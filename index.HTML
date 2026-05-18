@@ -1,0 +1,2540 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>정비용 루밍을 만들어보자</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e8eef7;
+      --muted: #8b9eb3;
+      --accent: #3d9cf5;
+      --accent-dim: #2563a8;
+      --ok: #34d399;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      background: linear-gradient(160deg, #0b0f14 0%, var(--bg) 40%, #121a24 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 0.35rem;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      font-size: 0.95rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(61, 156, 245, 0.08);
+    }
+    .dropzone p {
+      margin: 0.25rem 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 0.75rem;
+    }
+    label.file-btn {
+      font: inherit;
+      padding: 0.45rem 0.95rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #243044;
+      color: var(--text);
+      cursor: pointer;
+    }
+    label.file-btn:hover {
+      border-color: var(--accent-dim);
+      background: #2c3d54;
+    }
+    .file-btn input { display: none; }
+    .upload-summary {
+      margin-top: 0.65rem;
+      font-size: 0.82rem;
+      color: var(--ok);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .err {
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+    .extended-stay-hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0 0 0.5rem;
+      line-height: 1.45;
+    }
+    .extended-stay-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.85rem;
+      resize: vertical;
+      min-height: 4.25rem;
+    }
+    .extended-stay-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .extended-stay-inline {
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    .extended-stay-heading {
+      margin: 0 0 0.35rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .toolbar h2 {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    button.btn-make {
+      font: inherit;
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--accent-dim);
+      background: linear-gradient(180deg, #3d9cf5 0%, #2563a8 100%);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+    button.btn-make:hover { filter: brightness(1.08); }
+    button.btn-make:active { transform: translateY(1px); }
+
+    .board-layout {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 0.85rem;
+    }
+    .sidebar {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 3.25rem;
+    }
+    button.sidebar-btn {
+      font: inherit;
+      padding: 0.55rem 0.45rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #243044;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+    }
+    button.sidebar-btn:hover {
+      border-color: var(--accent-dim);
+      background: #2c3d54;
+    }
+    button.sidebar-btn.active {
+      border-color: var(--accent);
+      background: rgba(61, 156, 245, 0.22);
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(61, 156, 245, 0.35);
+    }
+    .board-main {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .view-panel[hidden] {
+      display: none !important;
+    }
+    .view-placeholder {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      margin-top: 0.25rem;
+    }
+
+    .summary-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
+    }
+    .summary-toolbar .status-summary-bar {
+      flex: 1 1 220px;
+      margin-bottom: 0;
+    }
+    .out-toggle {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.38rem 0.6rem;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .out-toggle input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #8b5cf6;
+    }
+
+    .asn-block-filters {
+      margin-bottom: 0.65rem;
+      padding: 0.45rem 0.55rem;
+      background: rgba(0, 0, 0, 0.12);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+    .asn-block-filters[hidden] {
+      display: none !important;
+    }
+    .asn-block-filters .asn-filter-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      font-size: 0.8rem;
+    }
+    .asn-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.75rem;
+    }
+    .asn-filter-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      cursor: pointer;
+      user-select: none;
+      padding: 0.15rem 0;
+      white-space: nowrap;
+    }
+    .asn-filter-item input {
+      accent-color: #a78bfa;
+      width: 0.95rem;
+      height: 0.95rem;
+    }
+
+    .asn-alias-details {
+      margin-top: 0.45rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .asn-alias-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.74rem;
+      user-select: none;
+    }
+    .asn-alias-details summary:hover {
+      color: var(--text);
+    }
+    .asn-alias-rows {
+      margin-top: 0.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.28rem;
+      max-height: 12rem;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .asn-alias-row {
+      display: grid;
+      grid-template-columns: minmax(4.5rem, 28%) 1fr;
+      gap: 0.35rem;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+    .asn-alias-code {
+      font-family: ui-monospace, monospace;
+      font-size: 0.68rem;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .block-alias-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.22rem 0.35rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      font-size: 0.74rem;
+    }
+    .pair-row .cell.status-with-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      justify-content: center;
+      padding: 2px 2px;
+    }
+    .asn-block-chip {
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: #6d28d9;
+      line-height: 1.12;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .villa-list-row .cell.status-with-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      justify-content: center;
+    }
+
+    .fasn-legend {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .sheet-outer.fasn-board .pair-row .cell.status-code {
+      font-weight: 800;
+      font-size: 0.62rem;
+      letter-spacing: 0.02em;
+    }
+    .pair-row.st-fo-occ,
+    .villa-list-row.st-fo-occ {
+      background: #fbcfe8 !important;
+    }
+    .pair-row.st-fo-vac,
+    .villa-list-row.st-fo-vac {
+      background: #d9f5d9 !important;
+    }
+    .summary-chip.fo-occ .tag {
+      background: #fbcfe8;
+      color: #9d174d;
+    }
+    .summary-chip.fo-vac .tag {
+      background: #d9f5d9;
+      color: #14532d;
+    }
+
+    .status-summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem 1rem;
+      padding: 0.5rem 0.65rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.82rem;
+    }
+    .status-summary-bar .summary-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-right: 0.25rem;
+    }
+    .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text);
+    }
+    label.summary-chip.filter-chip {
+      cursor: pointer;
+      user-select: none;
+    }
+    label.summary-chip.filter-chip input.chk-status-filter,
+    label.summary-chip.filter-chip input.chk-fo-filter {
+      width: 0.9rem;
+      height: 0.9rem;
+      margin: 0;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+    .summary-chip .tag {
+      font-weight: 800;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .summary-chip .num {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .summary-chip.ip .tag {
+      background: #d9f5d9;
+      color: #14532d;
+    }
+    .summary-chip.cl .tag {
+      background: #bae6fd;
+      color: #0c4a6e;
+    }
+    .summary-chip.pu .tag {
+      background: #fef9c3;
+      color: #713f12;
+    }
+    .summary-chip.di .tag {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .summary-chip.total {
+      margin-left: 0.35rem;
+      padding-left: 0.75rem;
+      border-left: 1px solid var(--border);
+    }
+    .summary-chip.total .tag {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .pair-row.vac-asn-in-highlight,
+    .villa-list-row.vac-asn-in-highlight {
+      outline: 1px solid #0f172a;
+      outline-offset: -1px;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+    }
+
+    .pair-row.extended-stay-strike,
+    .villa-list-row.extended-stay-strike {
+      position: relative;
+    }
+    .pair-row.extended-stay-strike::after,
+    .villa-list-row.extended-stay-strike::after {
+      content: "연박";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.58rem;
+      font-weight: 900;
+      font-style: italic;
+      color: rgba(17, 24, 39, 0.92);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 4;
+      white-space: nowrap;
+    }
+
+    .pair-row.out-departed-highlight,
+    .villa-list-row.out-departed-highlight {
+      background: #ede9fe !important;
+      box-shadow: inset 0 0 0 1px #c4b5fd;
+    }
+
+    /* 보드: 상단 라벨 + 열 그리드 (빌라 | 본관 | 별관 한 줄) */
+    .sheet-outer {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      background: #f3f4f6;
+    }
+    .sheet-triple-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .wing-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .wing-panel-villa {
+      flex: 0 0 auto;
+      max-width: 11rem;
+    }
+    .wing-panel-main {
+      flex: 1 1 260px;
+    }
+    .wing-panel-annex {
+      flex: 1 1 260px;
+    }
+    .wing-banner {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #9ca3af;
+      border-bottom: none;
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .wing-banner-villa {
+      background: #dbeafe;
+    }
+    .sheet-block-cols {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: 1px solid #9ca3af;
+      background: #fff;
+    }
+    .floor-columns {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      min-height: 72px;
+    }
+    .floor-col {
+      flex: 1 1 0;
+      min-width: 48px;
+      border-right: 1px solid #d1d5db;
+      display: flex;
+      flex-direction: column;
+    }
+    .floor-col:last-child {
+      border-right: none;
+    }
+    .floor-head {
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.28rem 0.15rem;
+      background: #f9fafb;
+      border-bottom: 1px solid #9ca3af;
+      color: #111827;
+      white-space: nowrap;
+    }
+    .pair-stack {
+      flex: 1;
+      padding: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: stretch;
+    }
+    .pair-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid #bfc5ce;
+      font-size: 0.68rem;
+      line-height: 1.15;
+      color: #111827;
+      background: #fff;
+    }
+    .pair-row .cell {
+      padding: 2px 3px;
+      text-align: center;
+      border-right: 1px solid #e5e7eb;
+      font-weight: 600;
+    }
+    .pair-row .cell:last-child {
+      border-right: none;
+    }
+    .pair-row.st-ip {
+      background: #d9f5d9;
+    }
+    .pair-row.st-di {
+      background: #fee2e2;
+    }
+    .pair-row.st-pu {
+      background: #fef9c3;
+    }
+    .pair-row.st-cl {
+      background: #bae6fd;
+    }
+    .pair-row.st-neutral {
+      background: #fff;
+    }
+    .villa-list-body {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 72px;
+    }
+    .villa-list-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid #bfc5ce;
+      font-size: 0.72rem;
+      line-height: 1.2;
+      color: #111827;
+      background: #fff;
+      font-weight: 600;
+    }
+    .villa-list-row .cell {
+      padding: 4px 6px;
+      text-align: center;
+      border-right: 1px solid #e5e7eb;
+    }
+    .villa-list-row .cell:last-child {
+      border-right: none;
+    }
+    .villa-list-row.st-ip {
+      background: #d9f5d9;
+    }
+    .villa-list-row.st-di {
+      background: #fee2e2;
+    }
+    .villa-list-row.st-pu {
+      background: #fef9c3;
+    }
+    .villa-list-row.st-cl {
+      background: #bae6fd;
+    }
+    .villa-list-row.st-neutral {
+      background: #fff;
+    }
+    .floor-empty {
+      flex: 1;
+      min-height: 2rem;
+      font-size: 0.65rem;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wing-panel-stray {
+      flex: 1 1 100%;
+      margin-top: 0.5rem;
+    }
+    .empty-board {
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .note {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(61, 156, 245, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(160deg, #0b0f14 0%, var(--bg) 50%, #121a24 100%);
+    }
+    .auth-gate.hidden { display: none; }
+    .auth-card {
+      width: min(400px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      text-align: center;
+    }
+    .auth-card h2 { margin: 0 0 8px; font-size: 20px; }
+    .auth-card p { margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+    .auth-card input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--text);
+    }
+    .auth-card button {
+      width: 100%;
+      border: 1px solid var(--accent-dim);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(180deg, #3d9cf5 0%, #2563a8 100%);
+      color: #fff;
+    }
+    .auth-error {
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #f87171;
+      font-weight: 600;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    body.locked { overflow: hidden; }
+    body.locked .app-main {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="locked">
+  <div id="auth-gate" class="auth-gate" aria-hidden="false">
+    <div class="auth-card">
+      <h2>정비 루밍 접근</h2>
+      <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
+      <form id="auth-form" autocomplete="off">
+        <label for="auth-password" class="sr-only">비밀번호</label>
+        <input id="auth-password" type="password" placeholder="비밀번호" required autofocus>
+        <button type="submit">확인</button>
+      </form>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="wrap app-main">
+    <h1>정비용 루밍을 만들어보자</h1>
+    <p class="sub">
+      <code>HKVACROOM</code>의 <code>ROOM</code>(숫자만)·<code>ROOM_STATUS</code>로 표시합니다.
+      PQ 비객실 코드(<code>CA1</code>, <code>VIP</code> 등)는 제외합니다.
+      아래 보드는 왼쪽 메뉴 <strong>499</strong>(전체 공실 보드), <strong>VAC</strong>(<code>RESV_STATUS</code>: Due Out·Departed 계열, <strong>Not Reserved</strong>, <strong>Arrival</strong> 등),
+      <strong>ASN</strong>은 <code>RESV_STATUS</code> 도착 계열 후, <strong>BLOCK_CODE</strong>로 모두·FIT(빈칸)·코드별 필터 가능합니다.
+      <strong>BLOCK_CODE</strong>는 공실표에 없으므로 같은 폴더의 <code>HK_ALLSTATUS</code> XML을 함께 두거나 업로드하면 객실번호 기준으로 붙입니다(FIT = All Status 기준 빈칸).
+      한 줄에 <strong>빌라동 · 본관 · 별관</strong>, 빌라는 세로 목록(001~004). 위쪽에 IP·CL·PU·DI 건수와 합계.
+      본관은 06·07·08층 열 없음. 객실 <code>0012</code>, <code>0023</code> 제외.
+      별관: 끝 두 자리 ≥ 51 이면 별관, 층은 앞 두 자리.
+    </p>
+
+    <section class="card">
+      <h2>XML 업로드</h2>
+      <div class="dropzone" id="dzUpload" tabindex="0" role="button" aria-label="XML 업로드">
+        <p><code>HKVACROOM</code> · <code>HK_ALLSTATUS</code>(블록코드) XML을 <strong>드래그 앤 드롭</strong> 또는 파일 찾기</p>
+        <p>공실은 <code>HKVACROOM</code>, ASN의 BLOCK_CODE/FIT 판단은 <code>HK_ALLSTATUS</code> 객실 행을 사용합니다.</p>
+        <p>여러 개 올리면 이어 붙인 뒤, 같은 객실은 <strong>나중 파일</strong> 값으로 덮어씁니다.</p>
+        <div class="actions">
+          <label class="file-btn">
+            파일 찾기
+            <input type="file" id="inputUpload" accept=".xml,text/xml,application/xml" multiple />
+          </label>
+        </div>
+      </div>
+      <div id="uploadSummary" class="upload-summary"></div>
+      <div id="uploadErr" class="err" hidden></div>
+      <div class="extended-stay-inline">
+        <h3 class="extended-stay-heading">연박 추가</h3>
+        <p class="extended-stay-hint">
+          <strong>VAC</strong>·<strong>ASN</strong> 보드에서 해당 객실 칸 가운데에 작게 <strong>연박</strong>이라고 표시합니다. 숫자만 입력하면 되며 쉼표·줄바꿈·공백으로 구분할 수 있습니다.
+        </p>
+        <textarea
+          id="extendedStayInput"
+          class="extended-stay-textarea"
+          rows="3"
+          placeholder="예: 0926, 1006, 1102"
+          autocomplete="off"
+        ></textarea>
+        <div class="extended-stay-actions">
+          <button type="button" id="btnExtendedStayApply" class="btn-make">적용</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="toolbar">
+        <h2>룸 상태판</h2>
+        <button type="button" id="btnMake" class="btn-make">만들기</button>
+      </div>
+      <div class="board-layout">
+        <aside class="sidebar" aria-label="화면 전환">
+          <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
+          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 필터">VAC</button>
+          <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
+          <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — All Status 객실 + VAC FO_STATUS">F.ASN</button>
+        </aside>
+        <div class="board-main">
+          <div id="view499" class="view-panel">
+            <div class="summary-toolbar">
+              <div id="statusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <div id="boardMount"></div>
+          </div>
+          <div id="viewVac" class="view-panel" hidden>
+            <div class="summary-toolbar">
+              <div id="vacStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <label class="out-toggle" title="ASN 탭과 동일 조건(도착·블록 필터)에 해당하는 객실 강조">
+                <input type="checkbox" class="chk-vac-asn-in" /> IN
+              </label>
+            </div>
+            <div id="vacBoardMount"></div>
+          </div>
+          <div id="viewAsn" class="view-panel" hidden>
+            <div class="summary-toolbar">
+              <div id="asnStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <div id="asnBlockFilters" class="asn-block-filters" hidden></div>
+            <div id="asnBoardMount"></div>
+          </div>
+          <div id="viewFAsn" class="view-panel" hidden>
+            <p class="fasn-legend">
+              <strong>객실</strong> = <code>HK_ALLSTATUS</code> ROOM ·
+              <strong>옆 칸</strong> = <code>HKVACROOM</code> FO (청소·빈방)
+            </p>
+            <div class="summary-toolbar">
+              <div id="fAsnFoSummaryBar" class="status-summary-bar"></div>
+            </div>
+            <div id="fAsnBlockFilters" class="asn-block-filters" hidden></div>
+            <div id="fAsnBoardMount"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="note">
+      같은 폴더 <code>hkvacroom6563812.xml</code> · <code>hk_allstatus6563818.xml</code>은 로컬 서버로 이 페이지를 열면 자동 로드됩니다.
+      <code>file://</code> 로만 열면 브라우저 보안 때문에 자동 로드가 안 될 수 있어 업로드가 필요합니다.
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var ACCESS_PASSWORD = "74321";
+      var AUTH_STORAGE_KEY = "clear_html_unlocked";
+      var authGate = document.getElementById("auth-gate");
+      var authForm = document.getElementById("auth-form");
+      var authPassword = document.getElementById("auth-password");
+      var authError = document.getElementById("auth-error");
+
+      function unlockApp() {
+        document.body.classList.remove("locked");
+        authGate.classList.add("hidden");
+        authGate.setAttribute("aria-hidden", "true");
+        sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+      }
+
+      authForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (authPassword.value === ACCESS_PASSWORD) {
+          authError.textContent = "";
+          unlockApp();
+          return;
+        }
+        authError.textContent = "비밀번호가 올바르지 않습니다.";
+        authPassword.value = "";
+        authPassword.focus();
+      });
+
+      if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+        unlockApp();
+      }
+    })();
+
+    (function () {
+      var DEFAULT_VACROOM_XML = "hkvacroom6563812.xml";
+      var DEFAULT_ALLSTATUS_XML = "hk_allstatus6563818.xml";
+
+      /** 객실번호(4자리 정규화) → All Status 의 BLOCK_CODE (빈 문자열 포함) */
+      var cachedAllStatusBlockMap = {};
+      var cachedAllStatusRooms = [];
+      var cachedVacFoByRoom = {};
+
+      /** 마지막으로 로드된 HKVACROOM 행(블록 오버레이 전) */
+      var cachedVacRows = [];
+
+      /** 연박 추가: 객실번호(4자리) → true , VAC·ASN 에서만 「연박」표시 */
+      var extendedStayRooms = {};
+
+      var ANNEX_TAIL_MIN = 51;
+      var DROP_ROOMS = { "0012": true, "0023": true };
+      var MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
+
+      /** VAC 탭: 이 RESV_STATUS 문자열만 (공백 정규화 후 일치) */
+      var VAC_RESV_WHITELIST = {
+        "Due Out": true,
+        "Departed, Arrival": true,
+        Departed: true,
+        "Due Out, Arrival": true,
+        "Not Reserved": true,
+        Arrival: true,
+      };
+
+      /** @type {{room:string,status:string,resvStatus:string,blockCode:string}[]} */
+      var cachedRows = [];
+
+      /** 원본 BLOCK_CODE → 화면 표시명 (localStorage, 필터·보드 ASN 표시에만 사용) */
+      var BLOCK_ALIAS_LS_KEY = "정비루밍_block_display_aliases_v1";
+      /** @type {Record<string,string>} */
+      var blockDisplayAliases = {};
+
+      function loadBlockAliasesFromStorage() {
+        try {
+          var raw = localStorage.getItem(BLOCK_ALIAS_LS_KEY);
+          if (!raw) return;
+          var o = JSON.parse(raw);
+          if (o && typeof o === "object") blockDisplayAliases = o;
+        } catch (e) {}
+      }
+
+      function persistBlockAliases() {
+        try {
+          localStorage.setItem(BLOCK_ALIAS_LS_KEY, JSON.stringify(blockDisplayAliases));
+        } catch (e) {}
+      }
+
+      function blockLabelForDisplay(canonicalBlockCode) {
+        var c = normalizeBlockCode(canonicalBlockCode);
+        var a = blockDisplayAliases[c];
+        if (a != null && String(a).trim() !== "") return String(a).trim();
+        return c;
+      }
+
+      function persistAliasFromInput(inp) {
+        if (!inp || !inp.getAttribute) return;
+        var canon = decodeURIComponent(inp.getAttribute("data-alias-canonical") || "");
+        if (!canon) return;
+        var v = String(inp.value || "").trim();
+        var prev = blockDisplayAliases[canon];
+        if (!v) {
+          if (prev === undefined) return;
+          delete blockDisplayAliases[canon];
+        } else {
+          if (prev === v) return;
+          blockDisplayAliases[canon] = v;
+        }
+        persistBlockAliases();
+        refreshBoards();
+      }
+
+      function fillStatusCell(cell, statusText, blockCodeRaw, boardMode) {
+        var bc = normalizeBlockCode(blockCodeRaw || "");
+        cell.className = "cell status-code";
+        if (boardMode === "asn" && bc !== "") {
+          cell.className += " status-with-block";
+          cell.textContent = "";
+          var stSpan = document.createElement("div");
+          stSpan.textContent = statusText || "";
+          cell.appendChild(stSpan);
+          var chip = document.createElement("div");
+          chip.className = "asn-block-chip";
+          chip.textContent = blockLabelForDisplay(bc);
+          chip.title = bc;
+          cell.appendChild(chip);
+        } else {
+          cell.textContent = statusText || "";
+        }
+      }
+
+      loadBlockAliasesFromStorage();
+
+      /** OUT 체크 시 Departed / Departed, Arrival 예약행 연보라 표시 */
+      var outDepartedHighlight = false;
+
+      /** VAC 탭 IN: ASN 보드에 나오는 객실과 동일 집합(RESV + 블록 필터) 굵은 테두리 */
+      var vacHighlightAsnIn = false;
+
+      /** 상태 요약 체크: IP·CL·PU·DI (전 탭 공통, 모두 켜면 필터 없음) */
+      var statusRoomFilters = { IP: true, CL: true, PU: true, DI: true };
+      var STATUS_FILTER_CODES = ["IP", "CL", "PU", "DI"];
+
+      /** F.ASN FO_STATUS 필터 (OCC=청소, VAC=빈방) */
+      var fasnFoFilters = { OCC: true, VAC: true };
+      var FO_FILTER_CODES = ["OCC", "VAC"];
+      var FO_LABELS = { OCC: "청소", VAC: "빈방" };
+
+      function isOutDepartedResv(item) {
+        var rs = normalizeResvStatus(item && item.resvStatus);
+        return rs === "Departed" || rs === "Departed, Arrival";
+      }
+
+      function outDepartedHighlightClass(item) {
+        if (!outDepartedHighlight) return "";
+        return isOutDepartedResv(item) ? " out-departed-highlight" : "";
+      }
+
+      /** @param {Record<string,boolean>|null} asnInRoomSet */
+      function vacAsnInOutlineClass(roomNorm, asnInRoomSet) {
+        if (!asnInRoomSet || !roomNorm || !asnInRoomSet[roomNorm]) return "";
+        return " vac-asn-in-highlight";
+      }
+
+      /** VAC·ASN 보드: 연박 추가 목록 객실에 작은 「연박」 레이블 */
+      function extendedStayStrikeClass(roomNorm, boardMode) {
+        if (boardMode !== "vac" && boardMode !== "asn") return "";
+        if (!roomNorm || !extendedStayRooms[roomNorm]) return "";
+        return " extended-stay-strike";
+      }
+
+      /** ASN 탭 최종 표시 집합과 동일 (모두/FIT/코드 필터 반영) */
+      function buildAsnVisibleRoomSet(dedupedRows) {
+        var set = {};
+        applyAsnBlockFilter(dedupedRows.filter(isAsnResvMatch)).forEach(function (r) {
+          set[r.room] = true;
+        });
+        return set;
+      }
+
+      function normalizeResvStatus(s) {
+        return String(s || "").replace(/\s+/g, " ").trim();
+      }
+
+      function isVacResvMatch(rec) {
+        return !!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
+      }
+
+      /** ASN 탭: 도착 계열 RESV_STATUS 만 */
+      var ASN_RESV_WHITELIST = {
+        Arrival: true,
+        Arrived: true,
+        "Arrived, Departed": true,
+        "Due Out, Arrival": true,
+        "Departed, Arrival": true,
+      };
+
+      /** ASN / F.ASN 탭 BLOCK_CODE 필터 상태 */
+      var asnBlockShowAll = true;
+      var asnBlockShowFit = false;
+      /** @type {Record<string,boolean>} */
+      var asnBlockSelectedCodes = {};
+      var fasnBlockShowAll = true;
+      var fasnBlockShowFit = false;
+      /** @type {Record<string,boolean>} */
+      var fasnBlockSelectedCodes = {};
+
+      function isAsnResvMatch(rec) {
+        return !!ASN_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
+      }
+
+      function normalizeBlockCode(s) {
+        return String(s || "").replace(/\s+/g, " ").trim();
+      }
+
+      function applyBlockFilter(rows, showAll, showFit, selectedCodes) {
+        if (showAll) return rows.slice();
+        var selected = Object.keys(selectedCodes).filter(function (k) {
+          return selectedCodes[k];
+        });
+        if (!showFit && selected.length === 0) return rows.slice();
+        return rows.filter(function (r) {
+          var bc = normalizeBlockCode(r.blockCode);
+          if (showFit && bc === "") return true;
+          for (var i = 0; i < selected.length; i++) {
+            if (bc === selected[i]) return true;
+          }
+          return false;
+        });
+      }
+
+      function applyAsnBlockFilter(asnRows) {
+        return applyBlockFilter(
+          asnRows,
+          asnBlockShowAll,
+          asnBlockShowFit,
+          asnBlockSelectedCodes
+        );
+      }
+
+      function applyFasnBlockFilter(rows) {
+        return applyBlockFilter(
+          rows,
+          fasnBlockShowAll,
+          fasnBlockShowFit,
+          fasnBlockSelectedCodes
+        );
+      }
+
+      function blockCodeForRoom(room) {
+        var map = cachedAllStatusBlockMap;
+        if (map && Object.prototype.hasOwnProperty.call(map, room)) {
+          return map[room];
+        }
+        return "";
+      }
+
+      function renderBlockFilterBar(wrapId, rows, showAll, showFit, selectedCodes) {
+        var wrap = document.getElementById(wrapId);
+        if (!wrap) return;
+
+        if (!rows.length) {
+          wrap.innerHTML = "";
+          wrap.hidden = true;
+          return;
+        }
+
+        var codeSet = {};
+        rows.forEach(function (r) {
+          var bc = normalizeBlockCode(r.blockCode);
+          if (bc !== "") codeSet[bc] = true;
+        });
+        var codes = Object.keys(codeSet).sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+
+        Object.keys(selectedCodes).forEach(function (k) {
+          if (!codeSet[k]) delete selectedCodes[k];
+        });
+
+        wrap.hidden = false;
+        wrap.innerHTML = "";
+
+        var title = document.createElement("div");
+        title.className = "asn-filter-title";
+        title.textContent = "BLOCK_CODE 필터";
+        wrap.appendChild(title);
+
+        var row = document.createElement("div");
+        row.className = "asn-filter-row";
+
+        function addCb(labelText, attrs, checked) {
+          var lab = document.createElement("label");
+          lab.className = "asn-filter-item";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "asn-filter-cb";
+          Object.keys(attrs).forEach(function (key) {
+            cb.setAttribute(key, attrs[key]);
+          });
+          cb.checked = checked;
+          lab.appendChild(cb);
+          lab.appendChild(document.createTextNode(" " + labelText));
+          row.appendChild(lab);
+        }
+
+        addCb(
+          "모두",
+          { "data-asn-kind": "all" },
+          showAll
+        );
+        addCb(
+          "FIT (All Status BLOCK 빈칸)",
+          { "data-asn-kind": "fit" },
+          showFit && !showAll
+        );
+
+        codes.forEach(function (code) {
+          var enc = encodeURIComponent(code);
+          var disp = blockLabelForDisplay(code);
+          var labEl = document.createElement("label");
+          labEl.className = "asn-filter-item";
+          if (disp !== code) labEl.title = "원본 BLOCK_CODE: " + code;
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "asn-filter-cb";
+          cb.setAttribute("data-asn-kind", "block");
+          cb.setAttribute("data-block-code", enc);
+          cb.checked = !!selectedCodes[code] && !showAll;
+          labEl.appendChild(cb);
+          labEl.appendChild(document.createTextNode(" " + disp));
+          row.appendChild(labEl);
+        });
+
+        wrap.appendChild(row);
+
+        var det = document.createElement("details");
+        det.className = "asn-alias-details";
+        var sum = document.createElement("summary");
+        sum.textContent = "블록 표시명 바꾸기 (이 브라우저에 저장)";
+        det.appendChild(sum);
+        var aliasWrap = document.createElement("div");
+        aliasWrap.className = "asn-alias-rows";
+        codes.forEach(function (code) {
+          var arow = document.createElement("div");
+          arow.className = "asn-alias-row";
+          var sc = document.createElement("span");
+          sc.className = "asn-alias-code";
+          sc.textContent = code;
+          sc.title = code;
+          var inp = document.createElement("input");
+          inp.type = "text";
+          inp.className = "block-alias-input";
+          inp.setAttribute("data-alias-canonical", encodeURIComponent(code));
+          inp.value = blockDisplayAliases[code] || "";
+          inp.placeholder = "화면에 쓸 이름";
+          inp.autocomplete = "off";
+          arow.appendChild(sc);
+          arow.appendChild(inp);
+          aliasWrap.appendChild(arow);
+        });
+        det.appendChild(aliasWrap);
+        wrap.appendChild(det);
+      }
+
+      function renderAsnBlockFilterBar(asnRows) {
+        renderBlockFilterBar(
+          "asnBlockFilters",
+          asnRows,
+          asnBlockShowAll,
+          asnBlockShowFit,
+          asnBlockSelectedCodes
+        );
+      }
+
+      function renderFasnBlockFilterBar(rows) {
+        renderBlockFilterBar(
+          "fAsnBlockFilters",
+          rows,
+          fasnBlockShowAll,
+          fasnBlockShowFit,
+          fasnBlockSelectedCodes
+        );
+      }
+
+      function textOf(el) {
+        return (el.textContent || "").replace(/\s+/g, " ").trim();
+      }
+
+      function normalizeRoomDigits(roomStr) {
+        var d = String(roomStr || "").replace(/\D/g, "");
+        if (!d) return "";
+        if (d.length <= 4) return d.padStart(4, "0");
+        return d.slice(-4);
+      }
+
+      function isNumericGuestRoom(raw) {
+        return /^\d{1,4}$/.test(String(raw || "").trim());
+      }
+
+      /**
+       * @returns {{ wing: string, floor: number, villaNum?: number, annex: boolean, room: string } | null }
+       */
+      function classifyRoom(roomStr) {
+        var r = normalizeRoomDigits(roomStr);
+        if (!r) return null;
+        var floor = parseInt(r.slice(0, 2), 10);
+        var tail = parseInt(r.slice(2), 10);
+        if (Number.isNaN(floor) || Number.isNaN(tail)) return null;
+        var annex = tail >= ANNEX_TAIL_MIN;
+
+        if (floor === 0 && !annex && tail >= 1 && tail <= 4) {
+          return { wing: "villa", villaNum: tail, annex: false, room: r };
+        }
+        if (floor === 0 && !annex) {
+          return { wing: "main", floor: 0, annex: false, room: r };
+        }
+        if (!annex && floor >= 1 && floor <= 12) {
+          return { wing: "main", floor: floor, annex: false, room: r };
+        }
+        if (annex && floor >= 1 && floor <= 11) {
+          return { wing: "annex", floor: floor, annex: true, room: r };
+        }
+        return { wing: "extra", floor: floor, annex: annex, room: r };
+      }
+
+      function bucketKey(wing, floor) {
+        return wing + "-" + floor;
+      }
+
+      /** 빌라·본관·별관 보드에 올라가는 행만 (기타 제외) */
+      function get499BoardRows(deduped) {
+        return deduped.filter(function (rec) {
+          var cl = classifyRoom(rec.room);
+          return cl && cl.wing !== "extra";
+        });
+      }
+
+      function normalizeRoomStatus(status) {
+        var u = String(status || "")
+          .toUpperCase()
+          .replace(/\s+/g, "");
+        if (u === "IP" || u === "CL" || u === "PU" || u === "DI") return u;
+        return "";
+      }
+
+      function allStatusFiltersOn() {
+        return STATUS_FILTER_CODES.every(function (c) {
+          return statusRoomFilters[c];
+        });
+      }
+
+      function setAllStatusFilters(on) {
+        STATUS_FILTER_CODES.forEach(function (c) {
+          statusRoomFilters[c] = !!on;
+        });
+      }
+
+      function syncStatusFilterCheckboxes() {
+        document.querySelectorAll(".chk-status-filter").forEach(function (cb) {
+          var code = cb.getAttribute("data-status-code");
+          if (code === "ALL") cb.checked = allStatusFiltersOn();
+          else if (code) cb.checked = !!statusRoomFilters[code];
+        });
+      }
+
+      function matchesStatusRoomFilter(rec) {
+        var allOn = allStatusFiltersOn();
+        if (allOn) return true;
+        var anyOn = STATUS_FILTER_CODES.some(function (c) {
+          return statusRoomFilters[c];
+        });
+        if (!anyOn) return false;
+        var u = normalizeRoomStatus(rec.status);
+        return !!u && !!statusRoomFilters[u];
+      }
+
+      function summarize499(boardRows) {
+        var c = { IP: 0, CL: 0, PU: 0, DI: 0 };
+        boardRows.forEach(function (r) {
+          var u = normalizeRoomStatus(r.status);
+          if (u === "IP") c.IP++;
+          else if (u === "CL") c.CL++;
+          else if (u === "PU") c.PU++;
+          else if (u === "DI") c.DI++;
+        });
+        return { counts: c, total: boardRows.length };
+      }
+
+      function renderStatusSummaryBar(el, counts, total) {
+        el.innerHTML = "";
+        var title = document.createElement("span");
+        title.className = "summary-title";
+        title.textContent = "상태 요약";
+        el.appendChild(title);
+        [
+          { code: "IP", cls: "ip" },
+          { code: "CL", cls: "cl" },
+          { code: "PU", cls: "pu" },
+          { code: "DI", cls: "di" },
+        ].forEach(function (item) {
+          var chip = document.createElement("label");
+          chip.className = "summary-chip filter-chip " + item.cls;
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "chk-status-filter";
+          cb.setAttribute("data-status-code", item.code);
+          cb.checked = !!statusRoomFilters[item.code];
+          chip.appendChild(cb);
+          var tag = document.createElement("span");
+          tag.className = "tag";
+          tag.textContent = item.code;
+          var num = document.createElement("span");
+          num.className = "num";
+          num.textContent = String(counts[item.code] || 0);
+          chip.appendChild(tag);
+          chip.appendChild(num);
+          el.appendChild(chip);
+        });
+        var totChip = document.createElement("label");
+        totChip.className = "summary-chip filter-chip total";
+        var totCb = document.createElement("input");
+        totCb.type = "checkbox";
+        totCb.className = "chk-status-filter";
+        totCb.setAttribute("data-status-code", "ALL");
+        totCb.checked = allStatusFiltersOn();
+        totCb.title = "전체 상태 표시";
+        totChip.appendChild(totCb);
+        var ttag = document.createElement("span");
+        ttag.className = "tag";
+        ttag.textContent = "합계";
+        var tnum = document.createElement("span");
+        tnum.className = "num";
+        tnum.textContent = String(total);
+        totChip.appendChild(ttag);
+        totChip.appendChild(tnum);
+        el.appendChild(totChip);
+      }
+
+      /** @param {{room:string,status:string,resvStatus?:string,blockCode?:string}[]} flat */
+      function buildBuckets(flat) {
+        /** @type {Record<string, {room:string,status:string,resvStatus:string}[]>} */
+        var buckets = {};
+        flat.forEach(function (rec) {
+          var cl = classifyRoom(rec.room);
+          if (!cl || cl.wing === "extra") return;
+          var key =
+            cl.wing === "villa"
+              ? bucketKey("villa", cl.villaNum)
+              : bucketKey(cl.wing, cl.floor);
+          if (!buckets[key]) buckets[key] = [];
+          buckets[key].push({
+            room: rec.room,
+            status: rec.status,
+            foRaw: rec.foRaw || "",
+            resvStatus: rec.resvStatus || "",
+            blockCode: rec.blockCode || "",
+          });
+        });
+        Object.keys(buckets).forEach(function (key) {
+          buckets[key].sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+        });
+        return buckets;
+      }
+
+      /** 00층 본관 실은 본관01 열에 합침 */
+      function getMainFloorItems(buckets, floorNum) {
+        if (floorNum === 1) {
+          var a = buckets[bucketKey("main", 0)] || [];
+          var b = buckets[bucketKey("main", 1)] || [];
+          var z = a.concat(b);
+          z.sort(function (x, y) {
+            return x.room.localeCompare(y.room, undefined, { numeric: true });
+          });
+          return z;
+        }
+        return buckets[bucketKey("main", floorNum)] || [];
+      }
+
+      /** @param {Document} doc */
+      function parseVacRooms(doc) {
+        var root = doc.documentElement && doc.documentElement.tagName;
+        if (root !== "HKVACROOM") throw new Error("HKVACROOM 루트 XML이 아닙니다.");
+        var out = [];
+        var nodes = doc.getElementsByTagName("G_ROOM");
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var rmRaw = "";
+          var st = "";
+          var resv = "";
+          var blk = "";
+          var fo = "";
+          for (var j = 0; j < el.children.length; j++) {
+            var c = el.children[j];
+            if (c.tagName === "ROOM") rmRaw = textOf(c);
+            else if (c.tagName === "ROOM_STATUS") st = textOf(c);
+            else if (c.tagName === "RESV_STATUS") resv = textOf(c);
+            else if (c.tagName === "BLOCK_CODE") blk = textOf(c);
+            else if (c.tagName === "FO_STATUS") fo = textOf(c);
+          }
+          if (!isNumericGuestRoom(rmRaw)) continue;
+          var nr = normalizeRoomDigits(rmRaw);
+          if (!nr) continue;
+          out.push({
+            room: nr,
+            status: st,
+            resvStatus: resv,
+            blockCode: blk,
+            foStatus: fo,
+          });
+        }
+        return out;
+      }
+
+      /**
+       * HK_ALLSTATUS 의 G_ROOM 에서 객실번호 → BLOCK_CODE (문서 순서상 나중 행이 덮어씀).
+       * @returns {Record<string,string>|null} 루트가 HK_ALLSTATUS 가 아니면 null
+       */
+      function parseAllStatusBlockMap(doc) {
+        var root = doc.documentElement && doc.documentElement.tagName;
+        if (root !== "HK_ALLSTATUS") return null;
+        var map = {};
+        var nodes = doc.getElementsByTagName("G_ROOM");
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var rmRaw = "";
+          var blk = "";
+          for (var j = 0; j < el.children.length; j++) {
+            var c = el.children[j];
+            if (c.tagName === "ROOM") rmRaw = textOf(c);
+            else if (c.tagName === "BLOCK_CODE") blk = textOf(c);
+          }
+          if (!isNumericGuestRoom(rmRaw)) continue;
+          var nr = normalizeRoomDigits(rmRaw);
+          if (!nr) continue;
+          map[nr] = blk;
+        }
+        return map;
+      }
+
+function parseAllStatusRoomList(doc) {
+        var root = doc.documentElement && doc.documentElement.tagName;
+        if (root !== "HK_ALLSTATUS") return null;
+        var seen = {};
+        var list = [];
+        var nodes = doc.getElementsByTagName("G_ROOM");
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var rmRaw = "";
+          for (var j = 0; j < el.children.length; j++) {
+            if (el.children[j].tagName === "ROOM") rmRaw = textOf(el.children[j]);
+          }
+          if (!isNumericGuestRoom(rmRaw)) continue;
+          var nr = normalizeRoomDigits(rmRaw);
+          if (!nr || seen[nr]) continue;
+          seen[nr] = true;
+          list.push(nr);
+        }
+        return list;
+      }
+
+      function rebuildVacFoMapFromRows() {
+        var m = {};
+        cachedVacRows.forEach(function (r) {
+          m[r.room] = r.foStatus || "";
+        });
+        cachedVacFoByRoom = m;
+      }
+
+      function mergeAllStatusRoomList(incoming) {
+        if (!incoming || !incoming.length) return;
+        var seen = {};
+        var next = [];
+        cachedAllStatusRooms.forEach(function (rm) {
+          if (!seen[rm]) {
+            seen[rm] = true;
+            next.push(rm);
+          }
+        });
+        incoming.forEach(function (rm) {
+          if (!seen[rm]) {
+            seen[rm] = true;
+            next.push(rm);
+          }
+        });
+        cachedAllStatusRooms = next;
+      }
+
+      function renderFAsnBoard() {
+        var mount = document.getElementById("fAsnBoardMount");
+        var summaryEl = document.getElementById("fAsnFoSummaryBar");
+        if (!mount) return;
+        mount.innerHTML = "";
+        if (summaryEl) summaryEl.innerHTML = "";
+        var fasnBarClear = document.getElementById("fAsnBlockFilters");
+        if (fasnBarClear) {
+          fasnBarClear.innerHTML = "";
+          fasnBarClear.hidden = true;
+        }
+        if (!cachedAllStatusRooms.length) {
+          var emptyAs = document.createElement("div");
+          emptyAs.className = "empty-board";
+          emptyAs.textContent =
+            "HK_ALLSTATUS XML을 업로드하거나 자동 로드해 주세요. (ROOM 목록 기준)";
+          mount.appendChild(emptyAs);
+          return;
+        }
+        var allRows = [];
+        cachedAllStatusRooms.forEach(function (room) {
+          if (DROP_ROOMS[room]) return;
+          var foRaw = cachedVacFoByRoom[room] || "";
+          var label = foLabelForDisplay(foRaw);
+          allRows.push({
+            room: room,
+            foRaw: foRaw,
+            status: label !== "" ? label : "—",
+            resvStatus: "",
+            blockCode: blockCodeForRoom(room),
+          });
+        });
+        if (!allRows.length) {
+          var emptyR0 = document.createElement("div");
+          emptyR0.className = "empty-board";
+          emptyR0.textContent = "표시할 객실이 없습니다.";
+          mount.appendChild(emptyR0);
+          return;
+        }
+        renderFasnBlockFilterBar(allRows);
+        var blockFiltered = applyFasnBlockFilter(allRows);
+        if (!blockFiltered.length) {
+          var emptyB = document.createElement("div");
+          emptyB.className = "empty-board";
+          emptyB.textContent =
+            "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다.";
+          mount.appendChild(emptyB);
+          return;
+        }
+        var summ = summarizeFo(blockFiltered);
+        var displayRows = blockFiltered.filter(matchesFoFilter);
+        if (summaryEl) {
+          renderFoSummaryBar(summaryEl, summ.counts, displayRows.length);
+        }
+        if (!displayRows.length) {
+          var emptyFo = document.createElement("div");
+          emptyFo.className = "empty-board";
+          emptyFo.textContent =
+            "선택한 FO(청소·빈방) 조건에 맞는 객실이 없습니다.";
+          mount.appendChild(emptyFo);
+          return;
+        }
+        var buckets = buildBuckets(displayRows);
+        var stray = displayRows.filter(function (rec) {
+          var cl = classifyRoom(rec.room);
+          return !cl || cl.wing === "extra";
+        });
+        var outer = document.createElement("div");
+        outer.className = "sheet-outer fasn-board";
+        var triple = document.createElement("div");
+        triple.className = "sheet-triple-row";
+        triple.appendChild(renderVillaPanel(buckets, "fasn", null));
+        triple.appendChild(
+          renderWingPanel(
+            "본관",
+            "본관",
+            "main",
+            MAIN_FLOOR_ORDER,
+            buckets,
+            "wing-panel-main",
+            "fasn",
+            null
+          )
+        );
+        var annexFloors = [];
+        for (var af = 1; af <= 11; af++) annexFloors.push(af);
+        triple.appendChild(
+          renderWingPanel(
+            "별관",
+            "별관",
+            "annex",
+            annexFloors,
+            buckets,
+            "wing-panel-annex",
+            "fasn",
+            null
+          )
+        );
+        outer.appendChild(triple);
+        if (stray.length) {
+          var strayPanel = document.createElement("div");
+          strayPanel.className = "wing-panel wing-panel-stray";
+          var sb = document.createElement("div");
+          sb.className = "wing-banner";
+          sb.textContent = "분류 외 기타 객실";
+          strayPanel.appendChild(sb);
+          var strip = document.createElement("div");
+          strip.className = "sheet-block-cols floor-columns";
+          strip.style.flexWrap = "wrap";
+          stray.sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+          stray.forEach(function (s) {
+            var row = document.createElement("div");
+            row.className = "pair-row " + boardRowStatusClass(s, "fasn");
+            row.style.display = "inline-grid";
+            row.style.gridTemplateColumns = "1fr 1fr";
+            row.style.minWidth = "72px";
+            row.style.margin = "2px";
+            var c1 = document.createElement("div");
+            c1.className = "cell room-num";
+            c1.textContent = formatRoomDisplay(normalizeRoomDigits(s.room));
+            var c2 = document.createElement("div");
+            fillStatusCell(c2, s.status || "", s.blockCode, "fasn");
+            row.appendChild(c1);
+            row.appendChild(c2);
+            strip.appendChild(row);
+          });
+          strayPanel.appendChild(strip);
+          outer.appendChild(strayPanel);
+        }
+        mount.appendChild(outer);
+      }
+
+      function overlayAllStatusBlocks(rows) {
+        var map = cachedAllStatusBlockMap;
+        if (!rows || !rows.length) return [];
+        if (!map || !Object.keys(map).length) return rows.slice();
+        return rows.map(function (r) {
+          if (!Object.prototype.hasOwnProperty.call(map, r.room)) return r;
+          return {
+            room: r.room,
+            status: r.status,
+            resvStatus: r.resvStatus,
+            blockCode: map[r.room],
+          };
+        });
+      }
+
+      function rebuildCachedRowsFromVacAndMap() {
+        cachedRows = overlayAllStatusBlocks(cachedVacRows);
+      }
+
+      function dedupeByRoomLastWins(rows) {
+        var map = {};
+        rows.forEach(function (r) {
+          if (!r.room) return;
+          map[r.room] = {
+            status: r.status || "",
+            resvStatus: r.resvStatus || "",
+            blockCode: r.blockCode || "",
+            foStatus: r.foStatus || "",
+          };
+        });
+        return Object.keys(map).map(function (k) {
+          var o = map[k];
+          return {
+            room: k,
+            status: o.status,
+            resvStatus: o.resvStatus,
+            blockCode: o.blockCode,
+            foStatus: o.foStatus,
+          };
+        });
+      }
+
+      function formatRoomDisplay(norm4) {
+        var f = parseInt(norm4.slice(0, 2), 10);
+        var t = parseInt(norm4.slice(2), 10);
+        if (Number.isNaN(f) || Number.isNaN(t)) return norm4;
+        return String(f) + String(t).padStart(2, "0");
+      }
+
+      function pairStatusClass(status) {
+        var u = String(status || "")
+          .toUpperCase()
+          .replace(/\s+/g, "");
+        if (u === "IP") return "st-ip";
+        if (u === "DI") return "st-di";
+        if (u === "PU") return "st-pu";
+        if (u === "CL") return "st-cl";
+        return "st-neutral";
+      }
+
+      function normalizeFoStatus(s) {
+        return String(s || "").toUpperCase().replace(/\s+/g, "").trim();
+      }
+
+      function foLabelForDisplay(foRaw) {
+        var u = normalizeFoStatus(foRaw);
+        if (u === "OCC") return FO_LABELS.OCC;
+        if (u === "VAC") return FO_LABELS.VAC;
+        return foRaw ? String(foRaw).trim() : "";
+      }
+
+      function pairFoStatusClass(foRaw) {
+        var u = normalizeFoStatus(foRaw);
+        if (u === "OCC") return "st-fo-occ";
+        if (u === "VAC") return "st-fo-vac";
+        return "st-neutral";
+      }
+
+      function boardRowStatusClass(it, boardMode) {
+        if (boardMode === "fasn") return pairFoStatusClass(it.foRaw || "");
+        return pairStatusClass(it.status);
+      }
+
+      function allFoFiltersOn() {
+        return FO_FILTER_CODES.every(function (c) {
+          return fasnFoFilters[c];
+        });
+      }
+
+      function setAllFoFilters(on) {
+        FO_FILTER_CODES.forEach(function (c) {
+          fasnFoFilters[c] = !!on;
+        });
+      }
+
+      function syncFoFilterCheckboxes() {
+        document.querySelectorAll(".chk-fo-filter").forEach(function (cb) {
+          var code = cb.getAttribute("data-fo-code");
+          if (code === "ALL") cb.checked = allFoFiltersOn();
+          else if (code) cb.checked = !!fasnFoFilters[code];
+        });
+      }
+
+      function matchesFoFilter(rec) {
+        var allOn = allFoFiltersOn();
+        if (allOn) return true;
+        var anyOn = FO_FILTER_CODES.some(function (c) {
+          return fasnFoFilters[c];
+        });
+        if (!anyOn) return false;
+        var u = normalizeFoStatus(rec.foRaw);
+        return !!u && !!fasnFoFilters[u];
+      }
+
+      function summarizeFo(rows) {
+        var c = { OCC: 0, VAC: 0 };
+        rows.forEach(function (r) {
+          var u = normalizeFoStatus(r.foRaw);
+          if (u === "OCC") c.OCC++;
+          else if (u === "VAC") c.VAC++;
+        });
+        return { counts: c, total: rows.length };
+      }
+
+      function renderFoSummaryBar(el, counts, total) {
+        el.innerHTML = "";
+        var title = document.createElement("span");
+        title.className = "summary-title";
+        title.textContent = "FO 요약";
+        el.appendChild(title);
+        [
+          { code: "OCC", cls: "fo-occ", label: FO_LABELS.OCC },
+          { code: "VAC", cls: "fo-vac", label: FO_LABELS.VAC },
+        ].forEach(function (item) {
+          var chip = document.createElement("label");
+          chip.className = "summary-chip filter-chip " + item.cls;
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "chk-fo-filter";
+          cb.setAttribute("data-fo-code", item.code);
+          cb.checked = !!fasnFoFilters[item.code];
+          chip.appendChild(cb);
+          var tag = document.createElement("span");
+          tag.className = "tag";
+          tag.textContent = item.label;
+          var num = document.createElement("span");
+          num.className = "num";
+          num.textContent = String(counts[item.code] || 0);
+          chip.appendChild(tag);
+          chip.appendChild(num);
+          el.appendChild(chip);
+        });
+        var totChip = document.createElement("label");
+        totChip.className = "summary-chip filter-chip total";
+        var totCb = document.createElement("input");
+        totCb.type = "checkbox";
+        totCb.className = "chk-fo-filter";
+        totCb.setAttribute("data-fo-code", "ALL");
+        totCb.checked = allFoFiltersOn();
+        totCb.title = "전체 표시";
+        totChip.appendChild(totCb);
+        var ttag = document.createElement("span");
+        ttag.className = "tag";
+        ttag.textContent = "합계";
+        var tnum = document.createElement("span");
+        tnum.className = "num";
+        tnum.textContent = String(total);
+        totChip.appendChild(ttag);
+        totChip.appendChild(tnum);
+        el.appendChild(totChip);
+      }
+
+      function renderFloorColumn(headLabel, items, roomFormatter, boardMode, asnInRoomSet) {
+        boardMode = boardMode || "499";
+        var rf =
+          typeof roomFormatter === "function" ? roomFormatter : formatRoomDisplay;
+        var col = document.createElement("div");
+        col.className = "floor-col";
+        var fh = document.createElement("div");
+        fh.className = "floor-head";
+        fh.textContent = headLabel;
+        col.appendChild(fh);
+        var stack = document.createElement("div");
+        stack.className = "pair-stack";
+        if (!items.length) {
+          var empty = document.createElement("div");
+          empty.className = "floor-empty";
+          empty.textContent = "—";
+          stack.appendChild(empty);
+        } else {
+          items.forEach(function (it) {
+            var row = document.createElement("div");
+            row.className =
+              "pair-row " +
+              boardRowStatusClass(it, boardMode) +
+              outDepartedHighlightClass(it) +
+              vacAsnInOutlineClass(it.room, asnInRoomSet) +
+              extendedStayStrikeClass(it.room, boardMode);
+            var c1 = document.createElement("div");
+            c1.className = "cell room-num";
+            c1.textContent = rf(normalizeRoomDigits(it.room));
+            var c2 = document.createElement("div");
+            fillStatusCell(c2, it.status || "", it.blockCode, boardMode);
+            row.appendChild(c1);
+            row.appendChild(c2);
+            stack.appendChild(row);
+          });
+        }
+        col.appendChild(stack);
+        return col;
+      }
+
+      function renderVillaPanel(buckets, boardMode, asnInRoomSet) {
+        boardMode = boardMode || "499";
+        var panel = document.createElement("div");
+        panel.className = "wing-panel wing-panel-villa";
+        var ban = document.createElement("div");
+        ban.className = "wing-banner wing-banner-villa";
+        ban.textContent = "빌라동";
+        panel.appendChild(ban);
+        var body = document.createElement("div");
+        body.className = "sheet-block-cols villa-list-body";
+        for (var v = 1; v <= 4; v++) {
+          var items = buckets[bucketKey("villa", v)] || [];
+          var it = items[0];
+          var st = it ? it.status : "";
+          var row = document.createElement("div");
+          row.className =
+            "villa-list-row " +
+            (it ? boardRowStatusClass(it, boardMode) : pairStatusClass(st)) +
+            outDepartedHighlightClass(it) +
+            vacAsnInOutlineClass(it ? it.room : "", asnInRoomSet) +
+            extendedStayStrikeClass(it ? it.room : "", boardMode);
+          var c1 = document.createElement("div");
+          c1.className = "cell room-num";
+          c1.textContent = String(v).padStart(3, "0");
+          var c2 = document.createElement("div");
+          fillStatusCell(c2, st || "—", it ? it.blockCode : "", boardMode);
+          row.appendChild(c1);
+          row.appendChild(c2);
+          body.appendChild(row);
+        }
+        panel.appendChild(body);
+        return panel;
+      }
+
+      function renderWingPanel(
+        titleText,
+        floorPrefix,
+        wingKey,
+        floorNums,
+        buckets,
+        panelClass,
+        boardMode,
+        asnInRoomSet
+      ) {
+        var panel = document.createElement("div");
+        panel.className = "wing-panel " + panelClass;
+        var ban = document.createElement("div");
+        ban.className = "wing-banner";
+        ban.textContent = titleText;
+        panel.appendChild(ban);
+        var colsWrap = document.createElement("div");
+        colsWrap.className = "sheet-block-cols floor-columns";
+        var useMainMerge = wingKey === "main";
+        floorNums.forEach(function (f) {
+          var items = useMainMerge
+            ? getMainFloorItems(buckets, f)
+            : buckets[bucketKey(wingKey, f)] || [];
+          var label = floorPrefix + String(f).padStart(2, "0");
+          colsWrap.appendChild(
+            renderFloorColumn(label, items, undefined, boardMode, asnInRoomSet)
+          );
+        });
+        panel.appendChild(colsWrap);
+        return panel;
+      }
+
+      function renderBoard(rows, mode) {
+        mode = mode || "499";
+        var summaryElId = "statusSummaryBar";
+        var mountId = "boardMount";
+        var filterFn = null;
+        var emptyFiltered =
+          "표시할 객실이 없습니다. HKVACROOM XML을 업로드하세요.";
+
+        if (mode === "vac") {
+          summaryElId = "vacStatusSummaryBar";
+          mountId = "vacBoardMount";
+          filterFn = isVacResvMatch;
+          emptyFiltered =
+            "VAC 조건의 RESV_STATUS(Due Out, Departed, 도찀 조합, Not Reserved, Arrival 등)에 해당하는 객실이 없습니다.";
+        } else if (mode === "asn") {
+          summaryElId = "asnStatusSummaryBar";
+          mountId = "asnBoardMount";
+          filterFn = isAsnResvMatch;
+          emptyFiltered =
+            "ASN 조건의 RESV_STATUS(Arrival, Arrived, Arrived·Departed, Due Out·Arrival, Departed·Arrival)에 해당하는 객실이 없습니다.";
+        }
+
+        var summaryEl = document.getElementById(summaryElId);
+        var mount = document.getElementById(mountId);
+        mount.innerHTML = "";
+
+        var filtered = rows.filter(function (rec) {
+          return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
+        });
+        var deduped = dedupeByRoomLastWins(filtered);
+        var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
+
+        /** VAC에서만: ASN 탭 최종 보드와 동일 객실 집합 */
+        var asnInRoomSet =
+          mode === "vac" && vacHighlightAsnIn ? buildAsnVisibleRoomSet(deduped) : null;
+
+        var workRows;
+        if (mode === "asn") {
+          renderAsnBlockFilterBar(modeFiltered);
+          workRows = applyAsnBlockFilter(modeFiltered);
+        } else {
+          var asnBarClear = document.getElementById("asnBlockFilters");
+          if (asnBarClear) {
+            asnBarClear.innerHTML = "";
+            asnBarClear.hidden = true;
+          }
+          workRows = modeFiltered;
+        }
+
+        var summarySource = get499BoardRows(workRows);
+        var summ = summarize499(summarySource);
+        var displayRows = workRows.filter(matchesStatusRoomFilter);
+        var board499 = get499BoardRows(displayRows);
+        renderStatusSummaryBar(summaryEl, summ.counts, board499.length);
+
+        if (!deduped.length) {
+          var empty0 = document.createElement("div");
+          empty0.className = "empty-board";
+          empty0.textContent =
+            "표시할 객실이 없습니다. HKVACROOM XML을 업로드하세요.";
+          mount.appendChild(empty0);
+          return;
+        }
+
+        if (!modeFiltered.length) {
+          var emptyM = document.createElement("div");
+          emptyM.className = "empty-board";
+          emptyM.textContent = emptyFiltered;
+          mount.appendChild(emptyM);
+          return;
+        }
+
+        if (!workRows.length) {
+          var emptyB = document.createElement("div");
+          emptyB.className = "empty-board";
+          emptyB.textContent =
+            mode === "asn"
+              ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
+              : emptyFiltered;
+          mount.appendChild(emptyB);
+          return;
+        }
+
+        if (!displayRows.length) {
+          var emptySt = document.createElement("div");
+          emptySt.className = "empty-board";
+          emptySt.textContent =
+            "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
+          mount.appendChild(emptySt);
+          return;
+        }
+
+        var buckets = buildBuckets(displayRows);
+        var stray = displayRows.filter(function (rec) {
+          var cl = classifyRoom(rec.room);
+          return !cl || cl.wing === "extra";
+        });
+
+        var outer = document.createElement("div");
+        outer.className = "sheet-outer";
+
+        var triple = document.createElement("div");
+        triple.className = "sheet-triple-row";
+        triple.appendChild(renderVillaPanel(buckets, mode, asnInRoomSet));
+        triple.appendChild(
+          renderWingPanel(
+            "본관",
+            "본관",
+            "main",
+            MAIN_FLOOR_ORDER,
+            buckets,
+            "wing-panel-main",
+            mode,
+            asnInRoomSet
+          )
+        );
+        var annexFloors = [];
+        for (var af = 1; af <= 11; af++) annexFloors.push(af);
+        triple.appendChild(
+          renderWingPanel(
+            "별관",
+            "별관",
+            "annex",
+            annexFloors,
+            buckets,
+            "wing-panel-annex",
+            mode,
+            asnInRoomSet
+          )
+        );
+        outer.appendChild(triple);
+
+        if (stray.length) {
+          var strayPanel = document.createElement("div");
+          strayPanel.className = "wing-panel wing-panel-stray";
+          var sb = document.createElement("div");
+          sb.className = "wing-banner";
+          sb.textContent = "분류 외 기타 객실";
+          strayPanel.appendChild(sb);
+          var strip = document.createElement("div");
+          strip.className = "sheet-block-cols floor-columns";
+          strip.style.flexWrap = "wrap";
+          stray.sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+          stray.forEach(function (s) {
+            var row = document.createElement("div");
+            row.className =
+              "pair-row " +
+              pairStatusClass(s.status) +
+              outDepartedHighlightClass(s) +
+              vacAsnInOutlineClass(s.room, asnInRoomSet) +
+              extendedStayStrikeClass(s.room, mode);
+            row.style.display = "inline-grid";
+            row.style.gridTemplateColumns = "1fr 1fr";
+            row.style.minWidth = "72px";
+            row.style.margin = "2px";
+            var c1 = document.createElement("div");
+            c1.className = "cell room-num";
+            c1.textContent = formatRoomDisplay(normalizeRoomDigits(s.room));
+            var c2 = document.createElement("div");
+            fillStatusCell(c2, s.status || "", s.blockCode, mode);
+            row.appendChild(c1);
+            row.appendChild(c2);
+            strip.appendChild(row);
+          });
+          strayPanel.appendChild(strip);
+          outer.appendChild(strayPanel);
+        }
+
+        mount.appendChild(outer);
+      }
+
+      function refreshBoards() {
+        renderBoard(cachedRows, "499");
+        renderBoard(cachedRows, "vac");
+        renderBoard(cachedRows, "asn");
+        renderFAsnBoard();
+      }
+
+      function loadXmlFiles(files, done) {
+        var arr = files ? Array.prototype.slice.call(files, 0) : [];
+        var summaries = [];
+        var errors = [];
+        var merged = [];
+
+        if (!arr.length) return done(null);
+
+        var blockPatch = {};
+        var roomListPatch = [];
+
+        Promise.all(
+          arr.map(function (file) {
+            return new Promise(function (resolve) {
+              var reader = new FileReader();
+              reader.onload = function () {
+                try {
+                  var doc = new DOMParser().parseFromString(reader.result, "text/xml");
+                  if (doc.querySelector("parsererror")) throw new Error("XML 파싱 오류");
+                  var root = doc.documentElement && doc.documentElement.tagName;
+                  if (root === "HKVACROOM") {
+                    var rooms = parseVacRooms(doc);
+                    merged = merged.concat(rooms);
+                    summaries.push(file.name + " · 공실 " + rooms.length + "건");
+                  } else if (root === "HK_ALLSTATUS") {
+                    var bm = parseAllStatusBlockMap(doc);
+                    if (!bm) throw new Error("HK_ALLSTATUS 형식 오류");
+                    Object.keys(bm).forEach(function (k) {
+                      blockPatch[k] = bm[k];
+                    });
+                    var rl = parseAllStatusRoomList(doc);
+                    if (rl && rl.length) roomListPatch = roomListPatch.concat(rl);
+                    summaries.push(
+                      file.name + " · BLOCK " + Object.keys(bm).length + "실"
+                    );
+                  } else {
+                    throw new Error("HKVACROOM 또는 HK_ALLSTATUS 가 아닙니다.");
+                  }
+                  resolve(null);
+                } catch (e) {
+                  resolve(file.name + ": " + (e.message || String(e)));
+                }
+              };
+              reader.onerror = function () {
+                resolve(file.name + ": 읽기 실패");
+              };
+              reader.readAsText(file, "UTF-8");
+            });
+          })
+        ).then(function (errs) {
+          errs.forEach(function (e) {
+            if (e) errors.push(e);
+          });
+          done({
+            summaries: summaries,
+            errors: errors,
+            rows: merged,
+            blockMapPatch: blockPatch,
+            allStatusRooms: roomListPatch,
+          });
+        });
+      }
+
+      function applyPayload(payload) {
+        if (!payload) return;
+        var uploadErr = document.getElementById("uploadErr");
+        var uploadSummary = document.getElementById("uploadSummary");
+        uploadErr.hidden = !payload.errors.length;
+        uploadErr.textContent = payload.errors.join("\n");
+        uploadSummary.textContent = payload.summaries.join("\n") || "";
+        if (payload.blockMapPatch && Object.keys(payload.blockMapPatch).length) {
+          Object.keys(payload.blockMapPatch).forEach(function (k) {
+            cachedAllStatusBlockMap[k] = payload.blockMapPatch[k];
+          });
+        }
+        if (payload.rows && payload.rows.length) {
+          cachedVacRows = payload.rows.slice();
+          rebuildVacFoMapFromRows();
+        }
+        if (payload.allStatusRooms && payload.allStatusRooms.length) {
+          mergeAllStatusRoomList(payload.allStatusRooms);
+        }
+        rebuildCachedRowsFromVacAndMap();
+        refreshBoards();
+      }
+
+      var dzUpload = document.getElementById("dzUpload");
+      var inputUpload = document.getElementById("inputUpload");
+
+      dzUpload.addEventListener("click", function (e) {
+        if (e.target.closest("label.file-btn")) return;
+        inputUpload.click();
+      });
+      dzUpload.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputUpload.click();
+        }
+      });
+      inputUpload.addEventListener("change", function () {
+        loadXmlFiles(inputUpload.files, applyPayload);
+        inputUpload.value = "";
+      });
+      ["dragenter", "dragover"].forEach(function (ev) {
+        dzUpload.addEventListener(ev, function (e) {
+          e.preventDefault();
+          dzUpload.classList.add("dragover");
+        });
+      });
+      ["dragleave", "drop"].forEach(function (ev) {
+        dzUpload.addEventListener(ev, function (e) {
+          e.preventDefault();
+          dzUpload.classList.remove("dragover");
+        });
+      });
+      dzUpload.addEventListener("drop", function (e) {
+        var dt = e.dataTransfer;
+        if (!dt || !dt.files || !dt.files.length) return;
+        loadXmlFiles(dt.files, applyPayload);
+      });
+
+      function rebuildExtendedStayRoomsFromTextarea() {
+        var ta = document.getElementById("extendedStayInput");
+        var next = {};
+        if (ta) {
+          var s = String(ta.value || "");
+          var re = /\d{1,4}/g;
+          var m;
+          while ((m = re.exec(s)) !== null) {
+            var tok = m[0];
+            if (!isNumericGuestRoom(tok)) continue;
+            var nr = normalizeRoomDigits(tok);
+            if (nr) next[nr] = true;
+          }
+        }
+        extendedStayRooms = next;
+      }
+
+      document.getElementById("btnExtendedStayApply").addEventListener("click", function () {
+        rebuildExtendedStayRoomsFromTextarea();
+        refreshBoards();
+      });
+
+      document.getElementById("btnMake").addEventListener("click", function () {
+        refreshBoards();
+      });
+
+      function switchBoardView(viewId) {
+        document.querySelectorAll(".sidebar-btn").forEach(function (b) {
+          b.classList.toggle(
+            "active",
+            b.getAttribute("data-view") === viewId
+          );
+        });
+        document.getElementById("view499").hidden = viewId !== "499";
+        document.getElementById("viewVac").hidden = viewId !== "vac";
+        document.getElementById("viewAsn").hidden = viewId !== "asn";
+        document.getElementById("viewFAsn").hidden = viewId !== "fasn";
+      }
+
+      document.querySelectorAll(".sidebar-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          switchBoardView(btn.getAttribute("data-view"));
+        });
+      });
+
+      var outDepartedChkWired = false;
+      function wireOutDepartedCheckboxes() {
+        if (outDepartedChkWired) return;
+        outDepartedChkWired = true;
+        document.querySelectorAll(".chk-out-departed").forEach(function (cb) {
+          cb.checked = outDepartedHighlight;
+          cb.addEventListener("change", function () {
+            outDepartedHighlight = !!cb.checked;
+            document.querySelectorAll(".chk-out-departed").forEach(function (x) {
+              x.checked = outDepartedHighlight;
+            });
+            refreshBoards();
+          });
+        });
+      }
+      wireOutDepartedCheckboxes();
+
+      var statusFilterWired = false;
+      function wireStatusFilterChecks() {
+        if (statusFilterWired) return;
+        statusFilterWired = true;
+        document.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("chk-status-filter")) return;
+          var code = t.getAttribute("data-status-code");
+          if (!code) return;
+          if (code === "ALL") {
+            setAllStatusFilters(!!t.checked);
+          } else if (Object.prototype.hasOwnProperty.call(statusRoomFilters, code)) {
+            statusRoomFilters[code] = !!t.checked;
+          } else {
+            return;
+          }
+          syncStatusFilterCheckboxes();
+          refreshBoards();
+        });
+      }
+      wireStatusFilterChecks();
+
+      var foFilterWired = false;
+      function wireFoFilterChecks() {
+        if (foFilterWired) return;
+        foFilterWired = true;
+        document.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("chk-fo-filter")) return;
+          var code = t.getAttribute("data-fo-code");
+          if (!code) return;
+          if (code === "ALL") {
+            setAllFoFilters(!!t.checked);
+          } else if (FO_FILTER_CODES.indexOf(code) >= 0) {
+            fasnFoFilters[code] = !!t.checked;
+          } else {
+            return;
+          }
+          syncFoFilterCheckboxes();
+          renderFAsnBoard();
+        });
+      }
+      wireFoFilterChecks();
+
+      function wireVacAsnInCheckbox() {
+        var va = document.getElementById("viewVac");
+        if (!va || va.dataset.vacAsnInWired) return;
+        va.dataset.vacAsnInWired = "1";
+        va.querySelectorAll(".chk-vac-asn-in").forEach(function (cb) {
+          cb.checked = vacHighlightAsnIn;
+          cb.addEventListener("change", function () {
+            vacHighlightAsnIn = !!cb.checked;
+            va.querySelectorAll(".chk-vac-asn-in").forEach(function (x) {
+              x.checked = vacHighlightAsnIn;
+            });
+            refreshBoards();
+          });
+        });
+      }
+      wireVacAsnInCheckbox();
+
+      function wireAsnBlockFilterUI() {
+        var va = document.getElementById("viewAsn");
+        if (!va || va.dataset.asnFilterWired) return;
+        va.dataset.asnFilterWired = "1";
+        va.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        va.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            asnBlockShowAll = !!t.checked;
+            if (asnBlockShowAll) {
+              asnBlockShowFit = false;
+              asnBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            asnBlockShowFit = !!t.checked;
+            if (asnBlockShowFit) asnBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            asnBlockSelectedCodes[code] = !!t.checked;
+            if (asnBlockSelectedCodes[code]) asnBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(asnBlockSelectedCodes).some(function (k) {
+            return asnBlockSelectedCodes[k];
+          });
+          if (!asnBlockShowAll && !asnBlockShowFit && !anyBlock) {
+            asnBlockShowAll = true;
+            asnBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireAsnBlockFilterUI();
+
+      function wireFasnBlockFilterUI() {
+        var vf = document.getElementById("viewFAsn");
+        if (!vf || vf.dataset.fasnFilterWired) return;
+        vf.dataset.fasnFilterWired = "1";
+        vf.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        vf.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            fasnBlockShowAll = !!t.checked;
+            if (fasnBlockShowAll) {
+              fasnBlockShowFit = false;
+              fasnBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            fasnBlockShowFit = !!t.checked;
+            if (fasnBlockShowFit) fasnBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            fasnBlockSelectedCodes[code] = !!t.checked;
+            if (fasnBlockSelectedCodes[code]) fasnBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(fasnBlockSelectedCodes).some(function (k) {
+            return fasnBlockSelectedCodes[k];
+          });
+          if (!fasnBlockShowAll && !fasnBlockShowFit && !anyBlock) {
+            fasnBlockShowAll = true;
+            fasnBlockSelectedCodes = {};
+          }
+          renderFAsnBoard();
+        });
+      }
+      wireFasnBlockFilterUI();
+
+      document.addEventListener("DOMContentLoaded", function () {
+        fetch(DEFAULT_VACROOM_XML)
+          .then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.text();
+          })
+          .then(function (text) {
+            var doc = new DOMParser().parseFromString(text, "text/xml");
+            if (doc.querySelector("parsererror")) throw new Error("HKVACROOM 파싱 오류");
+            cachedVacRows = parseVacRooms(doc);
+            rebuildVacFoMapFromRows();
+            return fetch(DEFAULT_ALLSTATUS_XML).then(function (r2) {
+              if (!r2.ok) return "";
+              return r2.text();
+            });
+          })
+          .then(function (asText) {
+            if (asText) {
+              var asDoc = new DOMParser().parseFromString(asText, "text/xml");
+              if (!asDoc.querySelector("parsererror")) {
+                var bm = parseAllStatusBlockMap(asDoc);
+                if (bm) cachedAllStatusBlockMap = bm;
+                var arl = parseAllStatusRoomList(asDoc);
+                if (arl && arl.length) cachedAllStatusRooms = arl;
+              }
+            }
+            rebuildCachedRowsFromVacAndMap();
+            document.getElementById("uploadSummary").textContent =
+              "자동 로드: " +
+              DEFAULT_VACROOM_XML +
+              " 공실 " +
+              cachedVacRows.length +
+              "건 · " +
+              DEFAULT_ALLSTATUS_XML +
+              " BLOCK " +
+              Object.keys(cachedAllStatusBlockMap).length +
+              "실 · ALLSTATUS ROOM " +
+              cachedAllStatusRooms.length +
+              "실 · 「만들기」로 다시 그리기";
+            refreshBoards();
+          })
+          .catch(function () {
+            document.getElementById("uploadSummary").textContent =
+              "자동 로드 실패 시 XML을 업로드한 뒤 「만들기」를 누르세요.";
+            cachedVacRows = [];
+            cachedAllStatusBlockMap = {};
+            cachedAllStatusRooms = [];
+            cachedVacFoByRoom = {};
+            rebuildCachedRowsFromVacAndMap();
+            refreshBoards();
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
