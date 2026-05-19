@@ -463,6 +463,16 @@
       background: #e5e7eb;
       color: #111827;
     }
+    .summary-chip.out .tag {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+    .summary-chip.total .num-sub {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-left: 0.15rem;
+    }
 
     .pair-row.vac-asn-in-highlight,
     .villa-list-row.vac-asn-in-highlight {
@@ -1008,8 +1018,16 @@
       var vacHighlightAsnIn = false;
 
       /** 상태 요약 체크: IP·CL·PU·DI (전 탭 공통, 모두 켜면 필터 없음) */
-      var statusRoomFilters = { IP: true, CL: true, PU: true, DI: true };
+      var statusRoomFilters = {
+        IP: true,
+        CL: true,
+        PU: true,
+        DI: true,
+        OO: true,
+        OS: true,
+      };
       var STATUS_FILTER_CODES = ["IP", "CL", "PU", "DI"];
+      var VAC_STATUS_EXTRA_CODES = ["OO", "OS"];
 
       /** F.ASN FO_STATUS 필터 (OCC=청소, VAC=빈방) */
       var fasnFoFilters = { OCC: true, VAC: true };
@@ -1310,65 +1328,125 @@
         var u = String(status || "")
           .toUpperCase()
           .replace(/\s+/g, "");
-        if (u === "IP" || u === "CL" || u === "PU" || u === "DI") return u;
+        if (
+          u === "IP" ||
+          u === "CL" ||
+          u === "PU" ||
+          u === "DI" ||
+          u === "OO" ||
+          u === "OS"
+        )
+          return u;
         return "";
       }
 
-      function allStatusFiltersOn() {
-        return STATUS_FILTER_CODES.every(function (c) {
+      function statusFilterCodesForMode(mode) {
+        if (mode === "vac") {
+          return STATUS_FILTER_CODES.concat(VAC_STATUS_EXTRA_CODES);
+        }
+        return STATUS_FILTER_CODES.slice();
+      }
+
+      function summaryBarModeFromId(barId) {
+        if (barId === "vacStatusSummaryBar") return "vac";
+        if (barId === "asnStatusSummaryBar") return "asn";
+        return "499";
+      }
+
+      function statusChipsForMode(mode) {
+        var chips = [
+          { code: "IP", cls: "ip" },
+          { code: "CL", cls: "cl" },
+          { code: "PU", cls: "pu" },
+          { code: "DI", cls: "di" },
+        ];
+        if (mode === "vac") {
+          chips.push({ code: "OO", cls: "oo" }, { code: "OS", cls: "os" });
+        }
+        return chips;
+      }
+
+      function allStatusFiltersOn(mode) {
+        return statusFilterCodesForMode(mode).every(function (c) {
           return statusRoomFilters[c];
         });
       }
 
-      function setAllStatusFilters(on) {
-        STATUS_FILTER_CODES.forEach(function (c) {
+      function setAllStatusFilters(on, mode) {
+        statusFilterCodesForMode(mode).forEach(function (c) {
           statusRoomFilters[c] = !!on;
         });
       }
 
       function syncStatusFilterCheckboxes() {
-        document.querySelectorAll(".chk-status-filter").forEach(function (cb) {
-          var code = cb.getAttribute("data-status-code");
-          if (code === "ALL") cb.checked = allStatusFiltersOn();
-          else if (code) cb.checked = !!statusRoomFilters[code];
+        [
+          { id: "statusSummaryBar", mode: "499" },
+          { id: "vacStatusSummaryBar", mode: "vac" },
+          { id: "asnStatusSummaryBar", mode: "asn" },
+        ].forEach(function (item) {
+          var bar = document.getElementById(item.id);
+          if (!bar) return;
+          bar.querySelectorAll(".chk-status-filter").forEach(function (cb) {
+            var code = cb.getAttribute("data-status-code");
+            if (code === "ALL") cb.checked = allStatusFiltersOn(item.mode);
+            else if (code) cb.checked = !!statusRoomFilters[code];
+          });
         });
       }
 
-      function matchesStatusRoomFilter(rec) {
-        var allOn = allStatusFiltersOn();
+      function matchesStatusRoomFilter(rec, mode) {
+        mode = mode || "499";
+        var u = normalizeRoomStatus(rec.status);
+        var codes = statusFilterCodesForMode(mode);
+        if (mode !== "vac" && (u === "OO" || u === "OS")) {
+          return STATUS_FILTER_CODES.every(function (c) {
+            return statusRoomFilters[c];
+          });
+        }
+        var allOn = codes.every(function (c) {
+          return statusRoomFilters[c];
+        });
         if (allOn) return true;
-        var anyOn = STATUS_FILTER_CODES.some(function (c) {
+        var anyOn = codes.some(function (c) {
           return statusRoomFilters[c];
         });
         if (!anyOn) return false;
-        var u = normalizeRoomStatus(rec.status);
         return !!u && !!statusRoomFilters[u];
       }
 
-      function summarize499(boardRows) {
-        var c = { IP: 0, CL: 0, PU: 0, DI: 0 };
+      function summarizeStatus(boardRows, codes) {
+        var c = {};
+        codes.forEach(function (code) {
+          c[code] = 0;
+        });
         boardRows.forEach(function (r) {
           var u = normalizeRoomStatus(r.status);
-          if (u === "IP") c.IP++;
-          else if (u === "CL") c.CL++;
-          else if (u === "PU") c.PU++;
-          else if (u === "DI") c.DI++;
+          if (u && Object.prototype.hasOwnProperty.call(c, u)) c[u]++;
         });
         return { counts: c, total: boardRows.length };
       }
 
-      function renderStatusSummaryBar(el, counts, total) {
+      function countOutRooms(rows) {
+        var n = 0;
+        rows.forEach(function (r) {
+          if (isOutDepartedResv(r)) n++;
+        });
+        return n;
+      }
+
+      function renderStatusSummaryBar(el, counts, total, opts) {
+        opts = opts || {};
+        var boardMode = opts.mode || "499";
+        var showOutStats = !!opts.showOutStats;
+        var outCount = opts.outCount || 0;
+        var netTotal = total - outCount;
+
         el.innerHTML = "";
         var title = document.createElement("span");
         title.className = "summary-title";
         title.textContent = "상태 요약";
         el.appendChild(title);
-        [
-          { code: "IP", cls: "ip" },
-          { code: "CL", cls: "cl" },
-          { code: "PU", cls: "pu" },
-          { code: "DI", cls: "di" },
-        ].forEach(function (item) {
+        statusChipsForMode(boardMode).forEach(function (item) {
           var chip = document.createElement("label");
           chip.className = "summary-chip filter-chip " + item.cls;
           var cb = document.createElement("input");
@@ -1387,13 +1465,27 @@
           chip.appendChild(num);
           el.appendChild(chip);
         });
+        if (showOutStats) {
+          var outChip = document.createElement("span");
+          outChip.className = "summary-chip out";
+          var outTag = document.createElement("span");
+          outTag.className = "tag";
+          outTag.textContent = "OUT";
+          var outNum = document.createElement("span");
+          outNum.className = "num";
+          outNum.textContent = String(outCount);
+          outChip.title = "Departed / Departed, Arrival";
+          outChip.appendChild(outTag);
+          outChip.appendChild(outNum);
+          el.appendChild(outChip);
+        }
         var totChip = document.createElement("label");
         totChip.className = "summary-chip filter-chip total";
         var totCb = document.createElement("input");
         totCb.type = "checkbox";
         totCb.className = "chk-status-filter";
         totCb.setAttribute("data-status-code", "ALL");
-        totCb.checked = allStatusFiltersOn();
+        totCb.checked = allStatusFiltersOn(boardMode);
         totCb.title = "전체 상태 표시";
         totChip.appendChild(totCb);
         var ttag = document.createElement("span");
@@ -1401,9 +1493,26 @@
         ttag.textContent = "합계";
         var tnum = document.createElement("span");
         tnum.className = "num";
-        tnum.textContent = String(total);
+        if (showOutStats) {
+          tnum.textContent = String(netTotal);
+          totChip.title =
+            "OUT 제외 " +
+            netTotal +
+            " · 전체 " +
+            total +
+            " · OUT " +
+            outCount;
+        } else {
+          tnum.textContent = String(total);
+        }
         totChip.appendChild(ttag);
         totChip.appendChild(tnum);
+        if (showOutStats && total !== netTotal) {
+          var tsub = document.createElement("span");
+          tsub.className = "num-sub";
+          tsub.textContent = "/ " + total;
+          totChip.appendChild(tsub);
+        }
         el.appendChild(totChip);
       }
 
@@ -2019,11 +2128,21 @@ function parseAllStatusRoomList(doc) {
           workRows = modeFiltered;
         }
 
+        var filterCodes = statusFilterCodesForMode(mode);
         var summarySource = get499BoardRows(workRows);
-        var summ = summarize499(summarySource);
-        var displayRows = workRows.filter(matchesStatusRoomFilter);
+        var summ = summarizeStatus(summarySource, filterCodes);
+        var displayRows = workRows.filter(function (rec) {
+          return matchesStatusRoomFilter(rec, mode);
+        });
         var board499 = get499BoardRows(displayRows);
-        renderStatusSummaryBar(summaryEl, summ.counts, board499.length);
+        var outCount = countOutRooms(board499);
+        var showOutStats =
+          outDepartedHighlight && (mode === "vac" || mode === "asn");
+        renderStatusSummaryBar(summaryEl, summ.counts, board499.length, {
+          mode: mode,
+          showOutStats: showOutStats,
+          outCount: outCount,
+        });
 
         if (!deduped.length) {
           var empty0 = document.createElement("div");
@@ -2057,7 +2176,9 @@ function parseAllStatusRoomList(doc) {
           var emptySt = document.createElement("div");
           emptySt.className = "empty-board";
           emptySt.textContent =
-            "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
+            mode === "vac"
+              ? "선택한 ROOM_STATUS(IP·CL·PU·DI·OO·OS) 조건에 맞는 객실이 없습니다."
+              : "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
           mount.appendChild(emptySt);
           return;
         }
@@ -2340,10 +2461,14 @@ function parseAllStatusRoomList(doc) {
         document.addEventListener("change", function (e) {
           var t = e.target;
           if (!t.classList || !t.classList.contains("chk-status-filter")) return;
+          var bar = t.closest(".status-summary-bar");
+          var filterMode = bar
+            ? summaryBarModeFromId(bar.id)
+            : "499";
           var code = t.getAttribute("data-status-code");
           if (!code) return;
           if (code === "ALL") {
-            setAllStatusFilters(!!t.checked);
+            setAllStatusFilters(!!t.checked, filterMode);
           } else if (Object.prototype.hasOwnProperty.call(statusRoomFilters, code)) {
             statusRoomFilters[code] = !!t.checked;
           } else {
