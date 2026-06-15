@@ -44,12 +44,12 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
   });
 });
 
-app.use(express.static(path.join(__dirname)));
-
-app.get("*", function (req, res) {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.get("/health", function (req, res) {
+  res.status(200).send("ok");
 });
 
-app.listen(PORT, function () {
+app.use(express.static(path.join(__dirname)));
+
+app.listen(PORT, "0.0.0.0", function () {
   console.log("makeroom listening on port " + PORT);
 });
