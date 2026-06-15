@@ -98,6 +98,14 @@
       white-space: pre-wrap;
       word-break: break-all;
     }
+    .sync-status {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .sync-status.live {
+      color: var(--ok);
+    }
     .err {
       color: #f87171;
       font-size: 0.85rem;
@@ -803,6 +811,7 @@
         </div>
       </div>
       <div id="uploadSummary" class="upload-summary"></div>
+      <div id="syncStatus" class="sync-status" hidden></div>
       <div id="uploadErr" class="err" hidden></div>
       <div class="extended-stay-inline">
         <h3 class="extended-stay-heading">연박 추가</h3>
@@ -876,7 +885,8 @@
     </section>
 
     <p class="note">
-      같은 폴더 <code>hkvacroom6563812.xml</code> · <code>hk_allstatus6563818.xml</code>은 로컬 서버로 이 페이지를 열면 자동 로드됩니다.
+      Render에 배포한 주소로 접속하면 <strong>한 PC에서 XML을 업로드하면 다른 PC에도 자동 반영</strong>됩니다 (약 3초 간격).
+      로컬에서만 쓸 때는 같은 폴더 <code>hkvacroom6563812.xml</code> · <code>hk_allstatus6563818.xml</code>을 두고 서버로 열면 자동 로드됩니다.
       <code>file://</code> 로만 열면 브라우저 보안 때문에 자동 로드가 안 될 수 있어 업로드가 필요합니다.
     </p>
   </div>
@@ -895,6 +905,8 @@
         authGate.classList.add("hidden");
         authGate.setAttribute("aria-hidden", "true");
         sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+        sessionStorage.setItem("clear_html_sync_pwd", ACCESS_PASSWORD);
+        if (typeof window.__startRoomSync === "function") window.__startRoomSync();
       }
 
       authForm.addEventListener("submit", function (event) {
@@ -950,6 +962,156 @@
       var BLOCK_ALIAS_LS_KEY = "정비루밍_block_display_aliases_v1";
       /** @type {Record<string,string>} */
       var blockDisplayAliases = {};
+
+      var AUTH_UNLOCK_KEY = "clear_html_unlocked";
+      var sharedStateVersion = 0;
+      var syncPollTimer = null;
+      var syncPushTimer = null;
+      var isApplyingRemote = false;
+
+      function getSyncPassword() {
+        return sessionStorage.getItem("clear_html_sync_pwd") || "74321";
+      }
+
+      function updateSyncStatus(message, live) {
+        var el = document.getElementById("syncStatus");
+        if (!el) return;
+        if (!message) {
+          el.hidden = true;
+          el.textContent = "";
+          el.classList.remove("live");
+          return;
+        }
+        el.hidden = false;
+        el.textContent = message;
+        el.classList.toggle("live", !!live);
+      }
+
+      function formatSyncTime(iso) {
+        if (!iso) return "";
+        try {
+          return new Date(iso).toLocaleString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function buildSharedStatePayload() {
+        return {
+          blockMap: cachedAllStatusBlockMap,
+          vacRows: cachedVacRows,
+          allStatusRooms: cachedAllStatusRooms,
+          extendedStayRooms: extendedStayRooms,
+          blockDisplayAliases: blockDisplayAliases,
+          uploadSummary: (document.getElementById("uploadSummary") || {}).textContent || "",
+        };
+      }
+
+      function applySharedState(data) {
+        if (!data) return;
+        var uploadSummary = document.getElementById("uploadSummary");
+        if (uploadSummary && data.uploadSummary) uploadSummary.textContent = data.uploadSummary;
+        if (data.blockMap) {
+          cachedAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap));
+        }
+        if (data.vacRows && data.vacRows.length) {
+          cachedVacRows = data.vacRows.slice();
+          rebuildVacFoMapFromRows();
+        }
+        if (data.allStatusRooms) {
+          cachedAllStatusRooms = data.allStatusRooms.slice();
+        }
+        if (data.extendedStayRooms) {
+          extendedStayRooms = JSON.parse(JSON.stringify(data.extendedStayRooms));
+          var ta = document.getElementById("extendedStayInput");
+          if (ta) {
+            var rooms = Object.keys(extendedStayRooms)
+              .filter(function (k) {
+                return extendedStayRooms[k];
+              })
+              .sort();
+            ta.value = rooms.join(", ");
+          }
+        }
+        if (data.blockDisplayAliases) {
+          blockDisplayAliases = JSON.parse(JSON.stringify(data.blockDisplayAliases));
+          persistBlockAliases();
+        }
+        rebuildCachedRowsFromVacAndMap();
+        refreshBoards();
+      }
+
+      function pushSharedState() {
+        if (isApplyingRemote) return;
+        fetch("/api/sync", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Sync-Password": getSyncPassword(),
+          },
+          body: JSON.stringify(buildSharedStatePayload()),
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error("sync failed");
+            return r.json();
+          })
+          .then(function (data) {
+            if (data.version) sharedStateVersion = data.version;
+            updateSyncStatus("다른 PC와 공유됨 · " + formatSyncTime(data.updatedAt), true);
+          })
+          .catch(function () {
+            updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
+          });
+      }
+
+      function schedulePushSharedState() {
+        if (syncPushTimer) clearTimeout(syncPushTimer);
+        syncPushTimer = setTimeout(pushSharedState, 400);
+      }
+
+      function pullSharedState(isPoll) {
+        return fetch("/api/sync", {
+          headers: { "X-Sync-Password": getSyncPassword() },
+        })
+          .then(function (r) {
+            if (!r.ok) return null;
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data || !data.payload) {
+              if (!isPoll) updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
+              return false;
+            }
+            if (data.version <= sharedStateVersion) {
+              if (!isPoll && data.version > 0) {
+                updateSyncStatus("다른 PC와 동기화됨 · " + formatSyncTime(data.updatedAt), true);
+              }
+              return true;
+            }
+            isApplyingRemote = true;
+            sharedStateVersion = data.version;
+            applySharedState(data.payload);
+            isApplyingRemote = false;
+            updateSyncStatus(
+              (isPoll ? "다른 PC에서 업데이트됨 · " : "공유 데이터 불러옴 · ") +
+                formatSyncTime(data.updatedAt),
+              true
+            );
+            return true;
+          })
+          .catch(function () {
+            if (!isPoll) updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
+            return false;
+          });
+      }
+
+      window.__startRoomSync = function () {
+        if (syncPollTimer) return;
+        pullSharedState(false);
+        syncPollTimer = setInterval(function () {
+          pullSharedState(true);
+        }, 3000);
+      };
 
       function loadBlockAliasesFromStorage() {
         try {
@@ -2355,6 +2517,7 @@ function parseAllStatusRoomList(doc) {
         }
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
+        schedulePushSharedState();
       }
 
       var dzUpload = document.getElementById("dzUpload");
@@ -2412,6 +2575,7 @@ function parseAllStatusRoomList(doc) {
       document.getElementById("btnExtendedStayApply").addEventListener("click", function () {
         rebuildExtendedStayRoomsFromTextarea();
         refreshBoards();
+        schedulePushSharedState();
       });
 
       document.getElementById("btnMake").addEventListener("click", function () {
@@ -2607,8 +2771,8 @@ function parseAllStatusRoomList(doc) {
       }
       wireFasnBlockFilterUI();
 
-      document.addEventListener("DOMContentLoaded", function () {
-        fetch(DEFAULT_VACROOM_XML)
+      function loadDefaultXmlFiles() {
+        return fetch(DEFAULT_VACROOM_XML)
           .then(function (r) {
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.text();
@@ -2658,6 +2822,15 @@ function parseAllStatusRoomList(doc) {
             rebuildCachedRowsFromVacAndMap();
             refreshBoards();
           });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        pullSharedState(false).then(function (hadRemote) {
+          if (!hadRemote) return loadDefaultXmlFiles();
+        });
+        if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
+          window.__startRoomSync();
+        }
       });
     })();
   </script>

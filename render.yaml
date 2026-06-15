@@ -1,0 +1,14 @@
+# Render Blueprint — GitHub 연동 후 Web Service로 배포
+# https://dashboard.render.com/blueprints
+
+services:
+  - type: web
+    name: makeroom
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: SYNC_PASSWORD
+        sync: false
+        # Render 대시보드에서 앱 비밀번호와 동일하게 설정 (기본 74321)

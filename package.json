@@ -1,0 +1,16 @@
+{
+  "name": "makeroom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "정비용 루밍 — 공유 동기화 웹 서비스",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
