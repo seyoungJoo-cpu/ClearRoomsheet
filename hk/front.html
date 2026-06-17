@@ -2487,7 +2487,9 @@
       function roomNumberForStatusLookup(numStr) {
         var s = String(numStr || "").trim();
         var m = s.match(/^(.+?)\s*->\s*(.+)$/);
-        if (m) return normalizeRoomDigits(m[1].trim());
+        if (m) return normalizeRoomDigits(m[2].trim()) || normalizeRoomDigits(m[1].trim());
+        var k = s.match(/^(.+?)\s*에서\s*(.+?)\s*로\s*$/);
+        if (k) return normalizeRoomDigits(k[2].trim()) || normalizeRoomDigits(k[1].trim());
         return normalizeRoomDigits(s);
       }
 
