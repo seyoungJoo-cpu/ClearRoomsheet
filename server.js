@@ -33,6 +33,67 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   });
 });
 
+function mergeRoomsByNumber(prev, incoming) {
+  var map = {};
+  (prev || []).forEach(function (r) {
+    if (r && r.number) map[r.number] = r;
+  });
+  (incoming || []).forEach(function (r) {
+    if (r && r.number) map[r.number] = r;
+  });
+  return Object.keys(map)
+    .map(function (k) {
+      return map[k];
+    })
+    .sort(function (a, b) {
+      return String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
+    });
+}
+
+function mergeHkStorage(prev, incoming) {
+  if (!incoming || typeof incoming !== "object") return prev || null;
+  if (!prev || typeof prev !== "object") return incoming;
+  var out = {
+    notice: Object.prototype.hasOwnProperty.call(incoming, "notice") ? incoming.notice : prev.notice,
+    rooms: { VIP: [], RC: [], CASINO: [] },
+  };
+  ["VIP", "RC", "CASINO"].forEach(function (zone) {
+    var p = prev.rooms && prev.rooms[zone];
+    var n = incoming.rooms && incoming.rooms[zone];
+    out.rooms[zone] = mergeRoomsByNumber(p, n);
+  });
+  return out;
+}
+
+function logEntryKey(entry) {
+  if (!entry || typeof entry !== "object") return "";
+  if (entry.id) return "id:" + entry.id;
+  if (entry.entryId) return "eid:" + entry.entryId + "|" + (entry.at || "");
+  return [entry.at || "", entry.room || "", entry.name || "", entry.sched || ""].join("|");
+}
+
+function mergeLogArrays(prev, incoming) {
+  if (!Array.isArray(incoming)) return prev;
+  if (incoming.length === 0) return [];
+  if (!Array.isArray(prev) || !prev.length) return incoming.slice();
+  var map = {};
+  prev.forEach(function (item) {
+    map[logEntryKey(item)] = item;
+  });
+  incoming.forEach(function (item) {
+    map[logEntryKey(item)] = item;
+  });
+  return Object.keys(map)
+    .map(function (k) {
+      return map[k];
+    })
+    .sort(function (a, b) {
+      var ta = new Date(a && a.at ? a.at : 0).getTime();
+      var tb = new Date(b && b.at ? b.at : 0).getTime();
+      return tb - ta;
+    });
+}
+
 function mergeSyncPayload(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
@@ -54,6 +115,18 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary")) {
     out.uploadSummary = incoming.uploadSummary;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkStorage")) {
+    out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
+    out.hkRequestLog = mergeLogArrays(prev.hkRequestLog, incoming.hkRequestLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkCancelLog")) {
+    out.hkCancelLog = mergeLogArrays(prev.hkCancelLog, incoming.hkCancelLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkUseLog")) {
+    out.hkUseLog = mergeLogArrays(prev.hkUseLog, incoming.hkUseLog);
   }
   return out;
 }

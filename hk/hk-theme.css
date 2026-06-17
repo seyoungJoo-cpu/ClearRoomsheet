@@ -1,0 +1,48 @@
+/**
+ * 정비관리(HK) — 루밍(index) 다크 테마
+ */
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --bg-page: #0f1419;
+  --bg-card: #1a2332;
+  --border: #2d3a4d;
+  --text: #e8eef7;
+  --muted: #8b9eb3;
+  --text-muted: #8b9eb3;
+  --accent: #3d9cf5;
+  --accent-dim: #2563a8;
+  --accent-light: #2563a8;
+  --ok: #34d399;
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --surface-raised: #243044;
+  --surface-inset: rgba(0, 0, 0, 0.22);
+  --hover-bg: rgba(61, 156, 245, 0.12);
+}
+
+body {
+  background: linear-gradient(160deg, #0b0f14 0%, var(--bg) 40%, #121a24 100%);
+  color: var(--text);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background: var(--surface-inset);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}

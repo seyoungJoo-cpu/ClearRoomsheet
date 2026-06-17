@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 · 정비관리</title>
+  <style>
+    :root {
+      --bg-page: #f3f4f6;
+      --bg-card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --accent: #1e3a5f;
+      --accent-light: #2d5080;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+    }
+
+    html {
+      font-size: 13px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      color: var(--text);
+      background: var(--bg-page);
+      min-height: 100vh;
+    }
+
+    .page-head {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .page-head h1 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .link-front {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      font-size: 0.8125rem;
+    }
+
+    .link-front:hover {
+      border-color: var(--accent);
+    }
+
+    .page-head-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 10px 14px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .notice-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .notice-field textarea {
+      width: 100%;
+      min-height: 72px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      line-height: 1.45;
+      resize: vertical;
+    }
+
+    .notice-field textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      margin-top: 10px;
+      height: 34px;
+      padding: 0 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-light);
+    }
+
+    .zone-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 720px) {
+      .zone-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .zone-card h3 {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+
+    .add-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .add-stack input {
+      width: 100%;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .rc-num-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rc-num-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .rc-num-inline input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .rc-num-inline input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .rc-num-suffix {
+      flex-shrink: 0;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .add-stack input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .btn-add {
+      height: 32px;
+      padding: 0 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .btn-add:hover {
+      background: var(--accent-light);
+    }
+
+    .room-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .room-list li.room-editor {
+      display: block;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    .room-list li.room-editor:last-child {
+      border-bottom: none;
+    }
+
+    .re-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 8px;
+      margin-bottom: 8px;
+    }
+
+    .re-grid input {
+      width: 100%;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+
+    .re-status-readonly {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .re-status-readonly.is-missing {
+      color: #b45309;
+      background: #fffbeb;
+      border-color: #fcd34d;
+      font-weight: 600;
+    }
+
+    .re-grid .re-span2 {
+      grid-column: 1 / -1;
+    }
+
+    .re-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .btn-save-row {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: #eff6ff;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+
+    .btn-save-row:hover {
+      background: #dbeafe;
+    }
+
+    .btn-remove {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .btn-remove:hover {
+      background: #fee2e2;
+    }
+
+    .log-reset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .btn-reset-log {
+      height: 34px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+    }
+
+    .btn-reset-log:hover {
+      background: #f3f4f6;
+      border-color: var(--text-muted);
+    }
+
+    .btn-reset-log--danger {
+      border-color: #fca5a5;
+      color: #b91c1c;
+      background: #fef2f2;
+    }
+
+    .btn-reset-log--danger:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .empty-hint {
+      padding: 10px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      opacity: 0;
+      background: var(--text);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: transform 0.25s, opacity 0.25s;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .auth-gate.hidden {
+      display: none;
+    }
+
+    .auth-card {
+      width: min(360px, 100%);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    }
+
+    .auth-card h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    .auth-card p {
+      margin: 0 0 14px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .auth-card input[type="password"] {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    .auth-card button {
+      width: 100%;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .auth-card button:hover {
+      background: var(--accent-light);
+    }
+
+    .auth-error {
+      min-height: 18px;
+      margin-top: 8px;
+      font-size: 0.8125rem;
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    body.locked {
+      overflow: hidden;
+    }
+
+    body.locked .page-head,
+    body.locked .wrap {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="locked">
+  <div id="auth-gate" class="auth-gate" aria-hidden="false">
+    <div class="auth-card">
+      <h2>관리자 접근</h2>
+      <p>관리자 페이지 비밀번호를 입력하세요.</p>
+      <form id="auth-form" autocomplete="off">
+        <label for="auth-password" class="sr-only">비밀번호</label>
+        <input id="auth-password" type="password" placeholder="비밀번호" required autofocus />
+        <button type="submit">확인</button>
+      </form>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+    </div>
+  </div>
+
+  <header class="page-head">
+    <h1>Lotte Hotel · 정비 관리자</h1>
+    <div class="page-head-actions">
+      <a class="link-front" href="front.html">오더</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card">
+      <h2>공지</h2>
+      <div class="notice-field">
+        <label for="noticeInput">공지 내용</label>
+        <textarea id="noticeInput" placeholder="호텔 전체 또는 HK 관련 공지를 입력하세요."></textarea>
+      </div>
+      <button type="button" class="btn-primary" id="saveNotice">공지 저장</button>
+    </section>
+
+    <section class="card">
+      <h2>구역별 객실 등록</h2>
+      <p style="margin: 0 0 16px; font-size: 0.875rem; color: var(--text-muted);">
+        객실번호·메모를 등록하면 메인 화면에 카드 형태로 표시됩니다. 상태는 루밍 XML에서 자동으로 가져옵니다.
+      </p>
+      <div class="zone-grid">
+        <div class="zone-card" data-zone="VIP">
+          <h3>VIP</h3>
+          <div class="add-stack" aria-label="VIP 객실 추가">
+            <input type="text" class="af-num" placeholder="객실번호" autocomplete="off" />
+            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
+            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
+            <button type="button" class="btn-add" data-action="add">추가</button>
+          </div>
+          <ul class="room-list" data-list="VIP"></ul>
+        </div>
+        <div class="zone-card" data-zone="RC">
+          <h3>R/C</h3>
+          <div class="add-stack" aria-label="R/C 객실 추가">
+            <div class="rc-num-pair">
+              <div class="rc-num-inline">
+                <input type="text" class="af-num-from" placeholder="객실번호" autocomplete="off" />
+                <span class="rc-num-suffix">에서</span>
+              </div>
+              <div class="rc-num-inline">
+                <input type="text" class="af-num-to" placeholder="객실번호" autocomplete="off" />
+                <span class="rc-num-suffix">로</span>
+              </div>
+            </div>
+            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
+            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
+            <button type="button" class="btn-add" data-action="add">추가</button>
+          </div>
+          <ul class="room-list" data-list="RC"></ul>
+        </div>
+        <div class="zone-card" data-zone="CASINO">
+          <h3>CASINO</h3>
+          <div class="add-stack" aria-label="CASINO 객실 추가">
+            <input type="text" class="af-num" placeholder="객실번호" autocomplete="off" />
+            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
+            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
+            <button type="button" class="btn-add" data-action="add">추가</button>
+          </div>
+          <ul class="room-list" data-list="CASINO"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>프론트 로그 초기화</h2>
+      <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+        정비 프론트 화면 사이드바의 <strong>취소리스트</strong>·<strong>사용리스트</strong>에 쌓인 기록을 이 브라우저에서 비웁니다. 되돌릴 수 없습니다.
+      </p>
+      <div class="log-reset-row">
+        <button type="button" class="btn-reset-log btn-reset-log--danger" id="resetCancelList">
+          취소리스트 초기화
+        </button>
+        <button type="button" class="btn-reset-log btn-reset-log--danger" id="resetUseList">
+          사용리스트 초기화
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="hk-auth.js"></script>
+  <script src="hk-storage.js"></script>
+  <script src="hk-sync.js"></script>
+  <script>
+    (function () {
+      var authGate = document.getElementById("auth-gate");
+      var authForm = document.getElementById("auth-form");
+      var authPassword = document.getElementById("auth-password");
+      var authError = document.getElementById("auth-error");
+
+      function unlockAdmin() {
+        document.body.classList.remove("locked");
+        if (authGate) {
+          authGate.classList.add("hidden");
+          authGate.setAttribute("aria-hidden", "true");
+        }
+        if (typeof HKAuth !== "undefined") HKAuth.setAuthed("admin");
+      }
+
+      if (typeof HKAuth !== "undefined" && HKAuth.isAuthed("admin")) {
+        unlockAdmin();
+      }
+
+      if (authForm) {
+        authForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (typeof HKAuth !== "undefined" && HKAuth.verify("admin", authPassword.value)) {
+            if (authError) authError.textContent = "";
+            unlockAdmin();
+            return;
+          }
+          if (authError) authError.textContent = "비밀번호가 올바르지 않습니다.";
+          if (authPassword) {
+            authPassword.value = "";
+            authPassword.focus();
+          }
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var toastEl = document.getElementById("toast");
+      var toastTimer;
+      var XML_ROOM_STATUS_MAP = {};
+      var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
+
+      function normalizeRoomDigits(roomStr) {
+        var d = String(roomStr || "").replace(/\D/g, "");
+        if (!d) return "";
+        if (d.length <= 4) return d.padStart(4, "0");
+        return d.slice(-4);
+      }
+
+      function roomNumberForStatusLookup(numStr) {
+        var s = String(numStr || "").trim();
+        var m = s.match(/^(.+?)\s*->\s*(.+)$/);
+        if (m) return normalizeRoomDigits(m[1].trim());
+        return normalizeRoomDigits(s);
+      }
+
+      function normalizeRoomStatus(status) {
+        var u = String(status || "")
+          .toUpperCase()
+          .replace(/\s+/g, "");
+        return VALID_XML_STATUSES[u] ? u : "";
+      }
+
+      function rebuildRoomStatusMap(vacRows) {
+        var m = {};
+        if (!vacRows || !vacRows.length) return m;
+        vacRows.forEach(function (row) {
+          var nr = normalizeRoomDigits(row.room);
+          var st = normalizeRoomStatus(row.status);
+          if (nr && st) m[nr] = st;
+        });
+        return m;
+      }
+
+      function lookupRoomStatusFromXml(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return "";
+        return XML_ROOM_STATUS_MAP[nr] || "";
+      }
+
+      function applyXmlRoomStatusPayload(payload) {
+        if (!payload || !payload.vacRows || !payload.vacRows.length) return;
+        XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+        renderRooms(HKStorage.load());
+      }
+
+      function handleHkSyncChange(changed, payload) {
+        if (changed.indexOf("vacRows") >= 0 && payload) {
+          applyXmlRoomStatusPayload(payload);
+        }
+        if (changed.indexOf("hkStorage") >= 0) {
+          refresh();
+        }
+      }
+
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          toastEl.classList.remove("show");
+        }, 2200);
+      }
+
+      function formatRoomNoDisplay(raw) {
+        var s = String(raw == null ? "" : raw).trim();
+        if (!s) return "";
+        var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
+        if (m) return m[1].trim() + " -> " + m[2].trim();
+        return s;
+      }
+
+      function renderRooms(data) {
+        ["VIP", "RC", "CASINO"].forEach(function (zone) {
+          var ul = document.querySelector('.room-list[data-list="' + zone + '"]');
+          if (!ul) return;
+          var rooms = data.rooms[zone] || [];
+          ul.innerHTML = "";
+          if (rooms.length === 0) {
+            var empty = document.createElement("li");
+            empty.className = "empty-hint";
+            empty.textContent = "등록된 객실이 없습니다.";
+            ul.appendChild(empty);
+            return;
+          }
+          rooms.forEach(function (room, idx) {
+            var li = document.createElement("li");
+            li.className = "room-editor";
+            var grid = document.createElement("div");
+            grid.className = "re-grid";
+
+            var inNum = document.createElement("input");
+            inNum.type = "text";
+            inNum.className = "re-num";
+            inNum.value = formatRoomNoDisplay(room.number || "");
+            inNum.placeholder = "객실번호";
+            grid.appendChild(inNum);
+
+            var stSpan = document.createElement("span");
+            var xmlSt = lookupRoomStatusFromXml(room.number || "");
+            stSpan.className = "re-status-readonly" + (xmlSt ? "" : " is-missing");
+            stSpan.textContent = xmlSt || "XML 없음";
+            stSpan.title = "루밍 XML ROOM_STATUS";
+            grid.appendChild(stSpan);
+
+            var inM1 = document.createElement("input");
+            inM1.type = "text";
+            inM1.className = "re-memo1 re-span2";
+            inM1.placeholder = "FD";
+            inM1.value = room.memo1 || "";
+            grid.appendChild(inM1);
+
+            var inM2 = document.createElement("input");
+            inM2.type = "text";
+            inM2.className = "re-memo2 re-span2";
+            inM2.placeholder = "두잉";
+            inM2.value = room.memo2 || "";
+            grid.appendChild(inM2);
+
+            li.appendChild(grid);
+
+            var actions = document.createElement("div");
+            actions.className = "re-actions";
+            var btnSave = document.createElement("button");
+            btnSave.type = "button";
+            btnSave.className = "btn-save-row";
+            btnSave.textContent = "저장";
+            btnSave.setAttribute("data-zone", zone);
+            btnSave.setAttribute("data-index", String(idx));
+            var btnRm = document.createElement("button");
+            btnRm.type = "button";
+            btnRm.className = "btn-remove";
+            btnRm.textContent = "삭제";
+            btnRm.setAttribute("data-zone", zone);
+            btnRm.setAttribute("data-index", String(idx));
+            actions.appendChild(btnSave);
+            actions.appendChild(btnRm);
+            li.appendChild(actions);
+
+            ul.appendChild(li);
+          });
+        });
+      }
+
+      function refresh() {
+        var data = HKStorage.load();
+        document.getElementById("noticeInput").value = data.notice;
+        renderRooms(data);
+      }
+
+      document.getElementById("saveNotice").addEventListener("click", function () {
+        var data = HKStorage.load();
+        data.notice = document.getElementById("noticeInput").value;
+        HKStorage.save(data);
+        toast("공지가 저장되었습니다.");
+      });
+
+      function readRoomFromEditor(li) {
+        var num = (li.querySelector(".re-num") && li.querySelector(".re-num").value.trim()) || "";
+        var memo1 = (li.querySelector(".re-memo1") && li.querySelector(".re-memo1").value) || "";
+        var memo2 = (li.querySelector(".re-memo2") && li.querySelector(".re-memo2").value) || "";
+        return {
+          number: num,
+          status: lookupRoomStatusFromXml(num),
+          memo1: memo1,
+          memo2: memo2,
+        };
+      }
+
+      document.querySelector(".zone-grid").addEventListener("click", function (e) {
+        var t = e.target;
+        if (t.classList.contains("btn-add")) {
+          var card = t.closest(".zone-card");
+          if (!card) return;
+          var zone = card.getAttribute("data-zone");
+          var num = "";
+          if (zone === "RC") {
+            var nFrom =
+              (card.querySelector(".af-num-from") && card.querySelector(".af-num-from").value.trim()) ||
+              "";
+            var nTo =
+              (card.querySelector(".af-num-to") && card.querySelector(".af-num-to").value.trim()) || "";
+            if (!nFrom && !nTo) {
+              toast("객실번호를 입력하세요.");
+              return;
+            }
+            if (nFrom && nTo) num = nFrom + " -> " + nTo;
+            else num = nFrom || nTo;
+          } else {
+            num = (card.querySelector(".af-num") && card.querySelector(".af-num").value.trim()) || "";
+            if (!num) {
+              toast("객실번호를 입력하세요.");
+              return;
+            }
+          }
+          var data = HKStorage.load();
+          var dup = (data.rooms[zone] || []).some(function (r) {
+            return (r.number || "") === num;
+          });
+          if (dup) {
+            toast("이미 등록된 객실번호입니다.");
+            return;
+          }
+          var status = lookupRoomStatusFromXml(num);
+          var memo1 = (card.querySelector(".af-memo1") && card.querySelector(".af-memo1").value) || "";
+          var memo2 = (card.querySelector(".af-memo2") && card.querySelector(".af-memo2").value) || "";
+          data.rooms[zone].push({
+            number: num,
+            status: status,
+            memo1: memo1,
+            memo2: memo2,
+            time: "",
+          });
+          HKStorage.save(data);
+          if (zone === "RC") {
+            var inf = card.querySelector(".af-num-from");
+            var int = card.querySelector(".af-num-to");
+            if (inf) inf.value = "";
+            if (int) int.value = "";
+          } else {
+            var nb = card.querySelector(".af-num");
+            if (nb) nb.value = "";
+          }
+          card.querySelector(".af-memo1").value = "";
+          card.querySelector(".af-memo2").value = "";
+          data = HKStorage.load();
+          renderRooms(data);
+          toast("객실이 추가되었습니다.");
+          return;
+        }
+        if (t.classList.contains("btn-save-row")) {
+          var li = t.closest(".room-editor");
+          if (!li) return;
+          var z = t.getAttribute("data-zone");
+          var ix = parseInt(t.getAttribute("data-index"), 10);
+          var data = HKStorage.load();
+          var next = readRoomFromEditor(li);
+          if (!next.number) {
+            toast("객실번호를 입력하세요.");
+            return;
+          }
+          var others = data.rooms[z].filter(function (_, i) {
+            return i !== ix;
+          });
+          var dup = others.some(function (r) {
+            return (r.number || "") === next.number;
+          });
+          if (dup) {
+            toast("다른 행과 같은 객실번호입니다.");
+            return;
+          }
+          var prevRow = data.rooms[z][ix];
+          next.time = prevRow && prevRow.time != null ? prevRow.time : "";
+          data.rooms[z][ix] = next;
+          HKStorage.save(data);
+          renderRooms(HKStorage.load());
+          toast("저장되었습니다.");
+          return;
+        }
+        if (t.classList.contains("btn-remove")) {
+          var z2 = t.getAttribute("data-zone");
+          var ix2 = parseInt(t.getAttribute("data-index"), 10);
+          var data2 = HKStorage.load();
+          if (data2.rooms[z2] && !isNaN(ix2)) {
+            data2.rooms[z2].splice(ix2, 1);
+            HKStorage.save(data2);
+            renderRooms(HKStorage.load());
+            toast("삭제되었습니다.");
+          }
+        }
+      });
+
+      refresh();
+      if (typeof HKSync !== "undefined") {
+        HKSync.onChange(handleHkSyncChange);
+        HKSync.start();
+      }
+
+      var resetCancelBtn = document.getElementById("resetCancelList");
+      if (resetCancelBtn) {
+        resetCancelBtn.addEventListener("click", function () {
+          if (!confirm("취소리스트의 모든 기록을 삭제할까요?")) return;
+          if (typeof HKSync !== "undefined") HKSync.clearCancelLog();
+          toast("취소리스트를 비웠습니다.");
+        });
+      }
+
+      var resetUseBtn = document.getElementById("resetUseList");
+      if (resetUseBtn) {
+        resetUseBtn.addEventListener("click", function () {
+          if (!confirm("사용리스트의 모든 기록을 삭제할까요?")) return;
+          if (typeof HKSync !== "undefined") HKSync.clearUseLog();
+          toast("사용리스트를 비웠습니다.");
+        });
+      }
+
+      window.addEventListener("storage", function (e) {
+        if (e.key === HKStorage.key) refresh();
+      });
+    })();
+  </script>
+</body>
+</html>

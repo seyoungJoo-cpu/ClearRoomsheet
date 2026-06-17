@@ -1,0 +1,3776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>정비관리 · Lotte Hotel</title>
+  <link rel="stylesheet" href="hk-theme.css" />
+  <style>
+    :root {
+      --sidebar-w: 172px;
+      --header-min-h: 132px;
+      --feedback-w: 228px;
+    }
+
+    html {
+      font-size: 13px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+
+    /* 상단: 로고 + 공지 | 우측 상단 관리자 */
+    .topbar {
+      min-height: var(--header-min-h);
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+
+    .topbar-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      padding-top: 6px;
+      padding-right: 4px;
+      flex-shrink: 0;
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    .btn-admin,
+    .btn-maint,
+    .btn-front {
+      padding: 6px 10px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      color: var(--text);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .btn-admin:hover,
+    .btn-maint:hover,
+    .btn-front:hover {
+      border-color: var(--accent);
+      background: var(--hover-bg);
+      color: var(--accent);
+    }
+
+    .btn-maint.is-on,
+    .btn-front.is-on {
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      color: #fff;
+      border-color: var(--accent-dim);
+    }
+
+    .notice-board {
+      flex: 1;
+      min-width: 0;
+      min-height: 96px;
+      max-height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-inset);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px 16px;
+      overflow-y: auto;
+    }
+
+    .notice-board__label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+
+    #noticeText {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: block;
+    }
+
+    .layout {
+      display: flex;
+      align-items: stretch;
+      min-height: calc(100vh - var(--header-min-h));
+    }
+
+    .layout-main-area {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 오른쪽 요청 알림 패널 (상시 표시) */
+    .request-feedback {
+      width: var(--feedback-w);
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - var(--header-min-h));
+    }
+
+    .request-feedback__head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .request-feedback__head h2 {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .request-feedback__hint {
+      margin: 0;
+      padding: 8px 16px;
+      font-size: 0.8125rem;
+      color: #b91c1c;
+      background: #fef2f2;
+      border-bottom: 1px solid #fecaca;
+      flex-shrink: 0;
+    }
+
+    .request-feedback__list {
+      list-style: none;
+      margin: 0;
+      padding: 8px 12px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 120px;
+    }
+
+    .request-feedback__item {
+      position: relative;
+      padding: 8px;
+      padding-bottom: 22px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .request-feedback__item.is-urgent {
+      border: 2px solid #dc2626;
+      background: #fff5f5;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+    }
+
+    .request-feedback__item-memo {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.75rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .request-feedback__item-memo2 {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #c7d2fe;
+      font-size: 0.75rem;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .request-feedback__item-memo2-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .request-feedback__maint-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      align-items: center;
+    }
+
+    .request-feedback__memo2-btn {
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px dashed #6366f1;
+      border-radius: 6px;
+      background: #fff;
+      color: #4338ca;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .request-feedback__memo2-btn:hover {
+      background: #eef2ff;
+    }
+
+    .request-feedback__memo2-editor-wrap {
+      margin-top: 8px;
+      padding: 10px;
+      background: #fafaff;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    .request-feedback__memo2-editor textarea {
+      width: 100%;
+      min-height: 4.5rem;
+      max-height: 10rem;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .request-feedback__memo2-editor textarea:focus {
+      outline: 2px solid #6366f1;
+      outline-offset: 0;
+      border-color: #6366f1;
+    }
+
+    .request-feedback__memo2-editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .request-feedback__memo2-editor .request-feedback__memo2-save,
+    .request-feedback__memo2-editor-wrap button.request-feedback__memo2-save,
+    button.request-feedback__memo2-save[type="button"] {
+      height: 32px;
+      min-width: 4.5rem;
+      padding: 0 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      line-height: 1.2;
+      border: 1px solid #4338ca !important;
+      background: #4f46e5 !important;
+      background-color: #4f46e5 !important;
+      color: #ffffff !important;
+      -webkit-appearance: none;
+      appearance: none;
+      box-shadow: 0 1px 2px rgba(79, 70, 229, 0.35);
+    }
+
+    .request-feedback__memo2-editor .request-feedback__memo2-save:hover,
+    .request-feedback__memo2-editor-wrap button.request-feedback__memo2-save:hover,
+    button.request-feedback__memo2-save[type="button"]:hover {
+      background: #4338ca !important;
+      background-color: #4338ca !important;
+      border-color: #3730a3 !important;
+      color: #ffffff !important;
+    }
+
+    .request-feedback__memo2-editor .request-feedback__memo2-cancel,
+    button.request-feedback__memo2-cancel {
+      height: 32px;
+      padding: 0 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+    }
+
+    .request-feedback__item-urgent-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      background: #dc2626;
+      border-radius: 4px;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
+    }
+
+    .request-feedback__item-time {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.25;
+    }
+
+    .hk-time-em {
+      font-size: 1.15em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+      display: inline-block;
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    .request-feedback__item-time .hk-time-em {
+      font-size: 1em;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .room-card__time-display .hk-time-em,
+    .sched-req-card .room-card__time-display .hk-time-em {
+      color: var(--accent);
+    }
+
+    .hk-sidebar-list-panel__item-meta .hk-time-em {
+      color: var(--text-muted);
+    }
+
+    .hk-sidebar-list-panel__item > div:first-child .hk-time-em {
+      color: var(--accent);
+    }
+
+    .sched-req-card .room-card__memo .hk-time-em {
+      color: var(--accent);
+    }
+
+    .room-time-editor__input.hk-time-em {
+      font-size: 1rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-height: 34px;
+    }
+
+    .request-feedback__sched-editor input.hk-time-em {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      width: 7.5rem;
+    }
+
+    .request-feedback__sched {
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .request-feedback__sched.is-empty {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .request-feedback__sched-btn {
+      margin-top: 6px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--accent);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .request-feedback__sched-btn:hover {
+      background: #eff6ff;
+    }
+
+    .request-feedback__sched-editor {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .request-feedback__sched-editor input {
+      width: 6.5rem;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+
+    .request-feedback__sched-editor button {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .request-feedback__sched-save {
+      background: var(--accent) !important;
+      color: #fff !important;
+      border-color: var(--accent) !important;
+    }
+
+    .request-feedback__front-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      align-items: center;
+    }
+
+    .request-feedback__front-actions .request-feedback__memo-btn {
+      margin-top: 0;
+    }
+
+    .request-feedback__memo-btn {
+      margin-top: 6px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px dashed #0f766e;
+      border-radius: 6px;
+      background: #fff;
+      color: #0f766e;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .request-feedback__memo-btn:hover {
+      background: #ecfdf5;
+    }
+
+    .request-feedback__cancel-btn {
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      background: #fff;
+      color: #b91c1c;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .request-feedback__cancel-btn:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+
+    .request-feedback__memo-editor-wrap {
+      margin-top: 8px;
+    }
+
+    .request-feedback__memo-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .request-feedback__memo-editor textarea {
+      width: 100%;
+      min-height: 5rem;
+      max-height: 10rem;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .request-feedback__memo-editor textarea:focus {
+      outline: 2px solid #0f766e;
+      outline-offset: 0;
+      border-color: #0f766e;
+    }
+
+    .request-feedback__memo-editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .request-feedback__memo-save {
+      height: 30px;
+      padding: 0 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid #0f766e;
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .request-feedback__memo-editor-actions button:not(.request-feedback__memo-save):not(.request-feedback__memo2-save) {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+    }
+
+    .request-feedback__item-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      align-items: baseline;
+    }
+
+    .request-feedback__item-room {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.9375rem;
+    }
+
+    .request-feedback__item-st {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .request-feedback__item-st.is-none {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .request-feedback__item-by {
+      position: absolute;
+      right: 8px;
+      bottom: 5px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1.2;
+      max-width: 45%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .request-feedback__empty {
+      margin: 0;
+      padding: 12px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .hk-confirm {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    .hk-confirm[hidden] {
+      display: none !important;
+    }
+
+    .hk-confirm__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      cursor: pointer;
+    }
+
+    .hk-confirm__box {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      padding: 16px 14px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .hk-confirm__msg {
+      margin: 0 0 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .hk-confirm__actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hk-confirm__btn {
+      min-width: 88px;
+      height: 34px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+
+    .hk-confirm__btn--yes {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .hk-confirm__btn--yes:hover {
+      filter: brightness(1.05);
+    }
+
+    .hk-confirm__btn--no {
+      background: var(--bg-card);
+      color: var(--text);
+    }
+
+    .hk-confirm__btn--no:hover {
+      background: #f3f4f6;
+    }
+
+    .hk-confirm__box--wide {
+      max-width: 400px;
+    }
+
+    .hk-confirm__sub {
+      margin: -8px 0 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .hk-confirm__sub[hidden] {
+      display: none !important;
+    }
+
+    .hk-confirm__label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .hk-confirm__input {
+      width: 100%;
+      height: 34px;
+      margin-bottom: 12px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+      box-sizing: border-box;
+    }
+
+    .hk-confirm__input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .hk-role-password-error {
+      margin: -10px 0 12px;
+      font-size: 0.8125rem;
+      color: #b91c1c;
+      font-weight: 600;
+      text-align: center;
+      min-height: 1.1em;
+    }
+
+    /* 왼쪽 사이드바 */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--accent);
+      color: #fff;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-section {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px 0 12px;
+    }
+
+    .sidebar-title {
+      padding: 8px 10px;
+      font-weight: 600;
+      font-size: 0.8125rem;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 0 8px 10px;
+    }
+
+    .sidebar-nav__btn {
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .sidebar-nav__btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .sidebar-nav__btn.is-active {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    a.sidebar-nav__link {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    a.sidebar-nav__link:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .hk-sidebar-list-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .hk-sidebar-list-panel__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hk-sidebar-list-panel__head h2 {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .hk-sidebar-list-panel__close {
+      height: 34px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .hk-sidebar-list-panel__close:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+
+    .hk-sidebar-list-panel__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .hk-sidebar-list-panel__item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .hk-sidebar-list-panel__item:last-child {
+      border-bottom: none;
+    }
+
+    .hk-sidebar-list-panel__item-meta {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hk-sidebar-list-panel__empty {
+      margin: 0;
+      padding: 16px;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .hk-sidebar-list-panel__empty[hidden] {
+      display: none !important;
+    }
+
+    /* VIP / R/C / CASINO 블록 (접기) */
+    .zone-block {
+      margin-bottom: 14px;
+    }
+
+    .zone-block__toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .zone-block__title {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .zone-block__collapse {
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .zone-block__collapse:hover {
+      border-color: var(--accent);
+      background: #f8fafc;
+    }
+
+    .zone-block.is-collapsed .zone-block__body {
+      display: none;
+    }
+
+    /* 메인 상단: VIP / R/C / CASINO */
+    .zone-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .zone-tab {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .zone-tab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .zone-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.25);
+    }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-placeholder {
+      flex: 1;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 14px;
+      min-height: 160px;
+      overflow: auto;
+    }
+
+    .zone-main-head {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .zone-main-head strong {
+      color: var(--accent);
+    }
+
+    .zone-panel-hint {
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .room-list-main {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+      gap: 10px;
+    }
+
+    .room-card {
+      padding: 8px 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+    }
+
+    .room-card.is-clickable {
+      cursor: pointer;
+      outline-offset: 2px;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .room-card.is-clickable:hover {
+      background: #f1f5f9;
+      border-color: rgba(30, 58, 95, 0.35);
+      box-shadow: 0 2px 8px rgba(30, 58, 95, 0.08);
+    }
+
+    .room-card.is-clickable:focus-visible {
+      outline: 2px solid var(--accent);
+    }
+
+    .room-card__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .room-card__no-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3.75em;
+      min-height: 28px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .room-card.is-clickable:hover .room-card__no-box {
+      border-color: var(--accent);
+      background: #f8fafc;
+    }
+
+    .room-card__no {
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: var(--accent);
+    }
+
+    .room-card__time-display {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+    }
+
+    .room-time-editor {
+      margin: 0 0 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+    }
+
+    .room-time-editor__label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .room-time-editor__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .room-time-editor__input {
+      width: 7.5rem;
+      max-width: 100%;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .room-time-editor__ok,
+    .room-time-editor__cancel {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .room-time-editor__ok {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .room-time-editor__cancel:hover {
+      border-color: var(--accent);
+    }
+
+    .room-card__status {
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .room-card__status.is-empty {
+      font-weight: 600;
+      background: #f1f5f9;
+      color: var(--text-muted);
+    }
+
+    .room-card__memo-block {
+      margin-top: 8px;
+    }
+
+    .room-card__memo-block:first-of-type {
+      margin-top: 6px;
+    }
+
+    .room-card__memo-tag {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .room-card__memo {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.8125rem;
+      word-break: break-word;
+    }
+
+    .room-card__memo.is-empty {
+      color: var(--text-muted);
+    }
+
+    .room-card__memo-block--m2.is-editable {
+      cursor: pointer;
+    }
+
+    .room-card__memo-block--m2.is-editable:hover .room-card__memo-target {
+      outline: 1px dashed rgba(30, 58, 95, 0.45);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .room-memo2-editor {
+      margin-top: 6px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+    }
+
+    .room-memo2-editor textarea {
+      width: 100%;
+      min-height: 72px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .room-memo2-editor textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .room-memo2-editor__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+
+    .room-memo2-editor__ok,
+    .room-memo2-editor__cancel {
+      height: 32px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .room-memo2-editor__ok {
+      background: var(--accent);
+      color: #fff !important;
+      border-color: var(--accent);
+      box-shadow: 0 1px 2px rgba(30, 58, 95, 0.2);
+    }
+
+    .room-memo2-editor__ok:hover {
+      filter: brightness(1.06);
+    }
+
+    .room-list-empty {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    /* 하단 정비 요청 */
+    .request-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      margin-bottom: 14px;
+    }
+
+    .request-panel h2 {
+      margin: 0 0 10px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* 정비요청 아래 · 처리·예정 요청 카드 */
+    .sched-cards-panel {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+      padding: 12px 14px 14px;
+      margin-bottom: 6px;
+    }
+
+    .sched-cards-panel__title {
+      margin: 0 0 8px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .sched-cards-panel__hint {
+      margin: 0 0 14px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .sched-cards-panel__hint[hidden] {
+      display: none;
+    }
+
+    .sched-cards-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 12px;
+    }
+
+    .sched-req-card .room-card__time-display {
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.78rem;
+    }
+
+    .sched-req-card--urgent {
+      border-color: #fca5a5;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    }
+
+    .sched-req-card__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .sched-card__use-btn {
+      margin-top: 0;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .sched-card__use-btn:hover {
+      background: #e5e7eb;
+      border-color: var(--text-muted);
+    }
+
+    .request-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .request-form-memo-full {
+      flex: 1 0 100%;
+    }
+
+    .memo-register-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .memo-register-row input {
+      flex: 1;
+      min-width: 140px;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .memo-register-row input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .btn-memo-register {
+      height: 34px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      color: var(--accent);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-memo-register:hover {
+      border-color: var(--accent);
+      background: #f8fafc;
+    }
+
+    .memo-stack {
+      list-style: disc;
+      margin: 8px 0 0;
+      padding-left: 1.25rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .memo-stack[hidden] {
+      display: none !important;
+    }
+
+    .btn-urgent {
+      min-width: 56px;
+      height: 34px;
+      padding: 0 14px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.8125rem;
+      color: #b91c1c;
+      background: var(--bg-card);
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-urgent:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+
+    .btn-urgent.is-on {
+      background: #b91c1c;
+      color: #fff;
+      border-color: #b91c1c;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .field-label-optional {
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .field input,
+    .field select {
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      min-width: 120px;
+    }
+
+    .field input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .room-status-auto {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 46px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .room-status-auto.is-empty {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .room-status-auto.is-missing {
+      color: #b45309;
+      background: #fffbeb;
+      border-color: #fcd34d;
+      font-weight: 600;
+      font-size: 0.75rem;
+      min-width: 72px;
+    }
+
+    .room-status-auto.is-st-ip {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+
+    .room-status-auto.is-st-cl {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #15803d;
+    }
+
+    .room-status-auto.is-st-pu {
+      background: #fef3c7;
+      border-color: #fcd34d;
+      color: #b45309;
+    }
+
+    .room-status-auto.is-st-di {
+      background: #fce7f3;
+      border-color: #f9a8d4;
+      color: #be185d;
+    }
+
+    .room-status-auto.is-st-oo,
+    .room-status-auto.is-st-os {
+      background: #f3e8ff;
+      border-color: #d8b4fe;
+      color: #7e22ce;
+    }
+
+    .btn-request {
+      height: 34px;
+      padding: 0 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-request:hover {
+      background: var(--accent-light);
+    }
+
+    .btn-request:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-main">
+      <span class="brand">Lotte Hotel</span>
+      <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
+        <strong>공지</strong>
+        <span id="noticeText"></span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
+      <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
+        정비관리
+      </button>
+      <button
+        type="button"
+        class="btn-front"
+        id="btnFront"
+        aria-pressed="false"
+        title="켠 뒤 처리·예정 요청에서 사용 처리 가능"
+      >
+        프론트
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="House Keeping">
+      <nav class="sidebar-section">
+        <div class="sidebar-title">House Keeping</div>
+        <div class="sidebar-nav">
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnCancelList" aria-pressed="false">
+            취소리스트
+          </button>
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnUseList" aria-pressed="false">
+            사용리스트
+          </button>
+        </div>
+      </nav>
+      <nav class="sidebar-footer" aria-label="다른 프로그램">
+        <div class="sidebar-nav">
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
+            교대
+          </button>
+          <a class="sidebar-nav__link" href="/">루밍</a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="layout-main-area">
+    <main class="main">
+      <section class="hk-sidebar-list-panel" id="hkSidebarListPanel" hidden aria-live="polite">
+        <div class="hk-sidebar-list-panel__head">
+          <h2 id="hkSidebarListPanelTitle">목록</h2>
+          <button type="button" class="hk-sidebar-list-panel__close" id="hkSidebarListPanelClose">
+            닫기
+          </button>
+        </div>
+        <ul class="hk-sidebar-list-panel__list" id="hkSidebarListPanelBody"></ul>
+        <p class="hk-sidebar-list-panel__empty" id="hkSidebarListPanelEmpty" hidden>내역이 없습니다.</p>
+      </section>
+
+      <section class="zone-block" id="zoneBlock" aria-label="구역별 객실">
+        <div class="zone-block__toolbar">
+          <h2 class="zone-block__title">VIP / R/C / CASINO</h2>
+          <button
+            type="button"
+            class="zone-block__collapse"
+            id="zoneCollapseBtn"
+            aria-expanded="true"
+            aria-controls="zoneBlockBody"
+          >
+            접기
+          </button>
+        </div>
+        <div class="zone-block__body" id="zoneBlockBody">
+          <div class="zone-tabs" role="tablist" aria-label="구역 선택">
+            <button type="button" class="zone-tab" role="tab" data-zone="VIP" aria-selected="false">
+              VIP
+            </button>
+            <button type="button" class="zone-tab" role="tab" data-zone="RC" aria-selected="false">
+              R/C
+            </button>
+            <button type="button" class="zone-tab" role="tab" data-zone="CASINO" aria-selected="false">
+              CASINO
+            </button>
+          </div>
+          <p class="zone-panel-hint" id="zonePanelHint">
+            VIP / R/C / CASINO 중 한 구역을 선택하면 객실 목록이 펼쳐집니다.
+          </p>
+          <div class="main-placeholder" id="mainZoneBody" hidden>
+            <p class="zone-main-head" id="zoneMainHead">
+              등록 객실 · <strong id="mainZoneLabel">VIP</strong> 구역
+            </p>
+            <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
+            <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 구역 객실을 등록하세요.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="request-panel" aria-labelledby="requestTitle">
+        <h2 id="requestTitle">정비 요청</h2>
+        <form class="request-row" id="requestForm">
+          <div class="field">
+            <label for="roomNo">객실번호</label>
+            <input
+              type="text"
+              id="roomNo"
+              name="roomNo"
+              placeholder="예: 1205"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field field--room-status">
+            <label for="roomStatusAuto">상태</label>
+            <input type="hidden" id="status" name="status" value="" />
+            <div class="room-status-auto is-empty" id="roomStatusAuto" aria-live="polite">—</div>
+          </div>
+          <div class="field">
+            <label for="btnUrgent">긴급</label>
+            <button type="button" class="btn-urgent" id="btnUrgent" aria-pressed="false">
+              긴급
+            </button>
+          </div>
+          <button type="submit" class="btn-request">요청</button>
+          <div class="request-form-memo-full">
+            <div class="field" style="width: 100%; max-width: 520px">
+              <label for="requestMemo">FD <span class="field-label-optional">(선택)</span></label>
+              <div class="memo-register-row">
+                <input
+                  type="text"
+                  id="requestMemo"
+                  name="requestMemo"
+                  placeholder="FD 입력 후 등록하거나 요청 시 함께 보냅니다"
+                  autocomplete="off"
+                />
+                <button type="button" class="btn-memo-register" id="btnMemoRegister">
+                  메모 등록
+                </button>
+              </div>
+              <ul class="memo-stack" id="memoStackList" hidden></ul>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
+        <h2 class="sched-cards-panel__title" id="schedCardsTitle">처리·예정 요청</h2>
+        <p class="sched-cards-panel__hint" id="schedCardsHint">
+          요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.
+        </p>
+        <ul class="sched-cards-list" id="schedRequestCardList"></ul>
+      </section>
+    </main>
+    </div>
+
+    <aside class="request-feedback" id="requestFeedback" aria-label="정비 요청 알림">
+      <div class="request-feedback__head">
+        <h2>요청 알림</h2>
+      </div>
+      <p class="request-feedback__hint" id="requestFeedbackHint" hidden></p>
+      <ul class="request-feedback__list" id="requestFeedbackList"></ul>
+      <p class="request-feedback__empty" id="requestFeedbackEmpty">
+        요청이 접수되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+  </div>
+
+  <div
+    class="hk-confirm"
+    id="hkCancelConfirm"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hkCancelConfirmTitle"
+  >
+    <div class="hk-confirm__backdrop" id="hkCancelConfirmBackdrop"></div>
+    <div class="hk-confirm__box">
+      <p class="hk-confirm__msg" id="hkCancelConfirmTitle"></p>
+      <div class="hk-confirm__actions">
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkCancelConfirmYes">
+          네
+        </button>
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkCancelConfirmNo">
+          아니오
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="hk-confirm hk-confirm--name"
+    id="hkCancelNameDialog"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hkCancelNameTitle"
+  >
+    <div class="hk-confirm__backdrop" id="hkCancelNameBackdrop"></div>
+    <div class="hk-confirm__box hk-confirm__box--wide">
+      <p class="hk-confirm__msg" id="hkCancelNameTitle">취소 처리자 이름을 입력하세요.</p>
+      <p class="hk-confirm__sub" id="hkCancelNameRoomHint" hidden></p>
+      <label class="hk-confirm__label" for="hkCancelNameInput">이름</label>
+      <input
+        type="text"
+        class="hk-confirm__input"
+        id="hkCancelNameInput"
+        name="cancelHandlerName"
+        autocomplete="name"
+        placeholder="이름을 입력하세요"
+      />
+      <div class="hk-confirm__actions">
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkCancelNameOk">확인</button>
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkCancelNameCancel">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="hk-confirm hk-confirm--operator"
+    id="hkOperatorDialog"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hkOperatorDialogTitle"
+  >
+    <div class="hk-confirm__backdrop" id="hkOperatorDialogBackdrop"></div>
+    <div class="hk-confirm__box hk-confirm__box--wide">
+      <p class="hk-confirm__msg" id="hkOperatorDialogTitle">이름을 입력하세요.</p>
+      <p class="hk-confirm__sub" id="hkOperatorDialogHint">정비 요청 시 요청자로 표시됩니다.</p>
+      <label class="hk-confirm__label" for="hkOperatorNameInput">이름</label>
+      <input
+        type="text"
+        class="hk-confirm__input"
+        id="hkOperatorNameInput"
+        name="operatorName"
+        autocomplete="name"
+        placeholder="이름을 입력하세요"
+      />
+      <div class="hk-confirm__actions">
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkOperatorNameOk">확인</button>
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkOperatorNameCancel" hidden>
+          취소
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="hk-confirm hk-confirm--role-password"
+    id="hkRolePasswordDialog"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hkRolePasswordTitle"
+  >
+    <div class="hk-confirm__backdrop" id="hkRolePasswordBackdrop"></div>
+    <div class="hk-confirm__box hk-confirm__box--wide">
+      <p class="hk-confirm__msg" id="hkRolePasswordTitle">비밀번호</p>
+      <label class="hk-confirm__label" for="hkRolePasswordInput">비밀번호</label>
+      <input
+        type="password"
+        class="hk-confirm__input"
+        id="hkRolePasswordInput"
+        autocomplete="current-password"
+        placeholder="비밀번호"
+      />
+      <div class="hk-role-password-error" id="hkRolePasswordError" role="alert"></div>
+      <div class="hk-confirm__actions">
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkRolePasswordOk">확인</button>
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkRolePasswordCancel">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="hk-auth.js"></script>
+  <script src="hk-storage.js"></script>
+  <script src="hk-sync.js"></script>
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll(".zone-tab");
+      var label = document.getElementById("mainZoneLabel");
+      var roomList = document.getElementById("roomListFront");
+      var roomEmpty = document.getElementById("roomListEmpty");
+      var noticeText = document.getElementById("noticeText");
+      var zoneLabels = { VIP: "VIP", RC: "R/C", CASINO: "CASINO" };
+      var currentZone = null;
+      var maintenanceMode = false;
+      var frontMode = false;
+      var memoStack = [];
+      var pendingCancelConfirmId = null;
+      var pendingCancelNameId = null;
+      var sidebarListView = null;
+      var requestLogEntries = [];
+      var OPERATOR_NAME_KEY = "lotte-hk-operator-name-v1";
+      var operatorNameModalMode = "initial";
+      var pendingOperatorNameCallback = null;
+      var SCHED_PANEL_HINT_EMPTY =
+        "요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.";
+      var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
+      var XML_ROOM_STATUS_MAP = {};
+      var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
+
+      var operatorNameModalMode = "initial";
+      var pendingOperatorNameCallback = null;
+      var pendingRoleAuth = null;
+      var pendingRoleSuccess = null;
+
+      function closeRolePasswordModal() {
+        var dlg = document.getElementById("hkRolePasswordDialog");
+        if (dlg) dlg.hidden = true;
+        pendingRoleAuth = null;
+        pendingRoleSuccess = null;
+      }
+
+      function openRolePasswordModal(role, onSuccess) {
+        if (typeof HKAuth === "undefined") {
+          if (onSuccess) onSuccess();
+          return;
+        }
+        pendingRoleAuth = role;
+        pendingRoleSuccess = onSuccess || null;
+        var dlg = document.getElementById("hkRolePasswordDialog");
+        var title = document.getElementById("hkRolePasswordTitle");
+        var inp = document.getElementById("hkRolePasswordInput");
+        var err = document.getElementById("hkRolePasswordError");
+        if (title) title.textContent = HKAuth.getLabel(role) + " 비밀번호";
+        if (inp) inp.value = "";
+        if (err) err.textContent = "";
+        if (dlg) dlg.hidden = false;
+        if (inp) setTimeout(function () { inp.focus(); }, 0);
+      }
+
+      function submitRolePasswordModal() {
+        var inp = document.getElementById("hkRolePasswordInput");
+        var err = document.getElementById("hkRolePasswordError");
+        if (typeof HKAuth === "undefined" || !pendingRoleAuth) {
+          closeRolePasswordModal();
+          return;
+        }
+        if (!HKAuth.verify(pendingRoleAuth, inp ? inp.value : "")) {
+          if (err) err.textContent = "비밀번호가 올바르지 않습니다.";
+          if (inp) {
+            inp.value = "";
+            inp.focus();
+          }
+          return;
+        }
+        HKAuth.setAuthed(pendingRoleAuth);
+        var cb = pendingRoleSuccess;
+        closeRolePasswordModal();
+        if (cb) cb();
+      }
+
+      function setupRolePasswordUi() {
+        var ok = document.getElementById("hkRolePasswordOk");
+        var cancel = document.getElementById("hkRolePasswordCancel");
+        var backdrop = document.getElementById("hkRolePasswordBackdrop");
+        var inp = document.getElementById("hkRolePasswordInput");
+        var btnAdmin = document.getElementById("btnAdmin");
+
+        if (ok) ok.addEventListener("click", submitRolePasswordModal);
+        if (cancel) cancel.addEventListener("click", closeRolePasswordModal);
+        if (backdrop) backdrop.addEventListener("click", closeRolePasswordModal);
+        if (inp) {
+          inp.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitRolePasswordModal();
+            }
+          });
+        }
+        if (btnAdmin) {
+          btnAdmin.addEventListener("click", function (e) {
+            e.preventDefault();
+            var href = btnAdmin.getAttribute("href") || "admin.html";
+            if (typeof HKAuth !== "undefined" && HKAuth.isAuthed("admin")) {
+              window.location.href = href;
+              return;
+            }
+            openRolePasswordModal("admin", function () {
+              window.location.href = href;
+            });
+          });
+        }
+      }
+
+      function requireRoleAuth(role, onAuthed) {
+        if (typeof HKAuth !== "undefined" && HKAuth.isAuthed(role)) {
+          onAuthed();
+          return;
+        }
+        openRolePasswordModal(role, onAuthed);
+      }
+
+      function getOperatorName() {
+        try {
+          return String(localStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function setOperatorName(name) {
+        var n = String(name || "").trim();
+        try {
+          if (n) localStorage.setItem(OPERATOR_NAME_KEY, n);
+        } catch (e) {}
+        return n;
+      }
+
+      function closeOperatorNameModal() {
+        var dlg = document.getElementById("hkOperatorDialog");
+        if (dlg) dlg.hidden = true;
+        pendingOperatorNameCallback = null;
+      }
+
+      function openOperatorNameModal(opts) {
+        opts = opts || {};
+        operatorNameModalMode = opts.mode || "shift";
+        pendingOperatorNameCallback =
+          typeof opts.onSaved === "function" ? opts.onSaved : null;
+        var dlg = document.getElementById("hkOperatorDialog");
+        var title = document.getElementById("hkOperatorDialogTitle");
+        var hint = document.getElementById("hkOperatorDialogHint");
+        var inp = document.getElementById("hkOperatorNameInput");
+        var cancelBtn = document.getElementById("hkOperatorNameCancel");
+        if (title) {
+          title.textContent =
+            operatorNameModalMode === "initial"
+              ? "정비관리 · 이름 입력"
+              : "교대 · 이름 변경";
+        }
+        if (hint) {
+          hint.textContent =
+            operatorNameModalMode === "initial"
+              ? "처음 사용 시 이름을 등록해 주세요. 요청 알림에 표시됩니다."
+              : "새 근무자 이름을 입력하세요.";
+        }
+        if (inp) {
+          inp.value = operatorNameModalMode === "shift" ? getOperatorName() : "";
+        }
+        if (cancelBtn) {
+          cancelBtn.hidden = operatorNameModalMode === "initial";
+        }
+        if (dlg) dlg.hidden = false;
+        if (inp) setTimeout(function () { inp.focus(); }, 0);
+      }
+
+      function ensureOperatorNameOnLoad() {
+        if (getOperatorName()) return;
+        openOperatorNameModal({ mode: "initial" });
+      }
+
+      function submitOperatorNameModal() {
+        var inp = document.getElementById("hkOperatorNameInput");
+        var name = inp ? String(inp.value || "").trim() : "";
+        if (!name) {
+          if (inp) inp.focus();
+          return;
+        }
+        setOperatorName(name);
+        closeOperatorNameModal();
+        if (pendingOperatorNameCallback) {
+          var cb = pendingOperatorNameCallback;
+          pendingOperatorNameCallback = null;
+          cb(name);
+        }
+      }
+
+      function setupOperatorNameUi() {
+        var ok = document.getElementById("hkOperatorNameOk");
+        var cancel = document.getElementById("hkOperatorNameCancel");
+        var backdrop = document.getElementById("hkOperatorDialogBackdrop");
+        var inp = document.getElementById("hkOperatorNameInput");
+        var shiftBtn = document.getElementById("sidebarBtnShiftChange");
+
+        if (ok) ok.addEventListener("click", submitOperatorNameModal);
+        if (cancel) {
+          cancel.addEventListener("click", function () {
+            if (operatorNameModalMode === "initial" && !getOperatorName()) return;
+            closeOperatorNameModal();
+          });
+        }
+        if (backdrop) {
+          backdrop.addEventListener("click", function () {
+            if (operatorNameModalMode === "initial" && !getOperatorName()) return;
+            closeOperatorNameModal();
+          });
+        }
+        if (inp) {
+          inp.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitOperatorNameModal();
+            }
+          });
+        }
+        if (shiftBtn) {
+          shiftBtn.addEventListener("click", function () {
+            openOperatorNameModal({ mode: "shift" });
+          });
+        }
+      }
+
+      function normalizeRoomDigits(roomStr) {
+        var d = String(roomStr || "").replace(/\D/g, "");
+        if (!d) return "";
+        if (d.length <= 4) return d.padStart(4, "0");
+        return d.slice(-4);
+      }
+
+      function normalizeRoomStatus(status) {
+        var u = String(status || "")
+          .toUpperCase()
+          .replace(/\s+/g, "");
+        return VALID_XML_STATUSES[u] ? u : "";
+      }
+
+      function rebuildRoomStatusMap(vacRows) {
+        var m = {};
+        if (!vacRows || !vacRows.length) return m;
+        vacRows.forEach(function (row) {
+          var nr = normalizeRoomDigits(row.room);
+          var st = normalizeRoomStatus(row.status);
+          if (nr && st) m[nr] = st;
+        });
+        return m;
+      }
+
+      function lookupRoomStatusFromXml(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return "";
+        return XML_ROOM_STATUS_MAP[nr] || "";
+      }
+
+      function roomNumberForStatusLookup(numStr) {
+        var s = String(numStr || "").trim();
+        var m = s.match(/^(.+?)\s*->\s*(.+)$/);
+        if (m) return normalizeRoomDigits(m[1].trim());
+        return normalizeRoomDigits(s);
+      }
+
+      function applyXmlRoomStatusPayload(payload) {
+        if (!payload || !payload.vacRows || !payload.vacRows.length) return;
+        XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+        updateRoomStatusDisplay();
+        var z = getActiveZone();
+        if (z) renderRoomsForZone(z);
+      }
+
+      function syncRequestLogFromServer() {
+        if (typeof HKSync !== "undefined") {
+          requestLogEntries = HKSync.getRequestLog();
+        }
+      }
+
+      function saveRequestLog() {
+        if (typeof HKSync !== "undefined") {
+          HKSync.setRequestLog(requestLogEntries);
+        }
+      }
+
+      function handleHkSyncChange(changed, payload) {
+        if (changed.indexOf("hkRequestLog") >= 0) {
+          syncRequestLogFromServer();
+          renderRequestLogPanel();
+        }
+        if (changed.indexOf("hkStorage") >= 0) {
+          refreshMain();
+        }
+        if (changed.indexOf("vacRows") >= 0) {
+          applyXmlRoomStatusPayload(payload);
+        }
+        if (
+          changed.indexOf("hkCancelLog") >= 0 ||
+          changed.indexOf("hkUseLog") >= 0
+        ) {
+          if (sidebarListView) openSidebarList(sidebarListView);
+        }
+      }
+
+      function updateRoomStatusDisplay() {
+        var roomEl = document.getElementById("roomNo");
+        var display = document.getElementById("roomStatusAuto");
+        var hidden = document.getElementById("status");
+        if (!display || !hidden) return;
+        var room = roomEl ? roomEl.value.trim() : "";
+        var st = lookupRoomStatusFromXml(room);
+        hidden.value = st;
+        if (!String(room).replace(/\s/g, "")) {
+          display.textContent = "—";
+          display.className = "room-status-auto is-empty";
+          return;
+        }
+        if (!st) {
+          display.textContent = "XML 없음";
+          display.className = "room-status-auto is-missing";
+          return;
+        }
+        display.textContent = st;
+        display.className = "room-status-auto is-st-" + st.toLowerCase();
+      }
+
+      function getRequestRoomFilterRaw() {
+        var el = document.getElementById("roomNo");
+        if (!el) return "";
+        return el.value.replace(/\s/g, "");
+      }
+
+      function roomMatchesSchedSearch(roomVal, filterNorm) {
+        if (!filterNorm) return true;
+        var r = String(roomVal || "")
+          .replace(/\s/g, "")
+          .toLowerCase();
+        return r.indexOf(filterNorm) !== -1;
+      }
+
+      function pad2(n) {
+        return n < 10 ? "0" + n : String(n);
+      }
+
+      function formatRoomNoDisplay(raw) {
+        var s = String(raw == null ? "" : raw).trim();
+        if (!s) return "";
+        var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
+        if (m) return m[1].trim() + " -> " + m[2].trim();
+        return s;
+      }
+
+      function loadRequestLog() {
+        syncRequestLogFromServer();
+      }
+
+      function formatReqAt(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+      }
+
+      function setLineWithEmTime(containerEl, prefixText, timeText) {
+        if (!containerEl) return;
+        containerEl.textContent = "";
+        var pre = prefixText != null ? String(prefixText) : "";
+        if (pre) containerEl.appendChild(document.createTextNode(pre));
+        var sp = document.createElement("span");
+        sp.className = "hk-time-em";
+        var t =
+          timeText != null && String(timeText).trim() !== "" ? String(timeText).trim() : "—";
+        sp.textContent = t;
+        containerEl.appendChild(sp);
+      }
+
+      function findRequestEntry(id) {
+        for (var i = 0; i < requestLogEntries.length; i++) {
+          if (requestLogEntries[i].id === id) return requestLogEntries[i];
+        }
+        return null;
+      }
+
+      function removeRequestEntry(id) {
+        var next = [];
+        for (var i = 0; i < requestLogEntries.length; i++) {
+          if (requestLogEntries[i].id !== id) next.push(requestLogEntries[i]);
+        }
+        requestLogEntries = next;
+        saveRequestLog();
+      }
+
+      function openCancelConfirmModal(reqId) {
+        pendingCancelConfirmId = reqId || null;
+        var titleEl = document.getElementById("hkCancelConfirmTitle");
+        var entry = reqId ? findRequestEntry(reqId) : null;
+        var roomLabel = entry && entry.room != null ? formatRoomNoDisplay(String(entry.room).trim()) : "";
+        if (titleEl) {
+          titleEl.textContent = roomLabel
+            ? "객실번호 " + roomLabel + "를 정말로 취소하시겠습니까?"
+            : "정말로 취소하시겠습니까?";
+        }
+        var dlg = document.getElementById("hkCancelConfirm");
+        if (!dlg) {
+          if (reqId) {
+            removeRequestEntry(reqId);
+            renderRequestLogPanel();
+          }
+          return;
+        }
+        dlg.hidden = false;
+        var noBtn = document.getElementById("hkCancelConfirmNo");
+        if (noBtn) noBtn.focus();
+      }
+
+      function closeCancelConfirmModal() {
+        var dlg = document.getElementById("hkCancelConfirm");
+        if (dlg) dlg.hidden = true;
+        pendingCancelConfirmId = null;
+      }
+
+      function appendCancelNameLog(room, handlerName, entryId) {
+        if (typeof HKSync === "undefined") return;
+        HKSync.prependCancelLog({
+          at: new Date().toISOString(),
+          room: room || "",
+          name: handlerName || "",
+          entryId: entryId || "",
+        });
+      }
+
+      function appendUseLog(entry) {
+        if (!entry || typeof HKSync === "undefined") return;
+        HKSync.prependUseLog({
+          at: new Date().toISOString(),
+          room: entry.room != null ? String(entry.room) : "",
+          status: entry.status != null ? String(entry.status) : "",
+          sched: entry.sched != null ? String(entry.sched) : "",
+          urgent: !!entry.urgent,
+          entryId: entry.id || "",
+        });
+      }
+
+      function setSidebarListNavActive() {
+        var b1 = document.getElementById("sidebarBtnCancelList");
+        var b2 = document.getElementById("sidebarBtnUseList");
+        if (b1) {
+          b1.classList.toggle("is-active", sidebarListView === "cancel");
+          b1.setAttribute("aria-pressed", sidebarListView === "cancel" ? "true" : "false");
+        }
+        if (b2) {
+          b2.classList.toggle("is-active", sidebarListView === "use");
+          b2.setAttribute("aria-pressed", sidebarListView === "use" ? "true" : "false");
+        }
+      }
+
+      function openSidebarList(kind) {
+        sidebarListView = kind;
+        var panel = document.getElementById("hkSidebarListPanel");
+        var title = document.getElementById("hkSidebarListPanelTitle");
+        var ul = document.getElementById("hkSidebarListPanelBody");
+        var empty = document.getElementById("hkSidebarListPanelEmpty");
+        if (!panel || !ul) return;
+        if (title) title.textContent = kind === "cancel" ? "취소리스트" : "사용리스트";
+        ul.innerHTML = "";
+        var rows =
+          typeof HKSync !== "undefined"
+            ? kind === "cancel"
+              ? HKSync.getCancelLog()
+              : HKSync.getUseLog()
+            : [];
+        if (rows.length === 0) {
+          if (empty) empty.hidden = false;
+        } else {
+          if (empty) empty.hidden = true;
+          rows.forEach(function (row) {
+            var li = document.createElement("li");
+            li.className = "hk-sidebar-list-panel__item";
+            if (kind === "cancel") {
+              var main = document.createElement("div");
+              main.textContent =
+                "객실 " +
+                (row.room ? formatRoomNoDisplay(String(row.room)) : "—") +
+                " · 취소 처리: " +
+                (row.name || "—");
+              li.appendChild(main);
+              var meta = document.createElement("div");
+              meta.className = "hk-sidebar-list-panel__item-meta";
+              if (row.at) setLineWithEmTime(meta, "기록 ", formatReqAt(row.at));
+              li.appendChild(meta);
+            } else {
+              var main2 = document.createElement("div");
+              var rmU = row.room ? formatRoomNoDisplay(String(row.room)) : "—";
+              var stU =
+                row.status && String(row.status).trim() ? String(row.status).trim() : "상태 없음";
+              var schU =
+                row.sched && String(row.sched).trim() ? String(row.sched).trim() : "—";
+              main2.appendChild(
+                document.createTextNode("객실 " + rmU + " · " + stU + " · 처리·예정 ")
+              );
+              var schSpan = document.createElement("span");
+              schSpan.className = "hk-time-em";
+              schSpan.textContent = schU;
+              main2.appendChild(schSpan);
+              li.appendChild(main2);
+              var meta2 = document.createElement("div");
+              meta2.className = "hk-sidebar-list-panel__item-meta";
+              if (row.at) setLineWithEmTime(meta2, "사용 ", formatReqAt(row.at));
+              li.appendChild(meta2);
+            }
+            ul.appendChild(li);
+          });
+        }
+        panel.hidden = false;
+        setSidebarListNavActive();
+      }
+
+      function closeSidebarList() {
+        sidebarListView = null;
+        var panel = document.getElementById("hkSidebarListPanel");
+        if (panel) panel.hidden = true;
+        setSidebarListNavActive();
+      }
+
+      function toggleSidebarList(kind) {
+        if (sidebarListView === kind) closeSidebarList();
+        else openSidebarList(kind);
+      }
+
+      function openCancelNameModal(reqId) {
+        pendingCancelNameId = reqId || null;
+        var nd = document.getElementById("hkCancelNameDialog");
+        var inp = document.getElementById("hkCancelNameInput");
+        var hint = document.getElementById("hkCancelNameRoomHint");
+        var entry = reqId ? findRequestEntry(reqId) : null;
+        var room = entry && entry.room != null ? String(entry.room).trim() : "";
+        if (hint) {
+          if (room) {
+            hint.textContent = "객실번호 " + formatRoomNoDisplay(room);
+            hint.hidden = false;
+          } else {
+            hint.textContent = "";
+            hint.hidden = true;
+          }
+        }
+        if (inp) inp.value = "";
+        if (nd) nd.hidden = false;
+        if (inp) setTimeout(function () { inp.focus(); }, 0);
+      }
+
+      function closeCancelNameModal() {
+        var nd = document.getElementById("hkCancelNameDialog");
+        if (nd) nd.hidden = true;
+        pendingCancelNameId = null;
+        var inp = document.getElementById("hkCancelNameInput");
+        if (inp) inp.value = "";
+      }
+
+      function getActiveZone() {
+        var active = document.querySelector(".zone-tab.active");
+        return active ? active.getAttribute("data-zone") : null;
+      }
+
+      function setZonePanelOpen(open) {
+        var hint = document.getElementById("zonePanelHint");
+        var body = document.getElementById("mainZoneBody");
+        if (!hint || !body) return;
+        if (open) {
+          hint.hidden = true;
+          body.hidden = false;
+        } else {
+          hint.hidden = false;
+          body.hidden = true;
+        }
+      }
+
+      function renderRequestLogPanel() {
+        var list = document.getElementById("requestFeedbackList");
+        var empty = document.getElementById("requestFeedbackEmpty");
+        if (!list) {
+          renderSchedRequestCards();
+          return;
+        }
+        list.innerHTML = "";
+        var pending = requestLogEntries.filter(function (entry) {
+          return !(entry.sched && String(entry.sched).trim());
+        });
+        pending.sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        pending.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "request-feedback__item";
+          li.setAttribute("data-req-id", entry.id);
+          if (entry.urgent) li.classList.add("is-urgent");
+
+          var t = document.createElement("div");
+          t.className = "request-feedback__item-time";
+          setLineWithEmTime(t, "접수 ", formatReqAt(entry.at));
+
+          var row = document.createElement("div");
+          row.className = "request-feedback__item-row";
+          var r = document.createElement("span");
+          r.className = "request-feedback__item-room";
+          r.textContent =
+            "객실 " + (entry.room ? formatRoomNoDisplay(String(entry.room)) : "—");
+          if (entry.urgent) {
+            var ub = document.createElement("span");
+            ub.className = "request-feedback__item-urgent-badge";
+            ub.textContent = "긴급";
+            ub.setAttribute("aria-label", "긴급");
+            r.appendChild(ub);
+          }
+          var s = document.createElement("span");
+          s.className =
+            "request-feedback__item-st" + (entry.status ? "" : " is-none");
+          s.textContent = entry.status || "상태 없음";
+          row.appendChild(r);
+          row.appendChild(s);
+          li.appendChild(t);
+          li.appendChild(row);
+
+          var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+          if (memoStr) {
+            var memEl = document.createElement("div");
+            memEl.className = "request-feedback__item-memo";
+            memEl.textContent = "FD : " + memoStr;
+            li.appendChild(memEl);
+          }
+
+          var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
+          if (memo2Str) {
+            var m2Box = document.createElement("div");
+            m2Box.className = "request-feedback__item-memo2";
+            var m2Body = document.createElement("div");
+            m2Body.className = "request-feedback__item-memo2-body";
+            m2Body.textContent = "두잉 : " + memo2Str;
+            m2Box.appendChild(m2Body);
+            li.appendChild(m2Box);
+          }
+
+          if (maintenanceMode) {
+            var schedEl = document.createElement("div");
+            schedEl.className = "request-feedback__sched is-empty";
+            schedEl.textContent = "처리·예정 —";
+            li.appendChild(schedEl);
+            var maintActs = document.createElement("div");
+            maintActs.className = "request-feedback__maint-actions";
+            var schedBtn = document.createElement("button");
+            schedBtn.type = "button";
+            schedBtn.className = "request-feedback__sched-btn";
+            schedBtn.setAttribute("data-req-id", entry.id);
+            schedBtn.textContent = "시간 입력";
+            maintActs.appendChild(schedBtn);
+            var memo2BtnP = document.createElement("button");
+            memo2BtnP.type = "button";
+            memo2BtnP.className = "request-feedback__memo2-btn";
+            memo2BtnP.setAttribute("data-req-id", entry.id);
+            memo2BtnP.textContent = memo2Str ? "메모2 수정" : "메모2 입력";
+            memo2BtnP.setAttribute("aria-label", memo2Str ? "메모2 수정" : "메모2 입력");
+            maintActs.appendChild(memo2BtnP);
+            li.appendChild(maintActs);
+          }
+
+          if (frontMode) {
+            var frontActs = document.createElement("div");
+            frontActs.className = "request-feedback__front-actions";
+            var memoBtnF = document.createElement("button");
+            memoBtnF.type = "button";
+            memoBtnF.className = "request-feedback__memo-btn";
+            memoBtnF.setAttribute("data-req-id", entry.id);
+            memoBtnF.textContent = memoStr ? "메모 수정" : "메모 입력";
+            memoBtnF.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+            frontActs.appendChild(memoBtnF);
+            var cancelReqBtn = document.createElement("button");
+            cancelReqBtn.type = "button";
+            cancelReqBtn.className = "request-feedback__cancel-btn";
+            cancelReqBtn.setAttribute("data-req-id", entry.id);
+            cancelReqBtn.textContent = "요청 취소";
+            cancelReqBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
+            frontActs.appendChild(cancelReqBtn);
+            li.appendChild(frontActs);
+          }
+
+          var byName = entry.by != null ? String(entry.by).trim() : "";
+          if (byName) {
+            var byEl = document.createElement("div");
+            byEl.className = "request-feedback__item-by";
+            byEl.textContent = byName;
+            byEl.title = "요청: " + byName;
+            li.appendChild(byEl);
+          }
+
+          list.appendChild(li);
+        });
+        if (empty) empty.hidden = pending.length > 0;
+        renderSchedRequestCards();
+      }
+
+      function renderSchedRequestCards() {
+        var ul = document.getElementById("schedRequestCardList");
+        var hint = document.getElementById("schedCardsHint");
+        if (!ul) return;
+        ul.innerHTML = "";
+        var allScheduled = requestLogEntries.filter(function (e) {
+          return e.sched && String(e.sched).trim();
+        });
+        allScheduled.sort(function (a, b) {
+          return (a.sched || "").localeCompare(b.sched || "", undefined, { numeric: true });
+        });
+        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+        var scheduled = allScheduled.filter(function (e) {
+          return roomMatchesSchedSearch(e.room, filterNorm);
+        });
+        scheduled.forEach(function (entry) {
+          var sched = String(entry.sched).trim();
+          var li = document.createElement("li");
+          li.className = "room-card sched-req-card";
+          li.setAttribute("data-req-id", entry.id);
+          if (entry.urgent) li.classList.add("sched-req-card--urgent");
+
+          var head = document.createElement("div");
+          head.className = "room-card__head";
+          var noBox = document.createElement("span");
+          noBox.className = "room-card__no-box";
+          var no = document.createElement("span");
+          no.className = "room-card__no";
+          no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+          noBox.appendChild(no);
+          var st = (entry.status || "").trim();
+          var stEl = document.createElement("span");
+          stEl.className = "room-card__status" + (st ? "" : " is-empty");
+          stEl.textContent = st || "—";
+          head.appendChild(noBox);
+          head.appendChild(stEl);
+          li.appendChild(head);
+
+          var sl = document.createElement("p");
+          sl.className = "room-card__time-display";
+          setLineWithEmTime(sl, "처리·예정 · ", sched);
+          li.appendChild(sl);
+
+          var acc = document.createElement("p");
+          acc.className = "room-card__memo";
+          acc.style.margin = "0";
+          acc.style.marginTop = "6px";
+          acc.style.fontSize = "0.75rem";
+          acc.style.color = "var(--text-muted)";
+          setLineWithEmTime(acc, "접수 ", formatReqAt(entry.at));
+          li.appendChild(acc);
+
+          var memoSched = entry.memo != null ? String(entry.memo).trim() : "";
+          if (memoSched) {
+            var memP = document.createElement("p");
+            memP.className = "room-card__memo";
+            memP.style.marginTop = "6px";
+            memP.style.fontSize = "0.8rem";
+            memP.style.color = "var(--text)";
+            memP.style.whiteSpace = "pre-wrap";
+            memP.style.wordBreak = "break-word";
+            memP.textContent = "FD : " + memoSched;
+            li.appendChild(memP);
+          }
+
+          var memo2Sched = entry.memo2 != null ? String(entry.memo2).trim() : "";
+          if (memo2Sched) {
+            var m2P = document.createElement("p");
+            m2P.className = "room-card__memo";
+            m2P.style.marginTop = "6px";
+            m2P.style.fontSize = "0.75rem";
+            m2P.style.color = "#4338ca";
+            m2P.style.whiteSpace = "pre-wrap";
+            m2P.style.wordBreak = "break-word";
+            m2P.textContent = "두잉 : " + memo2Sched;
+            li.appendChild(m2P);
+          }
+
+          if (maintenanceMode || frontMode) {
+            var actions = document.createElement("div");
+            actions.className = "sched-req-card__actions";
+            if (maintenanceMode) {
+              var editBtn = document.createElement("button");
+              editBtn.type = "button";
+              editBtn.className = "request-feedback__sched-btn sched-card__edit-btn";
+              editBtn.setAttribute("data-req-id", entry.id);
+              editBtn.textContent = "시간 수정";
+              actions.appendChild(editBtn);
+              var m2CardBtn = document.createElement("button");
+              m2CardBtn.type = "button";
+              m2CardBtn.className = "request-feedback__memo2-btn sched-card__memo2-btn";
+              m2CardBtn.setAttribute("data-req-id", entry.id);
+              m2CardBtn.textContent = memo2Sched ? "메모2 수정" : "메모2 입력";
+              m2CardBtn.setAttribute("aria-label", memo2Sched ? "메모2 수정" : "메모2 입력");
+              actions.appendChild(m2CardBtn);
+            }
+            if (frontMode) {
+              var useBtn = document.createElement("button");
+              useBtn.type = "button";
+              useBtn.className = "sched-card__use-btn";
+              useBtn.setAttribute("data-req-id", entry.id);
+              useBtn.setAttribute("aria-label", "사용 완료하여 목록에서 제거");
+              useBtn.textContent = "사용";
+              actions.appendChild(useBtn);
+            }
+            li.appendChild(actions);
+          }
+
+          ul.appendChild(li);
+        });
+        if (hint) {
+          if (allScheduled.length === 0) {
+            hint.textContent = SCHED_PANEL_HINT_EMPTY;
+            hint.hidden = false;
+          } else if (scheduled.length === 0 && filterNorm) {
+            hint.textContent = SCHED_PANEL_HINT_NO_MATCH;
+            hint.hidden = false;
+          } else {
+            hint.hidden = true;
+          }
+        }
+      }
+
+      function openRequestSchedEditor(entryId) {
+        if (!maintenanceMode) return;
+        var li =
+          document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
+          document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
+        if (!li) return;
+        var old = li.querySelector(".request-feedback__sched-editor-wrap");
+        if (old) {
+          old.remove();
+          var rb =
+            li.querySelector(".sched-card__edit-btn") ||
+            li.querySelector(".request-feedback__sched-btn");
+          if (rb) rb.style.visibility = "";
+          var m2rest = li.querySelector(".request-feedback__memo2-btn");
+          if (m2rest) m2rest.style.visibility = "";
+          return;
+        }
+        document.querySelectorAll(".request-feedback__sched-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo2-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".sched-card__edit-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__item .request-feedback__sched-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__memo-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__cancel-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__memo2-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        var entry = findRequestEntry(entryId);
+        if (!entry) return;
+
+        var btn =
+          li.querySelector(".sched-card__edit-btn") || li.querySelector(".request-feedback__sched-btn");
+        if (btn) btn.style.visibility = "hidden";
+        var cancelFb = li.querySelector(".request-feedback__cancel-btn");
+        if (cancelFb) cancelFb.style.visibility = "hidden";
+        var memo2Hide = li.querySelector(".request-feedback__memo2-btn");
+        if (memo2Hide) memo2Hide.style.visibility = "hidden";
+
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__sched-editor-wrap";
+        var row = document.createElement("div");
+        row.className = "request-feedback__sched-editor";
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.classList.add("hk-time-em");
+        inp.placeholder = "1430 또는 14:30";
+        inp.value = entry.sched || "";
+        inp.setAttribute("aria-label", "처리·예정 시간");
+        var ok = document.createElement("button");
+        ok.type = "button";
+        ok.className = "request-feedback__sched-save";
+        ok.textContent = "적용";
+        var cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "취소";
+        row.appendChild(inp);
+        row.appendChild(ok);
+        row.appendChild(cancel);
+        wrap.appendChild(row);
+        li.appendChild(wrap);
+
+        function done() {
+          if (btn) btn.style.visibility = "";
+          wrap.remove();
+          renderRequestLogPanel();
+        }
+
+        ok.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          var p = HKStorage.parseTime24(inp.value);
+          if (!p.ok) {
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430)\n비우면 삭제됩니다.");
+            return;
+          }
+          entry.sched = p.value;
+          saveRequestLog();
+          done();
+        });
+
+        cancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          done();
+        });
+
+        inp.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            ok.click();
+          }
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        inp.focus();
+        inp.select();
+      }
+
+      function openRequestMemoEditor(entryId) {
+        if (!frontMode) return;
+        var li = document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]');
+        if (!li) return;
+        var oldM = li.querySelector(".request-feedback__memo-editor-wrap");
+        if (oldM) {
+          oldM.remove();
+          var memoBtnRestore = li.querySelector(".request-feedback__memo-btn");
+          if (memoBtnRestore) memoBtnRestore.style.visibility = "";
+          var cancelToggle = li.querySelector(".request-feedback__cancel-btn");
+          if (cancelToggle) cancelToggle.style.visibility = "";
+          var m2tog = li.querySelector(".request-feedback__memo2-btn");
+          if (m2tog) m2tog.style.visibility = "";
+          return;
+        }
+        document.querySelectorAll(".request-feedback__memo-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo2-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__cancel-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__memo2-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__sched-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".sched-card__edit-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__item .request-feedback__sched-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        var entry = findRequestEntry(entryId);
+        if (!entry) return;
+        var memoBtnEl = li.querySelector(".request-feedback__memo-btn");
+        if (memoBtnEl) memoBtnEl.style.visibility = "hidden";
+        var cancelMemoBar = li.querySelector(".request-feedback__cancel-btn");
+        if (cancelMemoBar) cancelMemoBar.style.visibility = "hidden";
+        var memo2BarFront = li.querySelector(".request-feedback__memo2-btn");
+        if (memo2BarFront) memo2BarFront.style.visibility = "hidden";
+
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__memo-editor-wrap";
+        var ed = document.createElement("div");
+        ed.className = "request-feedback__memo-editor";
+        var ta = document.createElement("textarea");
+        ta.setAttribute("aria-label", "FD");
+        ta.placeholder = "FD 내용을 입력하세요. 비우면 삭제됩니다.";
+        ta.value = entry.memo != null ? String(entry.memo) : "";
+        var act = document.createElement("div");
+        act.className = "request-feedback__memo-editor-actions";
+        var ok = document.createElement("button");
+        ok.type = "button";
+        ok.className = "request-feedback__memo-save";
+        ok.textContent = "적용";
+        var cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "취소";
+        act.appendChild(ok);
+        act.appendChild(cancel);
+        ed.appendChild(ta);
+        ed.appendChild(act);
+        wrap.appendChild(ed);
+        li.appendChild(wrap);
+
+        function done() {
+          if (memoBtnEl) memoBtnEl.style.visibility = "";
+          if (cancelMemoBar) cancelMemoBar.style.visibility = "";
+          if (memo2BarFront) memo2BarFront.style.visibility = "";
+          wrap.remove();
+          renderRequestLogPanel();
+        }
+
+        ok.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          entry.memo = String(ta.value || "").trim();
+          saveRequestLog();
+          done();
+        });
+
+        cancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          done();
+        });
+
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") {
+            ev.preventDefault();
+            cancel.click();
+          }
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        ta.focus();
+      }
+
+      function openRequestMemo2Editor(entryId) {
+        if (!maintenanceMode) return;
+        var li =
+          document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
+          document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
+        if (!li) return;
+        var oldM2 = li.querySelector(".request-feedback__memo2-editor-wrap");
+        if (oldM2) {
+          oldM2.remove();
+          var sbR = li.querySelector(".sched-card__edit-btn") || li.querySelector(".request-feedback__sched-btn");
+          if (sbR) sbR.style.visibility = "";
+          var m2bR = li.querySelector(".request-feedback__memo2-btn");
+          if (m2bR) m2bR.style.visibility = "";
+          return;
+        }
+        document.querySelectorAll(".request-feedback__memo2-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo2-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__sched-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".sched-card__edit-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__item .request-feedback__sched-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__memo-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__cancel-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        var entry = findRequestEntry(entryId);
+        if (!entry) return;
+        var schedB = li.querySelector(".sched-card__edit-btn") || li.querySelector(".request-feedback__sched-btn");
+        if (schedB) schedB.style.visibility = "hidden";
+        var m2BtnEl = li.querySelector(".request-feedback__memo2-btn");
+        if (m2BtnEl) m2BtnEl.style.visibility = "hidden";
+        var cancelFb2 = li.querySelector(".request-feedback__cancel-btn");
+        if (cancelFb2) cancelFb2.style.visibility = "hidden";
+
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__memo2-editor-wrap";
+        var ed = document.createElement("div");
+        ed.className = "request-feedback__memo2-editor";
+        var ta = document.createElement("textarea");
+        ta.setAttribute("aria-label", "두잉");
+        ta.placeholder = "두잉 내용을 입력하세요. 비우면 삭제됩니다.";
+        ta.value = entry.memo2 != null ? String(entry.memo2) : "";
+        var act = document.createElement("div");
+        act.className = "request-feedback__memo2-editor-actions";
+        var ok = document.createElement("button");
+        ok.type = "button";
+        ok.className = "request-feedback__memo2-save";
+        ok.textContent = "적용";
+        ok.setAttribute("aria-label", "메모2 적용");
+        ok.style.setProperty("background", "#4f46e5", "important");
+        ok.style.setProperty("background-color", "#4f46e5", "important");
+        ok.style.setProperty("color", "#ffffff", "important");
+        ok.style.setProperty("border", "1px solid #4338ca", "important");
+        var cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.className = "request-feedback__memo2-cancel";
+        cancel.textContent = "취소";
+        act.appendChild(ok);
+        act.appendChild(cancel);
+        ed.appendChild(ta);
+        ed.appendChild(act);
+        wrap.appendChild(ed);
+        li.appendChild(wrap);
+
+        function done() {
+          if (schedB) schedB.style.visibility = "";
+          if (m2BtnEl) m2BtnEl.style.visibility = "";
+          if (cancelFb2) cancelFb2.style.visibility = "";
+          wrap.remove();
+          renderRequestLogPanel();
+        }
+
+        ok.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          entry.memo2 = String(ta.value || "").trim();
+          saveRequestLog();
+          done();
+        });
+
+        cancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          done();
+        });
+
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") {
+            ev.preventDefault();
+            cancel.click();
+          }
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        ta.focus();
+      }
+
+      function applyNotice() {
+        if (!noticeText) return;
+        var data = HKStorage.load();
+        noticeText.textContent = data.notice || "";
+      }
+
+      function closeTimeEditor() {
+        var ed = document.querySelector(".room-time-editor");
+        if (ed) ed.remove();
+      }
+
+      function closeMemo2Editor() {
+        document.querySelectorAll(".room-memo2-editor").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".room-card__memo2-text").forEach(function (p) {
+          p.style.display = "";
+        });
+      }
+
+      function openTimeEditor(card, zone, idx) {
+        closeMemo2Editor();
+        closeTimeEditor();
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][idx];
+        if (!room) return;
+
+        var wrap = document.createElement("div");
+        wrap.className = "room-time-editor";
+        var lb = document.createElement("span");
+        lb.className = "room-time-editor__label";
+        lb.textContent =
+          "시간 (14:30 / 1400 / 1430 — 콜론 없이 네 자리 숫자 가능)";
+        var row = document.createElement("div");
+        row.className = "room-time-editor__row";
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.className = "room-time-editor__input hk-time-em";
+        inp.maxLength = 8;
+        inp.placeholder = "예: 1430 또는 14:30";
+        inp.autocomplete = "off";
+        inp.value = (room.time || "").trim();
+        var btnOk = document.createElement("button");
+        btnOk.type = "button";
+        btnOk.className = "room-time-editor__ok";
+        btnOk.textContent = "확인";
+        var btnCancel = document.createElement("button");
+        btnCancel.type = "button";
+        btnCancel.className = "room-time-editor__cancel";
+        btnCancel.textContent = "취소";
+        row.appendChild(inp);
+        row.appendChild(btnOk);
+        row.appendChild(btnCancel);
+        wrap.appendChild(lb);
+        wrap.appendChild(row);
+
+        var head = card.querySelector(".room-card__head");
+        head.parentNode.insertBefore(wrap, head.nextSibling);
+
+        function commit() {
+          var p = HKStorage.parseTime24(inp.value);
+          if (!p.ok) {
+            alert(
+              "시간을 확인하세요.\n예: 14:30, 14:00, 1430, 1400 (네 자리 숫자 = 시·분)"
+            );
+            return;
+          }
+          var d = HKStorage.load();
+          if (d.rooms[zone] && d.rooms[zone][idx]) {
+            d.rooms[zone][idx].time = p.value;
+            HKStorage.save(d);
+          }
+          closeTimeEditor();
+          renderRoomsForZone(zone);
+        }
+
+        inp.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            commit();
+          }
+        });
+
+        btnOk.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          commit();
+        });
+
+        btnCancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          closeTimeEditor();
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        inp.focus();
+        inp.select();
+      }
+
+      function openMemo2Editor(card, zone, idx) {
+        closeTimeEditor();
+        closeMemo2Editor();
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][idx];
+        if (!room) return;
+
+        var block = card.querySelector(".room-card__memo-block--m2");
+        var p2 = card.querySelector(".room-card__memo2-text");
+        if (!block || !p2) return;
+
+        var wrap = document.createElement("div");
+        wrap.className = "room-memo2-editor";
+        var ta = document.createElement("textarea");
+        ta.className = "room-memo2-editor__ta";
+        ta.value = room.memo2 != null ? String(room.memo2) : "";
+        ta.setAttribute("aria-label", "두잉");
+        var actions = document.createElement("div");
+        actions.className = "room-memo2-editor__actions";
+        var btnOk = document.createElement("button");
+        btnOk.type = "button";
+        btnOk.className = "room-memo2-editor__ok";
+        btnOk.textContent = "적용";
+        var btnCancel = document.createElement("button");
+        btnCancel.type = "button";
+        btnCancel.className = "room-memo2-editor__cancel";
+        btnCancel.textContent = "취소";
+        actions.appendChild(btnOk);
+        actions.appendChild(btnCancel);
+        wrap.appendChild(ta);
+        wrap.appendChild(actions);
+        block.appendChild(wrap);
+        p2.style.display = "none";
+
+        function commit() {
+          var d = HKStorage.load();
+          if (d.rooms[zone] && d.rooms[zone][idx]) {
+            d.rooms[zone][idx].memo2 = ta.value;
+            HKStorage.save(d);
+          }
+          closeMemo2Editor();
+          renderRoomsForZone(zone);
+        }
+
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+            ev.preventDefault();
+            commit();
+          }
+        });
+
+        btnOk.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          commit();
+        });
+
+        btnCancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          closeMemo2Editor();
+          renderRoomsForZone(zone);
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        ta.focus();
+      }
+
+      function renderRoomsForZone(zone) {
+        if (!roomList || !roomEmpty || !label) return;
+        closeMemo2Editor();
+        closeTimeEditor();
+        if (!zone) {
+          roomList.innerHTML = "";
+          roomEmpty.hidden = true;
+          label.textContent = "—";
+          return;
+        }
+        var data = HKStorage.load();
+        var rooms = (data.rooms && data.rooms[zone]) || [];
+        label.textContent = zoneLabels[zone] || zone;
+        roomList.innerHTML = "";
+        if (rooms.length === 0) {
+          roomEmpty.hidden = false;
+        } else {
+          roomEmpty.hidden = true;
+          rooms.forEach(function (room, idx) {
+            var st = lookupRoomStatusFromXml(room.number || "").trim();
+            var m1 = (room.memo1 || "").trim();
+            var m2 = (room.memo2 || "").trim();
+            var tm = (room.time || "").trim();
+
+            var li = document.createElement("li");
+            li.className = "room-card" + (maintenanceMode ? " is-clickable" : "");
+            li.setAttribute("data-room-index", String(idx));
+            if (maintenanceMode) {
+              li.setAttribute("role", "button");
+              li.setAttribute("tabindex", "0");
+              li.title = "카드: 시간 입력 · 두잉: 아래 두잉 줄 클릭";
+            }
+
+            var head = document.createElement("div");
+            head.className = "room-card__head";
+            var noBox = document.createElement("span");
+            noBox.className = "room-card__no-box";
+            var no = document.createElement("span");
+            no.className = "room-card__no";
+            no.textContent = formatRoomNoDisplay(room.number || "");
+            noBox.appendChild(no);
+            var stEl = document.createElement("span");
+            stEl.className = "room-card__status" + (st ? "" : " is-empty");
+            stEl.textContent = st || "—";
+            head.appendChild(noBox);
+            head.appendChild(stEl);
+            li.appendChild(head);
+
+            var timeDisp = document.createElement("p");
+            timeDisp.className = "room-card__time-display";
+            setLineWithEmTime(timeDisp, "시간 · ", tm || "");
+            li.appendChild(timeDisp);
+
+            var b1 = document.createElement("div");
+            b1.className = "room-card__memo-block";
+            var p1 = document.createElement("p");
+            p1.className = "room-card__memo" + (m1 ? "" : " is-empty");
+            p1.textContent = m1 ? "FD : " + m1 : "FD : —";
+            b1.appendChild(p1);
+            li.appendChild(b1);
+
+            var b2 = document.createElement("div");
+            b2.className =
+              "room-card__memo-block room-card__memo-block--m2" +
+              (maintenanceMode ? " is-editable" : "");
+            var p2 = document.createElement("p");
+            p2.className =
+              "room-card__memo room-card__memo2-text" + (m2 ? "" : " is-empty");
+            p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
+            b2.appendChild(p2);
+            li.appendChild(b2);
+
+            roomList.appendChild(li);
+          });
+        }
+      }
+
+      function refreshMain() {
+        currentZone = getActiveZone();
+        applyNotice();
+        if (currentZone) {
+          renderRoomsForZone(currentZone);
+        } else {
+          renderRoomsForZone(null);
+        }
+        renderRequestLogPanel();
+      }
+
+      function applyMaintenanceModeUi() {
+        var btnMaint = document.getElementById("btnMaint");
+        if (btnMaint) {
+          btnMaint.classList.toggle("is-on", maintenanceMode);
+          btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
+        }
+        renderRoomsForZone(getActiveZone());
+        renderRequestLogPanel();
+      }
+
+      function applyFrontModeUi() {
+        var btnFront = document.getElementById("btnFront");
+        if (btnFront) {
+          btnFront.classList.toggle("is-on", frontMode);
+          btnFront.setAttribute("aria-pressed", frontMode ? "true" : "false");
+        }
+        renderRequestLogPanel();
+      }
+
+      var btnMaint = document.getElementById("btnMaint");
+      if (btnMaint) {
+        btnMaint.addEventListener("click", function () {
+          if (maintenanceMode) {
+            maintenanceMode = false;
+            applyMaintenanceModeUi();
+            return;
+          }
+          requireRoleAuth("maint", function () {
+            maintenanceMode = true;
+            applyMaintenanceModeUi();
+          });
+        });
+      }
+
+      var btnFront = document.getElementById("btnFront");
+      if (btnFront) {
+        btnFront.addEventListener("click", function () {
+          if (frontMode) {
+            frontMode = false;
+            applyFrontModeUi();
+            return;
+          }
+          requireRoleAuth("front", function () {
+            frontMode = true;
+            applyFrontModeUi();
+          });
+        });
+      }
+
+      var requestFeedbackEl = document.getElementById("requestFeedback");
+      if (requestFeedbackEl) {
+        requestFeedbackEl.addEventListener("click", function (e) {
+          var cancelReqB = e.target.closest(".request-feedback__cancel-btn");
+          if (cancelReqB) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridCancel = cancelReqB.getAttribute("data-req-id");
+            if (ridCancel) openCancelConfirmModal(ridCancel);
+            return;
+          }
+          var memoB = e.target.closest(".request-feedback__memo-btn");
+          if (memoB) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridM = memoB.getAttribute("data-req-id");
+            if (ridM) openRequestMemoEditor(ridM);
+            return;
+          }
+          var m2fb = e.target.closest(".request-feedback__memo2-btn");
+          if (m2fb && !m2fb.classList.contains("sched-card__memo2-btn")) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridM2 = m2fb.getAttribute("data-req-id");
+            if (ridM2) openRequestMemo2Editor(ridM2);
+            return;
+          }
+          var b = e.target.closest(".request-feedback__sched-btn");
+          if (!b || !maintenanceMode) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var rid = b.getAttribute("data-req-id");
+          if (rid) openRequestSchedEditor(rid);
+        });
+      }
+
+      var schedCardsPanelEl = document.getElementById("schedCardsPanel");
+      if (schedCardsPanelEl) {
+        schedCardsPanelEl.addEventListener("click", function (e) {
+          var useEl = e.target.closest(".sched-card__use-btn");
+          if (useEl) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridU = useEl.getAttribute("data-req-id");
+            if (ridU) {
+              var useEntry = findRequestEntry(ridU);
+              if (useEntry) appendUseLog(useEntry);
+              removeRequestEntry(ridU);
+              renderRequestLogPanel();
+              if (sidebarListView === "use") openSidebarList("use");
+            }
+            return;
+          }
+          var m2s = e.target.closest(".sched-card__memo2-btn");
+          if (m2s) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridM2s = m2s.getAttribute("data-req-id");
+            if (ridM2s) openRequestMemo2Editor(ridM2s);
+            return;
+          }
+          var b = e.target.closest(".sched-card__edit-btn");
+          if (!b || !maintenanceMode) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var rid = b.getAttribute("data-req-id");
+          if (rid) openRequestSchedEditor(rid);
+        });
+      }
+
+      if (roomList) {
+        roomList.addEventListener("click", function (e) {
+          if (!maintenanceMode) return;
+          if (e.target.closest(".room-time-editor")) return;
+          if (e.target.closest(".room-memo2-editor")) return;
+
+          var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
+          if (m2block) {
+            var cardM = m2block.closest(".room-card");
+            if (!cardM) return;
+            var ixM = parseInt(cardM.getAttribute("data-room-index"), 10);
+            if (isNaN(ixM)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openMemo2Editor(cardM, getActiveZone(), ixM);
+            return;
+          }
+
+          var card = e.target.closest(".room-card.is-clickable");
+          if (!card) return;
+          if (card.querySelector(".room-time-editor")) return;
+          var ix = parseInt(card.getAttribute("data-room-index"), 10);
+          if (isNaN(ix)) return;
+          openTimeEditor(card, getActiveZone(), ix);
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        roomList.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          if (e.target.closest(".room-memo2-editor")) return;
+          var card = e.target.closest(".room-card.is-clickable");
+          if (!card) return;
+          if (card.querySelector(".room-time-editor")) return;
+          var ix = parseInt(card.getAttribute("data-room-index"), 10);
+          if (isNaN(ix)) return;
+          e.preventDefault();
+          openTimeEditor(card, getActiveZone(), ix);
+        });
+      }
+
+      (function setupRoomStatusAuto() {
+        var roomEl = document.getElementById("roomNo");
+        if (!roomEl) return;
+        roomEl.addEventListener("input", updateRoomStatusDisplay);
+        roomEl.addEventListener("change", updateRoomStatusDisplay);
+        updateRoomStatusDisplay();
+      })();
+
+      var zoneBlock = document.getElementById("zoneBlock");
+      var zoneCollapseBtn = document.getElementById("zoneCollapseBtn");
+      if (zoneBlock && zoneCollapseBtn) {
+        zoneCollapseBtn.addEventListener("click", function () {
+          var collapsed = zoneBlock.classList.toggle("is-collapsed");
+          zoneCollapseBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          zoneCollapseBtn.textContent = collapsed ? "펼치기" : "접기";
+        });
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var z = tab.getAttribute("data-zone");
+          currentZone = z;
+          tabs.forEach(function (t) {
+            t.classList.toggle("active", t === tab);
+            t.setAttribute("aria-selected", t === tab ? "true" : "false");
+          });
+          setZonePanelOpen(true);
+          renderRoomsForZone(z);
+        });
+      });
+
+      window.addEventListener("storage", function (e) {
+        if (e.key === HKStorage.key) refreshMain();
+      });
+
+      window.addEventListener("pageshow", function (e) {
+        if (e.persisted) refreshMain();
+      });
+
+      setupOperatorNameUi();
+      setupRolePasswordUi();
+      ensureOperatorNameOnLoad();
+      loadRequestLog();
+      if (typeof HKSync !== "undefined") {
+        HKSync.onChange(handleHkSyncChange);
+        HKSync.start();
+      }
+      refreshMain();
+
+      function clearRoomStatusDisplay() {
+        updateRoomStatusDisplay();
+      }
+
+      function showRequestHint(msg) {
+        var hint = document.getElementById("requestFeedbackHint");
+        if (!hint) return;
+        hint.textContent = msg;
+        hint.hidden = false;
+      }
+
+      function hideRequestHint() {
+        var hint = document.getElementById("requestFeedbackHint");
+        if (hint) hint.hidden = true;
+      }
+
+      function normalizeRoomKey(s) {
+        return String(s || "")
+          .replace(/\s/g, "")
+          .toLowerCase();
+      }
+
+      function hasPendingRequestInFeedback(roomInput) {
+        var want = normalizeRoomKey(roomInput);
+        if (!want) return false;
+        for (var i = 0; i < requestLogEntries.length; i++) {
+          var e = requestLogEntries[i];
+          var pending = !(e.sched && String(e.sched).trim());
+          if (!pending) continue;
+          if (normalizeRoomKey(e.room) === want) return true;
+        }
+        return false;
+      }
+
+      function appendRequestLog(room, statusVal, isUrgent, memoText) {
+        var id = "req-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        requestLogEntries.unshift({
+          id: id,
+          room: room,
+          status: statusVal || "",
+          at: new Date().toISOString(),
+          sched: "",
+          urgent: !!isUrgent,
+          memo: memoText != null && String(memoText).trim() ? String(memoText).trim() : "",
+          memo2: "",
+          by: getOperatorName(),
+        });
+        saveRequestLog();
+        renderRequestLogPanel();
+      }
+
+      function renderMemoStack() {
+        var ul = document.getElementById("memoStackList");
+        if (!ul) return;
+        ul.innerHTML = "";
+        if (memoStack.length === 0) {
+          ul.hidden = true;
+          return;
+        }
+        ul.hidden = false;
+        memoStack.forEach(function (line) {
+          var item = document.createElement("li");
+          item.textContent = line;
+          ul.appendChild(item);
+        });
+      }
+
+      function collectMemoForSubmit() {
+        var field = document.getElementById("requestMemo");
+        var fromField = field ? String(field.value || "").trim() : "";
+        var lines = memoStack.slice();
+        if (fromField) lines.push(fromField);
+        if (field) field.value = "";
+        return lines.join("\n");
+      }
+
+      function processRequestFormSubmit() {
+        hideRequestHint();
+        var roomEl = document.getElementById("roomNo");
+        var room = roomEl && roomEl.value.trim();
+        var btnUrgentEl = document.getElementById("btnUrgent");
+        var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
+        if (!room) {
+          showRequestHint("객실번호를 입력해 주세요.");
+          if (roomEl) roomEl.focus();
+          return;
+        }
+        if (!getOperatorName()) {
+          openOperatorNameModal({
+            mode: "initial",
+            onSaved: function () {
+              processRequestFormSubmit();
+            },
+          });
+          return;
+        }
+        if (hasPendingRequestInFeedback(room)) {
+          alert("이미 요청하셨습니다.");
+          return;
+        }
+        updateRoomStatusDisplay();
+        var st = lookupRoomStatusFromXml(room);
+        if (!st) {
+          showRequestHint(
+            "루밍 XML에서 해당 객실 상태(IP·CL·PU·DI·OO·OS)를 찾을 수 없습니다. 루밍 페이지에서 XML을 업로드했는지 확인하세요."
+          );
+          if (roomEl) roomEl.focus();
+          return;
+        }
+        var memoCombined = collectMemoForSubmit();
+        memoStack.length = 0;
+        renderMemoStack();
+        appendRequestLog(room, st, isUrgent, memoCombined);
+        if (btnUrgentEl) {
+          btnUrgentEl.classList.remove("is-on");
+          btnUrgentEl.setAttribute("aria-pressed", "false");
+        }
+        clearRoomStatusDisplay();
+      }
+
+      var form = document.getElementById("requestForm");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          processRequestFormSubmit();
+        });
+      }
+
+      var btnUrgent = document.getElementById("btnUrgent");
+      if (btnUrgent) {
+        btnUrgent.addEventListener("click", function () {
+          var on = !btnUrgent.classList.contains("is-on");
+          btnUrgent.classList.toggle("is-on", on);
+          btnUrgent.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      var btnMemoReg = document.getElementById("btnMemoRegister");
+      if (btnMemoReg) {
+        btnMemoReg.addEventListener("click", function () {
+          var inp = document.getElementById("requestMemo");
+          var line = inp ? String(inp.value || "").trim() : "";
+          if (!line) {
+            showRequestHint("메모를 입력한 뒤 등록하세요.");
+            if (inp) inp.focus();
+            return;
+          }
+          hideRequestHint();
+          memoStack.push(line);
+          inp.value = "";
+          renderMemoStack();
+          inp.focus();
+        });
+      }
+
+      var roomNoInput = document.getElementById("roomNo");
+      if (roomNoInput) {
+        roomNoInput.addEventListener("input", function () {
+          renderSchedRequestCards();
+        });
+      }
+
+      (function setupSidebarLists() {
+        var bCancel = document.getElementById("sidebarBtnCancelList");
+        var bUse = document.getElementById("sidebarBtnUseList");
+        var closeBtn = document.getElementById("hkSidebarListPanelClose");
+        if (bCancel) {
+          bCancel.addEventListener("click", function () {
+            toggleSidebarList("cancel");
+          });
+        }
+        if (bUse) {
+          bUse.addEventListener("click", function () {
+            toggleSidebarList("use");
+          });
+        }
+        if (closeBtn) {
+          closeBtn.addEventListener("click", function () {
+            closeSidebarList();
+          });
+        }
+        setSidebarListNavActive();
+      })();
+
+      (function setupCancelConfirmModal() {
+        var dlg = document.getElementById("hkCancelConfirm");
+        if (!dlg) return;
+        var yes = document.getElementById("hkCancelConfirmYes");
+        var no = document.getElementById("hkCancelConfirmNo");
+        var backdrop = document.getElementById("hkCancelConfirmBackdrop");
+        if (yes) {
+          yes.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            var id = pendingCancelConfirmId;
+            closeCancelConfirmModal();
+            if (id) openCancelNameModal(id);
+          });
+        }
+        if (no) {
+          no.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            closeCancelConfirmModal();
+          });
+        }
+        if (backdrop) {
+          backdrop.addEventListener("click", function () {
+            closeCancelConfirmModal();
+          });
+        }
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Escape") return;
+          var nameDlg = document.getElementById("hkCancelNameDialog");
+          if (nameDlg && !nameDlg.hidden) {
+            ev.preventDefault();
+            closeCancelNameModal();
+            return;
+          }
+          if (!dlg || dlg.hidden) return;
+          ev.preventDefault();
+          closeCancelConfirmModal();
+        });
+      })();
+
+      (function setupCancelNameModal() {
+        var nd = document.getElementById("hkCancelNameDialog");
+        if (!nd) return;
+        var ok = document.getElementById("hkCancelNameOk");
+        var cancel = document.getElementById("hkCancelNameCancel");
+        var backdrop = document.getElementById("hkCancelNameBackdrop");
+        var inp = document.getElementById("hkCancelNameInput");
+        if (ok) {
+          ok.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            var id = pendingCancelNameId;
+            var nameVal = inp ? String(inp.value || "").trim() : "";
+            if (!nameVal) {
+              alert("이름을 입력하세요.");
+              if (inp) inp.focus();
+              return;
+            }
+            var entry = id ? findRequestEntry(id) : null;
+            var roomSnap = entry && entry.room != null ? String(entry.room).trim() : "";
+            closeCancelNameModal();
+            if (id) {
+              appendCancelNameLog(roomSnap, nameVal, id);
+              removeRequestEntry(id);
+              renderRequestLogPanel();
+              if (sidebarListView === "cancel") openSidebarList("cancel");
+            }
+          });
+        }
+        if (cancel) {
+          cancel.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            closeCancelNameModal();
+          });
+        }
+        if (backdrop) {
+          backdrop.addEventListener("click", function () {
+            closeCancelNameModal();
+          });
+        }
+        if (inp) {
+          inp.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              var okB = document.getElementById("hkCancelNameOk");
+              if (okB) okB.click();
+            }
+          });
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
