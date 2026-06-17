@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>정비용 루밍을 만들어보자</title>
   <style>
     :root {
@@ -807,6 +807,285 @@
     body.locked .app-main {
       visibility: hidden;
       pointer-events: none;
+    }
+
+    /* ── 모바일·태블릿 반응형 ── */
+    @media (max-width: 900px) {
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        overflow-x: hidden;
+      }
+
+      .wrap {
+        padding: 0.75rem 0.65rem 2rem;
+      }
+
+      .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        margin-bottom: 0.75rem;
+        padding: 0.65rem 0.5rem 0.75rem;
+        background: linear-gradient(180deg, #0b0f14 0%, var(--bg) 85%);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .app-header h1 {
+        font-size: 1.15rem;
+        flex: 1 1 100%;
+      }
+
+      .app-nav {
+        width: 100%;
+      }
+
+      .app-nav-btn {
+        flex: 1 1 auto;
+        min-height: 44px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      .card {
+        padding: 0.85rem 0.75rem;
+        border-radius: 10px;
+      }
+
+      .toolbar {
+        gap: 0.5rem;
+      }
+
+      button.btn-make,
+      label.file-btn {
+        min-height: 44px;
+        padding: 0.55rem 1rem;
+      }
+
+      .board-layout {
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+
+      .sidebar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        min-width: 0;
+        gap: 0.4rem;
+      }
+
+      button.sidebar-btn {
+        flex: 1 1 calc(25% - 0.35rem);
+        min-height: 44px;
+        padding: 0.55rem 0.35rem;
+        font-size: 0.82rem;
+      }
+
+      .summary-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+
+      .summary-toolbar .status-summary-bar {
+        flex: 1 1 auto;
+      }
+
+      .out-toggle {
+        align-self: flex-start;
+        min-height: 44px;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .out-toggle input {
+        width: 1.15rem;
+        height: 1.15rem;
+      }
+
+      .status-summary-bar {
+        gap: 0.5rem 0.65rem;
+        padding: 0.55rem 0.6rem;
+        font-size: 0.85rem;
+      }
+
+      label.summary-chip.filter-chip {
+        min-height: 36px;
+        padding: 0.2rem 0;
+      }
+
+      label.summary-chip.filter-chip input.chk-status-filter,
+      label.summary-chip.filter-chip input.chk-fo-filter {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      .summary-chip .tag {
+        font-size: 0.78rem;
+        padding: 0.18rem 0.45rem;
+      }
+
+      .asn-block-filters {
+        font-size: 0.82rem;
+        padding: 0.55rem 0.6rem;
+      }
+
+      .asn-filter-row {
+        gap: 0.4rem 0.55rem;
+      }
+
+      .asn-filter-item input {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      .sheet-triple-row {
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+
+      .wing-panel-villa,
+      .wing-panel-main,
+      .wing-panel-annex,
+      .wing-panel-stray {
+        flex: 1 1 100%;
+        max-width: none;
+        width: 100%;
+      }
+
+      .wing-panel-stray {
+        margin-top: 0;
+      }
+
+      .sheet-outer {
+        padding: 0.4rem;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .floor-col {
+        min-width: 52px;
+      }
+
+      .floor-head {
+        font-size: 0.72rem;
+        padding: 0.32rem 0.2rem;
+      }
+
+      .pair-row {
+        font-size: 0.72rem;
+      }
+
+      .pair-row .cell {
+        padding: 3px 2px;
+      }
+
+      .villa-list-row {
+        font-size: 0.78rem;
+      }
+
+      .villa-list-row .cell {
+        padding: 5px 4px;
+      }
+
+      .fasn-legend {
+        font-size: 0.78rem;
+        line-height: 1.5;
+      }
+
+      .extended-stay-textarea,
+      .auth-card input[type="password"] {
+        font-size: 16px;
+      }
+
+      .extended-stay-textarea {
+        min-height: 5rem;
+      }
+
+      .extended-stay-actions .btn-make {
+        width: 100%;
+      }
+
+      .auth-gate {
+        align-items: flex-end;
+        padding: 12px;
+      }
+
+      .auth-card {
+        border-radius: 12px 12px 0 0;
+        padding: 24px 20px;
+      }
+
+      .auth-card button {
+        min-height: 44px;
+      }
+
+      .dropzone {
+        padding: 1rem 0.75rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.05rem;
+      }
+
+      .sub {
+        font-size: 0.85rem;
+      }
+
+      button.sidebar-btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        font-size: 0.88rem;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      button.btn-make {
+        width: 100%;
+      }
+
+      .summary-chip.total {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        flex: 1 1 100%;
+      }
+
+      .asn-alias-row {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+      }
+
+      .floor-col {
+        min-width: 48px;
+      }
+
+      .pair-row.extended-stay-strike::after,
+      .villa-list-row.extended-stay-strike::after {
+        font-size: 0.52rem;
+      }
+    }
+
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+
+      .wrap {
+        padding-bottom: max(2rem, env(safe-area-inset-bottom));
+      }
+
+      .app-header {
+        padding-top: max(0.65rem, env(safe-area-inset-top));
+      }
     }
   </style>
 </head>
