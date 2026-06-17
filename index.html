@@ -142,6 +142,9 @@
       padding-top: 0.85rem;
       border-top: 1px solid var(--border);
     }
+    .tools-card {
+      margin-top: 1rem;
+    }
     .extended-stay-heading {
       margin: 0 0 0.35rem;
       font-size: 0.92rem;
@@ -786,52 +789,8 @@
 
   <div class="wrap app-main">
     <h1>정비용 루밍을 만들어보자</h1>
-    <p class="sub">
-      <code>HKVACROOM</code>의 <code>ROOM</code>(숫자만)·<code>ROOM_STATUS</code>로 표시합니다.
-      PQ 비객실 코드(<code>CA1</code>, <code>VIP</code> 등)는 제외합니다.
-      아래 보드는 왼쪽 메뉴 <strong>499</strong>(전체 공실 보드), <strong>VAC</strong>(<code>RESV_STATUS</code>: Due Out·Departed 계열, <strong>Not Reserved</strong>, <strong>Arrival</strong> 등),
-      <strong>ASN</strong>은 <code>RESV_STATUS</code> 도착 계열 후, <strong>BLOCK_CODE</strong>로 모두·FIT(빈칸)·코드별 필터 가능합니다.
-      <strong>BLOCK_CODE</strong>는 공실표에 없으므로 같은 폴더의 <code>HK_ALLSTATUS</code> XML을 함께 두거나 업로드하면 객실번호 기준으로 붙입니다(FIT = All Status 기준 빈칸).
-      한 줄에 <strong>빌라동 · 본관 · 별관</strong>, 빌라는 세로 목록(001~004). 위쪽에 IP·CL·PU·DI 건수와 합계.
-      본관은 06·07·08층 열 없음. 객실 <code>0012</code>, <code>0023</code> 제외.
-      별관: 끝 두 자리 ≥ 51 이면 별관, 층은 앞 두 자리.
-    </p>
 
-    <section class="card">
-      <h2>XML 업로드</h2>
-      <div class="dropzone" id="dzUpload" tabindex="0" role="button" aria-label="XML 업로드">
-        <p><code>HKVACROOM</code> · <code>HK_ALLSTATUS</code>(블록코드) XML을 <strong>드래그 앤 드롭</strong> 또는 파일 찾기</p>
-        <p>공실은 <code>HKVACROOM</code>, ASN의 BLOCK_CODE/FIT 판단은 <code>HK_ALLSTATUS</code> 객실 행을 사용합니다.</p>
-        <p>여러 개 올리면 이어 붙인 뒤, 같은 객실은 <strong>나중 파일</strong> 값으로 덮어씁니다.</p>
-        <div class="actions">
-          <label class="file-btn">
-            파일 찾기
-            <input type="file" id="inputUpload" accept=".xml,text/xml,application/xml" multiple />
-          </label>
-        </div>
-      </div>
-      <div id="uploadSummary" class="upload-summary"></div>
-      <div id="syncStatus" class="sync-status" hidden></div>
-      <div id="uploadErr" class="err" hidden></div>
-      <div class="extended-stay-inline">
-        <h3 class="extended-stay-heading">연박 추가</h3>
-        <p class="extended-stay-hint">
-          <strong>VAC</strong>·<strong>ASN</strong> 보드에서 해당 객실 칸 가운데에 작게 <strong>연박</strong>이라고 표시합니다. 숫자만 입력하면 되며 쉼표·줄바꿈·공백으로 구분할 수 있습니다.
-        </p>
-        <textarea
-          id="extendedStayInput"
-          class="extended-stay-textarea"
-          rows="3"
-          placeholder="예: 0926, 1006, 1102"
-          autocomplete="off"
-        ></textarea>
-        <div class="extended-stay-actions">
-          <button type="button" id="btnExtendedStayApply" class="btn-make">적용</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
+    <section class="card board-card">
       <div class="toolbar">
         <h2>룸 상태판</h2>
         <button type="button" id="btnMake" class="btn-make">만들기</button>
@@ -884,11 +843,33 @@
       </div>
     </section>
 
-    <p class="note">
-      Render에 배포한 주소로 접속하면 <strong>한 PC에서 XML을 업로드하면 다른 PC에도 자동 반영</strong>됩니다 (약 3초 간격).
-      로컬에서만 쓸 때는 같은 폴더 <code>hkvacroom6563812.xml</code> · <code>hk_allstatus6563818.xml</code>을 두고 서버로 열면 자동 로드됩니다.
-      <code>file://</code> 로만 열면 브라우저 보안 때문에 자동 로드가 안 될 수 있어 업로드가 필요합니다.
-    </p>
+    <section class="card tools-card">
+      <h2>XML 업로드</h2>
+      <div class="dropzone" id="dzUpload" tabindex="0" role="button" aria-label="XML 업로드">
+        <div class="actions">
+          <label class="file-btn">
+            파일 찾기
+            <input type="file" id="inputUpload" accept=".xml,text/xml,application/xml" multiple />
+          </label>
+        </div>
+      </div>
+      <div id="uploadSummary" class="upload-summary"></div>
+      <div id="uploadErr" class="err" hidden></div>
+      <div class="extended-stay-inline">
+        <h3 class="extended-stay-heading">연박 추가</h3>
+        <textarea
+          id="extendedStayInput"
+          class="extended-stay-textarea"
+          rows="3"
+          placeholder="예: 0926, 1006, 1102"
+          autocomplete="off"
+        ></textarea>
+        <div class="extended-stay-actions">
+          <button type="button" id="btnExtendedStayApply" class="btn-make">적용</button>
+        </div>
+      </div>
+      <div id="syncStatus" class="sync-status" hidden></div>
+    </section>
   </div>
 
   <script>
@@ -996,15 +977,19 @@
         }
       }
 
-      function buildSharedStatePayload() {
-        return {
+      function buildSharedStatePayload(opts) {
+        opts = opts || {};
+        var p = {
           blockMap: cachedAllStatusBlockMap,
           vacRows: cachedVacRows,
           allStatusRooms: cachedAllStatusRooms,
-          extendedStayRooms: extendedStayRooms,
           blockDisplayAliases: blockDisplayAliases,
           uploadSummary: (document.getElementById("uploadSummary") || {}).textContent || "",
         };
+        if (opts.includeExtendedStay !== false) {
+          p.extendedStayRooms = extendedStayRooms;
+        }
+        return p;
       }
 
       function applySharedState(data) {
@@ -1021,8 +1006,8 @@
         if (data.allStatusRooms) {
           cachedAllStatusRooms = data.allStatusRooms.slice();
         }
-        if (data.extendedStayRooms) {
-          extendedStayRooms = JSON.parse(JSON.stringify(data.extendedStayRooms));
+        if (data.extendedStayRooms !== undefined) {
+          extendedStayRooms = JSON.parse(JSON.stringify(data.extendedStayRooms || {}));
           var ta = document.getElementById("extendedStayInput");
           if (ta) {
             var rooms = Object.keys(extendedStayRooms)
@@ -1041,15 +1026,16 @@
         refreshBoards();
       }
 
-      function pushSharedState() {
+      function pushSharedState(opts) {
         if (isApplyingRemote) return;
+        opts = opts || {};
         fetch("/api/sync", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Sync-Password": getSyncPassword(),
           },
-          body: JSON.stringify(buildSharedStatePayload()),
+          body: JSON.stringify(buildSharedStatePayload(opts)),
         })
           .then(function (r) {
             if (!r.ok) throw new Error("sync failed");
@@ -1057,16 +1043,19 @@
           })
           .then(function (data) {
             if (data.version) sharedStateVersion = data.version;
-            updateSyncStatus("다른 PC와 공유됨 · " + formatSyncTime(data.updatedAt), true);
+            var label = opts.syncLabel || "다른 PC와 공유됨";
+            updateSyncStatus(label + " · " + formatSyncTime(data.updatedAt), true);
           })
           .catch(function () {
             updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
           });
       }
 
-      function schedulePushSharedState() {
+      function schedulePushSharedState(opts) {
         if (syncPushTimer) clearTimeout(syncPushTimer);
-        syncPushTimer = setTimeout(pushSharedState, 400);
+        syncPushTimer = setTimeout(function () {
+          pushSharedState(opts);
+        }, 400);
       }
 
       function pullSharedState(isPoll) {
@@ -2517,7 +2506,7 @@ function parseAllStatusRoomList(doc) {
         }
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
-        schedulePushSharedState();
+        schedulePushSharedState({ includeExtendedStay: false });
       }
 
       var dzUpload = document.getElementById("dzUpload");
@@ -2575,7 +2564,10 @@ function parseAllStatusRoomList(doc) {
       document.getElementById("btnExtendedStayApply").addEventListener("click", function () {
         rebuildExtendedStayRoomsFromTextarea();
         refreshBoards();
-        schedulePushSharedState();
+        schedulePushSharedState({
+          includeExtendedStay: true,
+          syncLabel: "연박 목록 공유됨",
+        });
       });
 
       document.getElementById("btnMake").addEventListener("click", function () {

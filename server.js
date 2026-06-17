@@ -33,8 +33,33 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   });
 });
 
+function mergeSyncPayload(prev, incoming) {
+  if (!incoming || typeof incoming !== "object") return prev || null;
+  if (!prev || typeof prev !== "object") return incoming;
+  var out = Object.assign({}, prev);
+  if (Object.prototype.hasOwnProperty.call(incoming, "blockMap")) {
+    out.blockMap = incoming.blockMap;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "vacRows")) {
+    out.vacRows = incoming.vacRows;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms")) {
+    out.allStatusRooms = incoming.allStatusRooms;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "extendedStayRooms")) {
+    out.extendedStayRooms = incoming.extendedStayRooms;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "blockDisplayAliases")) {
+    out.blockDisplayAliases = incoming.blockDisplayAliases;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary")) {
+    out.uploadSummary = incoming.uploadSummary;
+  }
+  return out;
+}
+
 app.post("/api/sync", checkSyncAuth, function (req, res) {
-  sharedState.payload = req.body;
+  sharedState.payload = mergeSyncPayload(sharedState.payload, req.body);
   sharedState.version += 1;
   sharedState.updatedAt = new Date().toISOString();
   res.json({
