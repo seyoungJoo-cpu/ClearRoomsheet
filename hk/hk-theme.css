@@ -1,42 +1,62 @@
 /**
- * 정비관리(HK) — 루밍(index) 다크 테마
+ * 정비관리(HK) — 가시성 우선 라이트 테마
  */
 :root {
-  --bg: #0f1419;
-  --panel: #1a2332;
-  --bg-page: #0f1419;
-  --bg-card: #1a2332;
-  --border: #2d3a4d;
-  --text: #e8eef7;
-  --muted: #8b9eb3;
-  --text-muted: #8b9eb3;
-  --accent: #3d9cf5;
-  --accent-dim: #2563a8;
-  --accent-light: #2563a8;
-  --ok: #34d399;
-  --danger: #f87171;
-  --danger-bg: rgba(248, 113, 113, 0.12);
-  --surface-raised: #243044;
-  --surface-inset: rgba(0, 0, 0, 0.22);
-  --hover-bg: rgba(61, 156, 245, 0.12);
+  --bg: #dde3ec;
+  --panel: #ffffff;
+  --bg-page: #dde3ec;
+  --bg-card: #ffffff;
+  --border: #b8c2d0;
+  --text: #15202b;
+  --muted: #4b5563;
+  --text-muted: #4b5563;
+  --accent: #1565c0;
+  --accent-dim: #0d47a1;
+  --accent-light: #1976d2;
+  --ok: #15803d;
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
+  --surface-raised: #ffffff;
+  --surface-inset: #f3f5f8;
+  --hover-bg: #e3f0ff;
+
+  /* 루밍 보드와 동일 계열 정비상태 색 */
+  --st-ip-bg: #d9f5d9;
+  --st-ip-fg: #14532d;
+  --st-ip-bd: #4ade80;
+  --st-cl-bg: #bae6fd;
+  --st-cl-fg: #0c4a6e;
+  --st-cl-bd: #38bdf8;
+  --st-pu-bg: #fef9c3;
+  --st-pu-fg: #713f12;
+  --st-pu-bd: #facc15;
+  --st-di-bg: #fee2e2;
+  --st-di-fg: #7f1d1d;
+  --st-di-bd: #f87171;
+  --st-oo-bg: #e9d5ff;
+  --st-oo-fg: #581c87;
+  --st-oo-bd: #c084fc;
+  --st-os-bg: #ddd6fe;
+  --st-os-fg: #4c1d95;
+  --st-os-bd: #a78bfa;
 }
 
 body {
-  background: linear-gradient(160deg, #0b0f14 0%, var(--bg) 40%, #121a24 100%);
+  background: var(--bg);
   color: var(--text);
 }
 
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
-  background: var(--surface-inset);
+  background: #fff;
   color: var(--text);
-  border-color: var(--border);
+  border: 1px solid var(--border);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--muted);
+  color: #9ca3af;
 }
 
 input:focus,
@@ -46,3 +66,68 @@ textarea:focus {
   outline-offset: 0;
   border-color: var(--accent);
 }
+
+/* 정비상태 뱃지 공통 */
+.hk-st-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.6em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.875rem;
+  line-height: 1.1;
+  border: 2px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.hk-st--ip {
+  background: var(--st-ip-bg);
+  color: var(--st-ip-fg);
+  border-color: var(--st-ip-bd);
+}
+
+.hk-st--cl {
+  background: var(--st-cl-bg);
+  color: var(--st-cl-fg);
+  border-color: var(--st-cl-bd);
+}
+
+.hk-st--pu {
+  background: var(--st-pu-bg);
+  color: var(--st-pu-fg);
+  border-color: var(--st-pu-bd);
+}
+
+.hk-st--di {
+  background: var(--st-di-bg);
+  color: var(--st-di-fg);
+  border-color: var(--st-di-bd);
+}
+
+.hk-st--oo {
+  background: var(--st-oo-bg);
+  color: var(--st-oo-fg);
+  border-color: var(--st-oo-bd);
+}
+
+.hk-st--os {
+  background: var(--st-os-bg);
+  color: var(--st-os-fg);
+  border-color: var(--st-os-bd);
+}
+
+.hk-st--none {
+  background: #e5e7eb;
+  color: #6b7280;
+  border-color: #d1d5db;
+  font-weight: 600;
+}
+
+.request-feedback__item.hk-st--ip { background: #f0fdf4; border-color: var(--st-ip-bd); }
+.request-feedback__item.hk-st--cl { background: #f0f9ff; border-color: var(--st-cl-bd); }
+.request-feedback__item.hk-st--pu { background: #fefce8; border-color: var(--st-pu-bd); }
+.request-feedback__item.hk-st--di { background: #fef2f2; border-color: var(--st-di-bd); }
+.request-feedback__item.hk-st--oo { background: #faf5ff; border-color: var(--st-oo-bd); }
+.request-feedback__item.hk-st--os { background: #f5f3ff; border-color: var(--st-os-bd); }

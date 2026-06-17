@@ -2,18 +2,18 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>정비관리 · Lotte Hotel</title>
   <link rel="stylesheet" href="hk-theme.css" />
   <style>
     :root {
-      --sidebar-w: 172px;
+      --sidebar-w: 176px;
       --header-min-h: 132px;
-      --feedback-w: 228px;
+      --feedback-w: 260px;
     }
 
     html {
-      font-size: 13px;
+      font-size: 14px;
     }
 
     * {
@@ -103,29 +103,30 @@
       min-width: 0;
       min-height: 96px;
       max-height: 220px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface-inset);
+      border: 2px solid #fbbf24;
+      border-radius: 10px;
+      background: #fffbeb;
       display: flex;
       flex-direction: column;
       gap: 8px;
       padding: 14px 16px;
       overflow-y: auto;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
 
     .notice-board__label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #92400e;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       flex-shrink: 0;
     }
 
     #noticeText {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1a2332;
       line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-word;
@@ -145,44 +146,47 @@
       flex-direction: column;
     }
 
-    /* 오른쪽 요청 알림 패널 (상시 표시) */
+    /* 오른쪽 요청 알림 패널 */
     .request-feedback {
       width: var(--feedback-w);
       flex-shrink: 0;
-      background: var(--bg-card);
-      border-left: 1px solid var(--border);
+      background: #f8fafc;
+      border-left: 2px solid var(--border);
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - var(--header-min-h));
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.04);
     }
 
     .request-feedback__head {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--border);
       flex-shrink: 0;
+      background: #fff;
     }
 
     .request-feedback__head h2 {
       margin: 0;
-      font-size: 0.875rem;
-      font-weight: 700;
+      font-size: 1rem;
+      font-weight: 800;
       color: var(--accent);
     }
 
     .request-feedback__hint {
       margin: 0;
-      padding: 8px 16px;
-      font-size: 0.8125rem;
-      color: #b91c1c;
-      background: #fef2f2;
-      border-bottom: 1px solid #fecaca;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-bottom: 1px solid #fca5a5;
       flex-shrink: 0;
     }
 
     .request-feedback__list {
       list-style: none;
       margin: 0;
-      padding: 8px 12px;
+      padding: 10px 12px;
       overflow-y: auto;
       flex: 1;
       min-height: 120px;
@@ -190,21 +194,37 @@
 
     .request-feedback__item {
       position: relative;
-      padding: 8px;
-      padding-bottom: 22px;
-      margin-bottom: 6px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: #f8fafc;
-      font-size: 0.8125rem;
-      line-height: 1.45;
+      padding: 10px 10px 24px;
+      margin-bottom: 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
 
     .request-feedback__item.is-urgent {
-      border: 2px solid #dc2626;
-      background: #fff5f5;
-      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+      border: 2px solid var(--danger);
+      background: #fff1f2;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15);
     }
+
+    .request-feedback__item.hk-st--ip.is-urgent,
+    .request-feedback__item.hk-st--cl.is-urgent,
+    .request-feedback__item.hk-st--pu.is-urgent,
+    .request-feedback__item.hk-st--di.is-urgent,
+    .request-feedback__item.hk-st--oo.is-urgent,
+    .request-feedback__item.hk-st--os.is-urgent {
+      border-left-width: 4px;
+    }
+
+    .request-feedback__item.hk-st--ip.is-urgent { border-left-color: var(--st-ip-bd); }
+    .request-feedback__item.hk-st--cl.is-urgent { border-left-color: var(--st-cl-bd); }
+    .request-feedback__item.hk-st--pu.is-urgent { border-left-color: var(--st-pu-bd); }
+    .request-feedback__item.hk-st--di.is-urgent { border-left-color: var(--st-di-bd); }
+    .request-feedback__item.hk-st--oo.is-urgent { border-left-color: var(--st-oo-bd); }
+    .request-feedback__item.hk-st--os.is-urgent { border-left-color: var(--st-os-bd); }
 
     .request-feedback__item-memo {
       margin-top: 8px;
@@ -245,7 +265,7 @@
       font-weight: 600;
       border: 1px dashed #6366f1;
       border-radius: 6px;
-      background: #fff;
+      background: var(--surface-raised);
       color: #4338ca;
       cursor: pointer;
       font: inherit;
@@ -332,7 +352,7 @@
       cursor: pointer;
       font: inherit;
       border: 1px solid var(--border);
-      background: #f8fafc;
+      background: var(--surface-raised);
       color: var(--text);
     }
 
@@ -349,22 +369,31 @@
       letter-spacing: 0.02em;
     }
 
-    .request-feedback__item-time {
-      font-size: 0.58rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.25;
+    .request-feedback__item-st.is-none {
+      font-weight: 600;
     }
 
-    .hk-time-em {
-      font-size: 1.15em;
+    .request-feedback__item-by {
+      position: absolute;
+      right: 8px;
+      bottom: 6px;
+      font-size: 0.7rem;
       font-weight: 700;
+      color: var(--text-muted);
+      line-height: 1.2;
+      max-width: 45%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .request-feedback__item-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
       font-variant-numeric: tabular-nums;
-      line-height: 1.15;
-      display: inline-block;
-      vertical-align: middle;
-      color: var(--text);
+      line-height: 1.25;
     }
 
     .request-feedback__item-time .hk-time-em {
@@ -424,14 +453,14 @@
       font-weight: 600;
       border: 1px dashed var(--accent);
       border-radius: 6px;
-      background: #fff;
+      background: var(--surface-raised);
       color: var(--accent);
       cursor: pointer;
       font: inherit;
     }
 
     .request-feedback__sched-btn:hover {
-      background: #eff6ff;
+      background: var(--hover-bg);
     }
 
     .request-feedback__sched-editor {
@@ -489,7 +518,7 @@
       font-weight: 600;
       border: 1px dashed #0f766e;
       border-radius: 6px;
-      background: #fff;
+      background: var(--surface-raised);
       color: #0f766e;
       cursor: pointer;
       font: inherit;
@@ -505,7 +534,7 @@
       font-weight: 600;
       border: 1px solid #fca5a5;
       border-radius: 6px;
-      background: #fff;
+      background: var(--surface-raised);
       color: #b91c1c;
       cursor: pointer;
       font: inherit;
@@ -587,42 +616,37 @@
     }
 
     .request-feedback__item-room {
-      font-weight: 700;
-      color: var(--accent);
-      font-size: 0.9375rem;
+      font-weight: 800;
+      color: #0f172a;
+      font-size: 1rem;
     }
 
     .request-feedback__item-st {
-      font-weight: 600;
-      color: var(--text);
+      flex-shrink: 0;
     }
 
-    .request-feedback__item-st.is-none {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .request-feedback__item-by {
-      position: absolute;
-      right: 8px;
-      bottom: 5px;
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      line-height: 1.2;
-      max-width: 45%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .request-feedback__item-st.hk-st-badge {
+      font-size: 0.9375rem;
+      min-width: 2.8em;
     }
 
     .request-feedback__empty {
       margin: 0;
       padding: 12px;
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       color: var(--text-muted);
       text-align: center;
       line-height: 1.5;
+    }
+
+    .hk-time-em {
+      font-size: 1.15em;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+      display: inline-block;
+      vertical-align: middle;
+      color: var(--text);
     }
 
     .hk-confirm {
@@ -761,20 +785,21 @@
     /* 왼쪽 사이드바 */
     .sidebar {
       width: var(--sidebar-w);
-      background: var(--accent);
-      color: #fff;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      color: var(--text);
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
     }
 
     .sidebar-section {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom: 1px solid var(--border);
     }
 
     .sidebar-footer {
       margin-top: auto;
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: 1px solid var(--border);
       padding: 10px 0 12px;
     }
 
@@ -782,6 +807,7 @@
       padding: 8px 10px;
       font-weight: 600;
       font-size: 0.8125rem;
+      color: var(--accent);
     }
 
     .sidebar-nav {
@@ -798,20 +824,24 @@
       font: inherit;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
       border-radius: 8px;
       cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
     }
 
     .sidebar-nav__btn:hover {
-      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--accent);
+      background: var(--hover-bg);
+      color: var(--accent);
     }
 
     .sidebar-nav__btn.is-active {
-      background: rgba(255, 255, 255, 0.22);
-      border-color: rgba(255, 255, 255, 0.35);
+      background: var(--hover-bg);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     a.sidebar-nav__link {
@@ -822,16 +852,19 @@
       font: inherit;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
       border-radius: 8px;
       text-decoration: none;
       box-sizing: border-box;
+      transition: border-color 0.15s, background 0.15s;
     }
 
     a.sidebar-nav__link:hover {
-      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--accent);
+      background: var(--hover-bg);
+      color: var(--accent);
     }
 
     .hk-sidebar-list-panel {
@@ -885,7 +918,7 @@
       overflow-y: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fafafa;
+      background: var(--surface-inset);
     }
 
     .hk-sidebar-list-panel__item {
@@ -946,7 +979,7 @@
       font-size: 0.8125rem;
       font-weight: 600;
       color: var(--accent);
-      background: #fff;
+      background: var(--surface-raised);
       border: 1px solid var(--border);
       border-radius: 8px;
       cursor: pointer;
@@ -955,7 +988,7 @@
 
     .zone-block__collapse:hover {
       border-color: var(--accent);
-      background: #f8fafc;
+      background: var(--surface-raised);
     }
 
     .zone-block.is-collapsed .zone-block__body {
@@ -1032,7 +1065,7 @@
       padding: 12px 14px;
       border: 1px dashed var(--border);
       border-radius: 10px;
-      background: #f8fafc;
+      background: var(--surface-raised);
       color: var(--text-muted);
       font-size: 0.8125rem;
       line-height: 1.45;
@@ -1050,7 +1083,7 @@
 
     .room-card {
       padding: 8px 10px;
-      background: #f8fafc;
+      background: var(--surface-raised);
       border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 0.8125rem;
@@ -1064,7 +1097,7 @@
     }
 
     .room-card.is-clickable:hover {
-      background: #f1f5f9;
+      background: var(--hover-bg);
       border-color: rgba(30, 58, 95, 0.35);
       box-shadow: 0 2px 8px rgba(30, 58, 95, 0.08);
     }
@@ -1092,13 +1125,13 @@
       padding: 3px 8px;
       border: 1px solid var(--border);
       border-radius: 6px;
-      background: #fff;
+      background: var(--surface-raised);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
     .room-card.is-clickable:hover .room-card__no-box {
       border-color: var(--accent);
-      background: #f8fafc;
+      background: var(--surface-raised);
     }
 
     .room-card__no {
@@ -1117,7 +1150,7 @@
     .room-time-editor {
       margin: 0 0 10px;
       padding: 10px;
-      background: #fff;
+      background: var(--surface-raised);
       border: 1px solid var(--accent);
       border-radius: 8px;
     }
@@ -1174,18 +1207,121 @@
     }
 
     .room-card__status {
-      font-weight: 700;
-      font-size: 0.8rem;
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: #e0e7ff;
-      color: #3730a3;
+      /* hk-st-badge + hk-st--* in theme */
     }
 
     .room-card__status.is-empty {
+      /* hk-st--none */
+    }
+
+    .room-status-auto {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3.2em;
+      height: 38px;
+      padding: 0 12px;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .room-status-auto.is-missing {
+      background: #fef3c7;
+      color: #92400e;
+      border: 2px solid #fbbf24;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    .btn-request {
+      height: 36px;
+      padding: 0 18px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .btn-request:active {
+      transform: translateY(1px);
+    }
+
+    .btn-request:hover {
+      background: var(--accent-dim);
+    }
+
+    /* 가시성 강화 */
+    .topbar {
+      background: #fff;
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .sidebar {
+      background: #fff;
+      border-right: 2px solid var(--border);
+    }
+
+    .sidebar-title {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .main {
+      background: var(--bg);
+    }
+
+    .request-panel,
+    .sched-cards-panel,
+    .hk-sidebar-list-panel,
+    .zone-block__body {
+      background: #fff;
+    }
+
+    .request-panel,
+    .sched-cards-panel {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .room-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .room-card.is-clickable:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(21, 101, 192, 0.15);
+    }
+
+    .room-card__no-box {
+      background: var(--surface-inset);
+      border: 2px solid var(--border);
+    }
+
+    .zone-tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent-dim);
+      box-shadow: none;
+    }
+
+    .zone-panel-hint {
+      background: var(--surface-inset);
+      border: 2px dashed var(--border);
+      color: var(--text);
       font-weight: 600;
-      background: #f1f5f9;
-      color: var(--text-muted);
+    }
+
+    .hk-confirm__box {
+      background: #fff;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
     }
 
     .room-card__memo-block {
@@ -1230,7 +1366,7 @@
     .room-memo2-editor {
       margin-top: 6px;
       padding: 10px;
-      background: #fff;
+      background: var(--surface-raised);
       border: 1px solid var(--accent);
       border-radius: 8px;
     }
@@ -1369,7 +1505,7 @@
       font-weight: 600;
       border: 1px solid var(--border);
       border-radius: 6px;
-      background: #f8fafc;
+      background: var(--surface-raised);
       color: var(--text);
       cursor: pointer;
       font: inherit;
@@ -1431,7 +1567,7 @@
 
     .btn-memo-register:hover {
       border-color: var(--accent);
-      background: #f8fafc;
+      background: var(--surface-raised);
     }
 
     .memo-stack {
@@ -1509,85 +1645,293 @@
       border-color: var(--accent);
     }
 
-    .room-status-auto {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 46px;
-      height: 34px;
-      padding: 0 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: #f8fafc;
-      font-weight: 700;
-      font-size: 0.8125rem;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
+    /* ── 모바일·태블릿 반응형 ── */
+    @media (max-width: 900px) {
+      :root {
+        --header-min-h: auto;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        overflow-x: hidden;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 12px;
+        gap: 10px;
+      }
+
+      .topbar-main {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .brand {
+        padding-top: 0;
+      }
+
+      .topbar-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-admin,
+      .btn-maint,
+      .btn-front {
+        flex: 1 1 calc(33.33% - 6px);
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: 0.875rem;
+      }
+
+      .notice-board {
+        min-height: 72px;
+        max-height: 160px;
+        padding: 12px 14px;
+      }
+
+      #noticeText {
+        font-size: 1.1rem;
+      }
+
+      .layout {
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .sidebar {
+        width: 100%;
+        flex-direction: column;
+        border-right: none;
+        border-bottom: 2px solid var(--border);
+      }
+
+      .sidebar-footer {
+        margin-top: 0;
+        border-top: 1px solid var(--border);
+        padding-top: 4px;
+      }
+
+      .sidebar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 0 8px 10px;
+        gap: 6px;
+      }
+
+      .sidebar-nav__btn,
+      a.sidebar-nav__link {
+        flex: 1 1 calc(50% - 4px);
+        min-height: 44px;
+        text-align: center;
+        padding: 10px 8px;
+      }
+
+      .layout-main-area {
+        order: 2;
+      }
+
+      .request-feedback {
+        order: 1;
+        width: 100%;
+        max-height: none;
+        border-left: none;
+        border-bottom: 2px solid var(--border);
+        box-shadow: none;
+      }
+
+      .request-feedback__list {
+        max-height: 42vh;
+        min-height: 100px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .main {
+        padding: 10px;
+      }
+
+      .room-list-main,
+      .sched-cards-list {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+      }
+
+      .request-row {
+        gap: 10px;
+      }
+
+      .request-row .field {
+        flex: 1 1 calc(50% - 6px);
+        min-width: 0;
+      }
+
+      .request-row .field--room-status {
+        flex: 0 1 auto;
+      }
+
+      .request-row .btn-request {
+        flex: 1 1 100%;
+        min-height: 44px;
+        width: 100%;
+      }
+
+      .memo-register-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .memo-register-row input {
+        min-width: 0;
+        width: 100%;
+        min-height: 44px;
+        font-size: 16px;
+      }
+
+      .btn-memo-register {
+        min-height: 44px;
+        width: 100%;
+      }
+
+      .field input,
+      .field select {
+        min-height: 44px;
+        font-size: 16px;
+        width: 100%;
+      }
+
+      .btn-urgent,
+      .room-status-auto {
+        min-height: 44px;
+      }
+
+      .zone-tab {
+        flex: 1 1 calc(33.33% - 6px);
+        min-height: 44px;
+        padding: 10px 8px;
+        text-align: center;
+      }
+
+      .zone-block__collapse {
+        min-height: 44px;
+        padding: 8px 14px;
+      }
+
+      .request-feedback__maint-actions,
+      .request-feedback__front-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .request-feedback__sched-btn,
+      .request-feedback__memo-btn,
+      .request-feedback__cancel-btn,
+      .request-feedback__memo2-btn,
+      .request-feedback__sched-editor button {
+        min-height: 44px;
+        width: 100%;
+        font-size: 0.8125rem;
+      }
+
+      .sched-card__use-btn {
+        min-height: 44px;
+        padding: 8px 12px;
+        font-size: 0.8125rem;
+        width: 100%;
+      }
+
+      .hk-sidebar-list-panel__close {
+        min-height: 44px;
+      }
+
+      .hk-confirm {
+        padding: 12px;
+        align-items: flex-end;
+      }
+
+      .hk-confirm__box {
+        max-width: none;
+        width: 100%;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .hk-confirm__btn {
+        min-height: 44px;
+        flex: 1;
+      }
+
+      .hk-confirm__input {
+        min-height: 44px;
+        font-size: 16px;
+      }
     }
 
-    .room-status-auto.is-empty {
-      color: var(--text-muted);
-      font-weight: 600;
+    @media (max-width: 480px) {
+      html {
+        font-size: 15px;
+      }
+
+      #noticeText {
+        font-size: 1.05rem;
+      }
+
+      .btn-admin,
+      .btn-maint,
+      .btn-front {
+        flex: 1 1 100%;
+      }
+
+      .room-list-main,
+      .sched-cards-list {
+        grid-template-columns: 1fr;
+      }
+
+      .request-row .field {
+        flex: 1 1 100%;
+      }
+
+      .request-feedback__item-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .request-feedback__item-by {
+        position: static;
+        max-width: 100%;
+        margin-top: 4px;
+        text-align: right;
+        width: 100%;
+      }
+
+      .request-feedback__item {
+        padding-bottom: 12px;
+      }
+
+      .room-card__head {
+        flex-wrap: wrap;
+      }
     }
 
-    .room-status-auto.is-missing {
-      color: #b45309;
-      background: #fffbeb;
-      border-color: #fcd34d;
-      font-weight: 600;
-      font-size: 0.75rem;
-      min-width: 72px;
-    }
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
 
-    .room-status-auto.is-st-ip {
-      background: #dbeafe;
-      border-color: #93c5fd;
-      color: #1d4ed8;
-    }
-
-    .room-status-auto.is-st-cl {
-      background: #dcfce7;
-      border-color: #86efac;
-      color: #15803d;
-    }
-
-    .room-status-auto.is-st-pu {
-      background: #fef3c7;
-      border-color: #fcd34d;
-      color: #b45309;
-    }
-
-    .room-status-auto.is-st-di {
-      background: #fce7f3;
-      border-color: #f9a8d4;
-      color: #be185d;
-    }
-
-    .room-status-auto.is-st-oo,
-    .room-status-auto.is-st-os {
-      background: #f3e8ff;
-      border-color: #d8b4fe;
-      color: #7e22ce;
-    }
-
-    .btn-request {
-      height: 34px;
-      padding: 0 16px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-request:hover {
-      background: var(--accent-light);
-    }
-
-    .btn-request:active {
-      transform: translateY(1px);
+      .topbar {
+        padding-top: max(10px, env(safe-area-inset-top));
+      }
     }
   </style>
 </head>
@@ -1596,8 +1940,8 @@
     <div class="topbar-main">
       <span class="brand">Lotte Hotel</span>
       <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
-        <strong>공지</strong>
-        <span id="noticeText"></span>
+        <div class="notice-board__label">공지</div>
+        <div id="noticeText"></div>
       </div>
     </div>
     <div class="topbar-actions">
@@ -1707,7 +2051,7 @@
           <div class="field field--room-status">
             <label for="roomStatusAuto">상태</label>
             <input type="hidden" id="status" name="status" value="" />
-            <div class="room-status-auto is-empty" id="roomStatusAuto" aria-live="polite">—</div>
+            <div class="room-status-auto hk-st-badge hk-st--none" id="roomStatusAuto" aria-live="polite">—</div>
           </div>
           <div class="field">
             <label for="btnUrgent">긴급</label>
@@ -2127,6 +2471,19 @@
         return XML_ROOM_STATUS_MAP[nr] || "";
       }
 
+      function hkStatusSuffix(status) {
+        var st = String(status || "").trim().toUpperCase();
+        if (!st) return "none";
+        if (st === "IP" || st === "CL" || st === "PU" || st === "DI" || st === "OO" || st === "OS") {
+          return st.toLowerCase();
+        }
+        return "none";
+      }
+
+      function hkStatusBadgeClasses(status) {
+        return "hk-st-badge hk-st--" + hkStatusSuffix(status);
+      }
+
       function roomNumberForStatusLookup(numStr) {
         var s = String(numStr || "").trim();
         var m = s.match(/^(.+?)\s*->\s*(.+)$/);
@@ -2183,7 +2540,7 @@
         hidden.value = st;
         if (!String(room).replace(/\s/g, "")) {
           display.textContent = "—";
-          display.className = "room-status-auto is-empty";
+          display.className = "room-status-auto " + hkStatusBadgeClasses("");
           return;
         }
         if (!st) {
@@ -2192,7 +2549,7 @@
           return;
         }
         display.textContent = st;
-        display.className = "room-status-auto is-st-" + st.toLowerCase();
+        display.className = "room-status-auto " + hkStatusBadgeClasses(st);
       }
 
       function getRequestRoomFilterRaw() {
@@ -2468,6 +2825,8 @@
           li.className = "request-feedback__item";
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("is-urgent");
+          var stKey = hkStatusSuffix(entry.status);
+          if (stKey !== "none") li.classList.add("hk-st--" + stKey);
 
           var t = document.createElement("div");
           t.className = "request-feedback__item-time";
@@ -2487,8 +2846,7 @@
             r.appendChild(ub);
           }
           var s = document.createElement("span");
-          s.className =
-            "request-feedback__item-st" + (entry.status ? "" : " is-none");
+          s.className = "request-feedback__item-st " + hkStatusBadgeClasses(entry.status);
           s.textContent = entry.status || "상태 없음";
           row.appendChild(r);
           row.appendChild(s);
@@ -2604,7 +2962,7 @@
           noBox.appendChild(no);
           var st = (entry.status || "").trim();
           var stEl = document.createElement("span");
-          stEl.className = "room-card__status" + (st ? "" : " is-empty");
+          stEl.className = "room-card__status " + hkStatusBadgeClasses(st);
           stEl.textContent = st || "—";
           head.appendChild(noBox);
           head.appendChild(stEl);
@@ -3238,7 +3596,7 @@
             no.textContent = formatRoomNoDisplay(room.number || "");
             noBox.appendChild(no);
             var stEl = document.createElement("span");
-            stEl.className = "room-card__status" + (st ? "" : " is-empty");
+            stEl.className = "room-card__status " + hkStatusBadgeClasses(st);
             stEl.textContent = st || "—";
             head.appendChild(noBox);
             head.appendChild(stEl);

@@ -2,23 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>관리자 · 정비관리</title>
+  <link rel="stylesheet" href="hk-theme.css" />
   <style>
     :root {
-      --bg-page: #f3f4f6;
-      --bg-card: #ffffff;
-      --border: #e5e7eb;
-      --text: #111827;
-      --text-muted: #6b7280;
-      --accent: #1e3a5f;
-      --accent-light: #2d5080;
       --danger: #b91c1c;
-      --danger-bg: #fef2f2;
+      --danger-bg: #fee2e2;
     }
 
     html {
-      font-size: 13px;
+      font-size: 14px;
     }
 
     * {
@@ -28,13 +22,12 @@
     body {
       margin: 0;
       font-family: "Segoe UI", "Malgun Gothic", sans-serif;
-      color: var(--text);
-      background: var(--bg-page);
       min-height: 100vh;
+      line-height: 1.45;
     }
 
     .page-head {
-      background: var(--bg-card);
+      background: var(--panel);
       border-bottom: 1px solid var(--border);
       padding: 10px 16px;
       display: flex;
@@ -49,21 +42,25 @@
       font-size: 1rem;
       font-weight: 700;
       color: var(--accent);
+      letter-spacing: -0.02em;
     }
 
     .link-front {
-      color: var(--accent);
+      color: var(--text);
       font-weight: 600;
       text-decoration: none;
       padding: 6px 10px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg-card);
+      border-radius: 8px;
+      background: var(--surface-raised);
       font-size: 0.8125rem;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
     }
 
     .link-front:hover {
       border-color: var(--accent);
+      background: var(--hover-bg);
+      color: var(--accent);
     }
 
     .page-head-actions {
@@ -80,12 +77,12 @@
     }
 
     .card {
-      background: var(--bg-card);
+      background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 14px 16px;
       margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
     .card h2 {
@@ -107,13 +104,15 @@
 
     .notice-field textarea {
       width: 100%;
-      min-height: 72px;
-      padding: 8px;
+      min-height: 140px;
+      padding: 12px 14px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       font: inherit;
-      line-height: 1.45;
+      font-size: 1rem;
+      line-height: 1.55;
       resize: vertical;
+      white-space: pre-wrap;
     }
 
     .notice-field textarea:focus {
@@ -124,12 +123,12 @@
 
     .btn-primary {
       margin-top: 10px;
-      height: 34px;
+      height: 36px;
       padding: 0 16px;
-      background: var(--accent);
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
       color: #fff;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font: inherit;
       font-weight: 600;
       font-size: 0.8125rem;
@@ -137,7 +136,7 @@
     }
 
     .btn-primary:hover {
-      background: var(--accent-light);
+      filter: brightness(1.06);
     }
 
     .zone-grid {
@@ -163,9 +162,9 @@
       gap: 8px;
       margin-bottom: 10px;
       padding: 10px;
-      background: #f8fafc;
+      background: var(--surface-inset);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
     .add-stack input {
@@ -225,7 +224,7 @@
     .btn-add {
       height: 32px;
       padding: 0 12px;
-      background: var(--accent);
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
       color: #fff;
       border: none;
       border-radius: 6px;
@@ -237,7 +236,7 @@
     }
 
     .btn-add:hover {
-      background: var(--accent-light);
+      filter: brightness(1.06);
     }
 
     .room-list {
@@ -248,7 +247,7 @@
       overflow-y: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fafafa;
+      background: var(--surface-inset);
     }
 
     .room-list li.room-editor {
@@ -287,16 +286,16 @@
       padding: 0 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
-      background: #f8fafc;
+      background: var(--surface-raised);
       font-weight: 700;
       font-size: 0.8rem;
-      color: var(--text-muted);
+      color: var(--muted);
     }
 
     .re-status-readonly.is-missing {
-      color: #b45309;
-      background: #fffbeb;
-      border-color: #fcd34d;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.35);
       font-weight: 600;
     }
 
@@ -414,7 +413,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: rgba(15, 23, 42, 0.45);
+      background: rgba(0, 0, 0, 0.55);
     }
 
     .auth-gate.hidden {
@@ -459,11 +458,11 @@
       width: 100%;
       height: 36px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 0.875rem;
       font-weight: 600;
       cursor: pointer;
-      background: var(--accent);
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
       color: #fff;
     }
 
@@ -487,6 +486,58 @@
     body.locked .wrap {
       visibility: hidden;
       pointer-events: none;
+    }
+
+    @media (max-width: 720px) {
+      .wrap {
+        padding: 8px 10px;
+      }
+
+      .page-head {
+        padding: 10px 12px;
+      }
+
+      .page-head-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .link-front,
+      .btn-primary,
+      .auth-card button,
+      .zone-card .btn-add,
+      .room-row button {
+        min-height: 44px;
+      }
+
+      .add-stack input,
+      .rc-num-inline input,
+      .notice-field textarea {
+        font-size: 16px;
+        min-height: 44px;
+      }
+
+      .notice-field textarea {
+        min-height: 120px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+    }
+
+    @supports (padding: max(0px)) {
+      body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      .page-head {
+        padding-top: max(10px, env(safe-area-inset-top));
+      }
     }
   </style>
 </head>
@@ -516,7 +567,10 @@
       <h2>공지</h2>
       <div class="notice-field">
         <label for="noticeInput">공지 내용</label>
-        <textarea id="noticeInput" placeholder="호텔 전체 또는 HK 관련 공지를 입력하세요."></textarea>
+        <p style="margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
+          엔터로 줄바꿈할 수 있습니다. 저장하면 정비 화면 상단에 크게 표시됩니다.
+        </p>
+        <textarea id="noticeInput" placeholder="공지를 입력하세요. (엔터 = 줄바꿈)"></textarea>
       </div>
       <button type="button" class="btn-primary" id="saveNotice">공지 저장</button>
     </section>
