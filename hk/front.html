@@ -1933,9 +1933,154 @@
         padding-top: max(10px, env(safe-area-inset-top));
       }
     }
+
+    /* 정비오더 접근 — 이름 입력 (루밍 비밀번호 화면과 동일 계열) */
+    .operator-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(160deg, #dde3ec 0%, #b8c5d6 50%, #dde3ec 100%);
+      box-sizing: border-box;
+    }
+
+    .operator-gate.hidden {
+      display: none !important;
+    }
+
+    .operator-gate.is-shift-overlay {
+      background: rgba(15, 23, 42, 0.48);
+    }
+
+    .operator-gate__card {
+      width: min(400px, 100%);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    }
+
+    .operator-gate__card h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .operator-gate__card p {
+      margin: 0 0 18px;
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .operator-gate__card input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 16px;
+      font-family: inherit;
+      margin-bottom: 12px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .operator-gate__card input[type="text"]:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .operator-gate__card button[type="submit"] {
+      width: 100%;
+      border: 1px solid var(--accent-dim);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      color: #fff;
+      min-height: 44px;
+    }
+
+    .operator-gate__card button[type="submit"]:hover {
+      filter: brightness(1.05);
+    }
+
+    .operator-gate__cancel {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .operator-gate__cancel:hover {
+      color: var(--text);
+    }
+
+    .operator-gate__cancel[hidden] {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    body.operator-locked {
+      overflow: hidden;
+    }
+
+    body.operator-locked .hk-app-main {
+      visibility: hidden;
+      pointer-events: none;
+    }
   </style>
 </head>
-<body>
+<body class="operator-locked">
+  <div id="operator-gate" class="operator-gate" aria-hidden="false">
+    <div class="operator-gate__card">
+      <h2 id="operatorGateTitle">정비오더 · 이름 입력</h2>
+      <p id="operatorGateHint">이름을 입력해야 화면을 사용할 수 있습니다.</p>
+      <form id="operator-gate-form" autocomplete="off">
+        <label for="hkOperatorNameInput" class="sr-only">이름</label>
+        <input
+          type="text"
+          id="hkOperatorNameInput"
+          name="operatorName"
+          autocomplete="name"
+          placeholder="이름을 입력하세요"
+          required
+        />
+        <button type="submit">확인</button>
+      </form>
+      <button type="button" class="operator-gate__cancel" id="operatorGateCancel" hidden>취소</button>
+    </div>
+  </div>
+
+  <div class="hk-app-main">
   <header class="topbar">
     <div class="topbar-main">
       <span class="brand">Lotte Hotel</span>
@@ -2102,6 +2247,7 @@
       </p>
     </aside>
   </div>
+  </div>
 
   <div
     class="hk-confirm"
@@ -2154,36 +2300,6 @@
   </div>
 
   <div
-    class="hk-confirm hk-confirm--operator"
-    id="hkOperatorDialog"
-    hidden
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="hkOperatorDialogTitle"
-  >
-    <div class="hk-confirm__backdrop" id="hkOperatorDialogBackdrop"></div>
-    <div class="hk-confirm__box hk-confirm__box--wide">
-      <p class="hk-confirm__msg" id="hkOperatorDialogTitle">이름을 입력하세요.</p>
-      <p class="hk-confirm__sub" id="hkOperatorDialogHint">정비 요청 시 요청자로 표시됩니다.</p>
-      <label class="hk-confirm__label" for="hkOperatorNameInput">이름</label>
-      <input
-        type="text"
-        class="hk-confirm__input"
-        id="hkOperatorNameInput"
-        name="operatorName"
-        autocomplete="name"
-        placeholder="이름을 입력하세요"
-      />
-      <div class="hk-confirm__actions">
-        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkOperatorNameOk">확인</button>
-        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkOperatorNameCancel" hidden>
-          취소
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div
     class="hk-confirm hk-confirm--role-password"
     id="hkRolePasswordDialog"
     hidden
@@ -2229,7 +2345,7 @@
       var pendingCancelNameId = null;
       var sidebarListView = null;
       var requestLogEntries = [];
-      var OPERATOR_NAME_KEY = "lotte-hk-operator-name-v1";
+      var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var operatorNameModalMode = "initial";
       var pendingOperatorNameCallback = null;
       var SCHED_PANEL_HINT_EMPTY =
@@ -2237,9 +2353,6 @@
       var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
       var XML_ROOM_STATUS_MAP = {};
       var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
-
-      var operatorNameModalMode = "initial";
-      var pendingOperatorNameCallback = null;
       var pendingRoleAuth = null;
       var pendingRoleSuccess = null;
 
@@ -2332,7 +2445,7 @@
 
       function getOperatorName() {
         try {
-          return String(localStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
+          return String(sessionStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
         } catch (e) {
           return "";
         }
@@ -2341,55 +2454,67 @@
       function setOperatorName(name) {
         var n = String(name || "").trim();
         try {
-          if (n) localStorage.setItem(OPERATOR_NAME_KEY, n);
+          if (n) sessionStorage.setItem(OPERATOR_NAME_KEY, n);
         } catch (e) {}
         return n;
       }
 
-      function closeOperatorNameModal() {
-        var dlg = document.getElementById("hkOperatorDialog");
-        if (dlg) dlg.hidden = true;
-        pendingOperatorNameCallback = null;
+      function hideOperatorGate() {
+        var gate = document.getElementById("operator-gate");
+        if (gate) {
+          gate.classList.add("hidden");
+          gate.setAttribute("aria-hidden", "true");
+          gate.classList.remove("is-shift-overlay");
+        }
+        document.body.classList.remove("operator-locked");
       }
 
-      function openOperatorNameModal(opts) {
+      function showOperatorGate(opts) {
         opts = opts || {};
-        operatorNameModalMode = opts.mode || "shift";
+        operatorNameModalMode = opts.mode || "initial";
         pendingOperatorNameCallback =
           typeof opts.onSaved === "function" ? opts.onSaved : null;
-        var dlg = document.getElementById("hkOperatorDialog");
-        var title = document.getElementById("hkOperatorDialogTitle");
-        var hint = document.getElementById("hkOperatorDialogHint");
+        var isShift = operatorNameModalMode === "shift";
+        var gate = document.getElementById("operator-gate");
+        var title = document.getElementById("operatorGateTitle");
+        var hint = document.getElementById("operatorGateHint");
         var inp = document.getElementById("hkOperatorNameInput");
-        var cancelBtn = document.getElementById("hkOperatorNameCancel");
+        var cancelBtn = document.getElementById("operatorGateCancel");
         if (title) {
-          title.textContent =
-            operatorNameModalMode === "initial"
-              ? "정비관리 · 이름 입력"
-              : "교대 · 이름 변경";
+          title.textContent = isShift ? "교대 · 이름 변경" : "정비오더 · 이름 입력";
         }
         if (hint) {
-          hint.textContent =
-            operatorNameModalMode === "initial"
-              ? "처음 사용 시 이름을 등록해 주세요. 요청 알림에 표시됩니다."
-              : "새 근무자 이름을 입력하세요.";
+          hint.textContent = isShift
+            ? "새 근무자 이름을 입력하세요."
+            : "이름을 입력해야 화면을 사용할 수 있습니다.";
         }
         if (inp) {
-          inp.value = operatorNameModalMode === "shift" ? getOperatorName() : "";
+          inp.value = isShift ? getOperatorName() : "";
         }
         if (cancelBtn) {
-          cancelBtn.hidden = operatorNameModalMode === "initial";
+          cancelBtn.hidden = !isShift;
         }
-        if (dlg) dlg.hidden = false;
+        if (gate) {
+          gate.classList.remove("hidden");
+          gate.setAttribute("aria-hidden", "false");
+          gate.classList.toggle("is-shift-overlay", isShift);
+        }
+        if (isShift) {
+          document.body.classList.remove("operator-locked");
+        } else {
+          document.body.classList.add("operator-locked");
+        }
         if (inp) setTimeout(function () { inp.focus(); }, 0);
       }
 
       function ensureOperatorNameOnLoad() {
-        if (getOperatorName()) return;
-        openOperatorNameModal({ mode: "initial" });
+        try {
+          localStorage.removeItem("lotte-hk-operator-name-v1");
+        } catch (e) {}
+        showOperatorGate({ mode: "initial" });
       }
 
-      function submitOperatorNameModal() {
+      function submitOperatorGate() {
         var inp = document.getElementById("hkOperatorNameInput");
         var name = inp ? String(inp.value || "").trim() : "";
         if (!name) {
@@ -2397,7 +2522,7 @@
           return;
         }
         setOperatorName(name);
-        closeOperatorNameModal();
+        hideOperatorGate();
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
           pendingOperatorNameCallback = null;
@@ -2406,36 +2531,35 @@
       }
 
       function setupOperatorNameUi() {
-        var ok = document.getElementById("hkOperatorNameOk");
-        var cancel = document.getElementById("hkOperatorNameCancel");
-        var backdrop = document.getElementById("hkOperatorDialogBackdrop");
+        var form = document.getElementById("operator-gate-form");
+        var cancelBtn = document.getElementById("operatorGateCancel");
         var inp = document.getElementById("hkOperatorNameInput");
         var shiftBtn = document.getElementById("sidebarBtnShiftChange");
 
-        if (ok) ok.addEventListener("click", submitOperatorNameModal);
-        if (cancel) {
-          cancel.addEventListener("click", function () {
-            if (operatorNameModalMode === "initial" && !getOperatorName()) return;
-            closeOperatorNameModal();
+        if (form) {
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            submitOperatorGate();
           });
         }
-        if (backdrop) {
-          backdrop.addEventListener("click", function () {
-            if (operatorNameModalMode === "initial" && !getOperatorName()) return;
-            closeOperatorNameModal();
+        if (cancelBtn) {
+          cancelBtn.addEventListener("click", function () {
+            hideOperatorGate();
+            pendingOperatorNameCallback = null;
           });
         }
         if (inp) {
           inp.addEventListener("keydown", function (e) {
-            if (e.key === "Enter") {
+            if (e.key === "Escape" && operatorNameModalMode === "shift") {
               e.preventDefault();
-              submitOperatorNameModal();
+              hideOperatorGate();
+              pendingOperatorNameCallback = null;
             }
           });
         }
         if (shiftBtn) {
           shiftBtn.addEventListener("click", function () {
-            openOperatorNameModal({ mode: "shift" });
+            showOperatorGate({ mode: "shift" });
           });
         }
       }
@@ -3845,7 +3969,10 @@
       });
 
       window.addEventListener("pageshow", function (e) {
-        if (e.persisted) refreshMain();
+        if (e.persisted) {
+          refreshMain();
+          showOperatorGate({ mode: "initial" });
+        }
       });
 
       setupOperatorNameUi();
@@ -3946,7 +4073,7 @@
           return;
         }
         if (!getOperatorName()) {
-          openOperatorNameModal({
+          showOperatorGate({
             mode: "initial",
             onSaved: function () {
               processRequestFormSubmit();
