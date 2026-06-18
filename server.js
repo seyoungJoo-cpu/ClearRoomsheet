@@ -65,6 +65,12 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "vacRows")) {
     out.vacRows = incoming.vacRows;
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "roomResvMap")) {
+    out.roomResvMap =
+      incoming.roomResvMap && typeof incoming.roomResvMap === "object"
+        ? Object.assign({}, incoming.roomResvMap)
+        : {};
+  }
   if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms")) {
     out.allStatusRooms = incoming.allStatusRooms;
   }
@@ -88,6 +94,12 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkUseLog")) {
     out.hkUseLog = replaceLogArray(incoming.hkUseLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkChangeLog")) {
+    out.hkChangeLog = replaceLogArray(incoming.hkChangeLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkLastRoomChange")) {
+    out.hkLastRoomChange = incoming.hkLastRoomChange || null;
   }
   return out;
 }

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>정비용 루밍을 만들어보자</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #0f1419;
@@ -1165,12 +1166,17 @@
     </section>
 
     <section class="card tools-card">
-      <h2>XML 업로드</h2>
-      <div class="dropzone" id="dzUpload" tabindex="0" role="button" aria-label="XML 업로드">
+      <h2>XML · 엑셀 업로드</h2>
+      <div class="dropzone" id="dzUpload" tabindex="0" role="button" aria-label="XML·엑셀 업로드">
         <div class="actions">
           <label class="file-btn">
             파일 찾기
-            <input type="file" id="inputUpload" accept=".xml,text/xml,application/xml" multiple />
+            <input
+              type="file"
+              id="inputUpload"
+              accept=".xml,text/xml,application/xml,.xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              multiple
+            />
           </label>
         </div>
       </div>
@@ -1240,8 +1246,11 @@
       /** 마지막으로 로드된 HKVACROOM 행(블록 오버레이 전) */
       var cachedVacRows = [];
 
-      /** 연박 추가: 객실번호(4자리) → true , VAC·ASN 에서만 「연박」표시 */
+      /** 연박 추가: 객실번호(4자리) → true , 499·VAC·ASN·F.ASN 보드에 「연박」표시 */
       var extendedStayRooms = {};
+
+      /** @type {Record<string,string>} 객실 → FO 표시(IN/O) */
+      var cachedRoomResvMap = {};
 
       var ANNEX_TAIL_MIN = 51;
       var DROP_ROOMS = { "0012": true, "0023": true };
@@ -1298,12 +1307,219 @@
         }
       }
 
+      function formatUploadTime(date) {
+        try {
+          return (date || new Date()).toLocaleString("ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          });
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function withUploadTimePrefix(summaryText) {
+        var body = String(summaryText || "").trim();
+        if (!body) return "";
+        return "업로드 " + formatUploadTime(new Date()) + (body ? "\n" + body : "");
+      }
+
+      function normalizeResvStatusKey(s) {
+        return String(s || "").replace(/\s+/g, " ").trim().toUpperCase();
+      }
+
+      function formatFoStatusDisplay(raw) {
+        var k = String(raw || "")
+          .replace(/_/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toUpperCase();
+        if (k === "OCC") return "IN";
+        if (k === "VAC") return "O";
+        return "";
+      }
+
+      function rebuildCombinedRoomResvMap() {
+        var m = {};
+        cachedVacRows.forEach(function (r) {
+          var label = formatFoStatusDisplay(r.foStatus);
+          if (r.room && label) m[r.room] = label;
+        });
+        cachedRoomResvMap = m;
+      }
+
+      function mergeFoPatch(rawPatch) {
+        if (!rawPatch || typeof rawPatch !== "object") return 0;
+        var n = 0;
+        Object.keys(rawPatch).forEach(function (roomKey) {
+          var nr = normalizeRoomDigits(roomKey);
+          var raw = rawPatch[roomKey];
+          if (!nr || raw == null || String(raw).trim() === "") return;
+          var fo = String(raw).trim();
+          if (!formatFoStatusDisplay(fo)) return;
+          var found = false;
+          cachedVacRows.forEach(function (row) {
+            if (row.room === nr) {
+              row.foStatus = fo;
+              found = true;
+            }
+          });
+          if (!found) {
+            cachedVacRows.push({
+              room: nr,
+              status: "",
+              resvStatus: "",
+              blockCode: "",
+              foStatus: fo,
+              roomType: "",
+            });
+          }
+          n++;
+        });
+        rebuildVacFoMapFromRows();
+        rebuildCombinedRoomResvMap();
+        return n;
+      }
+
+      function findSheetHeaderKeys(rows) {
+        var roomIdx = -1;
+        var foIdx = -1;
+        var startRow = 0;
+        if (!rows || !rows.length) {
+          return { roomIdx: roomIdx, foIdx: foIdx, startRow: startRow };
+        }
+        for (var ri = 0; ri < Math.min(8, rows.length); ri++) {
+          var row = rows[ri];
+          if (!row || !row.length) continue;
+          roomIdx = -1;
+          foIdx = -1;
+          for (var i = 0; i < row.length; i++) {
+            var h = normalizeResvStatusKey(row[i]).replace(/_/g, " ");
+            if (
+              roomIdx < 0 &&
+              (h === "ROOM" ||
+                h === "ROOM NO" ||
+                h === "ROOM NUMBER" ||
+                h === "ROOM #" ||
+                h === "RM" ||
+                h === "객실" ||
+                h === "객실번호")
+            ) {
+              roomIdx = i;
+            }
+            if (foIdx < 0 && (h === "FO STATUS" || h === "FO_STATUS")) {
+              foIdx = i;
+            }
+          }
+          if (roomIdx >= 0 && foIdx >= 0) {
+            startRow = ri + 1;
+            return { roomIdx: roomIdx, foIdx: foIdx, startRow: startRow };
+          }
+        }
+        return { roomIdx: 0, foIdx: 1, startRow: 0 };
+      }
+
+      function parseExcelFoArray(rows) {
+        var patch = {};
+        if (!rows || !rows.length) return patch;
+        var header = findSheetHeaderKeys(rows);
+        var start = header.startRow != null ? header.startRow : 0;
+        if (header.roomIdx < 0) header.roomIdx = 0;
+        if (header.foIdx < 0) header.foIdx = 1;
+        for (var r = start; r < rows.length; r++) {
+          var row = rows[r];
+          if (!row || !row.length) continue;
+          var roomRaw = row[header.roomIdx];
+          var foRaw = row[header.foIdx];
+          if (roomRaw == null || foRaw == null) continue;
+          var nr = normalizeRoomDigits(roomRaw);
+          if (!nr) continue;
+          patch[nr] = String(foRaw).trim();
+        }
+        return patch;
+      }
+
+      function readExcelFoFile(file) {
+        return new Promise(function (resolve) {
+          if (typeof XLSX === "undefined") {
+            resolve({ error: file.name + ": 엑셀 라이브러리를 불러오지 못했습니다." });
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              var data = new Uint8Array(reader.result);
+              var wb = XLSX.read(data, { type: "array" });
+              var sheet = wb.Sheets[wb.SheetNames[0]];
+              var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+              var patch = parseExcelFoArray(rows);
+              var count = Object.keys(patch).length;
+              if (!count) {
+                resolve({ error: file.name + ": ROOM·FO_STATUS 열을 찾지 못했습니다." });
+                return;
+              }
+              resolve({ patch: patch, count: count, name: file.name });
+            } catch (e) {
+              resolve({ error: file.name + ": " + (e.message || String(e)) });
+            }
+          };
+          reader.onerror = function () {
+            resolve({ error: file.name + ": 읽기 실패" });
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      function readCsvFoFile(file) {
+        return new Promise(function (resolve) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              var text = String(reader.result || "");
+              var lines = text.split(/\r?\n/).filter(function (ln) {
+                return String(ln).trim();
+              });
+              var rows = lines.map(function (ln) {
+                return ln.split(/,|\t/).map(function (c) {
+                  return c.replace(/^"|"$/g, "").trim();
+                });
+              });
+              var patch = parseExcelFoArray(rows);
+              var count = Object.keys(patch).length;
+              if (!count) {
+                resolve({ error: file.name + ": ROOM·FO_STATUS 열을 찾지 못했습니다." });
+                return;
+              }
+              resolve({ patch: patch, count: count, name: file.name });
+            } catch (e) {
+              resolve({ error: file.name + ": " + (e.message || String(e)) });
+            }
+          };
+          reader.onerror = function () {
+            resolve({ error: file.name + ": 읽기 실패" });
+          };
+          reader.readAsText(file, "UTF-8");
+        });
+      }
+
+      function isExcelLikeFile(file) {
+        var n = String(file.name || "").toLowerCase();
+        return n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv");
+      }
+
       function buildSharedStatePayload(opts) {
         opts = opts || {};
+        rebuildCombinedRoomResvMap();
         var p = {
           blockMap: cachedAllStatusBlockMap,
           vacRows: cachedVacRows,
           allStatusRooms: cachedAllStatusRooms,
+          roomResvMap: cachedRoomResvMap,
           blockDisplayAliases: blockDisplayAliases,
           uploadSummary: (document.getElementById("uploadSummary") || {}).textContent || "",
         };
@@ -1324,6 +1540,10 @@
           cachedVacRows = data.vacRows.slice();
           rebuildVacFoMapFromRows();
         }
+        if (data.roomResvMap && typeof data.roomResvMap === "object") {
+          cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap));
+        }
+        rebuildCombinedRoomResvMap();
         if (data.allStatusRooms) {
           cachedAllStatusRooms = data.allStatusRooms.slice();
         }
@@ -1522,9 +1742,8 @@
         return " vac-asn-in-highlight";
       }
 
-      /** VAC·ASN 보드: 연박 추가 목록 객실에 작은 「연박」 레이블 */
-      function extendedStayStrikeClass(roomNorm, boardMode) {
-        if (boardMode !== "vac" && boardMode !== "asn") return "";
+      /** 499·VAC·ASN·F.ASN 보드: 연박 추가 목록 객실에 작은 「연박」 레이블 */
+      function extendedStayStrikeClass(roomNorm) {
         if (!roomNorm || !extendedStayRooms[roomNorm]) return "";
         return " extended-stay-strike";
       }
@@ -2043,6 +2262,7 @@
           var resv = "";
           var blk = "";
           var fo = "";
+          var rtype = "";
           for (var j = 0; j < el.children.length; j++) {
             var c = el.children[j];
             if (c.tagName === "ROOM") rmRaw = textOf(c);
@@ -2050,6 +2270,7 @@
             else if (c.tagName === "RESV_STATUS") resv = textOf(c);
             else if (c.tagName === "BLOCK_CODE") blk = textOf(c);
             else if (c.tagName === "FO_STATUS") fo = textOf(c);
+            else if (c.tagName === "TYPE") rtype = textOf(c);
           }
           if (!isNumericGuestRoom(rmRaw)) continue;
           var nr = normalizeRoomDigits(rmRaw);
@@ -2060,6 +2281,7 @@
             resvStatus: resv,
             blockCode: blk,
             foStatus: fo,
+            roomType: rtype,
           });
         }
         return out;
@@ -2091,7 +2313,7 @@
         return map;
       }
 
-function parseAllStatusRoomList(doc) {
+      function parseAllStatusRoomList(doc) {
         var root = doc.documentElement && doc.documentElement.tagName;
         if (root !== "HK_ALLSTATUS") return null;
         var seen = {};
@@ -2253,7 +2475,7 @@ function parseAllStatusRoomList(doc) {
           });
           stray.forEach(function (s) {
             var row = document.createElement("div");
-            row.className = "pair-row " + boardRowStatusClass(s, "fasn");
+            row.className = "pair-row " + boardRowStatusClass(s, "fasn") + extendedStayStrikeClass(s.room);
             row.style.display = "inline-grid";
             row.style.gridTemplateColumns = "1fr 1fr";
             row.style.minWidth = "72px";
@@ -2812,7 +3034,9 @@ function parseAllStatusRoomList(doc) {
         var uploadSummary = document.getElementById("uploadSummary");
         uploadErr.hidden = !payload.errors.length;
         uploadErr.textContent = payload.errors.join("\n");
-        uploadSummary.textContent = payload.summaries.join("\n") || "";
+        var summaryBody = payload.summaries.join("\n") || "";
+        uploadSummary.textContent =
+          summaryBody && !payload.errors.length ? withUploadTimePrefix(summaryBody) : summaryBody;
         if (payload.blockMapPatch && Object.keys(payload.blockMapPatch).length) {
           Object.keys(payload.blockMapPatch).forEach(function (k) {
             cachedAllStatusBlockMap[k] = payload.blockMapPatch[k];
@@ -2825,9 +3049,67 @@ function parseAllStatusRoomList(doc) {
         if (payload.allStatusRooms && payload.allStatusRooms.length) {
           mergeAllStatusRoomList(payload.allStatusRooms);
         }
+        rebuildCombinedRoomResvMap();
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
         schedulePushSharedState({ includeExtendedStay: false });
+      }
+
+      function loadUploadFiles(files, done) {
+        var arr = files ? Array.prototype.slice.call(files, 0) : [];
+        if (!arr.length) return;
+
+        var xmlFiles = [];
+        var excelFiles = [];
+        arr.forEach(function (file) {
+          if (isExcelLikeFile(file)) excelFiles.push(file);
+          else xmlFiles.push(file);
+        });
+
+        function afterExcel(xmlPayload, summaries, errors) {
+          if (!excelFiles.length) {
+            if (xmlPayload) applyPayload(Object.assign({}, xmlPayload, { summaries: summaries, errors: errors }));
+            if (done) done();
+            return;
+          }
+          Promise.all(
+            excelFiles.map(function (file) {
+              var n = String(file.name || "").toLowerCase();
+              if (n.endsWith(".csv")) return readCsvFoFile(file);
+              return readExcelFoFile(file);
+            })
+          ).then(function (results) {
+            results.forEach(function (res) {
+              if (res.error) {
+                errors.push(res.error);
+                return;
+              }
+              var merged = mergeFoPatch(res.patch);
+              summaries.push(res.name + " · FO " + merged + "실 반영");
+            });
+            if (xmlPayload) {
+              applyPayload(Object.assign({}, xmlPayload, { summaries: summaries, errors: errors }));
+            } else {
+              rebuildCombinedRoomResvMap();
+              rebuildCachedRowsFromVacAndMap();
+              refreshBoards();
+              schedulePushSharedState({ includeExtendedStay: false });
+              applyPayload({ summaries: summaries, errors: errors, rows: [], blockMapPatch: {}, allStatusRooms: [] });
+            }
+            if (done) done();
+          });
+        }
+
+        if (!xmlFiles.length) {
+          afterExcel(null, [], []);
+          return;
+        }
+
+        loadXmlFiles(xmlFiles, function (xmlPayload) {
+          var summaries = (xmlPayload && xmlPayload.summaries) || [];
+          var errors = (xmlPayload && xmlPayload.errors) || [];
+          afterExcel(xmlPayload, summaries, errors);
+        });
       }
 
       var dzUpload = document.getElementById("dzUpload");
@@ -2844,7 +3126,7 @@ function parseAllStatusRoomList(doc) {
         }
       });
       inputUpload.addEventListener("change", function () {
-        loadXmlFiles(inputUpload.files, applyPayload);
+        loadUploadFiles(inputUpload.files);
         inputUpload.value = "";
       });
       ["dragenter", "dragover"].forEach(function (ev) {
@@ -2862,7 +3144,7 @@ function parseAllStatusRoomList(doc) {
       dzUpload.addEventListener("drop", function (e) {
         var dt = e.dataTransfer;
         if (!dt || !dt.files || !dt.files.length) return;
-        loadXmlFiles(dt.files, applyPayload);
+        loadUploadFiles(dt.files);
       });
 
       function rebuildExtendedStayRoomsFromTextarea() {
@@ -3110,8 +3392,9 @@ function parseAllStatusRoomList(doc) {
                 if (arl && arl.length) cachedAllStatusRooms = arl;
               }
             }
+            rebuildCombinedRoomResvMap();
             rebuildCachedRowsFromVacAndMap();
-            document.getElementById("uploadSummary").textContent =
+            document.getElementById("uploadSummary").textContent = withUploadTimePrefix(
               "자동 로드: " +
               DEFAULT_VACROOM_XML +
               " 공실 " +
@@ -3122,7 +3405,8 @@ function parseAllStatusRoomList(doc) {
               Object.keys(cachedAllStatusBlockMap).length +
               "실 · ALLSTATUS ROOM " +
               cachedAllStatusRooms.length +
-              "실 · 「만들기」로 다시 그리기";
+              "실 · 「만들기」로 다시 그리기"
+            );
             refreshBoards();
           })
           .catch(function () {

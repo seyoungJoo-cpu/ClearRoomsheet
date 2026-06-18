@@ -6,6 +6,7 @@
   var REQUEST_LOG_KEY = "lotte-hk-request-log-v1";
   var REQUEST_CANCEL_NAME_LOG_KEY = "lotte-hk-cancel-name-log-v1";
   var REQUEST_USE_LOG_KEY = "lotte-hk-use-log-v1";
+  var CHANGE_LOG_KEY = "lotte-hk-change-log-v1";
 
   var syncVersion = 0;
   var pollTimer = null;
@@ -18,7 +19,50 @@
     requestLog: [],
     cancelLog: [],
     useLog: [],
+    changeLog: [],
   };
+
+  /** 루밍 vacRows · roomResvMap — HK 화면용 (서버 payload에서 유지) */
+  var xmlSyncCache = {
+    vacRows: [],
+    roomResvMap: {},
+  };
+
+  function mergeXmlSyncCache(payload) {
+    if (!payload || typeof payload !== "object") return;
+    if (Array.isArray(payload.vacRows)) {
+      xmlSyncCache.vacRows = payload.vacRows.slice();
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(payload, "roomResvMap") &&
+      payload.roomResvMap &&
+      typeof payload.roomResvMap === "object"
+    ) {
+      xmlSyncCache.roomResvMap = Object.assign({}, payload.roomResvMap);
+    }
+  }
+
+  function xmlPayloadForListeners(serverPayload) {
+    var p = {
+      vacRows: xmlSyncCache.vacRows.slice(),
+      roomResvMap: Object.assign({}, xmlSyncCache.roomResvMap),
+    };
+    if (serverPayload && typeof serverPayload === "object") {
+      if (Array.isArray(serverPayload.vacRows)) p.vacRows = serverPayload.vacRows.slice();
+      if (serverPayload.roomResvMap && typeof serverPayload.roomResvMap === "object") {
+        p.roomResvMap = Object.assign({}, serverPayload.roomResvMap);
+      }
+    }
+    return p;
+  }
+
+  function xmlChangedKeys(payload) {
+    var keys = [];
+    if (!payload || typeof payload !== "object") return keys;
+    if (Array.isArray(payload.vacRows)) keys.push("vacRows");
+    if (Object.prototype.hasOwnProperty.call(payload, "roomResvMap")) keys.push("roomResvMap");
+    return keys;
+  }
 
   function getSyncPassword() {
     return global.sessionStorage.getItem("clear_html_sync_pwd") || "74321";
@@ -45,10 +89,19 @@
     cache.requestLog = readJsonArray(REQUEST_LOG_KEY);
     cache.cancelLog = readJsonArray(REQUEST_CANCEL_NAME_LOG_KEY);
     cache.useLog = readJsonArray(REQUEST_USE_LOG_KEY);
+    cache.changeLog = readJsonArray(CHANGE_LOG_KEY);
   }
 
   function onChange(fn) {
-    if (typeof fn === "function") changeListeners.push(fn);
+    if (typeof fn !== "function") return;
+    changeListeners.push(fn);
+    var hasXml =
+      xmlSyncCache.vacRows.length > 0 || Object.keys(xmlSyncCache.roomResvMap).length > 0;
+    if (hasXml) {
+      try {
+        fn(xmlChangedKeys(xmlSyncCache), xmlPayloadForListeners(null));
+      } catch (e) {}
+    }
   }
 
   function emitChange(changed, payload) {
@@ -76,6 +129,7 @@
     if (pendingPush.hkRequestLog) body.hkRequestLog = cache.requestLog;
     if (pendingPush.hkCancelLog) body.hkCancelLog = cache.cancelLog;
     if (pendingPush.hkUseLog) body.hkUseLog = cache.useLog;
+    if (pendingPush.hkChangeLog) body.hkChangeLog = cache.changeLog;
     return body;
   }
 
@@ -133,12 +187,24 @@
       writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
       changed.push("hkUseLog");
     }
-    if (payload.vacRows && payload.vacRows.length) {
-      changed.push("vacRows");
+    if (Array.isArray(payload.hkChangeLog)) {
+      cache.changeLog = payload.hkChangeLog.slice();
+      writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+      changed.push("hkChangeLog");
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, "hkLastRoomChange")) {
+      changed.push("hkLastRoomChange");
     }
 
+    mergeXmlSyncCache(payload);
+    xmlChangedKeys(payload).forEach(function (k) {
+      if (changed.indexOf(k) < 0) changed.push(k);
+    });
+
     isApplyingRemote = false;
-    if (changed.length) emitChange(changed, payload);
+    if (changed.length) {
+      emitChange(changed, Object.assign({}, payload, xmlPayloadForListeners(payload)));
+    }
   }
 
   function pull(isPoll) {
@@ -168,6 +234,7 @@
       if (cache.requestLog.length) fields.hkRequestLog = true;
       if (cache.cancelLog.length) fields.hkCancelLog = true;
       if (cache.useLog.length) fields.hkUseLog = true;
+      if (cache.changeLog.length) fields.hkChangeLog = true;
       schedulePush(fields);
     });
     if (pollTimer) return;
@@ -223,7 +290,31 @@
         cache.useLog = payload.hkUseLog.slice();
         writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
       }
+      if (Array.isArray(payload.hkChangeLog)) {
+        cache.changeLog = payload.hkChangeLog.slice();
+        writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+      }
       return postPayload(payload);
+    },
+    getChangeLog: function () {
+      return cache.changeLog;
+    },
+    pushRoomChange: function (entry) {
+      if (!entry || typeof entry !== "object") return Promise.resolve(false);
+      cache.changeLog.unshift(entry);
+      if (cache.changeLog.length > 100) cache.changeLog.length = 100;
+      writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+      var body = {
+        hkChangeLog: cache.changeLog.slice(),
+        hkLastRoomChange: entry,
+      };
+      if (global.HKStorage) body.hkStorage = global.HKStorage.load();
+      return postPayload(body);
+    },
+    clearChangeLog: function () {
+      cache.changeLog = [];
+      writeJsonArray(CHANGE_LOG_KEY, []);
+      schedulePush({ hkChangeLog: true });
     },
     getUseLog: function () {
       return cache.useLog;
@@ -240,6 +331,9 @@
     },
     schedulePushStorage: function () {
       schedulePush({ hkStorage: true });
+    },
+    getXmlPayload: function () {
+      return xmlPayloadForListeners(null);
     },
   };
 })(typeof window !== "undefined" ? window : this);

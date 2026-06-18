@@ -125,6 +125,47 @@ textarea:focus {
   font-weight: 600;
 }
 
+.hk-status-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hk-resv-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  border: 2px solid transparent;
+  letter-spacing: 0.02em;
+}
+
+.hk-resv--in {
+  background: #e0e7ff;
+  color: #3730a3;
+  border-color: #818cf8;
+}
+
+.hk-resv--o {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fb923c;
+}
+
+.room-status-auto.hk-status-group {
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
 .request-feedback__item.hk-st--ip { background: #f0fdf4; border-color: var(--st-ip-bd); }
 .request-feedback__item.hk-st--cl { background: #f0f9ff; border-color: var(--st-cl-bd); }
 .request-feedback__item.hk-st--pu { background: #fefce8; border-color: var(--st-pu-bd); }

@@ -867,6 +867,63 @@
       color: var(--accent);
     }
 
+    .sidebar-nav--zones {
+      gap: 4px;
+    }
+
+    .sidebar .sidebar-nav__btn.zone-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+    }
+
+    .sidebar .sidebar-nav__btn.zone-tab.active:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+      color: #fff;
+    }
+
+    .sidebar .sidebar-nav__btn.zone-tab.is-change-alert {
+      animation: sidebar-zone-alert 0.75s ease-in-out infinite;
+    }
+
+    @keyframes sidebar-zone-alert {
+      0%,
+      100% {
+        background: var(--surface-raised);
+        border-color: var(--border);
+        color: var(--text);
+        box-shadow: none;
+      }
+      50% {
+        background: #fef9c3;
+        border-color: #facc15;
+        color: #854d0e;
+        box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
+    .sidebar .sidebar-nav__btn.zone-tab.active.is-change-alert {
+      animation: sidebar-zone-alert-active 0.75s ease-in-out infinite;
+    }
+
+    @keyframes sidebar-zone-alert-active {
+      0%,
+      100% {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+      }
+      50% {
+        background: #fef08a;
+        border-color: #facc15;
+        color: #854d0e;
+        box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
     .hk-sidebar-list-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -995,38 +1052,6 @@
       display: none;
     }
 
-    /* 메인 상단: VIP / R/C / CASINO */
-    .zone-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .zone-tab {
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg-card);
-      font: inherit;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--text-muted);
-    }
-
-    .zone-tab:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .zone-tab.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.25);
-    }
-
     .main {
       flex: 1;
       min-width: 0;
@@ -1104,6 +1129,101 @@
 
     .room-card.is-clickable:focus-visible {
       outline: 2px solid var(--accent);
+    }
+
+    .room-card.is-change-alert {
+      animation: room-change-alert 0.75s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    .room-card.is-change-alert:hover {
+      border-color: #facc15;
+    }
+
+    .room-card.is-history-toggle {
+      cursor: pointer;
+    }
+
+    .room-card.is-history-open {
+      border-color: #facc15;
+    }
+
+    .room-card__history {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #facc15;
+      border-radius: 8px;
+      background: #fffbeb;
+      box-shadow: 0 2px 8px rgba(250, 204, 21, 0.15);
+    }
+
+    .room-card__history-title {
+      margin: 0 0 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #854d0e;
+    }
+
+    .room-card__history-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .room-card__history-item {
+      position: relative;
+      padding: 8px 10px 22px;
+      border: 1px solid #fde68a;
+      border-left: 3px solid #facc15;
+      border-radius: 6px;
+      background: #fffbeb;
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    .room-card__history-item-by {
+      position: absolute;
+      right: 8px;
+      bottom: 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      line-height: 1.2;
+      max-width: 45%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .room-card__history-item time {
+      display: block;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-size: 0.6875rem;
+    }
+
+    .room-card__history-changes {
+      margin: 0;
+      padding-left: 1.1em;
+      color: var(--text);
+    }
+
+    @keyframes room-change-alert {
+      0%,
+      100% {
+        background: var(--surface-raised);
+        border-color: var(--border);
+        box-shadow: none;
+      }
+      50% {
+        background: #fef9c3;
+        border-color: #facc15;
+        box-shadow: 0 0 0 2px #facc15, 0 0 12px rgba(250, 204, 21, 0.45);
+      }
     }
 
     .room-card__head {
@@ -1305,13 +1425,6 @@
       border: 2px solid var(--border);
     }
 
-    .zone-tab.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent-dim);
-      box-shadow: none;
-    }
-
     .zone-panel-hint {
       background: var(--surface-inset);
       border: 2px dashed var(--border);
@@ -1443,6 +1556,62 @@
       color: var(--accent);
     }
 
+    .request-type-filters {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .request-type-filters__label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .request-type-filters__list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .request-type-filters__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+    }
+
+    .request-type-filters__item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .request-type-filters__item input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .request-type-filters__item--all {
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .request-type-filters__item--suite {
+      font-weight: 700;
+      color: #6d28d9;
+    }
+
     /* 정비요청 아래 · 처리·예정 요청 카드 */
     .sched-cards-panel {
       border: 1px dashed var(--border);
@@ -1490,6 +1659,11 @@
       box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
     }
 
+    .sched-req-card {
+      position: relative;
+      padding-bottom: 22px;
+    }
+
     .sched-req-card__actions {
       display: flex;
       flex-wrap: wrap;
@@ -1514,6 +1688,12 @@
     .sched-card__use-btn:hover {
       background: #e5e7eb;
       border-color: var(--text-muted);
+    }
+
+    .sched-req-card__actions .request-feedback__memo-btn {
+      margin-top: 0;
+      padding: 4px 10px;
+      font-size: 0.72rem;
     }
 
     .request-row {
@@ -1814,7 +1994,12 @@
         min-height: 44px;
       }
 
-      .zone-tab {
+      .sidebar-section--zones .sidebar-nav--zones {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .sidebar-section--zones .sidebar-nav__btn.zone-tab {
         flex: 1 1 calc(33.33% - 6px);
         min-height: 44px;
         padding: 10px 8px;
@@ -2119,6 +2304,38 @@
           </button>
         </div>
       </nav>
+      <nav class="sidebar-section sidebar-section--zones" aria-label="특이객실 선택">
+        <div class="sidebar-title">특이객실</div>
+        <div class="sidebar-nav sidebar-nav--zones" role="tablist" aria-label="VIP / R/C / CASINO">
+          <button
+            type="button"
+            class="sidebar-nav__btn zone-tab"
+            role="tab"
+            data-zone="VIP"
+            aria-selected="false"
+          >
+            VIP
+          </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn zone-tab"
+            role="tab"
+            data-zone="RC"
+            aria-selected="false"
+          >
+            R/C
+          </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn zone-tab"
+            role="tab"
+            data-zone="CASINO"
+            aria-selected="false"
+          >
+            CASINO
+          </button>
+        </div>
+      </nav>
       <nav class="sidebar-footer" aria-label="다른 프로그램">
         <div class="sidebar-nav">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
@@ -2142,40 +2359,29 @@
         <p class="hk-sidebar-list-panel__empty" id="hkSidebarListPanelEmpty" hidden>내역이 없습니다.</p>
       </section>
 
-      <section class="zone-block" id="zoneBlock" aria-label="구역별 객실">
+      <section class="zone-block is-collapsed" id="zoneBlock" aria-label="특이객실 등록 객실">
         <div class="zone-block__toolbar">
-          <h2 class="zone-block__title">VIP / R/C / CASINO</h2>
+          <h2 class="zone-block__title" id="zoneBlockTitle">등록 객실</h2>
           <button
             type="button"
             class="zone-block__collapse"
             id="zoneCollapseBtn"
-            aria-expanded="true"
+            aria-expanded="false"
             aria-controls="zoneBlockBody"
           >
-            접기
+            펼치기
           </button>
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
-          <div class="zone-tabs" role="tablist" aria-label="구역 선택">
-            <button type="button" class="zone-tab" role="tab" data-zone="VIP" aria-selected="false">
-              VIP
-            </button>
-            <button type="button" class="zone-tab" role="tab" data-zone="RC" aria-selected="false">
-              R/C
-            </button>
-            <button type="button" class="zone-tab" role="tab" data-zone="CASINO" aria-selected="false">
-              CASINO
-            </button>
-          </div>
           <p class="zone-panel-hint" id="zonePanelHint">
-            VIP / R/C / CASINO 중 한 구역을 선택하면 객실 목록이 펼쳐집니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="main-placeholder" id="mainZoneBody" hidden>
             <p class="zone-main-head" id="zoneMainHead">
-              등록 객실 · <strong id="mainZoneLabel">VIP</strong> 구역
+              등록 객실 · <strong id="mainZoneLabel">VIP</strong>
             </p>
             <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
-            <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 구역 객실을 등록하세요.</p>
+            <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 특이객실 객실을 등록하세요.</p>
           </div>
         </div>
       </section>
@@ -2224,6 +2430,10 @@
             </div>
           </div>
         </form>
+        <div class="request-type-filters" id="requestTypeFilters" aria-label="처리·예정 TYPE 필터">
+          <span class="request-type-filters__label">TYPE (처리·예정 필터)</span>
+          <div class="request-type-filters__list" id="requestTypeFilterList"></div>
+        </div>
       </section>
 
       <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
@@ -2346,12 +2556,36 @@
       var sidebarListView = null;
       var requestLogEntries = [];
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
+      var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var operatorNameModalMode = "initial";
       var pendingOperatorNameCallback = null;
       var SCHED_PANEL_HINT_EMPTY =
         "요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.";
       var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
+      var SCHED_PANEL_HINT_NO_TYPE = "선택한 TYPE에 해당하는 처리·예정 요청이 없습니다.";
+      var SCHED_TYPE_FILTER_LS = "lotte-hk-sched-type-filters-v3";
+      var CHANGE_ACK_LS = "lotte-hk-change-ack-v1";
+      var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
+      var pendingZoneAlerts = {};
+      var pendingRoomAlerts = {};
+      var openRoomHistoryKeys = loadOpenRoomHistoryKeys();
+      var SCHED_TYPE_SUITE_KEY = "스위트";
+      /** 2~5줄: TYPE 체크박스 행 (1줄은 ALL) */
+      var SCHED_TYPE_FILTER_ROWS = [
+        ["MNDFZ", "ENDFZ", "ENCFZ", "MNPBG", "ENDBG", "MNCFY", "MNCFQ", "MNCFK"],
+        ["MNDDM", "MNDTM", "MNDFM", "ENDDG", "ENDFG", "MNPFG", "MNDMM", "MNPMG"],
+        ["ENDDT", "ENCFG", "ENCDT", "ENCFT", "MNPDO", "MNPFO", "ESCMT", "ESJMT", "MSJTO"],
+        [SCHED_TYPE_SUITE_KEY],
+      ];
+      /** 위 목록에 없는 XML TYPE 은 모두 스위트로 분류 */
+      var SCHED_TYPE_EXPLICIT_OPTIONS = []
+        .concat(SCHED_TYPE_FILTER_ROWS[0], SCHED_TYPE_FILTER_ROWS[1], SCHED_TYPE_FILTER_ROWS[2]);
+      var SCHED_TYPE_FILTER_OPTIONS = SCHED_TYPE_EXPLICIT_OPTIONS.concat([SCHED_TYPE_SUITE_KEY]);
       var XML_ROOM_STATUS_MAP = {};
+      var XML_ROOM_RESV_MAP = {};
+      var XML_ROOM_TYPE_MAP = {};
+      /** @type {Record<string, boolean>} */
+      var schedTypeFilters = {};
       var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
       var pendingRoleAuth = null;
       var pendingRoleSuccess = null;
@@ -2443,6 +2677,20 @@
         openRolePasswordModal(role, onAuthed);
       }
 
+      function isOperatorSessionUnlocked() {
+        try {
+          return sessionStorage.getItem(OPERATOR_UNLOCK_KEY) === "1" && !!getOperatorName();
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function setOperatorSessionUnlocked() {
+        try {
+          sessionStorage.setItem(OPERATOR_UNLOCK_KEY, "1");
+        } catch (e) {}
+      }
+
       function getOperatorName() {
         try {
           return String(sessionStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
@@ -2508,9 +2756,10 @@
       }
 
       function ensureOperatorNameOnLoad() {
-        try {
-          localStorage.removeItem("lotte-hk-operator-name-v1");
-        } catch (e) {}
+        if (isOperatorSessionUnlocked()) {
+          hideOperatorGate();
+          return;
+        }
         showOperatorGate({ mode: "initial" });
       }
 
@@ -2522,6 +2771,7 @@
           return;
         }
         setOperatorName(name);
+        setOperatorSessionUnlocked();
         hideOperatorGate();
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
@@ -2578,6 +2828,223 @@
         return VALID_XML_STATUSES[u] ? u : "";
       }
 
+      function formatFoStatusDisplay(raw) {
+        var k = String(raw || "")
+          .replace(/_/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toUpperCase();
+        if (k === "OCC") return "IN";
+        if (k === "VAC") return "O";
+        return "";
+      }
+
+      function rebuildRoomTypeMap(vacRows) {
+        var m = {};
+        if (!Array.isArray(vacRows)) return m;
+        vacRows.forEach(function (row) {
+          var nr = normalizeRoomDigits(row.room);
+          var tp = String(row.roomType != null ? row.roomType : "").trim();
+          if (nr && tp) m[nr] = normalizeRoomTypeCode(tp);
+        });
+        return m;
+      }
+
+      function lookupRoomTypeFromXml(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return "";
+        return XML_ROOM_TYPE_MAP[nr] || "";
+      }
+
+      function normalizeRoomTypeCode(raw) {
+        return String(raw || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toUpperCase();
+      }
+
+      function getRoomTypeFilterBucket(roomInput) {
+        var t = lookupRoomTypeFromXml(roomInput);
+        if (!t) return "";
+        var k = normalizeRoomTypeCode(t);
+        if (SCHED_TYPE_EXPLICIT_OPTIONS.indexOf(k) >= 0) return k;
+        return SCHED_TYPE_SUITE_KEY;
+      }
+
+      function getSchedTypeFilterOptions() {
+        return SCHED_TYPE_FILTER_OPTIONS.slice();
+      }
+
+      function loadSchedTypeFiltersFromStorage() {
+        try {
+          var raw = sessionStorage.getItem(SCHED_TYPE_FILTER_LS);
+          if (!raw) return;
+          var o = JSON.parse(raw);
+          if (o && typeof o === "object") schedTypeFilters = o;
+        } catch (e) {}
+      }
+
+      function saveSchedTypeFiltersToStorage() {
+        try {
+          sessionStorage.setItem(SCHED_TYPE_FILTER_LS, JSON.stringify(schedTypeFilters));
+        } catch (e) {}
+      }
+
+      function ensureSchedTypeFilterDefaults() {
+        getSchedTypeFilterOptions().forEach(function (t) {
+          if (schedTypeFilters[t] === undefined) schedTypeFilters[t] = true;
+        });
+      }
+
+      function isAllSchedTypesChecked() {
+        return getSchedTypeFilterOptions().every(function (t) {
+          return schedTypeFilters[t] !== false;
+        });
+      }
+
+      function setAllSchedTypeFilters(checked) {
+        getSchedTypeFilterOptions().forEach(function (t) {
+          schedTypeFilters[t] = !!checked;
+        });
+      }
+
+      function syncSchedTypeAllCheckbox(allCb) {
+        if (!allCb) return;
+        var opts = getSchedTypeFilterOptions();
+        var checkedCount = opts.filter(function (t) {
+          return schedTypeFilters[t] !== false;
+        }).length;
+        allCb.checked = checkedCount === opts.length;
+        allCb.indeterminate = checkedCount > 0 && checkedCount < opts.length;
+      }
+
+      function isSchedTypeFilterRestricted() {
+        return getSchedTypeFilterOptions().some(function (t) {
+          return schedTypeFilters[t] === false;
+        });
+      }
+
+      function roomPassesSchedTypeFilter(roomInput) {
+        if (!isSchedTypeFilterRestricted()) return true;
+        var bucket = getRoomTypeFilterBucket(roomInput);
+        if (!bucket) return false;
+        return schedTypeFilters[bucket] !== false;
+      }
+
+      function appendSchedTypeFilterItem(rowEl, tp, allCb) {
+        var lab = document.createElement("label");
+        lab.className =
+          "request-type-filters__item" +
+          (tp === SCHED_TYPE_SUITE_KEY ? " request-type-filters__item--suite" : "");
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = schedTypeFilters[tp] !== false;
+        cb.setAttribute("data-room-type", tp);
+        cb.addEventListener("change", function () {
+          schedTypeFilters[tp] = cb.checked;
+          syncSchedTypeAllCheckbox(allCb);
+          saveSchedTypeFiltersToStorage();
+          renderSchedRequestCards();
+        });
+        lab.appendChild(cb);
+        lab.appendChild(document.createTextNode(tp));
+        rowEl.appendChild(lab);
+      }
+
+      function renderTypeFilterCheckboxes() {
+        var listEl = document.getElementById("requestTypeFilterList");
+        if (!listEl) return;
+        listEl.innerHTML = "";
+        ensureSchedTypeFilterDefaults();
+
+        var allCb = document.createElement("input");
+        allCb.type = "checkbox";
+        allCb.id = "schedTypeFilterAll";
+        syncSchedTypeAllCheckbox(allCb);
+        allCb.addEventListener("change", function () {
+          setAllSchedTypeFilters(allCb.checked);
+          allCb.indeterminate = false;
+          saveSchedTypeFiltersToStorage();
+          listEl.querySelectorAll('input[type="checkbox"][data-room-type]').forEach(function (node) {
+            node.checked = allCb.checked;
+          });
+          renderSchedRequestCards();
+        });
+
+        var rowAll = document.createElement("div");
+        rowAll.className = "request-type-filters__row";
+        var allLab = document.createElement("label");
+        allLab.className = "request-type-filters__item request-type-filters__item--all";
+        allLab.appendChild(allCb);
+        allLab.appendChild(document.createTextNode("ALL"));
+        rowAll.appendChild(allLab);
+        listEl.appendChild(rowAll);
+
+        SCHED_TYPE_FILTER_ROWS.forEach(function (types) {
+          var row = document.createElement("div");
+          row.className = "request-type-filters__row";
+          types.forEach(function (tp) {
+            appendSchedTypeFilterItem(row, tp, allCb);
+          });
+          listEl.appendChild(row);
+        });
+      }
+
+      function rebuildRoomResvMap(vacRows, roomResvMap) {
+        var m = {};
+        if (Array.isArray(vacRows)) {
+          vacRows.forEach(function (row) {
+            var nr = normalizeRoomDigits(row.room);
+            var label = formatFoStatusDisplay(row.foStatus);
+            if (nr && label) m[nr] = label;
+          });
+        }
+        if (roomResvMap && typeof roomResvMap === "object") {
+          Object.keys(roomResvMap).forEach(function (key) {
+            var nr = normalizeRoomDigits(key);
+            var val = roomResvMap[key];
+            if (!nr || val == null) return;
+            var label = formatFoStatusDisplay(val) || String(val).trim();
+            if (label === "IN" || label === "O") m[nr] = label;
+          });
+        }
+        return m;
+      }
+
+      function lookupRoomResvDisplay(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return "";
+        return XML_ROOM_RESV_MAP[nr] || "";
+      }
+
+      function resvBadgeClass(label) {
+        if (label === "IN") return "hk-resv-badge hk-resv--in";
+        if (label === "O") return "hk-resv-badge hk-resv--o";
+        return "hk-resv-badge";
+      }
+
+      function buildRoomStatusGroup(hkStatus, roomInput, opts) {
+        opts = opts || {};
+        var group = document.createElement("span");
+        group.className = opts.groupClass || "hk-status-group";
+        var st = (hkStatus || "").trim();
+        var stEl = document.createElement("span");
+        stEl.className =
+          (opts.statusClass || "room-card__status") + " " + hkStatusBadgeClasses(st);
+        stEl.textContent = st || (opts.emptyLabel != null ? opts.emptyLabel : "—");
+        if (!st && opts.missingClass) stEl.classList.add(opts.missingClass);
+        group.appendChild(stEl);
+        var resv = lookupRoomResvDisplay(roomInput);
+        if (resv) {
+          var rv = document.createElement("span");
+          rv.className = resvBadgeClass(resv);
+          rv.textContent = resv;
+          rv.title = "FO " + resv;
+          group.appendChild(rv);
+        }
+        return group;
+      }
+
       function rebuildRoomStatusMap(vacRows) {
         var m = {};
         if (!vacRows || !vacRows.length) return m;
@@ -2618,11 +3085,19 @@
       }
 
       function applyXmlRoomStatusPayload(payload) {
-        if (!payload || !payload.vacRows || !payload.vacRows.length) return;
-        XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+        if (!payload) return;
+        if (payload.vacRows && payload.vacRows.length) {
+          XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+          XML_ROOM_TYPE_MAP = rebuildRoomTypeMap(payload.vacRows);
+        }
+        XML_ROOM_RESV_MAP = rebuildRoomResvMap(
+          payload && payload.vacRows ? payload.vacRows : [],
+          payload && payload.roomResvMap ? payload.roomResvMap : null
+        );
+        renderTypeFilterCheckboxes();
         updateRoomStatusDisplay();
-        var z = getActiveZone();
-        if (z) renderRoomsForZone(z);
+        renderRequestLogPanel();
+        refreshMain();
       }
 
       function syncRequestLogFromServer() {
@@ -2642,11 +3117,11 @@
           syncRequestLogFromServer();
           renderRequestLogPanel();
         }
+        if (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) {
+          applyXmlRoomStatusPayload(payload);
+        }
         if (changed.indexOf("hkStorage") >= 0) {
           refreshMain();
-        }
-        if (changed.indexOf("vacRows") >= 0) {
-          applyXmlRoomStatusPayload(payload);
         }
         if (
           changed.indexOf("hkCancelLog") >= 0 ||
@@ -2654,6 +3129,246 @@
         ) {
           if (sidebarListView) openSidebarList(sidebarListView);
         }
+        if (changed.indexOf("hkChangeLog") >= 0) {
+          if (!getRoomChangeLogEntries().length) {
+            clearAllChangeAlerts();
+          } else {
+            syncChangeAlertsFromLog();
+          }
+        }
+        if (changed.indexOf("hkLastRoomChange") >= 0 && payload && payload.hkLastRoomChange) {
+          registerChangeAlert(payload.hkLastRoomChange);
+        }
+      }
+
+      function getRoomChangeLogEntries() {
+        if (typeof HKSync !== "undefined" && HKSync.getChangeLog) {
+          return HKSync.getChangeLog();
+        }
+        return [];
+      }
+
+      function loadAckedChangeIds() {
+        try {
+          var raw = sessionStorage.getItem(CHANGE_ACK_LS);
+          if (!raw) return {};
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveAckedChangeIds(map) {
+        try {
+          sessionStorage.setItem(CHANGE_ACK_LS, JSON.stringify(map || {}));
+        } catch (e) {}
+      }
+
+      function isChangeAcked(id) {
+        if (!id) return false;
+        return !!loadAckedChangeIds()[id];
+      }
+
+      function ackChangeId(id) {
+        if (!id) return;
+        var map = loadAckedChangeIds();
+        map[id] = true;
+        saveAckedChangeIds(map);
+      }
+
+      function normalizeRoomKey(room) {
+        return String(room || "").replace(/\s/g, "").trim();
+      }
+
+      function roomAlertKey(zone, room) {
+        return String(zone || "") + ":" + normalizeRoomKey(room);
+      }
+
+      function loadOpenRoomHistoryKeys() {
+        try {
+          var raw = sessionStorage.getItem(OPEN_ROOM_HISTORY_LS);
+          if (!raw) return {};
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveOpenRoomHistoryKeys() {
+        try {
+          sessionStorage.setItem(OPEN_ROOM_HISTORY_LS, JSON.stringify(openRoomHistoryKeys));
+        } catch (e) {}
+      }
+
+      function isRoomHistoryOpen(zone, room) {
+        return !!openRoomHistoryKeys[roomAlertKey(zone, room)];
+      }
+
+      function clearAllChangeAlerts() {
+        pendingZoneAlerts = {};
+        pendingRoomAlerts = {};
+        openRoomHistoryKeys = {};
+        saveOpenRoomHistoryKeys();
+        saveAckedChangeIds({});
+        applyZoneAlertUi();
+        var zone = getActiveZone();
+        if (zone) renderRoomsForZone(zone);
+      }
+
+      function registerChangeAlert(entry) {
+        if (!entry || !entry.id || isChangeAcked(entry.id)) return;
+        if (entry.zone) pendingZoneAlerts[entry.zone] = true;
+        if (entry.zone && entry.room) {
+          pendingRoomAlerts[roomAlertKey(entry.zone, entry.room)] = entry.id;
+        }
+        applyZoneAlertUi();
+        var activeZone = getActiveZone();
+        if (activeZone === entry.zone) renderRoomsForZone(activeZone);
+      }
+
+      function syncChangeAlertsFromLog() {
+        getRoomChangeLogEntries().forEach(function (entry) {
+          registerChangeAlert(entry);
+        });
+      }
+
+      function isRoomChangePending(zone, room) {
+        return !!pendingRoomAlerts[roomAlertKey(zone, room)];
+      }
+
+      function applyZoneAlertUi() {
+        tabs.forEach(function (btn) {
+          var z = btn.getAttribute("data-zone");
+          btn.classList.toggle("is-change-alert", !!pendingZoneAlerts[z]);
+        });
+      }
+
+      function clearZoneAlert(zone) {
+        if (!zone) return;
+        delete pendingZoneAlerts[zone];
+        applyZoneAlertUi();
+      }
+
+      function dismissRoomFlash(zone, room) {
+        var roomNorm = normalizeRoomKey(room);
+        delete pendingRoomAlerts[roomAlertKey(zone, room)];
+        getRoomChangeLogEntries().forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (entry.zone !== zone) return;
+          if (normalizeRoomKey(entry.room) !== roomNorm) return;
+          ackChangeId(entry.id);
+        });
+      }
+
+      function toggleRoomHistoryPanel(zone, room) {
+        var key = roomAlertKey(zone, room);
+        if (openRoomHistoryKeys[key]) {
+          delete openRoomHistoryKeys[key];
+        } else {
+          openRoomHistoryKeys[key] = true;
+          dismissRoomFlash(zone, room);
+        }
+        saveOpenRoomHistoryKeys();
+        renderRoomsForZone(zone);
+      }
+
+      function canToggleRoomHistory(zone, room) {
+        return (
+          isRoomChangePending(zone, room) ||
+          isRoomHistoryOpen(zone, room) ||
+          getRoomChangeEntries(zone, room).length > 0
+        );
+      }
+
+      function displayChangeAuthor(entry) {
+        var by = entry && entry.by != null ? String(entry.by).trim() : "";
+        if (!by || by === "관리자") return "";
+        return by;
+      }
+
+      function getRoomChangeEntries(zone, room) {
+        var roomNorm = normalizeRoomKey(room);
+        return getRoomChangeLogEntries().filter(function (entry) {
+          return (
+            entry &&
+            entry.zone === zone &&
+            normalizeRoomKey(entry.room) === roomNorm
+          );
+        });
+      }
+
+      function buildRoomCardHistoryBlock(zone, room) {
+        var entries = getRoomChangeEntries(zone, room);
+        if (!entries.length) return null;
+        var wrap = document.createElement("div");
+        wrap.className = "room-card__history";
+        var title = document.createElement("p");
+        title.className = "room-card__history-title";
+        title.textContent = "변경 히스토리";
+        wrap.appendChild(title);
+        var ul = document.createElement("ul");
+        ul.className = "room-card__history-list";
+        entries.forEach(function (entry) {
+          var item = document.createElement("li");
+          item.className = "room-card__history-item";
+          var tm = document.createElement("time");
+          tm.textContent = formatReqAt(entry.at);
+          item.appendChild(tm);
+          var chUl = document.createElement("ul");
+          chUl.className = "room-card__history-changes";
+          (entry.changes || []).forEach(function (line) {
+            var ch = document.createElement("li");
+            ch.textContent = line;
+            chUl.appendChild(ch);
+          });
+          if (chUl.childNodes.length) item.appendChild(chUl);
+          var byName = displayChangeAuthor(entry);
+          if (byName) {
+            var byEl = document.createElement("span");
+            byEl.className = "room-card__history-item-by";
+            byEl.textContent = byName;
+            byEl.title = "작업: " + byName;
+            item.appendChild(byEl);
+          }
+          ul.appendChild(item);
+        });
+        wrap.appendChild(ul);
+        return wrap;
+      }
+
+      function collapseZoneBlock() {
+        var block = document.getElementById("zoneBlock");
+        var btn = document.getElementById("zoneCollapseBtn");
+        if (!block) return;
+        block.classList.add("is-collapsed");
+        if (btn) {
+          btn.setAttribute("aria-expanded", "false");
+          btn.textContent = "펼치기";
+        }
+      }
+
+      function expandZoneBlock() {
+        var block = document.getElementById("zoneBlock");
+        var btn = document.getElementById("zoneCollapseBtn");
+        if (!block) return;
+        block.classList.remove("is-collapsed");
+        if (btn) {
+          btn.setAttribute("aria-expanded", "true");
+          btn.textContent = "접기";
+        }
+      }
+
+      function clearZoneTabSelection() {
+        tabs.forEach(function (t) {
+          t.classList.remove("active");
+          t.setAttribute("aria-selected", "false");
+        });
+        currentZone = null;
+        updateZoneBlockTitle(null);
+        setZonePanelOpen(false);
+        renderRoomsForZone(null);
       }
 
       function updateRoomStatusDisplay() {
@@ -2665,17 +3380,43 @@
         var st = lookupRoomStatusFromXml(room);
         hidden.value = st;
         if (!String(room).replace(/\s/g, "")) {
-          display.textContent = "—";
-          display.className = "room-status-auto " + hkStatusBadgeClasses("");
+          display.innerHTML = "";
+          display.className = "room-status-auto hk-status-group";
+          display.appendChild(
+            buildRoomStatusGroup("", "", {
+              groupClass: "hk-status-group",
+              statusClass: "room-status-auto hk-st-badge",
+            })
+          );
           return;
         }
         if (!st) {
-          display.textContent = "XML 없음";
-          display.className = "room-status-auto is-missing";
+          var resvOnly = lookupRoomResvDisplay(room);
+          display.innerHTML = "";
+          if (!resvOnly) {
+            display.textContent = "XML 없음";
+            display.className = "room-status-auto is-missing";
+            return;
+          }
+          display.className = "room-status-auto hk-status-group";
+          display.appendChild(
+            buildRoomStatusGroup("", room, {
+              groupClass: "hk-status-group",
+              statusClass: "room-status-auto hk-st-badge",
+              emptyLabel: "XML 없음",
+              missingClass: "is-missing",
+            })
+          );
           return;
         }
-        display.textContent = st;
-        display.className = "room-status-auto " + hkStatusBadgeClasses(st);
+        display.innerHTML = "";
+        display.className = "room-status-auto hk-status-group";
+        display.appendChild(
+          buildRoomStatusGroup(st, room, {
+            groupClass: "hk-status-group",
+            statusClass: "room-status-auto hk-st-badge",
+          })
+        );
       }
 
       function getRequestRoomFilterRaw() {
@@ -2928,6 +3669,16 @@
         }
       }
 
+      function updateZoneBlockTitle(zone) {
+        var title = document.getElementById("zoneBlockTitle");
+        if (!title) return;
+        if (zone && zoneLabels[zone]) {
+          title.textContent = "등록 객실 · " + zoneLabels[zone];
+        } else {
+          title.textContent = "등록 객실";
+        }
+      }
+
       function renderRequestLogPanel() {
         var list = document.getElementById("requestFeedbackList");
         var empty = document.getElementById("requestFeedbackEmpty");
@@ -2972,8 +3723,12 @@
             r.appendChild(ub);
           }
           var s = document.createElement("span");
-          s.className = "request-feedback__item-st " + hkStatusBadgeClasses(entry.status);
-          s.textContent = entry.status || "상태 없음";
+          s.className = "request-feedback__item-st";
+          s.appendChild(
+            buildRoomStatusGroup(entry.status, entry.room, {
+              statusClass: "request-feedback__item-st hk-st-badge",
+            })
+          );
           row.appendChild(r);
           row.appendChild(s);
           li.appendChild(t);
@@ -3069,7 +3824,9 @@
         });
         var filterNorm = getRequestRoomFilterRaw().toLowerCase();
         var scheduled = allScheduled.filter(function (e) {
-          return roomMatchesSchedSearch(e.room, filterNorm);
+          return (
+            roomMatchesSchedSearch(e.room, filterNorm) && roomPassesSchedTypeFilter(e.room)
+          );
         });
         scheduled.forEach(function (entry) {
           var sched = String(entry.sched).trim();
@@ -3087,11 +3844,10 @@
           no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
           noBox.appendChild(no);
           var st = (entry.status || "").trim();
-          var stEl = document.createElement("span");
-          stEl.className = "room-card__status " + hkStatusBadgeClasses(st);
-          stEl.textContent = st || "—";
           head.appendChild(noBox);
-          head.appendChild(stEl);
+          head.appendChild(
+            buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
+          );
           li.appendChild(head);
 
           var sl = document.createElement("p");
@@ -3153,6 +3909,13 @@
               actions.appendChild(m2CardBtn);
             }
             if (frontMode) {
+              var memoCardBtn = document.createElement("button");
+              memoCardBtn.type = "button";
+              memoCardBtn.className = "request-feedback__memo-btn sched-card__memo-btn";
+              memoCardBtn.setAttribute("data-req-id", entry.id);
+              memoCardBtn.textContent = memoSched ? "메모 수정" : "메모 입력";
+              memoCardBtn.setAttribute("aria-label", memoSched ? "메모 수정" : "메모 입력");
+              actions.appendChild(memoCardBtn);
               var useBtn = document.createElement("button");
               useBtn.type = "button";
               useBtn.className = "sched-card__use-btn";
@@ -3164,6 +3927,15 @@
             li.appendChild(actions);
           }
 
+          var byNameSched = entry.by != null ? String(entry.by).trim() : "";
+          if (byNameSched) {
+            var byElSched = document.createElement("div");
+            byElSched.className = "request-feedback__item-by";
+            byElSched.textContent = byNameSched;
+            byElSched.title = "요청: " + byNameSched;
+            li.appendChild(byElSched);
+          }
+
           ul.appendChild(li);
         });
         if (hint) {
@@ -3172,6 +3944,9 @@
             hint.hidden = false;
           } else if (scheduled.length === 0 && filterNorm) {
             hint.textContent = SCHED_PANEL_HINT_NO_MATCH;
+            hint.hidden = false;
+          } else if (scheduled.length === 0 && isSchedTypeFilterRestricted()) {
+            hint.textContent = SCHED_PANEL_HINT_NO_TYPE;
             hint.hidden = false;
           } else {
             hint.hidden = true;
@@ -3294,7 +4069,9 @@
 
       function openRequestMemoEditor(entryId) {
         if (!frontMode) return;
-        var li = document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]');
+        var li =
+          document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
+          document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
         if (!li) return;
         var oldM = li.querySelector(".request-feedback__memo-editor-wrap");
         if (oldM) {
@@ -3305,6 +4082,10 @@
           if (cancelToggle) cancelToggle.style.visibility = "";
           var m2tog = li.querySelector(".request-feedback__memo2-btn");
           if (m2tog) m2tog.style.visibility = "";
+          var useBtnRestore = li.querySelector(".sched-card__use-btn");
+          if (useBtnRestore) useBtnRestore.style.visibility = "";
+          var editBtnRestore = li.querySelector(".sched-card__edit-btn");
+          if (editBtnRestore) editBtnRestore.style.visibility = "";
           return;
         }
         document.querySelectorAll(".request-feedback__memo-editor-wrap").forEach(function (n) {
@@ -3328,6 +4109,9 @@
         document.querySelectorAll(".sched-card__edit-btn").forEach(function (b) {
           b.style.visibility = "";
         });
+        document.querySelectorAll(".sched-card__use-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
         document.querySelectorAll(".request-feedback__item .request-feedback__sched-btn").forEach(function (b) {
           b.style.visibility = "";
         });
@@ -3339,6 +4123,10 @@
         if (cancelMemoBar) cancelMemoBar.style.visibility = "hidden";
         var memo2BarFront = li.querySelector(".request-feedback__memo2-btn");
         if (memo2BarFront) memo2BarFront.style.visibility = "hidden";
+        var useBtnHide = li.querySelector(".sched-card__use-btn");
+        if (useBtnHide) useBtnHide.style.visibility = "hidden";
+        var editBtnHide = li.querySelector(".sched-card__edit-btn");
+        if (editBtnHide) editBtnHide.style.visibility = "hidden";
 
         var wrap = document.createElement("div");
         wrap.className = "request-feedback__memo-editor-wrap";
@@ -3368,6 +4156,8 @@
           if (memoBtnEl) memoBtnEl.style.visibility = "";
           if (cancelMemoBar) cancelMemoBar.style.visibility = "";
           if (memo2BarFront) memo2BarFront.style.visibility = "";
+          if (useBtnHide) useBtnHide.style.visibility = "";
+          if (editBtnHide) editBtnHide.style.visibility = "";
           wrap.remove();
           renderRequestLogPanel();
         }
@@ -3688,11 +4478,13 @@
           roomList.innerHTML = "";
           roomEmpty.hidden = true;
           label.textContent = "—";
+          updateZoneBlockTitle(null);
           return;
         }
         var data = HKStorage.load();
         var rooms = (data.rooms && data.rooms[zone]) || [];
         label.textContent = zoneLabels[zone] || zone;
+        updateZoneBlockTitle(zone);
         roomList.innerHTML = "";
         if (rooms.length === 0) {
           roomEmpty.hidden = false;
@@ -3705,13 +4497,31 @@
             var tm = (room.time || "").trim();
 
             var li = document.createElement("li");
-            li.className = "room-card" + (maintenanceMode ? " is-clickable" : "");
+            var roomPending = isRoomChangePending(zone, room.number);
+            var hasHistory = getRoomChangeEntries(zone, room.number).length > 0;
+            var historyOpen = isRoomHistoryOpen(zone, room.number);
+            var canHistory = canToggleRoomHistory(zone, room.number);
+            li.className =
+              "room-card" +
+              (maintenanceMode ? " is-clickable" : "") +
+              (roomPending ? " is-change-alert" : "") +
+              (canHistory ? " is-history-toggle" : "") +
+              (historyOpen ? " is-history-open" : "");
             li.setAttribute("data-room-index", String(idx));
-            if (maintenanceMode) {
+            if (canHistory) {
+              li.setAttribute("role", "button");
+              li.setAttribute("tabindex", "0");
+              li.title = historyOpen
+                ? "변경 히스토리 접기"
+                : "변경 히스토리 보기";
+            } else if (maintenanceMode) {
               li.setAttribute("role", "button");
               li.setAttribute("tabindex", "0");
               li.title = "카드: 시간 입력 · 두잉: 아래 두잉 줄 클릭";
             }
+
+            var surface = document.createElement("div");
+            surface.className = "room-card__surface";
 
             var head = document.createElement("div");
             head.className = "room-card__head";
@@ -3721,17 +4531,16 @@
             no.className = "room-card__no";
             no.textContent = formatRoomNoDisplay(room.number || "");
             noBox.appendChild(no);
-            var stEl = document.createElement("span");
-            stEl.className = "room-card__status " + hkStatusBadgeClasses(st);
-            stEl.textContent = st || "—";
             head.appendChild(noBox);
-            head.appendChild(stEl);
-            li.appendChild(head);
+            head.appendChild(
+              buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
+            );
+            surface.appendChild(head);
 
             var timeDisp = document.createElement("p");
             timeDisp.className = "room-card__time-display";
             setLineWithEmTime(timeDisp, "시간 · ", tm || "");
-            li.appendChild(timeDisp);
+            surface.appendChild(timeDisp);
 
             var b1 = document.createElement("div");
             b1.className = "room-card__memo-block";
@@ -3739,7 +4548,7 @@
             p1.className = "room-card__memo" + (m1 ? "" : " is-empty");
             p1.textContent = m1 ? "FD : " + m1 : "FD : —";
             b1.appendChild(p1);
-            li.appendChild(b1);
+            surface.appendChild(b1);
 
             var b2 = document.createElement("div");
             b2.className =
@@ -3750,7 +4559,13 @@
               "room-card__memo room-card__memo2-text" + (m2 ? "" : " is-empty");
             p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
             b2.appendChild(p2);
-            li.appendChild(b2);
+            surface.appendChild(b2);
+            li.appendChild(surface);
+
+            if (historyOpen && hasHistory) {
+              var historyBlock = buildRoomCardHistoryBlock(zone, room.number);
+              if (historyBlock) li.appendChild(historyBlock);
+            }
 
             roomList.appendChild(li);
           });
@@ -3874,6 +4689,15 @@
             }
             return;
           }
+          var memoSchedBtn = e.target.closest(".sched-card__memo-btn");
+          if (memoSchedBtn) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridMemo = memoSchedBtn.getAttribute("data-req-id");
+            if (ridMemo) openRequestMemoEditor(ridMemo);
+            return;
+          }
           var m2s = e.target.closest(".sched-card__memo2-btn");
           if (m2s) {
             if (!maintenanceMode) return;
@@ -3892,11 +4716,29 @@
         });
       }
 
+      function handleRoomHistoryToggle(card, e) {
+        if (!card || e.target.closest(".room-card__history")) return false;
+        var ix = parseInt(card.getAttribute("data-room-index"), 10);
+        var zone = getActiveZone();
+        if (isNaN(ix) || !zone) return false;
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][ix];
+        if (!room || !canToggleRoomHistory(zone, room.number)) return false;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleRoomHistoryPanel(zone, room.number);
+        return true;
+      }
+
       if (roomList) {
         roomList.addEventListener("click", function (e) {
-          if (!maintenanceMode) return;
           if (e.target.closest(".room-time-editor")) return;
           if (e.target.closest(".room-memo2-editor")) return;
+
+          var histCard = e.target.closest(".room-card.is-history-toggle");
+          if (histCard && handleRoomHistoryToggle(histCard, e)) return;
+
+          if (!maintenanceMode) return;
 
           var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
           if (m2block) {
@@ -3923,6 +4765,11 @@
         roomList.addEventListener("keydown", function (e) {
           if (e.key !== "Enter" && e.key !== " ") return;
           if (e.target.closest(".room-memo2-editor")) return;
+
+          var histCard = e.target.closest(".room-card.is-history-toggle");
+          if (histCard && handleRoomHistoryToggle(histCard, e)) return;
+
+          if (!maintenanceMode) return;
           var card = e.target.closest(".room-card.is-clickable");
           if (!card) return;
           if (card.querySelector(".room-time-editor")) return;
@@ -3954,11 +4801,25 @@
       tabs.forEach(function (tab) {
         tab.addEventListener("click", function () {
           var z = tab.getAttribute("data-zone");
+          var wasActive = tab.classList.contains("active");
+          var block = document.getElementById("zoneBlock");
+          var isExpanded = block && !block.classList.contains("is-collapsed");
+
+          if (wasActive && isExpanded) {
+            collapseZoneBlock();
+            clearZoneTabSelection();
+            return;
+          }
+
           currentZone = z;
           tabs.forEach(function (t) {
             t.classList.toggle("active", t === tab);
             t.setAttribute("aria-selected", t === tab ? "true" : "false");
           });
+          if (sidebarListView) closeSidebarList();
+          clearZoneAlert(z);
+          expandZoneBlock();
+          updateZoneBlockTitle(z);
           setZonePanelOpen(true);
           renderRoomsForZone(z);
         });
@@ -3969,20 +4830,22 @@
       });
 
       window.addEventListener("pageshow", function (e) {
-        if (e.persisted) {
-          refreshMain();
-          showOperatorGate({ mode: "initial" });
-        }
+        if (e.persisted) refreshMain();
       });
 
       setupOperatorNameUi();
       setupRolePasswordUi();
       ensureOperatorNameOnLoad();
+      loadSchedTypeFiltersFromStorage();
+      renderTypeFilterCheckboxes();
       loadRequestLog();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
       }
+      syncChangeAlertsFromLog();
+      applyZoneAlertUi();
+      setZonePanelOpen(false);
       refreshMain();
 
       function clearRoomStatusDisplay() {

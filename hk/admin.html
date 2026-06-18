@@ -70,6 +70,29 @@
       gap: 8px;
     }
 
+    .admin-operator-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .admin-operator-name__label {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .admin-operator-name input {
+      width: 7rem;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
     .wrap {
       max-width: 900px;
       margin: 0 auto;
@@ -154,6 +177,13 @@
       margin: 0 0 10px;
       font-size: 0.9rem;
       color: var(--accent);
+    }
+
+    .zone-card {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-raised);
     }
 
     .add-stack {
@@ -598,6 +628,16 @@
   <header class="page-head">
     <h1>Lotte Hotel · 정비 관리자</h1>
     <div class="page-head-actions">
+      <label class="admin-operator-name" for="adminOperatorName">
+        <span class="admin-operator-name__label">작업자</span>
+        <input
+          type="text"
+          id="adminOperatorName"
+          placeholder="이름"
+          autocomplete="off"
+          maxlength="24"
+        />
+      </label>
       <a class="link-front" href="front.html">오더</a>
     </div>
   </header>
@@ -735,7 +775,61 @@
       var toastEl = document.getElementById("toast");
       var toastTimer;
       var XML_ROOM_STATUS_MAP = {};
+      var XML_ROOM_RESV_MAP = {};
       var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
+      var ADMIN_NAME_LS = "lotte-hk-admin-name-v1";
+      var ADMIN_NAME_FIRST_LS = "lotte-hk-admin-name-first-v1";
+
+      function getAdminName() {
+        var el = document.getElementById("adminOperatorName");
+        var v = el ? String(el.value || "").trim() : "";
+        if (v) return v;
+        try {
+          return String(localStorage.getItem(ADMIN_NAME_LS) || "").trim();
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function getAdminAuthorName() {
+        try {
+          var first = String(localStorage.getItem(ADMIN_NAME_FIRST_LS) || "").trim();
+          if (first) return first;
+        } catch (e) {}
+        var current = getAdminName();
+        if (current) {
+          try {
+            localStorage.setItem(ADMIN_NAME_FIRST_LS, current);
+          } catch (e) {}
+          return current;
+        }
+        return "";
+      }
+
+      function persistAdminNameField() {
+        var el = document.getElementById("adminOperatorName");
+        if (!el) return;
+        var n = String(el.value || "").trim();
+        try {
+          if (n) localStorage.setItem(ADMIN_NAME_LS, n);
+          if (n && !localStorage.getItem(ADMIN_NAME_FIRST_LS)) {
+            localStorage.setItem(ADMIN_NAME_FIRST_LS, n);
+          }
+        } catch (e) {}
+      }
+
+      function setupAdminNameField() {
+        var el = document.getElementById("adminOperatorName");
+        if (!el) return;
+        try {
+          var first = localStorage.getItem(ADMIN_NAME_FIRST_LS);
+          var saved = localStorage.getItem(ADMIN_NAME_LS);
+          el.value = saved || first || "";
+          if (first) el.placeholder = first;
+        } catch (e) {}
+        el.addEventListener("change", persistAdminNameField);
+        el.addEventListener("blur", persistAdminNameField);
+      }
 
       function normalizeRoomDigits(roomStr) {
         var d = String(roomStr || "").replace(/\D/g, "");
@@ -760,6 +854,72 @@
         return VALID_XML_STATUSES[u] ? u : "";
       }
 
+      function formatFoStatusDisplay(raw) {
+        var k = String(raw || "")
+          .replace(/_/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toUpperCase();
+        if (k === "OCC") return "IN";
+        if (k === "VAC") return "O";
+        return "";
+      }
+
+      function rebuildRoomResvMap(vacRows, roomResvMap) {
+        var m = {};
+        if (Array.isArray(vacRows)) {
+          vacRows.forEach(function (row) {
+            var nr = normalizeRoomDigits(row.room);
+            var label = formatFoStatusDisplay(row.foStatus);
+            if (nr && label) m[nr] = label;
+          });
+        }
+        if (roomResvMap && typeof roomResvMap === "object") {
+          Object.keys(roomResvMap).forEach(function (key) {
+            var nr = normalizeRoomDigits(key);
+            var val = roomResvMap[key];
+            if (!nr || val == null) return;
+            var label = formatFoStatusDisplay(val) || String(val).trim();
+            if (label === "IN" || label === "O") m[nr] = label;
+          });
+        }
+        return m;
+      }
+
+      function lookupRoomResvDisplay(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return "";
+        return XML_ROOM_RESV_MAP[nr] || "";
+      }
+
+      function hkStatusSuffix(status) {
+        var st = String(status || "").trim().toUpperCase();
+        if (!st) return "none";
+        if (st === "IP" || st === "CL" || st === "PU" || st === "DI" || st === "OO" || st === "OS") {
+          return st.toLowerCase();
+        }
+        return "none";
+      }
+
+      function appendAdminStatusBadges(container, hkStatus, roomInput) {
+        container.className = "re-status-readonly hk-status-group";
+        container.textContent = "";
+        var st = (hkStatus || "").trim();
+        var stEl = document.createElement("span");
+        stEl.className = "hk-st-badge hk-st--" + hkStatusSuffix(st);
+        stEl.textContent = st || "XML 없음";
+        container.appendChild(stEl);
+        var resv = lookupRoomResvDisplay(roomInput);
+        if (resv) {
+          var rv = document.createElement("span");
+          rv.className = "hk-resv-badge hk-resv--" + (resv === "IN" ? "in" : "o");
+          rv.textContent = resv;
+          rv.title = "FO " + resv;
+          container.appendChild(rv);
+        }
+        if (!st && !resv) container.classList.add("is-missing");
+      }
+
       function rebuildRoomStatusMap(vacRows) {
         var m = {};
         if (!vacRows || !vacRows.length) return m;
@@ -778,18 +938,65 @@
       }
 
       function applyXmlRoomStatusPayload(payload) {
-        if (!payload || !payload.vacRows || !payload.vacRows.length) return;
-        XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+        if (!payload) return;
+        if (payload.vacRows && payload.vacRows.length) {
+          XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
+        }
+        XML_ROOM_RESV_MAP = rebuildRoomResvMap(
+          payload && payload.vacRows ? payload.vacRows : [],
+          payload && payload.roomResvMap ? payload.roomResvMap : null
+        );
         renderRooms(HKStorage.load());
       }
 
       function handleHkSyncChange(changed, payload) {
-        if (changed.indexOf("vacRows") >= 0 && payload) {
+        if (
+          (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) &&
+          payload
+        ) {
           applyXmlRoomStatusPayload(payload);
         }
         if (changed.indexOf("hkStorage") >= 0) {
           refresh();
         }
+      }
+
+      function buildRoomChangeLines(prev, next) {
+        var lines = [];
+        var fields = [
+          { key: "number", label: "객실번호", fmt: formatRoomNoDisplay },
+          { key: "memo1", label: "FD" },
+          { key: "memo2", label: "두잉" },
+        ];
+        fields.forEach(function (f) {
+          var a = String((prev && prev[f.key]) || "").trim();
+          var b = String((next && next[f.key]) || "").trim();
+          if (a === b) return;
+          var fa = f.fmt ? f.fmt(a) : a;
+          var fb = f.fmt ? f.fmt(b) : b;
+          lines.push(f.label + ': "' + (fa || "—") + '" → "' + (fb || "—") + '"');
+        });
+        return lines;
+      }
+
+      function buildRoomChangeEntry(zone, prevRow, next) {
+        var changeLines = buildRoomChangeLines(prevRow, next);
+        if (!changeLines.length) return null;
+        return {
+          id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
+          at: new Date().toISOString(),
+          zone: zone,
+          room: next.number || (prevRow && prevRow.number) || "",
+          changes: changeLines,
+          by: getAdminAuthorName(),
+        };
+      }
+
+      function publishRoomChange(entry) {
+        if (typeof HKSync !== "undefined" && HKSync.pushRoomChange) {
+          return HKSync.pushRoomChange(entry);
+        }
+        return Promise.resolve();
       }
 
       function toast(msg) {
@@ -1001,6 +1208,8 @@
             hkRequestLog: [],
             hkCancelLog: [],
             hkUseLog: [],
+            hkChangeLog: [],
+            hkLastRoomChange: null,
           }).finally(function () {
             refresh();
             toast("마감 완료 · 엑셀 저장 후 초기화되었습니다.");
@@ -1049,9 +1258,8 @@
 
             var stSpan = document.createElement("span");
             var xmlSt = lookupRoomStatusFromXml(room.number || "");
-            stSpan.className = "re-status-readonly" + (xmlSt ? "" : " is-missing");
-            stSpan.textContent = xmlSt || "XML 없음";
-            stSpan.title = "루밍 XML ROOM_STATUS";
+            appendAdminStatusBadges(stSpan, xmlSt, room.number || "");
+            stSpan.title = "루밍 XML ROOM_STATUS · FO";
             grid.appendChild(stSpan);
 
             var inM1 = document.createElement("input");
@@ -1075,7 +1283,7 @@
             var btnSave = document.createElement("button");
             btnSave.type = "button";
             btnSave.className = "btn-save-row";
-            btnSave.textContent = "저장";
+            btnSave.textContent = "변경";
             btnSave.setAttribute("data-zone", zone);
             btnSave.setAttribute("data-index", String(idx));
             var btnRm = document.createElement("button");
@@ -1155,28 +1363,31 @@
           var status = lookupRoomStatusFromXml(num);
           var memo1 = (card.querySelector(".af-memo1") && card.querySelector(".af-memo1").value) || "";
           var memo2 = (card.querySelector(".af-memo2") && card.querySelector(".af-memo2").value) || "";
-          data.rooms[zone].push({
+          var newRow = {
             number: num,
             status: status,
             memo1: memo1,
             memo2: memo2,
             time: "",
+          };
+          var addEntry = buildRoomChangeEntry(zone, null, newRow);
+          data.rooms[zone].push(newRow);
+          HKStorage.save(data, { skipSync: true });
+          publishRoomChange(addEntry).then(function () {
+            if (zone === "RC") {
+              var inf = card.querySelector(".af-num-from");
+              var int = card.querySelector(".af-num-to");
+              if (inf) inf.value = "";
+              if (int) int.value = "";
+            } else {
+              var nb = card.querySelector(".af-num");
+              if (nb) nb.value = "";
+            }
+            card.querySelector(".af-memo1").value = "";
+            card.querySelector(".af-memo2").value = "";
+            renderRooms(HKStorage.load());
+            toast("객실이 추가되었습니다.");
           });
-          HKStorage.save(data);
-          if (zone === "RC") {
-            var inf = card.querySelector(".af-num-from");
-            var int = card.querySelector(".af-num-to");
-            if (inf) inf.value = "";
-            if (int) int.value = "";
-          } else {
-            var nb = card.querySelector(".af-num");
-            if (nb) nb.value = "";
-          }
-          card.querySelector(".af-memo1").value = "";
-          card.querySelector(".af-memo2").value = "";
-          data = HKStorage.load();
-          renderRooms(data);
-          toast("객실이 추가되었습니다.");
           return;
         }
         if (t.classList.contains("btn-save-row")) {
@@ -1202,10 +1413,17 @@
           }
           var prevRow = data.rooms[z][ix];
           next.time = prevRow && prevRow.time != null ? prevRow.time : "";
+          var changeEntry = buildRoomChangeEntry(z, prevRow, next);
+          if (!changeEntry) {
+            toast("변경된 내용이 없습니다.");
+            return;
+          }
           data.rooms[z][ix] = next;
-          HKStorage.save(data);
-          renderRooms(HKStorage.load());
-          toast("저장되었습니다.");
+          HKStorage.save(data, { skipSync: true });
+          publishRoomChange(changeEntry).then(function () {
+            renderRooms(HKStorage.load());
+            toast("변경되었습니다.");
+          });
           return;
         }
         if (t.classList.contains("btn-remove")) {
@@ -1222,6 +1440,7 @@
       });
 
       refresh();
+      setupAdminNameField();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
