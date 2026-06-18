@@ -152,6 +152,7 @@
     load: load,
     save: save,
     applyRemote: applyRemote,
+    defaultData: defaultData,
     defaultRoom: defaultRoom,
     parseTime24: parseTime24,
   };

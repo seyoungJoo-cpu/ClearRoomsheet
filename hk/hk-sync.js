@@ -79,12 +79,9 @@
     return body;
   }
 
-  function doPush() {
-    var body = buildPushBody();
-    var keys = Object.keys(body);
-    if (!keys.length) return;
-    pendingPush = {};
-    fetch("/api/sync", {
+  function postPayload(body) {
+    if (!body || !Object.keys(body).length) return Promise.resolve(false);
+    return fetch("/api/sync", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,7 +96,17 @@
       .then(function (data) {
         if (data && data.version) syncVersion = data.version;
       })
-      .catch(function () {});
+      .catch(function () {
+        return false;
+      });
+  }
+
+  function doPush() {
+    var body = buildPushBody();
+    var keys = Object.keys(body);
+    if (!keys.length) return;
+    pendingPush = {};
+    postPayload(body);
   }
 
   function applyRemotePayload(payload) {
@@ -193,6 +200,30 @@
       cache.cancelLog = [];
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, []);
       schedulePush({ hkCancelLog: true });
+    },
+    clearRequestLog: function () {
+      cache.requestLog = [];
+      writeJsonArray(REQUEST_LOG_KEY, []);
+      schedulePush({ hkRequestLog: true });
+    },
+    pushSnapshot: function (payload) {
+      if (!payload || typeof payload !== "object") return Promise.resolve(false);
+      if (payload.hkStorage && global.HKStorage) {
+        global.HKStorage.applyRemote(payload.hkStorage);
+      }
+      if (Array.isArray(payload.hkRequestLog)) {
+        cache.requestLog = payload.hkRequestLog.slice();
+        writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+      }
+      if (Array.isArray(payload.hkCancelLog)) {
+        cache.cancelLog = payload.hkCancelLog.slice();
+        writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
+      }
+      if (Array.isArray(payload.hkUseLog)) {
+        cache.useLog = payload.hkUseLog.slice();
+        writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
+      }
+      return postPayload(payload);
     },
     getUseLog: function () {
       return cache.useLog;

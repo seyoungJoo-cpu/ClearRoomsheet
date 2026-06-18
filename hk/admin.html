@@ -377,6 +377,42 @@
       border-color: #f87171;
     }
 
+    .close-day-card {
+      border: 2px solid #93c5fd;
+      background: #f0f9ff;
+    }
+
+    .close-day-card h2 {
+      color: #1d4ed8;
+    }
+
+    .btn-close-day {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 4px;
+      padding: 0 18px;
+      font: inherit;
+      font-weight: 800;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 2px solid #1d4ed8;
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
+    }
+
+    .btn-close-day:hover {
+      filter: brightness(1.05);
+    }
+
+    .close-day-note {
+      margin: 0 0 12px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
     .empty-hint {
       padding: 10px;
       font-size: 0.8125rem;
@@ -512,6 +548,10 @@
         min-height: 44px;
       }
 
+      .btn-close-day {
+        min-height: 48px;
+      }
+
       .add-stack input,
       .rc-num-inline input,
       .notice-field textarea {
@@ -637,6 +677,15 @@
         </button>
       </div>
     </section>
+
+    <section class="card close-day-card">
+      <h2>마감</h2>
+      <p class="close-day-note">
+        공지·구역 객실·요청 알림·취소/사용 리스트를 <strong>엑셀 파일로 저장</strong>한 뒤
+        <strong>전체 초기화</strong>합니다. 되돌릴 수 없으니 마감 시점에만 사용하세요.
+      </p>
+      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (엑셀 저장 + 초기화)</button>
+    </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -698,7 +747,9 @@
       function roomNumberForStatusLookup(numStr) {
         var s = String(numStr || "").trim();
         var m = s.match(/^(.+?)\s*->\s*(.+)$/);
-        if (m) return normalizeRoomDigits(m[1].trim());
+        if (m) return normalizeRoomDigits(m[2].trim()) || normalizeRoomDigits(m[1].trim());
+        var k = s.match(/^(.+?)\s*에서\s*(.+?)\s*로\s*$/);
+        if (k) return normalizeRoomDigits(k[2].trim()) || normalizeRoomDigits(k[1].trim());
         return normalizeRoomDigits(s);
       }
 
@@ -748,6 +799,218 @@
         toastTimer = setTimeout(function () {
           toastEl.classList.remove("show");
         }, 2200);
+      }
+
+      function pad2(n) {
+        return n < 10 ? "0" + n : String(n);
+      }
+
+      function formatAt(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        return (
+          d.getFullYear() +
+          "-" +
+          pad2(d.getMonth() + 1) +
+          "-" +
+          pad2(d.getDate()) +
+          " " +
+          pad2(d.getHours()) +
+          ":" +
+          pad2(d.getMinutes()) +
+          ":" +
+          pad2(d.getSeconds())
+        );
+      }
+
+      function escHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function buildRoomRows(data, zone) {
+        return (data.rooms[zone] || []).map(function (room) {
+          var num = formatRoomNoDisplay(room.number || "");
+          var st = lookupRoomStatusFromXml(room.number || "") || room.status || "";
+          return [num, st, room.memo1 || "", room.memo2 || "", room.time || ""];
+        });
+      }
+
+      function collectCloseDaySnapshot() {
+        var data = HKStorage.load();
+        return {
+          exportedAt: new Date().toISOString(),
+          data: data,
+          requestLog: typeof HKSync !== "undefined" ? HKSync.getRequestLog() : [],
+          cancelLog: typeof HKSync !== "undefined" ? HKSync.getCancelLog() : [],
+          useLog: typeof HKSync !== "undefined" ? HKSync.getUseLog() : [],
+        };
+      }
+
+      function buildCloseDayWorkbookHtml(snapshot) {
+        var sections = [
+          {
+            title: "공지",
+            headers: ["내용"],
+            rows: [[snapshot.data.notice || ""]],
+          },
+          {
+            title: "VIP 객실",
+            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
+            rows: buildRoomRows(snapshot.data, "VIP"),
+          },
+          {
+            title: "R/C 객실",
+            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
+            rows: buildRoomRows(snapshot.data, "RC"),
+          },
+          {
+            title: "CASINO 객실",
+            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
+            rows: buildRoomRows(snapshot.data, "CASINO"),
+          },
+          {
+            title: "요청 알림",
+            headers: ["접수시각", "객실", "상태", "처리·예정", "긴급", "FD", "두잉", "요청자"],
+            rows: (snapshot.requestLog || []).map(function (entry) {
+              return [
+                formatAt(entry.at),
+                formatRoomNoDisplay(entry.room || ""),
+                entry.status || "",
+                entry.sched || "",
+                entry.urgent ? "Y" : "",
+                entry.memo || "",
+                entry.memo2 || "",
+                entry.by || "",
+              ];
+            }),
+          },
+          {
+            title: "취소리스트",
+            headers: ["시각", "객실", "처리자"],
+            rows: (snapshot.cancelLog || []).map(function (entry) {
+              return [formatAt(entry.at), formatRoomNoDisplay(entry.room || ""), entry.name || ""];
+            }),
+          },
+          {
+            title: "사용리스트",
+            headers: ["시각", "객실", "상태", "처리·예정", "긴급"],
+            rows: (snapshot.useLog || []).map(function (entry) {
+              return [
+                formatAt(entry.at),
+                formatRoomNoDisplay(entry.room || ""),
+                entry.status || "",
+                entry.sched || "",
+                entry.urgent ? "Y" : "",
+              ];
+            }),
+          },
+        ];
+
+        var html = [
+          '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">',
+          "<head><meta charset=\"UTF-8\">",
+          "<style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #999;padding:4px 6px;vertical-align:top;}th{background:#e5e7eb;font-weight:700;}h3{margin:16px 0 8px;font-size:14px;}</style>",
+          "</head><body>",
+          "<p><strong>마감 내보내기</strong> · " + escHtml(formatAt(snapshot.exportedAt)) + "</p>",
+        ];
+
+        sections.forEach(function (section) {
+          html.push("<h3>" + escHtml(section.title) + "</h3><table><thead><tr>");
+          section.headers.forEach(function (header) {
+            html.push("<th>" + escHtml(header) + "</th>");
+          });
+          html.push("</tr></thead><tbody>");
+          if (!section.rows.length) {
+            html.push(
+              "<tr><td colspan=\"" +
+                section.headers.length +
+                "\">" +
+                escHtml("(내역 없음)") +
+                "</td></tr>"
+            );
+          } else {
+            section.rows.forEach(function (row) {
+              html.push("<tr>");
+              row.forEach(function (cell) {
+                html.push("<td>" + escHtml(cell).replace(/\n/g, "<br>") + "</td>");
+              });
+              html.push("</tr>");
+            });
+          }
+          html.push("</tbody></table>");
+        });
+
+        html.push("</body></html>");
+        return html.join("");
+      }
+
+      function downloadCloseDayExcel(snapshot) {
+        var now = new Date(snapshot.exportedAt);
+        var filename =
+          "마감_" +
+          now.getFullYear() +
+          pad2(now.getMonth() + 1) +
+          pad2(now.getDate()) +
+          "_" +
+          pad2(now.getHours()) +
+          pad2(now.getMinutes()) +
+          ".xls";
+        var blob = new Blob(["\ufeff", buildCloseDayWorkbookHtml(snapshot)], {
+          type: "application/vnd.ms-excel;charset=utf-8;",
+        });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 0);
+      }
+
+      function getResetStorageData() {
+        return {
+          notice: "",
+          rooms: { VIP: [], RC: [], CASINO: [] },
+        };
+      }
+
+      function performCloseDay() {
+        if (
+          !confirm(
+            "마감을 진행할까요?\n\n1) 현재 데이터를 엑셀 파일로 저장\n2) 공지·객실·요청·취소/사용 리스트 전체 초기화\n\n되돌릴 수 없습니다."
+          )
+        ) {
+          return;
+        }
+
+        var snapshot = collectCloseDaySnapshot();
+        downloadCloseDayExcel(snapshot);
+
+        var resetStorage = getResetStorageData();
+        if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
+          HKSync.pushSnapshot({
+            hkStorage: resetStorage,
+            hkRequestLog: [],
+            hkCancelLog: [],
+            hkUseLog: [],
+          }).finally(function () {
+            refresh();
+            toast("마감 완료 · 엑셀 저장 후 초기화되었습니다.");
+          });
+          return;
+        }
+
+        HKStorage.save(resetStorage, { skipSync: true });
+        refresh();
+        toast("마감 완료 · 엑셀 저장 후 초기화되었습니다.");
       }
 
       function formatRoomNoDisplay(raw) {
@@ -980,6 +1243,11 @@
           if (typeof HKSync !== "undefined") HKSync.clearUseLog();
           toast("사용리스트를 비웠습니다.");
         });
+      }
+
+      var closeDayBtn = document.getElementById("btnCloseDay");
+      if (closeDayBtn) {
+        closeDayBtn.addEventListener("click", performCloseDay);
       }
 
       window.addEventListener("storage", function (e) {
