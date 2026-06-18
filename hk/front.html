@@ -133,6 +133,24 @@
       display: block;
     }
 
+    .notice-board.is-notice-alert {
+      animation: notice-board-alert 0.75s ease-in-out infinite;
+    }
+
+    @keyframes notice-board-alert {
+      0%,
+      100% {
+        background: #fffbeb;
+        border-color: #fbbf24;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      }
+      50% {
+        background: #fef08a;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.45), 0 0 20px rgba(245, 158, 11, 0.35);
+      }
+    }
+
     .layout {
       display: flex;
       align-items: stretch;
@@ -1097,6 +1115,46 @@
         border-color: #facc15;
         color: #854d0e;
         box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
+    .sidebar .sidebar-nav__btn.is-front-chat-alert {
+      animation: sidebar-front-chat-alert 0.75s ease-in-out infinite;
+    }
+
+    .sidebar .sidebar-nav__btn.is-front-chat-alert.is-active {
+      animation: sidebar-front-chat-alert-active 0.75s ease-in-out infinite;
+    }
+
+    @keyframes sidebar-front-chat-alert {
+      0%,
+      100% {
+        background: var(--surface-raised);
+        border-color: var(--border);
+        color: var(--text);
+        box-shadow: none;
+      }
+      50% {
+        background: #ecfdf5;
+        border-color: #6ee7b7;
+        color: #0f766e;
+        box-shadow: 0 0 0 3px #6ee7b7, 0 0 16px rgba(16, 185, 129, 0.45);
+      }
+    }
+
+    @keyframes sidebar-front-chat-alert-active {
+      0%,
+      100% {
+        background: #0f766e;
+        border-color: #0f766e;
+        color: #fff;
+        box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
+      }
+      50% {
+        background: #6ee7b7;
+        border-color: #34d399;
+        color: #065f46;
+        box-shadow: 0 0 0 3px #6ee7b7, 0 0 16px rgba(52, 211, 153, 0.5);
       }
     }
 
@@ -2172,10 +2230,11 @@
     }
 
     .front-chat__msg-by {
-      font-size: 0.72rem;
-      font-weight: 700;
+      font-size: 1.0625rem;
+      font-weight: 800;
       color: #0f766e;
-      margin-bottom: 3px;
+      margin-bottom: 5px;
+      line-height: 1.3;
     }
 
     .front-chat__msg-text {
@@ -2281,6 +2340,47 @@
 
     @supports (padding: max(0px)) {
       .front-chat-toast {
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+      }
+    }
+
+    .hk-notice-toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10000;
+      width: min(320px, calc(100vw - 32px));
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: #fffbeb;
+      border: 2px solid #fbbf24;
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.22);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      pointer-events: none;
+    }
+
+    .hk-notice-toast[hidden] {
+      display: none !important;
+    }
+
+    .hk-notice-toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .hk-notice-toast__text {
+      font-size: 0.9375rem;
+      font-weight: 800;
+      color: #92400e;
+      line-height: 1.45;
+    }
+
+    @supports (padding: max(0px)) {
+      .hk-notice-toast {
         right: max(16px, env(safe-area-inset-right));
         bottom: max(16px, env(safe-area-inset-bottom));
       }
@@ -3496,6 +3596,16 @@
   </div>
 
   <div
+    class="hk-notice-toast"
+    id="hkNoticeToast"
+    hidden
+    role="status"
+    aria-live="polite"
+  >
+    <div class="hk-notice-toast__text">공지가 변경되었습니다</div>
+  </div>
+
+  <div
     class="hk-confirm"
     id="hkCancelConfirm"
     hidden
@@ -3596,6 +3706,10 @@
       var frontChatMessages = [];
       var knownFrontChatIds = {};
       var frontChatToastHideTimer = null;
+      var pendingFrontChatAlert = false;
+      var lastKnownNotice = null;
+      var noticeChangeReady = false;
+      var noticeToastHideTimer = null;
       var pendingOrderIssueAlert = false;
       var knownOrderIssueIds = {};
       var pendingOrderAlert = false;
@@ -4250,7 +4364,7 @@
           applyXmlRoomStatusPayload(payload);
         }
         if (changed.indexOf("hkStorage") >= 0) {
-          refreshMain();
+          refreshMain({ detectNoticeChange: true });
         }
         if (
           changed.indexOf("hkCancelLog") >= 0 ||
@@ -5029,6 +5143,7 @@
         updateSidebarPrimaryNavActive();
         if (showFront) {
           hideFrontChatToast();
+          clearFrontChatSidebarAlert();
           requestAnimationFrame(function () {
             renderFrontChatPanel(true);
           });
@@ -5371,6 +5486,24 @@
             knownOrderAlertIds[entry.id] = true;
           }
         });
+      }
+
+      function applyFrontChatSidebarAlertUi() {
+        var frontNav = document.getElementById("sidebarBtnFront");
+        if (frontNav) {
+          frontNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
+        }
+      }
+
+      function registerFrontChatAlert() {
+        if (!frontMode || isViewingFrontChat()) return;
+        pendingFrontChatAlert = true;
+        applyFrontChatSidebarAlertUi();
+      }
+
+      function clearFrontChatSidebarAlert() {
+        pendingFrontChatAlert = false;
+        applyFrontChatSidebarAlertUi();
       }
 
       function applyOrderSidebarAlertUi() {
@@ -6326,10 +6459,51 @@
         ta.focus();
       }
 
-      function applyNotice() {
+      function applyNotice(opts) {
+        opts = opts || {};
         if (!noticeText) return;
         var data = HKStorage.load();
-        noticeText.textContent = data.notice || "";
+        var next = data.notice != null ? String(data.notice) : "";
+        if (noticeChangeReady && opts.detectChange && next !== lastKnownNotice) {
+          showNoticeChangedToast();
+          flashNoticeBoard();
+        }
+        lastKnownNotice = next;
+        noticeChangeReady = true;
+        noticeText.textContent = next;
+      }
+
+      function hideNoticeChangedToast() {
+        var toast = document.getElementById("hkNoticeToast");
+        if (!toast) return;
+        toast.classList.remove("is-visible");
+        toast.hidden = true;
+        if (noticeToastHideTimer) {
+          clearTimeout(noticeToastHideTimer);
+          noticeToastHideTimer = null;
+        }
+      }
+
+      function showNoticeChangedToast() {
+        var toast = document.getElementById("hkNoticeToast");
+        if (!toast) return;
+        toast.hidden = false;
+        requestAnimationFrame(function () {
+          toast.classList.add("is-visible");
+        });
+        if (noticeToastHideTimer) clearTimeout(noticeToastHideTimer);
+        noticeToastHideTimer = setTimeout(hideNoticeChangedToast, 3000);
+      }
+
+      function stopNoticeBoardFlash() {
+        var board = document.getElementById("noticeBoard");
+        if (board) board.classList.remove("is-notice-alert");
+      }
+
+      function flashNoticeBoard() {
+        var board = document.getElementById("noticeBoard");
+        if (!board) return;
+        board.classList.add("is-notice-alert");
       }
 
       function closeTimeEditor() {
@@ -6610,9 +6784,10 @@
         }
       }
 
-      function refreshMain() {
+      function refreshMain(opts) {
+        opts = opts || {};
         currentZone = getActiveZone();
-        applyNotice();
+        applyNotice({ detectChange: !!opts.detectNoticeChange });
         if (currentZone) {
           renderRoomsForZone(currentZone);
         } else {
@@ -6646,6 +6821,7 @@
           applySidebarMainView("front");
         }
         if (!frontMode) hideFrontChatToast();
+        if (!frontMode) clearFrontChatSidebarAlert();
         if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
@@ -6801,7 +6977,10 @@
           if (selfNorm && byNorm === selfNorm) return;
           newest = msg;
         });
-        if (newest) notifyFrontChatMessage(newest);
+        if (newest) {
+          registerFrontChatAlert();
+          notifyFrontChatMessage(newest);
+        }
       }
 
       function submitFrontChatMessage(text, image) {
@@ -7067,6 +7246,12 @@
       setupOperatorNameUi();
       setupRolePasswordUi();
       ensureOperatorNameOnLoad();
+
+      var noticeBoardEl = document.getElementById("noticeBoard");
+      if (noticeBoardEl) {
+        noticeBoardEl.addEventListener("click", stopNoticeBoardFlash);
+      }
+
       loadSchedTypeFiltersFromStorage();
       renderTypeFilterCheckboxes();
       loadRequestLog();
@@ -7075,6 +7260,7 @@
       initFrontChatTracking();
       initOrderIssueTracking();
       applyOrderSidebarAlertUi();
+      applyFrontChatSidebarAlertUi();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
