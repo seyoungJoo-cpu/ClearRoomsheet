@@ -982,7 +982,7 @@
       function buildRoomChangeEntry(zone, prevRow, next) {
         var changeLines = buildRoomChangeLines(prevRow, next);
         if (!changeLines.length) return null;
-        return {
+        var entry = {
           id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
           at: new Date().toISOString(),
           zone: zone,
@@ -990,6 +990,8 @@
           changes: changeLines,
           by: getAdminAuthorName(),
         };
+        if (!prevRow) entry.kind = "add";
+        return entry;
       }
 
       function publishRoomChange(entry) {
@@ -1206,6 +1208,8 @@
           HKSync.pushSnapshot({
             hkStorage: resetStorage,
             hkRequestLog: [],
+            hkOrderLog: [],
+            hkFrontChat: [],
             hkCancelLog: [],
             hkUseLog: [],
             hkChangeLog: [],

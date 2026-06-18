@@ -7,6 +7,8 @@
   var REQUEST_CANCEL_NAME_LOG_KEY = "lotte-hk-cancel-name-log-v1";
   var REQUEST_USE_LOG_KEY = "lotte-hk-use-log-v1";
   var CHANGE_LOG_KEY = "lotte-hk-change-log-v1";
+  var ORDER_LOG_KEY = "lotte-hk-order-log-v1";
+  var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
 
   var syncVersion = 0;
   var pollTimer = null;
@@ -20,6 +22,8 @@
     cancelLog: [],
     useLog: [],
     changeLog: [],
+    orderLog: [],
+    frontChat: [],
   };
 
   /** 루밍 vacRows · roomResvMap — HK 화면용 (서버 payload에서 유지) */
@@ -90,6 +94,8 @@
     cache.cancelLog = readJsonArray(REQUEST_CANCEL_NAME_LOG_KEY);
     cache.useLog = readJsonArray(REQUEST_USE_LOG_KEY);
     cache.changeLog = readJsonArray(CHANGE_LOG_KEY);
+    cache.orderLog = readJsonArray(ORDER_LOG_KEY);
+    cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
   }
 
   function onChange(fn) {
@@ -130,6 +136,8 @@
     if (pendingPush.hkCancelLog) body.hkCancelLog = cache.cancelLog;
     if (pendingPush.hkUseLog) body.hkUseLog = cache.useLog;
     if (pendingPush.hkChangeLog) body.hkChangeLog = cache.changeLog;
+    if (pendingPush.hkOrderLog) body.hkOrderLog = cache.orderLog;
+    if (pendingPush.hkFrontChat) body.hkFrontChat = cache.frontChat;
     return body;
   }
 
@@ -192,6 +200,16 @@
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
       changed.push("hkChangeLog");
     }
+    if (Array.isArray(payload.hkOrderLog)) {
+      cache.orderLog = payload.hkOrderLog.slice();
+      writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+      changed.push("hkOrderLog");
+    }
+    if (Array.isArray(payload.hkFrontChat)) {
+      cache.frontChat = payload.hkFrontChat.slice();
+      writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      changed.push("hkFrontChat");
+    }
     if (Object.prototype.hasOwnProperty.call(payload, "hkLastRoomChange")) {
       changed.push("hkLastRoomChange");
     }
@@ -235,6 +253,8 @@
       if (cache.cancelLog.length) fields.hkCancelLog = true;
       if (cache.useLog.length) fields.hkUseLog = true;
       if (cache.changeLog.length) fields.hkChangeLog = true;
+      if (cache.orderLog.length) fields.hkOrderLog = true;
+      if (cache.frontChat.length) fields.hkFrontChat = true;
       schedulePush(fields);
     });
     if (pollTimer) return;
@@ -273,6 +293,41 @@
       writeJsonArray(REQUEST_LOG_KEY, []);
       schedulePush({ hkRequestLog: true });
     },
+    getOrderLog: function () {
+      return cache.orderLog;
+    },
+    setOrderLog: function (entries) {
+      cache.orderLog = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+      schedulePush({ hkOrderLog: true });
+    },
+    clearOrderLog: function () {
+      cache.orderLog = [];
+      writeJsonArray(ORDER_LOG_KEY, []);
+      schedulePush({ hkOrderLog: true });
+    },
+    getFrontChat: function () {
+      return cache.frontChat;
+    },
+    appendFrontChatMessage: function (entry) {
+      if (!entry || typeof entry !== "object") return;
+      cache.frontChat.push(entry);
+      if (cache.frontChat.length > 300) {
+        cache.frontChat = cache.frontChat.slice(-300);
+      }
+      writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      schedulePush({ hkFrontChat: true });
+    },
+    setFrontChat: function (entries) {
+      cache.frontChat = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      schedulePush({ hkFrontChat: true });
+    },
+    clearFrontChat: function () {
+      cache.frontChat = [];
+      writeJsonArray(FRONT_CHAT_KEY, []);
+      schedulePush({ hkFrontChat: true });
+    },
     pushSnapshot: function (payload) {
       if (!payload || typeof payload !== "object") return Promise.resolve(false);
       if (payload.hkStorage && global.HKStorage) {
@@ -293,6 +348,14 @@
       if (Array.isArray(payload.hkChangeLog)) {
         cache.changeLog = payload.hkChangeLog.slice();
         writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+      }
+      if (Array.isArray(payload.hkOrderLog)) {
+        cache.orderLog = payload.hkOrderLog.slice();
+        writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+      }
+      if (Array.isArray(payload.hkFrontChat)) {
+        cache.frontChat = payload.hkFrontChat.slice();
+        writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       }
       return postPayload(payload);
     },

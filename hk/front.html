@@ -146,16 +146,135 @@
       flex-direction: column;
     }
 
-    /* 오른쪽 요청 알림 패널 */
-    .request-feedback {
+    /* 오른쪽 알림 패널 */
+    .feedback-column {
       width: var(--feedback-w);
       flex-shrink: 0;
-      background: #f8fafc;
-      border-left: 2px solid var(--border);
       display: flex;
       flex-direction: column;
       max-height: calc(100vh - var(--header-min-h));
+      border-left: 2px solid var(--border);
       box-shadow: -4px 0 12px rgba(0, 0, 0, 0.04);
+      background: #f8fafc;
+    }
+
+    .request-feedback {
+      width: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: none;
+      flex-shrink: 0;
+      background: #f8fafc;
+      border-left: none;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .order-feedback {
+      width: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      flex-shrink: 0;
+      background: #fffbeb;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .request-feedback[hidden],
+    .order-feedback[hidden],
+    .feedback-column[hidden] {
+      display: none !important;
+    }
+
+    .order-feedback__head {
+      padding: 12px 14px;
+      border-bottom: 2px solid #fde68a;
+      flex-shrink: 0;
+      background: #fefce8;
+    }
+
+    .order-feedback__head h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #854d0e;
+    }
+
+    .order-feedback__list {
+      list-style: none;
+      margin: 0;
+      padding: 10px 12px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 100px;
+    }
+
+    .order-feedback__empty {
+      margin: 0;
+      padding: 14px 12px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .order-feedback__empty[hidden] {
+      display: none;
+    }
+
+    .order-feedback__item {
+      position: relative;
+      padding: 6px 8px 18px;
+      margin-bottom: 6px;
+      border: 2px solid #fde68a;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .order-feedback__item .request-feedback__item-room {
+      font-size: 1.125rem;
+      font-weight: 800;
+    }
+
+    .order-feedback__item .order-feedback__item-memo {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .order-feedback__item.order-feedback__item--urgent {
+      border-color: #fca5a5;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+    }
+
+    .order-feedback__item .request-feedback__item-urgent-badge {
+      margin-left: 6px;
+    }
+
+    .order-feedback__item .request-feedback__item-time {
+      font-size: 0.65rem;
+    }
+
+    .order-feedback__item-memo {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.8125rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .order-feedback__item-by {
+      position: absolute;
+      right: 8px;
+      bottom: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
     }
 
     .request-feedback__head {
@@ -793,6 +912,23 @@
       flex-direction: column;
     }
 
+    .sidebar-brand {
+      padding: 12px 10px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-brand__title {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+
+    .sidebar-section--primary .sidebar-nav {
+      padding-top: 8px;
+    }
+
     .sidebar-section {
       border-bottom: 1px solid var(--border);
     }
@@ -909,6 +1045,46 @@
     }
 
     @keyframes sidebar-zone-alert-active {
+      0%,
+      100% {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.2);
+      }
+      50% {
+        background: #fef08a;
+        border-color: #facc15;
+        color: #854d0e;
+        box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
+    .sidebar .sidebar-nav__btn.is-order-alert {
+      animation: sidebar-order-alert 0.75s ease-in-out infinite;
+    }
+
+    .sidebar .sidebar-nav__btn.is-order-alert.is-active {
+      animation: sidebar-order-alert-active 0.75s ease-in-out infinite;
+    }
+
+    @keyframes sidebar-order-alert {
+      0%,
+      100% {
+        background: var(--surface-raised);
+        border-color: var(--border);
+        color: var(--text);
+        box-shadow: none;
+      }
+      50% {
+        background: #fef9c3;
+        border-color: #facc15;
+        color: #854d0e;
+        box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
+    @keyframes sidebar-order-alert-active {
       0%,
       100% {
         background: var(--accent);
@@ -1539,6 +1715,663 @@
       margin: 0;
     }
 
+    /* 오더 */
+    .order-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .order-panel h2 {
+      margin: 0 0 10px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .order-panel__hint {
+      margin: 0 0 12px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .order-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 10px 12px;
+    }
+
+    .order-row .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .order-row .field label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .order-row input[type="text"] {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      min-width: 0;
+    }
+
+    .order-row .field--room-no input[type="text"] {
+      min-width: 4.5rem;
+      max-width: 5.5rem;
+    }
+
+    .order-row .field--room-no {
+      flex: 0 0 auto;
+    }
+
+    .order-row .field--memo {
+      flex: 1 1 280px;
+      min-width: 200px;
+    }
+
+    .order-row .field--memo input[type="text"] {
+      width: 100%;
+      max-width: none;
+    }
+
+    .order-fo-display {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.5rem;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.875rem;
+      background: var(--surface-inset);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .order-fo-display.hk-resv--in {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1e40af;
+    }
+
+    .order-fo-display.hk-resv--o {
+      background: #fef3c7;
+      border-color: #fcd34d;
+      color: #92400e;
+    }
+
+    .btn-order {
+      height: 36px;
+      padding: 0 18px;
+      border: none;
+      border-radius: 8px;
+      background: #854d0e;
+      color: #fff;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-order:hover {
+      background: #713f12;
+    }
+
+    .order-work-section {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 2px solid var(--border);
+    }
+
+    .order-work-section__title {
+      margin: 0 0 10px;
+      font-size: 0.875rem;
+      font-weight: 800;
+    }
+
+    .order-work-section--issue .order-work-section__title {
+      color: #b91c1c;
+    }
+
+    .order-work-section--accepted .order-work-section__title {
+      color: #047857;
+    }
+
+    .order-work-section--cancelled .order-work-section__title {
+      color: #64748b;
+    }
+
+    .order-work-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+    }
+
+    .order-work-list--issue {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .order-work-list--issue .order-work-item {
+      width: 100%;
+      max-width: 260px;
+    }
+
+    .order-work-item {
+      position: relative;
+      padding: 6px 8px 18px;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .order-work-item .request-feedback__item-time {
+      font-size: 0.65rem;
+      margin-bottom: 2px;
+    }
+
+    .order-work-item .request-feedback__item-row {
+      gap: 4px 6px;
+      align-items: center;
+    }
+
+    .order-work-item .request-feedback__item-room {
+      font-size: 0.8125rem;
+      font-weight: 800;
+    }
+
+    .order-work-item .request-feedback__item-st.hk-st-badge,
+    .order-work-item .hk-resv-badge {
+      font-size: 0.6875rem;
+      min-width: 2em;
+      padding: 1px 5px;
+    }
+
+    .order-work-item .order-feedback__item-memo {
+      margin-top: 4px;
+      padding-top: 4px;
+      font-size: 0.6875rem;
+    }
+
+    .order-work-item .order-feedback__item-by {
+      font-size: 0.625rem;
+      right: 6px;
+      bottom: 4px;
+    }
+
+    .order-work-section--issue .order-work-item {
+      border: 2px solid #fca5a5;
+    }
+
+    .order-work-section--accepted .order-work-item {
+      border: 2px solid #6ee7b7;
+    }
+
+    .order-work-section--cancelled .order-work-item {
+      border: 2px dashed #cbd5e1;
+    }
+
+    .order-work-item--cancelled {
+      opacity: 0.52;
+      background: #f8fafc;
+    }
+
+    .order-work-item--cancelled .order-work-item__x {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.25rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(185, 28, 28, 0.42);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .order-feedback__front-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .order-work-empty {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .order-work-empty[hidden] {
+      display: none;
+    }
+
+    .order-feedback__accept-btn,
+    .order-work__issue-btn,
+    .order-work__accept-btn {
+      margin-top: 4px;
+      padding: 3px 8px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 5px;
+      cursor: pointer;
+      font: inherit;
+      border: none;
+    }
+
+    .order-feedback__accept-btn,
+    .order-work__accept-btn {
+      background: #047857;
+      color: #fff;
+    }
+
+    .order-feedback__accept-btn:hover,
+    .order-work__accept-btn:hover {
+      background: #065f46;
+    }
+
+    .order-work__issue-btn {
+      background: #b91c1c;
+      color: #fff;
+    }
+
+    .order-work__issue-btn:hover {
+      background: #991b1b;
+    }
+
+    .order-feedback__maint-actions,
+    .order-work__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .order-chat {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .order-chat__messages {
+      list-style: none;
+      margin: 0 0 6px;
+      padding: 0;
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .order-chat__msg {
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: #fef2f2;
+      font-size: 0.8125rem;
+    }
+
+    .order-chat__msg-by {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #991b1b;
+      margin-bottom: 2px;
+    }
+
+    .order-chat__msg-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .order-chat__msg-time {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .order-chat__form {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .order-chat__form input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .order-chat__send {
+      height: 32px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      background: #b91c1c;
+      color: #fff;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .order-chat__send:hover {
+      background: #991b1b;
+    }
+
+    .sidebar-section--front[hidden] {
+      display: none !important;
+    }
+
+    .sidebar-section--front .sidebar-title {
+      color: #0f766e;
+    }
+
+    .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .front-chat-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      min-height: min(520px, calc(100vh - 160px));
+      max-height: calc(100vh - 140px);
+    }
+
+    .front-chat-panel[hidden] {
+      display: none !important;
+    }
+
+    .front-chat-panel h2 {
+      margin: 0 0 6px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: #0f766e;
+    }
+
+    .front-chat-panel__hint {
+      margin: 0 0 12px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .front-chat__messages {
+      list-style: none;
+      margin: 0 0 10px;
+      padding: 0;
+      flex: 1;
+      min-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .front-chat__empty {
+      margin: 0;
+      padding: 24px 12px;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .front-chat__empty[hidden] {
+      display: none;
+    }
+
+    .front-chat__msg {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      font-size: 0.875rem;
+      max-width: 92%;
+      align-self: flex-start;
+    }
+
+    .front-chat__msg-by {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #0f766e;
+      margin-bottom: 3px;
+    }
+
+    .front-chat__msg-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .front-chat__msg-time {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .front-chat__form {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .front-chat__form input {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.875rem;
+    }
+
+    .front-chat__send {
+      height: 38px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .front-chat__send:hover {
+      background: #115e59;
+    }
+
+    .front-chat-toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10000;
+      width: min(320px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #ecfdf5;
+      border: 2px solid #6ee7b7;
+      box-shadow: 0 8px 24px rgba(15, 118, 110, 0.22);
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      pointer-events: none;
+    }
+
+    .front-chat-toast[hidden] {
+      display: none !important;
+    }
+
+    .front-chat-toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .front-chat-toast__label {
+      font-size: 0.6875rem;
+      font-weight: 800;
+      color: #0f766e;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .front-chat-toast__by {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #115e59;
+      margin-bottom: 3px;
+    }
+
+    .front-chat-toast__text {
+      font-size: 0.875rem;
+      color: #134e4a;
+      line-height: 1.45;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    @supports (padding: max(0px)) {
+      .front-chat-toast {
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+      }
+    }
+
+    .hk-compose-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .hk-compose-row input[type="text"],
+    .hk-compose-row textarea {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hk-photo-btn {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .hk-photo-btn:hover {
+      background: #e2e8f0;
+      border-color: var(--text-muted);
+    }
+
+    .order-chat__form.hk-compose-row,
+    .front-chat__form .hk-compose-row {
+      flex-wrap: nowrap;
+    }
+
+    .order-chat__form .hk-photo-btn,
+    .front-chat__form .hk-photo-btn {
+      height: 32px;
+    }
+
+    .front-chat__form .hk-compose-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hk-photo-preview {
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .hk-photo-preview[hidden] {
+      display: none !important;
+    }
+
+    .hk-photo-preview img {
+      max-width: 140px;
+      max-height: 90px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+    }
+
+    .hk-msg-image {
+      display: block;
+      max-width: 100%;
+      max-height: 220px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      object-fit: contain;
+      background: #fff;
+    }
+
+    .request-feedback__item-memo .hk-msg-image,
+    .order-feedback__item-memo .hk-msg-image,
+    .request-feedback__item-memo2-body .hk-msg-image,
+    .room-card__memo .hk-msg-image {
+      max-height: 160px;
+    }
+
     /* 하단 정비 요청 */
     .request-panel {
       background: var(--bg-card);
@@ -1562,12 +2395,36 @@
       border-top: 1px solid var(--border);
     }
 
-    .request-type-filters__label {
-      display: block;
-      margin: 0 0 8px;
+    .request-type-filters__toggle {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      font: inherit;
       font-size: 0.8125rem;
       font-weight: 700;
       color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .request-type-filters__toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .request-type-filters__toggle.is-on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .request-type-filters__body {
+      margin-top: 10px;
+    }
+
+    .request-type-filters__body[hidden] {
+      display: none !important;
     }
 
     .request-type-filters__list {
@@ -1649,9 +2506,28 @@
     }
 
     .sched-req-card .room-card__time-display {
-      font-weight: 600;
+      font-weight: 700;
       color: var(--accent);
-      font-size: 0.78rem;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .sched-req-card .room-card__time-display .hk-time-em {
+      font-size: 1.125rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .sched-req-card__received {
+      margin: 4px 0 0;
+      font-size: 0.625rem;
+      color: var(--text-muted);
+    }
+
+    .sched-req-card__received .hk-time-em {
+      font-size: 0.95em;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
     .sched-req-card--urgent {
@@ -1921,7 +2797,7 @@
         order: 2;
       }
 
-      .request-feedback {
+      .feedback-column {
         order: 1;
         width: 100%;
         max-height: none;
@@ -1930,9 +2806,17 @@
         box-shadow: none;
       }
 
-      .request-feedback__list {
-        max-height: 42vh;
-        min-height: 100px;
+      .request-feedback,
+      .order-feedback {
+        width: 100%;
+        max-height: none;
+      }
+
+      .request-feedback__list,
+      .order-feedback__list {
+        max-height: none;
+        flex: 1;
+        min-height: 80px;
         -webkit-overflow-scrolling: touch;
       }
 
@@ -2293,14 +3177,39 @@
 
   <div class="layout">
     <aside class="sidebar" aria-label="House Keeping">
-      <nav class="sidebar-section">
-        <div class="sidebar-title">House Keeping</div>
+      <div class="sidebar-brand">
+        <h1 class="sidebar-brand__title">House Keeping</h1>
+      </div>
+      <nav class="sidebar-section sidebar-section--primary" aria-label="House Keeping 메뉴">
         <div class="sidebar-nav">
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnCancelList" aria-pressed="false">
-            취소리스트
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnRequest"
+            aria-pressed="true"
+          >
+            정비 요청
           </button>
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnUseList" aria-pressed="false">
-            사용리스트
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnOrder"
+            aria-pressed="false"
+          >
+            오더
+          </button>
+        </div>
+      </nav>
+      <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
+        <div class="sidebar-title">프론트</div>
+        <div class="sidebar-nav">
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnFront"
+            aria-pressed="false"
+          >
+            프론트
           </button>
         </div>
       </nav>
@@ -2336,6 +3245,17 @@
           </button>
         </div>
       </nav>
+      <nav class="sidebar-section sidebar-section--lists" aria-label="리스트">
+        <div class="sidebar-title">리스트</div>
+        <div class="sidebar-nav">
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnCancelList" aria-pressed="false">
+            취소리스트
+          </button>
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnUseList" aria-pressed="false">
+            사용리스트
+          </button>
+        </div>
+      </nav>
       <nav class="sidebar-footer" aria-label="다른 프로그램">
         <div class="sidebar-nav">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
@@ -2357,6 +3277,27 @@
         </div>
         <ul class="hk-sidebar-list-panel__list" id="hkSidebarListPanelBody"></ul>
         <p class="hk-sidebar-list-panel__empty" id="hkSidebarListPanelEmpty" hidden>내역이 없습니다.</p>
+      </section>
+
+      <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
+        <h2 id="frontChatPanelTitle">프론트 채팅</h2>
+        <p class="front-chat-panel__hint">프론트 모드에서만 사용하는 공용 대화방입니다. 메시지는 모든 프론트 화면에 동기화됩니다.</p>
+        <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
+        <p class="front-chat__empty" id="frontChatEmpty">메시지가 없습니다. 아래에서 대화를 시작하세요.</p>
+        <form class="front-chat__form" id="frontChatForm">
+          <div class="hk-compose-row">
+            <input
+              type="text"
+              id="frontChatInput"
+              placeholder="메시지 입력"
+              autocomplete="off"
+              aria-label="프론트 채팅 메시지"
+            />
+            <button type="button" class="hk-photo-btn" id="btnPhotoFrontChat" title="사진 첨부">사진</button>
+            <button type="submit" class="front-chat__send">전송</button>
+          </div>
+          <div class="hk-photo-preview" data-photo-key="frontChat" hidden></div>
+        </form>
       </section>
 
       <section class="zone-block is-collapsed" id="zoneBlock" aria-label="특이객실 등록 객실">
@@ -2384,6 +3325,65 @@
             <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 특이객실 객실을 등록하세요.</p>
           </div>
         </div>
+      </section>
+
+      <section class="order-panel" id="orderPanel" hidden aria-labelledby="orderPanelTitle">
+        <h2 id="orderPanelTitle">오더</h2>
+        <form class="order-row" id="orderForm">
+          <div class="field field--room-no">
+            <label for="orderRoomNo">객실번호</label>
+            <input
+              type="text"
+              id="orderRoomNo"
+              name="orderRoomNo"
+              placeholder="예: 1205"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field">
+            <label for="orderFoDisplay">IN/O</label>
+            <div class="order-fo-display" id="orderFoDisplay" aria-live="polite">—</div>
+          </div>
+          <div class="field field--memo">
+            <label for="orderMemo">메모</label>
+            <div class="hk-compose-row">
+              <input
+                type="text"
+                id="orderMemo"
+                name="orderMemo"
+                placeholder="메모 (선택)"
+                autocomplete="off"
+              />
+              <button type="button" class="hk-photo-btn" id="btnPhotoOrderMemo" title="사진 첨부">사진</button>
+            </div>
+            <div class="hk-photo-preview" data-photo-key="orderMemo" hidden></div>
+          </div>
+          <div class="field">
+            <label for="btnOrderUrgent">긴급</label>
+            <button type="button" class="btn-urgent" id="btnOrderUrgent" aria-pressed="false">
+              긴급
+            </button>
+          </div>
+          <button type="submit" class="btn-order">오더</button>
+        </form>
+
+        <section class="order-work-section order-work-section--issue" id="orderIssueSection" aria-labelledby="orderIssueTitle">
+          <h3 class="order-work-section__title" id="orderIssueTitle">문제 발생</h3>
+          <ul class="order-work-list order-work-list--issue" id="orderIssueList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderIssueEmpty">문제 발생 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--accepted" id="orderAcceptedSection" aria-labelledby="orderAcceptedTitle">
+          <h3 class="order-work-section__title" id="orderAcceptedTitle">접수완료</h3>
+          <ul class="order-work-list" id="orderAcceptedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderAcceptedEmpty">접수완료 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--cancelled" id="orderCancelledSection" aria-labelledby="orderCancelledTitle">
+          <h3 class="order-work-section__title" id="orderCancelledTitle">취소</h3>
+          <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
+        </section>
       </section>
 
       <section class="request-panel" aria-labelledby="requestTitle">
@@ -2422,17 +3422,29 @@
                   placeholder="FD 입력 후 등록하거나 요청 시 함께 보냅니다"
                   autocomplete="off"
                 />
+                <button type="button" class="hk-photo-btn" id="btnPhotoRequestMemo" title="사진 첨부">사진</button>
                 <button type="button" class="btn-memo-register" id="btnMemoRegister">
                   메모 등록
                 </button>
               </div>
+              <div class="hk-photo-preview" data-photo-key="requestMemo" hidden></div>
               <ul class="memo-stack" id="memoStackList" hidden></ul>
             </div>
           </div>
         </form>
         <div class="request-type-filters" id="requestTypeFilters" aria-label="처리·예정 TYPE 필터">
-          <span class="request-type-filters__label">TYPE (처리·예정 필터)</span>
-          <div class="request-type-filters__list" id="requestTypeFilterList"></div>
+          <button
+            type="button"
+            class="request-type-filters__toggle"
+            id="requestTypeFilterToggle"
+            aria-expanded="false"
+            aria-controls="requestTypeFilterBody"
+          >
+            TYPE 필터
+          </button>
+          <div class="request-type-filters__body" id="requestTypeFilterBody" hidden>
+            <div class="request-type-filters__list" id="requestTypeFilterList"></div>
+          </div>
         </div>
       </section>
 
@@ -2446,9 +3458,10 @@
     </main>
     </div>
 
+    <div class="feedback-column" id="feedbackColumn">
     <aside class="request-feedback" id="requestFeedback" aria-label="정비 요청 알림">
       <div class="request-feedback__head">
-        <h2>요청 알림</h2>
+        <h2>정비 요청 알림</h2>
       </div>
       <p class="request-feedback__hint" id="requestFeedbackHint" hidden></p>
       <ul class="request-feedback__list" id="requestFeedbackList"></ul>
@@ -2456,7 +3469,30 @@
         요청이 접수되면 이곳에 표시됩니다.
       </p>
     </aside>
+    <aside class="order-feedback" id="orderFeedback" aria-label="오더 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>오더 알림</h2>
+      </div>
+      <ul class="order-feedback__list" id="orderFeedbackList"></ul>
+      <p class="order-feedback__empty" id="orderFeedbackEmpty">
+        오더가 접수되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+    </div>
   </div>
+  </div>
+
+  <div
+    class="front-chat-toast"
+    id="frontChatToast"
+    hidden
+    role="status"
+    aria-live="polite"
+    title="클릭하면 프론트 채팅으로 이동"
+  >
+    <div class="front-chat-toast__label">프론트 채팅</div>
+    <div class="front-chat-toast__by" id="frontChatToastBy"></div>
+    <div class="front-chat-toast__text" id="frontChatToastText"></div>
   </div>
 
   <div
@@ -2554,7 +3590,16 @@
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
       var sidebarListView = null;
+      var sidebarMainView = "request";
       var requestLogEntries = [];
+      var orderLogEntries = [];
+      var frontChatMessages = [];
+      var knownFrontChatIds = {};
+      var frontChatToastHideTimer = null;
+      var pendingOrderIssueAlert = false;
+      var knownOrderIssueIds = {};
+      var pendingOrderAlert = false;
+      var knownOrderAlertIds = {};
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var operatorNameModalMode = "initial";
@@ -2990,6 +4035,18 @@
         });
       }
 
+      (function setupTypeFilterToggle() {
+        var btn = document.getElementById("requestTypeFilterToggle");
+        var body = document.getElementById("requestTypeFilterBody");
+        if (!btn || !body) return;
+        btn.addEventListener("click", function () {
+          var willOpen = body.hidden;
+          body.hidden = !willOpen;
+          btn.classList.toggle("is-on", willOpen);
+          btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+      })();
+
       function rebuildRoomResvMap(vacRows, roomResvMap) {
         var m = {};
         if (Array.isArray(vacRows)) {
@@ -3045,6 +4102,39 @@
         return group;
       }
 
+      function buildFoOnlyBadge(roomInput, opts) {
+        opts = opts || {};
+        var group = document.createElement("span");
+        group.className = opts.groupClass || "hk-status-group";
+        var resv = lookupRoomResvDisplay(roomInput);
+        var rv = document.createElement("span");
+        rv.className = resv ? resvBadgeClass(resv) : "hk-resv-badge";
+        rv.textContent = resv || "—";
+        if (!resv && opts.missingClass) rv.classList.add(opts.missingClass);
+        group.appendChild(rv);
+        return group;
+      }
+
+      function updateOrderFoDisplay() {
+        var roomEl = document.getElementById("orderRoomNo");
+        var display = document.getElementById("orderFoDisplay");
+        if (!display) return;
+        var room = roomEl ? roomEl.value.trim() : "";
+        var fo = lookupRoomResvDisplay(room);
+        display.textContent = "";
+        display.className = "order-fo-display";
+        if (!room) {
+          display.textContent = "—";
+          return;
+        }
+        if (fo) {
+          display.className = "order-fo-display " + (fo === "IN" ? "hk-resv--in" : "hk-resv--o");
+          display.textContent = fo;
+        } else {
+          display.textContent = "—";
+        }
+      }
+
       function rebuildRoomStatusMap(vacRows) {
         var m = {};
         if (!vacRows || !vacRows.length) return m;
@@ -3060,6 +4150,10 @@
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
         return XML_ROOM_STATUS_MAP[nr] || "";
+      }
+
+      function isXmlDataLoaded() {
+        return Object.keys(XML_ROOM_STATUS_MAP).length > 0;
       }
 
       function hkStatusSuffix(status) {
@@ -3097,7 +4191,9 @@
         renderTypeFilterCheckboxes();
         updateRoomStatusDisplay();
         renderRequestLogPanel();
+        renderOrderPanels();
         refreshMain();
+        updateOrderFoDisplay();
       }
 
       function syncRequestLogFromServer() {
@@ -3106,9 +4202,31 @@
         }
       }
 
+      function syncOrderLogFromServer() {
+        if (typeof HKSync !== "undefined") {
+          orderLogEntries = HKSync.getOrderLog();
+        }
+      }
+
+      function syncFrontChatFromServer() {
+        if (typeof HKSync !== "undefined" && HKSync.getFrontChat) {
+          frontChatMessages = HKSync.getFrontChat();
+        }
+      }
+
+      function loadFrontChat() {
+        syncFrontChatFromServer();
+      }
+
       function saveRequestLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setRequestLog(requestLogEntries);
+        }
+      }
+
+      function saveOrderLog() {
+        if (typeof HKSync !== "undefined") {
+          HKSync.setOrderLog(orderLogEntries);
         }
       }
 
@@ -3116,6 +4234,17 @@
         if (changed.indexOf("hkRequestLog") >= 0) {
           syncRequestLogFromServer();
           renderRequestLogPanel();
+        }
+        if (changed.indexOf("hkOrderLog") >= 0) {
+          syncOrderLogFromServer();
+          detectNewOrderIssues();
+          detectNewOrderAlerts();
+          renderOrderPanels();
+        }
+        if (changed.indexOf("hkFrontChat") >= 0) {
+          syncFrontChatFromServer();
+          detectNewFrontChatMessages();
+          renderFrontChatPanel(sidebarMainView === "front");
         }
         if (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) {
           applyXmlRoomStatusPayload(payload);
@@ -3278,7 +4407,7 @@
         return (
           isRoomChangePending(zone, room) ||
           isRoomHistoryOpen(zone, room) ||
-          getRoomChangeEntries(zone, room).length > 0
+          getRoomChangeEntriesForHistory(zone, room).length > 0
         );
       }
 
@@ -3286,6 +4415,17 @@
         var by = entry && entry.by != null ? String(entry.by).trim() : "";
         if (!by || by === "관리자") return "";
         return by;
+      }
+
+      function isInitialRoomAddEntry(entry) {
+        if (!entry) return false;
+        if (entry.kind === "add") return true;
+        var changes = entry.changes;
+        if (!Array.isArray(changes) || !changes.length) return false;
+        return changes.every(function (line) {
+          var s = String(line);
+          return s.indexOf(': "—" → "') >= 0 || s.indexOf(': "" → "') >= 0;
+        });
       }
 
       function getRoomChangeEntries(zone, room) {
@@ -3299,8 +4439,14 @@
         });
       }
 
+      function getRoomChangeEntriesForHistory(zone, room) {
+        return getRoomChangeEntries(zone, room).filter(function (entry) {
+          return !isInitialRoomAddEntry(entry);
+        });
+      }
+
       function buildRoomCardHistoryBlock(zone, room) {
-        var entries = getRoomChangeEntries(zone, room);
+        var entries = getRoomChangeEntriesForHistory(zone, room);
         if (!entries.length) return null;
         var wrap = document.createElement("div");
         wrap.className = "room-card__history";
@@ -3391,11 +4537,23 @@
           return;
         }
         if (!st) {
+          if (!isXmlDataLoaded()) {
+            display.innerHTML = "";
+            display.className = "room-status-auto hk-status-group";
+            display.appendChild(
+              buildRoomStatusGroup("", room, {
+                groupClass: "hk-status-group",
+                statusClass: "room-status-auto hk-st-badge",
+                emptyLabel: "—",
+              })
+            );
+            return;
+          }
           var resvOnly = lookupRoomResvDisplay(room);
           display.innerHTML = "";
           if (!resvOnly) {
-            display.textContent = "XML 없음";
-            display.className = "room-status-auto is-missing";
+            display.textContent = "—";
+            display.className = "room-status-auto hk-st-badge hk-st--none";
             return;
           }
           display.className = "room-status-auto hk-status-group";
@@ -3403,7 +4561,7 @@
             buildRoomStatusGroup("", room, {
               groupClass: "hk-status-group",
               statusClass: "room-status-auto hk-st-badge",
-              emptyLabel: "XML 없음",
+              emptyLabel: "—",
               missingClass: "is-missing",
             })
           );
@@ -3449,11 +4607,240 @@
         syncRequestLogFromServer();
       }
 
+      function loadOrderLog() {
+        syncOrderLogFromServer();
+      }
+
       function formatReqAt(iso) {
         if (!iso) return "";
         var d = new Date(iso);
         if (isNaN(d.getTime())) return "";
         return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+      }
+
+      var hkPhotoPending = {};
+
+      function hkCompressImage(file, done) {
+        if (!file) {
+          alert("이미지 파일만 첨부할 수 있습니다.");
+          return;
+        }
+        var mime = file.type ? String(file.type) : "";
+        if (mime.indexOf("image/") !== 0 && !(file instanceof Blob)) {
+          alert("이미지 파일만 첨부할 수 있습니다.");
+          return;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          alert("8MB 이하 이미지만 첨부할 수 있습니다.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          var img = new Image();
+          img.onload = function () {
+            var maxW = 1280;
+            var w = img.width;
+            var h = img.height;
+            if (w > maxW) {
+              h = Math.round(h * (maxW / w));
+              w = maxW;
+            }
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            var quality = 0.85;
+            var dataUrl = canvas.toDataURL("image/jpeg", quality);
+            while (dataUrl.length > 900000 && quality > 0.35) {
+              quality -= 0.1;
+              dataUrl = canvas.toDataURL("image/jpeg", quality);
+            }
+            if (dataUrl.length > 900000) {
+              alert("이미지가 너무 큽니다. 더 작은 사진을 선택해 주세요.");
+              return;
+            }
+            done(dataUrl);
+          };
+          img.onerror = function () {
+            alert("이미지를 읽을 수 없습니다.");
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function hkGetPhoto(key) {
+        return hkPhotoPending[key] || null;
+      }
+
+      function hkClearPhoto(key) {
+        hkPhotoPending[key] = null;
+        var prev = document.querySelector('.hk-photo-preview[data-photo-key="' + key + '"]');
+        if (prev) {
+          prev.hidden = true;
+          prev.innerHTML = "";
+        }
+      }
+
+      function hkSetPhotoPreview(key, dataUrl) {
+        hkPhotoPending[key] = dataUrl || null;
+        var prev = document.querySelector('.hk-photo-preview[data-photo-key="' + key + '"]');
+        if (!prev) return;
+        if (!dataUrl) {
+          prev.hidden = true;
+          prev.innerHTML = "";
+          return;
+        }
+        prev.innerHTML = "";
+        var img = document.createElement("img");
+        img.src = dataUrl;
+        img.alt = "첨부 미리보기";
+        prev.appendChild(img);
+        prev.hidden = false;
+      }
+
+      function hkBindPhotoButton(btn, key) {
+        if (!btn || btn.__hkPhotoBound) return;
+        btn.__hkPhotoBound = true;
+        var fileIn = document.createElement("input");
+        fileIn.type = "file";
+        fileIn.accept = "image/*";
+        fileIn.hidden = true;
+        fileIn.className = "hk-photo-input";
+
+        function ensureFileInput() {
+          if (fileIn.parentNode) return;
+          if (!btn.parentNode) return;
+          btn.parentNode.insertBefore(fileIn, btn.nextSibling);
+        }
+
+        btn.addEventListener("click", function () {
+          ensureFileInput();
+          fileIn.click();
+        });
+        fileIn.addEventListener("change", function () {
+          var f = fileIn.files && fileIn.files[0];
+          fileIn.value = "";
+          if (!f) return;
+          hkCompressImage(f, function (url) {
+            hkSetPhotoPreview(key, url);
+          });
+        });
+        ensureFileInput();
+      }
+
+      function hkExtractImageFileFromPaste(ev) {
+        var cd = ev.clipboardData;
+        if (!cd) return null;
+        var items = cd.items;
+        if (items) {
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].kind === "file" && items[i].type.indexOf("image/") === 0) {
+              return items[i].getAsFile();
+            }
+          }
+        }
+        var files = cd.files;
+        if (files && files.length) {
+          for (var j = 0; j < files.length; j++) {
+            if (files[j].type && files[j].type.indexOf("image/") === 0) return files[j];
+          }
+        }
+        return null;
+      }
+
+      function hkBindPhotoPaste(el, key, opts) {
+        if (!el || el.__hkPhotoPasteBound) return;
+        el.__hkPhotoPasteBound = true;
+        opts = opts || {};
+        el.addEventListener("paste", function (ev) {
+          var file = hkExtractImageFileFromPaste(ev);
+          if (!file) return;
+          ev.preventDefault();
+          hkCompressImage(file, function (url) {
+            if (typeof opts.autoSend === "function") {
+              var text = el.value != null ? String(el.value).trim() : "";
+              opts.autoSend(text, url);
+              if (el.value != null) el.value = "";
+              hkClearPhoto(key);
+            } else {
+              hkSetPhotoPreview(key, url);
+            }
+          });
+        });
+      }
+
+      function hkCreatePhotoButton(key) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "hk-photo-btn";
+        btn.textContent = "사진";
+        btn.title = "사진 첨부";
+        btn.setAttribute("data-photo-key", key);
+        hkBindPhotoButton(btn, key);
+        return btn;
+      }
+
+      function hkCreatePhotoPreview(key) {
+        var prev = document.createElement("div");
+        prev.className = "hk-photo-preview";
+        prev.setAttribute("data-photo-key", key);
+        prev.hidden = true;
+        return prev;
+      }
+
+      function hkAppendImageEl(parent, imageData, className) {
+        if (!imageData || !String(imageData).trim()) return;
+        var img = document.createElement("img");
+        img.className = className || "hk-msg-image";
+        img.src = String(imageData);
+        img.alt = "첨부 사진";
+        img.loading = "lazy";
+        img.addEventListener("click", function () {
+          window.open(img.src, "_blank");
+        });
+        parent.appendChild(img);
+      }
+
+      function hkAppendMessageContent(parent, text, image, textClass) {
+        var t = text != null ? String(text).trim() : "";
+        if (t) {
+          var textEl = document.createElement("div");
+          textEl.className = textClass || "hk-msg-text";
+          textEl.textContent = t;
+          parent.appendChild(textEl);
+        }
+        hkAppendImageEl(parent, image);
+      }
+
+      function hkAppendMemoBlock(parent, label, text, image, className) {
+        var t = text != null ? String(text).trim() : "";
+        var img = image != null ? String(image).trim() : "";
+        if (!t && !img) return;
+        var box = document.createElement("div");
+        box.className = className;
+        if (t) {
+          var line = document.createElement("div");
+          line.textContent = label ? label + " : " + t : t;
+          box.appendChild(line);
+        }
+        hkAppendImageEl(box, img);
+        parent.appendChild(box);
+      }
+
+      function initStaticPhotoButtons() {
+        hkBindPhotoButton(document.getElementById("btnPhotoFrontChat"), "frontChat");
+        hkBindPhotoButton(document.getElementById("btnPhotoOrderMemo"), "orderMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoRequestMemo"), "requestMemo");
+        hkBindPhotoPaste(document.getElementById("frontChatInput"), "frontChat", {
+          autoSend: function (text, image) {
+            if (!frontMode) return;
+            submitFrontChatMessage(text, image);
+          },
+        });
+        hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
+        hkBindPhotoPaste(document.getElementById("requestMemo"), "requestMemo");
       }
 
       function setLineWithEmTime(containerEl, prefixText, timeText) {
@@ -3476,6 +4863,16 @@
         return null;
       }
 
+      function isOrderEntryId(id) {
+        return id != null && String(id).indexOf("ord-") === 0;
+      }
+
+      function findCancelTargetEntry(id) {
+        if (!id) return null;
+        if (isOrderEntryId(id)) return findOrderEntry(id);
+        return findRequestEntry(id);
+      }
+
       function removeRequestEntry(id) {
         var next = [];
         for (var i = 0; i < requestLogEntries.length; i++) {
@@ -3485,10 +4882,10 @@
         saveRequestLog();
       }
 
-      function openCancelConfirmModal(reqId) {
-        pendingCancelConfirmId = reqId || null;
+      function openCancelConfirmModal(entryId) {
+        pendingCancelConfirmId = entryId || null;
         var titleEl = document.getElementById("hkCancelConfirmTitle");
-        var entry = reqId ? findRequestEntry(reqId) : null;
+        var entry = entryId ? findCancelTargetEntry(entryId) : null;
         var roomLabel = entry && entry.room != null ? formatRoomNoDisplay(String(entry.room).trim()) : "";
         if (titleEl) {
           titleEl.textContent = roomLabel
@@ -3497,9 +4894,13 @@
         }
         var dlg = document.getElementById("hkCancelConfirm");
         if (!dlg) {
-          if (reqId) {
-            removeRequestEntry(reqId);
-            renderRequestLogPanel();
+          if (entryId) {
+            if (isOrderEntryId(entryId)) {
+              cancelOrderEntry(entryId, getOperatorName() || "");
+            } else {
+              removeRequestEntry(entryId);
+              renderRequestLogPanel();
+            }
           }
           return;
         }
@@ -3514,14 +4915,37 @@
         pendingCancelConfirmId = null;
       }
 
-      function appendCancelNameLog(room, handlerName, entryId) {
+      function appendCancelNameLog(room, handlerName, entryId, extras) {
         if (typeof HKSync === "undefined") return;
-        HKSync.prependCancelLog({
+        var row = {
           at: new Date().toISOString(),
           room: room || "",
           name: handlerName || "",
           entryId: entryId || "",
+        };
+        if (extras && typeof extras === "object") {
+          if (extras.kind) row.kind = extras.kind;
+          if (extras.memo != null && String(extras.memo).trim()) {
+            row.memo = String(extras.memo).trim();
+          }
+        }
+        HKSync.prependCancelLog(row);
+      }
+
+      function cancelOrderEntry(orderId, handlerName) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) === "cancelled") return;
+        var nameVal = handlerName != null ? String(handlerName).trim() : "";
+        entry.phase = "cancelled";
+        entry.cancelledAt = new Date().toISOString();
+        entry.cancelledBy = nameVal;
+        appendCancelNameLog(entry.room, nameVal, orderId, {
+          kind: "order",
+          memo: entry.memo,
         });
+        saveOrderLog();
+        renderOrderPanels();
+        if (sidebarListView === "cancel") openSidebarList("cancel");
       }
 
       function appendUseLog(entry) {
@@ -3549,8 +4973,102 @@
         }
       }
 
+      function updateSidebarPrimaryNavActive() {
+        var req = document.getElementById("sidebarBtnRequest");
+        var ord = document.getElementById("sidebarBtnOrder");
+        var frontNav = document.getElementById("sidebarBtnFront");
+        if (req) {
+          req.classList.toggle("is-active", sidebarMainView === "request");
+          req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
+        }
+        if (ord) {
+          ord.classList.toggle("is-active", sidebarMainView === "order");
+          ord.setAttribute("aria-pressed", sidebarMainView === "order" ? "true" : "false");
+        }
+        if (frontNav) {
+          frontNav.classList.toggle("is-active", sidebarMainView === "front");
+          frontNav.setAttribute("aria-pressed", sidebarMainView === "front" ? "true" : "false");
+        }
+        if (sidebarMainView !== "zone") {
+          tabs.forEach(function (t) {
+            t.classList.remove("active");
+            t.setAttribute("aria-selected", "false");
+          });
+        }
+        if (sidebarMainView !== "list") {
+          setSidebarListNavActive();
+        }
+      }
+
+      function applySidebarMainView(view) {
+        sidebarMainView = view;
+        var showRequest = view === "request";
+        var showOrder = view === "order";
+        var showFront = view === "front";
+        var showZone = view === "zone";
+        var showList = view === "list";
+        var reqPanel = document.querySelector(".request-panel");
+        var schedPanel = document.getElementById("schedCardsPanel");
+        var orderPanel = document.getElementById("orderPanel");
+        var frontChatPanel = document.getElementById("frontChatPanel");
+        var zoneBlock = document.getElementById("zoneBlock");
+        var listPanel = document.getElementById("hkSidebarListPanel");
+        if (reqPanel) reqPanel.hidden = !showRequest;
+        if (schedPanel) schedPanel.hidden = !showRequest;
+        if (orderPanel) orderPanel.hidden = !showOrder;
+        if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
+        if (!showFront) hkClearPhoto("frontChat");
+        if (zoneBlock) zoneBlock.hidden = !showZone;
+        if (listPanel && !showList) listPanel.hidden = true;
+        var feedbackColumn = document.getElementById("feedbackColumn");
+        var requestFeedback = document.getElementById("requestFeedback");
+        var orderFeedback = document.getElementById("orderFeedback");
+        if (requestFeedback) requestFeedback.hidden = !showRequest;
+        if (orderFeedback) orderFeedback.hidden = !showOrder;
+        if (feedbackColumn) feedbackColumn.hidden = !showRequest && !showOrder;
+        updateSidebarPrimaryNavActive();
+        if (showFront) {
+          hideFrontChatToast();
+          requestAnimationFrame(function () {
+            renderFrontChatPanel(true);
+          });
+        }
+      }
+
+      function showSidebarRequestView() {
+        closeSidebarList();
+        collapseZoneBlock();
+        currentZone = null;
+        setZonePanelOpen(false);
+        renderRoomsForZone(null);
+        applySidebarMainView("request");
+      }
+
+      function showSidebarOrderView() {
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        clearOrderSidebarAlerts();
+        applySidebarMainView("order");
+      }
+
+      function showSidebarFrontView() {
+        if (!frontMode) return;
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("front");
+      }
+
+      function showSidebarZoneView(zone) {
+        closeSidebarList();
+        applySidebarMainView("zone");
+      }
+
       function openSidebarList(kind) {
         sidebarListView = kind;
+        applySidebarMainView("list");
+        collapseZoneBlock();
         var panel = document.getElementById("hkSidebarListPanel");
         var title = document.getElementById("hkSidebarListPanelTitle");
         var ul = document.getElementById("hkSidebarListPanelBody");
@@ -3573,12 +5091,20 @@
             li.className = "hk-sidebar-list-panel__item";
             if (kind === "cancel") {
               var main = document.createElement("div");
+              var isOrderCancel = row.kind === "order" || isOrderEntryId(row.entryId);
               main.textContent =
+                (isOrderCancel ? "오더 · " : "") +
                 "객실 " +
                 (row.room ? formatRoomNoDisplay(String(row.room)) : "—") +
                 " · 취소 처리: " +
                 (row.name || "—");
               li.appendChild(main);
+              if (isOrderCancel && row.memo) {
+                var memoLine = document.createElement("div");
+                memoLine.className = "hk-sidebar-list-panel__item-meta";
+                memoLine.textContent = "메모 : " + String(row.memo);
+                li.appendChild(memoLine);
+              }
               var meta = document.createElement("div");
               meta.className = "hk-sidebar-list-panel__item-meta";
               if (row.at) setLineWithEmTime(meta, "기록 ", formatReqAt(row.at));
@@ -3615,6 +5141,9 @@
         var panel = document.getElementById("hkSidebarListPanel");
         if (panel) panel.hidden = true;
         setSidebarListNavActive();
+        if (sidebarMainView === "list") {
+          applySidebarMainView("request");
+        }
       }
 
       function toggleSidebarList(kind) {
@@ -3622,12 +5151,12 @@
         else openSidebarList(kind);
       }
 
-      function openCancelNameModal(reqId) {
-        pendingCancelNameId = reqId || null;
+      function openCancelNameModal(entryId) {
+        pendingCancelNameId = entryId || null;
         var nd = document.getElementById("hkCancelNameDialog");
         var inp = document.getElementById("hkCancelNameInput");
         var hint = document.getElementById("hkCancelNameRoomHint");
-        var entry = reqId ? findRequestEntry(reqId) : null;
+        var entry = entryId ? findCancelTargetEntry(entryId) : null;
         var room = entry && entry.room != null ? String(entry.room).trim() : "";
         if (hint) {
           if (room) {
@@ -3735,20 +5264,24 @@
           li.appendChild(row);
 
           var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
-          if (memoStr) {
-            var memEl = document.createElement("div");
-            memEl.className = "request-feedback__item-memo";
-            memEl.textContent = "FD : " + memoStr;
-            li.appendChild(memEl);
+          var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
+          if (memoStr || memoImg) {
+            hkAppendMemoBlock(li, "FD", memoStr, memoImg, "request-feedback__item-memo");
           }
 
           var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
-          if (memo2Str) {
+          var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
+          if (memo2Str || memo2Img) {
             var m2Box = document.createElement("div");
             m2Box.className = "request-feedback__item-memo2";
             var m2Body = document.createElement("div");
             m2Body.className = "request-feedback__item-memo2-body";
-            m2Body.textContent = "두잉 : " + memo2Str;
+            if (memo2Str) {
+              var m2Line = document.createElement("div");
+              m2Line.textContent = "두잉 : " + memo2Str;
+              m2Body.appendChild(m2Line);
+            }
+            hkAppendImageEl(m2Body, memo2Img);
             m2Box.appendChild(m2Body);
             li.appendChild(m2Box);
           }
@@ -3811,6 +5344,490 @@
         renderSchedRequestCards();
       }
 
+      function getOrderPhase(entry) {
+        if (!entry) return "alert";
+        var p = entry.phase != null ? String(entry.phase).trim() : "";
+        if (p === "accepted" || p === "issue" || p === "cancelled") return p;
+        return "alert";
+      }
+
+      function findOrderEntry(orderId) {
+        if (!orderId) return null;
+        for (var i = 0; i < orderLogEntries.length; i++) {
+          if (orderLogEntries[i].id === orderId) return orderLogEntries[i];
+        }
+        return null;
+      }
+
+      function initOrderIssueTracking() {
+        knownOrderIssueIds = {};
+        knownOrderAlertIds = {};
+        orderLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getOrderPhase(entry) === "issue") {
+            knownOrderIssueIds[entry.id] = true;
+          }
+          if (getOrderPhase(entry) === "alert") {
+            knownOrderAlertIds[entry.id] = true;
+          }
+        });
+      }
+
+      function applyOrderSidebarAlertUi() {
+        var ord = document.getElementById("sidebarBtnOrder");
+        if (ord) {
+          ord.classList.toggle(
+            "is-order-alert",
+            pendingOrderIssueAlert || pendingOrderAlert
+          );
+        }
+      }
+
+      function registerOrderIssueAlert(entryId) {
+        if (!entryId) return;
+        knownOrderIssueIds[entryId] = true;
+        if (sidebarMainView !== "order") {
+          pendingOrderIssueAlert = true;
+          applyOrderSidebarAlertUi();
+        }
+      }
+
+      function registerOrderAlert(entryId) {
+        if (!entryId) return;
+        knownOrderAlertIds[entryId] = true;
+        if (sidebarMainView !== "order") {
+          pendingOrderAlert = true;
+          applyOrderSidebarAlertUi();
+        }
+      }
+
+      function clearOrderSidebarAlerts() {
+        pendingOrderIssueAlert = false;
+        pendingOrderAlert = false;
+        applyOrderSidebarAlertUi();
+      }
+
+      function clearOrderIssueAlert() {
+        clearOrderSidebarAlerts();
+      }
+
+      function detectNewOrderIssues() {
+        orderLogEntries.forEach(function (entry) {
+          if (getOrderPhase(entry) === "issue" && entry.id && !knownOrderIssueIds[entry.id]) {
+            registerOrderIssueAlert(entry.id);
+          }
+        });
+      }
+
+      function detectNewOrderAlerts() {
+        orderLogEntries.forEach(function (entry) {
+          if (getOrderPhase(entry) === "alert" && entry.id && !knownOrderAlertIds[entry.id]) {
+            registerOrderAlert(entry.id);
+          }
+        });
+      }
+
+      function renderOrderPanels() {
+        renderOrderLogPanel();
+        renderOrderWorkPanels();
+      }
+
+      function appendOrderItemCommon(li, entry, timePrefix, timeValue, opts) {
+        opts = opts || {};
+        var compact = opts.compact !== false;
+        var t = document.createElement("div");
+        t.className = "request-feedback__item-time";
+        setLineWithEmTime(t, timePrefix, formatReqAt(timeValue || entry.at));
+        li.appendChild(t);
+
+        var row = document.createElement("div");
+        row.className = "request-feedback__item-row";
+        var r = document.createElement("span");
+        r.className = "request-feedback__item-room";
+        r.textContent = entry.room
+          ? compact
+            ? formatRoomNoDisplay(String(entry.room))
+            : "객실 " + formatRoomNoDisplay(String(entry.room))
+          : "—";
+        if (entry.urgent) {
+          var ub = document.createElement("span");
+          ub.className = "request-feedback__item-urgent-badge";
+          ub.textContent = "긴급";
+          ub.setAttribute("aria-label", "긴급");
+          r.appendChild(ub);
+        }
+        row.appendChild(r);
+        var s = document.createElement("span");
+        s.className = "request-feedback__item-st";
+        s.appendChild(
+          buildFoOnlyBadge(entry.room, {
+            statusClass: "request-feedback__item-st hk-st-badge",
+          })
+        );
+        row.appendChild(s);
+        li.appendChild(row);
+
+        var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+        if (memoStr) {
+          var memEl = document.createElement("div");
+          memEl.className = "order-feedback__item-memo";
+          memEl.textContent = compact ? memoStr : "메모 : " + memoStr;
+          li.appendChild(memEl);
+        }
+        hkAppendImageEl(li, entry.memoImage);
+
+        var orderBy = entry.by != null ? String(entry.by).trim() : "";
+        if (orderBy && !opts.hideBy) {
+          var orderByEl = document.createElement("div");
+          orderByEl.className = "order-feedback__item-by";
+          orderByEl.textContent = orderBy;
+          orderByEl.title = "오더: " + orderBy;
+          li.appendChild(orderByEl);
+        }
+      }
+
+      function appendOrderChatUi(li, entry) {
+        var chatWrap = document.createElement("div");
+        chatWrap.className = "order-chat";
+
+        var msgList = document.createElement("ul");
+        msgList.className = "order-chat__messages";
+        var chat = Array.isArray(entry.chat) ? entry.chat : [];
+        chat.sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        if (chat.length === 0) {
+          var emptyMsg = document.createElement("li");
+          emptyMsg.className = "order-chat__msg";
+          emptyMsg.style.background = "#f8fafc";
+          emptyMsg.textContent = "메시지가 없습니다. 아래에서 대화를 시작하세요.";
+          msgList.appendChild(emptyMsg);
+        } else {
+          chat.forEach(function (msg) {
+            var msgLi = document.createElement("li");
+            msgLi.className = "order-chat__msg";
+            var byEl = document.createElement("div");
+            byEl.className = "order-chat__msg-by";
+            byEl.textContent = msg.by != null ? String(msg.by).trim() || "—" : "—";
+            msgLi.appendChild(byEl);
+            hkAppendMessageContent(
+              msgLi,
+              msg.text,
+              msg.image,
+              "order-chat__msg-text"
+            );
+            if (msg.at) {
+              var timeEl = document.createElement("div");
+              timeEl.className = "order-chat__msg-time";
+              timeEl.textContent = formatReqAt(msg.at);
+              msgLi.appendChild(timeEl);
+            }
+            msgList.appendChild(msgLi);
+          });
+        }
+        chatWrap.appendChild(msgList);
+
+        var chatKey = "orderChat:" + (entry.id || "");
+        var chatForm = document.createElement("form");
+        chatForm.className = "order-chat__form hk-compose-row";
+        chatForm.setAttribute("data-order-id", entry.id || "");
+        var chatInput = document.createElement("input");
+        chatInput.type = "text";
+        chatInput.placeholder = "메시지 입력";
+        chatInput.autocomplete = "off";
+        chatInput.setAttribute("aria-label", "문제 발생 채팅 메시지");
+        chatForm.appendChild(chatInput);
+        chatForm.appendChild(hkCreatePhotoButton(chatKey));
+        hkBindPhotoPaste(chatInput, chatKey, {
+          autoSend: function (text, image) {
+            appendOrderChat(entry.id || "", text, image);
+          },
+        });
+        var chatSend = document.createElement("button");
+        chatSend.type = "submit";
+        chatSend.className = "order-chat__send";
+        chatSend.textContent = "전송";
+        chatForm.appendChild(chatSend);
+        chatWrap.appendChild(chatForm);
+        chatWrap.appendChild(hkCreatePhotoPreview(chatKey));
+
+        li.appendChild(chatWrap);
+        requestAnimationFrame(function () {
+          msgList.scrollTop = msgList.scrollHeight;
+        });
+      }
+
+      function acceptOrderEntry(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "alert") return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              acceptOrderEntry(orderId);
+            },
+          });
+          return;
+        }
+        entry.phase = "accepted";
+        entry.acceptedAt = new Date().toISOString();
+        entry.acceptedBy = getOperatorName();
+        saveOrderLog();
+        renderOrderPanels();
+      }
+
+      function raiseOrderIssue(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "accepted") return;
+        if (!maintenanceMode) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              raiseOrderIssue(orderId);
+            },
+          });
+          return;
+        }
+        entry.phase = "issue";
+        entry.issueAt = new Date().toISOString();
+        entry.issueBy = getOperatorName();
+        if (!Array.isArray(entry.chat)) entry.chat = [];
+        saveOrderLog();
+        registerOrderIssueAlert(orderId);
+        renderOrderPanels();
+        requestAnimationFrame(function () {
+          var card = document.querySelector(
+            '.order-work-section--issue .order-work-item[data-order-id="' + orderId + '"]'
+          );
+          if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      }
+
+      function resolveOrderIssueEntry(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "issue") return;
+        if (!maintenanceMode) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              resolveOrderIssueEntry(orderId);
+            },
+          });
+          return;
+        }
+        entry.phase = "accepted";
+        entry.reacceptedAt = new Date().toISOString();
+        entry.reacceptedBy = getOperatorName();
+        saveOrderLog();
+        renderOrderPanels();
+      }
+
+      function appendOrderChat(orderId, text, image) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "issue") return;
+        var msgText = String(text || "").trim();
+        var msgImage = image != null ? String(image).trim() : "";
+        if (!msgText && !msgImage) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              appendOrderChat(orderId, msgText, msgImage);
+            },
+          });
+          return;
+        }
+        if (!Array.isArray(entry.chat)) entry.chat = [];
+        entry.chat.push({
+          at: new Date().toISOString(),
+          by: getOperatorName(),
+          text: msgText,
+          image: msgImage || "",
+        });
+        hkClearPhoto("orderChat:" + orderId);
+        saveOrderLog();
+        renderOrderPanels();
+      }
+
+      function renderOrderWorkPanels() {
+        var issueList = document.getElementById("orderIssueList");
+        var issueEmpty = document.getElementById("orderIssueEmpty");
+        var acceptedList = document.getElementById("orderAcceptedList");
+        var acceptedEmpty = document.getElementById("orderAcceptedEmpty");
+        var cancelledList = document.getElementById("orderCancelledList");
+        var cancelledEmpty = document.getElementById("orderCancelledEmpty");
+        if (!issueList || !acceptedList || !cancelledList) return;
+
+        issueList.innerHTML = "";
+        acceptedList.innerHTML = "";
+        cancelledList.innerHTML = "";
+
+        var issueEntries = orderLogEntries.filter(function (e) {
+          return getOrderPhase(e) === "issue";
+        });
+        var acceptedEntries = orderLogEntries.filter(function (e) {
+          return getOrderPhase(e) === "accepted";
+        });
+        var cancelledEntries = orderLogEntries.filter(function (e) {
+          return getOrderPhase(e) === "cancelled";
+        });
+
+        issueEntries.sort(function (a, b) {
+          var ta = new Date(a.issueAt || a.at || 0).getTime();
+          var tb = new Date(b.issueAt || b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        acceptedEntries.sort(function (a, b) {
+          var ta = new Date(a.acceptedAt || a.at || 0).getTime();
+          var tb = new Date(b.acceptedAt || b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+
+        issueEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-work-item";
+          li.setAttribute("data-order-id", entry.id || "");
+          appendOrderItemCommon(li, entry, "문제 ", entry.issueAt || entry.at);
+          if (maintenanceMode) {
+            var issueActs = document.createElement("div");
+            issueActs.className = "order-work__actions";
+            var acceptBtn = document.createElement("button");
+            acceptBtn.type = "button";
+            acceptBtn.className = "order-work__accept-btn";
+            acceptBtn.setAttribute("data-order-id", entry.id || "");
+            acceptBtn.textContent = "완료";
+            issueActs.appendChild(acceptBtn);
+            li.appendChild(issueActs);
+          }
+          appendOrderChatUi(li, entry);
+          issueList.appendChild(li);
+        });
+
+        acceptedEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-work-item";
+          li.setAttribute("data-order-id", entry.id || "");
+          appendOrderItemCommon(li, entry, "접수 ", entry.acceptedAt || entry.at);
+          var acceptedBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
+          if (acceptedBy) {
+            var accMeta = document.createElement("div");
+            accMeta.className = "order-feedback__item-memo";
+            accMeta.style.marginTop = "6px";
+            accMeta.style.paddingTop = "6px";
+            accMeta.textContent = "접수자 : " + acceptedBy;
+            li.appendChild(accMeta);
+          }
+          if (maintenanceMode) {
+            var acts = document.createElement("div");
+            acts.className = "order-work__actions";
+            var issueBtn = document.createElement("button");
+            issueBtn.type = "button";
+            issueBtn.className = "order-work__issue-btn";
+            issueBtn.setAttribute("data-order-id", entry.id || "");
+            issueBtn.textContent = "문제 발생";
+            acts.appendChild(issueBtn);
+            li.appendChild(acts);
+          }
+          acceptedList.appendChild(li);
+        });
+
+        cancelledEntries.sort(function (a, b) {
+          var ta = new Date(a.cancelledAt || a.at || 0).getTime();
+          var tb = new Date(b.cancelledAt || b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        cancelledEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-work-item order-work-item--cancelled";
+          li.setAttribute("data-order-id", entry.id || "");
+          appendOrderItemCommon(li, entry, "취소 ", entry.cancelledAt || entry.at);
+          var cancelledBy = entry.cancelledBy != null ? String(entry.cancelledBy).trim() : "";
+          if (cancelledBy) {
+            var cancelMeta = document.createElement("div");
+            cancelMeta.className = "order-feedback__item-memo";
+            cancelMeta.style.marginTop = "4px";
+            cancelMeta.style.paddingTop = "4px";
+            cancelMeta.textContent = "취소 : " + cancelledBy;
+            li.appendChild(cancelMeta);
+          }
+          var xMark = document.createElement("div");
+          xMark.className = "order-work-item__x";
+          xMark.setAttribute("aria-hidden", "true");
+          xMark.textContent = "✕";
+          li.appendChild(xMark);
+          cancelledList.appendChild(li);
+        });
+
+        if (issueEmpty) issueEmpty.hidden = issueEntries.length > 0;
+        if (acceptedEmpty) acceptedEmpty.hidden = acceptedEntries.length > 0;
+        if (cancelledEmpty) cancelledEmpty.hidden = cancelledEntries.length > 0;
+      }
+
+      function renderOrderLogPanel() {
+        var list = document.getElementById("orderFeedbackList");
+        var empty = document.getElementById("orderFeedbackEmpty");
+        if (!list) return;
+        list.innerHTML = "";
+        var entries = orderLogEntries.filter(function (entry) {
+          return getOrderPhase(entry) === "alert";
+        });
+        entries.sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        entries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-feedback__item";
+          li.setAttribute("data-order-id", entry.id || "");
+          if (entry.urgent) li.classList.add("order-feedback__item--urgent");
+
+          appendOrderItemCommon(li, entry, "접수 ", entry.at);
+
+          if (maintenanceMode) {
+            var maintActs = document.createElement("div");
+            maintActs.className = "order-feedback__maint-actions";
+            var acceptBtn = document.createElement("button");
+            acceptBtn.type = "button";
+            acceptBtn.className = "order-feedback__accept-btn";
+            acceptBtn.setAttribute("data-order-id", entry.id || "");
+            acceptBtn.textContent = "접수";
+            maintActs.appendChild(acceptBtn);
+            li.appendChild(maintActs);
+          }
+
+          if (frontMode) {
+            var frontActs = document.createElement("div");
+            frontActs.className = "order-feedback__front-actions";
+            var cancelOrderBtn = document.createElement("button");
+            cancelOrderBtn.type = "button";
+            cancelOrderBtn.className = "request-feedback__cancel-btn";
+            cancelOrderBtn.setAttribute("data-order-id", entry.id || "");
+            cancelOrderBtn.textContent = "취소";
+            cancelOrderBtn.setAttribute("aria-label", "이 오더를 취소");
+            frontActs.appendChild(cancelOrderBtn);
+            li.appendChild(frontActs);
+          }
+
+          list.appendChild(li);
+        });
+        if (empty) empty.hidden = entries.length > 0;
+      }
+
       function renderSchedRequestCards() {
         var ul = document.getElementById("schedRequestCardList");
         var hint = document.getElementById("schedCardsHint");
@@ -3856,37 +5873,30 @@
           li.appendChild(sl);
 
           var acc = document.createElement("p");
-          acc.className = "room-card__memo";
-          acc.style.margin = "0";
-          acc.style.marginTop = "6px";
-          acc.style.fontSize = "0.75rem";
-          acc.style.color = "var(--text-muted)";
+          acc.className = "room-card__memo sched-req-card__received";
           setLineWithEmTime(acc, "접수 ", formatReqAt(entry.at));
           li.appendChild(acc);
 
           var memoSched = entry.memo != null ? String(entry.memo).trim() : "";
-          if (memoSched) {
-            var memP = document.createElement("p");
-            memP.className = "room-card__memo";
-            memP.style.marginTop = "6px";
-            memP.style.fontSize = "0.8rem";
-            memP.style.color = "var(--text)";
-            memP.style.whiteSpace = "pre-wrap";
-            memP.style.wordBreak = "break-word";
-            memP.textContent = "FD : " + memoSched;
-            li.appendChild(memP);
+          var memoSchedImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
+          if (memoSched || memoSchedImg) {
+            hkAppendMemoBlock(li, "FD", memoSched, memoSchedImg, "room-card__memo");
           }
 
           var memo2Sched = entry.memo2 != null ? String(entry.memo2).trim() : "";
-          if (memo2Sched) {
+          var memo2SchedImg = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
+          if (memo2Sched || memo2SchedImg) {
             var m2P = document.createElement("p");
             m2P.className = "room-card__memo";
             m2P.style.marginTop = "6px";
             m2P.style.fontSize = "0.75rem";
             m2P.style.color = "#4338ca";
-            m2P.style.whiteSpace = "pre-wrap";
-            m2P.style.wordBreak = "break-word";
-            m2P.textContent = "두잉 : " + memo2Sched;
+            if (memo2Sched) {
+              var m2Line = document.createElement("span");
+              m2Line.textContent = "두잉 : " + memo2Sched;
+              m2P.appendChild(m2Line);
+            }
+            hkAppendImageEl(m2P, memo2SchedImg);
             li.appendChild(m2P);
           }
 
@@ -4117,6 +6127,9 @@
         });
         var entry = findRequestEntry(entryId);
         if (!entry) return;
+        var memoEditKey = "reqMemo:" + entryId;
+        hkClearPhoto(memoEditKey);
+        if (entry.memoImage) hkSetPhotoPreview(memoEditKey, entry.memoImage);
         var memoBtnEl = li.querySelector(".request-feedback__memo-btn");
         if (memoBtnEl) memoBtnEl.style.visibility = "hidden";
         var cancelMemoBar = li.querySelector(".request-feedback__cancel-btn");
@@ -4147,12 +6160,16 @@
         cancel.textContent = "취소";
         act.appendChild(ok);
         act.appendChild(cancel);
+        act.appendChild(hkCreatePhotoButton(memoEditKey));
         ed.appendChild(ta);
         ed.appendChild(act);
         wrap.appendChild(ed);
+        wrap.appendChild(hkCreatePhotoPreview(memoEditKey));
         li.appendChild(wrap);
+        hkBindPhotoPaste(ta, memoEditKey);
 
         function done() {
+          hkClearPhoto(memoEditKey);
           if (memoBtnEl) memoBtnEl.style.visibility = "";
           if (cancelMemoBar) cancelMemoBar.style.visibility = "";
           if (memo2BarFront) memo2BarFront.style.visibility = "";
@@ -4165,6 +6182,7 @@
         ok.addEventListener("click", function (ev) {
           ev.stopPropagation();
           entry.memo = String(ta.value || "").trim();
+          entry.memoImage = hkGetPhoto(memoEditKey) || "";
           saveRequestLog();
           done();
         });
@@ -4229,6 +6247,9 @@
         });
         var entry = findRequestEntry(entryId);
         if (!entry) return;
+        var memo2EditKey = "reqMemo2:" + entryId;
+        hkClearPhoto(memo2EditKey);
+        if (entry.memo2Image) hkSetPhotoPreview(memo2EditKey, entry.memo2Image);
         var schedB = li.querySelector(".sched-card__edit-btn") || li.querySelector(".request-feedback__sched-btn");
         if (schedB) schedB.style.visibility = "hidden";
         var m2BtnEl = li.querySelector(".request-feedback__memo2-btn");
@@ -4261,12 +6282,16 @@
         cancel.textContent = "취소";
         act.appendChild(ok);
         act.appendChild(cancel);
+        act.appendChild(hkCreatePhotoButton(memo2EditKey));
         ed.appendChild(ta);
         ed.appendChild(act);
         wrap.appendChild(ed);
+        wrap.appendChild(hkCreatePhotoPreview(memo2EditKey));
         li.appendChild(wrap);
+        hkBindPhotoPaste(ta, memo2EditKey);
 
         function done() {
+          hkClearPhoto(memo2EditKey);
           if (schedB) schedB.style.visibility = "";
           if (m2BtnEl) m2BtnEl.style.visibility = "";
           if (cancelFb2) cancelFb2.style.visibility = "";
@@ -4277,6 +6302,7 @@
         ok.addEventListener("click", function (ev) {
           ev.stopPropagation();
           entry.memo2 = String(ta.value || "").trim();
+          entry.memo2Image = hkGetPhoto(memo2EditKey) || "";
           saveRequestLog();
           done();
         });
@@ -4412,6 +6438,10 @@
         var p2 = card.querySelector(".room-card__memo2-text");
         if (!block || !p2) return;
 
+        var roomMemo2Key = "roomM2:" + zone + ":" + normalizeRoomKey(room.number);
+        hkClearPhoto(roomMemo2Key);
+        if (room.memo2Image) hkSetPhotoPreview(roomMemo2Key, room.memo2Image);
+
         var wrap = document.createElement("div");
         wrap.className = "room-memo2-editor";
         var ta = document.createElement("textarea");
@@ -4430,17 +6460,22 @@
         btnCancel.textContent = "취소";
         actions.appendChild(btnOk);
         actions.appendChild(btnCancel);
+        actions.appendChild(hkCreatePhotoButton(roomMemo2Key));
         wrap.appendChild(ta);
         wrap.appendChild(actions);
+        wrap.appendChild(hkCreatePhotoPreview(roomMemo2Key));
         block.appendChild(wrap);
         p2.style.display = "none";
+        hkBindPhotoPaste(ta, roomMemo2Key);
 
         function commit() {
           var d = HKStorage.load();
           if (d.rooms[zone] && d.rooms[zone][idx]) {
             d.rooms[zone][idx].memo2 = ta.value;
+            d.rooms[zone][idx].memo2Image = hkGetPhoto(roomMemo2Key) || "";
             HKStorage.save(d);
           }
+          hkClearPhoto(roomMemo2Key);
           closeMemo2Editor();
           renderRoomsForZone(zone);
         }
@@ -4459,6 +6494,7 @@
 
         btnCancel.addEventListener("click", function (ev) {
           ev.stopPropagation();
+          hkClearPhoto(roomMemo2Key);
           closeMemo2Editor();
           renderRoomsForZone(zone);
         });
@@ -4494,11 +6530,12 @@
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             var m1 = (room.memo1 || "").trim();
             var m2 = (room.memo2 || "").trim();
+            var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
             var tm = (room.time || "").trim();
 
             var li = document.createElement("li");
             var roomPending = isRoomChangePending(zone, room.number);
-            var hasHistory = getRoomChangeEntries(zone, room.number).length > 0;
+            var hasHistory = getRoomChangeEntriesForHistory(zone, room.number).length > 0;
             var historyOpen = isRoomHistoryOpen(zone, room.number);
             var canHistory = canToggleRoomHistory(zone, room.number);
             li.className =
@@ -4556,9 +6593,10 @@
               (maintenanceMode ? " is-editable" : "");
             var p2 = document.createElement("p");
             p2.className =
-              "room-card__memo room-card__memo2-text" + (m2 ? "" : " is-empty");
+              "room-card__memo room-card__memo2-text" + (m2 || m2Img ? "" : " is-empty");
             p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
             b2.appendChild(p2);
+            hkAppendImageEl(b2, m2Img);
             surface.appendChild(b2);
             li.appendChild(surface);
 
@@ -4591,15 +6629,208 @@
         }
         renderRoomsForZone(getActiveZone());
         renderRequestLogPanel();
+        renderOrderPanels();
       }
 
       function applyFrontModeUi() {
         var btnFront = document.getElementById("btnFront");
+        var sidebarFrontSection = document.getElementById("sidebarFrontSection");
         if (btnFront) {
           btnFront.classList.toggle("is-on", frontMode);
           btnFront.setAttribute("aria-pressed", frontMode ? "true" : "false");
         }
+        if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
+        if (!frontMode && sidebarMainView === "front") {
+          showSidebarRequestView();
+        } else if (sidebarMainView === "front") {
+          applySidebarMainView("front");
+        }
+        if (!frontMode) hideFrontChatToast();
+        if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
+        renderOrderPanels();
+      }
+
+      function renderFrontChatPanel(scrollToBottom) {
+        var list = document.getElementById("frontChatMessages");
+        var empty = document.getElementById("frontChatEmpty");
+        if (!list) return;
+        list.innerHTML = "";
+        var messages = frontChatMessages.slice();
+        messages.sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        if (messages.length === 0) {
+          if (empty) empty.hidden = false;
+        } else {
+          if (empty) empty.hidden = true;
+          messages.forEach(function (msg) {
+            var li = document.createElement("li");
+            li.className = "front-chat__msg";
+            var byEl = document.createElement("div");
+            byEl.className = "front-chat__msg-by";
+            byEl.textContent = msg.by != null ? String(msg.by).trim() || "—" : "—";
+            li.appendChild(byEl);
+            hkAppendMessageContent(li, msg.text, msg.image, "front-chat__msg-text");
+            if (msg.at) {
+              var timeEl = document.createElement("div");
+              timeEl.className = "front-chat__msg-time";
+              timeEl.textContent = formatReqAt(msg.at);
+              li.appendChild(timeEl);
+            }
+            list.appendChild(li);
+          });
+        }
+        if (scrollToBottom) {
+          requestAnimationFrame(function () {
+            list.scrollTop = list.scrollHeight;
+          });
+        }
+      }
+
+      function getFrontChatMessageId(msg, idx) {
+        if (msg && msg.id) return String(msg.id);
+        return "fchat-fallback-" + (msg && msg.at ? String(msg.at) : "") + "-" + idx;
+      }
+
+      function initFrontChatTracking() {
+        knownFrontChatIds = {};
+        frontChatMessages.forEach(function (msg, idx) {
+          knownFrontChatIds[getFrontChatMessageId(msg, idx)] = true;
+        });
+      }
+
+      function isViewingFrontChat() {
+        if (!frontMode || sidebarMainView !== "front") return false;
+        var panel = document.getElementById("frontChatPanel");
+        return !!(panel && !panel.hidden);
+      }
+
+      function getFrontChatNotifyPreview(msg) {
+        var by = msg.by != null ? String(msg.by).trim() || "—" : "—";
+        var text = msg.text != null ? String(msg.text).trim() : "";
+        var hasImage = msg.image != null && String(msg.image).trim();
+        if (!text && hasImage) text = "사진";
+        else if (!text) text = "새 메시지";
+        if (text.length > 80) text = text.slice(0, 80) + "…";
+        return { by: by, text: text };
+      }
+
+      function requestFrontChatNotificationPermission() {
+        if (typeof Notification === "undefined") return;
+        if (Notification.permission === "granted" || Notification.permission === "denied") return;
+        try {
+          Notification.requestPermission();
+        } catch (e) {}
+      }
+
+      function showFrontChatDesktopNotification(msg) {
+        if (typeof Notification === "undefined") return;
+        if (Notification.permission !== "granted") return;
+        var preview = getFrontChatNotifyPreview(msg);
+        try {
+          var n = new Notification("프론트 채팅 · " + preview.by, {
+            body: preview.text,
+            tag: "hk-front-chat",
+            renotify: true,
+          });
+          n.onclick = function () {
+            window.focus();
+            n.close();
+            hideFrontChatToast();
+            if (frontMode) showSidebarFrontView();
+          };
+          setTimeout(function () {
+            n.close();
+          }, 5000);
+        } catch (e) {}
+      }
+
+      function notifyFrontChatMessage(msg) {
+        if (!frontMode || isViewingFrontChat()) return;
+        if (document.hidden) {
+          showFrontChatDesktopNotification(msg);
+        } else {
+          showFrontChatToast(msg);
+        }
+      }
+
+      function hideFrontChatToast() {
+        var toast = document.getElementById("frontChatToast");
+        if (!toast) return;
+        toast.classList.remove("is-visible");
+        toast.hidden = true;
+        if (frontChatToastHideTimer) {
+          clearTimeout(frontChatToastHideTimer);
+          frontChatToastHideTimer = null;
+        }
+      }
+
+      function showFrontChatToast(msg) {
+        if (!frontMode || isViewingFrontChat()) return;
+        var preview = getFrontChatNotifyPreview(msg);
+        var toast = document.getElementById("frontChatToast");
+        var byEl = document.getElementById("frontChatToastBy");
+        var textEl = document.getElementById("frontChatToastText");
+        if (!toast || !textEl) return;
+        if (byEl) byEl.textContent = preview.by;
+        textEl.textContent = preview.text;
+        toast.hidden = false;
+        requestAnimationFrame(function () {
+          toast.classList.add("is-visible");
+        });
+        if (frontChatToastHideTimer) clearTimeout(frontChatToastHideTimer);
+        frontChatToastHideTimer = setTimeout(hideFrontChatToast, 3000);
+      }
+
+      function detectNewFrontChatMessages() {
+        if (!frontMode) return;
+        var selfNorm = (getOperatorName() || "").trim().toLowerCase();
+        var notify = !isViewingFrontChat();
+        var newest = null;
+        frontChatMessages.forEach(function (msg, idx) {
+          var mid = getFrontChatMessageId(msg, idx);
+          if (knownFrontChatIds[mid]) return;
+          knownFrontChatIds[mid] = true;
+          if (!notify) return;
+          var byNorm = msg.by != null ? String(msg.by).trim().toLowerCase() : "";
+          if (selfNorm && byNorm === selfNorm) return;
+          newest = msg;
+        });
+        if (newest) notifyFrontChatMessage(newest);
+      }
+
+      function submitFrontChatMessage(text, image) {
+        if (!frontMode) return;
+        var msgText = String(text || "").trim();
+        var msgImage = image != null ? String(image).trim() : "";
+        if (!msgText && !msgImage) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              submitFrontChatMessage(msgText, msgImage);
+            },
+          });
+          return;
+        }
+        if (typeof HKSync === "undefined" || !HKSync.appendFrontChatMessage) return;
+        var newId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        HKSync.appendFrontChatMessage({
+          id: newId,
+          at: new Date().toISOString(),
+          by: getOperatorName(),
+          text: msgText,
+          image: msgImage || "",
+        });
+        knownFrontChatIds[newId] = true;
+        hkClearPhoto("frontChat");
+        syncFrontChatFromServer();
+        renderFrontChatPanel(true);
       }
 
       var btnMaint = document.getElementById("btnMaint");
@@ -4806,8 +7037,7 @@
           var isExpanded = block && !block.classList.contains("is-collapsed");
 
           if (wasActive && isExpanded) {
-            collapseZoneBlock();
-            clearZoneTabSelection();
+            showSidebarRequestView();
             return;
           }
 
@@ -4816,8 +7046,9 @@
             t.classList.toggle("active", t === tab);
             t.setAttribute("aria-selected", t === tab ? "true" : "false");
           });
-          if (sidebarListView) closeSidebarList();
+          showSidebarZoneView(z);
           clearZoneAlert(z);
+          expandedRoomHistoryKey = null;
           expandZoneBlock();
           updateZoneBlockTitle(z);
           setZonePanelOpen(true);
@@ -4839,6 +7070,11 @@
       loadSchedTypeFiltersFromStorage();
       renderTypeFilterCheckboxes();
       loadRequestLog();
+      loadOrderLog();
+      loadFrontChat();
+      initFrontChatTracking();
+      initOrderIssueTracking();
+      applyOrderSidebarAlertUi();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
@@ -4846,7 +7082,12 @@
       syncChangeAlertsFromLog();
       applyZoneAlertUi();
       setZonePanelOpen(false);
+      initStaticPhotoButtons();
       refreshMain();
+      showSidebarRequestView();
+      renderOrderPanels();
+      applyFrontModeUi();
+      renderFrontChatPanel();
 
       function clearRoomStatusDisplay() {
         updateRoomStatusDisplay();
@@ -4882,7 +7123,58 @@
         return false;
       }
 
-      function appendRequestLog(room, statusVal, isUrgent, memoText) {
+      function appendOrderLog(room, memoText, isUrgent, memoImage) {
+        var fo = lookupRoomResvDisplay(room);
+        var id = "ord-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        orderLogEntries.unshift({
+          id: id,
+          room: room,
+          memo: memoText != null && String(memoText).trim() ? String(memoText).trim() : "",
+          memoImage: memoImage != null ? String(memoImage).trim() : "",
+          foStatus: fo || "",
+          phase: "alert",
+          urgent: !!isUrgent,
+          at: new Date().toISOString(),
+          by: getOperatorName(),
+        });
+        knownOrderAlertIds[id] = true;
+        hkClearPhoto("orderMemo");
+        saveOrderLog();
+        renderOrderPanels();
+      }
+
+      function processOrderFormSubmit() {
+        var roomEl = document.getElementById("orderRoomNo");
+        var memoEl = document.getElementById("orderMemo");
+        var btnOrderUrgentEl = document.getElementById("btnOrderUrgent");
+        var room = roomEl && roomEl.value.trim();
+        var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var isUrgent = btnOrderUrgentEl && btnOrderUrgentEl.classList.contains("is-on");
+        var memoImage = hkGetPhoto("orderMemo");
+        if (!room) {
+          if (roomEl) roomEl.focus();
+          return;
+        }
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              processOrderFormSubmit();
+            },
+          });
+          return;
+        }
+        appendOrderLog(room, memo, isUrgent, memoImage);
+        if (roomEl) roomEl.value = "";
+        if (memoEl) memoEl.value = "";
+        if (btnOrderUrgentEl) {
+          btnOrderUrgentEl.classList.remove("is-on");
+          btnOrderUrgentEl.setAttribute("aria-pressed", "false");
+        }
+        updateOrderFoDisplay();
+      }
+
+      function appendRequestLog(room, statusVal, isUrgent, memoText, memoImage) {
         var id = "req-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         requestLogEntries.unshift({
           id: id,
@@ -4892,7 +7184,9 @@
           sched: "",
           urgent: !!isUrgent,
           memo: memoText != null && String(memoText).trim() ? String(memoText).trim() : "",
+          memoImage: memoImage != null ? String(memoImage).trim() : "",
           memo2: "",
+          memo2Image: "",
           by: getOperatorName(),
         });
         saveRequestLog();
@@ -4958,9 +7252,11 @@
           return;
         }
         var memoCombined = collectMemoForSubmit();
+        var memoImage = hkGetPhoto("requestMemo");
         memoStack.length = 0;
         renderMemoStack();
-        appendRequestLog(room, st, isUrgent, memoCombined);
+        hkClearPhoto("requestMemo");
+        appendRequestLog(room, st, isUrgent, memoCombined, memoImage);
         if (btnUrgentEl) {
           btnUrgentEl.classList.remove("is-on");
           btnUrgentEl.setAttribute("aria-pressed", "false");
@@ -4976,12 +7272,113 @@
         });
       }
 
+      var orderForm = document.getElementById("orderForm");
+      if (orderForm) {
+        orderForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          processOrderFormSubmit();
+        });
+      }
+
+      (function setupOrderRoomAuto() {
+        var orderRoomEl = document.getElementById("orderRoomNo");
+        if (!orderRoomEl) return;
+        orderRoomEl.addEventListener("input", updateOrderFoDisplay);
+        orderRoomEl.addEventListener("change", updateOrderFoDisplay);
+        updateOrderFoDisplay();
+      })();
+
+      var orderFeedbackEl = document.getElementById("orderFeedback");
+      if (orderFeedbackEl) {
+        orderFeedbackEl.addEventListener("click", function (e) {
+          var cancelOrderBtn = e.target.closest(".request-feedback__cancel-btn");
+          if (cancelOrderBtn && cancelOrderBtn.hasAttribute("data-order-id")) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var cancelId = cancelOrderBtn.getAttribute("data-order-id");
+            if (cancelId) openCancelConfirmModal(cancelId);
+            return;
+          }
+          var acceptBtn = e.target.closest(".order-feedback__accept-btn");
+          if (!acceptBtn) return;
+          if (!maintenanceMode) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var orderId = acceptBtn.getAttribute("data-order-id");
+          if (orderId) acceptOrderEntry(orderId);
+        });
+      }
+
+      var orderPanelEl = document.getElementById("orderPanel");
+      if (orderPanelEl) {
+        orderPanelEl.addEventListener("click", function (e) {
+          var acceptIssueBtn = e.target.closest(".order-work__accept-btn");
+          if (acceptIssueBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var acceptId = acceptIssueBtn.getAttribute("data-order-id");
+            if (acceptId) resolveOrderIssueEntry(acceptId);
+            return;
+          }
+          var issueBtn = e.target.closest(".order-work__issue-btn");
+          if (!issueBtn) return;
+          if (!maintenanceMode) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var orderId = issueBtn.getAttribute("data-order-id");
+          if (orderId) raiseOrderIssue(orderId);
+        });
+        orderPanelEl.addEventListener("submit", function (e) {
+          var chatForm = e.target.closest(".order-chat__form");
+          if (!chatForm) return;
+          e.preventDefault();
+          var orderId = chatForm.getAttribute("data-order-id");
+          var chatInput = chatForm.querySelector("input");
+          var text = chatInput ? chatInput.value : "";
+          var chatImage = orderId ? hkGetPhoto("orderChat:" + orderId) : null;
+          if (orderId) appendOrderChat(orderId, text, chatImage);
+          if (chatInput) chatInput.value = "";
+        });
+      }
+
+      var frontChatForm = document.getElementById("frontChatForm");
+      if (frontChatForm) {
+        frontChatForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (!frontMode) return;
+          var inp = document.getElementById("frontChatInput");
+          var text = inp ? inp.value : "";
+          var image = hkGetPhoto("frontChat");
+          submitFrontChatMessage(text, image);
+          if (inp) inp.value = "";
+        });
+      }
+
+      var frontChatToastEl = document.getElementById("frontChatToast");
+      if (frontChatToastEl) {
+        frontChatToastEl.addEventListener("click", function () {
+          hideFrontChatToast();
+          if (frontMode) showSidebarFrontView();
+        });
+      }
+
       var btnUrgent = document.getElementById("btnUrgent");
       if (btnUrgent) {
         btnUrgent.addEventListener("click", function () {
           var on = !btnUrgent.classList.contains("is-on");
           btnUrgent.classList.toggle("is-on", on);
           btnUrgent.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      var btnOrderUrgent = document.getElementById("btnOrderUrgent");
+      if (btnOrderUrgent) {
+        btnOrderUrgent.addEventListener("click", function () {
+          var on = !btnOrderUrgent.classList.contains("is-on");
+          btnOrderUrgent.classList.toggle("is-on", on);
+          btnOrderUrgent.setAttribute("aria-pressed", on ? "true" : "false");
         });
       }
 
@@ -5009,6 +7406,31 @@
           renderSchedRequestCards();
         });
       }
+
+      (function setupSidebarNav() {
+        var bReq = document.getElementById("sidebarBtnRequest");
+        var bOrd = document.getElementById("sidebarBtnOrder");
+        var bFront = document.getElementById("sidebarBtnFront");
+        if (bReq) {
+          bReq.addEventListener("click", function () {
+            if (sidebarMainView === "request") return;
+            showSidebarRequestView();
+          });
+        }
+        if (bOrd) {
+          bOrd.addEventListener("click", function () {
+            if (sidebarMainView === "order") return;
+            showSidebarOrderView();
+          });
+        }
+        if (bFront) {
+          bFront.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "front") return;
+            showSidebarFrontView();
+          });
+        }
+      })();
 
       (function setupSidebarLists() {
         var bCancel = document.getElementById("sidebarBtnCancelList");
@@ -5088,14 +7510,18 @@
               if (inp) inp.focus();
               return;
             }
-            var entry = id ? findRequestEntry(id) : null;
+            var entry = id ? findCancelTargetEntry(id) : null;
             var roomSnap = entry && entry.room != null ? String(entry.room).trim() : "";
             closeCancelNameModal();
             if (id) {
-              appendCancelNameLog(roomSnap, nameVal, id);
-              removeRequestEntry(id);
-              renderRequestLogPanel();
-              if (sidebarListView === "cancel") openSidebarList("cancel");
+              if (isOrderEntryId(id)) {
+                cancelOrderEntry(id, nameVal);
+              } else {
+                appendCancelNameLog(roomSnap, nameVal, id);
+                removeRequestEntry(id);
+                renderRequestLogPanel();
+                if (sidebarListView === "cancel") openSidebarList("cancel");
+              }
             }
           });
         }

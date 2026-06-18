@@ -25,6 +25,10 @@ function checkSyncAuth(req, res, next) {
 
 app.use(express.json({ limit: "12mb" }));
 
+app.get("/ping", function (req, res) {
+  res.status(200).type("text/plain").send("ok");
+});
+
 app.get("/api/sync", checkSyncAuth, function (req, res) {
   res.json({
     version: sharedState.version,
@@ -88,6 +92,12 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
     out.hkRequestLog = replaceLogArray(incoming.hkRequestLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkOrderLog")) {
+    out.hkOrderLog = replaceLogArray(incoming.hkOrderLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
+    out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkCancelLog")) {
     out.hkCancelLog = replaceLogArray(incoming.hkCancelLog);
