@@ -8,6 +8,8 @@
   var REQUEST_USE_LOG_KEY = "lotte-hk-use-log-v1";
   var CHANGE_LOG_KEY = "lotte-hk-change-log-v1";
   var ORDER_LOG_KEY = "lotte-hk-order-log-v1";
+  var MB_INV_LOG_KEY = "lotte-hk-mb-inv-log-v1";
+  var MB_CHECK_LOG_KEY = "lotte-hk-mb-check-log-v1";
   var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
 
   var syncVersion = 0;
@@ -23,6 +25,8 @@
     useLog: [],
     changeLog: [],
     orderLog: [],
+    mbInvLog: [],
+    mbCheckLog: [],
     frontChat: [],
   };
 
@@ -95,6 +99,8 @@
     cache.useLog = readJsonArray(REQUEST_USE_LOG_KEY);
     cache.changeLog = readJsonArray(CHANGE_LOG_KEY);
     cache.orderLog = readJsonArray(ORDER_LOG_KEY);
+    cache.mbInvLog = readJsonArray(MB_INV_LOG_KEY);
+    cache.mbCheckLog = readJsonArray(MB_CHECK_LOG_KEY);
     cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
   }
 
@@ -137,6 +143,8 @@
     if (pendingPush.hkUseLog) body.hkUseLog = cache.useLog;
     if (pendingPush.hkChangeLog) body.hkChangeLog = cache.changeLog;
     if (pendingPush.hkOrderLog) body.hkOrderLog = cache.orderLog;
+    if (pendingPush.hkMbInvLog) body.hkMbInvLog = cache.mbInvLog;
+    if (pendingPush.hkMbCheckLog) body.hkMbCheckLog = cache.mbCheckLog;
     if (pendingPush.hkFrontChat) body.hkFrontChat = cache.frontChat;
     return body;
   }
@@ -205,6 +213,16 @@
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
       changed.push("hkOrderLog");
     }
+    if (Array.isArray(payload.hkMbInvLog)) {
+      cache.mbInvLog = payload.hkMbInvLog.slice();
+      writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+      changed.push("hkMbInvLog");
+    }
+    if (Array.isArray(payload.hkMbCheckLog)) {
+      cache.mbCheckLog = payload.hkMbCheckLog.slice();
+      writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
+      changed.push("hkMbCheckLog");
+    }
     if (Array.isArray(payload.hkFrontChat)) {
       cache.frontChat = payload.hkFrontChat.slice();
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
@@ -254,6 +272,8 @@
       if (cache.useLog.length) fields.hkUseLog = true;
       if (cache.changeLog.length) fields.hkChangeLog = true;
       if (cache.orderLog.length) fields.hkOrderLog = true;
+      if (cache.mbInvLog.length) fields.hkMbInvLog = true;
+      if (cache.mbCheckLog.length) fields.hkMbCheckLog = true;
       if (cache.frontChat.length) fields.hkFrontChat = true;
       schedulePush(fields);
     });
@@ -306,6 +326,32 @@
       writeJsonArray(ORDER_LOG_KEY, []);
       schedulePush({ hkOrderLog: true });
     },
+    getMbInvLog: function () {
+      return cache.mbInvLog;
+    },
+    setMbInvLog: function (entries) {
+      cache.mbInvLog = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+      schedulePush({ hkMbInvLog: true });
+    },
+    clearMbInvLog: function () {
+      cache.mbInvLog = [];
+      writeJsonArray(MB_INV_LOG_KEY, []);
+      schedulePush({ hkMbInvLog: true });
+    },
+    getMbCheckLog: function () {
+      return cache.mbCheckLog;
+    },
+    setMbCheckLog: function (entries) {
+      cache.mbCheckLog = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
+      schedulePush({ hkMbCheckLog: true });
+    },
+    clearMbCheckLog: function () {
+      cache.mbCheckLog = [];
+      writeJsonArray(MB_CHECK_LOG_KEY, []);
+      schedulePush({ hkMbCheckLog: true });
+    },
     getFrontChat: function () {
       return cache.frontChat;
     },
@@ -352,6 +398,14 @@
       if (Array.isArray(payload.hkOrderLog)) {
         cache.orderLog = payload.hkOrderLog.slice();
         writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+      }
+      if (Array.isArray(payload.hkMbInvLog)) {
+        cache.mbInvLog = payload.hkMbInvLog.slice();
+        writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+      }
+      if (Array.isArray(payload.hkMbCheckLog)) {
+        cache.mbCheckLog = payload.hkMbCheckLog.slice();
+        writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
       }
       if (Array.isArray(payload.hkFrontChat)) {
         cache.frontChat = payload.hkFrontChat.slice();

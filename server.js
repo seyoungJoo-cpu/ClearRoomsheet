@@ -96,6 +96,12 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "hkOrderLog")) {
     out.hkOrderLog = replaceLogArray(incoming.hkOrderLog);
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) {
+    out.hkMbInvLog = replaceLogArray(incoming.hkMbInvLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkMbCheckLog")) {
+    out.hkMbCheckLog = replaceLogArray(incoming.hkMbCheckLog);
+  }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
     out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
   }

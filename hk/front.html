@@ -1903,6 +1903,10 @@
       font-weight: 800;
     }
 
+    .order-work-section--issue[hidden] {
+      display: none !important;
+    }
+
     .order-work-section--issue .order-work-section__title {
       color: #b91c1c;
     }
@@ -2062,6 +2066,53 @@
       background: #991b1b;
     }
 
+    .order-work__actions--toggle {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .order-work__actions--toggle .order-work__issue-btn {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+
+    .order-work__actions--toggle .order-work__wan-btn {
+      flex: 0 0 auto;
+      margin-top: 0;
+      margin-left: auto;
+    }
+
+    .order-work__wan-btn {
+      padding: 2px 5px;
+      font-size: 0.5625rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid #059669;
+      background: #ecfdf5;
+      color: #047857;
+      min-width: 1.4em;
+      line-height: 1.15;
+    }
+
+    .order-work__wan-btn:hover {
+      background: #d1fae5;
+    }
+
+    .order-work__wan-btn.is-on {
+      background: #047857;
+      color: #fff;
+      border-color: #047857;
+    }
+
     .order-feedback__maint-actions,
     .order-work__actions {
       display: flex;
@@ -2159,6 +2210,299 @@
       background: #0f766e;
       border-color: #0f766e;
       color: #fff;
+    }
+
+    .sidebar-nav__btn--compact {
+      font-size: 0.72rem;
+      line-height: 1.25;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+
+    .mb-workflow__tag {
+      display: block;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .mb-workflow__tag--mb {
+      color: #1e3a8a;
+      background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+      border: 2px solid #3b82f6;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .mb-workflow__tag--inv {
+      color: #065f46;
+      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 2px solid #10b981;
+      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .order-feedback__item.order-feedback__item--mb {
+      border-color: #93c5fd;
+      background: #f8fbff;
+    }
+
+    .order-feedback__item.order-feedback__item--inv {
+      border-color: #6ee7b7;
+      background: #f0fdf9;
+    }
+
+    #mbInvFeedback {
+      background: #f8fafc;
+    }
+
+    #mbInvFeedback .order-feedback__list {
+      background: #f8fafc;
+    }
+
+    #mbInvFeedback .order-feedback__item {
+      padding: 10px 10px 22px;
+    }
+
+    #mbInvFeedback .order-feedback__head {
+      background: linear-gradient(180deg, #f0f9ff 0%, #ecfdf5 100%);
+      border-bottom-color: #cbd5e1;
+    }
+
+    #mbInvFeedback .order-feedback__head h2 {
+      color: #1e293b;
+    }
+
+    .mb-inv-panel__columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 14px;
+      align-items: start;
+    }
+
+    .mb-inv-panel__col {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 12px 10px;
+      background: #fafbfc;
+    }
+
+    .mb-inv-panel__col--mb {
+      border-top: 3px solid #2563eb;
+    }
+
+    .mb-inv-panel__col--inv {
+      border-top: 3px solid #059669;
+    }
+
+    .mb-inv-panel__col .mb-workflow__subhead {
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.9375rem;
+    }
+
+    .mb-inv-panel__col--mb .mb-workflow__subhead {
+      color: #1d4ed8;
+    }
+
+    .mb-inv-panel__col--inv .mb-workflow__subhead {
+      color: #047857;
+    }
+
+    .mb-inv-panel__col .order-work-section__title {
+      font-size: 0.8125rem;
+    }
+
+    @media (max-width: 960px) {
+      .mb-inv-panel__columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mb-workflow__subhead {
+      margin: 16px 0 8px;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .mb-workflow__subhead:first-of-type {
+      margin-top: 0;
+    }
+
+    .mb-room-change-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 8px 10px;
+    }
+
+    .mb-room-change-row .field--room-arrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mb-room-change-row .room-arrow {
+      font-weight: 800;
+      color: var(--text-muted);
+      padding-bottom: 8px;
+    }
+
+    .mb-inv-change-form {
+      margin-bottom: 12px;
+    }
+
+    .mb-inv-form__memo {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .mb-inv-form__memo label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .mb-inv-form__memo .hk-compose-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .mb-inv-form__memo input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .mb-inv__memo-display {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      line-height: 1.45;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+      text-align: left;
+    }
+
+    .mb-check__memo-wrap {
+      margin-top: 8px;
+    }
+
+    .mb-check__memo-input {
+      width: 100%;
+      min-height: 52px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .mb-check__memo-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.15);
+    }
+
+    .mb-check-change-form .mb-inv-form__memo input[type="text"] {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      box-sizing: border-box;
+    }
+
+    .mb-check-change-form {
+      margin-bottom: 12px;
+    }
+
+    .order-work-section--gst .order-work-section__title {
+      color: #b45309;
+    }
+
+    .order-work-section--gst .order-work-item {
+      border: 2px solid #fcd34d;
+      background: #fffbeb;
+    }
+
+    .mb-check__alert-actions {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mb-check__gst-btn {
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .mb-check__gst-btn:hover {
+      background: #fde68a;
+    }
+
+    .mb-check__rerequest-btn {
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #1e40af;
+      background: #dbeafe;
+      border: 1px solid #3b82f6;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .mb-check__rerequest-btn:hover {
+      background: #bfdbfe;
+    }
+
+    .mb-check-panel .mb-check__memo-display {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      line-height: 1.45;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+      text-align: left;
+    }
+
+    .order-work-section--posted .order-work-section__title {
+      color: #0369a1;
+    }
+
+    .order-work-section--posted .order-work-item {
+      border: 2px solid #7dd3fc;
     }
 
     .front-chat-panel {
@@ -3298,6 +3642,22 @@
           >
             오더
           </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn sidebar-nav__btn--compact"
+            id="sidebarBtnMbInv"
+            aria-pressed="false"
+          >
+            MB &amp; 인벤 변경
+          </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnMbCheck"
+            aria-pressed="false"
+          >
+            MB CHECK
+          </button>
         </div>
       </nav>
       <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
@@ -3467,7 +3827,7 @@
           <button type="submit" class="btn-order">오더</button>
         </form>
 
-        <section class="order-work-section order-work-section--issue" id="orderIssueSection" aria-labelledby="orderIssueTitle">
+        <section class="order-work-section order-work-section--issue" id="orderIssueSection" hidden aria-labelledby="orderIssueTitle">
           <h3 class="order-work-section__title" id="orderIssueTitle">문제 발생</h3>
           <ul class="order-work-list order-work-list--issue" id="orderIssueList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderIssueEmpty">문제 발생 건이 없습니다.</p>
@@ -3483,6 +3843,144 @@
           <h3 class="order-work-section__title" id="orderCancelledTitle">취소</h3>
           <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
+        </section>
+      </section>
+
+      <section class="order-panel mb-inv-panel" id="mbInvPanel" hidden aria-labelledby="mbInvPanelTitle">
+        <h2 id="mbInvPanelTitle">MB &amp; 인벤 변경</h2>
+
+        <div class="mb-inv-panel__columns">
+          <div class="mb-inv-panel__col mb-inv-panel__col--mb">
+            <h3 class="mb-workflow__subhead">MB 변경</h3>
+            <form class="mb-inv-change-form" id="mbChangeForm">
+              <div class="order-row mb-room-change-row">
+                <div class="field field--room-arrow">
+                  <label for="mbRoomFrom">객실번호</label>
+                  <div class="field--room-arrow">
+                    <input type="text" id="mbRoomFrom" placeholder="예: 1205" autocomplete="off" />
+                    <span class="room-arrow" aria-hidden="true">→</span>
+                    <input type="text" id="mbRoomTo" placeholder="예: 1206" autocomplete="off" />
+                  </div>
+                </div>
+                <button type="submit" class="btn-order">등록</button>
+              </div>
+              <div class="field mb-inv-form__memo">
+                <label for="mbMemo">메모</label>
+                <div class="hk-compose-row">
+                  <input
+                    type="text"
+                    id="mbMemo"
+                    placeholder="메모 (선택)"
+                    autocomplete="off"
+                  />
+                  <button type="button" class="hk-photo-btn" id="btnPhotoMbMemo" title="사진 첨부">사진</button>
+                </div>
+                <div class="hk-photo-preview" data-photo-key="mbMemo" hidden></div>
+              </div>
+            </form>
+
+            <section class="order-work-section order-work-section--issue" id="mbChangeIssueSection" hidden aria-labelledby="mbChangeIssueTitle">
+              <h3 class="order-work-section__title" id="mbChangeIssueTitle">문제 발생</h3>
+              <ul class="order-work-list order-work-list--issue" id="mbChangeIssueList"></ul>
+              <p class="order-work-empty" id="mbChangeIssueEmpty">문제 발생 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--accepted" aria-labelledby="mbChangeAcceptedTitle">
+              <h3 class="order-work-section__title" id="mbChangeAcceptedTitle">접수완료</h3>
+              <ul class="order-work-list" id="mbChangeAcceptedList"></ul>
+              <p class="order-work-empty" id="mbChangeAcceptedEmpty">접수완료 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--cancelled" aria-labelledby="mbChangeCancelledTitle">
+              <h3 class="order-work-section__title" id="mbChangeCancelledTitle">취소</h3>
+              <ul class="order-work-list" id="mbChangeCancelledList"></ul>
+              <p class="order-work-empty" id="mbChangeCancelledEmpty">취소된 건이 없습니다.</p>
+            </section>
+          </div>
+
+          <div class="mb-inv-panel__col mb-inv-panel__col--inv">
+            <h3 class="mb-workflow__subhead">인벤 변경</h3>
+            <form class="mb-inv-change-form" id="invChangeForm">
+              <div class="order-row mb-room-change-row">
+                <div class="field field--room-arrow">
+                  <label for="invRoomFrom">객실번호</label>
+                  <div class="field--room-arrow">
+                    <input type="text" id="invRoomFrom" placeholder="예: 1205" autocomplete="off" />
+                    <span class="room-arrow" aria-hidden="true">→</span>
+                    <input type="text" id="invRoomTo" placeholder="예: 1206" autocomplete="off" />
+                  </div>
+                </div>
+                <button type="submit" class="btn-order">등록</button>
+              </div>
+              <div class="field mb-inv-form__memo">
+                <label for="invMemo">메모</label>
+                <div class="hk-compose-row">
+                  <input
+                    type="text"
+                    id="invMemo"
+                    placeholder="메모 (선택)"
+                    autocomplete="off"
+                  />
+                  <button type="button" class="hk-photo-btn" id="btnPhotoInvMemo" title="사진 첨부">사진</button>
+                </div>
+                <div class="hk-photo-preview" data-photo-key="invMemo" hidden></div>
+              </div>
+            </form>
+
+            <section class="order-work-section order-work-section--issue" id="invChangeIssueSection" hidden aria-labelledby="invChangeIssueTitle">
+              <h3 class="order-work-section__title" id="invChangeIssueTitle">문제 발생</h3>
+              <ul class="order-work-list order-work-list--issue" id="invChangeIssueList"></ul>
+              <p class="order-work-empty" id="invChangeIssueEmpty">문제 발생 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--accepted" aria-labelledby="invChangeAcceptedTitle">
+              <h3 class="order-work-section__title" id="invChangeAcceptedTitle">접수완료</h3>
+              <ul class="order-work-list" id="invChangeAcceptedList"></ul>
+              <p class="order-work-empty" id="invChangeAcceptedEmpty">접수완료 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--cancelled" aria-labelledby="invChangeCancelledTitle">
+              <h3 class="order-work-section__title" id="invChangeCancelledTitle">취소</h3>
+              <ul class="order-work-list" id="invChangeCancelledList"></ul>
+              <p class="order-work-empty" id="invChangeCancelledEmpty">취소된 건이 없습니다.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="order-panel mb-check-panel" id="mbCheckPanel" hidden aria-labelledby="mbCheckPanelTitle">
+        <h2 id="mbCheckPanelTitle">MB CHECK</h2>
+        <form class="mb-check-change-form" id="mbCheckForm">
+          <div class="order-row">
+            <div class="field field--room-no">
+              <label for="mbCheckRoomNo">객실번호</label>
+              <input type="text" id="mbCheckRoomNo" placeholder="예: 1205" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn-order">등록</button>
+          </div>
+          <div class="field mb-inv-form__memo">
+            <label for="mbCheckMemo">메모</label>
+            <input
+              type="text"
+              id="mbCheckMemo"
+              placeholder="메모 (선택)"
+              autocomplete="off"
+            />
+          </div>
+        </form>
+
+        <section class="order-work-section order-work-section--accepted" aria-labelledby="mbCheckAcceptedTitle">
+          <h3 class="order-work-section__title" id="mbCheckAcceptedTitle">접수</h3>
+          <ul class="order-work-list" id="mbCheckAcceptedList"></ul>
+          <p class="order-work-empty" id="mbCheckAcceptedEmpty">접수 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--gst" aria-labelledby="mbCheckGstTitle">
+          <h3 class="order-work-section__title" id="mbCheckGstTitle">GST 있음</h3>
+          <ul class="order-work-list" id="mbCheckGstList"></ul>
+          <p class="order-work-empty" id="mbCheckGstEmpty">GST 있음 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--posted" aria-labelledby="mbCheckPostedTitle">
+          <h3 class="order-work-section__title" id="mbCheckPostedTitle">포스팅 완료</h3>
+          <ul class="order-work-list" id="mbCheckPostedList"></ul>
+          <p class="order-work-empty" id="mbCheckPostedEmpty">포스팅 완료 건이 없습니다.</p>
         </section>
       </section>
 
@@ -3576,6 +4074,24 @@
       <ul class="order-feedback__list" id="orderFeedbackList"></ul>
       <p class="order-feedback__empty" id="orderFeedbackEmpty">
         오더가 접수되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+    <aside class="order-feedback" id="mbInvFeedback" aria-label="MB 인벤 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>MB &amp; 인벤 알림</h2>
+      </div>
+      <ul class="order-feedback__list" id="mbInvFeedbackList"></ul>
+      <p class="order-feedback__empty" id="mbInvFeedbackEmpty">
+        등록되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+    <aside class="order-feedback" id="mbCheckFeedback" aria-label="MB CHECK 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>MB CHECK 알림</h2>
+      </div>
+      <ul class="order-feedback__list" id="mbCheckFeedbackList"></ul>
+      <p class="order-feedback__empty" id="mbCheckFeedbackEmpty">
+        등록되면 이곳에 표시됩니다.
       </p>
     </aside>
     </div>
@@ -3685,6 +4201,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
   <script src="hk-sync.js"></script>
+  <script src="hk-mb-workflow.js"></script>
   <script>
     (function () {
       var tabs = document.querySelectorAll(".zone-tab");
@@ -3714,6 +4231,16 @@
       var knownOrderIssueIds = {};
       var pendingOrderAlert = false;
       var knownOrderAlertIds = {};
+      var pendingMbInvAlert = false;
+      var pendingMbInvIssue = false;
+      var pendingMbCheckAlert = false;
+      var pendingMbCheckAccepted = false;
+      var pendingMbCheckGst = false;
+      var knownMbInvAlertKeys = {};
+      var knownMbInvIssueIds = {};
+      var knownMbCheckAlertKeys = {};
+      var knownMbCheckAcceptedIds = {};
+      var knownMbCheckGstIds = {};
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var operatorNameModalMode = "initial";
@@ -4319,7 +4846,29 @@
       function syncOrderLogFromServer() {
         if (typeof HKSync !== "undefined") {
           orderLogEntries = HKSync.getOrderLog();
+          normalizeOrderIssueEntries();
         }
+      }
+
+      function isOrderIssueOpen(entry) {
+        if (!entry) return false;
+        if (entry.issueOpen === true) return true;
+        return getOrderPhase(entry) === "issue";
+      }
+
+      function normalizeOrderIssueEntries() {
+        orderLogEntries.forEach(function (entry) {
+          if (!entry) return;
+          if (getOrderPhase(entry) === "issue") {
+            entry.phase = "accepted";
+            entry.issueOpen = true;
+          }
+        });
+      }
+
+      function setIssueSectionVisible(sectionEl, visible) {
+        if (!sectionEl) return;
+        sectionEl.hidden = !visible;
       }
 
       function syncFrontChatFromServer() {
@@ -4354,6 +4903,20 @@
           detectNewOrderIssues();
           detectNewOrderAlerts();
           renderOrderPanels();
+        }
+        if (changed.indexOf("hkMbInvLog") >= 0) {
+          if (typeof HKMbWorkflow !== "undefined") {
+            HKMbWorkflow.loadMbInv();
+            detectNewMbInvItems();
+            HKMbWorkflow.renderMbInvPanels();
+          }
+        }
+        if (changed.indexOf("hkMbCheckLog") >= 0) {
+          if (typeof HKMbWorkflow !== "undefined") {
+            HKMbWorkflow.loadMbCheck();
+            detectNewMbCheckItems();
+            HKMbWorkflow.renderMbCheckPanels();
+          }
         }
         if (changed.indexOf("hkFrontChat") >= 0) {
           syncFrontChatFromServer();
@@ -4947,6 +5510,8 @@
         hkBindPhotoButton(document.getElementById("btnPhotoFrontChat"), "frontChat");
         hkBindPhotoButton(document.getElementById("btnPhotoOrderMemo"), "orderMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoRequestMemo"), "requestMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoMbMemo"), "mbMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoInvMemo"), "invMemo");
         hkBindPhotoPaste(document.getElementById("frontChatInput"), "frontChat", {
           autoSend: function (text, image) {
             if (!frontMode) return;
@@ -4955,6 +5520,8 @@
         });
         hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
         hkBindPhotoPaste(document.getElementById("requestMemo"), "requestMemo");
+        hkBindPhotoPaste(document.getElementById("mbMemo"), "mbMemo");
+        hkBindPhotoPaste(document.getElementById("invMemo"), "invMemo");
       }
 
       function setLineWithEmTime(containerEl, prefixText, timeText) {
@@ -4981,9 +5548,32 @@
         return id != null && String(id).indexOf("ord-") === 0;
       }
 
+      function isMbInvEntryId(id) {
+        return typeof HKMbWorkflow !== "undefined" && HKMbWorkflow.isMbInvEntryId(id);
+      }
+
+      function isMbCheckEntryId(id) {
+        return typeof HKMbWorkflow !== "undefined" && HKMbWorkflow.isMbCheckEntryId(id);
+      }
+
+      function getCancelEntryRoomLabel(entry) {
+        if (!entry) return "";
+        if (entry.roomFrom != null && entry.roomTo != null) {
+          return (
+            formatRoomNoDisplay(String(entry.roomFrom).trim()) +
+            " → " +
+            formatRoomNoDisplay(String(entry.roomTo).trim())
+          );
+        }
+        if (entry.room != null) return formatRoomNoDisplay(String(entry.room).trim());
+        return "";
+      }
+
       function findCancelTargetEntry(id) {
         if (!id) return null;
         if (isOrderEntryId(id)) return findOrderEntry(id);
+        if (isMbInvEntryId(id)) return HKMbWorkflow.findMbInvEntry(id);
+        if (isMbCheckEntryId(id)) return HKMbWorkflow.findMbCheckEntry(id);
         return findRequestEntry(id);
       }
 
@@ -5000,7 +5590,7 @@
         pendingCancelConfirmId = entryId || null;
         var titleEl = document.getElementById("hkCancelConfirmTitle");
         var entry = entryId ? findCancelTargetEntry(entryId) : null;
-        var roomLabel = entry && entry.room != null ? formatRoomNoDisplay(String(entry.room).trim()) : "";
+        var roomLabel = getCancelEntryRoomLabel(entry);
         if (titleEl) {
           titleEl.textContent = roomLabel
             ? "객실번호 " + roomLabel + "를 정말로 취소하시겠습니까?"
@@ -5011,6 +5601,10 @@
           if (entryId) {
             if (isOrderEntryId(entryId)) {
               cancelOrderEntry(entryId, getOperatorName() || "");
+            } else if (isMbInvEntryId(entryId)) {
+              HKMbWorkflow.cancelMbInvEntry(entryId, getOperatorName() || "");
+            } else if (isMbCheckEntryId(entryId)) {
+              HKMbWorkflow.cancelMbCheckEntry(entryId, getOperatorName() || "");
             } else {
               removeRequestEntry(entryId);
               renderRequestLogPanel();
@@ -5090,6 +5684,8 @@
       function updateSidebarPrimaryNavActive() {
         var req = document.getElementById("sidebarBtnRequest");
         var ord = document.getElementById("sidebarBtnOrder");
+        var mbInvNav = document.getElementById("sidebarBtnMbInv");
+        var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
         var frontNav = document.getElementById("sidebarBtnFront");
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
@@ -5098,6 +5694,14 @@
         if (ord) {
           ord.classList.toggle("is-active", sidebarMainView === "order");
           ord.setAttribute("aria-pressed", sidebarMainView === "order" ? "true" : "false");
+        }
+        if (mbInvNav) {
+          mbInvNav.classList.toggle("is-active", sidebarMainView === "mbInv");
+          mbInvNav.setAttribute("aria-pressed", sidebarMainView === "mbInv" ? "true" : "false");
+        }
+        if (mbCheckNav) {
+          mbCheckNav.classList.toggle("is-active", sidebarMainView === "mbCheck");
+          mbCheckNav.setAttribute("aria-pressed", sidebarMainView === "mbCheck" ? "true" : "false");
         }
         if (frontNav) {
           frontNav.classList.toggle("is-active", sidebarMainView === "front");
@@ -5118,18 +5722,24 @@
         sidebarMainView = view;
         var showRequest = view === "request";
         var showOrder = view === "order";
+        var showMbInv = view === "mbInv";
+        var showMbCheck = view === "mbCheck";
         var showFront = view === "front";
         var showZone = view === "zone";
         var showList = view === "list";
         var reqPanel = document.querySelector(".request-panel");
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
+        var mbInvPanel = document.getElementById("mbInvPanel");
+        var mbCheckPanel = document.getElementById("mbCheckPanel");
         var frontChatPanel = document.getElementById("frontChatPanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var listPanel = document.getElementById("hkSidebarListPanel");
         if (reqPanel) reqPanel.hidden = !showRequest;
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
+        if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
+        if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
@@ -5137,9 +5747,15 @@
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
         var orderFeedback = document.getElementById("orderFeedback");
+        var mbInvFeedback = document.getElementById("mbInvFeedback");
+        var mbCheckFeedback = document.getElementById("mbCheckFeedback");
         if (requestFeedback) requestFeedback.hidden = !showRequest;
         if (orderFeedback) orderFeedback.hidden = !showOrder;
-        if (feedbackColumn) feedbackColumn.hidden = !showRequest && !showOrder;
+        if (mbInvFeedback) mbInvFeedback.hidden = !showMbInv;
+        if (mbCheckFeedback) mbCheckFeedback.hidden = !showMbCheck;
+        if (feedbackColumn) {
+          feedbackColumn.hidden = !showRequest && !showOrder && !showMbInv && !showMbCheck;
+        }
         updateSidebarPrimaryNavActive();
         if (showFront) {
           hideFrontChatToast();
@@ -5165,6 +5781,22 @@
         clearZoneTabSelection();
         clearOrderSidebarAlerts();
         applySidebarMainView("order");
+      }
+
+      function showSidebarMbInvView() {
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        clearMbInvSidebarAlerts();
+        applySidebarMainView("mbInv");
+      }
+
+      function showSidebarMbCheckView() {
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        clearMbCheckSidebarAlerts();
+        applySidebarMainView("mbCheck");
       }
 
       function showSidebarFrontView() {
@@ -5207,14 +5839,25 @@
             if (kind === "cancel") {
               var main = document.createElement("div");
               var isOrderCancel = row.kind === "order" || isOrderEntryId(row.entryId);
+              var kindPrefix = "";
+              if (isOrderCancel) kindPrefix = "오더 · ";
+              else if (row.kind === "mb") kindPrefix = "MB 변경 · ";
+              else if (row.kind === "inv") kindPrefix = "인벤 변경 · ";
+              else if (row.kind === "mbcheck") kindPrefix = "MB CHECK · ";
+              var roomDisp = row.room ? String(row.room) : "—";
+              if (row.kind === "mb" || row.kind === "inv") {
+                roomDisp = roomDisp.replace(/→/g, " → ");
+              } else if (roomDisp !== "—") {
+                roomDisp = formatRoomNoDisplay(roomDisp);
+              }
               main.textContent =
-                (isOrderCancel ? "오더 · " : "") +
+                kindPrefix +
                 "객실 " +
-                (row.room ? formatRoomNoDisplay(String(row.room)) : "—") +
+                roomDisp +
                 " · 취소 처리: " +
                 (row.name || "—");
               li.appendChild(main);
-              if (isOrderCancel && row.memo) {
+              if ((isOrderCancel || row.kind === "mb" || row.kind === "inv" || row.kind === "mbcheck") && row.memo) {
                 var memoLine = document.createElement("div");
                 memoLine.className = "hk-sidebar-list-panel__item-meta";
                 memoLine.textContent = "메모 : " + String(row.memo);
@@ -5272,10 +5915,10 @@
         var inp = document.getElementById("hkCancelNameInput");
         var hint = document.getElementById("hkCancelNameRoomHint");
         var entry = entryId ? findCancelTargetEntry(entryId) : null;
-        var room = entry && entry.room != null ? String(entry.room).trim() : "";
+        var roomLabel = getCancelEntryRoomLabel(entry);
         if (hint) {
-          if (room) {
-            hint.textContent = "객실번호 " + formatRoomNoDisplay(room);
+          if (roomLabel) {
+            hint.textContent = "객실번호 " + roomLabel;
             hint.hidden = false;
           } else {
             hint.textContent = "";
@@ -5479,7 +6122,7 @@
         knownOrderAlertIds = {};
         orderLogEntries.forEach(function (entry) {
           if (!entry || !entry.id) return;
-          if (getOrderPhase(entry) === "issue") {
+          if (isOrderIssueOpen(entry)) {
             knownOrderIssueIds[entry.id] = true;
           }
           if (getOrderPhase(entry) === "alert") {
@@ -5546,7 +6189,7 @@
 
       function detectNewOrderIssues() {
         orderLogEntries.forEach(function (entry) {
-          if (getOrderPhase(entry) === "issue" && entry.id && !knownOrderIssueIds[entry.id]) {
+          if (isOrderIssueOpen(entry) && entry.id && !knownOrderIssueIds[entry.id]) {
             registerOrderIssueAlert(entry.id);
           }
         });
@@ -5556,6 +6199,185 @@
         orderLogEntries.forEach(function (entry) {
           if (getOrderPhase(entry) === "alert" && entry.id && !knownOrderAlertIds[entry.id]) {
             registerOrderAlert(entry.id);
+          }
+        });
+      }
+
+      function getMbInvPhase(entry) {
+        if (!entry) return "alert";
+        var p = entry.phase != null ? String(entry.phase).trim() : "";
+        if (p === "accepted" || p === "issue" || p === "cancelled") return p;
+        return "alert";
+      }
+
+      function isMbInvIssueOpen(entry) {
+        if (!entry) return false;
+        if (entry.issueOpen === true) return true;
+        return getMbInvPhase(entry) === "issue";
+      }
+
+      function getMbCheckPhase(entry) {
+        if (!entry) return "alert";
+        var p = entry.phase != null ? String(entry.phase).trim() : "";
+        if (p === "accepted" || p === "posted" || p === "cancelled" || p === "gst") return p;
+        return "alert";
+      }
+
+      function mbInvAlertKey(entry) {
+        return (entry.id || "") + "|" + (entry.at || "");
+      }
+
+      function mbCheckAlertKey(entry) {
+        return (entry.id || "") + "|" + (entry.at || "");
+      }
+
+      function initMbWorkflowAlertTracking() {
+        knownMbInvAlertKeys = {};
+        knownMbInvIssueIds = {};
+        knownMbCheckAlertKeys = {};
+        knownMbCheckAcceptedIds = {};
+        knownMbCheckGstIds = {};
+        var mbInv =
+          typeof HKSync !== "undefined" && HKSync.getMbInvLog
+            ? HKSync.getMbInvLog()
+            : [];
+        mbInv.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbInvPhase(entry) === "alert") {
+            knownMbInvAlertKeys[mbInvAlertKey(entry)] = true;
+          }
+          if (getMbInvPhase(entry) === "issue" || entry.issueOpen === true) {
+            knownMbInvIssueIds[entry.id] = true;
+          }
+        });
+        var mbCheck =
+          typeof HKSync !== "undefined" && HKSync.getMbCheckLog
+            ? HKSync.getMbCheckLog()
+            : [];
+        mbCheck.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbCheckPhase(entry) === "alert") {
+            knownMbCheckAlertKeys[mbCheckAlertKey(entry)] = true;
+          }
+          if (getMbCheckPhase(entry) === "accepted") {
+            knownMbCheckAcceptedIds[entry.id] = true;
+          }
+          if (getMbCheckPhase(entry) === "gst") {
+            knownMbCheckGstIds[entry.id] = true;
+          }
+        });
+      }
+
+      function applyMbSidebarAlertUi() {
+        var mbInvNav = document.getElementById("sidebarBtnMbInv");
+        var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
+        if (mbInvNav) {
+          mbInvNav.classList.toggle(
+            "is-order-alert",
+            pendingMbInvAlert || pendingMbInvIssue
+          );
+        }
+        if (mbCheckNav) {
+          mbCheckNav.classList.toggle(
+            "is-order-alert",
+            pendingMbCheckAlert || pendingMbCheckAccepted || pendingMbCheckGst
+          );
+        }
+      }
+
+      function registerMbInvAlert(key) {
+        if (!key) return;
+        knownMbInvAlertKeys[key] = true;
+        if (sidebarMainView !== "mbInv") {
+          pendingMbInvAlert = true;
+          applyMbSidebarAlertUi();
+        }
+      }
+
+      function registerMbInvIssue(entryId) {
+        if (!entryId) return;
+        knownMbInvIssueIds[entryId] = true;
+        if (sidebarMainView !== "mbInv") {
+          pendingMbInvIssue = true;
+          applyMbSidebarAlertUi();
+        }
+      }
+
+      function registerMbCheckAlert(key) {
+        if (!key) return;
+        knownMbCheckAlertKeys[key] = true;
+        if (sidebarMainView !== "mbCheck") {
+          pendingMbCheckAlert = true;
+          applyMbSidebarAlertUi();
+        }
+      }
+
+      function registerMbCheckAccepted(entryId) {
+        if (!entryId) return;
+        knownMbCheckAcceptedIds[entryId] = true;
+        if (sidebarMainView !== "mbCheck") {
+          pendingMbCheckAccepted = true;
+          applyMbSidebarAlertUi();
+        }
+      }
+
+      function registerMbCheckGst(entryId) {
+        if (!entryId) return;
+        knownMbCheckGstIds[entryId] = true;
+        if (sidebarMainView !== "mbCheck") {
+          pendingMbCheckGst = true;
+          applyMbSidebarAlertUi();
+        }
+      }
+
+      function clearMbInvSidebarAlerts() {
+        pendingMbInvAlert = false;
+        pendingMbInvIssue = false;
+        applyMbSidebarAlertUi();
+      }
+
+      function clearMbCheckSidebarAlerts() {
+        pendingMbCheckAlert = false;
+        pendingMbCheckAccepted = false;
+        pendingMbCheckGst = false;
+        applyMbSidebarAlertUi();
+      }
+
+      function detectNewMbInvItems() {
+        var entries =
+          typeof HKSync !== "undefined" && HKSync.getMbInvLog
+            ? HKSync.getMbInvLog()
+            : [];
+        entries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbInvPhase(entry) === "alert") {
+            var key = mbInvAlertKey(entry);
+            if (!knownMbInvAlertKeys[key]) registerMbInvAlert(key);
+          }
+          if (isMbInvIssueOpen(entry)) {
+            if (!knownMbInvIssueIds[entry.id]) registerMbInvIssue(entry.id);
+          }
+        });
+      }
+
+      function detectNewMbCheckItems() {
+        var entries =
+          typeof HKSync !== "undefined" && HKSync.getMbCheckLog
+            ? HKSync.getMbCheckLog()
+            : [];
+        entries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbCheckPhase(entry) === "alert") {
+            var key = mbCheckAlertKey(entry);
+            if (!knownMbCheckAlertKeys[key]) registerMbCheckAlert(key);
+          }
+          if (getMbCheckPhase(entry) === "accepted") {
+            if (!knownMbCheckAcceptedIds[entry.id]) {
+              registerMbCheckAccepted(entry.id);
+            }
+          }
+          if (getMbCheckPhase(entry) === "gst") {
+            if (!knownMbCheckGstIds[entry.id]) registerMbCheckGst(entry.id);
           }
         });
       }
@@ -5715,7 +6537,7 @@
 
       function raiseOrderIssue(orderId) {
         var entry = findOrderEntry(orderId);
-        if (!entry || getOrderPhase(entry) !== "accepted") return;
+        if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
         if (!maintenanceMode) return;
         if (!getOperatorName()) {
           showOperatorGate({
@@ -5726,7 +6548,7 @@
           });
           return;
         }
-        entry.phase = "issue";
+        entry.issueOpen = true;
         entry.issueAt = new Date().toISOString();
         entry.issueBy = getOperatorName();
         if (!Array.isArray(entry.chat)) entry.chat = [];
@@ -5743,7 +6565,7 @@
 
       function resolveOrderIssueEntry(orderId) {
         var entry = findOrderEntry(orderId);
-        if (!entry || getOrderPhase(entry) !== "issue") return;
+        if (!entry || !isOrderIssueOpen(entry)) return;
         if (!maintenanceMode) return;
         if (!getOperatorName()) {
           showOperatorGate({
@@ -5754,16 +6576,52 @@
           });
           return;
         }
-        entry.phase = "accepted";
+        entry.issueOpen = false;
+        entry.issueBtnVisible = true;
         entry.reacceptedAt = new Date().toISOString();
         entry.reacceptedBy = getOperatorName();
         saveOrderLog();
         renderOrderPanels();
       }
 
+      function isIssueBtnVisible(entry) {
+        return entry && entry.issueBtnVisible !== false;
+      }
+
+      function toggleOrderIssueBtnVisible(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+        if (!maintenanceMode) return;
+        entry.issueBtnVisible = !isIssueBtnVisible(entry);
+        saveOrderLog();
+        renderOrderPanels();
+      }
+
+      function appendOrderAcceptedMaintActions(li, entry) {
+        if (!maintenanceMode) return;
+        var acts = document.createElement("div");
+        acts.className = "order-work__actions order-work__actions--toggle";
+        if (isIssueBtnVisible(entry)) {
+          var issueBtn = document.createElement("button");
+          issueBtn.type = "button";
+          issueBtn.className = "order-work__issue-btn";
+          issueBtn.setAttribute("data-order-id", entry.id || "");
+          issueBtn.textContent = "문제 발생";
+          acts.appendChild(issueBtn);
+        }
+        var wanBtn = document.createElement("button");
+        wanBtn.type = "button";
+        wanBtn.className =
+          "order-work__wan-btn" + (isIssueBtnVisible(entry) ? " is-on" : "");
+        wanBtn.setAttribute("data-order-id", entry.id || "");
+        wanBtn.textContent = "완";
+        acts.appendChild(wanBtn);
+        li.appendChild(acts);
+      }
+
       function appendOrderChat(orderId, text, image) {
         var entry = findOrderEntry(orderId);
-        if (!entry || getOrderPhase(entry) !== "issue") return;
+        if (!entry || !isOrderIssueOpen(entry)) return;
         var msgText = String(text || "").trim();
         var msgImage = image != null ? String(image).trim() : "";
         if (!msgText && !msgImage) return;
@@ -5802,10 +6660,10 @@
         cancelledList.innerHTML = "";
 
         var issueEntries = orderLogEntries.filter(function (e) {
-          return getOrderPhase(e) === "issue";
+          return isOrderIssueOpen(e);
         });
         var acceptedEntries = orderLogEntries.filter(function (e) {
-          return getOrderPhase(e) === "accepted";
+          return getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
         });
         var cancelledEntries = orderLogEntries.filter(function (e) {
           return getOrderPhase(e) === "cancelled";
@@ -5860,17 +6718,7 @@
             accMeta.textContent = "접수자 : " + acceptedBy;
             li.appendChild(accMeta);
           }
-          if (maintenanceMode) {
-            var acts = document.createElement("div");
-            acts.className = "order-work__actions";
-            var issueBtn = document.createElement("button");
-            issueBtn.type = "button";
-            issueBtn.className = "order-work__issue-btn";
-            issueBtn.setAttribute("data-order-id", entry.id || "");
-            issueBtn.textContent = "문제 발생";
-            acts.appendChild(issueBtn);
-            li.appendChild(acts);
-          }
+          appendOrderAcceptedMaintActions(li, entry);
           acceptedList.appendChild(li);
         });
 
@@ -5906,6 +6754,10 @@
         if (issueEmpty) issueEmpty.hidden = issueEntries.length > 0;
         if (acceptedEmpty) acceptedEmpty.hidden = acceptedEntries.length > 0;
         if (cancelledEmpty) cancelledEmpty.hidden = cancelledEntries.length > 0;
+        setIssueSectionVisible(
+          document.getElementById("orderIssueSection"),
+          issueEntries.length > 0
+        );
       }
 
       function renderOrderLogPanel() {
@@ -6805,6 +7657,10 @@
         renderRoomsForZone(getActiveZone());
         renderRequestLogPanel();
         renderOrderPanels();
+        if (typeof HKMbWorkflow !== "undefined") {
+          HKMbWorkflow.renderMbInvPanels();
+          HKMbWorkflow.renderMbCheckPanels();
+        }
       }
 
       function applyFrontModeUi() {
@@ -6825,6 +7681,10 @@
         if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
+        if (typeof HKMbWorkflow !== "undefined") {
+          HKMbWorkflow.renderMbInvPanels();
+          HKMbWorkflow.renderMbCheckPanels();
+        }
       }
 
       function renderFrontChatPanel(scrollToBottom) {
@@ -7264,11 +8124,42 @@
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
+        initMbWorkflowAlertTracking();
+        applyMbSidebarAlertUi();
       }
       syncChangeAlertsFromLog();
       applyZoneAlertUi();
       setZonePanelOpen(false);
       initStaticPhotoButtons();
+      if (typeof HKMbWorkflow !== "undefined") {
+        HKMbWorkflow.init({
+          formatRoomNoDisplay: formatRoomNoDisplay,
+          formatReqAt: formatReqAt,
+          setLineWithEmTime: setLineWithEmTime,
+          getOperatorName: getOperatorName,
+          showOperatorGate: showOperatorGate,
+          getMaintenanceMode: function () {
+            return maintenanceMode;
+          },
+          getFrontMode: function () {
+            return frontMode;
+          },
+          hkCreatePhotoButton: hkCreatePhotoButton,
+          hkCreatePhotoPreview: hkCreatePhotoPreview,
+          hkBindPhotoPaste: hkBindPhotoPaste,
+          hkAppendMessageContent: hkAppendMessageContent,
+          hkAppendImageEl: hkAppendImageEl,
+          hkGetPhoto: hkGetPhoto,
+          hkClearPhoto: hkClearPhoto,
+          appendCancelNameLog: appendCancelNameLog,
+          openCancelConfirmModal: openCancelConfirmModal,
+          onCancelListRefresh: function () {
+            if (sidebarListView === "cancel") openSidebarList("cancel");
+          },
+        });
+        HKMbWorkflow.renderMbInvPanels();
+        HKMbWorkflow.renderMbCheckPanels();
+      }
       refreshMain();
       showSidebarRequestView();
       renderOrderPanels();
@@ -7508,6 +8399,15 @@
             if (acceptId) resolveOrderIssueEntry(acceptId);
             return;
           }
+          var wanBtn = e.target.closest(".order-work__wan-btn");
+          if (wanBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var wanId = wanBtn.getAttribute("data-order-id");
+            if (wanId) toggleOrderIssueBtnVisible(wanId);
+            return;
+          }
           var issueBtn = e.target.closest(".order-work__issue-btn");
           if (!issueBtn) return;
           if (!maintenanceMode) return;
@@ -7596,6 +8496,8 @@
       (function setupSidebarNav() {
         var bReq = document.getElementById("sidebarBtnRequest");
         var bOrd = document.getElementById("sidebarBtnOrder");
+        var bMbInv = document.getElementById("sidebarBtnMbInv");
+        var bMbCheck = document.getElementById("sidebarBtnMbCheck");
         var bFront = document.getElementById("sidebarBtnFront");
         if (bReq) {
           bReq.addEventListener("click", function () {
@@ -7607,6 +8509,18 @@
           bOrd.addEventListener("click", function () {
             if (sidebarMainView === "order") return;
             showSidebarOrderView();
+          });
+        }
+        if (bMbInv) {
+          bMbInv.addEventListener("click", function () {
+            if (sidebarMainView === "mbInv") return;
+            showSidebarMbInvView();
+          });
+        }
+        if (bMbCheck) {
+          bMbCheck.addEventListener("click", function () {
+            if (sidebarMainView === "mbCheck") return;
+            showSidebarMbCheckView();
           });
         }
         if (bFront) {
@@ -7698,10 +8612,17 @@
             }
             var entry = id ? findCancelTargetEntry(id) : null;
             var roomSnap = entry && entry.room != null ? String(entry.room).trim() : "";
+            if (!roomSnap && entry && entry.roomFrom != null) {
+              roomSnap = String(entry.roomFrom).trim();
+            }
             closeCancelNameModal();
             if (id) {
               if (isOrderEntryId(id)) {
                 cancelOrderEntry(id, nameVal);
+              } else if (isMbInvEntryId(id)) {
+                HKMbWorkflow.cancelMbInvEntry(id, nameVal);
+              } else if (isMbCheckEntryId(id)) {
+                HKMbWorkflow.cancelMbCheckEntry(id, nameVal);
               } else {
                 appendCancelNameLog(roomSnap, nameVal, id);
                 removeRequestEntry(id);
