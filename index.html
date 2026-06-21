@@ -733,6 +733,30 @@
       color: var(--muted);
       font-size: 0.88rem;
     }
+
+    .room-digits-strip {
+      margin-top: 0.65rem;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #f9fafb;
+    }
+
+    .room-digits-strip__label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #6b7280;
+      margin-bottom: 0.35rem;
+    }
+
+    .room-digits-strip__text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: #111827;
+      word-break: break-all;
+      user-select: all;
+    }
     .note {
       margin-top: 1rem;
       padding: 0.75rem 1rem;
@@ -2493,6 +2517,7 @@
           outer.appendChild(strayPanel);
         }
         mount.appendChild(outer);
+        mount.appendChild(renderRoomDigitsStrip(displayRows));
       }
 
       function overlayAllStatusBlocks(rows) {
@@ -2542,6 +2567,40 @@
         var t = parseInt(norm4.slice(2), 10);
         if (Number.isNaN(f) || Number.isNaN(t)) return norm4;
         return String(f) + String(t).padStart(2, "0");
+      }
+
+      function formatRoomDigits4(roomStr) {
+        return normalizeRoomDigits(roomStr);
+      }
+
+      function collectVisibleRoomDigits(displayRows) {
+        var seen = {};
+        var rooms = [];
+        (displayRows || []).forEach(function (rec) {
+          var nr = formatRoomDigits4(rec.room);
+          if (!nr || seen[nr]) return;
+          seen[nr] = true;
+          rooms.push(nr);
+        });
+        rooms.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+        return rooms;
+      }
+
+      function renderRoomDigitsStrip(displayRows) {
+        var rooms = collectVisibleRoomDigits(displayRows);
+        var wrap = document.createElement("div");
+        wrap.className = "room-digits-strip";
+        var label = document.createElement("div");
+        label.className = "room-digits-strip__label";
+        label.textContent = "객실번호 (4자리)";
+        var text = document.createElement("div");
+        text.className = "room-digits-strip__text";
+        text.textContent = rooms.length ? rooms.join(",") : "—";
+        wrap.appendChild(label);
+        wrap.appendChild(text);
+        return wrap;
       }
 
       function pairStatusClass(status) {
@@ -2956,6 +3015,7 @@
         }
 
         mount.appendChild(outer);
+        mount.appendChild(renderRoomDigitsStrip(displayRows));
       }
 
       function refreshBoards() {

@@ -174,9 +174,19 @@
   function doPush() {
     var body = buildPushBody();
     var keys = Object.keys(body);
-    if (!keys.length) return;
+    if (!keys.length) return Promise.resolve(false);
     pendingPush = {};
-    postPayload(body);
+    return postPayload(body);
+  }
+
+  function pushStorageNow() {
+    if (isApplyingRemote || !global.HKStorage) return Promise.resolve(false);
+    if (pushTimer) {
+      clearTimeout(pushTimer);
+      pushTimer = null;
+    }
+    pendingPush.hkStorage = true;
+    return doPush();
   }
 
   function applyRemotePayload(payload) {
@@ -449,6 +459,7 @@
     schedulePushStorage: function () {
       schedulePush({ hkStorage: true });
     },
+    pushStorageNow: pushStorageNow,
     getXmlPayload: function () {
       return xmlPayloadForListeners(null);
     },

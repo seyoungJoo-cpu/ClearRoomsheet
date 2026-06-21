@@ -37,21 +37,66 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   });
 });
 
+var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO"];
+
+function copyHkRoomArray(rooms, zone) {
+  if (rooms && Array.isArray(rooms[zone])) return rooms[zone].slice();
+  return [];
+}
+
+function mergeHkCustomZones(prev, incoming) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
+    return Array.isArray(incoming.customZones) ? incoming.customZones.slice() : [];
+  }
+  if (Array.isArray(prev.customZones)) return prev.customZones.slice();
+  return [];
+}
+
+function collectHkCustomZoneIds(customZones, prevRooms, incomingRooms) {
+  var ids = {};
+  (customZones || []).forEach(function (z) {
+    if (z && z.id) ids[z.id] = true;
+  });
+  [prevRooms, incomingRooms].forEach(function (rooms) {
+    if (!rooms || typeof rooms !== "object") return;
+    Object.keys(rooms).forEach(function (k) {
+      if (HK_STANDARD_ZONES.indexOf(k) < 0) ids[k] = true;
+    });
+  });
+  return Object.keys(ids);
+}
+
 function mergeHkStorage(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
+
+  var customZones = mergeHkCustomZones(prev, incoming);
   var out = {
-    notice: Object.prototype.hasOwnProperty.call(incoming, "notice") ? incoming.notice : prev.notice,
+    notice: Object.prototype.hasOwnProperty.call(incoming, "notice")
+      ? incoming.notice
+      : prev.notice,
+    customZones: customZones,
     rooms: { VIP: [], RC: [], CASINO: [] },
   };
-  ["VIP", "RC", "CASINO"].forEach(function (zone) {
+
+  HK_STANDARD_ZONES.forEach(function (zone) {
     var n = incoming.rooms && incoming.rooms[zone];
     if (Array.isArray(n)) {
       out.rooms[zone] = n.slice();
       return;
     }
-    out.rooms[zone] = prev.rooms && Array.isArray(prev.rooms[zone]) ? prev.rooms[zone].slice() : [];
+    out.rooms[zone] = copyHkRoomArray(prev.rooms, zone);
   });
+
+  collectHkCustomZoneIds(customZones, prev.rooms, incoming.rooms).forEach(function (zone) {
+    var n = incoming.rooms && incoming.rooms[zone];
+    if (Array.isArray(n)) {
+      out.rooms[zone] = n.slice();
+      return;
+    }
+    out.rooms[zone] = copyHkRoomArray(prev.rooms, zone);
+  });
+
   return out;
 }
 

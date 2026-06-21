@@ -174,9 +174,45 @@
     }
 
     .zone-card h3 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: 0.9rem;
       color: var(--accent);
+    }
+
+    .zone-card__title-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .zone-card__title-input {
+      width: 100%;
+      margin: 0;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .zone-card__title-input:hover {
+      border-color: var(--border);
+      background: var(--surface);
+    }
+
+    .zone-card__title-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .zone-card__head-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
     }
 
     .zone-card {
@@ -184,6 +220,64 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       background: var(--surface-raised);
+    }
+
+    .zone-card__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+
+    .zone-card__delete {
+      flex-shrink: 0;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .zone-card__delete:hover {
+      color: #fca5a5;
+      border-color: #fca5a5;
+    }
+
+    .zone-group-add {
+      margin: 0 0 16px;
+    }
+
+    .zone-group-add label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .zone-group-add__row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .zone-group-add__row input {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .zone-group-add__hint {
+      margin: 8px 0 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.45;
     }
 
     .add-stack {
@@ -658,49 +752,25 @@
     <section class="card">
       <h2>구역별 객실 등록</h2>
       <p style="margin: 0 0 16px; font-size: 0.875rem; color: var(--text-muted);">
-        객실번호·메모를 등록하면 메인 화면에 카드 형태로 표시됩니다. 상태는 루밍 XML에서 자동으로 가져옵니다.
+        객실번호·메모를 등록하면 메인 화면에 카드 형태로 표시됩니다. VIP·CASINO·추가 그룹은 객실번호를 <strong>201,202</strong>처럼 쉼표로 여러 개 한 번에 등록할 수 있습니다. (R/C 제외) 상태는 루밍 XML에서 자동으로 가져옵니다.
       </p>
-      <div class="zone-grid">
-        <div class="zone-card" data-zone="VIP">
-          <h3>VIP</h3>
-          <div class="add-stack" aria-label="VIP 객실 추가">
-            <input type="text" class="af-num" placeholder="객실번호" autocomplete="off" />
-            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
-            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
-            <button type="button" class="btn-add" data-action="add">추가</button>
-          </div>
-          <ul class="room-list" data-list="VIP"></ul>
+      <div class="zone-group-add">
+        <label for="newZoneLabel">그룹 추가</label>
+        <div class="zone-group-add__row">
+          <input
+            type="text"
+            id="newZoneLabel"
+            placeholder="예: BACCARAT"
+            autocomplete="off"
+            maxlength="24"
+          />
+          <button type="button" class="btn-primary" id="btnAddZoneGroup">추가</button>
         </div>
-        <div class="zone-card" data-zone="RC">
-          <h3>R/C</h3>
-          <div class="add-stack" aria-label="R/C 객실 추가">
-            <div class="rc-num-pair">
-              <div class="rc-num-inline">
-                <input type="text" class="af-num-from" placeholder="객실번호" autocomplete="off" />
-                <span class="rc-num-suffix">에서</span>
-              </div>
-              <div class="rc-num-inline">
-                <input type="text" class="af-num-to" placeholder="객실번호" autocomplete="off" />
-                <span class="rc-num-suffix">로</span>
-              </div>
-            </div>
-            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
-            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
-            <button type="button" class="btn-add" data-action="add">추가</button>
-          </div>
-          <ul class="room-list" data-list="RC"></ul>
-        </div>
-        <div class="zone-card" data-zone="CASINO">
-          <h3>CASINO</h3>
-          <div class="add-stack" aria-label="CASINO 객실 추가">
-            <input type="text" class="af-num" placeholder="객실번호" autocomplete="off" />
-            <input type="text" class="af-memo1" placeholder="FD" autocomplete="off" />
-            <input type="text" class="af-memo2" placeholder="두잉" autocomplete="off" />
-            <button type="button" class="btn-add" data-action="add">추가</button>
-          </div>
-          <ul class="room-list" data-list="CASINO"></ul>
-        </div>
+        <p class="zone-group-add__hint">
+          CASINO처럼 정비 화면 사이드바에 표시됩니다. 추가한 그룹 이름은 카드 제목에서 바로 수정할 수 있습니다. 객실 변경 시 해당 탭이 노란색으로 깜빡입니다.
+        </p>
       </div>
+      <div class="zone-grid" id="zoneGrid"></div>
     </section>
 
     <section class="card">
@@ -1067,21 +1137,17 @@
             headers: ["내용"],
             rows: [[snapshot.data.notice || ""]],
           },
-          {
-            title: "VIP 객실",
+        ];
+
+        HKStorage.getZoneOrder(snapshot.data).forEach(function (zoneId) {
+          sections.push({
+            title: HKStorage.getZoneLabel(zoneId, snapshot.data) + " 객실",
             headers: ["객실번호", "상태", "FD", "두잉", "시간"],
-            rows: buildRoomRows(snapshot.data, "VIP"),
-          },
-          {
-            title: "R/C 객실",
-            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
-            rows: buildRoomRows(snapshot.data, "RC"),
-          },
-          {
-            title: "CASINO 객실",
-            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
-            rows: buildRoomRows(snapshot.data, "CASINO"),
-          },
+            rows: buildRoomRows(snapshot.data, zoneId),
+          });
+        });
+
+        sections.push(
           {
             title: "요청 알림",
             headers: ["접수시각", "객실", "상태", "처리·예정", "긴급", "FD", "두잉", "요청자"],
@@ -1117,8 +1183,8 @@
                 entry.urgent ? "Y" : "",
               ];
             }),
-          },
-        ];
+          }
+        );
 
         var html = [
           '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">',
@@ -1185,10 +1251,7 @@
       }
 
       function getResetStorageData() {
-        return {
-          notice: "",
-          rooms: { VIP: [], RC: [], CASINO: [] },
-        };
+        return HKStorage.defaultData();
       }
 
       function performCloseDay() {
@@ -1236,8 +1299,219 @@
         return s;
       }
 
+      function parseBulkRoomNumbers(raw) {
+        var seen = {};
+        var out = [];
+        String(raw || "")
+          .split(/[,，]/)
+          .forEach(function (part) {
+            var n = part.trim();
+            if (!n || seen[n]) return;
+            seen[n] = true;
+            out.push(n);
+          });
+        return out;
+      }
+
+      function publishRoomChangesSequential(entries) {
+        var chain = Promise.resolve();
+        (entries || []).forEach(function (entry) {
+          chain = chain.then(function () {
+            return publishRoomChange(entry);
+          });
+        });
+        return chain;
+      }
+
+      function clearZoneAddForm(card, zone) {
+        if (!card) return;
+        if (zone === "RC") {
+          var inf = card.querySelector(".af-num-from");
+          var int = card.querySelector(".af-num-to");
+          if (inf) inf.value = "";
+          if (int) int.value = "";
+        } else {
+          var nb = card.querySelector(".af-num");
+          if (nb) nb.value = "";
+        }
+        var m1 = card.querySelector(".af-memo1");
+        var m2 = card.querySelector(".af-memo2");
+        if (m1) m1.value = "";
+        if (m2) m2.value = "";
+      }
+
+      function createZoneAddStack(zoneId, label) {
+        var stack = document.createElement("div");
+        stack.className = "add-stack";
+        stack.setAttribute("aria-label", label + " 객실 추가");
+
+        if (zoneId === "RC") {
+          var pair = document.createElement("div");
+          pair.className = "rc-num-pair";
+          var fromWrap = document.createElement("div");
+          fromWrap.className = "rc-num-inline";
+          var fromInput = document.createElement("input");
+          fromInput.type = "text";
+          fromInput.className = "af-num-from";
+          fromInput.placeholder = "객실번호";
+          fromInput.autocomplete = "off";
+          var fromSuffix = document.createElement("span");
+          fromSuffix.className = "rc-num-suffix";
+          fromSuffix.textContent = "에서";
+          fromWrap.appendChild(fromInput);
+          fromWrap.appendChild(fromSuffix);
+          var toWrap = document.createElement("div");
+          toWrap.className = "rc-num-inline";
+          var toInput = document.createElement("input");
+          toInput.type = "text";
+          toInput.className = "af-num-to";
+          toInput.placeholder = "객실번호";
+          toInput.autocomplete = "off";
+          var toSuffix = document.createElement("span");
+          toSuffix.className = "rc-num-suffix";
+          toSuffix.textContent = "로";
+          toWrap.appendChild(toInput);
+          toWrap.appendChild(toSuffix);
+          pair.appendChild(fromWrap);
+          pair.appendChild(toWrap);
+          stack.appendChild(pair);
+        } else {
+          var numInput = document.createElement("input");
+          numInput.type = "text";
+          numInput.className = "af-num";
+          numInput.placeholder = "객실번호 (예: 201,202)";
+          numInput.autocomplete = "off";
+          stack.appendChild(numInput);
+        }
+
+        var memo1 = document.createElement("input");
+        memo1.type = "text";
+        memo1.className = "af-memo1";
+        memo1.placeholder = "FD";
+        memo1.autocomplete = "off";
+        stack.appendChild(memo1);
+
+        var memo2 = document.createElement("input");
+        memo2.type = "text";
+        memo2.className = "af-memo2";
+        memo2.placeholder = "두잉";
+        memo2.autocomplete = "off";
+        stack.appendChild(memo2);
+
+        var addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "btn-add";
+        addBtn.setAttribute("data-action", "add");
+        addBtn.textContent = "추가";
+        stack.appendChild(addBtn);
+
+        return stack;
+      }
+
+      function isDuplicateZoneLabel(data, label, exceptZoneId) {
+        return (data.customZones || []).some(function (z) {
+          if (!z) return false;
+          if (exceptZoneId && z.id === exceptZoneId) return false;
+          return String(z.label || "").trim().toLowerCase() === label.toLowerCase();
+        });
+      }
+
+      function commitZoneRename(inp) {
+        if (!inp) return;
+        var zoneId = inp.getAttribute("data-zone");
+        if (!zoneId || HKStorage.isStandardZone(zoneId)) return;
+        var newLabel = inp.value.trim();
+        var data = HKStorage.load();
+        var current = HKStorage.getZoneLabel(zoneId, data);
+        if (!newLabel) {
+          inp.value = current;
+          toast("그룹 이름을 입력하세요.");
+          return;
+        }
+        if (newLabel === current) return;
+        if (isDuplicateZoneLabel(data, newLabel, zoneId)) {
+          inp.value = current;
+          toast("이미 같은 이름의 그룹이 있습니다.");
+          return;
+        }
+        var found = false;
+        data.customZones = (data.customZones || []).map(function (z) {
+          if (z && z.id === zoneId) {
+            found = true;
+            return { id: zoneId, label: newLabel };
+          }
+          return z;
+        });
+        if (!found) return;
+        HKStorage.save(data);
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        inp.value = newLabel;
+        var card = inp.closest(".zone-card");
+        var stack = card && card.querySelector(".add-stack");
+        if (stack) stack.setAttribute("aria-label", newLabel + " 객실 추가");
+        toast("그룹 이름이 변경되었습니다.");
+      }
+
+      function createZoneCard(zoneId, label) {
+        var card = document.createElement("div");
+        card.className = "zone-card";
+        card.setAttribute("data-zone", zoneId);
+
+        var head = document.createElement("div");
+        head.className = "zone-card__head";
+        if (HKStorage.isStandardZone(zoneId)) {
+          var h3 = document.createElement("h3");
+          h3.textContent = label;
+          head.appendChild(h3);
+        } else {
+          var titleWrap = document.createElement("div");
+          titleWrap.className = "zone-card__title-wrap";
+          var titleInput = document.createElement("input");
+          titleInput.type = "text";
+          titleInput.className = "zone-card__title-input";
+          titleInput.value = label;
+          titleInput.setAttribute("data-zone", zoneId);
+          titleInput.setAttribute("maxlength", "24");
+          titleInput.setAttribute("autocomplete", "off");
+          titleInput.setAttribute("aria-label", "그룹 이름");
+          titleInput.title = "그룹 이름 수정";
+          titleWrap.appendChild(titleInput);
+          head.appendChild(titleWrap);
+          var actions = document.createElement("div");
+          actions.className = "zone-card__head-actions";
+          var delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "zone-card__delete";
+          delBtn.setAttribute("data-action", "delete-zone");
+          delBtn.textContent = "삭제";
+          actions.appendChild(delBtn);
+          head.appendChild(actions);
+        }
+        card.appendChild(head);
+        card.appendChild(createZoneAddStack(zoneId, label));
+
+        var ul = document.createElement("ul");
+        ul.className = "room-list";
+        ul.setAttribute("data-list", zoneId);
+        card.appendChild(ul);
+        return card;
+      }
+
+      function renderZoneGrid(data) {
+        var grid = document.getElementById("zoneGrid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        HKStorage.getZoneOrder(data).forEach(function (zoneId) {
+          grid.appendChild(
+            createZoneCard(zoneId, HKStorage.getZoneLabel(zoneId, data))
+          );
+        });
+      }
+
       function renderRooms(data) {
-        ["VIP", "RC", "CASINO"].forEach(function (zone) {
+        HKStorage.getZoneOrder(data).forEach(function (zone) {
           var ul = document.querySelector('.room-list[data-list="' + zone + '"]');
           if (!ul) return;
           var rooms = data.rooms[zone] || [];
@@ -1310,7 +1584,44 @@
       function refresh() {
         var data = HKStorage.load();
         document.getElementById("noticeInput").value = data.notice;
+        renderZoneGrid(data);
         renderRooms(data);
+      }
+
+      document.getElementById("btnAddZoneGroup").addEventListener("click", function () {
+        var labelInput = document.getElementById("newZoneLabel");
+        var label = labelInput ? labelInput.value.trim() : "";
+        if (!label) {
+          toast("그룹 이름을 입력하세요.");
+          return;
+        }
+        var data = HKStorage.load();
+        var dupLabel = isDuplicateZoneLabel(data, label, null);
+        if (dupLabel) {
+          toast("이미 같은 이름의 그룹이 있습니다.");
+          return;
+        }
+        var id = HKStorage.makeCustomZoneId(label, data);
+        if (!data.customZones) data.customZones = [];
+        data.customZones.push({ id: id, label: label });
+        if (!data.rooms[id]) data.rooms[id] = [];
+        HKStorage.save(data);
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        if (labelInput) labelInput.value = "";
+        refresh();
+        toast("그룹이 추가되었습니다.");
+      });
+
+      var newZoneLabelInput = document.getElementById("newZoneLabel");
+      if (newZoneLabelInput) {
+        newZoneLabelInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("btnAddZoneGroup").click();
+          }
+        });
       }
 
       document.getElementById("saveNotice").addEventListener("click", function () {
@@ -1332,8 +1643,58 @@
         };
       }
 
-      document.querySelector(".zone-grid").addEventListener("click", function (e) {
+      document.getElementById("zoneGrid").addEventListener("focusout", function (e) {
+        if (e.target.classList.contains("zone-card__title-input")) {
+          commitZoneRename(e.target);
+        }
+      });
+
+      document.getElementById("zoneGrid").addEventListener("keydown", function (e) {
+        if (!e.target.classList.contains("zone-card__title-input")) return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.target.blur();
+        }
+        if (e.key === "Escape") {
+          var zoneId = e.target.getAttribute("data-zone");
+          e.target.value = HKStorage.getZoneLabel(zoneId, HKStorage.load());
+          e.target.blur();
+        }
+      });
+
+      document.getElementById("zoneGrid").addEventListener("click", function (e) {
         var t = e.target;
+        if (
+          t.getAttribute("data-action") === "delete-zone" ||
+          t.classList.contains("zone-card__delete")
+        ) {
+          var cardDel = t.closest(".zone-card");
+          if (!cardDel) return;
+          var zoneDel = cardDel.getAttribute("data-zone");
+          if (HKStorage.isStandardZone(zoneDel)) return;
+          var dataDel = HKStorage.load();
+          var zoneLabel = HKStorage.getZoneLabel(zoneDel, dataDel);
+          if (
+            !confirm(
+              '그룹 "' +
+                zoneLabel +
+                '" 을(를) 삭제할까요?\n등록된 객실도 함께 삭제됩니다.'
+            )
+          ) {
+            return;
+          }
+          dataDel.customZones = (dataDel.customZones || []).filter(function (z) {
+            return z && z.id !== zoneDel;
+          });
+          delete dataDel.rooms[zoneDel];
+          HKStorage.save(dataDel);
+          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+            HKSync.pushStorageNow();
+          }
+          refresh();
+          toast("그룹이 삭제되었습니다.");
+          return;
+        }
         if (t.classList.contains("btn-add")) {
           var card = t.closest(".zone-card");
           if (!card) return;
@@ -1352,11 +1713,68 @@
             if (nFrom && nTo) num = nFrom + " -> " + nTo;
             else num = nFrom || nTo;
           } else {
-            num = (card.querySelector(".af-num") && card.querySelector(".af-num").value.trim()) || "";
-            if (!num) {
+            var numRaw =
+              (card.querySelector(".af-num") && card.querySelector(".af-num").value.trim()) || "";
+            if (!numRaw) {
               toast("객실번호를 입력하세요.");
               return;
             }
+            var numbers = parseBulkRoomNumbers(numRaw);
+            if (!numbers.length) {
+              toast("객실번호를 입력하세요.");
+              return;
+            }
+            var dataBulk = HKStorage.load();
+            if (!dataBulk.rooms[zone]) dataBulk.rooms[zone] = [];
+            var existingNums = {};
+            (dataBulk.rooms[zone] || []).forEach(function (r) {
+              existingNums[r.number || ""] = true;
+            });
+            var memo1Bulk =
+              (card.querySelector(".af-memo1") && card.querySelector(".af-memo1").value) || "";
+            var memo2Bulk =
+              (card.querySelector(".af-memo2") && card.querySelector(".af-memo2").value) || "";
+            var toAdd = [];
+            var skipped = [];
+            numbers.forEach(function (n) {
+              if (existingNums[n]) {
+                skipped.push(n);
+                return;
+              }
+              existingNums[n] = true;
+              toAdd.push(n);
+            });
+            if (!toAdd.length) {
+              toast("이미 등록된 객실번호입니다.");
+              return;
+            }
+            var changeEntries = [];
+            toAdd.forEach(function (n) {
+              var row = {
+                number: n,
+                status: lookupRoomStatusFromXml(n),
+                memo1: memo1Bulk,
+                memo2: memo2Bulk,
+                time: "",
+              };
+              dataBulk.rooms[zone].push(row);
+              var entry = buildRoomChangeEntry(zone, null, row);
+              if (entry) changeEntries.push(entry);
+            });
+            HKStorage.save(dataBulk, { skipSync: true });
+            publishRoomChangesSequential(changeEntries).then(function () {
+              clearZoneAddForm(card, zone);
+              renderRooms(HKStorage.load());
+              var msg =
+                toAdd.length === 1
+                  ? "객실이 추가되었습니다."
+                  : "객실 " + toAdd.length + "개가 추가되었습니다.";
+              if (skipped.length) {
+                msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
+              }
+              toast(msg);
+            });
+            return;
           }
           var data = HKStorage.load();
           var dup = (data.rooms[zone] || []).some(function (r) {
@@ -1380,17 +1798,7 @@
           data.rooms[zone].push(newRow);
           HKStorage.save(data, { skipSync: true });
           publishRoomChange(addEntry).then(function () {
-            if (zone === "RC") {
-              var inf = card.querySelector(".af-num-from");
-              var int = card.querySelector(".af-num-to");
-              if (inf) inf.value = "";
-              if (int) int.value = "";
-            } else {
-              var nb = card.querySelector(".af-num");
-              if (nb) nb.value = "";
-            }
-            card.querySelector(".af-memo1").value = "";
-            card.querySelector(".af-memo2").value = "";
+            clearZoneAddForm(card, zone);
             renderRooms(HKStorage.load());
             toast("객실이 추가되었습니다.");
           });

@@ -6,6 +6,8 @@
  */
 (function (global) {
   var STORAGE_KEY = "lotte-hk-v1";
+  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO"];
+  var STANDARD_ZONE_LABELS = { VIP: "VIP", RC: "R/C", CASINO: "CASINO" };
 
   function defaultRoom() {
     return {
@@ -67,10 +69,47 @@
     return p.ok ? p.value : "";
   }
 
+  function isStandardZone(zoneId) {
+    return STANDARD_ZONE_IDS.indexOf(zoneId) >= 0;
+  }
+
+  function slugZoneLabel(label) {
+    var s = String(label || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9가-힣]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    if (!s) s = "GROUP";
+    return "C_" + s.slice(0, 32);
+  }
+
+  function labelFromZoneId(zoneId) {
+    var id = String(zoneId || "").trim();
+    if (STANDARD_ZONE_LABELS[id]) return STANDARD_ZONE_LABELS[id];
+    if (id.indexOf("C_") === 0) {
+      var rest = id.slice(2).replace(/_/g, " ").trim();
+      return rest || id;
+    }
+    return id;
+  }
+
+  function parseRoomsArray(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map(parseRoomEntry)
+      .filter(function (room) {
+        return room.number.length > 0;
+      })
+      .sort(function (a, b) {
+        return a.number.localeCompare(b.number, undefined, { numeric: true });
+      });
+  }
+
   function defaultData() {
     return {
       notice:
         "공지 내용을 여기에 표시합니다. (우측 상단 관리자에서 수정할 수 있습니다.)",
+      customZones: [],
       rooms: {
         VIP: [],
         RC: [],
@@ -105,24 +144,94 @@
     var d = defaultData();
     if (!data || typeof data !== "object") return d;
     if (typeof data.notice === "string") d.notice = data.notice;
-    var r = data.rooms;
-    if (r && typeof r === "object") {
-      ["VIP", "RC", "CASINO"].forEach(function (k) {
-        if (Array.isArray(r[k])) {
-          d.rooms[k] = r[k]
-            .map(parseRoomEntry)
-            .filter(function (room) {
-              return room.number.length > 0;
-            });
-          d.rooms[k].sort(function (a, b) {
-            return a.number.localeCompare(b.number, undefined, {
-              numeric: true,
-            });
-          });
-        }
+
+    var customZones = [];
+    var customById = {};
+
+    if (Array.isArray(data.customZones)) {
+      data.customZones.forEach(function (z) {
+        if (!z || typeof z !== "object") return;
+        var id = z.id != null ? String(z.id).trim() : "";
+        var label = z.label != null ? String(z.label).trim() : "";
+        if (!id || !label || isStandardZone(id)) return;
+        if (customById[id]) return;
+        var entry = { id: id, label: label };
+        customById[id] = entry;
+        customZones.push(entry);
       });
     }
+
+    var r = data.rooms;
+    if (r && typeof r === "object") {
+      Object.keys(r).forEach(function (k) {
+        if (isStandardZone(k)) return;
+        if (customById[k]) return;
+        if (!Array.isArray(r[k])) return;
+        var orphan = { id: k, label: labelFromZoneId(k) };
+        customById[k] = orphan;
+        customZones.push(orphan);
+      });
+    }
+
+    d.customZones = customZones;
+
+    STANDARD_ZONE_IDS.forEach(function (k) {
+      if (r && Array.isArray(r[k])) {
+        d.rooms[k] = parseRoomsArray(r[k]);
+      }
+    });
+
+    customZones.forEach(function (z) {
+      d.rooms[z.id] =
+        r && Array.isArray(r[z.id]) ? parseRoomsArray(r[z.id]) : [];
+    });
+
     return d;
+  }
+
+  function getZoneOrder(data) {
+    data = normalize(data || load());
+    var order = STANDARD_ZONE_IDS.slice();
+    (data.customZones || []).forEach(function (z) {
+      if (z && z.id && order.indexOf(z.id) < 0) order.push(z.id);
+    });
+    return order;
+  }
+
+  function getAllZoneIds(data) {
+    return getZoneOrder(data);
+  }
+
+  function getZoneLabel(zoneId, data) {
+    data = data || load();
+    if (STANDARD_ZONE_LABELS[zoneId]) return STANDARD_ZONE_LABELS[zoneId];
+    var found = (data.customZones || []).find(function (z) {
+      return z && z.id === zoneId;
+    });
+    if (found && found.label) return found.label;
+    return labelFromZoneId(zoneId);
+  }
+
+  function getZoneLabelsMap(data) {
+    data = data || load();
+    var map = {};
+    getZoneOrder(data).forEach(function (zoneId) {
+      map[zoneId] = getZoneLabel(zoneId, data);
+    });
+    return map;
+  }
+
+  function makeCustomZoneId(label, data) {
+    data = data || load();
+    var base = slugZoneLabel(label);
+    var id = base;
+    var n = 2;
+    var existing = getAllZoneIds(data);
+    while (existing.indexOf(id) >= 0) {
+      id = base + "_" + n;
+      n += 1;
+    }
+    return id;
   }
 
   function load() {
@@ -155,5 +264,11 @@
     defaultData: defaultData,
     defaultRoom: defaultRoom,
     parseTime24: parseTime24,
+    isStandardZone: isStandardZone,
+    getZoneOrder: getZoneOrder,
+    getAllZoneIds: getAllZoneIds,
+    getZoneLabel: getZoneLabel,
+    getZoneLabelsMap: getZoneLabelsMap,
+    makeCustomZoneId: makeCustomZoneId,
   };
 })(typeof window !== "undefined" ? window : this);
