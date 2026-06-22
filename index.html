@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -2368,21 +2368,13 @@
 
       function mergeAllStatusRoomList(incoming) {
         if (!incoming || !incoming.length) return;
-        var seen = {};
-        var next = [];
-        cachedAllStatusRooms.forEach(function (rm) {
-          if (!seen[rm]) {
-            seen[rm] = true;
-            next.push(rm);
-          }
+        cachedAllStatusRooms = dedupeByRoomLastWins(
+          incoming.map(function (rm) {
+            return { room: rm };
+          })
+        ).map(function (r) {
+          return r.room;
         });
-        incoming.forEach(function (rm) {
-          if (!seen[rm]) {
-            seen[rm] = true;
-            next.push(rm);
-          }
-        });
-        cachedAllStatusRooms = next;
       }
 
       function renderFAsnBoard() {
@@ -3098,12 +3090,10 @@
         uploadSummary.textContent =
           summaryBody && !payload.errors.length ? withUploadTimePrefix(summaryBody) : summaryBody;
         if (payload.blockMapPatch && Object.keys(payload.blockMapPatch).length) {
-          Object.keys(payload.blockMapPatch).forEach(function (k) {
-            cachedAllStatusBlockMap[k] = payload.blockMapPatch[k];
-          });
+          cachedAllStatusBlockMap = Object.assign({}, payload.blockMapPatch);
         }
         if (payload.rows && payload.rows.length) {
-          cachedVacRows = payload.rows.slice();
+          cachedVacRows = dedupeByRoomLastWins(payload.rows);
           rebuildVacFoMapFromRows();
         }
         if (payload.allStatusRooms && payload.allStatusRooms.length) {

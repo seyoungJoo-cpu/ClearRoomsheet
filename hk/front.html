@@ -4322,6 +4322,10 @@
       var knownOrderIssueIds = {};
       var pendingOrderAlert = false;
       var knownOrderAlertIds = {};
+      var pendingRequestAlert = false;
+      var pendingRequestModifyAlert = false;
+      var knownRequestAlertKeys = {};
+      var knownRequestSnapshots = {};
       var pendingMbInvAlert = false;
       var pendingMbInvIssue = false;
       var pendingMbCheckAlert = false;
@@ -5117,6 +5121,7 @@
       function handleHkSyncChange(changed, payload) {
         if (changed.indexOf("hkRequestLog") >= 0) {
           syncRequestLogFromServer();
+          detectNewRequestItems();
           renderRequestLogPanel();
         }
         if (changed.indexOf("hkOrderLog") >= 0) {
@@ -6062,6 +6067,7 @@
         currentZone = null;
         setZonePanelOpen(false);
         renderRoomsForZone(null);
+        clearRequestSidebarAlerts();
         applySidebarMainView("request");
       }
 
@@ -6418,6 +6424,106 @@
           if (getOrderPhase(entry) === "alert") {
             knownOrderAlertIds[entry.id] = true;
           }
+        });
+      }
+
+      function isRequestPendingAlert(entry) {
+        return !(entry && entry.sched && String(entry.sched).trim());
+      }
+
+      function requestAlertKey(entry) {
+        return (entry.id || "") + "|" + (entry.at || "");
+      }
+
+      function requestContentSignature(entry) {
+        if (!entry) return "";
+        return [
+          entry.room || "",
+          entry.status || "",
+          entry.sched || "",
+          entry.memo || "",
+          entry.memo2 || "",
+          entry.memoImage || "",
+          entry.memo2Image || "",
+          entry.urgent ? "1" : "0",
+        ].join("\x1e");
+      }
+
+      function initRequestAlertTracking() {
+        knownRequestAlertKeys = {};
+        knownRequestSnapshots = {};
+        requestLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (isRequestPendingAlert(entry)) {
+            knownRequestAlertKeys[requestAlertKey(entry)] = true;
+          }
+          knownRequestSnapshots[entry.id] = requestContentSignature(entry);
+        });
+      }
+
+      function applyRequestSidebarAlertUi() {
+        var req = document.getElementById("sidebarBtnRequest");
+        if (req) {
+          req.classList.toggle(
+            "is-order-alert",
+            pendingRequestAlert || pendingRequestModifyAlert
+          );
+        }
+      }
+
+      function registerRequestAlert(key) {
+        if (!key) return;
+        knownRequestAlertKeys[key] = true;
+        if (sidebarMainView !== "request") {
+          pendingRequestAlert = true;
+          applyRequestSidebarAlertUi();
+        }
+      }
+
+      function registerRequestModifyAlert() {
+        if (sidebarMainView !== "request") {
+          pendingRequestModifyAlert = true;
+          applyRequestSidebarAlertUi();
+        }
+      }
+
+      function clearRequestSidebarAlerts() {
+        pendingRequestAlert = false;
+        pendingRequestModifyAlert = false;
+        requestLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (isRequestPendingAlert(entry)) {
+            knownRequestAlertKeys[requestAlertKey(entry)] = true;
+          }
+          knownRequestSnapshots[entry.id] = requestContentSignature(entry);
+        });
+        applyRequestSidebarAlertUi();
+      }
+
+      function detectNewRequestItems() {
+        var liveIds = {};
+        requestLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          liveIds[entry.id] = true;
+          var sig = requestContentSignature(entry);
+          var prevSig = knownRequestSnapshots[entry.id];
+
+          if (prevSig === undefined) {
+            knownRequestSnapshots[entry.id] = sig;
+            if (isRequestPendingAlert(entry)) {
+              var key = requestAlertKey(entry);
+              if (!knownRequestAlertKeys[key]) registerRequestAlert(key);
+            }
+            return;
+          }
+
+          if (prevSig !== sig) {
+            knownRequestSnapshots[entry.id] = sig;
+            registerRequestModifyAlert();
+          }
+        });
+        Object.keys(knownRequestSnapshots).forEach(function (id) {
+          if (!liveIds[id]) delete knownRequestSnapshots[id];
         });
       }
 
@@ -8455,7 +8561,9 @@
       loadFrontChat();
       initFrontChatTracking();
       initOrderIssueTracking();
+      initRequestAlertTracking();
       applyOrderSidebarAlertUi();
+      applyRequestSidebarAlertUi();
       applyFrontChatSidebarAlertUi();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
