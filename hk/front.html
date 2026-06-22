@@ -112,6 +112,66 @@
       border-color: var(--accent-dim);
     }
 
+    .btn-push-alarm {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      align-self: flex-end;
+      font: inherit;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-raised);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-push-alarm:hover {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .btn-push-alarm.is-on {
+      color: #fff;
+      background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+      border-color: #d97706;
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35);
+    }
+
+    .btn-push-alarm.is-on:hover {
+      background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 100%);
+      color: #fff;
+    }
+
+    .btn-push-alarm.is-denied {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-push-alarm__icon {
+      width: 22px;
+      height: 22px;
+      display: block;
+      fill: currentColor;
+    }
+
+    .btn-push-alarm__slash {
+      display: none;
+    }
+
+    .btn-push-alarm:not(.is-on) .btn-push-alarm__slash {
+      display: block;
+    }
+
+    .btn-push-alarm[hidden] {
+      display: none !important;
+    }
+
     .notice-board {
       flex: 1;
       min-width: 0;
@@ -3302,6 +3362,15 @@
         font-size: 0.875rem;
       }
 
+      .btn-push-alarm {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        align-self: auto;
+        margin-left: auto;
+        order: 10;
+      }
+
       .notice-board {
         min-height: 72px;
         max-height: 160px;
@@ -3714,6 +3783,20 @@
       </div>
     </div>
     <div class="topbar-actions">
+      <button
+        type="button"
+        class="btn-push-alarm"
+        id="btnPushAlarm"
+        aria-pressed="false"
+        aria-label="오더 알림 끔"
+        title="오더 알림 끔 — 탭하여 켜기"
+        hidden
+      >
+        <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
       <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
       <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
         정비관리
@@ -4293,6 +4376,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
   <script src="hk-sync.js"></script>
+  <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
   <script>
     (function () {
@@ -4513,6 +4597,59 @@
           gate.classList.remove("is-shift-overlay");
         }
         document.body.classList.remove("operator-locked");
+        refreshPushAlarmButtonUi();
+        if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
+          HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
+        }
+      }
+
+      function refreshPushAlarmButtonUi() {
+        var btn = document.getElementById("btnPushAlarm");
+        if (!btn) return;
+        if (typeof HKPush === "undefined" || !HKPush.isSupported()) {
+          btn.hidden = true;
+          return;
+        }
+        btn.hidden = false;
+        HKPush.getOrderPushStatus().then(function (status) {
+          var on = status === "on";
+          var denied = status === "denied";
+          btn.classList.toggle("is-on", on);
+          btn.classList.toggle("is-denied", denied);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+          if (denied) {
+            btn.title = "브라우저에서 알림이 차단됨 — 설정에서 허용하세요";
+            btn.setAttribute("aria-label", "오더 알림 차단됨");
+          } else if (on) {
+            btn.title = "오더 알림 켜짐 — 탭하여 끄기";
+            btn.setAttribute("aria-label", "오더 알림 켜짐");
+          } else {
+            btn.title = "오더 알림 꺼짐 — 탭하여 켜기";
+            btn.setAttribute("aria-label", "오더 알림 꺼짐");
+          }
+        });
+      }
+
+      function setupPushAlarmButton() {
+        var btn = document.getElementById("btnPushAlarm");
+        if (!btn || typeof HKPush === "undefined") return;
+        if (!HKPush.isSupported()) {
+          btn.hidden = true;
+          return;
+        }
+        btn.hidden = false;
+        btn.addEventListener("click", function () {
+          if (btn.classList.contains("is-denied")) return;
+          btn.disabled = true;
+          HKPush.toggleOrderPush()
+            .then(function () {
+              refreshPushAlarmButtonUi();
+            })
+            .finally(function () {
+              btn.disabled = false;
+            });
+        });
+        refreshPushAlarmButtonUi();
       }
 
       function showOperatorGate(opts) {
@@ -8110,6 +8247,11 @@
           btnMaint.classList.toggle("is-on", maintenanceMode);
           btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
         }
+        if (maintenanceMode) {
+          if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
+            HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
+          }
+        }
         renderRoomsForZone(getActiveZone());
         renderRequestLogPanel();
         renderOrderPanels();
@@ -8543,6 +8685,7 @@
 
       setupOperatorNameUi();
       setupRolePasswordUi();
+      setupPushAlarmButton();
       ensureOperatorNameOnLoad();
 
       var noticeBoardEl = document.getElementById("noticeBoard");

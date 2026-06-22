@@ -2,10 +2,97 @@
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
+const webpush = require("web-push");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SYNC_PASSWORD = process.env.SYNC_PASSWORD || "74321";
+const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:hk@localhost";
+
+/** @type {Map<string, object>} */
+const pushSubscriptions = new Map();
+
+function loadOrCreateVapidKeys() {
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    return {
+      publicKey: process.env.VAPID_PUBLIC_KEY,
+      privateKey: process.env.VAPID_PRIVATE_KEY,
+    };
+  }
+  try {
+    if (fs.existsSync(VAPID_FILE)) {
+      return JSON.parse(fs.readFileSync(VAPID_FILE, "utf8"));
+    }
+  } catch (e) {}
+  const keys = webpush.generateVAPIDKeys();
+  try {
+    fs.writeFileSync(VAPID_FILE, JSON.stringify(keys, null, 2));
+    console.log("Web Push: VAPID keys saved to .vapid-keys.json");
+  } catch (e) {
+    console.warn("Web Push: could not save VAPID keys file");
+  }
+  return keys;
+}
+
+const vapidKeys = loadOrCreateVapidKeys();
+webpush.setVapidDetails(VAPID_SUBJECT, vapidKeys.publicKey, vapidKeys.privateKey);
+
+function getOrderPhase(entry) {
+  if (!entry) return "alert";
+  const p = entry.phase != null ? String(entry.phase).trim() : "";
+  if (p === "accepted" || p === "cancelled") return p;
+  return "alert";
+}
+
+function findNewOrderAlerts(prevLog, nextLog) {
+  const prevIds = {};
+  (prevLog || []).forEach(function (entry) {
+    if (entry && entry.id) prevIds[entry.id] = true;
+  });
+  const out = [];
+  (nextLog || []).forEach(function (entry) {
+    if (!entry || !entry.id || prevIds[entry.id]) return;
+    if (getOrderPhase(entry) === "alert") out.push(entry);
+  });
+  return out;
+}
+
+function formatOrderPushBody(entry) {
+  const room = entry.room != null ? String(entry.room).trim() : "";
+  const memo = entry.memo != null ? String(entry.memo).trim() : "";
+  let body = room ? "객실 " + room : "새 오더";
+  if (entry.urgent) body += " · 긴급";
+  if (memo) {
+    const short = memo.length > 60 ? memo.slice(0, 60) + "…" : memo;
+    body += "\n" + short;
+  }
+  return body;
+}
+
+function sendOrderPushNotifications(orders) {
+  if (!orders.length || !pushSubscriptions.size) return;
+  const tasks = [];
+  orders.forEach(function (order) {
+    const payload = JSON.stringify({
+      title: "오더 알림",
+      body: formatOrderPushBody(order),
+      tag: "hk-order-" + (order.id || Date.now()),
+      url: "/hk/front.html",
+    });
+    pushSubscriptions.forEach(function (sub, endpoint) {
+      tasks.push(
+        webpush.sendNotification(sub, payload).catch(function (err) {
+          if (err && (err.statusCode === 404 || err.statusCode === 410)) {
+            pushSubscriptions.delete(endpoint);
+          }
+        })
+      );
+    });
+  });
+  return Promise.all(tasks);
+}
 
 /** @type {{ version: number, updatedAt: string | null, payload: object | null }} */
 const sharedState = {
@@ -35,6 +122,26 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
     updatedAt: sharedState.updatedAt,
     payload: sharedState.payload,
   });
+});
+
+app.get("/api/push/vapid-public-key", checkSyncAuth, function (req, res) {
+  res.json({ publicKey: vapidKeys.publicKey });
+});
+
+app.post("/api/push/subscribe", checkSyncAuth, function (req, res) {
+  const sub = req.body;
+  if (!sub || !sub.endpoint) {
+    res.status(400).json({ error: "invalid subscription" });
+    return;
+  }
+  pushSubscriptions.set(sub.endpoint, sub);
+  res.json({ ok: true, count: pushSubscriptions.size });
+});
+
+app.post("/api/push/unsubscribe", checkSyncAuth, function (req, res) {
+  const endpoint = req.body && req.body.endpoint;
+  if (endpoint) pushSubscriptions.delete(endpoint);
+  res.json({ ok: true });
 });
 
 var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO"];
@@ -166,9 +273,27 @@ function mergeSyncPayload(prev, incoming) {
 }
 
 app.post("/api/sync", checkSyncAuth, function (req, res) {
-  sharedState.payload = mergeSyncPayload(sharedState.payload, req.body);
+  const prevOrderLog =
+    sharedState.payload && Array.isArray(sharedState.payload.hkOrderLog)
+      ? sharedState.payload.hkOrderLog
+      : [];
+  const nextPayload = mergeSyncPayload(sharedState.payload, req.body);
+  sharedState.payload = nextPayload;
   sharedState.version += 1;
   sharedState.updatedAt = new Date().toISOString();
+
+  if (req.body && Object.prototype.hasOwnProperty.call(req.body, "hkOrderLog")) {
+    const newAlerts = findNewOrderAlerts(
+      prevOrderLog,
+      nextPayload && nextPayload.hkOrderLog
+    );
+    if (newAlerts.length) {
+      sendOrderPushNotifications(newAlerts).catch(function (err) {
+        console.warn("Web Push send failed:", err && err.message ? err.message : err);
+      });
+    }
+  }
+
   res.json({
     ok: true,
     version: sharedState.version,
