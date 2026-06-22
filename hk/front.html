@@ -149,8 +149,27 @@
     }
 
     .btn-push-alarm.is-denied {
-      opacity: 0.45;
-      cursor: not-allowed;
+      opacity: 0.55;
+      cursor: pointer;
+    }
+
+    .btn-push-alarm.is-busy {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .btn-push-alarm.is-busy .btn-push-alarm__icon {
+      animation: push-alarm-pulse 0.8s ease-in-out infinite;
+    }
+
+    @keyframes push-alarm-pulse {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.12);
+      }
     }
 
     .btn-push-alarm__icon {
@@ -3770,6 +3789,16 @@
     </div>
   </div>
 
+  <div
+    class="hk-notice-toast hk-push-toast"
+    id="pushAlarmToast"
+    role="status"
+    aria-live="polite"
+    hidden
+  >
+    <div class="hk-notice-toast__text" id="pushAlarmToastText"></div>
+  </div>
+
   <div class="hk-app-main">
   <header class="topbar">
     <div class="topbar-main">
@@ -4603,6 +4632,23 @@
         }
       }
 
+      var pushAlarmToastHideTimer = null;
+
+      function showPushAlarmToast(message) {
+        var toast = document.getElementById("pushAlarmToast");
+        var text = document.getElementById("pushAlarmToastText");
+        if (!toast || !text || !message) return;
+        text.textContent = message;
+        toast.hidden = false;
+        toast.classList.add("is-visible");
+        if (pushAlarmToastHideTimer) clearTimeout(pushAlarmToastHideTimer);
+        pushAlarmToastHideTimer = setTimeout(function () {
+          toast.classList.remove("is-visible");
+          toast.hidden = true;
+          pushAlarmToastHideTimer = null;
+        }, 3200);
+      }
+
       function refreshPushAlarmButtonUi() {
         var btn = document.getElementById("btnPushAlarm");
         if (!btn) return;
@@ -4639,14 +4685,27 @@
         }
         btn.hidden = false;
         btn.addEventListener("click", function () {
-          if (btn.classList.contains("is-denied")) return;
+          if (btn.classList.contains("is-busy")) return;
+          if (btn.classList.contains("is-denied")) {
+            showPushAlarmToast(
+              "알림이 차단됨 — 주소창 자물쇠 → 사이트 설정 → 알림 허용"
+            );
+            return;
+          }
+          var turningOn = !btn.classList.contains("is-on");
           btn.disabled = true;
+          btn.classList.add("is-busy");
+          if (turningOn) {
+            showPushAlarmToast("알림 권한 확인 중… 허용 창이 뜨면 허용을 눌러 주세요.");
+          }
           HKPush.toggleOrderPush()
-            .then(function () {
+            .then(function (result) {
               refreshPushAlarmButtonUi();
+              if (result && result.message) showPushAlarmToast(result.message);
             })
             .finally(function () {
               btn.disabled = false;
+              btn.classList.remove("is-busy");
             });
         });
         refreshPushAlarmButtonUi();

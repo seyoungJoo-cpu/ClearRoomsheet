@@ -168,15 +168,27 @@
     });
   }
 
+  function makePushResult(ok, status, message) {
+    return { ok: !!ok, status: status || "", message: message || "" };
+  }
+
+  function requestNotificationPermission() {
+    if (global.Notification.permission === "granted") {
+      return Promise.resolve("granted");
+    }
+    if (global.Notification.permission === "denied") {
+      return Promise.resolve("denied");
+    }
+    return global.Notification.requestPermission();
+  }
+
   function ensureOrderPushSubscription(forceFresh) {
     if (!isSupported()) return Promise.resolve(false);
     if (!isOrderPushEnabledPreference()) return Promise.resolve(false);
 
     return Promise.resolve()
       .then(function () {
-        if (global.Notification.permission === "granted") return "granted";
-        if (global.Notification.permission === "denied") return "denied";
-        return global.Notification.requestPermission();
+        return requestNotificationPermission();
       })
       .then(function (perm) {
         if (perm !== "granted") {
@@ -234,27 +246,68 @@
   }
 
   function enableOrderPush() {
-    if (!isSupported()) return Promise.resolve(false);
+    if (!isSupported()) {
+      return Promise.resolve(
+        makePushResult(false, "unsupported", "이 브라우저는 오더 알림을 지원하지 않습니다.")
+      );
+    }
     setOrderPushEnabledPreference(true);
-    return ensureOrderPushSubscription(true);
+    return requestNotificationPermission()
+      .then(function (perm) {
+        if (perm === "denied") {
+          setOrderPushEnabledPreference(false);
+          return makePushResult(
+            false,
+            "denied",
+            "알림이 차단되어 있습니다. 주소창 자물쇠 → 사이트 설정에서 알림을 허용한 뒤 다시 켜 주세요."
+          );
+        }
+        if (perm !== "granted") {
+          setOrderPushEnabledPreference(false);
+          return makePushResult(
+            false,
+            "dismissed",
+            "알림 권한이 필요합니다. 벨을 다시 눌러 허용해 주세요."
+          );
+        }
+        return ensureOrderPushSubscription(true).then(function (ok) {
+          if (ok) {
+            return makePushResult(
+              true,
+              "on",
+              "오더 알림이 켜졌습니다. 앱을 닫아도 알림을 받습니다."
+            );
+          }
+          setOrderPushEnabledPreference(false);
+          return makePushResult(
+            false,
+            "error",
+            "알림 등록에 실패했습니다. 잠시 후 벨을 다시 눌러 주세요."
+          );
+        });
+      })
+      .catch(function () {
+        setOrderPushEnabledPreference(false);
+        return makePushResult(false, "error", "알림 등록 중 오류가 발생했습니다.");
+      });
   }
 
   function disableOrderPush() {
-    return unsubscribeOrderPush();
+    return unsubscribeOrderPush().then(function () {
+      return makePushResult(true, "off", "오더 알림이 꺼졌습니다.");
+    });
   }
 
   function toggleOrderPush() {
-    if (!isSupported()) return Promise.resolve("unsupported");
-    if (isOrderPushEnabledPreference()) {
-      return disableOrderPush().then(function () {
-        return "off";
-      });
+    if (!isSupported()) {
+      return Promise.resolve(
+        makePushResult(false, "unsupported", "이 브라우저는 오더 알림을 지원하지 않습니다.")
+      );
     }
-    return enableOrderPush().then(function (ok) {
-      if (ok) return "on";
-      if (global.Notification.permission === "denied") return "denied";
-      return "off";
-    });
+    if (isOrderPushEnabledPreference()) {
+      return disableOrderPush();
+    }
+    return enableOrderPush();
   }
 
   function refreshOrderPushSubscription() {
