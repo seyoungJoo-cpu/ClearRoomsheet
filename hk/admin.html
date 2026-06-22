@@ -827,11 +827,12 @@
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지·구역 객실·요청·오더·MB·채팅 등 전체 기록을 <strong>엑셀 파일로 저장</strong>한 뒤
-        <strong>초기화</strong>합니다. <strong>프론트 채팅</strong>·<strong>오더 알림·문제발생</strong>은 엑셀에 저장하고 화면에 유지합니다.
+        공지·구역 객실·요청·오더·MB·채팅 등 전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤
+        <strong>초기화</strong>합니다. HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
+        <strong>프론트 채팅</strong>·<strong>오더 알림·문제발생</strong>은 함께 저장하고 화면에 유지합니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
-      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (엑셀 저장 + 초기화)</button>
+      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 저장 + 초기화)</button>
     </section>
   </div>
 
@@ -1424,7 +1425,7 @@
         };
       }
 
-      function buildCloseDayWorkbookHtml(snapshot) {
+      function buildCloseDaySections(snapshot) {
         var sections = [
           {
             title: "공지",
@@ -1815,6 +1816,11 @@
           }
         );
 
+        return sections;
+      }
+
+      function buildCloseDayWorkbookHtml(snapshot) {
+        var sections = buildCloseDaySections(snapshot);
         var html = [
           '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">',
           "<head><meta charset=\"UTF-8\">",
@@ -1853,20 +1859,409 @@
         return html.join("");
       }
 
-      function downloadCloseDayExcel(snapshot) {
+      function getCloseDayFilenameBase(snapshot) {
         var now = new Date(snapshot.exportedAt);
-        var filename =
+        return (
           "마감_" +
           now.getFullYear() +
           pad2(now.getMonth() + 1) +
           pad2(now.getDate()) +
           "_" +
           pad2(now.getHours()) +
-          pad2(now.getMinutes()) +
-          ".xls";
-        var blob = new Blob(["\ufeff", buildCloseDayWorkbookHtml(snapshot)], {
-          type: "application/vnd.ms-excel;charset=utf-8;",
+          pad2(now.getMinutes())
+        );
+      }
+
+      function sectionAnchorId(title, index) {
+        return (
+          "sec-" +
+          index +
+          "-" +
+          String(title || "section")
+            .replace(/\s+/g, "-")
+            .replace(/[^\w\uAC00-\uD7A3-]/g, "")
+            .slice(0, 40)
+        );
+      }
+
+      function getReportChatPalette(byName) {
+        if (typeof HKChatColors !== "undefined" && HKChatColors.getColorIdForUser) {
+          return HKChatColors.getPaletteById(HKChatColors.getColorIdForUser(byName));
+        }
+        return { bg: "#ecfdf5", border: "#a7f3d0", text: "#064e3b", by: "#047857", id: "default" };
+      }
+
+      function renderReportImageTag(src, className) {
+        var url = normalizeImageDataUrl(src);
+        if (!url || url.indexOf("data:image") !== 0) return "";
+        return (
+          '<img class="' +
+          escHtml(className || "report-img") +
+          '" src="' +
+          url.replace(/"/g, "&quot;") +
+          '" alt="첨부" />'
+        );
+      }
+
+      function renderReportCell(cell) {
+        if (cell && typeof cell === "object") {
+          if (cell.__excelImage) return cell.html;
+          if (cell.__excelHtml != null) return cell.__excelHtml;
+        }
+        return escHtml(cell == null ? "" : String(cell)).replace(/\n/g, "<br>");
+      }
+
+      function renderReportMetaItem(label, value) {
+        if (value == null || String(value).trim() === "") return "";
+        return (
+          '<div class="meta-item"><span class="meta-item__label">' +
+          escHtml(label) +
+          '</span><span class="meta-item__value">' +
+          escHtml(String(value)) +
+          "</span></div>"
+        );
+      }
+
+      function renderReportChatBubble(msg) {
+        var by = msg.by != null ? String(msg.by).trim() || "—" : "—";
+        var palette = getReportChatPalette(by);
+        var deleted = !!(msg.deleted || msg.__deleted);
+        var text = deleted ? "삭제하였습니다." : formatChatMessageText(msg);
+        var bubbleClass = "chat-bubble" + (deleted ? " chat-bubble--deleted" : "");
+        var flags = [];
+        if (msg.edited && !deleted) flags.push("(수정됨)");
+        if (deleted && msg.deletedAt) flags.push("삭제 " + formatAt(msg.deletedAt));
+        var html = ['<div class="chat-msg">'];
+        html.push(
+          '<div class="chat-msg__by" style="color:' +
+            escHtml(palette.by) +
+            '">' +
+            escHtml(by) +
+            "</div>"
+        );
+        html.push(
+          '<div class="' +
+            bubbleClass +
+            '" style="background:' +
+            escHtml(palette.bg) +
+            ";border-color:" +
+            escHtml(palette.border) +
+            ";color:" +
+            escHtml(palette.text) +
+            '">'
+        );
+        html.push(
+          '<div class="chat-msg__text">' +
+            escHtml(text).replace(/\n/g, "<br>") +
+            "</div>"
+        );
+        if (!deleted && msg.image) html.push(renderReportImageTag(msg.image, "chat-msg__img"));
+        html.push("</div>");
+        var timeText = msg.at ? formatAt(msg.at) : "";
+        if (flags.length) timeText += (timeText ? " · " : "") + flags.join(" · ");
+        if (timeText) html.push('<div class="chat-msg__time">' + escHtml(timeText) + "</div>");
+        html.push("</div>");
+        return html.join("");
+      }
+
+      function renderReportChatList(messages) {
+        if (!messages || !messages.length) {
+          return '<p class="report-empty">(메시지 없음)</p>';
+        }
+        var sorted = messages.slice().sort(function (a, b) {
+          return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
         });
+        var html = ['<div class="chat-panel">'];
+        sorted.forEach(function (msg) {
+          html.push(renderReportChatBubble(msg));
+        });
+        html.push("</div>");
+        return html.join("");
+      }
+
+      function renderReportFrontChatSection(snapshot) {
+        return renderReportChatList(snapshot.frontChat || []);
+      }
+
+      function renderReportOrderChatGroups(snapshot) {
+        var groups = [];
+        (snapshot.orderLog || []).forEach(function (entry) {
+          if (!entry.chat || !entry.chat.length) return;
+          groups.push({
+            title:
+              formatRoomNoDisplay(entry.room || "") +
+              " · " +
+              (entry.id || ""),
+            chat: entry.chat,
+          });
+        });
+        if (!groups.length) return '<p class="report-empty">(채팅 없음)</p>';
+        var html = [];
+        groups.forEach(function (group) {
+          html.push('<div class="chat-group">');
+          html.push("<h4>" + escHtml(group.title) + "</h4>");
+          html.push(renderReportChatList(group.chat));
+          html.push("</div>");
+        });
+        return html.join("");
+      }
+
+      function renderReportMbInvChatGroups(snapshot) {
+        var groups = [];
+        (snapshot.mbInvLog || []).forEach(function (entry) {
+          if (!entry.chat || !entry.chat.length) return;
+          groups.push({
+            title:
+              formatMbCategoryLabel(entry.category) +
+              " · " +
+              formatRoomNoDisplay(entry.roomFrom || "") +
+              " → " +
+              formatRoomNoDisplay(entry.roomTo || ""),
+            chat: entry.chat,
+          });
+        });
+        if (!groups.length) return '<p class="report-empty">(채팅 없음)</p>';
+        var html = [];
+        groups.forEach(function (group) {
+          html.push('<div class="chat-group">');
+          html.push("<h4>" + escHtml(group.title) + "</h4>");
+          html.push(renderReportChatList(group.chat));
+          html.push("</div>");
+        });
+        return html.join("");
+      }
+
+      function renderReportOrderCards(snapshot) {
+        var entries = snapshot.orderLog || [];
+        if (!entries.length) return '<p class="report-empty">(오더 없음)</p>';
+        var html = [];
+        entries.forEach(function (entry) {
+          html.push('<article class="record-card record-card--order">');
+          html.push('<div class="record-card__head">');
+          html.push(
+            '<span class="record-card__room">' +
+              escHtml(formatRoomNoDisplay(entry.room || "")) +
+              "</span>"
+          );
+          html.push(
+            '<span class="badge">' + escHtml(formatOrderEntryPhaseLabel(entry)) + "</span>"
+          );
+          if (entry.urgent) html.push('<span class="badge badge--urgent">긴급</span>');
+          if (entry.fromMaint) html.push('<span class="badge badge--maint">정비</span>');
+          html.push("</div>");
+          html.push('<div class="meta-grid">');
+          html.push(renderReportMetaItem("오더", formatAt(entry.at)));
+          html.push(renderReportMetaItem("접수", formatAt(entry.acceptedAt)));
+          html.push(renderReportMetaItem("접수자", entry.acceptedBy));
+          html.push(renderReportMetaItem("문제", formatAt(entry.issueAt)));
+          html.push(renderReportMetaItem("문제자", entry.issueBy));
+          html.push(renderReportMetaItem("재접수", formatAt(entry.reacceptedAt)));
+          html.push(renderReportMetaItem("취소", formatAt(entry.cancelledAt)));
+          html.push(renderReportMetaItem("요청자", entry.by));
+          html.push(renderReportMetaItem("ID", entry.id));
+          html.push("</div>");
+          if (entry.memo) {
+            html.push(
+              '<div class="record-card__memo">' +
+                escHtml(String(entry.memo)).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          if (entry.memoImage) html.push(renderReportImageTag(entry.memoImage, "record-card__img"));
+          if (entry.chat && entry.chat.length) {
+            html.push('<div class="record-card__chat-label">채팅</div>');
+            html.push(renderReportChatList(entry.chat));
+          }
+          html.push("</article>");
+        });
+        return html.join("");
+      }
+
+      function renderReportMbInvCards(snapshot) {
+        var entries = snapshot.mbInvLog || [];
+        if (!entries.length) return '<p class="report-empty">(내역 없음)</p>';
+        var html = [];
+        entries.forEach(function (entry) {
+          html.push('<article class="record-card record-card--mb">');
+          html.push('<div class="record-card__head">');
+          html.push(
+            '<span class="record-card__room">' +
+              escHtml(formatMbCategoryLabel(entry.category)) +
+              " " +
+              escHtml(formatRoomNoDisplay(entry.roomFrom || "")) +
+              " → " +
+              escHtml(formatRoomNoDisplay(entry.roomTo || "")) +
+              "</span>"
+          );
+          html.push(
+            '<span class="badge">' + escHtml(formatMbInvEntryPhaseLabel(entry)) + "</span>"
+          );
+          html.push("</div>");
+          html.push('<div class="meta-grid">');
+          html.push(renderReportMetaItem("요청", formatAt(entry.at)));
+          html.push(renderReportMetaItem("접수", formatAt(entry.acceptedAt)));
+          html.push(renderReportMetaItem("접수자", entry.acceptedBy));
+          html.push(renderReportMetaItem("문제", formatAt(entry.issueAt)));
+          html.push(renderReportMetaItem("취소", formatAt(entry.cancelledAt)));
+          html.push(renderReportMetaItem("요청자", entry.by));
+          html.push(renderReportMetaItem("ID", entry.id));
+          html.push("</div>");
+          if (entry.memo) {
+            html.push(
+              '<div class="record-card__memo">' +
+                escHtml(String(entry.memo)).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          if (entry.memoImage) html.push(renderReportImageTag(entry.memoImage, "record-card__img"));
+          if (entry.chat && entry.chat.length) {
+            html.push('<div class="record-card__chat-label">채팅</div>');
+            html.push(renderReportChatList(entry.chat));
+          }
+          html.push("</article>");
+        });
+        return html.join("");
+      }
+
+      function renderReportTableSection(section) {
+        var html = ['<div class="table-wrap"><table class="report-table"><thead><tr>'];
+        section.headers.forEach(function (header) {
+          html.push("<th>" + escHtml(header) + "</th>");
+        });
+        html.push("</tr></thead><tbody>");
+        if (!section.rows.length) {
+          html.push(
+            '<tr><td colspan="' +
+              section.headers.length +
+              '" class="report-empty">(내역 없음)</td></tr>'
+          );
+        } else {
+          section.rows.forEach(function (row) {
+            html.push("<tr>");
+            row.forEach(function (cell) {
+              html.push("<td>" + renderReportCell(cell) + "</td>");
+            });
+            html.push("</tr>");
+          });
+        }
+        html.push("</tbody></table></div>");
+        return html.join("");
+      }
+
+      function renderReportSectionBody(section, snapshot) {
+        if (section.title === "공지") {
+          var notice = snapshot.data.notice || "";
+          return notice
+            ? '<div class="notice-box">' + escHtml(notice).replace(/\n/g, "<br>") + "</div>"
+            : '<p class="report-empty">(공지 없음)</p>';
+        }
+        if (section.title === "프론트 채팅") return renderReportFrontChatSection(snapshot);
+        if (section.title === "오더") return renderReportOrderCards(snapshot);
+        if (section.title === "오더 채팅 (상세)") return renderReportOrderChatGroups(snapshot);
+        if (section.title === "MB & 인벤 변경") return renderReportMbInvCards(snapshot);
+        if (section.title === "MB & 인벤 채팅 (상세)") return renderReportMbInvChatGroups(snapshot);
+        return renderReportTableSection(section);
+      }
+
+      function buildCloseDayReportHtml(snapshot) {
+        var sections = buildCloseDaySections(snapshot);
+        var html = [
+          "<!DOCTYPE html>",
+          '<html lang="ko">',
+          "<head>",
+          '<meta charset="UTF-8">',
+          '<meta name="viewport" content="width=device-width, initial-scale=1">',
+          '<meta name="robots" content="noindex">',
+          "<title>마감 보고서 · " + escHtml(formatAt(snapshot.exportedAt)) + "</title>",
+          "<style>",
+          ":root{--accent:#0f766e;--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;}",
+          "*{box-sizing:border-box;}",
+          "html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;}",
+          "body{-webkit-user-modify:read-only;user-select:text;}",
+          "a{color:var(--accent);}",
+          ".report-top{background:linear-gradient(135deg,#0f766e,#115e59);color:#fff;padding:20px 24px;}",
+          ".report-top h1{margin:0 0 6px;font-size:1.35rem;}",
+          ".report-top p{margin:0;opacity:.92;font-size:.875rem;}",
+          ".report-readonly{margin:12px 0 0;padding:8px 12px;background:rgba(255,255,255,.12);border-radius:8px;font-size:.8125rem;}",
+          ".report-layout{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;}",
+          ".report-nav{position:sticky;top:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;max-height:calc(100vh - 24px);overflow:auto;}",
+          ".report-nav h2{margin:0 0 8px;font-size:.8125rem;color:var(--muted);}",
+          ".report-nav ol{margin:0;padding-left:18px;font-size:.75rem;line-height:1.6;}",
+          ".report-main{min-width:0;}",
+          ".report-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}",
+          ".report-section h3{margin:0 0 12px;font-size:1rem;color:var(--accent);border-bottom:2px solid var(--border);padding-bottom:8px;}",
+          ".notice-box{white-space:pre-wrap;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;padding:12px;}",
+          ".table-wrap{overflow:auto;}",
+          ".report-table{width:100%;border-collapse:collapse;font-size:.8125rem;}",
+          ".report-table th,.report-table td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;}",
+          ".report-table th{background:#f8fafc;font-weight:700;white-space:nowrap;}",
+          ".report-table tr:nth-child(even) td{background:#fafafa;}",
+          ".report-empty{color:var(--muted);font-style:italic;margin:0;}",
+          ".report-img,.chat-msg__img,.record-card__img{max-width:220px;max-height:180px;display:block;margin-top:6px;border-radius:8px;border:1px solid var(--border);object-fit:contain;}",
+          ".record-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;background:#fafafa;}",
+          ".record-card--order{border-left:4px solid #b91c1c;}",
+          ".record-card--mb{border-left:4px solid #7c3aed;}",
+          ".record-card__head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}",
+          ".record-card__room{font-weight:800;font-size:.9375rem;}",
+          ".badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#e2e8f0;font-size:.6875rem;font-weight:700;}",
+          ".badge--urgent{background:#fee2e2;color:#b91c1c;}",
+          ".badge--maint{background:#ffedd5;color:#c2410c;}",
+          ".meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-bottom:8px;}",
+          ".meta-item{font-size:.75rem;}",
+          ".meta-item__label{display:block;color:var(--muted);font-weight:700;}",
+          ".meta-item__value{display:block;}",
+          ".record-card__memo{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);white-space:pre-wrap;font-size:.8125rem;}",
+          ".record-card__chat-label{margin:10px 0 6px;font-size:.75rem;font-weight:700;color:var(--muted);}",
+          ".chat-panel{display:flex;flex-direction:column;gap:8px;}",
+          ".chat-group{margin-bottom:16px;}",
+          ".chat-group h4{margin:0 0 8px;font-size:.8125rem;color:var(--muted);}",
+          ".chat-msg{max-width:88%;}",
+          ".chat-msg__by{font-size:.625rem;font-weight:700;margin-bottom:2px;}",
+          ".chat-bubble{border:1px solid;padding:6px 9px;border-radius:10px;font-size:.75rem;}",
+          ".chat-bubble--deleted{background:#f1f5f9!important;border-color:#cbd5e1!important;color:#64748b!important;font-style:italic;}",
+          ".chat-msg__text{white-space:pre-wrap;word-break:break-word;}",
+          ".chat-msg__time{font-size:.625rem;color:var(--muted);margin-top:2px;}",
+          "@media (max-width:900px){.report-layout{grid-template-columns:1fr;}.report-nav{position:static;max-height:none;}}",
+          "@media print{.report-nav{display:none;}.report-layout{padding:0;}.report-section{break-inside:avoid;box-shadow:none;}}",
+          "</style>",
+          "</head>",
+          "<body>",
+          '<header class="report-top">',
+          "<h1>House Keeping 마감 보고서</h1>",
+          "<p>내보내기 시각 · " + escHtml(formatAt(snapshot.exportedAt)) + "</p>",
+          '<p class="report-readonly">읽기 전용 스냅샷입니다. 브라우저에서 열어 확인·인쇄할 수 있으며 내용은 수정할 수 없습니다.</p>',
+          "</header>",
+          '<div class="report-layout">',
+          '<nav class="report-nav" aria-label="목차">',
+          "<h2>목차</h2>",
+          "<ol>",
+        ];
+
+        sections.forEach(function (section, index) {
+          var id = sectionAnchorId(section.title, index);
+          html.push(
+            '<li><a href="#' + id + '">' + escHtml(section.title) + "</a></li>"
+          );
+        });
+
+        html.push(
+          "</ol></nav>",
+          '<main class="report-main">'
+        );
+
+        sections.forEach(function (section, index) {
+          var id = sectionAnchorId(section.title, index);
+          html.push('<section class="report-section" id="' + id + '">');
+          html.push("<h3>" + escHtml(section.title) + "</h3>");
+          html.push(renderReportSectionBody(section, snapshot));
+          html.push("</section>");
+        });
+
+        html.push("</main></div></body></html>");
+        return html.join("");
+      }
+
+      function downloadBlobFile(filename, blob) {
         var url = URL.createObjectURL(blob);
         var a = document.createElement("a");
         a.href = url;
@@ -1877,6 +2272,28 @@
         setTimeout(function () {
           URL.revokeObjectURL(url);
         }, 0);
+      }
+
+      function downloadCloseDayHtml(snapshot) {
+        var blob = new Blob([buildCloseDayReportHtml(snapshot)], {
+          type: "text/html;charset=utf-8;",
+        });
+        downloadBlobFile(getCloseDayFilenameBase(snapshot) + ".html", blob);
+      }
+
+      function downloadCloseDayExcel(snapshot) {
+        var filename = getCloseDayFilenameBase(snapshot) + ".xls";
+        var blob = new Blob(["\ufeff", buildCloseDayWorkbookHtml(snapshot)], {
+          type: "application/vnd.ms-excel;charset=utf-8;",
+        });
+        downloadBlobFile(filename, blob);
+      }
+
+      function downloadCloseDayFiles(snapshot) {
+        downloadCloseDayHtml(snapshot);
+        setTimeout(function () {
+          downloadCloseDayExcel(snapshot);
+        }, 350);
       }
 
       function preserveOrderAlertEntries(orderLog) {
@@ -1898,7 +2315,7 @@
         var snapshot = collectCloseDaySnapshot();
         var preservedFrontChat = (snapshot.frontChat || []).slice();
         var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
-        downloadCloseDayExcel(snapshot);
+        downloadCloseDayFiles(snapshot);
 
         var resetStorage = getResetStorageData();
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
@@ -1915,20 +2332,20 @@
             hkLastRoomChange: null,
           }).finally(function () {
             refresh();
-            toast("마감 완료 · 엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
+            toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
           });
           return;
         }
 
         HKStorage.save(resetStorage, { skipSync: true });
         refresh();
-        toast("마감 완료 · 엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
+        toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 엑셀 파일로 저장\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
