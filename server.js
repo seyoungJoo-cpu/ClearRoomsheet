@@ -382,6 +382,9 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "hkLastRoomChange")) {
     out.hkLastRoomChange = incoming.hkLastRoomChange || null;
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkCloseDayAt")) {
+    out.hkCloseDayAt = incoming.hkCloseDayAt || null;
+  }
   return out;
 }
 

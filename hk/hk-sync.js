@@ -11,6 +11,8 @@
   var MB_INV_LOG_KEY = "lotte-hk-mb-inv-log-v1";
   var MB_CHECK_LOG_KEY = "lotte-hk-mb-check-log-v1";
   var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
+  var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
+  var CLOSE_DAY_KEY = "lotte-hk-close-day-at-v1";
 
   var syncVersion = 0;
   var pollTimer = null;
@@ -18,6 +20,55 @@
   var pendingPush = {};
   var isApplyingRemote = false;
   var changeListeners = [];
+  var dirty = {
+    hkStorage: false,
+    hkRequestLog: false,
+    hkCancelLog: false,
+    hkUseLog: false,
+    hkChangeLog: false,
+    hkOrderLog: false,
+    hkMbInvLog: false,
+    hkMbCheckLog: false,
+    hkFrontChat: false,
+  };
+
+  function markDirty(field) {
+    if (Object.prototype.hasOwnProperty.call(dirty, field)) dirty[field] = true;
+  }
+
+  function clearDirty(field) {
+    if (Object.prototype.hasOwnProperty.call(dirty, field)) dirty[field] = false;
+  }
+
+  function clearAllDirty() {
+    Object.keys(dirty).forEach(function (field) {
+      dirty[field] = false;
+    });
+  }
+
+  function loadSyncVersionFromLocal() {
+    try {
+      var raw = global.localStorage.getItem(SYNC_VERSION_KEY);
+      if (raw == null || raw === "") return;
+      var v = parseInt(raw, 10);
+      if (!isNaN(v) && v >= 0) syncVersion = v;
+    } catch (e) {}
+  }
+
+  function saveSyncVersion(version) {
+    if (version == null || isNaN(version)) return;
+    syncVersion = version;
+    try {
+      global.localStorage.setItem(SYNC_VERSION_KEY, String(version));
+    } catch (e) {}
+  }
+
+  function applyCloseDayMarker(payload) {
+    if (!payload || !payload.hkCloseDayAt) return;
+    try {
+      global.localStorage.setItem(CLOSE_DAY_KEY, String(payload.hkCloseDayAt));
+    } catch (e) {}
+  }
 
   var cache = {
     requestLog: [],
@@ -138,17 +189,33 @@
 
   function buildPushBody() {
     var body = {};
-    if (pendingPush.hkStorage && global.HKStorage) {
+    if (pendingPush.hkStorage && dirty.hkStorage && global.HKStorage) {
       body.hkStorage = global.HKStorage.load();
     }
-    if (pendingPush.hkRequestLog) body.hkRequestLog = cache.requestLog;
-    if (pendingPush.hkCancelLog) body.hkCancelLog = cache.cancelLog;
-    if (pendingPush.hkUseLog) body.hkUseLog = cache.useLog;
-    if (pendingPush.hkChangeLog) body.hkChangeLog = cache.changeLog;
-    if (pendingPush.hkOrderLog) body.hkOrderLog = cache.orderLog;
-    if (pendingPush.hkMbInvLog) body.hkMbInvLog = cache.mbInvLog;
-    if (pendingPush.hkMbCheckLog) body.hkMbCheckLog = cache.mbCheckLog;
-    if (pendingPush.hkFrontChat) body.hkFrontChat = cache.frontChat;
+    if (pendingPush.hkRequestLog && dirty.hkRequestLog) {
+      body.hkRequestLog = cache.requestLog;
+    }
+    if (pendingPush.hkCancelLog && dirty.hkCancelLog) {
+      body.hkCancelLog = cache.cancelLog;
+    }
+    if (pendingPush.hkUseLog && dirty.hkUseLog) {
+      body.hkUseLog = cache.useLog;
+    }
+    if (pendingPush.hkChangeLog && dirty.hkChangeLog) {
+      body.hkChangeLog = cache.changeLog;
+    }
+    if (pendingPush.hkOrderLog && dirty.hkOrderLog) {
+      body.hkOrderLog = cache.orderLog;
+    }
+    if (pendingPush.hkMbInvLog && dirty.hkMbInvLog) {
+      body.hkMbInvLog = cache.mbInvLog;
+    }
+    if (pendingPush.hkMbCheckLog && dirty.hkMbCheckLog) {
+      body.hkMbCheckLog = cache.mbCheckLog;
+    }
+    if (pendingPush.hkFrontChat && dirty.hkFrontChat) {
+      body.hkFrontChat = cache.frontChat;
+    }
     return body;
   }
 
@@ -167,7 +234,8 @@
         return r.json();
       })
       .then(function (data) {
-        if (data && data.version) syncVersion = data.version;
+        if (data && data.version != null) saveSyncVersion(data.version);
+        return data;
       })
       .catch(function () {
         return false;
@@ -177,13 +245,24 @@
   function doPush() {
     var body = buildPushBody();
     var keys = Object.keys(body);
-    if (!keys.length) return Promise.resolve(false);
+    if (!keys.length) {
+      pendingPush = {};
+      return Promise.resolve(false);
+    }
     pendingPush = {};
-    return postPayload(body);
+    return postPayload(body).then(function (data) {
+      if (data && data.version != null) {
+        keys.forEach(function (key) {
+          clearDirty(key);
+        });
+      }
+      return data;
+    });
   }
 
   function pushStorageNow() {
     if (isApplyingRemote || !global.HKStorage) return Promise.resolve(false);
+    markDirty("hkStorage");
     if (pushTimer) {
       clearTimeout(pushTimer);
       pushTimer = null;
@@ -195,52 +274,62 @@
   function applyRemotePayload(payload) {
     if (!payload || typeof payload !== "object") return;
     lastServerPayload = Object.assign({}, lastServerPayload || {}, payload);
+    applyCloseDayMarker(payload);
     var changed = [];
     isApplyingRemote = true;
 
     if (payload.hkStorage && global.HKStorage) {
       global.HKStorage.applyRemote(payload.hkStorage);
       changed.push("hkStorage");
+      clearDirty("hkStorage");
     }
     if (Array.isArray(payload.hkRequestLog)) {
       cache.requestLog = payload.hkRequestLog.slice();
       writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
       changed.push("hkRequestLog");
+      clearDirty("hkRequestLog");
     }
     if (Array.isArray(payload.hkCancelLog)) {
       cache.cancelLog = payload.hkCancelLog.slice();
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
       changed.push("hkCancelLog");
+      clearDirty("hkCancelLog");
     }
     if (Array.isArray(payload.hkUseLog)) {
       cache.useLog = payload.hkUseLog.slice();
       writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
       changed.push("hkUseLog");
+      clearDirty("hkUseLog");
     }
     if (Array.isArray(payload.hkChangeLog)) {
       cache.changeLog = payload.hkChangeLog.slice();
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
       changed.push("hkChangeLog");
+      clearDirty("hkChangeLog");
     }
     if (Array.isArray(payload.hkOrderLog)) {
       cache.orderLog = payload.hkOrderLog.slice();
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
       changed.push("hkOrderLog");
+      clearDirty("hkOrderLog");
     }
     if (Array.isArray(payload.hkMbInvLog)) {
       cache.mbInvLog = payload.hkMbInvLog.slice();
       writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
       changed.push("hkMbInvLog");
+      clearDirty("hkMbInvLog");
     }
     if (Array.isArray(payload.hkMbCheckLog)) {
       cache.mbCheckLog = payload.hkMbCheckLog.slice();
       writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
       changed.push("hkMbCheckLog");
+      clearDirty("hkMbCheckLog");
     }
     if (Array.isArray(payload.hkFrontChat)) {
       cache.frontChat = payload.hkFrontChat.slice();
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       changed.push("hkFrontChat");
+      clearDirty("hkFrontChat");
     }
     if (Object.prototype.hasOwnProperty.call(payload, "hkLastRoomChange")) {
       changed.push("hkLastRoomChange");
@@ -268,7 +357,7 @@
       .then(function (data) {
         if (!data) return false;
         if (data.version != null && data.version <= syncVersion) return true;
-        if (data.version != null) syncVersion = data.version;
+        if (data.version != null) saveSyncVersion(data.version);
         if (data.payload) applyRemotePayload(data.payload);
         return true;
       })
@@ -278,19 +367,9 @@
   }
 
   function startPolling() {
+    loadSyncVersionFromLocal();
     loadCachesFromLocal();
-    pull(false).finally(function () {
-      var fields = { hkStorage: true };
-      if (cache.requestLog.length) fields.hkRequestLog = true;
-      if (cache.cancelLog.length) fields.hkCancelLog = true;
-      if (cache.useLog.length) fields.hkUseLog = true;
-      if (cache.changeLog.length) fields.hkChangeLog = true;
-      if (cache.orderLog.length) fields.hkOrderLog = true;
-      if (cache.mbInvLog.length) fields.hkMbInvLog = true;
-      if (cache.mbCheckLog.length) fields.hkMbCheckLog = true;
-      if (cache.frontChat.length) fields.hkFrontChat = true;
-      schedulePush(fields);
-    });
+    pull(false);
     if (pollTimer) return;
     pollTimer = setInterval(function () {
       pull(true);
@@ -307,6 +386,7 @@
     setRequestLog: function (entries) {
       cache.requestLog = Array.isArray(entries) ? entries.slice() : [];
       writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+      markDirty("hkRequestLog");
       schedulePush({ hkRequestLog: true });
     },
     getCancelLog: function () {
@@ -315,16 +395,19 @@
     prependCancelLog: function (entry) {
       cache.cancelLog.unshift(entry);
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
+      markDirty("hkCancelLog");
       schedulePush({ hkCancelLog: true });
     },
     clearCancelLog: function () {
       cache.cancelLog = [];
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, []);
+      markDirty("hkCancelLog");
       schedulePush({ hkCancelLog: true });
     },
     clearRequestLog: function () {
       cache.requestLog = [];
       writeJsonArray(REQUEST_LOG_KEY, []);
+      markDirty("hkRequestLog");
       schedulePush({ hkRequestLog: true });
     },
     getOrderLog: function () {
@@ -333,11 +416,13 @@
     setOrderLog: function (entries) {
       cache.orderLog = Array.isArray(entries) ? entries.slice() : [];
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+      markDirty("hkOrderLog");
       schedulePush({ hkOrderLog: true });
     },
     clearOrderLog: function () {
       cache.orderLog = [];
       writeJsonArray(ORDER_LOG_KEY, []);
+      markDirty("hkOrderLog");
       schedulePush({ hkOrderLog: true });
     },
     getMbInvLog: function () {
@@ -346,11 +431,13 @@
     setMbInvLog: function (entries) {
       cache.mbInvLog = Array.isArray(entries) ? entries.slice() : [];
       writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+      markDirty("hkMbInvLog");
       schedulePush({ hkMbInvLog: true });
     },
     clearMbInvLog: function () {
       cache.mbInvLog = [];
       writeJsonArray(MB_INV_LOG_KEY, []);
+      markDirty("hkMbInvLog");
       schedulePush({ hkMbInvLog: true });
     },
     getMbCheckLog: function () {
@@ -359,11 +446,13 @@
     setMbCheckLog: function (entries) {
       cache.mbCheckLog = Array.isArray(entries) ? entries.slice() : [];
       writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
+      markDirty("hkMbCheckLog");
       schedulePush({ hkMbCheckLog: true });
     },
     clearMbCheckLog: function () {
       cache.mbCheckLog = [];
       writeJsonArray(MB_CHECK_LOG_KEY, []);
+      markDirty("hkMbCheckLog");
       schedulePush({ hkMbCheckLog: true });
     },
     getFrontChat: function () {
@@ -376,20 +465,28 @@
         cache.frontChat = cache.frontChat.slice(-300);
       }
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
     },
     setFrontChat: function (entries) {
       cache.frontChat = Array.isArray(entries) ? entries.slice() : [];
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
     },
     clearFrontChat: function () {
       cache.frontChat = [];
       writeJsonArray(FRONT_CHAT_KEY, []);
+      markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
     },
     pushSnapshot: function (payload) {
       if (!payload || typeof payload !== "object") return Promise.resolve(false);
+      if (!payload.hkCloseDayAt) {
+        payload = Object.assign({}, payload, {
+          hkCloseDayAt: new Date().toISOString(),
+        });
+      }
       if (payload.hkStorage && global.HKStorage) {
         global.HKStorage.applyRemote(payload.hkStorage);
       }
@@ -425,7 +522,12 @@
         cache.frontChat = payload.hkFrontChat.slice();
         writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       }
-      return postPayload(payload);
+      applyCloseDayMarker(payload);
+      clearAllDirty();
+      return postPayload(payload).then(function (data) {
+        if (data && data.version != null) saveSyncVersion(data.version);
+        return data;
+      });
     },
     getChangeLog: function () {
       return cache.changeLog;
@@ -435,16 +537,26 @@
       cache.changeLog.unshift(entry);
       if (cache.changeLog.length > 100) cache.changeLog.length = 100;
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+      markDirty("hkChangeLog");
+      markDirty("hkStorage");
       var body = {
         hkChangeLog: cache.changeLog.slice(),
         hkLastRoomChange: entry,
       };
       if (global.HKStorage) body.hkStorage = global.HKStorage.load();
-      return postPayload(body);
+      return postPayload(body).then(function (data) {
+        if (data && data.version != null) {
+          clearDirty("hkChangeLog");
+          clearDirty("hkStorage");
+          saveSyncVersion(data.version);
+        }
+        return data;
+      });
     },
     clearChangeLog: function () {
       cache.changeLog = [];
       writeJsonArray(CHANGE_LOG_KEY, []);
+      markDirty("hkChangeLog");
       schedulePush({ hkChangeLog: true });
     },
     getUseLog: function () {
@@ -453,14 +565,17 @@
     prependUseLog: function (entry) {
       cache.useLog.unshift(entry);
       writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
+      markDirty("hkUseLog");
       schedulePush({ hkUseLog: true });
     },
     clearUseLog: function () {
       cache.useLog = [];
       writeJsonArray(REQUEST_USE_LOG_KEY, []);
+      markDirty("hkUseLog");
       schedulePush({ hkUseLog: true });
     },
     schedulePushStorage: function () {
+      markDirty("hkStorage");
       schedulePush({ hkStorage: true });
     },
     pushStorageNow: pushStorageNow,
