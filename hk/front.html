@@ -245,6 +245,55 @@
       display: none !important;
     }
 
+    .btn-refresh-app,
+    .topbar-collapse-btn {
+      padding: 6px 12px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-refresh-app:hover,
+    .topbar-collapse-btn:hover {
+      border-color: var(--accent);
+      background: var(--hover-bg);
+    }
+
+    .btn-refresh-app {
+      min-width: 40px;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+    }
+
+    .topbar-mobile-bar {
+      display: contents;
+    }
+
+    .topbar-head-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .topbar-collapse-btn {
+      display: none;
+    }
+
+    .topbar-collapsible {
+      display: contents;
+    }
+
     .notice-board {
       flex: 1;
       min-width: 0;
@@ -3520,6 +3569,41 @@
         gap: 10px;
       }
 
+      .topbar-mobile-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .topbar-head-tools {
+        margin-left: auto;
+      }
+
+      .topbar-collapse-btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 8px 12px;
+      }
+
+      .btn-refresh-app {
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .topbar-collapsible {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .topbar.is-collapsed .topbar-collapsible {
+        display: none;
+      }
+
       .topbar-main {
         flex-direction: column;
         gap: 10px;
@@ -3979,45 +4063,69 @@
   </div>
 
   <div class="hk-app-main">
-  <header class="topbar">
-    <div class="topbar-main">
+  <header class="topbar" id="topbar">
+    <div class="topbar-mobile-bar">
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
       </div>
-      <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
-        <div class="notice-board__label">공지</div>
-        <div id="noticeText"></div>
+      <div class="topbar-head-tools">
+        <button
+          type="button"
+          class="btn-refresh-app"
+          id="btnRefreshApp"
+          title="새로고침"
+          aria-label="새로고침"
+        >
+          ↻
+        </button>
+        <button
+          type="button"
+          class="topbar-collapse-btn"
+          id="btnTopbarCollapse"
+          aria-expanded="true"
+          aria-controls="topbarCollapsible"
+        >
+          접기
+        </button>
       </div>
     </div>
-    <div class="topbar-actions">
-      <button
-        type="button"
-        class="btn-push-alarm"
-        id="btnPushAlarm"
-        aria-pressed="false"
-        aria-label="오더 알림 끔"
-        title="오더 알림 끔 — 탭하여 켜기"
-        hidden
-      >
-        <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-          <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
-      <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
-        정비관리
-      </button>
-      <button
-        type="button"
-        class="btn-front"
-        id="btnFront"
-        aria-pressed="false"
-        title="켠 뒤 처리·예정 요청에서 사용 처리 가능"
-      >
-        프론트
-      </button>
+    <div class="topbar-collapsible" id="topbarCollapsible">
+      <div class="topbar-main">
+        <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
+          <div class="notice-board__label">공지</div>
+          <div id="noticeText"></div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button
+          type="button"
+          class="btn-push-alarm"
+          id="btnPushAlarm"
+          aria-pressed="false"
+          aria-label="오더 알림 끔"
+          title="오더 알림 끔 — 탭하여 켜기"
+          hidden
+        >
+          <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
+        <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
+          정비관리
+        </button>
+        <button
+          type="button"
+          class="btn-front"
+          id="btnFront"
+          aria-pressed="false"
+          title="켠 뒤 처리·예정 요청에서 사용 처리 가능"
+        >
+          프론트
+        </button>
+      </div>
     </div>
   </header>
 
@@ -5032,11 +5140,34 @@
         }
         setOperatorName(name);
         setOperatorSessionUnlocked();
+        if (operatorNameModalMode === "initial") {
+          location.reload();
+          return;
+        }
         hideOperatorGate();
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
           pendingOperatorNameCallback = null;
           cb(name);
+        }
+      }
+
+      function setupTopbarToolbar() {
+        var refreshBtn = document.getElementById("btnRefreshApp");
+        if (refreshBtn) {
+          refreshBtn.addEventListener("click", function () {
+            location.reload();
+          });
+        }
+
+        var topbar = document.getElementById("topbar");
+        var collapseBtn = document.getElementById("btnTopbarCollapse");
+        if (topbar && collapseBtn) {
+          collapseBtn.addEventListener("click", function () {
+            var collapsed = topbar.classList.toggle("is-collapsed");
+            collapseBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+            collapseBtn.textContent = collapsed ? "펼치기" : "접기";
+          });
         }
       }
 
@@ -9152,6 +9283,7 @@
       setupOperatorNameUi();
       setupRolePasswordUi();
       setupPushAlarmButton();
+      setupTopbarToolbar();
       ensureOperatorNameOnLoad();
 
       var noticeBoardEl = document.getElementById("noticeBoard");
