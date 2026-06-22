@@ -154,6 +154,13 @@
         var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
         var msgLi = document.createElement("li");
         msgLi.className = "order-chat__msg";
+        if (typeof ctx.applyChatBubbleAlign === "function") {
+          ctx.applyChatBubbleAlign(msgLi, byName);
+        } else if (typeof ctx.isOwnChatAuthor === "function") {
+          msgLi.classList.add(
+            ctx.isOwnChatAuthor(byName) ? "hk-chat-msg--mine" : "hk-chat-msg--other"
+          );
+        }
         var byEl = document.createElement("div");
         byEl.className = "order-chat__msg-by";
         byEl.textContent = byName;

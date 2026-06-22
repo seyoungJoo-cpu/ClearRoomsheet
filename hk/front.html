@@ -2380,6 +2380,23 @@
       background: #fef2f2;
       border: 1px solid #fecaca;
       font-size: 0.8125rem;
+      max-width: 85%;
+    }
+
+    .order-chat__msg.hk-chat-msg--mine {
+      align-self: flex-end;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .order-chat__msg.hk-chat-msg--mine .order-chat__msg-by {
+      text-align: right;
+    }
+
+    .order-chat__msg.hk-chat-msg--other {
+      align-self: flex-start;
+      margin-right: auto;
+      text-align: left;
     }
 
     .order-chat__msg-by {
@@ -2801,14 +2818,29 @@
     }
 
     .front-chat__msg {
-      padding: 8px 10px;
+      padding: 6px 9px;
       border-radius: 10px;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
-      font-size: 0.875rem;
-      max-width: 92%;
-      align-self: flex-start;
+      font-size: 0.75rem;
+      max-width: 78%;
       position: relative;
+    }
+
+    .front-chat__msg.hk-chat-msg--mine {
+      align-self: flex-end;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .front-chat__msg.hk-chat-msg--other {
+      align-self: flex-start;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    .front-chat__msg.hk-chat-msg--mine.front-chat__msg--selectable {
+      cursor: pointer;
     }
 
     .front-chat__msg--deleted {
@@ -2822,11 +2854,20 @@
       font-style: italic;
     }
 
+    .front-chat__msg.is-selected {
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.28);
+    }
+
     .front-chat__msg-actions {
-      display: flex;
+      display: none;
       gap: 6px;
       margin-top: 6px;
       flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .front-chat__msg.is-selected .front-chat__msg-actions {
+      display: flex;
     }
 
     .front-chat__msg-action {
@@ -2878,17 +2919,22 @@
     }
 
     .front-chat__msg-by {
-      font-size: 1.0625rem;
-      font-weight: 800;
+      font-size: 0.625rem;
+      font-weight: 700;
       color: #0f766e;
-      margin-bottom: 5px;
-      line-height: 1.3;
+      margin-bottom: 3px;
+      line-height: 1.2;
+    }
+
+    .front-chat__msg.hk-chat-msg--mine .front-chat__msg-by {
+      text-align: right;
     }
 
     .front-chat__msg-text {
       white-space: pre-wrap;
       word-break: break-word;
-      line-height: 1.45;
+      line-height: 1.4;
+      font-size: 0.75rem;
     }
 
     .front-chat__msg-time {
@@ -4814,6 +4860,24 @@
       function applyChatBubbleColors(li, byName, byEl, textClass) {
         if (typeof HKChatColors === "undefined" || !HKChatColors.applyBubbleColors) return;
         HKChatColors.applyBubbleColors(li, byName, byEl, textClass);
+      }
+
+      function applyChatBubbleAlign(li, byName) {
+        if (!li) return;
+        if (isOwnChatAuthor(byName)) {
+          li.classList.add("hk-chat-msg--mine");
+        } else {
+          li.classList.add("hk-chat-msg--other");
+        }
+      }
+
+      function closeFrontChatMsgSelection(exceptEl) {
+        var list = document.getElementById("frontChatMessages");
+        if (!list) return;
+        list.querySelectorAll(".front-chat__msg.is-selected").forEach(function (el) {
+          if (exceptEl && el === exceptEl) return;
+          el.classList.remove("is-selected");
+        });
       }
 
       function hideOperatorGate() {
@@ -7177,13 +7241,28 @@
         renderOrderWorkPanels();
       }
 
-      function appendOrderItemCommon(li, entry, timePrefix, timeValue, opts) {
+      function appendOrderItemCommon(li, entry, opts) {
         opts = opts || {};
         var compact = opts.compact !== false;
-        var t = document.createElement("div");
-        t.className = "request-feedback__item-time";
-        setLineWithEmTime(t, timePrefix, formatReqAt(timeValue || entry.at));
-        li.appendChild(t);
+
+        if (entry.at) {
+          var orderTimeEl = document.createElement("div");
+          orderTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(orderTimeEl, "오더 ", formatReqAt(entry.at));
+          li.appendChild(orderTimeEl);
+        }
+        if (entry.acceptedAt) {
+          var acceptTimeEl = document.createElement("div");
+          acceptTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(acceptTimeEl, "접수 ", formatReqAt(entry.acceptedAt));
+          li.appendChild(acceptTimeEl);
+        }
+        if (opts.extraLabel && opts.extraAt) {
+          var extraTimeEl = document.createElement("div");
+          extraTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(extraTimeEl, opts.extraLabel, formatReqAt(opts.extraAt));
+          li.appendChild(extraTimeEl);
+        }
 
         var row = document.createElement("div");
         row.className = "request-feedback__item-row";
@@ -7256,6 +7335,7 @@
             var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var msgLi = document.createElement("li");
             msgLi.className = "order-chat__msg";
+            applyChatBubbleAlign(msgLi, byName);
             var byEl = document.createElement("div");
             byEl.className = "order-chat__msg-by";
             byEl.textContent = byName;
@@ -7523,7 +7603,10 @@
           var li = document.createElement("li");
           li.className = "order-work-item";
           li.setAttribute("data-order-id", entry.id || "");
-          appendOrderItemCommon(li, entry, "문제 ", entry.issueAt || entry.at);
+          appendOrderItemCommon(li, entry, {
+            extraLabel: "문제 ",
+            extraAt: entry.issueAt || entry.at,
+          });
           if (maintenanceMode) {
             var issueActs = document.createElement("div");
             issueActs.className = "order-work__actions";
@@ -7543,7 +7626,7 @@
           var li = document.createElement("li");
           li.className = "order-work-item";
           li.setAttribute("data-order-id", entry.id || "");
-          appendOrderItemCommon(li, entry, "접수 ", entry.acceptedAt || entry.at);
+          appendOrderItemCommon(li, entry);
           var acceptedBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
           if (acceptedBy) {
             var accMeta = document.createElement("div");
@@ -7568,7 +7651,10 @@
           var li = document.createElement("li");
           li.className = "order-work-item order-work-item--cancelled";
           li.setAttribute("data-order-id", entry.id || "");
-          appendOrderItemCommon(li, entry, "취소 ", entry.cancelledAt || entry.at);
+          appendOrderItemCommon(li, entry, {
+            extraLabel: "취소 ",
+            extraAt: entry.cancelledAt || entry.at,
+          });
           var cancelledBy = entry.cancelledBy != null ? String(entry.cancelledBy).trim() : "";
           if (cancelledBy) {
             var cancelMeta = document.createElement("div");
@@ -7617,7 +7703,7 @@
           if (entry.urgent) li.classList.add("order-feedback__item--urgent");
           if (entry.fromMaint) li.classList.add("order-feedback__item--from-maint");
 
-          appendOrderItemCommon(li, entry, "접수 ", entry.at);
+          appendOrderItemCommon(li, entry);
 
           if (frontMode && entry.fromMaint) {
             var frontAcceptActs = document.createElement("div");
@@ -8575,6 +8661,7 @@
             var li = document.createElement("li");
             li.className = "front-chat__msg";
             if (msg.deleted) li.classList.add("front-chat__msg--deleted");
+            applyChatBubbleAlign(li, byName);
 
             var byEl = document.createElement("div");
             byEl.className = "front-chat__msg-by";
@@ -8606,15 +8693,32 @@
             }
 
             if (!msg.deleted && msg.id && isOwnChatAuthor(msg.by)) {
+              li.classList.add("front-chat__msg--selectable");
+              li.addEventListener("click", function (e) {
+                if (
+                  e.target.closest(".front-chat__msg-action") ||
+                  e.target.closest(".front-chat__msg-edit") ||
+                  e.target.closest("input")
+                ) {
+                  return;
+                }
+                var wasSelected = li.classList.contains("is-selected");
+                closeFrontChatMsgSelection();
+                if (!wasSelected) li.classList.add("is-selected");
+                e.stopPropagation();
+              });
+
               var actions = document.createElement("div");
               actions.className = "front-chat__msg-actions";
               var editBtn = document.createElement("button");
               editBtn.type = "button";
               editBtn.className = "front-chat__msg-action";
               editBtn.textContent = "수정";
-              editBtn.addEventListener("click", function () {
+              editBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
                 var existing = li.querySelector(".front-chat__msg-edit");
                 if (existing) return;
+                li.classList.remove("is-selected");
                 li.querySelectorAll(".front-chat__msg-actions").forEach(function (el) {
                   el.hidden = true;
                 });
@@ -8638,10 +8742,14 @@
                     el.hidden = false;
                   });
                 }
-                saveBtn.addEventListener("click", function () {
+                saveBtn.addEventListener("click", function (e) {
+                  e.stopPropagation();
                   saveFrontChatMessageEdit(msg.id, inp.value);
                 });
-                cancelBtn.addEventListener("click", closeEdit);
+                cancelBtn.addEventListener("click", function (e) {
+                  e.stopPropagation();
+                  closeEdit();
+                });
                 row.appendChild(inp);
                 row.appendChild(saveBtn);
                 row.appendChild(cancelBtn);
@@ -8653,7 +8761,8 @@
               delBtn.type = "button";
               delBtn.className = "front-chat__msg-action front-chat__msg-action--danger";
               delBtn.textContent = "삭제";
-              delBtn.addEventListener("click", function () {
+              delBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
                 deleteFrontChatMessage(msg.id);
               });
               actions.appendChild(editBtn);
@@ -9087,6 +9196,8 @@
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
           applyChatBubbleColors: applyChatBubbleColors,
+          applyChatBubbleAlign: applyChatBubbleAlign,
+          isOwnChatAuthor: isOwnChatAuthor,
           appendCancelNameLog: appendCancelNameLog,
           openCancelConfirmModal: openCancelConfirmModal,
           onCancelListRefresh: function () {
@@ -9365,6 +9476,18 @@
           if (chatInput) chatInput.value = "";
         });
       }
+
+      document.addEventListener("click", function (e) {
+        if (
+          e.target.closest(".front-chat__msg-action") ||
+          e.target.closest(".front-chat__msg-edit")
+        ) {
+          return;
+        }
+        if (!e.target.closest(".front-chat__msg.is-selected")) {
+          closeFrontChatMsgSelection();
+        }
+      });
 
       var frontChatForm = document.getElementById("frontChatForm");
       if (frontChatForm) {

@@ -840,6 +840,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
   <script src="hk-sync.js"></script>
+  <script src="hk-chat-colors.js"></script>
   <script>
     (function () {
       var authGate = document.getElementById("auth-gate");
@@ -1164,6 +1165,54 @@
         return "알림";
       }
 
+      function isOrderIssueOpen(entry) {
+        if (!entry) return false;
+        if (entry.issueOpen === true) return true;
+        var p = entry.phase != null ? String(entry.phase).trim() : "";
+        return p === "issue";
+      }
+
+      function formatOrderEntryPhaseLabel(entry) {
+        if (!entry) return "알림";
+        if (isOrderIssueOpen(entry)) return "문제발생";
+        return formatOrderPhaseLabel(entry.phase);
+      }
+
+      function formatMbInvEntryPhaseLabel(entry) {
+        if (!entry) return "알림";
+        if (entry.issueOpen === true) return "문제발생";
+        return formatOrderPhaseLabel(entry.phase);
+      }
+
+      function formatChatMessageText(msg) {
+        if (!msg) return "";
+        if (msg.deleted) return "삭제하였습니다.";
+        var text = msg.text != null ? String(msg.text) : "";
+        if (msg.edited) text += (text ? " " : "") + "(수정됨)";
+        return text;
+      }
+
+      function formatFrontChatRowText(entry) {
+        if (!entry) return "";
+        if (entry.deleted) return "삭제하였습니다.";
+        var text = entry.text != null ? String(entry.text) : "";
+        if (entry.edited) text += (text ? " " : "") + "(수정됨)";
+        return text;
+      }
+
+      function excelColorSwatchCell(palette) {
+        if (!palette) return "";
+        return excelHtmlCell(
+          '<span style="display:inline-block;width:28px;height:28px;background:' +
+            escHtml(palette.bg) +
+            ";border:2px solid " +
+            escHtml(palette.border) +
+            ';border-radius:6px;" title="' +
+            escHtml(palette.id || "") +
+            '"></span>'
+        );
+      }
+
       function formatMbCategoryLabel(category) {
         return category === "inv" ? "인벤 변경" : "MB 변경";
       }
@@ -1222,9 +1271,9 @@
             " " +
             (m.by || "") +
             ": " +
-            (m.text || "");
+            formatChatMessageText(m);
           parts.push(escHtml(line));
-          if (m.image) {
+          if (m.image && !m.deleted) {
             var img = excelImageCell(m.image);
             if (img && img.html) parts.push(img.html);
           }
@@ -1239,10 +1288,15 @@
             rows.push([
               entry.id || "",
               formatRoomNoDisplay(entry.room || ""),
+              msg.id || "",
               formatAt(msg.at),
               msg.by || "",
-              msg.text || "",
-              excelImageCell(msg.image),
+              formatChatMessageText(msg),
+              excelImageCell(msg.deleted ? "" : msg.image),
+              formatYn(msg.deleted),
+              formatAt(msg.deletedAt),
+              formatYn(msg.edited),
+              formatAt(msg.editedAt),
             ]);
           });
         });
@@ -1259,13 +1313,83 @@
               formatRoomNoDisplay(entry.roomFrom || "") +
                 " → " +
                 formatRoomNoDisplay(entry.roomTo || ""),
+              msg.id || "",
               formatAt(msg.at),
               msg.by || "",
-              msg.text || "",
-              excelImageCell(msg.image),
+              formatChatMessageText(msg),
+              excelImageCell(msg.deleted ? "" : msg.image),
+              formatYn(msg.deleted),
+              formatAt(msg.deletedAt),
+              formatYn(msg.edited),
+              formatAt(msg.editedAt),
             ]);
           });
         });
+        return rows;
+      }
+
+      function collectChatUserColorRows(snapshot) {
+        var names = {};
+        function addName(name) {
+          var n = String(name || "").trim();
+          if (n) names[n] = true;
+        }
+        (snapshot.frontChat || []).forEach(function (entry) {
+          addName(entry.by);
+        });
+        (snapshot.orderLog || []).forEach(function (entry) {
+          addName(entry.by);
+          addName(entry.acceptedBy);
+          addName(entry.issueBy);
+          addName(entry.reacceptedBy);
+          addName(entry.cancelledBy);
+          (entry.chat || []).forEach(function (msg) {
+            addName(msg.by);
+          });
+        });
+        (snapshot.mbInvLog || []).forEach(function (entry) {
+          addName(entry.by);
+          addName(entry.acceptedBy);
+          addName(entry.issueBy);
+          addName(entry.reacceptedBy);
+          addName(entry.cancelledBy);
+          (entry.chat || []).forEach(function (msg) {
+            addName(msg.by);
+          });
+        });
+        (snapshot.mbCheckLog || []).forEach(function (entry) {
+          addName(entry.by);
+          addName(entry.acceptedBy);
+          addName(entry.gstBy);
+          addName(entry.postedBy);
+          addName(entry.rerequestedBy);
+          addName(entry.cancelledBy);
+        });
+        (snapshot.requestLog || []).forEach(function (entry) {
+          addName(entry.by);
+        });
+
+        var rows = Object.keys(names)
+          .sort(function (a, b) {
+            return a.localeCompare(b, "ko");
+          })
+          .map(function (name) {
+            var colorId =
+              typeof HKChatColors !== "undefined" && HKChatColors.getColorIdForUser
+                ? HKChatColors.getColorIdForUser(name)
+                : "";
+            var palette =
+              typeof HKChatColors !== "undefined" && HKChatColors.getPaletteById
+                ? HKChatColors.getPaletteById(colorId)
+                : null;
+            return [
+              name,
+              colorId || "",
+              palette ? palette.bg : "",
+              palette ? palette.border : "",
+              excelColorSwatchCell(palette),
+            ];
+          });
         return rows;
       }
 
@@ -1366,6 +1490,29 @@
             }),
         });
 
+        var allStatusRooms = (snapshot.rooming && snapshot.rooming.allStatusRooms) || [];
+        sections.push({
+          title: "All Status 객실",
+          headers: ["객실번호"],
+          rows: allStatusRooms
+            .slice()
+            .sort()
+            .map(function (room) {
+              return [formatRoomNoDisplay(room)];
+            }),
+        });
+
+        var roomResvMap = (snapshot.rooming && snapshot.rooming.roomResvMap) || {};
+        sections.push({
+          title: "루밍 RESV 매핑",
+          headers: ["객실번호", "RESV_STATUS"],
+          rows: Object.keys(roomResvMap)
+            .sort()
+            .map(function (room) {
+              return [formatRoomNoDisplay(room), roomResvMap[room] || ""];
+            }),
+        });
+
         var vacRows = (snapshot.rooming && snapshot.rooming.vacRows) || [];
         sections.push({
           title: "루밍 XML (HKVACROOM)",
@@ -1418,11 +1565,13 @@
             title: "오더",
             headers: [
               "ID",
-              "접수시각",
+              "오더시각",
               "객실",
               "단계",
+              "문제발생중",
               "긴급",
               "정비오더",
+              "프론트접수",
               "FD",
               "메모",
               "메모사진",
@@ -1442,9 +1591,11 @@
                 entry.id || "",
                 formatAt(entry.at),
                 formatRoomNoDisplay(entry.room || ""),
-                formatOrderPhaseLabel(entry.phase),
+                formatOrderEntryPhaseLabel(entry),
+                formatYn(isOrderIssueOpen(entry)),
                 formatYn(entry.urgent),
                 formatYn(entry.fromMaint),
+                formatYn(entry.acceptedByFront),
                 entry.foStatus || "",
                 entry.memo || "",
                 excelImageCell(entry.memoImage),
@@ -1463,18 +1614,31 @@
           },
           {
             title: "오더 채팅 (상세)",
-            headers: ["오더ID", "객실", "시각", "작성자", "내용", "사진"],
+            headers: [
+              "오더ID",
+              "객실",
+              "메시지ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+              "수정",
+              "수정시각",
+            ],
             rows: collectOrderChatRows(snapshot.orderLog),
           },
           {
             title: "MB & 인벤 변경",
             headers: [
               "ID",
-              "접수시각",
+              "요청시각",
               "구분",
               "From",
               "To",
               "단계",
+              "문제발생중",
               "메모",
               "메모사진",
               "요청자",
@@ -1495,7 +1659,8 @@
                 formatMbCategoryLabel(entry.category),
                 formatRoomNoDisplay(entry.roomFrom || ""),
                 formatRoomNoDisplay(entry.roomTo || ""),
-                formatOrderPhaseLabel(entry.phase),
+                formatMbInvEntryPhaseLabel(entry),
+                formatYn(entry.issueOpen === true),
                 entry.memo || "",
                 excelImageCell(entry.memoImage),
                 entry.by || "",
@@ -1513,14 +1678,27 @@
           },
           {
             title: "MB & 인벤 채팅 (상세)",
-            headers: ["ID", "구분", "객실", "시각", "작성자", "내용", "사진"],
+            headers: [
+              "ID",
+              "구분",
+              "객실",
+              "메시지ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+              "수정",
+              "수정시각",
+            ],
             rows: collectMbInvChatRows(snapshot.mbInvLog),
           },
           {
             title: "MB CHECK",
             headers: [
               "ID",
-              "접수시각",
+              "요청시각",
               "객실",
               "단계",
               "메모",
@@ -1559,16 +1737,35 @@
           },
           {
             title: "프론트 채팅",
-            headers: ["ID", "시각", "작성자", "내용", "사진"],
+            headers: [
+              "ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+              "수정",
+              "수정시각",
+            ],
             rows: (snapshot.frontChat || []).map(function (entry) {
               return [
                 entry.id || "",
                 formatAt(entry.at),
                 entry.by || "",
-                entry.text || "",
-                excelImageCell(entry.image),
+                formatFrontChatRowText(entry),
+                excelImageCell(entry.deleted ? "" : entry.image),
+                formatYn(entry.deleted),
+                formatAt(entry.deletedAt),
+                formatYn(entry.edited),
+                formatAt(entry.editedAt),
               ];
             }),
+          },
+          {
+            title: "채팅 사용자 색상",
+            headers: ["사용자", "색상ID", "배경색", "테두리색", "미리보기"],
+            rows: collectChatUserColorRows(snapshot),
           },
           {
             title: "객실 변경 이력",
