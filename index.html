@@ -1132,7 +1132,7 @@
     <header class="app-header">
       <h1>정비용 루밍을 만들어보자</h1>
       <nav class="app-nav" aria-label="다른 프로그램">
-        <a class="app-nav-btn" href="/hk/front.html?entry=1">정비오더</a>
+        <a class="app-nav-btn" href="/hk/front.html?entry=1" id="linkToHkFront">정비오더</a>
       </nav>
     </header>
 
@@ -1299,10 +1299,28 @@
       var blockDisplayAliases = {};
 
       var AUTH_UNLOCK_KEY = "clear_html_unlocked";
+      var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
       var sharedStateVersion = 0;
       var syncPollTimer = null;
       var syncPushTimer = null;
       var isApplyingRemote = false;
+
+      function loadSharedStateVersion() {
+        try {
+          var raw = localStorage.getItem(SYNC_VERSION_KEY);
+          if (raw == null || raw === "") return;
+          var v = parseInt(raw, 10);
+          if (!isNaN(v) && v >= 0) sharedStateVersion = v;
+        } catch (e) {}
+      }
+
+      function saveSharedStateVersion(version) {
+        if (version == null || isNaN(version)) return;
+        sharedStateVersion = version;
+        try {
+          localStorage.setItem(SYNC_VERSION_KEY, String(version));
+        } catch (e) {}
+      }
 
       function getSyncPassword() {
         return sessionStorage.getItem("clear_html_sync_pwd") || "74321";
@@ -1607,7 +1625,7 @@
             return r.json();
           })
           .then(function (data) {
-            if (data.version) sharedStateVersion = data.version;
+            if (data && data.version != null) saveSharedStateVersion(data.version);
             var label = opts.syncLabel || "다른 PC와 공유됨";
             updateSyncStatus(label + " · " + formatSyncTime(data.updatedAt), true);
           })
@@ -1643,7 +1661,7 @@
               return true;
             }
             isApplyingRemote = true;
-            sharedStateVersion = data.version;
+            saveSharedStateVersion(data.version);
             applySharedState(data.payload);
             isApplyingRemote = false;
             updateSyncStatus(
@@ -1661,6 +1679,7 @@
 
       window.__startRoomSync = function () {
         if (syncPollTimer) return;
+        loadSharedStateVersion();
         pullSharedState(false);
         syncPollTimer = setInterval(function () {
           pullSharedState(true);
@@ -3472,6 +3491,15 @@
       }
 
       document.addEventListener("DOMContentLoaded", function () {
+        loadSharedStateVersion();
+        var linkToHkFront = document.getElementById("linkToHkFront");
+        if (linkToHkFront) {
+          linkToHkFront.addEventListener("click", function () {
+            try {
+              sessionStorage.setItem("makeroom-hk-entry", "1");
+            } catch (e) {}
+          });
+        }
         pullSharedState(false).then(function (hadRemote) {
           if (!hadRemote) return loadDefaultXmlFiles();
         });

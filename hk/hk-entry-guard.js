@@ -1,6 +1,6 @@
 /**
  * HK front/admin — 루밍(index) 경유 없이 직접 URL 접속 시 메인으로 이동
- * (?entry=1 · ?from=push · sessionStorage 허용)
+ * (?entry=1 · ?from=push · sessionStorage · HK 내부 이동 허용)
  */
 (function (global) {
   var ENTRY_KEY = "makeroom-hk-entry";
@@ -11,14 +11,25 @@
     } catch (e) {}
   }
 
+  function isHkAppPath(path) {
+    return /\/hk\/(front|admin)\.html$/i.test(path || "");
+  }
+
+  function isRoomingHomePath(path) {
+    var p = path || "";
+    return p === "/" || /\/index\.html$/i.test(p);
+  }
+
   function hasEntryBypass() {
     var search = global.location.search || "";
     if (/\b(from=push|entry=1)\b/.test(search)) return true;
     try {
-      return global.sessionStorage.getItem(ENTRY_KEY) === "1";
-    } catch (e) {
-      return false;
-    }
+      if (global.sessionStorage.getItem(ENTRY_KEY) === "1") return true;
+    } catch (e) {}
+    var ref = global.document.referrer || "";
+    if (isHkAppPath(global.location.pathname) && isHkAppPath(ref)) return true;
+    if (isHkAppPath(global.location.pathname) && isRoomingHomePath(ref)) return true;
+    return false;
   }
 
   function guardEntry() {
@@ -35,7 +46,10 @@
       }
       return;
     }
-    if (hasEntryBypass()) return;
+    if (hasEntryBypass()) {
+      allowEntry();
+      return;
+    }
     global.location.replace("/");
   }
 

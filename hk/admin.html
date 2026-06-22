@@ -760,7 +760,7 @@
           maxlength="24"
         />
       </label>
-      <a class="link-front" href="front.html">오더</a>
+      <a class="link-front" href="front.html" id="linkFrontFromAdmin">오더</a>
     </div>
   </header>
 
@@ -2943,6 +2943,14 @@
 
       refresh();
       setupAdminNameField();
+
+      var linkFrontFromAdmin = document.getElementById("linkFrontFromAdmin");
+      if (linkFrontFromAdmin) {
+        linkFrontFromAdmin.addEventListener("click", function () {
+          if (typeof HKEntryGuard !== "undefined") HKEntryGuard.allow();
+        });
+      }
+
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();

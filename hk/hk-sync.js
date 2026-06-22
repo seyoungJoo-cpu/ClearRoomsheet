@@ -346,6 +346,37 @@
     }
   }
 
+  function emitLocalCacheHydrate() {
+    emitChange(
+      [
+        "hkRequestLog",
+        "hkOrderLog",
+        "hkMbInvLog",
+        "hkMbCheckLog",
+        "hkFrontChat",
+        "hkCancelLog",
+        "hkUseLog",
+      ],
+      Object.assign(
+        {
+          hkRequestLog: cache.requestLog.slice(),
+          hkOrderLog: cache.orderLog.slice(),
+          hkMbInvLog: cache.mbInvLog.slice(),
+          hkMbCheckLog: cache.mbCheckLog.slice(),
+          hkFrontChat: cache.frontChat.slice(),
+          hkCancelLog: cache.cancelLog.slice(),
+          hkUseLog: cache.useLog.slice(),
+        },
+        xmlPayloadForListeners(lastServerPayload)
+      )
+    );
+  }
+
+  function hydrateFromLocal() {
+    loadCachesFromLocal();
+    emitLocalCacheHydrate();
+  }
+
   function pull(isPoll) {
     return fetch("/api/sync", {
       headers: { "X-Sync-Password": getSyncPassword() },
@@ -356,12 +387,18 @@
       })
       .then(function (data) {
         if (!data) return false;
-        if (data.version != null && data.version <= syncVersion) return true;
+        if (data.version != null && data.version <= syncVersion) {
+          loadCachesFromLocal();
+          emitLocalCacheHydrate();
+          return true;
+        }
         if (data.version != null) saveSyncVersion(data.version);
         if (data.payload) applyRemotePayload(data.payload);
         return true;
       })
       .catch(function () {
+        loadCachesFromLocal();
+        emitLocalCacheHydrate();
         return false;
       });
   }
@@ -369,17 +406,26 @@
   function startPolling() {
     loadSyncVersionFromLocal();
     loadCachesFromLocal();
-    pull(false);
-    if (pollTimer) return;
-    pollTimer = setInterval(function () {
-      pull(true);
-    }, 3000);
+    var pullPromise = pull(false);
+    if (!pollTimer) {
+      pollTimer = setInterval(function () {
+        pull(true);
+      }, 3000);
+    }
+    return pullPromise.then(function () {
+      loadCachesFromLocal();
+      emitLocalCacheHydrate();
+    });
   }
+
+  loadSyncVersionFromLocal();
+  loadCachesFromLocal();
 
   global.HKSync = {
     start: startPolling,
     onChange: onChange,
     pull: pull,
+    hydrateFromLocal: hydrateFromLocal,
     getRequestLog: function () {
       return cache.requestLog;
     },

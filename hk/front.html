@@ -4096,7 +4096,7 @@
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
             교대
           </button>
-          <a class="sidebar-nav__link" href="/">루밍</a>
+          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
         </div>
       </nav>
     </aside>
@@ -9138,8 +9138,15 @@
         if (e.key === HKStorage.key) refreshMain();
       });
 
-      window.addEventListener("pageshow", function (e) {
-        if (e.persisted) refreshMain();
+      window.addEventListener("pageshow", function () {
+        if (typeof HKSync !== "undefined") {
+          HKSync.hydrateFromLocal();
+          HKSync.pull(false).finally(function () {
+            refreshSyncedPanelsFromCache();
+          });
+          return;
+        }
+        refreshMain();
       });
 
       setupOperatorNameUi();
@@ -9150,6 +9157,32 @@
       var noticeBoardEl = document.getElementById("noticeBoard");
       if (noticeBoardEl) {
         noticeBoardEl.addEventListener("click", stopNoticeBoardFlash);
+      }
+
+      var linkRoomingFromFront = document.getElementById("linkRoomingFromFront");
+      if (linkRoomingFromFront) {
+        linkRoomingFromFront.addEventListener("click", function () {
+          if (typeof HKEntryGuard !== "undefined") HKEntryGuard.allow();
+        });
+      }
+
+      function refreshSyncedPanelsFromCache() {
+        loadRequestLog();
+        loadOrderLog();
+        loadFrontChat();
+        if (typeof HKMbWorkflow !== "undefined") {
+          if (typeof HKMbWorkflow.loadMbInv === "function") HKMbWorkflow.loadMbInv();
+          if (typeof HKMbWorkflow.loadMbCheck === "function") HKMbWorkflow.loadMbCheck();
+          HKMbWorkflow.renderMbInvPanels();
+          HKMbWorkflow.renderMbCheckPanels();
+        }
+        renderRequestLogPanel();
+        renderOrderPanels();
+        renderFrontChatPanel(sidebarMainView === "front");
+        applyOrderSidebarAlertUi();
+        applyRequestSidebarAlertUi();
+        applyFrontChatSidebarAlertUi();
+        applyMbSidebarAlertUi();
       }
 
       loadSchedTypeFiltersFromStorage();
@@ -9169,9 +9202,13 @@
       applyFrontChatSidebarAlertUi();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
-        HKSync.start();
-        initMbWorkflowAlertTracking();
-        applyMbSidebarAlertUi();
+        HKSync.start().finally(function () {
+          refreshSyncedPanelsFromCache();
+          initFrontChatTracking();
+          initOrderIssueTracking();
+          initRequestAlertTracking();
+          initMbWorkflowAlertTracking();
+        });
       }
       renderSidebarZoneTabs();
       syncChangeAlertsFromLog();
