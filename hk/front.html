@@ -3116,29 +3116,6 @@
       pointer-events: auto;
     }
 
-    .hk-app-toast {
-      z-index: 10002;
-      background: #ecfdf5;
-      border-color: #34d399;
-      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.22);
-    }
-
-    .hk-app-toast .hk-notice-toast__text {
-      color: #065f46;
-    }
-
-    .sidebar-nav__btn--clockout {
-      color: #b45309;
-      border-color: #fcd34d;
-      background: #fffbeb;
-    }
-
-    .sidebar-nav__btn--clockout:hover {
-      border-color: #f59e0b;
-      background: #fef3c7;
-      color: #92400e;
-    }
-
     .hk-notice-toast__text {
       font-size: 0.9375rem;
       font-weight: 800;
@@ -4085,16 +4062,6 @@
     <div class="hk-notice-toast__text" id="pushAlarmToastText"></div>
   </div>
 
-  <div
-    class="hk-notice-toast hk-app-toast"
-    id="hkAppToast"
-    role="status"
-    aria-live="polite"
-    hidden
-  >
-    <div class="hk-notice-toast__text" id="hkAppToastText"></div>
-  </div>
-
   <div class="hk-app-main">
   <header class="topbar" id="topbar">
     <div class="topbar-mobile-bar">
@@ -4236,14 +4203,6 @@
         <div class="sidebar-nav">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
             교대
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--clockout"
-            id="sidebarBtnClockOut"
-            title="퇴근 · 알림 해제 및 로그아웃"
-          >
-            퇴근하기
           </button>
           <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
         </div>
@@ -4676,28 +4635,6 @@
   </div>
 
   <div
-    class="hk-confirm"
-    id="hkClockOutConfirm"
-    hidden
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="hkClockOutConfirmTitle"
-  >
-    <div class="hk-confirm__backdrop" id="hkClockOutConfirmBackdrop"></div>
-    <div class="hk-confirm__box">
-      <p class="hk-confirm__msg" id="hkClockOutConfirmTitle">퇴근하시겠습니까?</p>
-      <div class="hk-confirm__actions">
-        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkClockOutConfirmYes">
-          예
-        </button>
-        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkClockOutConfirmNo">
-          아니요
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div
     class="hk-confirm hk-confirm--name"
     id="hkCancelNameDialog"
     hidden
@@ -4941,17 +4878,6 @@
         } catch (e) {}
       }
 
-      function clearOperatorSession() {
-        try {
-          sessionStorage.removeItem(OPERATOR_NAME_KEY);
-          sessionStorage.removeItem(OPERATOR_UNLOCK_KEY);
-          sessionStorage.removeItem("lotte-hk-auth-admin");
-          sessionStorage.removeItem("lotte-hk-auth-maint");
-          sessionStorage.removeItem("lotte-hk-auth-front");
-        } catch (e) {}
-        updateOperatorNameDisplay();
-      }
-
       function getOperatorName() {
         try {
           return String(sessionStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
@@ -5065,21 +4991,6 @@
         });
       }
 
-      function tryAutoEnableOrderPush() {
-        if (typeof HKPush === "undefined" || !HKPush.isSupported()) {
-          return Promise.resolve();
-        }
-        if (!HKPush.isOrderPushEnabledPreference()) {
-          return Promise.resolve();
-        }
-        if (global.Notification && global.Notification.permission === "granted") {
-          return HKPush.ensureOrderPushSubscription(true).then(refreshPushAlarmButtonUi);
-        }
-        return HKPush.enableOrderPush({ soft: true }).then(function () {
-          refreshPushAlarmButtonUi();
-        });
-      }
-
       function hideOperatorGate() {
         var gate = document.getElementById("operator-gate");
         if (gate) {
@@ -5089,26 +5000,12 @@
         }
         document.body.classList.remove("operator-locked");
         refreshPushAlarmButtonUi();
-        tryAutoEnableOrderPush();
+        if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
+          HKPush.refreshOrderPushSubscription().then(refreshPushAlarmButtonUi);
+        }
       }
 
       var pushAlarmToastHideTimer = null;
-      var hkAppToastHideTimer = null;
-
-      function showHkAppToast(message) {
-        var toast = document.getElementById("hkAppToast");
-        var text = document.getElementById("hkAppToastText");
-        if (!toast || !text || !message) return;
-        text.textContent = message;
-        toast.hidden = false;
-        toast.classList.add("is-visible");
-        if (hkAppToastHideTimer) clearTimeout(hkAppToastHideTimer);
-        hkAppToastHideTimer = setTimeout(function () {
-          toast.classList.remove("is-visible");
-          toast.hidden = true;
-          hkAppToastHideTimer = null;
-        }, 3200);
-      }
 
       function showPushAlarmToast(message) {
         var toast = document.getElementById("pushAlarmToast");
@@ -5266,18 +5163,7 @@
           resetHkLocalSyncCaches();
           setOperatorName(name);
           setOperatorSessionUnlocked();
-          var reload = function () {
-            location.reload();
-          };
-          if (
-            typeof HKPush !== "undefined" &&
-            HKPush.isSupported() &&
-            HKPush.isOrderPushEnabledPreference()
-          ) {
-            HKPush.enableOrderPush({ soft: true }).finally(reload);
-            return;
-          }
-          reload();
+          location.reload();
           return;
         }
         setOperatorName(name);
@@ -5308,82 +5194,6 @@
             collapseBtn.textContent = collapsed ? "펼치기" : "접기";
           });
         }
-      }
-
-      function openClockOutConfirmModal() {
-        var dlg = document.getElementById("hkClockOutConfirm");
-        if (!dlg) return;
-        dlg.hidden = false;
-        var noBtn = document.getElementById("hkClockOutConfirmNo");
-        if (noBtn) noBtn.focus();
-      }
-
-      function closeClockOutConfirmModal() {
-        var dlg = document.getElementById("hkClockOutConfirm");
-        if (dlg) dlg.hidden = true;
-      }
-
-      function performClockOut() {
-        var pushOff = Promise.resolve();
-        if (typeof HKPush !== "undefined" && HKPush.unsubscribeForClockOut) {
-          pushOff = HKPush.unsubscribeForClockOut();
-        } else if (typeof HKPush !== "undefined" && HKPush.unsubscribeOrderPush) {
-          pushOff = HKPush.unsubscribeOrderPush();
-        }
-        return pushOff
-          .catch(function () {
-            return false;
-          })
-          .then(function () {
-            clearOperatorSession();
-            maintenanceMode = false;
-            frontMode = false;
-            applyMaintenanceModeUi();
-            applyFrontModeUi();
-            refreshPushAlarmButtonUi();
-            showHkAppToast("오늘도 고생하셨습니다");
-            showOperatorGate({ mode: "initial" });
-          });
-      }
-
-      function setupClockOutUi() {
-        var btn = document.getElementById("sidebarBtnClockOut");
-        var dlg = document.getElementById("hkClockOutConfirm");
-        if (!btn || !dlg) return;
-
-        btn.addEventListener("click", function () {
-          openClockOutConfirmModal();
-        });
-
-        var yesBtn = document.getElementById("hkClockOutConfirmYes");
-        var noBtn = document.getElementById("hkClockOutConfirmNo");
-        var backdrop = document.getElementById("hkClockOutConfirmBackdrop");
-
-        if (yesBtn) {
-          yesBtn.addEventListener("click", function (ev) {
-            ev.preventDefault();
-            closeClockOutConfirmModal();
-            performClockOut();
-          });
-        }
-        if (noBtn) {
-          noBtn.addEventListener("click", function (ev) {
-            ev.preventDefault();
-            closeClockOutConfirmModal();
-          });
-        }
-        if (backdrop) {
-          backdrop.addEventListener("click", function () {
-            closeClockOutConfirmModal();
-          });
-        }
-        document.addEventListener("keydown", function (ev) {
-          if (ev.key !== "Escape") return;
-          if (!dlg.hidden) {
-            ev.preventDefault();
-            closeClockOutConfirmModal();
-          }
-        });
       }
 
       function setupOperatorNameUi() {
@@ -9499,7 +9309,6 @@
       setupRolePasswordUi();
       setupPushAlarmButton();
       setupTopbarToolbar();
-      setupClockOutUi();
       ensureOperatorNameOnLoad();
 
       var noticeBoardEl = document.getElementById("noticeBoard");

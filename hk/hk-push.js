@@ -16,27 +16,11 @@
     }
   }
 
-  function isMobileDevice() {
-    try {
-      if (global.matchMedia && global.matchMedia("(max-width: 900px)").matches) {
-        return true;
-      }
-      var ua = global.navigator && global.navigator.userAgent ? global.navigator.userAgent : "";
-      return /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(ua);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /** 미설정 시 — 모바일: 켜짐, PC: 꺼짐. "0"/"1"은 사용자 선택 우선 */
   function isOrderPushEnabledPreference() {
     try {
-      var v = global.localStorage.getItem(ORDER_PUSH_ENABLED_LS);
-      if (v === "0") return false;
-      if (v === "1") return true;
-      return isMobileDevice();
+      return global.localStorage.getItem(ORDER_PUSH_ENABLED_LS) === "1";
     } catch (e) {
-      return isMobileDevice();
+      return false;
     }
   }
 
@@ -274,32 +258,7 @@
       });
   }
 
-  /** 퇴근 — 구독만 해제, 다음 로그인 시 알림 기본 켜짐 유지 */
-  function unsubscribeForClockOut() {
-    if (!isSupported()) return Promise.resolve(false);
-    setStoredVapidPublicKey("");
-    try {
-      global.localStorage.removeItem(ORDER_PUSH_ENABLED_LS);
-    } catch (e) {}
-
-    return registerServiceWorker()
-      .then(function (reg) {
-        if (!reg) return true;
-        return global.navigator.serviceWorker.ready.then(function () {
-          return removeBrowserSubscription(reg);
-        });
-      })
-      .then(function () {
-        return true;
-      })
-      .catch(function () {
-        return false;
-      });
-  }
-
-  function enableOrderPush(opts) {
-    opts = opts || {};
-    var soft = !!opts.soft;
+  function enableOrderPush() {
     if (!isSupported()) {
       return Promise.resolve(
         makePushResult(false, "unsupported", "이 브라우저는 오더 알림을 지원하지 않습니다.")
@@ -309,7 +268,7 @@
     return requestNotificationPermission()
       .then(function (perm) {
         if (perm === "denied") {
-          if (!soft) setOrderPushEnabledPreference(false);
+          setOrderPushEnabledPreference(false);
           return makePushResult(
             false,
             "denied",
@@ -317,7 +276,7 @@
           );
         }
         if (perm !== "granted") {
-          if (!soft) setOrderPushEnabledPreference(false);
+          setOrderPushEnabledPreference(false);
           return makePushResult(
             false,
             "dismissed",
@@ -332,7 +291,7 @@
               "오더 알림이 켜졌습니다. 앱을 닫아도 알림을 받습니다."
             );
           }
-          if (!soft) setOrderPushEnabledPreference(false);
+          setOrderPushEnabledPreference(false);
           return makePushResult(
             false,
             "error",
@@ -341,7 +300,7 @@
         });
       })
       .catch(function () {
-        if (!soft) setOrderPushEnabledPreference(false);
+        setOrderPushEnabledPreference(false);
         return makePushResult(false, "error", "알림 등록 중 오류가 발생했습니다.");
       });
   }
@@ -373,12 +332,10 @@
 
   global.HKPush = {
     isSupported: isSupported,
-    isMobileDevice: isMobileDevice,
     isOrderPushEnabledPreference: isOrderPushEnabledPreference,
     ensureOrderPushSubscription: ensureOrderPushSubscription,
     refreshOrderPushSubscription: refreshOrderPushSubscription,
     unsubscribeOrderPush: unsubscribeOrderPush,
-    unsubscribeForClockOut: unsubscribeForClockOut,
     enableOrderPush: enableOrderPush,
     disableOrderPush: disableOrderPush,
     toggleOrderPush: toggleOrderPush,
