@@ -9,10 +9,39 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SYNC_PASSWORD = process.env.SYNC_PASSWORD || "74321";
 const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
+const PUSH_SUBS_FILE = path.join(__dirname, "push-subs.json");
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:hk@localhost";
 
 /** @type {Map<string, object>} */
 const pushSubscriptions = new Map();
+
+function loadPushSubscriptions() {
+  try {
+    if (!fs.existsSync(PUSH_SUBS_FILE)) return;
+    const list = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, "utf8"));
+    if (!Array.isArray(list)) return;
+    list.forEach(function (sub) {
+      if (sub && sub.endpoint) pushSubscriptions.set(sub.endpoint, sub);
+    });
+    console.log("Web Push: loaded " + pushSubscriptions.size + " subscription(s)");
+  } catch (e) {
+    console.warn("Web Push: could not load subscriptions file");
+  }
+}
+
+function savePushSubscriptions() {
+  try {
+    const list = [];
+    pushSubscriptions.forEach(function (sub) {
+      list.push(sub);
+    });
+    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(list, null, 2));
+  } catch (e) {
+    console.warn("Web Push: could not save subscriptions file");
+  }
+}
+
+loadPushSubscriptions();
 
 function loadOrCreateVapidKeys() {
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -38,6 +67,11 @@ function loadOrCreateVapidKeys() {
 
 const vapidKeys = loadOrCreateVapidKeys();
 webpush.setVapidDetails(VAPID_SUBJECT, vapidKeys.publicKey, vapidKeys.privateKey);
+if (process.env.VAPID_PUBLIC_KEY) {
+  console.log("Web Push: using VAPID keys from environment");
+} else {
+  console.log("Web Push: using VAPID keys from file or generated (set env on Render)");
+}
 
 function getOrderPhase(entry) {
   if (!entry) return "alert";
@@ -72,7 +106,15 @@ function formatOrderPushBody(entry) {
 }
 
 function sendOrderPushNotifications(orders) {
-  if (!orders.length || !pushSubscriptions.size) return;
+  if (!orders.length || !pushSubscriptions.size) {
+    if (orders.length && !pushSubscriptions.size) {
+      console.log("Web Push: new order(s) but no subscribers — enable bell on device");
+    }
+    return;
+  }
+  console.log(
+    "Web Push: sending " + orders.length + " alert(s) to " + pushSubscriptions.size + " device(s)"
+  );
   const tasks = [];
   orders.forEach(function (order) {
     const payload = JSON.stringify({
@@ -86,6 +128,7 @@ function sendOrderPushNotifications(orders) {
         webpush.sendNotification(sub, payload).catch(function (err) {
           if (err && (err.statusCode === 404 || err.statusCode === 410)) {
             pushSubscriptions.delete(endpoint);
+            savePushSubscriptions();
           }
         })
       );
@@ -135,12 +178,15 @@ app.post("/api/push/subscribe", checkSyncAuth, function (req, res) {
     return;
   }
   pushSubscriptions.set(sub.endpoint, sub);
+  savePushSubscriptions();
+  console.log("Web Push: subscribed (" + pushSubscriptions.size + " total)");
   res.json({ ok: true, count: pushSubscriptions.size });
 });
 
 app.post("/api/push/unsubscribe", checkSyncAuth, function (req, res) {
   const endpoint = req.body && req.body.endpoint;
   if (endpoint) pushSubscriptions.delete(endpoint);
+  savePushSubscriptions();
   res.json({ ok: true });
 });
 

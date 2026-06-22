@@ -1,5 +1,12 @@
 # Render Blueprint — GitHub 연동 후 Web Service로 배포
 # https://dashboard.render.com/blueprints
+#
+# Web Push (오더 알림) — Render 대시보드 Environment 에 추가:
+#   VAPID_PUBLIC_KEY   = npx web-push generate-vapid-keys 로 생성
+#   VAPID_PRIVATE_KEY  = (위와 쌍인 비밀키)
+#   VAPID_SUBJECT      = mailto:your-email@example.com
+#   SYNC_PASSWORD      = 앱 동기화 비밀번호 (기본 74321, index 로그인과 동일해야 함)
+# 배포 후 각 기기에서 벨 버튼을 다시 켜야 구독이 등록됩니다.
 
 services:
   - type: web
@@ -11,4 +18,10 @@ services:
     healthCheckPath: /health
     envVars:
       - key: SYNC_PASSWORD
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
         sync: false
