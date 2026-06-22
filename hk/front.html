@@ -282,6 +282,18 @@
       box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
     }
 
+    .order-feedback__item.order-feedback__item--from-maint {
+      border-color: #6ee7b7;
+      background: #ecfdf5;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.14);
+    }
+
+    .order-feedback__item.order-feedback__item--from-maint.order-feedback__item--urgent {
+      border-color: #fca5a5;
+      background: #fff7ed;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+    }
+
     .order-feedback__item .request-feedback__item-urgent-badge {
       margin-left: 6px;
     }
@@ -6794,9 +6806,38 @@
         });
       }
 
+      function openOrderIssueAfterAccept(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "accepted") return;
+        entry.issueOpen = true;
+        entry.issueAt = new Date().toISOString();
+        entry.issueBy = entry.acceptedBy || getOperatorName();
+        if (!Array.isArray(entry.chat)) entry.chat = [];
+        saveOrderLog();
+        registerOrderIssueAlert(orderId);
+        renderOrderPanels();
+        requestAnimationFrame(function () {
+          var card = document.querySelector(
+            '.order-work-section--issue .order-work-item[data-order-id="' + orderId + '"]'
+          );
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            var chatInput = card.querySelector(".order-chat__form input");
+            if (chatInput) chatInput.focus();
+          }
+        });
+      }
+
       function acceptOrderEntry(orderId) {
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "alert") return;
+        if (frontMode) {
+          if (!entry.fromMaint) return;
+        } else if (maintenanceMode) {
+          if (entry.fromMaint) return;
+        } else {
+          return;
+        }
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -6809,6 +6850,11 @@
         entry.phase = "accepted";
         entry.acceptedAt = new Date().toISOString();
         entry.acceptedBy = getOperatorName();
+        if (frontMode && entry.fromMaint) {
+          entry.acceptedByFront = true;
+          openOrderIssueAfterAccept(orderId);
+          return;
+        }
         saveOrderLog();
         renderOrderPanels();
       }
@@ -7058,22 +7104,35 @@
           li.className = "order-feedback__item";
           li.setAttribute("data-order-id", entry.id || "");
           if (entry.urgent) li.classList.add("order-feedback__item--urgent");
+          if (entry.fromMaint) li.classList.add("order-feedback__item--from-maint");
 
           appendOrderItemCommon(li, entry, "접수 ", entry.at);
 
-          if (maintenanceMode) {
-            var maintActs = document.createElement("div");
-            maintActs.className = "order-feedback__maint-actions";
+          if (frontMode && entry.fromMaint) {
+            var frontAcceptActs = document.createElement("div");
+            frontAcceptActs.className = "order-feedback__maint-actions";
             var acceptBtn = document.createElement("button");
             acceptBtn.type = "button";
             acceptBtn.className = "order-feedback__accept-btn";
             acceptBtn.setAttribute("data-order-id", entry.id || "");
             acceptBtn.textContent = "접수";
-            maintActs.appendChild(acceptBtn);
-            li.appendChild(maintActs);
+            frontAcceptActs.appendChild(acceptBtn);
+            li.appendChild(frontAcceptActs);
           }
 
-          if (frontMode) {
+          if (maintenanceMode && !entry.fromMaint) {
+            var maintAcceptActs = document.createElement("div");
+            maintAcceptActs.className = "order-feedback__maint-actions";
+            var maintAcceptBtn = document.createElement("button");
+            maintAcceptBtn.type = "button";
+            maintAcceptBtn.className = "order-feedback__accept-btn";
+            maintAcceptBtn.setAttribute("data-order-id", entry.id || "");
+            maintAcceptBtn.textContent = "접수";
+            maintAcceptActs.appendChild(maintAcceptBtn);
+            li.appendChild(maintAcceptActs);
+          }
+
+          if (frontMode && !entry.fromMaint) {
             var frontActs = document.createElement("div");
             frontActs.className = "order-feedback__front-actions";
             var cancelOrderBtn = document.createElement("button");
@@ -8489,6 +8548,7 @@
           foStatus: fo || "",
           phase: "alert",
           urgent: !!isUrgent,
+          fromMaint: !!maintenanceMode,
           at: new Date().toISOString(),
           by: getOperatorName(),
         });
@@ -8657,7 +8717,7 @@
           }
           var acceptBtn = e.target.closest(".order-feedback__accept-btn");
           if (!acceptBtn) return;
-          if (!maintenanceMode) return;
+          if (!maintenanceMode && !frontMode) return;
           e.preventDefault();
           e.stopPropagation();
           var orderId = acceptBtn.getAttribute("data-order-id");
