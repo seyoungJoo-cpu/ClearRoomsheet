@@ -4,7 +4,7 @@ self.addEventListener("push", function (event) {
     title: "오더 알림",
     body: "새 오더가 접수되었습니다.",
     tag: "hk-order-alert",
-    url: "/hk/front.html",
+    url: "/hk/front.html?from=push",
   };
   try {
     if (event.data) {
@@ -31,7 +31,7 @@ self.addEventListener("push", function (event) {
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
   var url =
-    (event.notification.data && event.notification.data.url) || "/hk/front.html";
+    (event.notification.data && event.notification.data.url) || "/hk/front.html?from=push";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
       for (var i = 0; i < list.length; i++) {

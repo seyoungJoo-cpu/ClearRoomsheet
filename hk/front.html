@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>정비관리 · Lotte Hotel</title>
+  <script src="hk-entry-guard.js"></script>
   <link rel="stylesheet" href="hk-theme.css" />
   <style>
     :root {
@@ -4734,13 +4735,15 @@
           btnAdmin.addEventListener("click", function (e) {
             e.preventDefault();
             var href = btnAdmin.getAttribute("href") || "admin.html";
-            if (typeof HKAuth !== "undefined" && HKAuth.isAuthed("admin")) {
+            function goAdmin() {
+              if (typeof HKEntryGuard !== "undefined") HKEntryGuard.allow();
               window.location.href = href;
+            }
+            if (typeof HKAuth !== "undefined" && HKAuth.isAuthed("admin")) {
+              goAdmin();
               return;
             }
-            openRolePasswordModal("admin", function () {
-              window.location.href = href;
-            });
+            openRolePasswordModal("admin", goAdmin);
           });
         }
       }

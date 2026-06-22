@@ -171,7 +171,7 @@ function sendOrderPushNotifications(orders) {
       title: "오더 알림",
       body: formatOrderPushBody(order),
       tag: "hk-order-" + (order.id || Date.now()),
-      url: "/hk/front.html",
+      url: "/hk/front.html?from=push",
       by: order.by != null ? String(order.by).trim() : "",
     });
     pushSubscriptions.forEach(function (sub, endpoint) {
