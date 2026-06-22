@@ -257,10 +257,18 @@
     });
   }
 
+  function refreshOrderPushSubscription() {
+    if (!isSupported() || !isOrderPushEnabledPreference()) {
+      return Promise.resolve(false);
+    }
+    return ensureOrderPushSubscription(true);
+  }
+
   global.HKPush = {
     isSupported: isSupported,
     isOrderPushEnabledPreference: isOrderPushEnabledPreference,
     ensureOrderPushSubscription: ensureOrderPushSubscription,
+    refreshOrderPushSubscription: refreshOrderPushSubscription,
     unsubscribeOrderPush: unsubscribeOrderPush,
     enableOrderPush: enableOrderPush,
     disableOrderPush: disableOrderPush,

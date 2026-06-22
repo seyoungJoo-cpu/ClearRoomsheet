@@ -4599,7 +4599,7 @@
         document.body.classList.remove("operator-locked");
         refreshPushAlarmButtonUi();
         if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
-          HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
+          HKPush.refreshOrderPushSubscription().then(refreshPushAlarmButtonUi);
         }
       }
 

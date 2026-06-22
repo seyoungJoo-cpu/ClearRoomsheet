@@ -156,7 +156,9 @@ function sendOrderPushNotifications(orders) {
     });
     pushSubscriptions.forEach(function (sub, endpoint) {
       tasks.push(
-        webpush.sendNotification(sub, payload).catch(function (err) {
+        webpush.sendNotification(sub, payload).then(function () {
+          console.log("Web Push: delivered to " + endpoint.slice(0, 48) + "…");
+        }).catch(function (err) {
           logPushSendError(endpoint, err);
           if (
             err &&
