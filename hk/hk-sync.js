@@ -147,6 +147,19 @@
     } catch (e) {}
   }
 
+  var LOCAL_CACHE_KEYS = [
+    REQUEST_LOG_KEY,
+    REQUEST_CANCEL_NAME_LOG_KEY,
+    REQUEST_USE_LOG_KEY,
+    CHANGE_LOG_KEY,
+    ORDER_LOG_KEY,
+    MB_INV_LOG_KEY,
+    MB_CHECK_LOG_KEY,
+    FRONT_CHAT_KEY,
+    SYNC_VERSION_KEY,
+    CLOSE_DAY_KEY,
+  ];
+
   function loadCachesFromLocal() {
     cache.requestLog = readJsonArray(REQUEST_LOG_KEY);
     cache.cancelLog = readJsonArray(REQUEST_CANCEL_NAME_LOG_KEY);
@@ -156,6 +169,38 @@
     cache.mbInvLog = readJsonArray(MB_INV_LOG_KEY);
     cache.mbCheckLog = readJsonArray(MB_CHECK_LOG_KEY);
     cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
+  }
+
+  /** 로컬 싱크 캐시 삭제 — 재접속 시 서버에서 다시 받기 */
+  function clearLocalCaches() {
+    LOCAL_CACHE_KEYS.forEach(function (key) {
+      try {
+        global.localStorage.removeItem(key);
+      } catch (e) {}
+    });
+    if (global.HKStorage && global.HKStorage.key) {
+      try {
+        global.localStorage.removeItem(global.HKStorage.key);
+      } catch (e) {}
+    }
+    syncVersion = 0;
+    lastServerPayload = null;
+    xmlSyncCache.vacRows = [];
+    xmlSyncCache.roomResvMap = {};
+    cache.requestLog = [];
+    cache.cancelLog = [];
+    cache.useLog = [];
+    cache.changeLog = [];
+    cache.orderLog = [];
+    cache.mbInvLog = [];
+    cache.mbCheckLog = [];
+    cache.frontChat = [];
+    clearAllDirty();
+    pendingPush = {};
+    if (pushTimer) {
+      clearTimeout(pushTimer);
+      pushTimer = null;
+    }
   }
 
   function onChange(fn) {
@@ -426,6 +471,7 @@
     onChange: onChange,
     pull: pull,
     hydrateFromLocal: hydrateFromLocal,
+    clearLocalCaches: clearLocalCaches,
     getRequestLog: function () {
       return cache.requestLog;
     },

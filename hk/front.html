@@ -4074,8 +4074,8 @@
           type="button"
           class="btn-refresh-app"
           id="btnRefreshApp"
-          title="새로고침"
-          aria-label="새로고침"
+          title="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
+          aria-label="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
         >
           ↻
         </button>
@@ -5122,12 +5122,33 @@
         if (inp) setTimeout(function () { inp.focus(); }, 0);
       }
 
+      function clearHkSessionUiCaches() {
+        [
+          SCHED_TYPE_FILTER_LS,
+          ZONE_STATUS_FILTER_LS,
+          CHANGE_ACK_LS,
+          OPEN_ROOM_HISTORY_LS,
+        ].forEach(function (key) {
+          try {
+            sessionStorage.removeItem(key);
+          } catch (e) {}
+        });
+      }
+
+      function resetHkLocalSyncCaches() {
+        clearHkSessionUiCaches();
+        if (typeof HKSync !== "undefined" && typeof HKSync.clearLocalCaches === "function") {
+          HKSync.clearLocalCaches();
+        }
+      }
+
       function ensureOperatorNameOnLoad() {
         if (isOperatorSessionUnlocked()) {
           hideOperatorGate();
           updateOperatorNameDisplay();
           return;
         }
+        resetHkLocalSyncCaches();
         showOperatorGate({ mode: "initial" });
       }
 
@@ -5138,12 +5159,15 @@
           if (inp) inp.focus();
           return;
         }
-        setOperatorName(name);
-        setOperatorSessionUnlocked();
         if (operatorNameModalMode === "initial") {
+          resetHkLocalSyncCaches();
+          setOperatorName(name);
+          setOperatorSessionUnlocked();
           location.reload();
           return;
         }
+        setOperatorName(name);
+        setOperatorSessionUnlocked();
         hideOperatorGate();
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
@@ -5156,6 +5180,7 @@
         var refreshBtn = document.getElementById("btnRefreshApp");
         if (refreshBtn) {
           refreshBtn.addEventListener("click", function () {
+            resetHkLocalSyncCaches();
             location.reload();
           });
         }
