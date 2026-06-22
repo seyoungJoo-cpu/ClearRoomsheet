@@ -18,6 +18,14 @@
   var pollTimer = null;
   var pushTimer = null;
   var pendingPush = {};
+  var PUSH_MIN_INTERVAL_MS = 1000;
+  var PUSH_DEBOUNCE_MS = 400;
+  var pushGapTimer = null;
+  var pushTaskQueue = [];
+  var pushTaskRunning = false;
+  var lastPushCompletedAt = 0;
+  var pendingLastRoomChange = null;
+  var pendingScheduledFlushPromise = null;
   var isApplyingRemote = false;
   var changeListeners = [];
   var dirty = {
@@ -197,9 +205,18 @@
     cache.frontChat = [];
     clearAllDirty();
     pendingPush = {};
+    pendingLastRoomChange = null;
+    pendingScheduledFlushPromise = null;
+    pushTaskQueue = [];
+    pushTaskRunning = false;
+    lastPushCompletedAt = 0;
     if (pushTimer) {
       clearTimeout(pushTimer);
       pushTimer = null;
+    }
+    if (pushGapTimer) {
+      clearTimeout(pushGapTimer);
+      pushGapTimer = null;
     }
   }
 
@@ -229,7 +246,57 @@
       pendingPush[k] = true;
     });
     if (pushTimer) clearTimeout(pushTimer);
-    pushTimer = setTimeout(doPush, 400);
+    pushTimer = setTimeout(function () {
+      pushTimer = null;
+      queueScheduledFlush();
+    }, PUSH_DEBOUNCE_MS);
+  }
+
+  function hasPendingPushWork() {
+    return Object.keys(pendingPush).some(function (k) {
+      return pendingPush[k] && dirty[k];
+    });
+  }
+
+  function enqueuePushTask(taskFn) {
+    return new Promise(function (resolve) {
+      pushTaskQueue.push({ taskFn: taskFn, resolve: resolve });
+      pumpPushTaskQueue();
+    });
+  }
+
+  function pumpPushTaskQueue() {
+    if (pushTaskRunning || pushTaskQueue.length === 0) return;
+
+    var gapMs =
+      lastPushCompletedAt > 0 ? PUSH_MIN_INTERVAL_MS - (Date.now() - lastPushCompletedAt) : 0;
+    if (gapMs > 0) {
+      if (!pushGapTimer) {
+        pushGapTimer = setTimeout(function () {
+          pushGapTimer = null;
+          pumpPushTaskQueue();
+        }, gapMs);
+      }
+      return;
+    }
+
+    pushTaskRunning = true;
+    var item = pushTaskQueue.shift();
+    Promise.resolve()
+      .then(function () {
+        return item.taskFn();
+      })
+      .then(function (result) {
+        item.resolve(result);
+      })
+      .catch(function () {
+        item.resolve(false);
+      })
+      .finally(function () {
+        pushTaskRunning = false;
+        lastPushCompletedAt = Date.now();
+        pumpPushTaskQueue();
+      });
   }
 
   function buildPushBody() {
@@ -264,7 +331,7 @@
     return body;
   }
 
-  function postPayload(body) {
+  function postPayloadNow(body) {
     if (!body || !Object.keys(body).length) return Promise.resolve(false);
     return fetch("/api/sync", {
       method: "POST",
@@ -287,15 +354,26 @@
       });
   }
 
-  function doPush() {
+  function postPayload(body) {
+    if (!body || !Object.keys(body).length) return Promise.resolve(false);
+    return enqueuePushTask(function () {
+      return postPayloadNow(body);
+    });
+  }
+
+  function runScheduledFlush() {
     var body = buildPushBody();
+    if (pendingLastRoomChange) {
+      body.hkLastRoomChange = pendingLastRoomChange;
+      pendingLastRoomChange = null;
+    }
     var keys = Object.keys(body);
     if (!keys.length) {
       pendingPush = {};
       return Promise.resolve(false);
     }
     pendingPush = {};
-    return postPayload(body).then(function (data) {
+    return postPayloadNow(body).then(function (data) {
       if (data && data.version != null) {
         keys.forEach(function (key) {
           clearDirty(key);
@@ -303,6 +381,18 @@
       }
       return data;
     });
+  }
+
+  function queueScheduledFlush() {
+    if (!pendingScheduledFlushPromise) {
+      pendingScheduledFlushPromise = enqueuePushTask(runScheduledFlush).finally(function () {
+        pendingScheduledFlushPromise = null;
+        if (hasPendingPushWork()) {
+          queueScheduledFlush();
+        }
+      });
+    }
+    return pendingScheduledFlushPromise;
   }
 
   function pushStorageNow() {
@@ -313,7 +403,7 @@
       pushTimer = null;
     }
     pendingPush.hkStorage = true;
-    return doPush();
+    return queueScheduledFlush();
   }
 
   function applyRemotePayload(payload) {
@@ -631,19 +721,14 @@
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
       markDirty("hkChangeLog");
       markDirty("hkStorage");
-      var body = {
-        hkChangeLog: cache.changeLog.slice(),
-        hkLastRoomChange: entry,
-      };
-      if (global.HKStorage) body.hkStorage = global.HKStorage.load();
-      return postPayload(body).then(function (data) {
-        if (data && data.version != null) {
-          clearDirty("hkChangeLog");
-          clearDirty("hkStorage");
-          saveSyncVersion(data.version);
-        }
-        return data;
-      });
+      pendingLastRoomChange = entry;
+      if (pushTimer) {
+        clearTimeout(pushTimer);
+        pushTimer = null;
+      }
+      pendingPush.hkChangeLog = true;
+      pendingPush.hkStorage = true;
+      return queueScheduledFlush();
     },
     clearChangeLog: function () {
       cache.changeLog = [];
