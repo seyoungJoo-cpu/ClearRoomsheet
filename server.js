@@ -10,44 +10,17 @@ const PORT = process.env.PORT || 3000;
 const SYNC_PASSWORD = process.env.SYNC_PASSWORD || "74321";
 const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
 const PUSH_SUBS_FILE = path.join(__dirname, "push-subs.json");
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:hk@localhost";
+const VAPID_MARKER_FILE = path.join(__dirname, ".push-vapid-marker.txt");
+const VAPID_SUBJECT = (process.env.VAPID_SUBJECT || "mailto:hk@localhost").trim();
 
 /** @type {Map<string, object>} */
 const pushSubscriptions = new Map();
 
-function loadPushSubscriptions() {
-  try {
-    if (!fs.existsSync(PUSH_SUBS_FILE)) return;
-    const list = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, "utf8"));
-    if (!Array.isArray(list)) return;
-    list.forEach(function (sub) {
-      if (sub && sub.endpoint) pushSubscriptions.set(sub.endpoint, sub);
-    });
-    console.log("Web Push: loaded " + pushSubscriptions.size + " subscription(s)");
-  } catch (e) {
-    console.warn("Web Push: could not load subscriptions file");
-  }
-}
-
-function savePushSubscriptions() {
-  try {
-    const list = [];
-    pushSubscriptions.forEach(function (sub) {
-      list.push(sub);
-    });
-    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(list, null, 2));
-  } catch (e) {
-    console.warn("Web Push: could not save subscriptions file");
-  }
-}
-
-loadPushSubscriptions();
-
 function loadOrCreateVapidKeys() {
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     return {
-      publicKey: process.env.VAPID_PUBLIC_KEY,
-      privateKey: process.env.VAPID_PRIVATE_KEY,
+      publicKey: String(process.env.VAPID_PUBLIC_KEY).trim(),
+      privateKey: String(process.env.VAPID_PRIVATE_KEY).trim(),
     };
   }
   try {
@@ -71,6 +44,64 @@ if (process.env.VAPID_PUBLIC_KEY) {
   console.log("Web Push: using VAPID keys from environment");
 } else {
   console.log("Web Push: using VAPID keys from file or generated (set env on Render)");
+}
+console.log("Web Push: subject " + VAPID_SUBJECT);
+
+function loadPushSubscriptions() {
+  try {
+    var currentMarker = vapidKeys.publicKey;
+    var savedMarker = "";
+    if (fs.existsSync(VAPID_MARKER_FILE)) {
+      savedMarker = fs.readFileSync(VAPID_MARKER_FILE, "utf8").trim();
+    }
+    if (savedMarker && savedMarker !== currentMarker) {
+      pushSubscriptions.clear();
+      try {
+        fs.writeFileSync(PUSH_SUBS_FILE, "[]");
+        fs.writeFileSync(VAPID_MARKER_FILE, currentMarker);
+      } catch (e) {}
+      console.log("Web Push: VAPID key changed — old subscriptions cleared");
+      return;
+    }
+    if (!savedMarker) {
+      try {
+        fs.writeFileSync(VAPID_MARKER_FILE, currentMarker);
+      } catch (e) {}
+    }
+    if (!fs.existsSync(PUSH_SUBS_FILE)) return;
+    const list = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, "utf8"));
+    if (!Array.isArray(list)) return;
+    list.forEach(function (sub) {
+      if (sub && sub.endpoint) pushSubscriptions.set(sub.endpoint, sub);
+    });
+    console.log("Web Push: loaded " + pushSubscriptions.size + " subscription(s)");
+  } catch (e) {
+    console.warn("Web Push: could not load subscriptions file");
+  }
+}
+
+loadPushSubscriptions();
+
+function savePushSubscriptions() {
+  try {
+    const list = [];
+    pushSubscriptions.forEach(function (sub) {
+      list.push(sub);
+    });
+    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(list, null, 2));
+  } catch (e) {
+    console.warn("Web Push: could not save subscriptions file");
+  }
+}
+
+function logPushSendError(endpoint, err) {
+  var code = err && err.statusCode ? err.statusCode : "?";
+  var msg = err && err.message ? err.message : String(err);
+  var body = err && err.body ? String(err.body).slice(0, 200) : "";
+  console.warn("Web Push: send failed (" + code + ") " + msg + (body ? " — " + body : ""));
+  if (err && (err.statusCode === 401 || err.statusCode === 403)) {
+    console.warn("Web Push: VAPID mismatch — turn bell off/on on each device");
+  }
 }
 
 function getOrderPhase(entry) {
@@ -126,7 +157,14 @@ function sendOrderPushNotifications(orders) {
     pushSubscriptions.forEach(function (sub, endpoint) {
       tasks.push(
         webpush.sendNotification(sub, payload).catch(function (err) {
-          if (err && (err.statusCode === 404 || err.statusCode === 410)) {
+          logPushSendError(endpoint, err);
+          if (
+            err &&
+            (err.statusCode === 404 ||
+              err.statusCode === 410 ||
+              err.statusCode === 401 ||
+              err.statusCode === 403)
+          ) {
             pushSubscriptions.delete(endpoint);
             savePushSubscriptions();
           }
