@@ -537,6 +537,33 @@
       line-height: 1.55;
     }
 
+    .rooming-xml-card {
+      border: 2px solid #fcd34d;
+      background: #fffbeb;
+    }
+
+    .rooming-xml-card h2 {
+      color: #b45309;
+    }
+
+    .btn-clear-rooming-xml {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 16px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 2px solid #f59e0b;
+      background: #fff;
+      color: #b45309;
+    }
+
+    .btn-clear-rooming-xml:hover {
+      background: #fef3c7;
+    }
+
     .empty-hint {
       padding: 10px;
       font-size: 0.8125rem;
@@ -788,11 +815,21 @@
       </div>
     </section>
 
+    <section class="card rooming-xml-card">
+      <h2>루밍 XML 초기화</h2>
+      <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+        정비루밍 화면에 업로드된 <strong>HKVACROOM · All Status XML</strong> 데이터를 서버에서 비웁니다.
+        객실 상태·FO·블록·연박 표시가 초기화됩니다. 공지·구역 객실·오더 등 HK 데이터는 유지됩니다.
+      </p>
+      <button type="button" class="btn-clear-rooming-xml" id="btnClearRoomingXml">루밍 XML 초기화</button>
+    </section>
+
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지·구역 객실·요청 알림·취소/사용 리스트를 <strong>엑셀 파일로 저장</strong>한 뒤
-        <strong>전체 초기화</strong>합니다. 되돌릴 수 없으니 마감 시점에만 사용하세요.
+        공지·구역 객실·요청·오더·MB·채팅 등 전체 기록을 <strong>엑셀 파일로 저장</strong>한 뒤
+        <strong>초기화</strong>합니다. <strong>프론트 채팅</strong>·<strong>오더 알림·문제발생</strong>은 엑셀에 저장하고 화면에 유지합니다.
+        되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
       <button type="button" class="btn-close-day" id="btnCloseDay">마감 (엑셀 저장 + 초기화)</button>
     </section>
@@ -1119,14 +1156,147 @@
         });
       }
 
+      function formatOrderPhaseLabel(phase) {
+        var p = phase != null ? String(phase).trim() : "alert";
+        if (p === "accepted") return "접수";
+        if (p === "issue") return "문제발생";
+        if (p === "cancelled") return "취소";
+        return "알림";
+      }
+
+      function formatMbCategoryLabel(category) {
+        return category === "inv" ? "인벤 변경" : "MB 변경";
+      }
+
+      function formatMbCheckPhaseLabel(phase) {
+        var p = phase != null ? String(phase).trim() : "alert";
+        if (p === "accepted") return "접수";
+        if (p === "gst") return "GST 있음";
+        if (p === "posted") return "포스팅 완료";
+        if (p === "cancelled") return "취소";
+        return "알림";
+      }
+
+      function formatYn(val) {
+        return val ? "Y" : "";
+      }
+
+      function normalizeImageDataUrl(src) {
+        var s = src != null ? String(src).trim() : "";
+        if (!s) return "";
+        if (s.indexOf("data:image") === 0) return s;
+        if (/^data:/i.test(s)) return s;
+        return "data:image/jpeg;base64," + s;
+      }
+
+      function excelImageCell(src) {
+        var url = normalizeImageDataUrl(src);
+        if (!url || url.indexOf("data:image") !== 0) return "";
+        return {
+          __excelImage: true,
+          html:
+            '<img src="' +
+            url.replace(/"/g, "&quot;") +
+            '" alt="첨부" width="140" height="105" style="max-width:140px;max-height:105px;display:block;" />',
+        };
+      }
+
+      function excelHtmlCell(html) {
+        return { __excelHtml: String(html || "") };
+      }
+
+      function renderExcelCell(cell) {
+        if (cell && typeof cell === "object") {
+          if (cell.__excelImage) return cell.html;
+          if (cell.__excelHtml != null) return cell.__excelHtml;
+        }
+        return escHtml(cell == null ? "" : String(cell)).replace(/\n/g, "<br>");
+      }
+
+      function formatChatTranscript(chat) {
+        if (!Array.isArray(chat) || !chat.length) return "";
+        var parts = [];
+        chat.forEach(function (m) {
+          var line =
+            formatAt(m.at) +
+            " " +
+            (m.by || "") +
+            ": " +
+            (m.text || "");
+          parts.push(escHtml(line));
+          if (m.image) {
+            var img = excelImageCell(m.image);
+            if (img && img.html) parts.push(img.html);
+          }
+        });
+        return excelHtmlCell(parts.join("<br>"));
+      }
+
+      function collectOrderChatRows(orderLog) {
+        var rows = [];
+        (orderLog || []).forEach(function (entry) {
+          (entry.chat || []).forEach(function (msg) {
+            rows.push([
+              entry.id || "",
+              formatRoomNoDisplay(entry.room || ""),
+              formatAt(msg.at),
+              msg.by || "",
+              msg.text || "",
+              excelImageCell(msg.image),
+            ]);
+          });
+        });
+        return rows;
+      }
+
+      function collectMbInvChatRows(mbInvLog) {
+        var rows = [];
+        (mbInvLog || []).forEach(function (entry) {
+          (entry.chat || []).forEach(function (msg) {
+            rows.push([
+              entry.id || "",
+              formatMbCategoryLabel(entry.category),
+              formatRoomNoDisplay(entry.roomFrom || "") +
+                " → " +
+                formatRoomNoDisplay(entry.roomTo || ""),
+              formatAt(msg.at),
+              msg.by || "",
+              msg.text || "",
+              excelImageCell(msg.image),
+            ]);
+          });
+        });
+        return rows;
+      }
+
+      function collectRoomingSnapshot(sync) {
+        var server = sync && sync.getLastServerPayload ? sync.getLastServerPayload() : null;
+        var xml = sync && sync.getXmlPayload ? sync.getXmlPayload() : null;
+        return {
+          uploadSummary: (server && server.uploadSummary) || "",
+          vacRows: (server && server.vacRows) || (xml && xml.vacRows) || [],
+          allStatusRooms: (server && server.allStatusRooms) || [],
+          blockMap: (server && server.blockMap) || {},
+          roomResvMap: (server && server.roomResvMap) || (xml && xml.roomResvMap) || {},
+          extendedStayRooms: (server && server.extendedStayRooms) || {},
+        };
+      }
+
       function collectCloseDaySnapshot() {
         var data = HKStorage.load();
+        var sync = typeof HKSync !== "undefined" ? HKSync : null;
         return {
           exportedAt: new Date().toISOString(),
           data: data,
-          requestLog: typeof HKSync !== "undefined" ? HKSync.getRequestLog() : [],
-          cancelLog: typeof HKSync !== "undefined" ? HKSync.getCancelLog() : [],
-          useLog: typeof HKSync !== "undefined" ? HKSync.getUseLog() : [],
+          rooming: collectRoomingSnapshot(sync),
+          requestLog: sync ? sync.getRequestLog() : [],
+          orderLog: sync ? sync.getOrderLog() : [],
+          mbInvLog: sync ? sync.getMbInvLog() : [],
+          mbCheckLog: sync ? sync.getMbCheckLog() : [],
+          frontChat: sync ? sync.getFrontChat() : [],
+          changeLog: sync ? sync.getChangeLog() : [],
+          cancelLog: sync ? sync.getCancelLog() : [],
+          useLog: sync ? sync.getUseLog() : [],
         };
       }
 
@@ -1137,50 +1307,312 @@
             headers: ["내용"],
             rows: [[snapshot.data.notice || ""]],
           },
+          {
+            title: "커스텀 구역",
+            headers: ["구역ID", "표시명"],
+            rows: (snapshot.data.customZones || []).map(function (z) {
+              return [z.id || "", z.label || ""];
+            }),
+          },
+          {
+            title: "루밍 업로드 요약",
+            headers: ["요약"],
+            rows: [[(snapshot.rooming && snapshot.rooming.uploadSummary) || ""]],
+          },
         ];
+
+        var extRooms = snapshot.rooming && snapshot.rooming.extendedStayRooms;
+        var extList = extRooms
+          ? Object.keys(extRooms).filter(function (k) {
+              return extRooms[k];
+            })
+          : [];
+        sections.push({
+          title: "연박 객실",
+          headers: ["객실번호"],
+          rows: extList.sort().map(function (room) {
+            return [formatRoomNoDisplay(room)];
+          }),
+        });
 
         HKStorage.getZoneOrder(snapshot.data).forEach(function (zoneId) {
           sections.push({
             title: HKStorage.getZoneLabel(zoneId, snapshot.data) + " 객실",
-            headers: ["객실번호", "상태", "FD", "두잉", "시간"],
-            rows: buildRoomRows(snapshot.data, zoneId),
+            headers: ["객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+            rows: (snapshot.data.rooms[zoneId] || []).map(function (room) {
+              var num = formatRoomNoDisplay(room.number || "");
+              var xmlSt = lookupRoomStatusFromXml(room.number || "") || "";
+              return [
+                num,
+                xmlSt,
+                room.status || "",
+                room.memo1 || "",
+                room.memo2 || "",
+                excelImageCell(room.memo2Image),
+                room.time || "",
+              ];
+            }),
           });
+        });
+
+        var blockMap = (snapshot.rooming && snapshot.rooming.blockMap) || {};
+        sections.push({
+          title: "All Status BLOCK",
+          headers: ["객실번호", "BLOCK_CODE"],
+          rows: Object.keys(blockMap)
+            .sort()
+            .map(function (room) {
+              return [formatRoomNoDisplay(room), blockMap[room] || ""];
+            }),
+        });
+
+        var vacRows = (snapshot.rooming && snapshot.rooming.vacRows) || [];
+        sections.push({
+          title: "루밍 XML (HKVACROOM)",
+          headers: ["객실", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE", "FO_STATUS", "TYPE"],
+          rows: vacRows.map(function (row) {
+            return [
+              formatRoomNoDisplay(row.room || ""),
+              row.status || "",
+              row.resvStatus || "",
+              row.blockCode || "",
+              row.foStatus || "",
+              row.roomType || "",
+            ];
+          }),
         });
 
         sections.push(
           {
             title: "요청 알림",
-            headers: ["접수시각", "객실", "상태", "처리·예정", "긴급", "FD", "두잉", "요청자"],
+            headers: [
+              "ID",
+              "접수시각",
+              "객실",
+              "상태",
+              "처리·예정",
+              "긴급",
+              "FD",
+              "FD사진",
+              "두잉",
+              "두잉사진",
+              "요청자",
+            ],
             rows: (snapshot.requestLog || []).map(function (entry) {
               return [
+                entry.id || "",
                 formatAt(entry.at),
                 formatRoomNoDisplay(entry.room || ""),
                 entry.status || "",
                 entry.sched || "",
-                entry.urgent ? "Y" : "",
+                formatYn(entry.urgent),
                 entry.memo || "",
+                excelImageCell(entry.memoImage),
                 entry.memo2 || "",
+                excelImageCell(entry.memo2Image),
+                entry.by || "",
+              ];
+            }),
+          },
+          {
+            title: "오더",
+            headers: [
+              "ID",
+              "접수시각",
+              "객실",
+              "단계",
+              "긴급",
+              "정비오더",
+              "FD",
+              "메모",
+              "메모사진",
+              "요청자",
+              "접수시각",
+              "접수자",
+              "문제발생시각",
+              "문제발생자",
+              "재접수시각",
+              "재접수자",
+              "취소시각",
+              "취소자",
+              "채팅",
+            ],
+            rows: (snapshot.orderLog || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                formatRoomNoDisplay(entry.room || ""),
+                formatOrderPhaseLabel(entry.phase),
+                formatYn(entry.urgent),
+                formatYn(entry.fromMaint),
+                entry.foStatus || "",
+                entry.memo || "",
+                excelImageCell(entry.memoImage),
+                entry.by || "",
+                formatAt(entry.acceptedAt),
+                entry.acceptedBy || "",
+                formatAt(entry.issueAt),
+                entry.issueBy || "",
+                formatAt(entry.reacceptedAt),
+                entry.reacceptedBy || "",
+                formatAt(entry.cancelledAt),
+                entry.cancelledBy || "",
+                formatChatTranscript(entry.chat),
+              ];
+            }),
+          },
+          {
+            title: "오더 채팅 (상세)",
+            headers: ["오더ID", "객실", "시각", "작성자", "내용", "사진"],
+            rows: collectOrderChatRows(snapshot.orderLog),
+          },
+          {
+            title: "MB & 인벤 변경",
+            headers: [
+              "ID",
+              "접수시각",
+              "구분",
+              "From",
+              "To",
+              "단계",
+              "메모",
+              "메모사진",
+              "요청자",
+              "접수시각",
+              "접수자",
+              "문제발생시각",
+              "문제발생자",
+              "재접수시각",
+              "재접수자",
+              "취소시각",
+              "취소자",
+              "채팅",
+            ],
+            rows: (snapshot.mbInvLog || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                formatMbCategoryLabel(entry.category),
+                formatRoomNoDisplay(entry.roomFrom || ""),
+                formatRoomNoDisplay(entry.roomTo || ""),
+                formatOrderPhaseLabel(entry.phase),
+                entry.memo || "",
+                excelImageCell(entry.memoImage),
+                entry.by || "",
+                formatAt(entry.acceptedAt),
+                entry.acceptedBy || "",
+                formatAt(entry.issueAt),
+                entry.issueBy || "",
+                formatAt(entry.reacceptedAt),
+                entry.reacceptedBy || "",
+                formatAt(entry.cancelledAt),
+                entry.cancelledBy || "",
+                formatChatTranscript(entry.chat),
+              ];
+            }),
+          },
+          {
+            title: "MB & 인벤 채팅 (상세)",
+            headers: ["ID", "구분", "객실", "시각", "작성자", "내용", "사진"],
+            rows: collectMbInvChatRows(snapshot.mbInvLog),
+          },
+          {
+            title: "MB CHECK",
+            headers: [
+              "ID",
+              "접수시각",
+              "객실",
+              "단계",
+              "메모",
+              "요청자",
+              "접수시각",
+              "접수자",
+              "GST시각",
+              "GST처리자",
+              "포스팅시각",
+              "포스팅처리자",
+              "재요청시각",
+              "재요청자",
+              "취소시각",
+              "취소자",
+            ],
+            rows: (snapshot.mbCheckLog || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                formatRoomNoDisplay(entry.room || ""),
+                formatMbCheckPhaseLabel(entry.phase),
+                entry.memo || "",
+                entry.by || "",
+                formatAt(entry.acceptedAt),
+                entry.acceptedBy || "",
+                formatAt(entry.gstAt),
+                entry.gstBy || "",
+                formatAt(entry.postedAt),
+                entry.postedBy || "",
+                formatAt(entry.rerequestedAt),
+                entry.rerequestedBy || "",
+                formatAt(entry.cancelledAt),
+                entry.cancelledBy || "",
+              ];
+            }),
+          },
+          {
+            title: "프론트 채팅",
+            headers: ["ID", "시각", "작성자", "내용", "사진"],
+            rows: (snapshot.frontChat || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                entry.by || "",
+                entry.text || "",
+                excelImageCell(entry.image),
+              ];
+            }),
+          },
+          {
+            title: "객실 변경 이력",
+            headers: ["ID", "시각", "구역", "객실", "종류", "변경내용", "처리자"],
+            rows: (snapshot.changeLog || []).map(function (entry) {
+              var changes = Array.isArray(entry.changes) ? entry.changes.join("\n") : "";
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                entry.zone
+                  ? HKStorage.getZoneLabel(entry.zone, snapshot.data)
+                  : entry.zone || "",
+                formatRoomNoDisplay(entry.room || ""),
+                entry.kind === "add" ? "추가" : "수정",
+                changes,
                 entry.by || "",
               ];
             }),
           },
           {
             title: "취소리스트",
-            headers: ["시각", "객실", "처리자"],
+            headers: ["시각", "객실", "처리자", "종류", "메모", "연결ID"],
             rows: (snapshot.cancelLog || []).map(function (entry) {
-              return [formatAt(entry.at), formatRoomNoDisplay(entry.room || ""), entry.name || ""];
+              return [
+                formatAt(entry.at),
+                formatRoomNoDisplay(entry.room || ""),
+                entry.name || "",
+                entry.kind || "",
+                entry.memo || "",
+                entry.entryId || "",
+              ];
             }),
           },
           {
             title: "사용리스트",
-            headers: ["시각", "객실", "상태", "처리·예정", "긴급"],
+            headers: ["시각", "객실", "상태", "처리·예정", "긴급", "연결ID"],
             rows: (snapshot.useLog || []).map(function (entry) {
               return [
                 formatAt(entry.at),
                 formatRoomNoDisplay(entry.room || ""),
                 entry.status || "",
                 entry.sched || "",
-                entry.urgent ? "Y" : "",
+                formatYn(entry.urgent),
+                entry.entryId || "",
               ];
             }),
           }
@@ -1189,7 +1621,7 @@
         var html = [
           '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">',
           "<head><meta charset=\"UTF-8\">",
-          "<style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #999;padding:4px 6px;vertical-align:top;}th{background:#e5e7eb;font-weight:700;}h3{margin:16px 0 8px;font-size:14px;}</style>",
+          "<style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #999;padding:4px 6px;vertical-align:top;}th{background:#e5e7eb;font-weight:700;}h3{margin:16px 0 8px;font-size:14px;}td img{object-fit:contain;}</style>",
           "</head><body>",
           "<p><strong>마감 내보내기</strong> · " + escHtml(formatAt(snapshot.exportedAt)) + "</p>",
         ];
@@ -1212,7 +1644,7 @@
             section.rows.forEach(function (row) {
               html.push("<tr>");
               row.forEach(function (cell) {
-                html.push("<td>" + escHtml(cell).replace(/\n/g, "<br>") + "</td>");
+                html.push("<td>" + renderExcelCell(cell) + "</td>");
               });
               html.push("</tr>");
             });
@@ -1250,20 +1682,25 @@
         }, 0);
       }
 
+      function preserveOrderAlertEntries(orderLog) {
+        return (orderLog || []).filter(function (entry) {
+          if (!entry) return false;
+          var p = entry.phase != null ? String(entry.phase).trim() : "";
+          if (p === "cancelled") return false;
+          if (entry.issueOpen === true || p === "issue") return true;
+          if (p === "accepted") return false;
+          return true;
+        });
+      }
+
       function getResetStorageData() {
         return HKStorage.defaultData();
       }
 
-      function performCloseDay() {
-        if (
-          !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 엑셀 파일로 저장\n2) 공지·객실·요청·취소/사용 리스트 전체 초기화\n\n되돌릴 수 없습니다."
-          )
-        ) {
-          return;
-        }
-
+      function runCloseDayExport() {
         var snapshot = collectCloseDaySnapshot();
+        var preservedFrontChat = (snapshot.frontChat || []).slice();
+        var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
         downloadCloseDayExcel(snapshot);
 
         var resetStorage = getResetStorageData();
@@ -1271,24 +1708,60 @@
           HKSync.pushSnapshot({
             hkStorage: resetStorage,
             hkRequestLog: [],
-            hkOrderLog: [],
+            hkOrderLog: preservedOrderLog,
             hkMbInvLog: [],
             hkMbCheckLog: [],
-            hkFrontChat: [],
+            hkFrontChat: preservedFrontChat,
             hkCancelLog: [],
             hkUseLog: [],
             hkChangeLog: [],
             hkLastRoomChange: null,
           }).finally(function () {
             refresh();
-            toast("마감 완료 · 엑셀 저장 후 초기화되었습니다.");
+            toast("마감 완료 · 엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
           });
           return;
         }
 
         HKStorage.save(resetStorage, { skipSync: true });
         refresh();
-        toast("마감 완료 · 엑셀 저장 후 초기화되었습니다.");
+        toast("마감 완료 · 엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
+      }
+
+      function performCloseDay() {
+        if (
+          !confirm(
+            "마감을 진행할까요?\n\n1) 현재 데이터를 엑셀 파일로 저장\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
+          )
+        ) {
+          return;
+        }
+
+        if (typeof HKSync !== "undefined" && HKSync.pull) {
+          HKSync.pull(false).finally(runCloseDayExport);
+          return;
+        }
+        runCloseDayExport();
+      }
+
+      function performClearRoomingXml() {
+        if (
+          !confirm(
+            "루밍 XML 데이터를 초기화할까요?\n\nHKVACROOM·All Status 업로드 내용이 서버에서 삭제됩니다.\n공지·구역 객실·오더 등은 유지됩니다."
+          )
+        ) {
+          return;
+        }
+        if (typeof HKSync === "undefined" || !HKSync.clearRoomingXml) {
+          toast("동기화를 사용할 수 없습니다.");
+          return;
+        }
+        HKSync.clearRoomingXml().then(function () {
+          XML_ROOM_STATUS_MAP = {};
+          XML_ROOM_RESV_MAP = {};
+          refresh();
+          toast("루밍 XML이 초기화되었습니다.");
+        });
       }
 
       function formatRoomNoDisplay(raw) {
@@ -1881,6 +2354,11 @@
       var closeDayBtn = document.getElementById("btnCloseDay");
       if (closeDayBtn) {
         closeDayBtn.addEventListener("click", performCloseDay);
+      }
+
+      var clearRoomingXmlBtn = document.getElementById("btnClearRoomingXml");
+      if (clearRoomingXmlBtn) {
+        clearRoomingXmlBtn.addEventListener("click", performClearRoomingXml);
       }
 
       window.addEventListener("storage", function (e) {

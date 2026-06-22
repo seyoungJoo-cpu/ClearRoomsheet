@@ -71,6 +71,59 @@
       white-space: nowrap;
     }
 
+    .brand-operator.brand-operator--color-picker {
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+    }
+
+    .brand-operator.brand-operator--color-picker:hover {
+      color: var(--accent);
+    }
+
+    .chat-color-picker {
+      position: fixed;
+      z-index: 200;
+      min-width: 220px;
+      max-width: 280px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .chat-color-picker[hidden] {
+      display: none !important;
+    }
+
+    .chat-color-picker__label {
+      margin: 0 0 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .chat-color-picker__swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chat-color-picker__swatch {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .chat-color-picker__swatch.is-selected {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
     .topbar-actions {
       display: flex;
       flex-direction: column;
@@ -2325,6 +2378,7 @@
       padding: 6px 8px;
       border-radius: 8px;
       background: #fef2f2;
+      border: 1px solid #fecaca;
       font-size: 0.8125rem;
     }
 
@@ -2754,6 +2808,73 @@
       font-size: 0.875rem;
       max-width: 92%;
       align-self: flex-start;
+      position: relative;
+    }
+
+    .front-chat__msg--deleted {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      opacity: 0.85;
+    }
+
+    .front-chat__msg--deleted .front-chat__msg-text {
+      color: #64748b !important;
+      font-style: italic;
+    }
+
+    .front-chat__msg-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .front-chat__msg-action {
+      padding: 2px 8px;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.65);
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .front-chat__msg-action:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .front-chat__msg-action--danger:hover {
+      border-color: #f87171;
+      color: #dc2626;
+    }
+
+    .front-chat__msg-edited {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .front-chat__msg-edit {
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .front-chat__msg-edit input {
+      flex: 1;
+      min-width: 120px;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
     }
 
     .front-chat__msg-by {
@@ -3769,6 +3890,17 @@
   </style>
 </head>
 <body class="operator-locked">
+  <div
+    id="chatColorPicker"
+    class="chat-color-picker"
+    role="dialog"
+    aria-label="채팅 색상 선택"
+    hidden
+  >
+    <p class="chat-color-picker__label">채팅 말풍선 색상</p>
+    <div class="chat-color-picker__swatches" id="chatColorPickerSwatches"></div>
+  </div>
+
   <div id="operator-gate" class="operator-gate" aria-hidden="false">
     <div class="operator-gate__card">
       <h2 id="operatorGateTitle">정비오더 · 이름 입력</h2>
@@ -4405,6 +4537,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
   <script src="hk-sync.js"></script>
+  <script src="hk-chat-colors.js"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
   <script>
@@ -4602,6 +4735,9 @@
           if (n) sessionStorage.setItem(OPERATOR_NAME_KEY, n);
         } catch (e) {}
         updateOperatorNameDisplay();
+        if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
+          HKPush.refreshOrderPushSubscription();
+        }
         return n;
       }
 
@@ -4612,10 +4748,72 @@
         if (name) {
           el.textContent = name;
           el.hidden = false;
+          if (typeof HKChatColors !== "undefined") {
+            HKChatColors.bindOperatorColorPicker(el, getOperatorName, function () {
+              renderFrontChatPanel();
+              renderOrderPanels();
+              if (typeof HKMbWorkflow !== "undefined") {
+                HKMbWorkflow.renderMbInvPanels();
+              }
+            });
+          }
         } else {
           el.textContent = "";
           el.hidden = true;
         }
+      }
+
+      function isOwnChatAuthor(byName) {
+        var selfNorm = (getOperatorName() || "").trim().toLowerCase();
+        var byNorm = String(byName || "")
+          .trim()
+          .toLowerCase();
+        return !!(selfNorm && byNorm && selfNorm === byNorm);
+      }
+
+      function findFrontChatMessageById(id) {
+        if (!id) return null;
+        for (var i = 0; i < frontChatMessages.length; i++) {
+          if (frontChatMessages[i] && frontChatMessages[i].id === id) {
+            return frontChatMessages[i];
+          }
+        }
+        return null;
+      }
+
+      function saveFrontChatMessages() {
+        if (typeof HKSync === "undefined" || !HKSync.setFrontChat) return;
+        HKSync.setFrontChat(frontChatMessages);
+      }
+
+      function deleteFrontChatMessage(id) {
+        var msg = findFrontChatMessageById(id);
+        if (!msg || msg.deleted || !isOwnChatAuthor(msg.by)) return;
+        msg.deleted = true;
+        msg.deletedAt = new Date().toISOString();
+        msg.text = "";
+        msg.image = "";
+        saveFrontChatMessages();
+        syncFrontChatFromServer();
+        renderFrontChatPanel();
+      }
+
+      function saveFrontChatMessageEdit(id, newText) {
+        var msg = findFrontChatMessageById(id);
+        var text = String(newText || "").trim();
+        if (!msg || msg.deleted || !isOwnChatAuthor(msg.by) || !text) return;
+        msg.text = text;
+        msg.image = "";
+        msg.edited = true;
+        msg.editedAt = new Date().toISOString();
+        saveFrontChatMessages();
+        syncFrontChatFromServer();
+        renderFrontChatPanel();
+      }
+
+      function applyChatBubbleColors(li, byName, byEl, textClass) {
+        if (typeof HKChatColors === "undefined" || !HKChatColors.applyBubbleColors) return;
+        HKChatColors.applyBubbleColors(li, byName, byEl, textClass);
       }
 
       function hideOperatorGate() {
@@ -7055,18 +7253,29 @@
           msgList.appendChild(emptyMsg);
         } else {
           chat.forEach(function (msg) {
+            var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var msgLi = document.createElement("li");
             msgLi.className = "order-chat__msg";
             var byEl = document.createElement("div");
             byEl.className = "order-chat__msg-by";
-            byEl.textContent = msg.by != null ? String(msg.by).trim() || "—" : "—";
+            byEl.textContent = byName;
             msgLi.appendChild(byEl);
+            applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
             hkAppendMessageContent(
               msgLi,
               msg.text,
               msg.image,
               "order-chat__msg-text"
             );
+            if (msg.edited) {
+              var textEl = msgLi.querySelector(".order-chat__msg-text");
+              if (textEl) {
+                var editedMark = document.createElement("span");
+                editedMark.className = "front-chat__msg-edited";
+                editedMark.textContent = "(수정됨)";
+                textEl.appendChild(editedMark);
+              }
+            }
             if (msg.at) {
               var timeEl = document.createElement("div");
               timeEl.className = "order-chat__msg-time";
@@ -8362,19 +8571,96 @@
         } else {
           if (empty) empty.hidden = true;
           messages.forEach(function (msg) {
+            var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var li = document.createElement("li");
             li.className = "front-chat__msg";
+            if (msg.deleted) li.classList.add("front-chat__msg--deleted");
+
             var byEl = document.createElement("div");
             byEl.className = "front-chat__msg-by";
-            byEl.textContent = msg.by != null ? String(msg.by).trim() || "—" : "—";
+            byEl.textContent = byName;
             li.appendChild(byEl);
-            hkAppendMessageContent(li, msg.text, msg.image, "front-chat__msg-text");
+            applyChatBubbleColors(li, byName, byEl, "front-chat__msg-text");
+
+            if (msg.deleted) {
+              var deletedEl = document.createElement("div");
+              deletedEl.className = "front-chat__msg-text";
+              deletedEl.textContent = "삭제하였습니다.";
+              li.appendChild(deletedEl);
+            } else {
+              hkAppendMessageContent(li, msg.text, msg.image, "front-chat__msg-text");
+              var textEl = li.querySelector(".front-chat__msg-text");
+              if (textEl && msg.edited) {
+                var editedMark = document.createElement("span");
+                editedMark.className = "front-chat__msg-edited";
+                editedMark.textContent = "(수정됨)";
+                textEl.appendChild(editedMark);
+              }
+            }
+
             if (msg.at) {
               var timeEl = document.createElement("div");
               timeEl.className = "front-chat__msg-time";
               timeEl.textContent = formatReqAt(msg.at);
               li.appendChild(timeEl);
             }
+
+            if (!msg.deleted && msg.id && isOwnChatAuthor(msg.by)) {
+              var actions = document.createElement("div");
+              actions.className = "front-chat__msg-actions";
+              var editBtn = document.createElement("button");
+              editBtn.type = "button";
+              editBtn.className = "front-chat__msg-action";
+              editBtn.textContent = "수정";
+              editBtn.addEventListener("click", function () {
+                var existing = li.querySelector(".front-chat__msg-edit");
+                if (existing) return;
+                li.querySelectorAll(".front-chat__msg-actions").forEach(function (el) {
+                  el.hidden = true;
+                });
+                var row = document.createElement("div");
+                row.className = "front-chat__msg-edit";
+                var inp = document.createElement("input");
+                inp.type = "text";
+                inp.value = msg.text != null ? String(msg.text) : "";
+                inp.setAttribute("aria-label", "메시지 수정");
+                var saveBtn = document.createElement("button");
+                saveBtn.type = "button";
+                saveBtn.className = "front-chat__msg-action";
+                saveBtn.textContent = "저장";
+                var cancelBtn = document.createElement("button");
+                cancelBtn.type = "button";
+                cancelBtn.className = "front-chat__msg-action";
+                cancelBtn.textContent = "취소";
+                function closeEdit() {
+                  row.remove();
+                  li.querySelectorAll(".front-chat__msg-actions").forEach(function (el) {
+                    el.hidden = false;
+                  });
+                }
+                saveBtn.addEventListener("click", function () {
+                  saveFrontChatMessageEdit(msg.id, inp.value);
+                });
+                cancelBtn.addEventListener("click", closeEdit);
+                row.appendChild(inp);
+                row.appendChild(saveBtn);
+                row.appendChild(cancelBtn);
+                li.appendChild(row);
+                inp.focus();
+                inp.select();
+              });
+              var delBtn = document.createElement("button");
+              delBtn.type = "button";
+              delBtn.className = "front-chat__msg-action front-chat__msg-action--danger";
+              delBtn.textContent = "삭제";
+              delBtn.addEventListener("click", function () {
+                deleteFrontChatMessage(msg.id);
+              });
+              actions.appendChild(editBtn);
+              actions.appendChild(delBtn);
+              li.appendChild(actions);
+            }
+
             list.appendChild(li);
           });
         }
@@ -8405,10 +8691,12 @@
 
       function getFrontChatNotifyPreview(msg) {
         var by = msg.by != null ? String(msg.by).trim() || "—" : "—";
+        if (msg.deleted) return { by: by, text: "삭제하였습니다." };
         var text = msg.text != null ? String(msg.text).trim() : "";
         var hasImage = msg.image != null && String(msg.image).trim();
         if (!text && hasImage) text = "사진";
         else if (!text) text = "새 메시지";
+        if (msg.edited) text += " (수정됨)";
         if (text.length > 80) text = text.slice(0, 80) + "…";
         return { by: by, text: text };
       }
@@ -8798,6 +9086,7 @@
           hkAppendImageEl: hkAppendImageEl,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
+          applyChatBubbleColors: applyChatBubbleColors,
           appendCancelNameLog: appendCancelNameLog,
           openCancelConfirmModal: openCancelConfirmModal,
           onCancelListRefresh: function () {

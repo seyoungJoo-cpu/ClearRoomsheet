@@ -30,6 +30,9 @@
     frontChat: [],
   };
 
+  /** @type {object | null} */
+  var lastServerPayload = null;
+
   /** 루밍 vacRows · roomResvMap — HK 화면용 (서버 payload에서 유지) */
   var xmlSyncCache = {
     vacRows: [],
@@ -191,6 +194,7 @@
 
   function applyRemotePayload(payload) {
     if (!payload || typeof payload !== "object") return;
+    lastServerPayload = Object.assign({}, lastServerPayload || {}, payload);
     var changed = [];
     isApplyingRemote = true;
 
@@ -461,7 +465,43 @@
     },
     pushStorageNow: pushStorageNow,
     getXmlPayload: function () {
-      return xmlPayloadForListeners(null);
+      return xmlPayloadForListeners(lastServerPayload);
+    },
+    getLastServerPayload: function () {
+      return lastServerPayload ? Object.assign({}, lastServerPayload) : null;
+    },
+    clearRoomingXml: function () {
+      xmlSyncCache.vacRows = [];
+      xmlSyncCache.roomResvMap = {};
+      if (lastServerPayload) {
+        lastServerPayload.vacRows = [];
+        lastServerPayload.roomResvMap = {};
+        lastServerPayload.allStatusRooms = [];
+        lastServerPayload.blockMap = {};
+        lastServerPayload.extendedStayRooms = {};
+        lastServerPayload.uploadSummary = "";
+      }
+      return postPayload({
+        vacRows: [],
+        roomResvMap: {},
+        allStatusRooms: [],
+        blockMap: {},
+        extendedStayRooms: {},
+        uploadSummary: "",
+      }).then(function () {
+        emitChange(
+          [
+            "vacRows",
+            "roomResvMap",
+            "allStatusRooms",
+            "blockMap",
+            "extendedStayRooms",
+            "uploadSummary",
+          ],
+          Object.assign({}, lastServerPayload || {}, xmlPayloadForListeners(lastServerPayload))
+        );
+        return true;
+      });
     },
   };
 })(typeof window !== "undefined" ? window : this);

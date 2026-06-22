@@ -6,6 +6,7 @@
   var SW_SCOPE = "/hk/";
   var ORDER_PUSH_ENABLED_LS = "lotte-hk-order-push-enabled-v1";
   var ORDER_PUSH_VAPID_LS = "lotte-hk-order-push-vapid-v1";
+  var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
 
   function getSyncPassword() {
     try {
@@ -113,18 +114,30 @@
     );
   }
 
+  function getOperatorNameForPush() {
+    try {
+      return String(global.sessionStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
+    } catch (e) {
+      return "";
+    }
+  }
+
   function registerServiceWorker() {
     return global.navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
   }
 
   function postSubscription(subscription) {
+    var payload =
+      subscription && typeof subscription === "object"
+        ? Object.assign({}, subscription, { operatorName: getOperatorNameForPush() })
+        : subscription;
     return fetch("/api/push/subscribe", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Sync-Password": getSyncPassword(),
       },
-      body: JSON.stringify(subscription),
+      body: JSON.stringify(payload),
     }).then(function (r) {
       if (!r.ok) throw new Error("subscribe failed");
       return r.json();

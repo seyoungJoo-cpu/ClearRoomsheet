@@ -151,13 +151,26 @@
       msgList.appendChild(emptyMsg);
     } else {
       chat.forEach(function (msg) {
+        var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
         var msgLi = document.createElement("li");
         msgLi.className = "order-chat__msg";
         var byEl = document.createElement("div");
         byEl.className = "order-chat__msg-by";
-        byEl.textContent = msg.by != null ? String(msg.by).trim() || "—" : "—";
+        byEl.textContent = byName;
         msgLi.appendChild(byEl);
+        if (typeof ctx.applyChatBubbleColors === "function") {
+          ctx.applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
+        }
         ctx.hkAppendMessageContent(msgLi, msg.text, msg.image, "order-chat__msg-text");
+        if (msg.edited) {
+          var textEl = msgLi.querySelector(".order-chat__msg-text");
+          if (textEl) {
+            var editedMark = document.createElement("span");
+            editedMark.className = "front-chat__msg-edited";
+            editedMark.textContent = "(수정됨)";
+            textEl.appendChild(editedMark);
+          }
+        }
         msgList.appendChild(msgLi);
       });
     }

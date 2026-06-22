@@ -124,6 +124,25 @@ function findNewOrderAlerts(prevLog, nextLog) {
   return out;
 }
 
+function normalizePersonName(name) {
+  return name != null ? String(name).trim().toLowerCase() : "";
+}
+
+function shouldSkipPushToSubscriber(sub, order) {
+  var orderBy = normalizePersonName(order && order.by);
+  var subBy = normalizePersonName(sub && sub.operatorName);
+  if (!orderBy || !subBy) return false;
+  return orderBy === subBy;
+}
+
+function toWebPushSubscription(stored) {
+  return {
+    endpoint: stored.endpoint,
+    keys: stored.keys,
+    expirationTime: stored.expirationTime,
+  };
+}
+
 function formatOrderPushBody(entry) {
   const room = entry.room != null ? String(entry.room).trim() : "";
   const memo = entry.memo != null ? String(entry.memo).trim() : "";
@@ -153,10 +172,17 @@ function sendOrderPushNotifications(orders) {
       body: formatOrderPushBody(order),
       tag: "hk-order-" + (order.id || Date.now()),
       url: "/hk/front.html",
+      by: order.by != null ? String(order.by).trim() : "",
     });
     pushSubscriptions.forEach(function (sub, endpoint) {
+      if (shouldSkipPushToSubscriber(sub, order)) {
+        console.log(
+          "Web Push: skipped sender device (" + (sub.operatorName || "?") + ")"
+        );
+        return;
+      }
       tasks.push(
-        webpush.sendNotification(sub, payload).then(function () {
+        webpush.sendNotification(toWebPushSubscription(sub), payload).then(function () {
           console.log("Web Push: delivered to " + endpoint.slice(0, 48) + "…");
         }).catch(function (err) {
           logPushSendError(endpoint, err);
@@ -219,7 +245,8 @@ app.post("/api/push/subscribe", checkSyncAuth, function (req, res) {
   }
   pushSubscriptions.set(sub.endpoint, sub);
   savePushSubscriptions();
-  console.log("Web Push: subscribed (" + pushSubscriptions.size + " total)");
+  var who = sub.operatorName ? " · " + sub.operatorName : "";
+  console.log("Web Push: subscribed (" + pushSubscriptions.size + " total)" + who);
   res.json({ ok: true, count: pushSubscriptions.size });
 });
 
