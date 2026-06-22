@@ -5,6 +5,7 @@
   var SW_URL = "/hk/sw.js";
   var SW_SCOPE = "/hk/";
   var ORDER_PUSH_ENABLED_LS = "lotte-hk-order-push-enabled-v1";
+  var ORDER_PUSH_VAPID_LS = "lotte-hk-order-push-vapid-v1";
 
   function getSyncPassword() {
     try {
@@ -26,6 +27,71 @@
     try {
       global.localStorage.setItem(ORDER_PUSH_ENABLED_LS, enabled ? "1" : "0");
     } catch (e) {}
+  }
+
+  function getStoredVapidPublicKey() {
+    try {
+      return global.localStorage.getItem(ORDER_PUSH_VAPID_LS) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function setStoredVapidPublicKey(publicKey) {
+    try {
+      if (publicKey) global.localStorage.setItem(ORDER_PUSH_VAPID_LS, publicKey);
+      else global.localStorage.removeItem(ORDER_PUSH_VAPID_LS);
+    } catch (e) {}
+  }
+
+  function fetchVapidPublicKey() {
+    return fetch("/api/push/vapid-public-key", {
+      headers: { "X-Sync-Password": getSyncPassword() },
+    }).then(function (r) {
+      if (!r.ok) throw new Error("vapid key failed");
+      return r.json().then(function (data) {
+        return data.publicKey || "";
+      });
+    });
+  }
+
+  function removeBrowserSubscription(reg) {
+    return reg.pushManager.getSubscription().then(function (existing) {
+      if (!existing) return null;
+      var endpoint = existing.endpoint;
+      return existing.unsubscribe().then(function () {
+        return postUnsubscription(endpoint).catch(function () {}).then(function () {
+          return endpoint;
+        });
+      });
+    });
+  }
+
+  function subscribeWithCurrentVapid(reg, publicKey, forceFresh) {
+    if (!publicKey) return Promise.resolve(null);
+    var storedKey = getStoredVapidPublicKey();
+    var needsFresh = !!forceFresh || !storedKey || storedKey !== publicKey;
+
+    function doSubscribe() {
+      return reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+
+    if (!needsFresh) {
+      return reg.pushManager.getSubscription().then(function (existing) {
+        if (existing) return existing;
+        return doSubscribe();
+      });
+    }
+
+    return removeBrowserSubscription(reg).then(function () {
+      return doSubscribe();
+    }).then(function (sub) {
+      if (sub) setStoredVapidPublicKey(publicKey);
+      return sub;
+    });
   }
 
   function urlBase64ToUint8Array(base64String) {
@@ -102,7 +168,7 @@
     });
   }
 
-  function ensureOrderPushSubscription() {
+  function ensureOrderPushSubscription(forceFresh) {
     if (!isSupported()) return Promise.resolve(false);
     if (!isOrderPushEnabledPreference()) return Promise.resolve(false);
 
@@ -128,24 +194,13 @@
       })
       .then(function (reg) {
         if (!reg) return false;
-        return fetch("/api/push/vapid-public-key", {
-          headers: { "X-Sync-Password": getSyncPassword() },
-        }).then(function (r) {
-          if (!r.ok) throw new Error("vapid key failed");
-          return r.json().then(function (data) {
-            return { reg: reg, publicKey: data.publicKey };
-          });
+        return fetchVapidPublicKey().then(function (publicKey) {
+          return { reg: reg, publicKey: publicKey };
         });
       })
       .then(function (ctx) {
         if (!ctx || !ctx.publicKey) return false;
-        return ctx.reg.pushManager.getSubscription().then(function (existing) {
-          if (existing) return existing;
-          return ctx.reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(ctx.publicKey),
-          });
-        });
+        return subscribeWithCurrentVapid(ctx.reg, ctx.publicKey, forceFresh);
       })
       .then(function (sub) {
         if (!sub) return false;
@@ -161,16 +216,17 @@
   function unsubscribeOrderPush() {
     if (!isSupported()) return Promise.resolve(false);
     setOrderPushEnabledPreference(false);
+    setStoredVapidPublicKey("");
 
-    return getActiveSubscription()
-      .then(function (sub) {
-        if (!sub) return true;
-        var endpoint = sub.endpoint;
-        return sub.unsubscribe().then(function () {
-          return postUnsubscription(endpoint).then(function () {
-            return true;
-          });
+    return registerServiceWorker()
+      .then(function (reg) {
+        if (!reg) return true;
+        return global.navigator.serviceWorker.ready.then(function () {
+          return removeBrowserSubscription(reg);
         });
+      })
+      .then(function () {
+        return true;
       })
       .catch(function () {
         return false;
@@ -180,7 +236,7 @@
   function enableOrderPush() {
     if (!isSupported()) return Promise.resolve(false);
     setOrderPushEnabledPreference(true);
-    return ensureOrderPushSubscription();
+    return ensureOrderPushSubscription(true);
   }
 
   function disableOrderPush() {
