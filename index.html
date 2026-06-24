@@ -2015,7 +2015,7 @@
         });
         if (!showFit && selected.length === 0) return rows.slice();
         return rows.filter(function (r) {
-          var bc = normalizeBlockCode(r.blockCode);
+          var bc = resolvedBlockCodeForRow(r);
           if (showFit && bc === "") return true;
           for (var i = 0; i < selected.length; i++) {
             if (bc === selected[i]) return true;
@@ -2059,6 +2059,31 @@
         return "";
       }
 
+      function resolvedBlockCodeForRow(r) {
+        if (!r) return "";
+        var rowBlk = normalizeBlockCode(r.blockCode);
+        if (rowBlk) return rowBlk;
+        return normalizeBlockCode(blockCodeForRoom(r.room));
+      }
+
+      function distinctBlockCodesForFilter(rows) {
+        var codeSet = {};
+        (rows || []).forEach(function (r) {
+          var bc = resolvedBlockCodeForRow(r);
+          if (bc) codeSet[bc] = true;
+        });
+        var map = cachedAllStatusBlockMap;
+        if (map) {
+          Object.keys(map).forEach(function (roomKey) {
+            var bc = normalizeBlockCode(map[roomKey]);
+            if (bc) codeSet[bc] = true;
+          });
+        }
+        return Object.keys(codeSet).sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+      }
+
       function renderBlockFilterBar(wrapId, rows, showAll, showFit, selectedCodes) {
         var wrap = document.getElementById(wrapId);
         if (!wrap) return;
@@ -2069,17 +2094,10 @@
           return;
         }
 
-        var codeSet = {};
-        rows.forEach(function (r) {
-          var bc = normalizeBlockCode(r.blockCode);
-          if (bc !== "") codeSet[bc] = true;
-        });
-        var codes = Object.keys(codeSet).sort(function (a, b) {
-          return a.localeCompare(b, undefined, { numeric: true });
-        });
+        var codes = distinctBlockCodesForFilter(rows);
 
         Object.keys(selectedCodes).forEach(function (k) {
-          if (!codeSet[k]) delete selectedCodes[k];
+          if (codes.indexOf(k) < 0) delete selectedCodes[k];
         });
 
         wrap.hidden = false;
@@ -2481,7 +2499,7 @@
             status: rec.status,
             foRaw: rec.foRaw || "",
             resvStatus: rec.resvStatus || "",
-            blockCode: rec.blockCode || "",
+            blockCode: resolvedBlockCodeForRow(rec),
           });
         });
         Object.keys(buckets).forEach(function (key) {
@@ -2816,14 +2834,19 @@
       function overlayAllStatusBlocks(rows) {
         var map = cachedAllStatusBlockMap;
         if (!rows || !rows.length) return [];
-        if (!map || !Object.keys(map).length) return rows.slice();
         return rows.map(function (r) {
-          if (!Object.prototype.hasOwnProperty.call(map, r.room)) return r;
+          var rowBlk = normalizeBlockCode(r.blockCode);
+          var mapBlk = "";
+          if (map && Object.prototype.hasOwnProperty.call(map, r.room)) {
+            mapBlk = normalizeBlockCode(map[r.room]);
+          }
           return {
             room: r.room,
-            status: r.status,
-            resvStatus: r.resvStatus,
-            blockCode: map[r.room],
+            status: r.status || "",
+            resvStatus: r.resvStatus || "",
+            blockCode: mapBlk || rowBlk,
+            foStatus: r.foStatus || "",
+            roomType: r.roomType != null ? String(r.roomType).trim() : "",
           };
         });
       }
