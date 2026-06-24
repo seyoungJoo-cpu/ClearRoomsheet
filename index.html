@@ -1300,6 +1300,7 @@
 
       var AUTH_UNLOCK_KEY = "clear_html_unlocked";
       var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
+      var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
       var sharedStateVersion = 0;
       var syncPollTimer = null;
       var syncPushTimer = null;
@@ -1554,6 +1555,47 @@
         return n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv");
       }
 
+      function hasPayloadRoomingData(payload) {
+        if (!payload || typeof payload !== "object") return false;
+        if (Array.isArray(payload.vacRows) && payload.vacRows.length) return true;
+        if (payload.roomResvMap && Object.keys(payload.roomResvMap).length) return true;
+        if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
+        if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
+        return false;
+      }
+
+      function hasLocalRoomingData() {
+        return (
+          (cachedVacRows && cachedVacRows.length > 0) ||
+          (cachedAllStatusRooms && cachedAllStatusRooms.length > 0) ||
+          (cachedRoomResvMap && Object.keys(cachedRoomResvMap).length > 0) ||
+          (cachedAllStatusBlockMap && Object.keys(cachedAllStatusBlockMap).length > 0)
+        );
+      }
+
+      function saveRoomingStateToLocal() {
+        if (!hasLocalRoomingData()) return;
+        try {
+          localStorage.setItem(
+            ROOMING_XML_LS_KEY,
+            JSON.stringify(buildSharedStatePayload({ includeExtendedStay: true }))
+          );
+        } catch (e) {}
+      }
+
+      function loadRoomingStateFromLocal() {
+        try {
+          var raw = localStorage.getItem(ROOMING_XML_LS_KEY);
+          if (!raw) return false;
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object") return false;
+          applySharedState(parsed);
+          return hasLocalRoomingData();
+        } catch (e) {
+          return false;
+        }
+      }
+
       function buildSharedStatePayload(opts) {
         opts = opts || {};
         rebuildCombinedRoomResvMap();
@@ -1607,6 +1649,7 @@
         }
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
+        saveRoomingStateToLocal();
       }
 
       function pushSharedState(opts) {
@@ -1626,6 +1669,7 @@
           })
           .then(function (data) {
             if (data && data.version != null) saveSharedStateVersion(data.version);
+            saveRoomingStateToLocal();
             var label = opts.syncLabel || "다른 PC와 공유됨";
             updateSyncStatus(label + " · " + formatSyncTime(data.updatedAt), true);
           })
@@ -1651,14 +1695,21 @@
           })
           .then(function (data) {
             if (!data || !data.payload) {
-              if (!isPoll) updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
-              return false;
+              if (!isPoll) {
+                updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
+              }
+              return hasLocalRoomingData();
             }
             if (data.version <= sharedStateVersion) {
-              if (!isPoll && data.version > 0) {
-                updateSyncStatus("다른 PC와 동기화됨 · " + formatSyncTime(data.updatedAt), true);
+              if (!isPoll) {
+                if (hasPayloadRoomingData(data.payload)) {
+                  applySharedState(data.payload);
+                }
+                if (data.version > 0) {
+                  updateSyncStatus("다른 PC와 동기화됨 · " + formatSyncTime(data.updatedAt), true);
+                }
               }
-              return true;
+              return hasPayloadRoomingData(data.payload) || hasLocalRoomingData();
             }
             isApplyingRemote = true;
             saveSharedStateVersion(data.version);
@@ -3122,6 +3173,7 @@
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
         schedulePushSharedState({ includeExtendedStay: false });
+        saveRoomingStateToLocal();
       }
 
       function loadUploadFiles(files, done) {
@@ -3492,16 +3544,18 @@
 
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
+        loadRoomingStateFromLocal();
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {
             try {
               sessionStorage.setItem("makeroom-hk-entry", "1");
             } catch (e) {}
+            saveRoomingStateToLocal();
           });
         }
-        pullSharedState(false).then(function (hadRemote) {
-          if (!hadRemote) return loadDefaultXmlFiles();
+        pullSharedState(false).then(function (hasData) {
+          if (!hasData && !hasLocalRoomingData()) return loadDefaultXmlFiles();
         });
         if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
           window.__startRoomSync();
