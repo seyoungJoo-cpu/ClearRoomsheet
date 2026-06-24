@@ -889,6 +889,67 @@
       var VALID_XML_STATUSES = { IP: true, CL: true, PU: true, DI: true, OO: true, OS: true };
       var ADMIN_NAME_LS = "lotte-hk-admin-name-v1";
       var ADMIN_NAME_FIRST_LS = "lotte-hk-admin-name-first-v1";
+      var pendingAdminRefresh = null;
+
+      function isTextInputActive(el) {
+        el = el || document.activeElement;
+        if (!el) return false;
+        if (el.isContentEditable) return true;
+        var tag = el.tagName;
+        if (tag === "TEXTAREA") return true;
+        if (tag !== "INPUT") return false;
+        var type = (el.type || "text").toLowerCase();
+        return (
+          type === "text" ||
+          type === "search" ||
+          type === "tel" ||
+          type === "url" ||
+          type === "email" ||
+          type === "number" ||
+          type === "password" ||
+          type === ""
+        );
+      }
+
+      function isAdminUserEditing() {
+        if (!isTextInputActive()) return false;
+        var el = document.activeElement;
+        if (!el || !el.closest) return false;
+        return !!(
+          el.closest(".admin-app") ||
+          el.closest("#zoneGrid") ||
+          el.closest(".notice-block") ||
+          el.id === "noticeInput" ||
+          el.id === "newZoneLabel" ||
+          el.classList.contains("re-num") ||
+          el.classList.contains("re-memo1") ||
+          el.classList.contains("re-memo2") ||
+          el.classList.contains("zone-card__title-input")
+        );
+      }
+
+      function deferAdminRefresh(applyFn) {
+        if (!isAdminUserEditing()) {
+          applyFn();
+          return;
+        }
+        pendingAdminRefresh = applyFn;
+      }
+
+      function flushDeferredAdminRefresh() {
+        if (!pendingAdminRefresh || isAdminUserEditing()) return;
+        var fn = pendingAdminRefresh;
+        pendingAdminRefresh = null;
+        fn();
+      }
+
+      document.addEventListener(
+        "focusout",
+        function () {
+          setTimeout(flushDeferredAdminRefresh, 50);
+        },
+        true
+      );
 
       function getAdminName() {
         var el = document.getElementById("adminOperatorName");
@@ -1056,10 +1117,17 @@
           payload && payload.vacRows ? payload.vacRows : [],
           payload && payload.roomResvMap ? payload.roomResvMap : null
         );
+        if (isAdminUserEditing()) return;
         renderRooms(HKStorage.load());
       }
 
       function handleHkSyncChange(changed, payload) {
+        deferAdminRefresh(function () {
+          handleHkSyncChangeApply(changed, payload);
+        });
+      }
+
+      function handleHkSyncChangeApply(changed, payload) {
         if (
           (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) &&
           payload
@@ -2599,6 +2667,7 @@
       }
 
       function renderRooms(data) {
+        if (isAdminUserEditing()) return;
         HKStorage.getZoneOrder(data).forEach(function (zone) {
           var ul = document.querySelector('.room-list[data-list="' + zone + '"]');
           if (!ul) return;
@@ -2669,9 +2738,19 @@
         });
       }
 
-      function refresh() {
+      function refresh(opts) {
+        opts = opts || {};
+        if (!opts.force && isAdminUserEditing()) {
+          deferAdminRefresh(function () {
+            refresh({ force: true });
+          });
+          return;
+        }
         var data = HKStorage.load();
-        document.getElementById("noticeInput").value = data.notice;
+        var noticeEl = document.getElementById("noticeInput");
+        if (noticeEl && document.activeElement !== noticeEl) {
+          noticeEl.value = data.notice;
+        }
         renderZoneGrid(data);
         renderRooms(data);
       }
@@ -2985,7 +3064,11 @@
       }
 
       window.addEventListener("storage", function (e) {
-        if (e.key === HKStorage.key) refresh();
+        if (e.key === HKStorage.key) {
+          deferAdminRefresh(function () {
+            refresh();
+          });
+        }
       });
     })();
   </script>

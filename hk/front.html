@@ -4751,6 +4751,70 @@
       var zoneStatusFilters = {};
       var CHANGE_ACK_LS = "lotte-hk-change-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
+      var pendingDeferredSyncApply = null;
+
+      function isTextInputActive(el) {
+        el = el || document.activeElement;
+        if (!el) return false;
+        if (el.isContentEditable) return true;
+        var tag = el.tagName;
+        if (tag === "TEXTAREA") return true;
+        if (tag !== "INPUT") return false;
+        var type = (el.type || "text").toLowerCase();
+        return (
+          type === "text" ||
+          type === "search" ||
+          type === "tel" ||
+          type === "url" ||
+          type === "email" ||
+          type === "number" ||
+          type === "password" ||
+          type === ""
+        );
+      }
+
+      function hasOpenHkEditors() {
+        return !!document.querySelector(
+          ".room-time-editor, .room-memo2-editor, .request-feedback__sched-editor, .front-chat__msg-edit"
+        );
+      }
+
+      function isHkUserEditing() {
+        if (hasOpenHkEditors()) return true;
+        if (!isTextInputActive()) return false;
+        var el = document.activeElement;
+        if (!el || !el.closest) return false;
+        return !!(
+          el.closest(".hk-app-main") ||
+          el.closest("#feedbackColumn") ||
+          el.closest(".feedback-column") ||
+          el.closest(".sidebar")
+        );
+      }
+
+      function deferHkSyncUiApply(applyFn) {
+        if (!isHkUserEditing()) {
+          applyFn();
+          return;
+        }
+        pendingDeferredSyncApply = applyFn;
+      }
+
+      function flushDeferredHkSyncUiApply() {
+        if (!pendingDeferredSyncApply || isHkUserEditing()) return;
+        var fn = pendingDeferredSyncApply;
+        pendingDeferredSyncApply = null;
+        fn();
+      }
+
+      document.addEventListener(
+        "focusout",
+        function () {
+          setTimeout(flushDeferredHkSyncUiApply, 50);
+        },
+        true
+      );
+
       var pendingZoneAlerts = {};
       var pendingRoomAlerts = {};
       var openRoomHistoryKeys = loadOpenRoomHistoryKeys();
@@ -5671,6 +5735,11 @@
           payload && payload.vacRows ? payload.vacRows : [],
           payload && payload.roomResvMap ? payload.roomResvMap : null
         );
+        if (isHkUserEditing()) {
+          updateRoomStatusDisplay();
+          updateOrderFoDisplay();
+          return;
+        }
         renderTypeFilterCheckboxes();
         updateRoomStatusDisplay();
         renderRequestLogPanel();
@@ -5736,6 +5805,12 @@
       }
 
       function handleHkSyncChange(changed, payload) {
+        deferHkSyncUiApply(function () {
+          handleHkSyncChangeApply(changed, payload);
+        });
+      }
+
+      function handleHkSyncChangeApply(changed, payload) {
         if (changed.indexOf("hkRequestLog") >= 0) {
           syncRequestLogFromServer();
           detectNewRequestItems();
@@ -6880,6 +6955,7 @@
       }
 
       function renderRequestLogPanel() {
+        if (isHkUserEditing()) return;
         var list = document.getElementById("requestFeedbackList");
         var empty = document.getElementById("requestFeedbackEmpty");
         if (!list) {
@@ -7396,6 +7472,7 @@
       }
 
       function renderOrderPanels() {
+        if (isHkUserEditing()) return;
         renderOrderLogPanel();
         renderOrderWorkPanels();
       }
@@ -8625,7 +8702,9 @@
         ta.focus();
       }
 
-      function renderRoomsForZone(zone) {
+      function renderRoomsForZone(zone, opts) {
+        opts = opts || {};
+        if (!opts.force && isHkUserEditing()) return;
         if (!roomList || !roomEmpty || !label) return;
         closeMemo2Editor();
         closeTimeEditor();
@@ -8741,6 +8820,12 @@
 
       function refreshMain(opts) {
         opts = opts || {};
+        if (!opts.force && isHkUserEditing()) {
+          deferHkSyncUiApply(function () {
+            refreshMain(Object.assign({}, opts, { force: true }));
+          });
+          return;
+        }
         renderSidebarZoneTabs();
         syncZoneLabelsFromStorage();
         currentZone = getActiveZone();
@@ -8799,6 +8884,7 @@
       }
 
       function renderFrontChatPanel(scrollToBottom) {
+        if (isHkUserEditing()) return;
         var list = document.getElementById("frontChatMessages");
         var empty = document.getElementById("frontChatEmpty");
         if (!list) return;
@@ -9291,7 +9377,11 @@
       }
 
       window.addEventListener("storage", function (e) {
-        if (e.key === HKStorage.key) refreshMain();
+        if (e.key === HKStorage.key) {
+          deferHkSyncUiApply(function () {
+            refreshMain();
+          });
+        }
       });
 
       window.addEventListener("pageshow", function () {
@@ -9324,6 +9414,12 @@
       }
 
       function refreshSyncedPanelsFromCache() {
+        deferHkSyncUiApply(function () {
+          refreshSyncedPanelsFromCacheApply();
+        });
+      }
+
+      function refreshSyncedPanelsFromCacheApply() {
         loadRequestLog();
         loadOrderLog();
         loadFrontChat();

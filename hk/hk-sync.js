@@ -13,6 +13,14 @@
   var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
   var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
   var CLOSE_DAY_KEY = "lotte-hk-close-day-at-v1";
+  var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
+  var ROOMING_EXTRA_KEYS = [
+    "blockMap",
+    "allStatusRooms",
+    "extendedStayRooms",
+    "blockDisplayAliases",
+    "uploadSummary",
+  ];
 
   var syncVersion = 0;
   var pollTimer = null;
@@ -98,10 +106,52 @@
     roomResvMap: {},
   };
 
-  function mergeXmlSyncCache(payload) {
-    if (!payload || typeof payload !== "object") return;
-    if (Array.isArray(payload.vacRows)) {
+  function getRoomingXmlSnapshot() {
+    var snap = {
+      vacRows: xmlSyncCache.vacRows.slice(),
+      roomResvMap: Object.assign({}, xmlSyncCache.roomResvMap),
+    };
+    if (lastServerPayload && typeof lastServerPayload === "object") {
+      ROOMING_EXTRA_KEYS.forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(lastServerPayload, key)) {
+          snap[key] = lastServerPayload[key];
+        }
+      });
+    }
+    return snap;
+  }
+
+  function hasRoomingData(snapshot) {
+    snapshot = snapshot || getRoomingXmlSnapshot();
+    if (Array.isArray(snapshot.vacRows) && snapshot.vacRows.length) return true;
+    if (snapshot.roomResvMap && Object.keys(snapshot.roomResvMap).length) return true;
+    if (snapshot.blockMap && Object.keys(snapshot.blockMap).length) return true;
+    if (Array.isArray(snapshot.allStatusRooms) && snapshot.allStatusRooms.length) return true;
+    return false;
+  }
+
+  function saveRoomingXmlToLocal() {
+    if (!hasRoomingData()) return;
+    try {
+      global.localStorage.setItem(ROOMING_XML_LS_KEY, JSON.stringify(getRoomingXmlSnapshot()));
+    } catch (e) {}
+  }
+
+  function loadRoomingXmlFromLocal() {
+    try {
+      var raw = global.localStorage.getItem(ROOMING_XML_LS_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") mergeRoomingPayload(parsed);
+    } catch (e) {}
+  }
+
+  function mergeRoomingPayload(payload) {
+    if (!payload || typeof payload !== "object") return false;
+    var touched = false;
+    if (Object.prototype.hasOwnProperty.call(payload, "vacRows") && Array.isArray(payload.vacRows)) {
       xmlSyncCache.vacRows = payload.vacRows.slice();
+      touched = true;
     }
     if (
       Object.prototype.hasOwnProperty.call(payload, "roomResvMap") &&
@@ -109,7 +159,27 @@
       typeof payload.roomResvMap === "object"
     ) {
       xmlSyncCache.roomResvMap = Object.assign({}, payload.roomResvMap);
+      touched = true;
     }
+    ROOMING_EXTRA_KEYS.forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) {
+        lastServerPayload = Object.assign({}, lastServerPayload || {});
+        lastServerPayload[key] = payload[key];
+        touched = true;
+      }
+    });
+    if (touched) {
+      lastServerPayload = Object.assign({}, lastServerPayload || {}, {
+        vacRows: xmlSyncCache.vacRows.slice(),
+        roomResvMap: Object.assign({}, xmlSyncCache.roomResvMap),
+      });
+      saveRoomingXmlToLocal();
+    }
+    return touched;
+  }
+
+  function mergeXmlSyncCache(payload) {
+    return mergeRoomingPayload(payload);
   }
 
   function xmlPayloadForListeners(serverPayload) {
@@ -177,9 +247,10 @@
     cache.mbInvLog = readJsonArray(MB_INV_LOG_KEY);
     cache.mbCheckLog = readJsonArray(MB_CHECK_LOG_KEY);
     cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
+    loadRoomingXmlFromLocal();
   }
 
-  /** 로컬 싱크 캐시 삭제 — 재접속 시 서버에서 다시 받기 */
+  /** HK 오더·요청 등 로컬 캐시만 삭제 — 루밍 XML 자료는 유지 */
   function clearLocalCaches() {
     LOCAL_CACHE_KEYS.forEach(function (key) {
       try {
@@ -218,6 +289,7 @@
       clearTimeout(pushGapTimer);
       pushGapTimer = null;
     }
+    loadRoomingXmlFromLocal();
   }
 
   function onChange(fn) {
@@ -482,16 +554,21 @@
   }
 
   function emitLocalCacheHydrate() {
+    var changed = [
+      "hkRequestLog",
+      "hkOrderLog",
+      "hkMbInvLog",
+      "hkMbCheckLog",
+      "hkFrontChat",
+      "hkCancelLog",
+      "hkUseLog",
+    ];
+    if (hasRoomingData()) {
+      changed.push("vacRows");
+      changed.push("roomResvMap");
+    }
     emitChange(
-      [
-        "hkRequestLog",
-        "hkOrderLog",
-        "hkMbInvLog",
-        "hkMbCheckLog",
-        "hkFrontChat",
-        "hkCancelLog",
-        "hkUseLog",
-      ],
+      changed,
       Object.assign(
         {
           hkRequestLog: cache.requestLog.slice(),
@@ -523,8 +600,11 @@
       .then(function (data) {
         if (!data) return false;
         if (data.version != null && data.version <= syncVersion) {
-          loadCachesFromLocal();
-          emitLocalCacheHydrate();
+          if (!isPoll) {
+            loadCachesFromLocal();
+            if (data.payload) mergeRoomingPayload(data.payload);
+            emitLocalCacheHydrate();
+          }
           return true;
         }
         if (data.version != null) saveSyncVersion(data.version);
@@ -532,8 +612,10 @@
         return true;
       })
       .catch(function () {
-        loadCachesFromLocal();
-        emitLocalCacheHydrate();
+        if (!isPoll) {
+          loadCachesFromLocal();
+          emitLocalCacheHydrate();
+        }
         return false;
       });
   }
@@ -765,6 +847,9 @@
     clearRoomingXml: function () {
       xmlSyncCache.vacRows = [];
       xmlSyncCache.roomResvMap = {};
+      try {
+        global.localStorage.removeItem(ROOMING_XML_LS_KEY);
+      } catch (e) {}
       if (lastServerPayload) {
         lastServerPayload.vacRows = [];
         lastServerPayload.roomResvMap = {};
