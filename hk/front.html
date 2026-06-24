@@ -1136,6 +1136,8 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      min-height: calc(100vh - var(--header-min-h));
+      align-self: stretch;
     }
 
     .sidebar-brand {
@@ -1157,13 +1159,34 @@
 
     .sidebar-section {
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
-    .sidebar-nav--compact-footer {
-      padding-top: 8px;
-      padding-bottom: 8px;
-      margin-top: 56px;
-      border-top: 1px dashed var(--border);
+    .sidebar-footer {
+      margin-top: auto;
+      flex-shrink: 0;
+      padding: 8px;
+      border-top: 1px solid #e2e5e9;
+      background: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .sidebar-footer .sidebar-nav__btn,
+    .sidebar-footer a.sidebar-nav__link {
+      background: #eceef1;
+      border-color: #dfe3e8;
+      color: #64748b;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .sidebar-footer .sidebar-nav__btn:hover,
+    .sidebar-footer a.sidebar-nav__link:hover {
+      background: #e4e7eb;
+      border-color: #cbd5e1;
+      color: #475569;
     }
 
     .sidebar-title {
@@ -3441,6 +3464,15 @@
       padding-bottom: 22px;
     }
 
+    .sched-req-card.is-change-alert {
+      animation: room-change-alert 0.75s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    .sched-req-card.is-change-alert:hover {
+      border-color: #facc15;
+    }
+
     .sched-req-card__actions {
       display: flex;
       flex-wrap: wrap;
@@ -3719,6 +3751,23 @@
         flex-direction: column;
         border-right: none;
         border-bottom: 2px solid var(--border);
+        min-height: 0;
+      }
+
+      .sidebar-footer {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 0;
+        border-top: 1px solid #e2e5e9;
+      }
+
+      .sidebar-footer .sidebar-nav__btn,
+      .sidebar-footer a.sidebar-nav__link {
+        flex: 1 1 calc(50% - 4px);
+        min-height: 44px;
+        text-align: center;
+        padding: 10px 8px;
       }
 
       .sidebar-nav {
@@ -3726,12 +3775,6 @@
         flex-wrap: wrap;
         padding: 0 8px 8px;
         gap: 6px;
-      }
-
-      .sidebar-nav--compact-footer {
-        border-top: none;
-        margin-top: 16px;
-        padding-top: 4px;
       }
 
       .sidebar-nav__btn,
@@ -4255,12 +4298,12 @@
             사용리스트
           </button>
         </div>
-        <div class="sidebar-nav sidebar-nav--compact-footer" aria-label="다른 프로그램">
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
-            교대
-          </button>
-          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
-        </div>
+      </nav>
+      <nav class="sidebar-footer" aria-label="교대 · 루밍">
+        <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
+          교대
+        </button>
+        <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
       </nav>
     </aside>
 
@@ -4820,6 +4863,8 @@
       var knownOrderAlertIds = {};
       var pendingRequestAlert = false;
       var pendingRequestModifyAlert = false;
+      /** 처리·예정 카드 깜빡임 — 정비관리 등에서 내용 수정 시 */
+      var pendingRequestModifyIds = {};
       var knownRequestAlertKeys = {};
       var knownRequestSnapshots = {};
       var pendingMbInvAlert = false;
@@ -6816,6 +6861,7 @@
           if (requestLogEntries[i].id !== id) next.push(requestLogEntries[i]);
         }
         requestLogEntries = next;
+        delete pendingRequestModifyIds[id];
         saveRequestLog();
       }
 
@@ -7007,6 +7053,7 @@
         renderRoomsForZone(null);
         clearRequestSidebarAlerts();
         applySidebarMainView("request");
+        renderRequestLogPanel({ force: true });
       }
 
       function showSidebarOrderView() {
@@ -7388,6 +7435,26 @@
         return (entry.id || "") + "|" + (entry.at || "");
       }
 
+      function isScheduledRequestEntry(entry) {
+        return !!(entry && entry.sched && String(entry.sched).trim());
+      }
+
+      function hasPendingRequestModifyCards() {
+        return Object.keys(pendingRequestModifyIds).some(function (id) {
+          return pendingRequestModifyIds[id];
+        });
+      }
+
+      function markRequestEntrySavedLocally(entry) {
+        if (!entry || !entry.id) return;
+        knownRequestSnapshots[entry.id] = requestContentSignature(entry);
+        delete pendingRequestModifyIds[entry.id];
+        if (!hasPendingRequestModifyCards()) {
+          pendingRequestModifyAlert = false;
+          applyRequestSidebarAlertUi();
+        }
+      }
+
       function requestContentSignature(entry) {
         if (!entry) return "";
         return [
@@ -7405,6 +7472,7 @@
       function initRequestAlertTracking() {
         knownRequestAlertKeys = {};
         knownRequestSnapshots = {};
+        pendingRequestModifyIds = {};
         requestLogEntries.forEach(function (entry) {
           if (!entry || !entry.id) return;
           if (isRequestPendingAlert(entry)) {
@@ -7433,16 +7501,26 @@
         }
       }
 
-      function registerRequestModifyAlert() {
-        if (sidebarMainView !== "request") {
-          pendingRequestModifyAlert = true;
-          applyRequestSidebarAlertUi();
-        }
+      function registerRequestModifyAlert(entryId, blinkCard) {
+        pendingRequestModifyAlert = true;
+        if (blinkCard && entryId) pendingRequestModifyIds[entryId] = true;
+        applyRequestSidebarAlertUi();
+        var schedPanel = document.getElementById("schedCardsPanel");
+        if (schedPanel && !schedPanel.hidden) renderSchedRequestCards();
+      }
+
+      function ackRequestModifyCard(entryId) {
+        if (!entryId || !pendingRequestModifyIds[entryId]) return;
+        delete pendingRequestModifyIds[entryId];
+        if (!hasPendingRequestModifyCards()) pendingRequestModifyAlert = false;
+        applyRequestSidebarAlertUi();
+        renderSchedRequestCards();
       }
 
       function clearRequestSidebarAlerts() {
         pendingRequestAlert = false;
         pendingRequestModifyAlert = false;
+        pendingRequestModifyIds = {};
         requestLogEntries.forEach(function (entry) {
           if (!entry || !entry.id) return;
           if (isRequestPendingAlert(entry)) {
@@ -7472,7 +7550,7 @@
 
           if (prevSig !== sig) {
             knownRequestSnapshots[entry.id] = sig;
-            registerRequestModifyAlert();
+            registerRequestModifyAlert(entry.id, isScheduledRequestEntry(entry));
           }
         });
         Object.keys(knownRequestSnapshots).forEach(function (id) {
@@ -8302,6 +8380,10 @@
           li.className = "room-card sched-req-card";
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("sched-req-card--urgent");
+          if (pendingRequestModifyIds[entry.id]) {
+            li.classList.add("is-change-alert");
+            li.title = "수정된 내용이 있습니다 · 클릭하면 강조 해제";
+          }
 
           var head = document.createElement("div");
           head.className = "room-card__head";
@@ -8505,6 +8587,7 @@
             return;
           }
           entry.sched = p.value;
+          markRequestEntrySavedLocally(entry);
           saveRequestLog();
           done();
         });
@@ -8635,6 +8718,7 @@
           ev.stopPropagation();
           entry.memo = String(ta.value || "").trim();
           entry.memoImage = hkGetPhoto(memoEditKey) || "";
+          markRequestEntrySavedLocally(entry);
           saveRequestLog();
           done();
         });
@@ -8755,6 +8839,7 @@
           ev.stopPropagation();
           entry.memo2 = String(ta.value || "").trim();
           entry.memo2Image = hkGetPhoto(memo2EditKey) || "";
+          markRequestEntrySavedLocally(entry);
           saveRequestLog();
           done();
         });
@@ -9548,6 +9633,21 @@
       var schedCardsPanelEl = document.getElementById("schedCardsPanel");
       if (schedCardsPanelEl) {
         schedCardsPanelEl.addEventListener("click", function (e) {
+          var ackCard = e.target.closest(".sched-req-card.is-change-alert");
+          if (
+            ackCard &&
+            !e.target.closest(
+              ".sched-card__use-btn, .sched-card__memo-btn, .sched-card__memo2-btn, .sched-card__edit-btn, .request-feedback__sched-editor-wrap, .request-feedback__memo-editor-wrap, .request-feedback__memo2-editor-wrap"
+            )
+          ) {
+            var ackId = ackCard.getAttribute("data-req-id");
+            if (ackId) {
+              e.preventDefault();
+              e.stopPropagation();
+              ackRequestModifyCard(ackId);
+              return;
+            }
+          }
           var useEl = e.target.closest(".sched-card__use-btn");
           if (useEl) {
             if (!frontMode) return;
@@ -10171,7 +10271,17 @@
         var bFront = document.getElementById("sidebarBtnFront");
         if (bReq) {
           bReq.addEventListener("click", function () {
-            if (sidebarMainView === "request") return;
+            if (sidebarMainView === "request") {
+              if (
+                pendingRequestModifyAlert ||
+                pendingRequestAlert ||
+                hasPendingRequestModifyCards()
+              ) {
+                clearRequestSidebarAlerts();
+                renderRequestLogPanel({ force: true });
+              }
+              return;
+            }
             showSidebarRequestView();
           });
         }
