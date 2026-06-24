@@ -465,43 +465,6 @@
       background: #fee2e2;
     }
 
-    .log-reset-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-top: 8px;
-    }
-
-    .btn-reset-log {
-      height: 34px;
-      padding: 0 14px;
-      font: inherit;
-      font-weight: 600;
-      font-size: 0.8125rem;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text);
-    }
-
-    .btn-reset-log:hover {
-      background: #f3f4f6;
-      border-color: var(--text-muted);
-    }
-
-    .btn-reset-log--danger {
-      border-color: #fca5a5;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
-
-    .btn-reset-log--danger:hover {
-      background: #fee2e2;
-      border-color: #f87171;
-    }
-
     .close-day-card {
       border: 2px solid #93c5fd;
       background: #f0f9ff;
@@ -799,21 +762,6 @@
         </p>
       </div>
       <div class="zone-grid" id="zoneGrid"></div>
-    </section>
-
-    <section class="card">
-      <h2>프론트 로그 초기화</h2>
-      <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
-        정비 프론트 화면 사이드바의 <strong>취소리스트</strong>·<strong>사용리스트</strong>에 쌓인 기록을 이 브라우저에서 비웁니다. 되돌릴 수 없습니다.
-      </p>
-      <div class="log-reset-row">
-        <button type="button" class="btn-reset-log btn-reset-log--danger" id="resetCancelList">
-          취소리스트 초기화
-        </button>
-        <button type="button" class="btn-reset-log btn-reset-log--danger" id="resetUseList">
-          사용리스트 초기화
-        </button>
-      </div>
     </section>
 
     <section class="card rooming-xml-card">
@@ -3033,24 +2981,6 @@
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start();
-      }
-
-      var resetCancelBtn = document.getElementById("resetCancelList");
-      if (resetCancelBtn) {
-        resetCancelBtn.addEventListener("click", function () {
-          if (!confirm("취소리스트의 모든 기록을 삭제할까요?")) return;
-          if (typeof HKSync !== "undefined") HKSync.clearCancelLog();
-          toast("취소리스트를 비웠습니다.");
-        });
-      }
-
-      var resetUseBtn = document.getElementById("resetUseList");
-      if (resetUseBtn) {
-        resetUseBtn.addEventListener("click", function () {
-          if (!confirm("사용리스트의 모든 기록을 삭제할까요?")) return;
-          if (typeof HKSync !== "undefined") HKSync.clearUseLog();
-          toast("사용리스트를 비웠습니다.");
-        });
       }
 
       var closeDayBtn = document.getElementById("btnCloseDay");

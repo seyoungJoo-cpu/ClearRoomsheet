@@ -232,15 +232,17 @@
     }
     button.sidebar-btn {
       font: inherit;
-      padding: 0.55rem 0.45rem;
+      padding: 0.55rem 0.4rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: #243044;
       color: var(--text);
       cursor: pointer;
       font-weight: 700;
-      font-size: 0.78rem;
-      letter-spacing: 0.02em;
+      font-size: 0.72rem;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      white-space: nowrap;
     }
     button.sidebar-btn:hover {
       border-color: var(--accent-dim);
@@ -420,6 +422,40 @@
       font-size: 0.8rem;
       color: var(--muted);
     }
+
+    .fasn-upload-card {
+      margin-bottom: 0.85rem;
+      padding: 0.75rem 0.85rem;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: rgba(36, 48, 68, 0.45);
+    }
+
+    .fasn-upload-card h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.88rem;
+      color: var(--accent);
+    }
+
+    .fasn-upload-note {
+      margin: 0 0 0.55rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .fasn-upload-card .dropzone {
+      margin: 0;
+      padding: 0.85rem 0.75rem;
+    }
+
+    .fasn-upload-summary {
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--ok);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
     .sheet-outer.fasn-board .pair-row .cell.status-code {
       font-weight: 800;
       font-size: 0.62rem;
@@ -1146,7 +1182,9 @@
           <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
           <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 필터">VAC</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
-          <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — All Status 객실 + VAC FO_STATUS">F.ASN</button>
+          <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
+          <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
+          <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · 정비 루밍과 무관">F.ASN</button>
         </aside>
         <div class="board-main">
           <div id="view499" class="view-panel">
@@ -1174,7 +1212,49 @@
             <div id="asnBlockFilters" class="asn-block-filters" hidden></div>
             <div id="asnBoardMount"></div>
           </div>
+          <div id="viewOVac" class="view-panel" hidden>
+            <div class="summary-toolbar">
+              <div id="oVacStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <p class="fasn-upload-note" style="margin-top:0">FO IN(투숙·OCC) 객실은 표시하지 않습니다.</p>
+            <div id="oVacBoardMount"></div>
+          </div>
+          <div id="viewOAsn" class="view-panel" hidden>
+            <div class="summary-toolbar">
+              <div id="oAsnStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <p class="fasn-upload-note" style="margin-top:0">FO IN(투숙·OCC) 객실은 표시하지 않습니다.</p>
+            <div id="oAsnBlockFilters" class="asn-block-filters" hidden></div>
+            <div id="oAsnBoardMount"></div>
+          </div>
           <div id="viewFAsn" class="view-panel" hidden>
+            <p class="fasn-legend">
+              <strong>F.ASN 전용 보드</strong> — 아래에서 XML을 별도 업로드합니다.
+              499·VAC·ASN·O.VAC·O.ASN(정비 루밍)과 데이터를 공유하지 않습니다.
+            </p>
+            <div class="fasn-upload-card" id="fasnUploadCard">
+              <h3>F.ASN XML 업로드</h3>
+              <p class="fasn-upload-note">
+                <code>HKVACROOM</code> · <code>HK_ALLSTATUS</code> 형식. 정비관리(hk) 동기화와 무관합니다.
+              </p>
+              <div class="dropzone" id="dzFasnUpload" tabindex="0" role="button" aria-label="F.ASN XML 업로드">
+                <div class="actions">
+                  <label class="file-btn">
+                    파일 찾기
+                    <input
+                      type="file"
+                      id="inputFasnUpload"
+                      accept=".xml,text/xml,application/xml"
+                      multiple
+                    />
+                  </label>
+                </div>
+              </div>
+              <div id="fasnUploadSummary" class="fasn-upload-summary"></div>
+              <div id="fasnUploadErr" class="err" hidden></div>
+            </div>
             <p class="fasn-legend">
               <strong>객실</strong> = <code>HK_ALLSTATUS</code> ROOM ·
               <strong>옆 칸</strong> = <code>HKVACROOM</code> FO (청소·빈방)
@@ -1269,6 +1349,13 @@
 
       /** 마지막으로 로드된 HKVACROOM 행(블록 오버레이 전) */
       var cachedVacRows = [];
+
+      /** F.ASN 전용 — 정비 루밍·hk 동기화와 분리 */
+      var FASN_LS_KEY = "makeroom-fasn-local-v1";
+      var fasnVacRows = [];
+      var fasnAllStatusRooms = [];
+      var fasnAllStatusBlockMap = {};
+      var fasnVacFoByRoom = {};
 
       /** 연박 추가: 객실번호(4자리) → true , 499·VAC·ASN·F.ASN 보드에 「연박」표시 */
       var extendedStayRooms = {};
@@ -1882,6 +1969,16 @@
         return !!ASN_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
       }
 
+      function isFoInRoom(rec) {
+        var nr = normalizeRoomDigits(rec && rec.room);
+        var fo = (rec && rec.foStatus) || (nr ? cachedVacFoByRoom[nr] : "") || "";
+        return formatFoStatusDisplay(fo) === "IN";
+      }
+
+      function isNotFoInRoom(rec) {
+        return !isFoInRoom(rec);
+      }
+
       function normalizeBlockCode(s) {
         return String(s || "").replace(/\s+/g, " ").trim();
       }
@@ -2046,6 +2143,23 @@
         );
       }
 
+      function renderOAsnBlockFilterBar(asnRows) {
+        renderBlockFilterBar(
+          "oAsnBlockFilters",
+          asnRows,
+          asnBlockShowAll,
+          asnBlockShowFit,
+          asnBlockSelectedCodes
+        );
+      }
+
+      function clearBlockFilterBar(wrapId) {
+        var wrap = document.getElementById(wrapId);
+        if (!wrap) return;
+        wrap.innerHTML = "";
+        wrap.hidden = true;
+      }
+
       function renderFasnBlockFilterBar(rows) {
         renderBlockFilterBar(
           "fAsnBlockFilters",
@@ -2126,15 +2240,15 @@
       }
 
       function statusFilterCodesForMode(mode) {
-        if (mode === "vac") {
+        if (mode === "vac" || mode === "ovac") {
           return STATUS_FILTER_CODES.concat(VAC_STATUS_EXTRA_CODES);
         }
         return STATUS_FILTER_CODES.slice();
       }
 
       function summaryBarModeFromId(barId) {
-        if (barId === "vacStatusSummaryBar") return "vac";
-        if (barId === "asnStatusSummaryBar") return "asn";
+        if (barId === "vacStatusSummaryBar" || barId === "oVacStatusSummaryBar") return "vac";
+        if (barId === "asnStatusSummaryBar" || barId === "oAsnStatusSummaryBar") return "asn";
         return "499";
       }
 
@@ -2145,7 +2259,7 @@
           { code: "PU", cls: "pu" },
           { code: "DI", cls: "di" },
         ];
-        if (mode === "vac") {
+        if (mode === "vac" || mode === "ovac") {
           chips.push({ code: "OO", cls: "oo" }, { code: "OS", cls: "os" });
         }
         return chips;
@@ -2167,7 +2281,9 @@
         [
           { id: "statusSummaryBar", mode: "499" },
           { id: "vacStatusSummaryBar", mode: "vac" },
+          { id: "oVacStatusSummaryBar", mode: "ovac" },
           { id: "asnStatusSummaryBar", mode: "asn" },
+          { id: "oAsnStatusSummaryBar", mode: "oasn" },
         ].forEach(function (item) {
           var bar = document.getElementById(item.id);
           if (!bar) return;
@@ -2183,7 +2299,7 @@
         mode = mode || "499";
         var u = normalizeRoomStatus(rec.status);
         var codes = statusFilterCodesForMode(mode);
-        if (mode !== "vac" && (u === "OO" || u === "OS")) {
+        if (mode !== "vac" && mode !== "ovac" && (u === "OO" || u === "OS")) {
           return STATUS_FILTER_CODES.every(function (c) {
             return statusRoomFilters[c];
           });
@@ -2436,6 +2552,74 @@
         cachedVacFoByRoom = m;
       }
 
+      function rebuildFasnVacFoMapFromRows() {
+        var m = {};
+        fasnVacRows.forEach(function (r) {
+          m[r.room] = r.foStatus || "";
+        });
+        fasnVacFoByRoom = m;
+      }
+
+      function mergeFasnAllStatusRoomList(incoming) {
+        if (!incoming || !incoming.length) return;
+        fasnAllStatusRooms = dedupeByRoomLastWins(
+          incoming.map(function (rm) {
+            return { room: rm };
+          })
+        ).map(function (r) {
+          return r.room;
+        });
+      }
+
+      function fasnBlockCodeForRoom(room) {
+        var map = fasnAllStatusBlockMap;
+        if (map && Object.prototype.hasOwnProperty.call(map, room)) {
+          return map[room];
+        }
+        return "";
+      }
+
+      function hasLocalFasnData() {
+        return (
+          (fasnVacRows && fasnVacRows.length > 0) ||
+          (fasnAllStatusRooms && fasnAllStatusRooms.length > 0) ||
+          (fasnAllStatusBlockMap && Object.keys(fasnAllStatusBlockMap).length > 0)
+        );
+      }
+
+      function saveFasnStateToLocal() {
+        if (!hasLocalFasnData()) return;
+        try {
+          localStorage.setItem(
+            FASN_LS_KEY,
+            JSON.stringify({
+              vacRows: fasnVacRows,
+              allStatusRooms: fasnAllStatusRooms,
+              blockMap: fasnAllStatusBlockMap,
+              uploadSummary: (document.getElementById("fasnUploadSummary") || {}).textContent || "",
+            })
+          );
+        } catch (e) {}
+      }
+
+      function loadFasnStateFromLocal() {
+        try {
+          var raw = localStorage.getItem(FASN_LS_KEY);
+          if (!raw) return false;
+          var data = JSON.parse(raw);
+          if (!data || typeof data !== "object") return false;
+          if (data.vacRows && data.vacRows.length) fasnVacRows = data.vacRows.slice();
+          if (data.allStatusRooms) fasnAllStatusRooms = data.allStatusRooms.slice();
+          if (data.blockMap) fasnAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap));
+          rebuildFasnVacFoMapFromRows();
+          var sum = document.getElementById("fasnUploadSummary");
+          if (sum && data.uploadSummary) sum.textContent = data.uploadSummary;
+          return hasLocalFasnData();
+        } catch (e) {
+          return false;
+        }
+      }
+
       function mergeAllStatusRoomList(incoming) {
         if (!incoming || !incoming.length) return;
         cachedAllStatusRooms = dedupeByRoomLastWins(
@@ -2462,21 +2646,21 @@
           var emptyAs = document.createElement("div");
           emptyAs.className = "empty-board";
           emptyAs.textContent =
-            "HK_ALLSTATUS XML을 업로드하거나 자동 로드해 주세요. (ROOM 목록 기준)";
+            "F.ASN 전용 XML을 위 업로드 영역에서 올려 주세요. (HK_ALLSTATUS ROOM 목록 기준)";
           mount.appendChild(emptyAs);
           return;
         }
         var allRows = [];
-        cachedAllStatusRooms.forEach(function (room) {
+        fasnAllStatusRooms.forEach(function (room) {
           if (DROP_ROOMS[room]) return;
-          var foRaw = cachedVacFoByRoom[room] || "";
+          var foRaw = fasnVacFoByRoom[room] || "";
           var label = foLabelForDisplay(foRaw);
           allRows.push({
             room: room,
             foRaw: foRaw,
             status: label !== "" ? label : "—",
             resvStatus: "",
-            blockCode: blockCodeForRoom(room),
+            blockCode: fasnBlockCodeForRoom(room),
           });
         });
         if (!allRows.length) {
@@ -2908,16 +3092,33 @@
           filterFn = isVacResvMatch;
           emptyFiltered =
             "VAC 조건의 RESV_STATUS(Due Out, Departed, 도찀 조합, Not Reserved, Arrival 등)에 해당하는 객실이 없습니다.";
+        } else if (mode === "ovac") {
+          summaryElId = "oVacStatusSummaryBar";
+          mountId = "oVacBoardMount";
+          filterFn = function (rec) {
+            return isVacResvMatch(rec) && isNotFoInRoom(rec);
+          };
+          emptyFiltered =
+            "O.VAC 조건(VAC RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
         } else if (mode === "asn") {
           summaryElId = "asnStatusSummaryBar";
           mountId = "asnBoardMount";
           filterFn = isAsnResvMatch;
           emptyFiltered =
             "ASN 조건의 RESV_STATUS(Arrival, Arrived, Arrived·Departed, Due Out·Arrival, Departed·Arrival)에 해당하는 객실이 없습니다.";
+        } else if (mode === "oasn") {
+          summaryElId = "oAsnStatusSummaryBar";
+          mountId = "oAsnBoardMount";
+          filterFn = function (rec) {
+            return isAsnResvMatch(rec) && isNotFoInRoom(rec);
+          };
+          emptyFiltered =
+            "O.ASN 조건(ASN RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
         }
 
         var summaryEl = document.getElementById(summaryElId);
         var mount = document.getElementById(mountId);
+        if (!mount) return;
         mount.innerHTML = "";
 
         var filtered = rows.filter(function (rec) {
@@ -2933,13 +3134,15 @@
         var workRows;
         if (mode === "asn") {
           renderAsnBlockFilterBar(modeFiltered);
+          clearBlockFilterBar("oAsnBlockFilters");
+          workRows = applyAsnBlockFilter(modeFiltered);
+        } else if (mode === "oasn") {
+          renderOAsnBlockFilterBar(modeFiltered);
+          clearBlockFilterBar("asnBlockFilters");
           workRows = applyAsnBlockFilter(modeFiltered);
         } else {
-          var asnBarClear = document.getElementById("asnBlockFilters");
-          if (asnBarClear) {
-            asnBarClear.innerHTML = "";
-            asnBarClear.hidden = true;
-          }
+          clearBlockFilterBar("asnBlockFilters");
+          clearBlockFilterBar("oAsnBlockFilters");
           workRows = modeFiltered;
         }
 
@@ -2952,7 +3155,8 @@
         var board499 = get499BoardRows(displayRows);
         var outCount = countOutRooms(board499);
         var showOutStats =
-          outDepartedHighlight && (mode === "vac" || mode === "asn");
+          outDepartedHighlight &&
+          (mode === "vac" || mode === "ovac" || mode === "asn" || mode === "oasn");
         renderStatusSummaryBar(summaryEl, summ.counts, board499.length, {
           mode: mode,
           showOutStats: showOutStats,
@@ -2980,7 +3184,7 @@
           var emptyB = document.createElement("div");
           emptyB.className = "empty-board";
           emptyB.textContent =
-            mode === "asn"
+            mode === "asn" || mode === "oasn"
               ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
               : emptyFiltered;
           mount.appendChild(emptyB);
@@ -2991,7 +3195,7 @@
           var emptySt = document.createElement("div");
           emptySt.className = "empty-board";
           emptySt.textContent =
-            mode === "vac"
+            mode === "vac" || mode === "ovac"
               ? "선택한 ROOM_STATUS(IP·CL·PU·DI·OO·OS) 조건에 맞는 객실이 없습니다."
               : "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
           mount.appendChild(emptySt);
@@ -3084,7 +3288,46 @@
         renderBoard(cachedRows, "499");
         renderBoard(cachedRows, "vac");
         renderBoard(cachedRows, "asn");
+        renderBoard(cachedRows, "ovac");
+        renderBoard(cachedRows, "oasn");
         renderFAsnBoard();
+      }
+
+      function applyFasnPayload(payload) {
+        if (!payload) return;
+        var uploadErr = document.getElementById("fasnUploadErr");
+        var uploadSummary = document.getElementById("fasnUploadSummary");
+        if (uploadErr) {
+          uploadErr.hidden = !payload.errors.length;
+          uploadErr.textContent = payload.errors.join("\n");
+        }
+        if (uploadSummary) {
+          var summaryBody = payload.summaries.join("\n") || "";
+          uploadSummary.textContent =
+            summaryBody && !payload.errors.length
+              ? withUploadTimePrefix(summaryBody)
+              : summaryBody;
+        }
+        if (payload.blockMapPatch && Object.keys(payload.blockMapPatch).length) {
+          fasnAllStatusBlockMap = Object.assign({}, payload.blockMapPatch);
+        }
+        if (payload.rows && payload.rows.length) {
+          fasnVacRows = dedupeByRoomLastWins(payload.rows);
+          rebuildFasnVacFoMapFromRows();
+        }
+        if (payload.allStatusRooms && payload.allStatusRooms.length) {
+          mergeFasnAllStatusRoomList(payload.allStatusRooms);
+        }
+        saveFasnStateToLocal();
+        renderFAsnBoard();
+      }
+
+      function loadFasnUploadFiles(files) {
+        var arr = files ? Array.prototype.slice.call(files, 0) : [];
+        if (!arr.length) return;
+        loadXmlFiles(arr, function (payload) {
+          applyFasnPayload(payload || { summaries: [], errors: ["파일을 읽지 못했습니다."] });
+        });
       }
 
       function loadXmlFiles(files, done) {
@@ -3268,6 +3511,43 @@
         loadUploadFiles(dt.files);
       });
 
+      (function wireFasnUploadDropzone() {
+        var dzFasn = document.getElementById("dzFasnUpload");
+        var inputFasn = document.getElementById("inputFasnUpload");
+        if (!dzFasn || !inputFasn) return;
+        dzFasn.addEventListener("click", function (e) {
+          if (e.target.closest("label.file-btn")) return;
+          inputFasn.click();
+        });
+        dzFasn.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputFasn.click();
+          }
+        });
+        inputFasn.addEventListener("change", function () {
+          loadFasnUploadFiles(inputFasn.files);
+          inputFasn.value = "";
+        });
+        ["dragenter", "dragover"].forEach(function (ev) {
+          dzFasn.addEventListener(ev, function (e) {
+            e.preventDefault();
+            dzFasn.classList.add("dragover");
+          });
+        });
+        ["dragleave", "drop"].forEach(function (ev) {
+          dzFasn.addEventListener(ev, function (e) {
+            e.preventDefault();
+            dzFasn.classList.remove("dragover");
+          });
+        });
+        dzFasn.addEventListener("drop", function (e) {
+          var dt = e.dataTransfer;
+          if (!dt || !dt.files || !dt.files.length) return;
+          loadFasnUploadFiles(dt.files);
+        });
+      })();
+
       function rebuildExtendedStayRoomsFromTextarea() {
         var ta = document.getElementById("extendedStayInput");
         var next = {};
@@ -3308,6 +3588,8 @@
         document.getElementById("view499").hidden = viewId !== "499";
         document.getElementById("viewVac").hidden = viewId !== "vac";
         document.getElementById("viewAsn").hidden = viewId !== "asn";
+        document.getElementById("viewOVac").hidden = viewId !== "ovac";
+        document.getElementById("viewOAsn").hidden = viewId !== "oasn";
         document.getElementById("viewFAsn").hidden = viewId !== "fasn";
       }
 
@@ -3443,6 +3725,50 @@
       }
       wireAsnBlockFilterUI();
 
+      function wireOAsnBlockFilterUI() {
+        var va = document.getElementById("viewOAsn");
+        if (!va || va.dataset.oasnFilterWired) return;
+        va.dataset.oasnFilterWired = "1";
+        va.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        va.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            asnBlockShowAll = !!t.checked;
+            if (asnBlockShowAll) {
+              asnBlockShowFit = false;
+              asnBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            asnBlockShowFit = !!t.checked;
+            if (asnBlockShowFit) asnBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            asnBlockSelectedCodes[code] = !!t.checked;
+            if (asnBlockSelectedCodes[code]) asnBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(asnBlockSelectedCodes).some(function (k) {
+            return asnBlockSelectedCodes[k];
+          });
+          if (!asnBlockShowAll && !asnBlockShowFit && !anyBlock) {
+            asnBlockShowAll = true;
+            asnBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireOAsnBlockFilterUI();
+
       function wireFasnBlockFilterUI() {
         var vf = document.getElementById("viewFAsn");
         if (!vf || vf.dataset.fasnFilterWired) return;
@@ -3546,6 +3872,7 @@
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
         loadRoomingStateFromLocal();
+        loadFasnStateFromLocal();
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {

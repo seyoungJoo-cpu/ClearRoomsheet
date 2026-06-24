@@ -1139,7 +1139,7 @@
     }
 
     .sidebar-brand {
-      padding: 12px 10px 10px;
+      padding: 10px 10px 8px;
       border-bottom: 1px solid var(--border);
     }
 
@@ -1152,21 +1152,22 @@
     }
 
     .sidebar-section--primary .sidebar-nav {
-      padding-top: 8px;
+      padding-top: 6px;
     }
 
     .sidebar-section {
       border-bottom: 1px solid var(--border);
     }
 
-    .sidebar-footer {
-      margin-top: auto;
-      border-top: 1px solid var(--border);
-      padding: 10px 0 12px;
+    .sidebar-nav--compact-footer {
+      padding-top: 4px;
+      padding-bottom: 8px;
+      margin-top: 2px;
+      border-top: 1px dashed var(--border);
     }
 
     .sidebar-title {
-      padding: 8px 10px;
+      padding: 6px 10px 4px;
       font-weight: 600;
       font-size: 0.8125rem;
       color: var(--accent);
@@ -1176,7 +1177,7 @@
       display: flex;
       flex-direction: column;
       gap: 3px;
-      padding: 0 8px 10px;
+      padding: 0 8px 6px;
     }
 
     .sidebar-nav__btn {
@@ -1531,6 +1532,12 @@
       margin: 0;
     }
 
+    .zone-type-filters {
+      margin: 0 0 10px;
+      padding: 0;
+      border-top: none;
+    }
+
     .zone-status-filters {
       display: flex;
       flex-wrap: wrap;
@@ -1778,6 +1785,19 @@
       font-weight: 700;
       font-size: 0.9375rem;
       color: var(--accent);
+    }
+
+    .room-card__type {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface-raised);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .room-card__time-display {
@@ -3239,6 +3259,13 @@
       border-top: 1px solid var(--border);
     }
 
+    .request-type-filters__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
     .request-type-filters__toggle {
       height: 34px;
       padding: 0 14px;
@@ -3664,17 +3691,17 @@
         border-bottom: 2px solid var(--border);
       }
 
-      .sidebar-footer {
-        margin-top: 0;
-        border-top: 1px solid var(--border);
-        padding-top: 4px;
-      }
-
       .sidebar-nav {
         flex-direction: row;
         flex-wrap: wrap;
-        padding: 0 8px 10px;
+        padding: 0 8px 8px;
         gap: 6px;
+      }
+
+      .sidebar-nav--compact-footer {
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
       }
 
       .sidebar-nav__btn,
@@ -4198,9 +4225,7 @@
             사용리스트
           </button>
         </div>
-      </nav>
-      <nav class="sidebar-footer" aria-label="다른 프로그램">
-        <div class="sidebar-nav">
+        <div class="sidebar-nav sidebar-nav--compact-footer" aria-label="다른 프로그램">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
             교대
           </button>
@@ -4271,6 +4296,20 @@
                 role="group"
                 aria-label="객실 상태 필터"
               ></div>
+            </div>
+            <div class="request-type-filters zone-type-filters" id="zoneTypeFilters" aria-label="특이객실 TYPE 필터">
+              <button
+                type="button"
+                class="request-type-filters__toggle"
+                id="zoneTypeFilterToggle"
+                aria-expanded="false"
+                aria-controls="zoneTypeFilterBody"
+              >
+                TYPE 필터
+              </button>
+              <div class="request-type-filters__body" id="zoneTypeFilterBody" hidden>
+                <div class="request-type-filters__list" id="zoneTypeFilterList"></div>
+              </div>
             </div>
             <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
             <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 특이객실 객실을 등록하세요.</p>
@@ -4522,15 +4561,25 @@
           </div>
         </form>
         <div class="request-type-filters" id="requestTypeFilters" aria-label="처리·예정 TYPE 필터">
-          <button
-            type="button"
-            class="request-type-filters__toggle"
-            id="requestTypeFilterToggle"
-            aria-expanded="false"
-            aria-controls="requestTypeFilterBody"
-          >
-            TYPE 필터
-          </button>
+          <div class="request-type-filters__actions">
+            <button
+              type="button"
+              class="request-type-filters__toggle"
+              id="roomTypeDisplayToggle"
+              aria-pressed="false"
+            >
+              TYPE 표시 OFF
+            </button>
+            <button
+              type="button"
+              class="request-type-filters__toggle"
+              id="requestTypeFilterToggle"
+              aria-expanded="false"
+              aria-controls="requestTypeFilterBody"
+            >
+              TYPE 필터
+            </button>
+          </div>
           <div class="request-type-filters__body" id="requestTypeFilterBody" hidden>
             <div class="request-type-filters__list" id="requestTypeFilterList"></div>
           </div>
@@ -4746,6 +4795,8 @@
       var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
       var SCHED_PANEL_HINT_NO_TYPE = "선택한 TYPE에 해당하는 처리·예정 요청이 없습니다.";
       var SCHED_TYPE_FILTER_LS = "lotte-hk-sched-type-filters-v3";
+      var SHOW_ROOM_TYPE_LS = "lotte-hk-show-room-type-v1";
+      var showRoomTypeOnCards = true;
       var ZONE_STATUS_FILTER_LS = "lotte-hk-zone-status-filters-v2";
       var ZONE_STATUS_CODES = ["IP", "CL", "PU", "DI", "OS", "OO"];
       var zoneStatusFilters = {};
@@ -5187,12 +5238,7 @@
       }
 
       function clearHkSessionUiCaches() {
-        [
-          SCHED_TYPE_FILTER_LS,
-          ZONE_STATUS_FILTER_LS,
-          CHANGE_ACK_LS,
-          OPEN_ROOM_HISTORY_LS,
-        ].forEach(function (key) {
+        [ZONE_STATUS_FILTER_LS, CHANGE_ACK_LS, OPEN_ROOM_HISTORY_LS].forEach(function (key) {
           try {
             sessionStorage.removeItem(key);
           } catch (e) {}
@@ -5333,6 +5379,41 @@
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
         return XML_ROOM_TYPE_MAP[nr] || "";
+      }
+
+      function appendRoomTypeToCardHead(headEl, roomInput) {
+        if (!showRoomTypeOnCards || !headEl) return;
+        var tp = normalizeRoomTypeCode(lookupRoomTypeFromXml(roomInput));
+        if (!tp) return;
+        var typeEl = document.createElement("span");
+        typeEl.className = "room-card__type";
+        typeEl.textContent = tp;
+        typeEl.title = "객실 TYPE · " + tp;
+        var noBox = headEl.querySelector(".room-card__no-box");
+        if (noBox) noBox.insertAdjacentElement("afterend", typeEl);
+        else headEl.insertBefore(typeEl, headEl.firstChild);
+      }
+
+      function loadShowRoomTypePref() {
+        try {
+          var v = sessionStorage.getItem(SHOW_ROOM_TYPE_LS);
+          if (v === "1") showRoomTypeOnCards = true;
+          else if (v === "0") showRoomTypeOnCards = false;
+        } catch (e) {}
+      }
+
+      function saveShowRoomTypePref() {
+        try {
+          sessionStorage.setItem(SHOW_ROOM_TYPE_LS, showRoomTypeOnCards ? "1" : "0");
+        } catch (e) {}
+      }
+
+      function syncRoomTypeDisplayToggleUi() {
+        var btn = document.getElementById("roomTypeDisplayToggle");
+        if (!btn) return;
+        btn.classList.toggle("is-on", showRoomTypeOnCards);
+        btn.setAttribute("aria-pressed", showRoomTypeOnCards ? "true" : "false");
+        btn.textContent = showRoomTypeOnCards ? "TYPE 표시 ON" : "TYPE 표시 OFF";
       }
 
       function normalizeRoomTypeCode(raw) {
@@ -5522,6 +5603,27 @@
         return schedTypeFilters[bucket] !== false;
       }
 
+      function refreshRequestTypeFilterViews() {
+        renderRequestLogPanel({ force: true });
+      }
+
+      function onSchedTypeFilterChanged() {
+        saveSchedTypeFiltersToStorage();
+        syncSchedTypeFilterCheckboxesUi();
+        refreshMain({ force: true });
+      }
+
+      function syncSchedTypeFilterCheckboxesUi() {
+        document.querySelectorAll('input[type="checkbox"][data-room-type]').forEach(function (node) {
+          var tp = node.getAttribute("data-room-type");
+          if (!tp) return;
+          node.checked = schedTypeFilters[tp] !== false;
+        });
+        document.querySelectorAll(".sched-type-filter-all").forEach(function (allCb) {
+          syncSchedTypeAllCheckbox(allCb);
+        });
+      }
+
       function appendSchedTypeFilterItem(rowEl, tp, allCb) {
         var lab = document.createElement("label");
         lab.className =
@@ -5534,32 +5636,34 @@
         cb.addEventListener("change", function () {
           schedTypeFilters[tp] = cb.checked;
           syncSchedTypeAllCheckbox(allCb);
-          saveSchedTypeFiltersToStorage();
-          renderSchedRequestCards();
+          onSchedTypeFilterChanged();
         });
         lab.appendChild(cb);
         lab.appendChild(document.createTextNode(tp));
         rowEl.appendChild(lab);
       }
 
-      function renderTypeFilterCheckboxes() {
-        var listEl = document.getElementById("requestTypeFilterList");
+      function renderTypeFilterCheckboxes(cfg) {
+        cfg = cfg || {};
+        var listId = cfg.listId || "requestTypeFilterList";
+        var allCbId = cfg.allCbId || "schedTypeFilterAll";
+        var listEl = document.getElementById(listId);
         if (!listEl) return;
         listEl.innerHTML = "";
         ensureSchedTypeFilterDefaults();
 
         var allCb = document.createElement("input");
         allCb.type = "checkbox";
-        allCb.id = "schedTypeFilterAll";
+        allCb.className = "sched-type-filter-all";
+        allCb.id = allCbId;
         syncSchedTypeAllCheckbox(allCb);
         allCb.addEventListener("change", function () {
           setAllSchedTypeFilters(allCb.checked);
           allCb.indeterminate = false;
-          saveSchedTypeFiltersToStorage();
           listEl.querySelectorAll('input[type="checkbox"][data-room-type]').forEach(function (node) {
             node.checked = allCb.checked;
           });
-          renderSchedRequestCards();
+          onSchedTypeFilterChanged();
         });
 
         var rowAll = document.createElement("div");
@@ -5581,6 +5685,17 @@
         });
       }
 
+      function renderAllTypeFilterCheckboxes() {
+        renderTypeFilterCheckboxes({
+          listId: "requestTypeFilterList",
+          allCbId: "schedTypeFilterAll",
+        });
+        renderTypeFilterCheckboxes({
+          listId: "zoneTypeFilterList",
+          allCbId: "zoneSchedTypeFilterAll",
+        });
+      }
+
       (function setupTypeFilterToggle() {
         var btn = document.getElementById("requestTypeFilterToggle");
         var body = document.getElementById("requestTypeFilterBody");
@@ -5590,6 +5705,30 @@
           body.hidden = !willOpen;
           btn.classList.toggle("is-on", willOpen);
           btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+      })();
+
+      (function setupZoneTypeFilterToggle() {
+        var btn = document.getElementById("zoneTypeFilterToggle");
+        var body = document.getElementById("zoneTypeFilterBody");
+        if (!btn || !body) return;
+        btn.addEventListener("click", function () {
+          var willOpen = body.hidden;
+          body.hidden = !willOpen;
+          btn.classList.toggle("is-on", willOpen);
+          btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+      })();
+
+      (function setupRoomTypeDisplayToggle() {
+        var btn = document.getElementById("roomTypeDisplayToggle");
+        if (!btn) return;
+        syncRoomTypeDisplayToggleUi();
+        btn.addEventListener("click", function () {
+          showRoomTypeOnCards = !showRoomTypeOnCards;
+          saveShowRoomTypePref();
+          syncRoomTypeDisplayToggleUi();
+          refreshMain({ force: true });
         });
       })();
 
@@ -5739,7 +5878,7 @@
           updateOrderFoDisplay();
           return;
         }
-        renderTypeFilterCheckboxes();
+        renderAllTypeFilterCheckboxes();
         updateRoomStatusDisplay();
         renderRequestLogPanel();
         renderOrderPanels();
@@ -6242,6 +6381,12 @@
 
       function getRequestRoomFilterRaw() {
         var el = document.getElementById("roomNo");
+        if (!el) return "";
+        return el.value.replace(/\s/g, "");
+      }
+
+      function getOrderRoomFilterRaw() {
+        var el = document.getElementById("orderRoomNo");
         if (!el) return "";
         return el.value.replace(/\s/g, "");
       }
@@ -6953,8 +7098,9 @@
         }
       }
 
-      function renderRequestLogPanel() {
-        if (isHkUserEditing()) return;
+      function renderRequestLogPanel(opts) {
+        opts = opts || {};
+        if (!opts.force && isHkUserEditing()) return;
         var list = document.getElementById("requestFeedbackList");
         var empty = document.getElementById("requestFeedbackEmpty");
         if (!list) {
@@ -6962,8 +7108,11 @@
           return;
         }
         list.innerHTML = "";
-        var pending = requestLogEntries.filter(function (entry) {
+        var allPending = requestLogEntries.filter(function (entry) {
           return !(entry.sched && String(entry.sched).trim());
+        });
+        var pending = allPending.filter(function (entry) {
+          return roomPassesSchedTypeFilter(entry.room);
         });
         pending.sort(function (a, b) {
           var ta = new Date(a.at || 0).getTime();
@@ -7086,7 +7235,17 @@
 
           list.appendChild(li);
         });
-        if (empty) empty.hidden = pending.length > 0;
+        if (empty) {
+          if (pending.length > 0) {
+            empty.hidden = true;
+          } else if (allPending.length > 0 && isSchedTypeFilterRestricted()) {
+            empty.textContent = "선택한 TYPE에 해당하는 요청 알림이 없습니다.";
+            empty.hidden = false;
+          } else {
+            empty.textContent = "요청이 접수되면 이곳에 표시됩니다.";
+            empty.hidden = false;
+          }
+        }
         renderSchedRequestCards();
       }
 
@@ -7470,10 +7629,11 @@
         });
       }
 
-      function renderOrderPanels() {
-        if (isHkUserEditing()) return;
-        renderOrderLogPanel();
-        renderOrderWorkPanels();
+      function renderOrderPanels(opts) {
+        opts = opts || {};
+        if (!opts.force && isHkUserEditing()) return;
+        renderOrderLogPanel(opts);
+        renderOrderWorkPanels(opts);
       }
 
       function appendOrderItemCommon(li, entry, opts) {
@@ -7796,7 +7956,8 @@
         renderOrderPanels();
       }
 
-      function renderOrderWorkPanels() {
+      function renderOrderWorkPanels(opts) {
+        opts = opts || {};
         var issueList = document.getElementById("orderIssueList");
         var issueEmpty = document.getElementById("orderIssueEmpty");
         var acceptedList = document.getElementById("orderAcceptedList");
@@ -7818,6 +7979,19 @@
         var cancelledEntries = orderLogEntries.filter(function (e) {
           return getOrderPhase(e) === "cancelled";
         });
+
+        var filterNorm = getOrderRoomFilterRaw().toLowerCase();
+        if (filterNorm) {
+          issueEntries = issueEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterNorm);
+          });
+          acceptedEntries = acceptedEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterNorm);
+          });
+          cancelledEntries = cancelledEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterNorm);
+          });
+        }
 
         issueEntries.sort(function (a, b) {
           var ta = new Date(a.issueAt || a.at || 0).getTime();
@@ -7907,16 +8081,37 @@
           cancelledList.appendChild(li);
         });
 
-        if (issueEmpty) issueEmpty.hidden = issueEntries.length > 0;
-        if (acceptedEmpty) acceptedEmpty.hidden = acceptedEntries.length > 0;
-        if (cancelledEmpty) cancelledEmpty.hidden = cancelledEntries.length > 0;
+        if (issueEmpty) {
+          issueEmpty.hidden = issueEntries.length > 0;
+          if (!issueEntries.length && filterNorm) {
+            issueEmpty.textContent = "입력한 객실번호에 해당하는 문제 발생 건이 없습니다.";
+          } else {
+            issueEmpty.textContent = "문제 발생 건이 없습니다.";
+          }
+        }
+        if (acceptedEmpty) {
+          acceptedEmpty.hidden = acceptedEntries.length > 0;
+          if (!acceptedEntries.length && filterNorm) {
+            acceptedEmpty.textContent = "입력한 객실번호에 해당하는 접수완료 건이 없습니다.";
+          } else {
+            acceptedEmpty.textContent = "접수완료 건이 없습니다.";
+          }
+        }
+        if (cancelledEmpty) {
+          cancelledEmpty.hidden = cancelledEntries.length > 0;
+          if (!cancelledEntries.length && filterNorm) {
+            cancelledEmpty.textContent = "입력한 객실번호에 해당하는 취소 건이 없습니다.";
+          } else {
+            cancelledEmpty.textContent = "취소된 오더가 없습니다.";
+          }
+        }
         setIssueSectionVisible(
           document.getElementById("orderIssueSection"),
-          issueEntries.length > 0
+          issueEntries.length > 0 || (!filterNorm && orderLogEntries.some(isOrderIssueOpen))
         );
       }
 
-      function renderOrderLogPanel() {
+      function renderOrderLogPanel(opts) {
         var list = document.getElementById("orderFeedbackList");
         var empty = document.getElementById("orderFeedbackEmpty");
         if (!list) return;
@@ -8016,6 +8211,7 @@
           noBox.appendChild(no);
           var st = (entry.status || "").trim();
           head.appendChild(noBox);
+          appendRoomTypeToCardHead(head, entry.room);
           head.appendChild(
             buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
           );
@@ -8724,9 +8920,12 @@
           roomEmpty.textContent = "관리자에서 이 특이객실 객실을 등록하세요.";
         } else {
           var shownCount = 0;
+          var statusPassCount = 0;
           rooms.forEach(function (room, idx) {
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
+            statusPassCount += 1;
+            if (!roomPassesSchedTypeFilter(room.number)) return;
             shownCount += 1;
             var m1 = (room.memo1 || "").trim();
             var m2 = (room.memo2 || "").trim();
@@ -8769,6 +8968,7 @@
             no.textContent = formatRoomNoDisplay(room.number || "");
             noBox.appendChild(no);
             head.appendChild(noBox);
+            appendRoomTypeToCardHead(head, room.number || "");
             head.appendChild(
               buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
             );
@@ -8809,8 +9009,12 @@
           });
           if (shownCount === 0) {
             roomEmpty.hidden = false;
-            roomEmpty.textContent =
-              "선택한 ROOM_STATUS(IP·CL·PU·DI·OS·OO) 조건에 맞는 객실이 없습니다.";
+            if (statusPassCount > 0 && isSchedTypeFilterRestricted()) {
+              roomEmpty.textContent = "선택한 TYPE에 해당하는 객실이 없습니다.";
+            } else {
+              roomEmpty.textContent =
+                "선택한 ROOM_STATUS(IP·CL·PU·DI·OS·OO) 조건에 맞는 객실이 없습니다.";
+            }
           } else {
             roomEmpty.hidden = true;
           }
@@ -9438,11 +9642,13 @@
       }
 
       loadSchedTypeFiltersFromStorage();
+      loadShowRoomTypePref();
       loadZoneStatusFiltersFromStorage();
       renderZoneStatusFilterBar();
       wireZoneStatusFilterBar();
       syncZoneStatusFilterCheckboxes();
-      renderTypeFilterCheckboxes();
+      renderAllTypeFilterCheckboxes();
+      syncRoomTypeDisplayToggleUi();
       loadRequestLog();
       loadOrderLog();
       loadFrontChat();
@@ -9557,7 +9763,7 @@
         knownOrderAlertIds[id] = true;
         hkClearPhoto("orderMemo");
         saveOrderLog();
-        renderOrderPanels();
+        renderOrderPanels({ force: true });
       }
 
       function processOrderFormSubmit() {
@@ -9606,8 +9812,10 @@
           memo2Image: "",
           by: getOperatorName(),
         });
+        knownRequestSnapshots[id] = requestContentSignature(requestLogEntries[0]);
         saveRequestLog();
-        renderRequestLogPanel();
+        renderRequestLogPanel({ force: true });
+        applyRequestSidebarAlertUi();
       }
 
       function renderMemoStack() {
@@ -9674,11 +9882,13 @@
         renderMemoStack();
         hkClearPhoto("requestMemo");
         appendRequestLog(room, st, isUrgent, memoCombined, memoImage);
+        if (roomEl) roomEl.value = "";
         if (btnUrgentEl) {
           btnUrgentEl.classList.remove("is-on");
           btnUrgentEl.setAttribute("aria-pressed", "false");
         }
         clearRoomStatusDisplay();
+        refreshRequestTypeFilterViews();
       }
 
       var form = document.getElementById("requestForm");
@@ -9700,7 +9910,10 @@
       (function setupOrderRoomAuto() {
         var orderRoomEl = document.getElementById("orderRoomNo");
         if (!orderRoomEl) return;
-        orderRoomEl.addEventListener("input", updateOrderFoDisplay);
+        orderRoomEl.addEventListener("input", function () {
+          updateOrderFoDisplay();
+          renderOrderPanels({ force: true });
+        });
         orderRoomEl.addEventListener("change", updateOrderFoDisplay);
         updateOrderFoDisplay();
       })();
@@ -9841,7 +10054,7 @@
       var roomNoInput = document.getElementById("roomNo");
       if (roomNoInput) {
         roomNoInput.addEventListener("input", function () {
-          renderSchedRequestCards();
+          refreshRequestTypeFilterViews();
         });
       }
 
