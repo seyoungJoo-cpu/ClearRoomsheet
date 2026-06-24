@@ -5421,6 +5421,22 @@
         return m;
       }
 
+      /** vacRows에 TYPE가 하나도 없으면 기존 맵 유지(동기화로 roomType만 빠진 경우) */
+      function applyVacRowsToTypeMap(vacRows) {
+        if (!Array.isArray(vacRows) || !vacRows.length) return;
+        var hasAnyType = vacRows.some(function (row) {
+          return String(row.roomType != null ? row.roomType : "").trim();
+        });
+        if (!hasAnyType) return;
+        vacRows.forEach(function (row) {
+          var nr = normalizeRoomDigits(row.room);
+          if (!nr) return;
+          var tp = String(row.roomType != null ? row.roomType : "").trim();
+          if (tp) XML_ROOM_TYPE_MAP[nr] = normalizeRoomTypeCode(tp);
+          else delete XML_ROOM_TYPE_MAP[nr];
+        });
+      }
+
       function lookupRoomTypeFromXml(roomInput) {
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
@@ -5915,7 +5931,7 @@
         if (!payload) return;
         if (payload.vacRows && payload.vacRows.length) {
           XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
-          XML_ROOM_TYPE_MAP = rebuildRoomTypeMap(payload.vacRows);
+          applyVacRowsToTypeMap(payload.vacRows);
         }
         XML_ROOM_RESV_MAP = rebuildRoomResvMap(
           payload && payload.vacRows ? payload.vacRows : [],
@@ -9709,6 +9725,9 @@
       }
 
       function refreshSyncedPanelsFromCacheApply() {
+        if (typeof HKSync !== "undefined" && typeof HKSync.getXmlPayload === "function") {
+          applyXmlRoomStatusPayload(HKSync.getXmlPayload());
+        }
         loadRequestLog();
         loadOrderLog();
         loadFrontChat();

@@ -1202,6 +1202,7 @@
                 <input type="checkbox" class="chk-vac-asn-in" /> IN
               </label>
             </div>
+            <div id="vacBlockFilters" class="asn-block-filters" hidden></div>
             <div id="vacBoardMount"></div>
           </div>
           <div id="viewAsn" class="view-panel" hidden>
@@ -1218,6 +1219,7 @@
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
             </div>
             <p class="fasn-upload-note" style="margin-top:0">FO IN(투숙·OCC) 객실은 표시하지 않습니다.</p>
+            <div id="oVacBlockFilters" class="asn-block-filters" hidden></div>
             <div id="oVacBoardMount"></div>
           </div>
           <div id="viewOAsn" class="view-panel" hidden>
@@ -1708,7 +1710,26 @@
           cachedAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap));
         }
         if (data.vacRows && data.vacRows.length) {
-          cachedVacRows = data.vacRows.slice();
+          cachedVacRows = dedupeByRoomLastWins(
+            data.vacRows.map(function (row) {
+              var old = null;
+              for (var i = 0; i < cachedVacRows.length; i++) {
+                if (cachedVacRows[i].room === row.room) {
+                  old = cachedVacRows[i];
+                  break;
+                }
+              }
+              if (!old) return row;
+              return {
+                room: row.room,
+                status: row.status || old.status || "",
+                resvStatus: row.resvStatus || old.resvStatus || "",
+                blockCode: row.blockCode || old.blockCode || "",
+                foStatus: row.foStatus || old.foStatus || "",
+                roomType: row.roomType || old.roomType || "",
+              };
+            })
+          );
           rebuildVacFoMapFromRows();
         }
         if (data.roomResvMap && typeof data.roomResvMap === "object") {
@@ -1960,6 +1981,10 @@
       var asnBlockShowFit = false;
       /** @type {Record<string,boolean>} */
       var asnBlockSelectedCodes = {};
+      var vacBlockShowAll = true;
+      var vacBlockShowFit = false;
+      /** @type {Record<string,boolean>} */
+      var vacBlockSelectedCodes = {};
       var fasnBlockShowAll = true;
       var fasnBlockShowFit = false;
       /** @type {Record<string,boolean>} */
@@ -2005,6 +2030,15 @@
           asnBlockShowAll,
           asnBlockShowFit,
           asnBlockSelectedCodes
+        );
+      }
+
+      function applyVacBlockFilter(rows) {
+        return applyBlockFilter(
+          rows,
+          vacBlockShowAll,
+          vacBlockShowFit,
+          vacBlockSelectedCodes
         );
       }
 
@@ -2140,6 +2174,26 @@
           asnBlockShowAll,
           asnBlockShowFit,
           asnBlockSelectedCodes
+        );
+      }
+
+      function renderVacBlockFilterBar(rows) {
+        renderBlockFilterBar(
+          "vacBlockFilters",
+          rows,
+          vacBlockShowAll,
+          vacBlockShowFit,
+          vacBlockSelectedCodes
+        );
+      }
+
+      function renderOVacBlockFilterBar(rows) {
+        renderBlockFilterBar(
+          "oVacBlockFilters",
+          rows,
+          vacBlockShowAll,
+          vacBlockShowFit,
+          vacBlockSelectedCodes
         );
       }
 
@@ -3137,14 +3191,32 @@
         if (mode === "asn") {
           renderAsnBlockFilterBar(modeFiltered);
           clearBlockFilterBar("oAsnBlockFilters");
+          clearBlockFilterBar("vacBlockFilters");
+          clearBlockFilterBar("oVacBlockFilters");
           workRows = applyAsnBlockFilter(modeFiltered);
         } else if (mode === "oasn") {
           renderOAsnBlockFilterBar(modeFiltered);
           clearBlockFilterBar("asnBlockFilters");
+          clearBlockFilterBar("vacBlockFilters");
+          clearBlockFilterBar("oVacBlockFilters");
           workRows = applyAsnBlockFilter(modeFiltered);
+        } else if (mode === "vac") {
+          renderVacBlockFilterBar(modeFiltered);
+          clearBlockFilterBar("oVacBlockFilters");
+          clearBlockFilterBar("asnBlockFilters");
+          clearBlockFilterBar("oAsnBlockFilters");
+          workRows = applyVacBlockFilter(modeFiltered);
+        } else if (mode === "ovac") {
+          renderOVacBlockFilterBar(modeFiltered);
+          clearBlockFilterBar("vacBlockFilters");
+          clearBlockFilterBar("asnBlockFilters");
+          clearBlockFilterBar("oAsnBlockFilters");
+          workRows = applyVacBlockFilter(modeFiltered);
         } else {
           clearBlockFilterBar("asnBlockFilters");
           clearBlockFilterBar("oAsnBlockFilters");
+          clearBlockFilterBar("vacBlockFilters");
+          clearBlockFilterBar("oVacBlockFilters");
           workRows = modeFiltered;
         }
 
@@ -3186,7 +3258,7 @@
           var emptyB = document.createElement("div");
           emptyB.className = "empty-board";
           emptyB.textContent =
-            mode === "asn" || mode === "oasn"
+            mode === "asn" || mode === "oasn" || mode === "vac" || mode === "ovac"
               ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
               : emptyFiltered;
           mount.appendChild(emptyB);
@@ -3726,6 +3798,94 @@
         });
       }
       wireAsnBlockFilterUI();
+
+      function wireVacBlockFilterUI() {
+        var va = document.getElementById("viewVac");
+        if (!va || va.dataset.vacBlockFilterWired) return;
+        va.dataset.vacBlockFilterWired = "1";
+        va.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        va.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            vacBlockShowAll = !!t.checked;
+            if (vacBlockShowAll) {
+              vacBlockShowFit = false;
+              vacBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            vacBlockShowFit = !!t.checked;
+            if (vacBlockShowFit) vacBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            vacBlockSelectedCodes[code] = !!t.checked;
+            if (vacBlockSelectedCodes[code]) vacBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(vacBlockSelectedCodes).some(function (k) {
+            return vacBlockSelectedCodes[k];
+          });
+          if (!vacBlockShowAll && !vacBlockShowFit && !anyBlock) {
+            vacBlockShowAll = true;
+            vacBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireVacBlockFilterUI();
+
+      function wireOVacBlockFilterUI() {
+        var va = document.getElementById("viewOVac");
+        if (!va || va.dataset.ovacBlockFilterWired) return;
+        va.dataset.ovacBlockFilterWired = "1";
+        va.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        va.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            vacBlockShowAll = !!t.checked;
+            if (vacBlockShowAll) {
+              vacBlockShowFit = false;
+              vacBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            vacBlockShowFit = !!t.checked;
+            if (vacBlockShowFit) vacBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            vacBlockSelectedCodes[code] = !!t.checked;
+            if (vacBlockSelectedCodes[code]) vacBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(vacBlockSelectedCodes).some(function (k) {
+            return vacBlockSelectedCodes[k];
+          });
+          if (!vacBlockShowAll && !vacBlockShowFit && !anyBlock) {
+            vacBlockShowAll = true;
+            vacBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireOVacBlockFilterUI();
 
       function wireOAsnBlockFilterUI() {
         var va = document.getElementById("viewOAsn");

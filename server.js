@@ -324,6 +324,33 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
+function pickNonEmptyStr(incoming, fallback) {
+  const s = incoming != null ? String(incoming).trim() : "";
+  if (s) return s;
+  return fallback != null ? String(fallback).trim() : "";
+}
+
+function mergeVacRowsPreservingFields(incoming, existing) {
+  const prevByRoom = {};
+  (existing || []).forEach((r) => {
+    if (r && r.room) prevByRoom[String(r.room)] = r;
+  });
+  return (incoming || [])
+    .filter((r) => r && r.room)
+    .map((r) => {
+      const key = String(r.room);
+      const old = prevByRoom[key] || {};
+      return {
+        room: key,
+        status: pickNonEmptyStr(r.status, old.status),
+        resvStatus: pickNonEmptyStr(r.resvStatus, old.resvStatus),
+        blockCode: pickNonEmptyStr(r.blockCode, old.blockCode),
+        foStatus: pickNonEmptyStr(r.foStatus, old.foStatus),
+        roomType: pickNonEmptyStr(r.roomType, old.roomType),
+      };
+    });
+}
+
 function mergeSyncPayload(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
@@ -332,7 +359,7 @@ function mergeSyncPayload(prev, incoming) {
     out.blockMap = incoming.blockMap;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "vacRows")) {
-    out.vacRows = incoming.vacRows;
+    out.vacRows = mergeVacRowsPreservingFields(incoming.vacRows, prev.vacRows);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "roomResvMap")) {
     out.roomResvMap =
