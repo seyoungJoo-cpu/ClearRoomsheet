@@ -127,6 +127,16 @@
     if (snapshot.roomResvMap && Object.keys(snapshot.roomResvMap).length) return true;
     if (snapshot.blockMap && Object.keys(snapshot.blockMap).length) return true;
     if (Array.isArray(snapshot.allStatusRooms) && snapshot.allStatusRooms.length) return true;
+    try {
+      var raw = global.localStorage.getItem(ROOMING_XML_LS_KEY);
+      if (!raw) return false;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return false;
+      if (Array.isArray(parsed.vacRows) && parsed.vacRows.length) return true;
+      if (parsed.roomResvMap && Object.keys(parsed.roomResvMap).length) return true;
+      if (parsed.blockMap && Object.keys(parsed.blockMap).length) return true;
+      if (Array.isArray(parsed.allStatusRooms) && parsed.allStatusRooms.length) return true;
+    } catch (e) {}
     return false;
   }
 
@@ -150,21 +160,32 @@
     if (!payload || typeof payload !== "object") return false;
     var touched = false;
     if (Object.prototype.hasOwnProperty.call(payload, "vacRows") && Array.isArray(payload.vacRows)) {
-      xmlSyncCache.vacRows = payload.vacRows.slice();
-      touched = true;
+      if (payload.vacRows.length > 0 || !hasRoomingData()) {
+        xmlSyncCache.vacRows = payload.vacRows.slice();
+        touched = true;
+      }
     }
     if (
       Object.prototype.hasOwnProperty.call(payload, "roomResvMap") &&
       payload.roomResvMap &&
       typeof payload.roomResvMap === "object"
     ) {
-      xmlSyncCache.roomResvMap = Object.assign({}, payload.roomResvMap);
-      touched = true;
+      var resvKeys = Object.keys(payload.roomResvMap);
+      if (resvKeys.length > 0 || !hasRoomingData()) {
+        xmlSyncCache.roomResvMap = Object.assign({}, payload.roomResvMap);
+        touched = true;
+      }
     }
     ROOMING_EXTRA_KEYS.forEach(function (key) {
-      if (Object.prototype.hasOwnProperty.call(payload, key)) {
+      if (!Object.prototype.hasOwnProperty.call(payload, key)) return;
+      var val = payload[key];
+      var isEmpty =
+        val == null ||
+        (Array.isArray(val) && !val.length) ||
+        (typeof val === "object" && !Array.isArray(val) && !Object.keys(val).length);
+      if (!isEmpty || !hasRoomingData()) {
         lastServerPayload = Object.assign({}, lastServerPayload || {});
-        lastServerPayload[key] = payload[key];
+        lastServerPayload[key] = val;
         touched = true;
       }
     });
@@ -250,8 +271,9 @@
     loadRoomingXmlFromLocal();
   }
 
-  /** HK 오더·요청 등 로컬 캐시만 삭제 — 루밍 XML 자료는 유지 */
-  function clearLocalCaches() {
+  /** HK 오더·요청 등 로컬 캐시만 삭제 — opts.preserveRooming 시 루밍 XML 유지 */
+  function clearLocalCaches(opts) {
+    opts = opts || {};
     LOCAL_CACHE_KEYS.forEach(function (key) {
       try {
         global.localStorage.removeItem(key);
@@ -263,9 +285,16 @@
       } catch (e) {}
     }
     syncVersion = 0;
-    lastServerPayload = null;
-    xmlSyncCache.vacRows = [];
-    xmlSyncCache.roomResvMap = {};
+    if (!opts.preserveRooming) {
+      lastServerPayload = null;
+      xmlSyncCache.vacRows = [];
+      xmlSyncCache.roomResvMap = {};
+      try {
+        global.localStorage.removeItem(ROOMING_XML_LS_KEY);
+      } catch (e) {}
+    } else {
+      lastServerPayload = null;
+    }
     cache.requestLog = [];
     cache.cancelLog = [];
     cache.useLog = [];
@@ -289,7 +318,9 @@
       clearTimeout(pushGapTimer);
       pushGapTimer = null;
     }
-    loadRoomingXmlFromLocal();
+    if (opts.preserveRooming) {
+      loadRoomingXmlFromLocal();
+    }
   }
 
   function onChange(fn) {

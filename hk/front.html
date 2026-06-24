@@ -5202,7 +5202,7 @@
       function resetHkLocalSyncCaches() {
         clearHkSessionUiCaches();
         if (typeof HKSync !== "undefined" && typeof HKSync.clearLocalCaches === "function") {
-          HKSync.clearLocalCaches();
+          HKSync.clearLocalCaches({ preserveRooming: true });
         }
       }
 
@@ -5212,7 +5212,6 @@
           updateOperatorNameDisplay();
           return;
         }
-        resetHkLocalSyncCaches();
         showOperatorGate({ mode: "initial" });
       }
 

@@ -3529,6 +3529,7 @@
               "실 · 「만들기」로 다시 그리기"
             );
             refreshBoards();
+            saveRoomingStateToLocal();
           })
           .catch(function () {
             document.getElementById("uploadSummary").textContent =
@@ -3560,6 +3561,17 @@
         if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
           window.__startRoomSync();
         }
+      });
+
+      window.addEventListener("pageshow", function () {
+        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        pullSharedState(false).then(function (hasData) {
+          if (!hasData && !hasLocalRoomingData()) loadDefaultXmlFiles();
+        });
+      });
+
+      window.addEventListener("pagehide", function () {
+        saveRoomingStateToLocal();
       });
     })();
   </script>
