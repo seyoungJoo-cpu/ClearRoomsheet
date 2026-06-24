@@ -184,7 +184,6 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      align-self: flex-end;
       font: inherit;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -291,9 +290,11 @@
 
     .topbar-head-tools {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
+      align-self: flex-start;
     }
 
     .topbar-collapse-btn {
@@ -412,7 +413,11 @@
 
     .request-feedback[hidden],
     .order-feedback[hidden],
-    .feedback-column[hidden] {
+    .feedback-column[hidden],
+    .request-main-stack[hidden],
+    .request-panel[hidden],
+    .sched-cards-panel[hidden],
+    .order-panel[hidden] {
       display: none !important;
     }
 
@@ -1181,7 +1186,6 @@
 
     .sidebar-footer {
       margin-top: auto;
-      margin-bottom: 40px;
       flex-shrink: 0;
       padding: 8px;
       border-top: 1px solid #e2e5e9;
@@ -2130,6 +2134,15 @@
       padding: 14px 16px;
       margin-bottom: 14px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .main.main--order #orderPanel,
+    .main.main--mb-inv #mbInvPanel,
+    .main.main--mb-check #mbCheckPanel {
+      flex: 1;
+      min-height: 0;
+      margin-bottom: 0;
+      overflow-y: auto;
     }
 
     .order-panel h2 {
@@ -3415,6 +3428,14 @@
     }
 
     /* 정비요청 아래 · 처리·예정 요청 카드 */
+    .request-main-stack {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     .sched-cards-panel {
       border: 1px dashed var(--border);
       border-radius: 10px;
@@ -3472,6 +3493,28 @@
       font-size: 1.125rem;
       font-weight: 800;
       color: var(--accent);
+    }
+
+    .sched-req-card .room-card__time-display.is-sched-changed {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .sched-req-card .room-card__time-display .sched-time-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1px;
+      padding-left: 0.15rem;
+    }
+
+    .sched-req-card .room-card__time-display .hk-time-em--prev {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      opacity: 0.85;
     }
 
     .sched-req-card__received {
@@ -3709,6 +3752,12 @@
         overflow: visible;
       }
 
+      .request-main-stack {
+        flex: none;
+        min-height: 0;
+        overflow: visible;
+      }
+
       .sched-cards-list {
         flex: none;
         overflow: visible;
@@ -3741,7 +3790,10 @@
       }
 
       .topbar-head-tools {
+        flex-direction: row;
+        align-items: center;
         margin-left: auto;
+        gap: 8px;
       }
 
       .topbar-collapse-btn {
@@ -3800,9 +3852,6 @@
         flex: 0 0 44px;
         width: 44px;
         height: 44px;
-        align-self: auto;
-        margin-left: auto;
-        order: 10;
       }
 
       .notice-board {
@@ -3833,7 +3882,6 @@
         flex-wrap: wrap;
         gap: 6px;
         margin-top: 0;
-        margin-bottom: 8px;
         border-top: 1px solid #e2e5e9;
       }
 
@@ -4256,6 +4304,20 @@
         </button>
         <button
           type="button"
+          class="btn-push-alarm"
+          id="btnPushAlarm"
+          aria-pressed="false"
+          aria-label="오더 알림 끔"
+          title="오더 알림 끔 — 탭하여 켜기"
+          hidden
+        >
+          <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button
+          type="button"
           class="topbar-collapse-btn"
           id="btnTopbarCollapse"
           aria-expanded="true"
@@ -4273,20 +4335,6 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button
-          type="button"
-          class="btn-push-alarm"
-          id="btnPushAlarm"
-          aria-pressed="false"
-          aria-label="오더 알림 끔"
-          title="오더 알림 끔 — 탭하여 켜기"
-          hidden
-        >
-          <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-            <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
         <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
         <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
           정비관리
@@ -4673,6 +4721,7 @@
         </section>
       </section>
 
+      <div class="request-main-stack" id="requestMainStack">
       <section class="request-panel" aria-labelledby="requestTitle">
         <h2 id="requestTitle">정비 요청</h2>
         <form class="request-row" id="requestForm">
@@ -4753,6 +4802,7 @@
         </p>
         <ul class="sched-cards-list" id="schedRequestCardList"></ul>
       </section>
+      </div>
     </main>
     </div>
 
@@ -6890,6 +6940,47 @@
         containerEl.appendChild(sp);
       }
 
+      function applyRequestSchedChange(entry, newSched) {
+        if (!entry) return;
+        var oldSched = entry.sched != null ? String(entry.sched).trim() : "";
+        var nextSched = newSched != null ? String(newSched).trim() : "";
+        if (!nextSched) {
+          entry.sched = "";
+          delete entry.schedPrev;
+          return;
+        }
+        if (oldSched && oldSched !== nextSched) {
+          entry.schedPrev = oldSched;
+        }
+        entry.sched = nextSched;
+      }
+
+      function appendSchedTimeDisplay(containerEl, entry) {
+        if (!containerEl || !entry) return;
+        var sched = String(entry.sched || "").trim();
+        var prev = String(entry.schedPrev || "").trim();
+        containerEl.textContent = "";
+        containerEl.classList.remove("is-sched-changed");
+        if (prev && prev !== sched) {
+          containerEl.classList.add("is-sched-changed");
+          containerEl.appendChild(document.createTextNode("처리·예정 ·"));
+          var stack = document.createElement("span");
+          stack.className = "sched-time-stack";
+          var prevEm = document.createElement("span");
+          prevEm.className = "hk-time-em hk-time-em--prev";
+          prevEm.textContent = prev;
+          prevEm.title = "이전 처리·예정 시간";
+          var curEm = document.createElement("span");
+          curEm.className = "hk-time-em";
+          curEm.textContent = sched || "—";
+          stack.appendChild(prevEm);
+          stack.appendChild(curEm);
+          containerEl.appendChild(stack);
+          return;
+        }
+        setLineWithEmTime(containerEl, "처리·예정 · ", sched);
+      }
+
       function findRequestEntry(id) {
         for (var i = 0; i < requestLogEntries.length; i++) {
           if (requestLogEntries[i].id === id) return requestLogEntries[i];
@@ -7082,6 +7173,7 @@
         var showZone = view === "zone";
         var showList = view === "list";
         var reqPanel = document.querySelector(".request-panel");
+        var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
         var mbInvPanel = document.getElementById("mbInvPanel");
@@ -7089,6 +7181,8 @@
         var frontChatPanel = document.getElementById("frontChatPanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var listPanel = document.getElementById("hkSidebarListPanel");
+        var mainEl = document.querySelector(".main");
+        if (requestStack) requestStack.hidden = !showRequest;
         if (reqPanel) reqPanel.hidden = !showRequest;
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
@@ -7098,6 +7192,12 @@
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (listPanel && !showList) listPanel.hidden = true;
+        if (mainEl) {
+          mainEl.classList.toggle("main--request", showRequest);
+          mainEl.classList.toggle("main--order", showOrder);
+          mainEl.classList.toggle("main--mb-inv", showMbInv);
+          mainEl.classList.toggle("main--mb-check", showMbCheck);
+        }
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
         var orderFeedback = document.getElementById("orderFeedback");
@@ -7536,6 +7636,7 @@
           entry.room || "",
           entry.status || "",
           entry.sched || "",
+          entry.schedPrev || "",
           entry.memo || "",
           entry.memo2 || "",
           entry.memoImage || "",
@@ -7581,7 +7682,10 @@
         if (blinkCard && entryId) pendingRequestModifyIds[entryId] = true;
         applyRequestSidebarAlertUi();
         var schedPanel = document.getElementById("schedCardsPanel");
-        if (schedPanel && !schedPanel.hidden) renderSchedRequestCards();
+        var requestStack = document.getElementById("requestMainStack");
+        if ((requestStack && !requestStack.hidden) || (schedPanel && !schedPanel.hidden)) {
+          renderSchedRequestCards();
+        }
       }
 
       function ackRequestModifyCard(entryId) {
@@ -8478,7 +8582,7 @@
 
           var sl = document.createElement("p");
           sl.className = "room-card__time-display";
-          setLineWithEmTime(sl, "처리·예정 · ", sched);
+          appendSchedTimeDisplay(sl, entry);
           li.appendChild(sl);
 
           var acc = document.createElement("p");
@@ -8661,7 +8765,7 @@
             alert("시간 형식을 확인하세요. (예: 14:30, 1430)\n비우면 삭제됩니다.");
             return;
           }
-          entry.sched = p.value;
+          applyRequestSchedChange(entry, p.value);
           markRequestEntrySavedLocally(entry);
           saveRequestLog();
           done();
