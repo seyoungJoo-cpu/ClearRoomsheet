@@ -15,6 +15,7 @@
 
     html {
       font-size: 14px;
+      height: 100%;
     }
 
     * {
@@ -24,18 +25,27 @@
     body {
       margin: 0;
       font-family: "Segoe UI", "Malgun Gothic", sans-serif;
-      min-height: 100vh;
+      height: 100%;
+      overflow: hidden;
       line-height: 1.45;
+    }
+
+    .hk-app-main {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
     }
 
     /* 상단: 로고 + 공지 | 우측 상단 관리자 */
     .topbar {
-      min-height: var(--header-min-h);
+      flex-shrink: 0;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: flex-start;
-      padding: 10px 14px;
+      padding: 8px 14px;
       gap: 10px;
     }
 
@@ -297,8 +307,8 @@
     .notice-board {
       flex: 1;
       min-width: 0;
-      min-height: 96px;
-      max-height: 220px;
+      min-height: 56px;
+      max-height: 120px;
       border: 2px solid #fbbf24;
       border-radius: 10px;
       background: #fffbeb;
@@ -350,14 +360,18 @@
     .layout {
       display: flex;
       align-items: stretch;
-      min-height: calc(100vh - var(--header-min-h));
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .layout-main-area {
       flex: 1;
       min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     /* 오른쪽 알림 패널 */
@@ -366,7 +380,8 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      max-height: calc(100vh - var(--header-min-h));
+      min-height: 0;
+      overflow: hidden;
       border-left: 2px solid var(--border);
       box-shadow: -4px 0 12px rgba(0, 0, 0, 0.04);
       background: #f8fafc;
@@ -377,22 +392,22 @@
       flex: 1 1 auto;
       min-height: 0;
       max-height: none;
-      flex-shrink: 0;
       background: #f8fafc;
       border-left: none;
       box-shadow: none;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .order-feedback {
       width: 100%;
       flex: 1 1 auto;
       min-height: 0;
-      flex-shrink: 0;
       background: #fffbeb;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .request-feedback[hidden],
@@ -421,7 +436,7 @@
       padding: 10px 12px;
       overflow-y: auto;
       flex: 1;
-      min-height: 100px;
+      min-height: 0;
     }
 
     .order-feedback__empty {
@@ -534,7 +549,7 @@
       padding: 10px 12px;
       overflow-y: auto;
       flex: 1;
-      min-height: 120px;
+      min-height: 0;
     }
 
     .request-feedback__item {
@@ -1136,7 +1151,9 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      min-height: calc(100vh - var(--header-min-h));
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
       align-self: stretch;
     }
 
@@ -1526,6 +1543,8 @@
       padding: 10px 12px;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .main-placeholder {
@@ -3297,7 +3316,8 @@
       border-radius: 10px;
       padding: 12px 14px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-      margin-bottom: 14px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
     }
 
     .request-panel h2 {
@@ -3400,7 +3420,12 @@
       border-radius: 10px;
       background: var(--bg-card);
       padding: 12px 14px 14px;
-      margin-bottom: 6px;
+      margin-bottom: 0;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .sched-cards-panel__title {
@@ -3408,6 +3433,7 @@
       font-size: 0.9375rem;
       font-weight: 700;
       color: var(--accent);
+      flex-shrink: 0;
     }
 
     .sched-cards-panel__hint {
@@ -3415,6 +3441,7 @@
       font-size: 0.8125rem;
       color: var(--text-muted);
       line-height: 1.45;
+      flex-shrink: 0;
     }
 
     .sched-cards-panel__hint[hidden] {
@@ -3428,6 +3455,10 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
       gap: 12px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      align-content: start;
     }
 
     .sched-req-card .room-card__time-display {
@@ -3647,6 +3678,48 @@
 
       body {
         overflow-x: hidden;
+        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .hk-app-main {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+      }
+
+      .layout {
+        flex: none;
+        min-height: 0;
+        overflow: visible;
+      }
+
+      .layout-main-area {
+        overflow: visible;
+      }
+
+      .main {
+        overflow: visible;
+      }
+
+      .sched-cards-panel {
+        flex: none;
+        min-height: 0;
+        overflow: visible;
+      }
+
+      .sched-cards-list {
+        flex: none;
+        overflow: visible;
+      }
+
+      .feedback-column {
+        overflow: visible;
+      }
+
+      .sidebar {
+        overflow-y: visible;
       }
 
       .topbar {
