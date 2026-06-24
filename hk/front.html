@@ -5047,16 +5047,7 @@
       }
 
       function isHkUserEditing() {
-        if (hasOpenHkEditors()) return true;
-        if (!isTextInputActive()) return false;
-        var el = document.activeElement;
-        if (!el || !el.closest) return false;
-        return !!(
-          el.closest(".hk-app-main") ||
-          el.closest("#feedbackColumn") ||
-          el.closest(".feedback-column") ||
-          el.closest(".sidebar")
-        );
+        return hasOpenHkEditors();
       }
 
       function deferHkSyncUiApply(applyFn) {
@@ -8312,7 +8303,17 @@
         });
         hkClearPhoto("orderChat:" + orderId);
         saveOrderLog();
-        renderOrderPanels();
+        renderOrderPanels({ force: true });
+        requestAnimationFrame(function () {
+          var card = document.querySelector(
+            '.order-work-section--issue .order-work-item[data-order-id="' + orderId + '"]'
+          );
+          if (!card) return;
+          var msgList = card.querySelector(".order-chat__messages");
+          if (msgList) msgList.scrollTop = msgList.scrollHeight;
+          var chatInput = card.querySelector(".order-chat__form input");
+          if (chatInput) chatInput.focus();
+        });
       }
 
       function renderOrderWorkPanels(opts) {
@@ -9452,8 +9453,16 @@
         }
       }
 
-      function renderFrontChatPanel(scrollToBottom) {
-        if (isHkUserEditing()) return;
+      function renderFrontChatPanel(opts) {
+        var scrollToBottom = false;
+        if (typeof opts === "boolean") {
+          scrollToBottom = opts;
+          opts = {};
+        } else {
+          opts = opts || {};
+          scrollToBottom = !!opts.scrollToBottom;
+        }
+        if (!opts.force && isHkUserEditing()) return;
         var list = document.getElementById("frontChatMessages");
         var empty = document.getElementById("frontChatEmpty");
         if (!list) return;
@@ -9737,7 +9746,7 @@
         knownFrontChatIds[newId] = true;
         hkClearPhoto("frontChat");
         syncFrontChatFromServer();
-        renderFrontChatPanel(true);
+        renderFrontChatPanel({ scrollToBottom: true, force: true });
       }
 
       var btnMaint = document.getElementById("btnMaint");

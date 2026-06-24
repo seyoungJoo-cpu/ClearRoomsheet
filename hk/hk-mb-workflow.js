@@ -456,6 +456,16 @@
     ctx.hkClearPhoto("mbInvChat:" + id);
     saveMbInvLog();
     renderMbInvPanels();
+    requestAnimationFrame(function () {
+      var card = document.querySelector(
+        '.order-work-section--issue .order-work-item[data-mb-inv-id="' + id + '"]'
+      );
+      if (!card) return;
+      var msgList = card.querySelector(".order-chat__messages");
+      if (msgList) msgList.scrollTop = msgList.scrollHeight;
+      var chatInput = card.querySelector(".order-chat__form input");
+      if (chatInput) chatInput.focus();
+    });
   }
 
   function cancelMbInvEntry(id, handlerName) {
