@@ -2614,8 +2614,9 @@
         });
       }
 
-      function renderRooms(data) {
-        if (isAdminUserEditing()) return;
+      function renderRooms(data, opts) {
+        opts = opts || {};
+        if (!opts.force && isAdminUserEditing()) return;
         HKStorage.getZoneOrder(data).forEach(function (zone) {
           var ul = document.querySelector('.room-list[data-list="' + zone + '"]');
           if (!ul) return;
@@ -2700,7 +2701,7 @@
           noticeEl.value = data.notice;
         }
         renderZoneGrid(data);
-        renderRooms(data);
+        renderRooms(data, opts);
       }
 
       document.getElementById("btnAddZoneGroup").addEventListener("click", function () {
@@ -2724,8 +2725,17 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
-        if (labelInput) labelInput.value = "";
-        refresh();
+        if (labelInput) {
+          labelInput.value = "";
+          labelInput.blur();
+        }
+        refresh({ force: true });
+        var newCard = document.querySelector('.zone-card[data-zone="' + id + '"]');
+        if (newCard) {
+          newCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          var titleInput = newCard.querySelector(".zone-card__title-input");
+          if (titleInput) titleInput.focus();
+        }
         toast("그룹이 추가되었습니다.");
       });
 
@@ -2806,7 +2816,7 @@
           if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
             HKSync.pushStorageNow();
           }
-          refresh();
+          refresh({ force: true });
           toast("그룹이 삭제되었습니다.");
           return;
         }

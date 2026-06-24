@@ -1160,9 +1160,9 @@
     }
 
     .sidebar-nav--compact-footer {
-      padding-top: 4px;
+      padding-top: 8px;
       padding-bottom: 8px;
-      margin-top: 2px;
+      margin-top: 56px;
       border-top: 1px dashed var(--border);
     }
 
@@ -3215,6 +3215,7 @@
       border-radius: 6px;
       border: 1px solid var(--border);
       object-fit: cover;
+      cursor: zoom-in;
     }
 
     .hk-msg-image {
@@ -3224,9 +3225,38 @@
       margin-top: 6px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      cursor: pointer;
+      cursor: zoom-in;
       object-fit: contain;
       background: #fff;
+    }
+
+    .hk-image-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.88);
+      cursor: zoom-out;
+    }
+
+    .hk-image-lightbox[hidden] {
+      display: none !important;
+    }
+
+    .hk-image-lightbox__img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+      cursor: zoom-out;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    body.hk-image-lightbox-open {
+      overflow: hidden;
     }
 
     .request-feedback__item-memo .hk-msg-image,
@@ -3700,8 +3730,8 @@
 
       .sidebar-nav--compact-footer {
         border-top: none;
-        margin-top: 0;
-        padding-top: 0;
+        margin-top: 16px;
+        padding-top: 4px;
       }
 
       .sidebar-nav__btn,
@@ -4298,15 +4328,26 @@
               ></div>
             </div>
             <div class="request-type-filters zone-type-filters" id="zoneTypeFilters" aria-label="특이객실 TYPE 필터">
-              <button
-                type="button"
-                class="request-type-filters__toggle"
-                id="zoneTypeFilterToggle"
-                aria-expanded="false"
-                aria-controls="zoneTypeFilterBody"
-              >
-                TYPE 필터
-              </button>
+              <div class="request-type-filters__actions">
+                <button
+                  type="button"
+                  class="request-type-filters__toggle"
+                  id="zoneRoomTypeDisplayToggle"
+                  data-room-type-display-toggle
+                  aria-pressed="false"
+                >
+                  TYPE 표시 OFF
+                </button>
+                <button
+                  type="button"
+                  class="request-type-filters__toggle"
+                  id="zoneTypeFilterToggle"
+                  aria-expanded="false"
+                  aria-controls="zoneTypeFilterBody"
+                >
+                  TYPE 필터
+                </button>
+              </div>
               <div class="request-type-filters__body" id="zoneTypeFilterBody" hidden>
                 <div class="request-type-filters__list" id="zoneTypeFilterList"></div>
               </div>
@@ -4566,6 +4607,7 @@
               type="button"
               class="request-type-filters__toggle"
               id="roomTypeDisplayToggle"
+              data-room-type-display-toggle
               aria-pressed="false"
             >
               TYPE 표시 OFF
@@ -4736,6 +4778,10 @@
         <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkRolePasswordCancel">취소</button>
       </div>
     </div>
+  </div>
+
+  <div class="hk-image-lightbox" id="hkImageLightbox" hidden aria-hidden="true">
+    <img class="hk-image-lightbox__img" id="hkImageLightboxImg" alt="첨부 사진 확대" />
   </div>
 
   <script src="hk-auth.js"></script>
@@ -5409,11 +5455,18 @@
       }
 
       function syncRoomTypeDisplayToggleUi() {
-        var btn = document.getElementById("roomTypeDisplayToggle");
-        if (!btn) return;
-        btn.classList.toggle("is-on", showRoomTypeOnCards);
-        btn.setAttribute("aria-pressed", showRoomTypeOnCards ? "true" : "false");
-        btn.textContent = showRoomTypeOnCards ? "TYPE 표시 ON" : "TYPE 표시 OFF";
+        document.querySelectorAll("[data-room-type-display-toggle]").forEach(function (btn) {
+          btn.classList.toggle("is-on", showRoomTypeOnCards);
+          btn.setAttribute("aria-pressed", showRoomTypeOnCards ? "true" : "false");
+          btn.textContent = showRoomTypeOnCards ? "TYPE 표시 ON" : "TYPE 표시 OFF";
+        });
+      }
+
+      function toggleRoomTypeDisplay() {
+        showRoomTypeOnCards = !showRoomTypeOnCards;
+        saveShowRoomTypePref();
+        syncRoomTypeDisplayToggleUi();
+        refreshMain({ force: true });
       }
 
       function normalizeRoomTypeCode(raw) {
@@ -5721,15 +5774,10 @@
       })();
 
       (function setupRoomTypeDisplayToggle() {
-        var btn = document.getElementById("roomTypeDisplayToggle");
-        if (!btn) return;
-        syncRoomTypeDisplayToggleUi();
-        btn.addEventListener("click", function () {
-          showRoomTypeOnCards = !showRoomTypeOnCards;
-          saveShowRoomTypePref();
-          syncRoomTypeDisplayToggleUi();
-          refreshMain({ force: true });
+        document.querySelectorAll("[data-room-type-display-toggle]").forEach(function (btn) {
+          btn.addEventListener("click", toggleRoomTypeDisplay);
         });
+        syncRoomTypeDisplayToggleUi();
       })();
 
       function rebuildRoomResvMap(vacRows, roomResvMap) {
@@ -6605,11 +6653,49 @@
         img.src = String(imageData);
         img.alt = "첨부 사진";
         img.loading = "lazy";
-        img.addEventListener("click", function () {
-          window.open(img.src, "_blank");
-        });
         parent.appendChild(img);
       }
+
+      (function setupHkImageLightbox() {
+        var lightbox = document.getElementById("hkImageLightbox");
+        var lightboxImg = document.getElementById("hkImageLightboxImg");
+        if (!lightbox || !lightboxImg) return;
+
+        function closeLightbox() {
+          lightbox.hidden = true;
+          lightbox.setAttribute("aria-hidden", "true");
+          lightboxImg.removeAttribute("src");
+          document.body.classList.remove("hk-image-lightbox-open");
+        }
+
+        function openLightbox(src) {
+          if (!src) return;
+          lightboxImg.src = src;
+          lightbox.hidden = false;
+          lightbox.setAttribute("aria-hidden", "false");
+          document.body.classList.add("hk-image-lightbox-open");
+        }
+
+        lightbox.addEventListener("click", function () {
+          closeLightbox();
+        });
+
+        document.addEventListener("click", function (e) {
+          var img = e.target;
+          if (!img || img.tagName !== "IMG") return;
+          var isMsg = img.classList.contains("hk-msg-image");
+          var isPreview =
+            img.parentElement && img.parentElement.classList.contains("hk-photo-preview");
+          if (!isMsg && !isPreview) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (!lightbox.hidden && lightboxImg.src === img.src) {
+            closeLightbox();
+            return;
+          }
+          openLightbox(img.src);
+        });
+      })();
 
       function hkAppendMessageContent(parent, text, image, textClass) {
         var t = text != null ? String(text).trim() : "";

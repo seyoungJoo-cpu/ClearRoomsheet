@@ -2794,6 +2794,7 @@
             resvStatus: r.resvStatus || "",
             blockCode: r.blockCode || "",
             foStatus: r.foStatus || "",
+            roomType: r.roomType != null ? String(r.roomType).trim() : "",
           };
         });
         return Object.keys(map).map(function (k) {
@@ -2804,6 +2805,7 @@
             resvStatus: o.resvStatus,
             blockCode: o.blockCode,
             foStatus: o.foStatus,
+            roomType: o.roomType,
           };
         });
       }
