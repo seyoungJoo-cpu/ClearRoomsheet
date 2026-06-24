@@ -2207,13 +2207,6 @@
         );
       }
 
-      function clearBlockFilterBar(wrapId) {
-        var wrap = document.getElementById(wrapId);
-        if (!wrap) return;
-        wrap.innerHTML = "";
-        wrap.hidden = true;
-      }
-
       function renderFasnBlockFilterBar(rows) {
         renderBlockFilterBar(
           "fAsnBlockFilters",
@@ -3190,33 +3183,17 @@
         var workRows;
         if (mode === "asn") {
           renderAsnBlockFilterBar(modeFiltered);
-          clearBlockFilterBar("oAsnBlockFilters");
-          clearBlockFilterBar("vacBlockFilters");
-          clearBlockFilterBar("oVacBlockFilters");
           workRows = applyAsnBlockFilter(modeFiltered);
         } else if (mode === "oasn") {
           renderOAsnBlockFilterBar(modeFiltered);
-          clearBlockFilterBar("asnBlockFilters");
-          clearBlockFilterBar("vacBlockFilters");
-          clearBlockFilterBar("oVacBlockFilters");
           workRows = applyAsnBlockFilter(modeFiltered);
         } else if (mode === "vac") {
           renderVacBlockFilterBar(modeFiltered);
-          clearBlockFilterBar("oVacBlockFilters");
-          clearBlockFilterBar("asnBlockFilters");
-          clearBlockFilterBar("oAsnBlockFilters");
           workRows = applyVacBlockFilter(modeFiltered);
         } else if (mode === "ovac") {
           renderOVacBlockFilterBar(modeFiltered);
-          clearBlockFilterBar("vacBlockFilters");
-          clearBlockFilterBar("asnBlockFilters");
-          clearBlockFilterBar("oAsnBlockFilters");
           workRows = applyVacBlockFilter(modeFiltered);
         } else {
-          clearBlockFilterBar("asnBlockFilters");
-          clearBlockFilterBar("oAsnBlockFilters");
-          clearBlockFilterBar("vacBlockFilters");
-          clearBlockFilterBar("oVacBlockFilters");
           workRows = modeFiltered;
         }
 
