@@ -380,14 +380,6 @@
       background: #fff;
     }
 
-    .notice-thumb-image.is-expanded {
-      width: auto;
-      max-width: min(300px, 38vw);
-      max-height: 220px;
-      object-fit: contain;
-      cursor: zoom-out;
-    }
-
     .notice-board__label {
       font-size: 0.75rem;
       font-weight: 800;
@@ -3549,8 +3541,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.88);
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.92);
       cursor: zoom-out;
     }
 
@@ -3559,8 +3551,10 @@
     }
 
     .hk-image-lightbox__img {
-      max-width: 100%;
-      max-height: 100%;
+      width: auto;
+      height: auto;
+      max-width: calc(100vw - 16px);
+      max-height: calc(100vh - 16px);
       object-fit: contain;
       border-radius: 4px;
       cursor: zoom-out;
@@ -4801,7 +4795,7 @@
               class="notice-thumb-image"
               alt="공지 첨부 사진"
               hidden
-              title="클릭하면 크게 · 다시 클릭하면 작게"
+              title="클릭하면 크게 보기"
             />
           </div>
         </div>
@@ -4929,7 +4923,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="../DD/index.HTML"
+          src="/DD/index.HTML"
           loading="lazy"
         ></iframe>
       </section>
@@ -4939,7 +4933,7 @@
           class="front-embed-panel__frame"
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
-          src="../../inven/index.HTML"
+          src="/inven/index.HTML"
           loading="lazy"
         ></iframe>
       </section>
@@ -8033,14 +8027,15 @@
           var isMsg = img.classList.contains("hk-msg-image");
           var isPreview =
             img.parentElement && img.parentElement.classList.contains("hk-photo-preview");
-          if (!isMsg && !isPreview) return;
+          var isNotice = img.classList.contains("notice-thumb-image");
+          if (!isMsg && !isPreview && !isNotice) return;
           e.preventDefault();
           e.stopPropagation();
-          if (!lightbox.hidden && lightboxImg.src === img.src) {
-            closeLightbox();
-            return;
-          }
           openLightbox(img.src);
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && !lightbox.hidden) closeLightbox();
         });
       })();
 
@@ -10471,7 +10466,6 @@
         noticeChangeReady = true;
         noticeText.textContent = next;
         if (noticeImage) {
-          noticeImage.classList.remove("is-expanded");
           if (nextImg) {
             noticeImage.src = nextImg;
             noticeImage.hidden = false;
@@ -11451,11 +11445,7 @@
       var noticeBoardEl = document.getElementById("noticeBoard");
       if (noticeBoardEl) {
         noticeBoardEl.addEventListener("click", function (e) {
-          if (e.target && e.target.id === "noticeImage") {
-            e.stopPropagation();
-            e.target.classList.toggle("is-expanded");
-            return;
-          }
+          if (e.target && e.target.id === "noticeImage") return;
           stopNoticeBoardFlash();
         });
       }

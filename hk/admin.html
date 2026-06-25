@@ -205,12 +205,31 @@
       background: #fff;
     }
 
-    .notice-thumb-image.is-expanded {
-      width: auto;
-      max-width: min(280px, 36vw);
-      max-height: 220px;
-      object-fit: contain;
+    .hk-image-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.92);
       cursor: zoom-out;
+    }
+
+    .hk-image-lightbox[hidden] {
+      display: none !important;
+    }
+
+    .hk-image-lightbox__img {
+      width: auto;
+      height: auto;
+      max-width: calc(100vw - 16px);
+      max-height: calc(100vh - 16px);
+      object-fit: contain;
+      border-radius: 4px;
+      cursor: zoom-out;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
     }
 
     .btn-primary {
@@ -819,7 +838,7 @@
               id="noticeImagePreview"
               class="notice-thumb-image"
               alt="공지 첨부 사진"
-              title="클릭하면 크게 · 다시 클릭하면 작게"
+              title="클릭하면 크게 보기"
             />
           </div>
         </div>
@@ -874,6 +893,10 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="hk-image-lightbox" id="hkImageLightbox" hidden aria-hidden="true">
+    <img class="hk-image-lightbox__img" id="hkImageLightboxImg" alt="공지 사진 확대" />
+  </div>
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
@@ -2588,7 +2611,6 @@
         var img = document.getElementById("noticeImagePreview");
         var clearBtn = document.getElementById("btnNoticePhotoClear");
         if (img) {
-          img.classList.remove("is-expanded");
           if (adminNoticeImage) {
             img.src = adminNoticeImage;
             img.hidden = false;
@@ -2671,15 +2693,45 @@
         return null;
       }
 
+      function setupAdminImageLightbox() {
+        var lightbox = document.getElementById("hkImageLightbox");
+        var lightboxImg = document.getElementById("hkImageLightboxImg");
+        if (!lightbox || !lightboxImg) return;
+
+        function closeLightbox() {
+          lightbox.hidden = true;
+          lightbox.setAttribute("aria-hidden", "true");
+          lightboxImg.removeAttribute("src");
+        }
+
+        function openLightbox(src) {
+          if (!src) return;
+          lightboxImg.src = src;
+          lightbox.hidden = false;
+          lightbox.setAttribute("aria-hidden", "false");
+        }
+
+        lightbox.addEventListener("click", function () {
+          closeLightbox();
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && !lightbox.hidden) closeLightbox();
+        });
+
+        return openLightbox;
+      }
+
       function setupNoticeImageUi() {
         var noticeInput = document.getElementById("noticeInput");
         var photoBtn = document.getElementById("btnNoticePhoto");
         var clearBtn = document.getElementById("btnNoticePhotoClear");
         var preview = document.getElementById("noticeImagePreview");
-        if (preview) {
+        var openLightbox = setupAdminImageLightbox();
+        if (preview && openLightbox) {
           preview.addEventListener("click", function (e) {
             e.stopPropagation();
-            preview.classList.toggle("is-expanded");
+            if (preview.src) openLightbox(preview.src);
           });
         }
         if (photoBtn) {
