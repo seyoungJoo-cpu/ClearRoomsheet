@@ -145,6 +145,74 @@
       border-color: var(--accent);
     }
 
+    .notice-compose {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .notice-compose__main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notice-compose__aside {
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .notice-compose__actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .notice-compose__paste-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-notice-photo,
+    .btn-notice-photo-clear {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-raised);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-notice-photo:hover,
+    .btn-notice-photo-clear:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .notice-thumb-image {
+      display: block;
+      width: 72px;
+      max-height: 84px;
+      height: auto;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: zoom-in;
+      background: #fff;
+    }
+
+    .notice-thumb-image.is-expanded {
+      width: auto;
+      max-width: min(280px, 36vw);
+      max-height: 220px;
+      object-fit: contain;
+      cursor: zoom-out;
+    }
+
     .btn-primary {
       margin-top: 10px;
       height: 36px;
@@ -733,9 +801,28 @@
       <div class="notice-field">
         <label for="noticeInput">공지 내용</label>
         <p style="margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
-          엔터로 줄바꿈할 수 있습니다. 저장하면 정비 화면 상단에 크게 표시됩니다.
+          엔터로 줄바꿈할 수 있습니다. 사진은 <strong>Ctrl+V</strong> 붙여넣기 또는 사진 버튼으로 첨부합니다. 저장하면 정비 화면 상단에 표시됩니다.
         </p>
-        <textarea id="noticeInput" placeholder="공지를 입력하세요. (엔터 = 줄바꿈)"></textarea>
+        <div class="notice-compose">
+          <div class="notice-compose__main">
+            <textarea id="noticeInput" placeholder="공지를 입력하세요. (엔터 = 줄바꿈)"></textarea>
+            <div class="notice-compose__actions">
+              <button type="button" class="btn-notice-photo" id="btnNoticePhoto">사진</button>
+              <button type="button" class="btn-notice-photo-clear" id="btnNoticePhotoClear" hidden>
+                사진 삭제
+              </button>
+              <span class="notice-compose__paste-hint">Ctrl+V 붙여넣기</span>
+            </div>
+          </div>
+          <div class="notice-compose__aside" id="noticeImageAside" hidden>
+            <img
+              id="noticeImagePreview"
+              class="notice-thumb-image"
+              alt="공지 첨부 사진"
+              title="클릭하면 크게 · 다시 클릭하면 작게"
+            />
+          </div>
+        </div>
       </div>
       <button type="button" class="btn-primary" id="saveNotice">공지 저장</button>
     </section>
@@ -1404,8 +1491,8 @@
         var sections = [
           {
             title: "공지",
-            headers: ["내용"],
-            rows: [[snapshot.data.notice || ""]],
+            headers: ["내용", "이미지"],
+            rows: [[snapshot.data.notice || "", snapshot.data.noticeImage ? "Y" : "N"]],
           },
           {
             title: "커스텀 구역",
@@ -2126,8 +2213,23 @@
       function renderReportSectionBody(section, snapshot) {
         if (section.title === "공지") {
           var notice = snapshot.data.notice || "";
-          return notice
-            ? '<div class="notice-box">' + escHtml(notice).replace(/\n/g, "<br>") + "</div>"
+          var noticeImg =
+            snapshot.data.noticeImage != null ? String(snapshot.data.noticeImage).trim() : "";
+          var htmlParts = [];
+          if (notice) {
+            htmlParts.push(
+              '<div class="notice-box">' + escHtml(notice).replace(/\n/g, "<br>") + "</div>"
+            );
+          }
+          if (noticeImg) {
+            htmlParts.push(
+              '<div style="margin-top:10px;"><img src="' +
+                noticeImg.replace(/"/g, "&quot;") +
+                '" alt="공지 첨부" style="max-width:min(360px,100%);border-radius:8px;border:1px solid var(--border);"></div>'
+            );
+          }
+          return htmlParts.length
+            ? htmlParts.join("")
             : '<p class="report-empty">(공지 없음)</p>';
         }
         if (section.title === "프론트 채팅") return renderReportFrontChatSection(snapshot);
@@ -2468,11 +2570,158 @@
         }
         var data = HKStorage.load();
         var noticeEl = document.getElementById("noticeInput");
-        if (noticeEl && document.activeElement !== noticeEl) {
+        var editingNotice = noticeEl && document.activeElement === noticeEl;
+        if (noticeEl && !editingNotice) {
           noticeEl.value = data.notice;
+        }
+        if (!editingNotice) {
+          setAdminNoticeImagePreview(data.noticeImage || "");
         }
         renderZoneGrid(data);
       }
+
+      var adminNoticeImage = "";
+
+      function setAdminNoticeImagePreview(dataUrl) {
+        adminNoticeImage = dataUrl || "";
+        var aside = document.getElementById("noticeImageAside");
+        var img = document.getElementById("noticeImagePreview");
+        var clearBtn = document.getElementById("btnNoticePhotoClear");
+        if (img) {
+          img.classList.remove("is-expanded");
+          if (adminNoticeImage) {
+            img.src = adminNoticeImage;
+            img.hidden = false;
+          } else {
+            img.removeAttribute("src");
+            img.hidden = true;
+          }
+        }
+        if (aside) aside.hidden = !adminNoticeImage;
+        if (clearBtn) clearBtn.hidden = !adminNoticeImage;
+      }
+
+      function adminCompressImage(file, done) {
+        if (!file) {
+          toast("이미지 파일만 첨부할 수 있습니다.");
+          return;
+        }
+        var mime = file.type ? String(file.type) : "";
+        if (mime.indexOf("image/") !== 0 && !(file instanceof Blob)) {
+          toast("이미지 파일만 첨부할 수 있습니다.");
+          return;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          toast("8MB 이하 이미지만 첨부할 수 있습니다.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          var image = new Image();
+          image.onload = function () {
+            var maxW = 1280;
+            var w = image.width;
+            var h = image.height;
+            if (w > maxW) {
+              h = Math.round(h * (maxW / w));
+              w = maxW;
+            }
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(image, 0, 0, w, h);
+            var quality = 0.85;
+            var dataUrl = canvas.toDataURL("image/jpeg", quality);
+            while (dataUrl.length > 900000 && quality > 0.35) {
+              quality -= 0.1;
+              dataUrl = canvas.toDataURL("image/jpeg", quality);
+            }
+            if (dataUrl.length > 900000) {
+              toast("이미지가 너무 큽니다. 더 작은 사진을 선택해 주세요.");
+              return;
+            }
+            done(dataUrl);
+          };
+          image.onerror = function () {
+            toast("이미지를 읽을 수 없습니다.");
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function adminExtractImageFileFromPaste(ev) {
+        var cd = ev.clipboardData;
+        if (!cd) return null;
+        var items = cd.items;
+        if (items) {
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].kind === "file" && items[i].type.indexOf("image/") === 0) {
+              return items[i].getAsFile();
+            }
+          }
+        }
+        var files = cd.files;
+        if (files && files.length) {
+          for (var j = 0; j < files.length; j++) {
+            if (files[j].type && files[j].type.indexOf("image/") === 0) return files[j];
+          }
+        }
+        return null;
+      }
+
+      function setupNoticeImageUi() {
+        var noticeInput = document.getElementById("noticeInput");
+        var photoBtn = document.getElementById("btnNoticePhoto");
+        var clearBtn = document.getElementById("btnNoticePhotoClear");
+        var preview = document.getElementById("noticeImagePreview");
+        if (preview) {
+          preview.addEventListener("click", function (e) {
+            e.stopPropagation();
+            preview.classList.toggle("is-expanded");
+          });
+        }
+        if (photoBtn) {
+          var fileIn = document.createElement("input");
+          fileIn.type = "file";
+          fileIn.accept = "image/*";
+          fileIn.hidden = true;
+          photoBtn.parentNode.appendChild(fileIn);
+          photoBtn.addEventListener("click", function () {
+            fileIn.click();
+          });
+          fileIn.addEventListener("change", function () {
+            var f = fileIn.files && fileIn.files[0];
+            fileIn.value = "";
+            if (!f) return;
+            adminCompressImage(f, setAdminNoticeImagePreview);
+          });
+        }
+        if (clearBtn) {
+          clearBtn.addEventListener("click", function () {
+            setAdminNoticeImagePreview("");
+          });
+        }
+        if (noticeInput) {
+          noticeInput.addEventListener("paste", function (ev) {
+            var file = adminExtractImageFileFromPaste(ev);
+            if (!file) return;
+            ev.preventDefault();
+            adminCompressImage(file, setAdminNoticeImagePreview);
+          });
+        }
+      }
+
+      document.getElementById("saveNotice").addEventListener("click", function () {
+        var data = HKStorage.load();
+        data.notice = document.getElementById("noticeInput").value;
+        data.noticeImage = adminNoticeImage || "";
+        HKStorage.save(data);
+        toast("공지가 변경되었습니다.");
+      });
+
+      setupNoticeImageUi();
 
       document.getElementById("btnAddZoneGroup").addEventListener("click", function () {
         var labelInput = document.getElementById("newZoneLabel");
@@ -2518,13 +2767,6 @@
           }
         });
       }
-
-      document.getElementById("saveNotice").addEventListener("click", function () {
-        var data = HKStorage.load();
-        data.notice = document.getElementById("noticeInput").value;
-        HKStorage.save(data);
-        toast("공지가 변경되었습니다.");
-      });
 
       document.getElementById("zoneGrid").addEventListener("focusout", function (e) {
         if (e.target.classList.contains("zone-card__title-input")) {

@@ -6,8 +6,13 @@
  */
 (function (global) {
   var STORAGE_KEY = "lotte-hk-v1";
-  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO"];
-  var STANDARD_ZONE_LABELS = { VIP: "VIP", RC: "R/C", CASINO: "CASINO" };
+  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI"];
+  var STANDARD_ZONE_LABELS = {
+    VIP: "VIP",
+    RC: "R/C",
+    CASINO: "CASINO",
+    MOBILE_CI: "모바일체크인",
+  };
 
   function defaultRoom() {
     return {
@@ -109,11 +114,13 @@
     return {
       notice:
         "공지 내용을 여기에 표시합니다. (우측 상단 관리자에서 수정할 수 있습니다.)",
+      noticeImage: "",
       customZones: [],
       rooms: {
         VIP: [],
         RC: [],
         CASINO: [],
+        MOBILE_CI: [],
       },
     };
   }
@@ -144,6 +151,7 @@
     var d = defaultData();
     if (!data || typeof data !== "object") return d;
     if (typeof data.notice === "string") d.notice = data.notice;
+    if (data.noticeImage != null) d.noticeImage = String(data.noticeImage);
 
     var customZones = [];
     var customById = {};

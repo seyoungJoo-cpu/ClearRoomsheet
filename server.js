@@ -257,7 +257,7 @@ app.post("/api/push/unsubscribe", checkSyncAuth, function (req, res) {
   res.json({ ok: true });
 });
 
-var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO"];
+var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO", "MOBILE_CI"];
 
 function copyHkRoomArray(rooms, zone) {
   if (rooms && Array.isArray(rooms[zone])) return rooms[zone].slice();
@@ -295,8 +295,15 @@ function mergeHkStorage(prev, incoming) {
     notice: Object.prototype.hasOwnProperty.call(incoming, "notice")
       ? incoming.notice
       : prev.notice,
+    noticeImage: Object.prototype.hasOwnProperty.call(incoming, "noticeImage")
+      ? incoming.noticeImage != null
+        ? String(incoming.noticeImage)
+        : ""
+      : prev.noticeImage != null
+        ? String(prev.noticeImage)
+        : "",
     customZones: customZones,
-    rooms: { VIP: [], RC: [], CASINO: [] },
+    rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [] },
   };
 
   HK_STANDARD_ZONES.forEach(function (zone) {
@@ -448,6 +455,7 @@ app.get("/health", function (req, res) {
   res.status(200).send("ok");
 });
 
+app.use("/inven", express.static(path.join(__dirname, "..", "inven")));
 app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, "0.0.0.0", function () {

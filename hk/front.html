@@ -337,7 +337,7 @@
       flex: 1;
       min-width: 0;
       min-height: 56px;
-      max-height: 120px;
+      max-height: 160px;
       border: 2px solid #fbbf24;
       border-radius: 10px;
       background: #fffbeb;
@@ -349,6 +349,45 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
 
+    .notice-board__content {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .notice-board__text {
+      flex: 1;
+      min-width: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #1a2332;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .notice-thumb-image {
+      display: block;
+      width: 64px;
+      max-height: 76px;
+      height: auto;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #fbbf24;
+      cursor: zoom-in;
+      flex-shrink: 0;
+      background: #fff;
+    }
+
+    .notice-thumb-image.is-expanded {
+      width: auto;
+      max-width: min(300px, 38vw);
+      max-height: 220px;
+      object-fit: contain;
+      cursor: zoom-out;
+    }
+
     .notice-board__label {
       font-size: 0.75rem;
       font-weight: 800;
@@ -356,16 +395,6 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
       flex-shrink: 0;
-    }
-
-    #noticeText {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: #1a2332;
-      line-height: 1.55;
-      white-space: pre-wrap;
-      word-break: break-word;
-      display: block;
     }
 
     .notice-board.is-notice-alert {
@@ -1567,7 +1596,9 @@
 
     .zone-room-manage-panel {
       margin-bottom: 14px;
-      padding: 12px;
+      padding: 14px;
+      width: min(100%, 280px);
+      max-width: 280px;
       border: 1px solid var(--border);
       border-radius: 10px;
       background: var(--surface-inset);
@@ -1576,9 +1607,9 @@
     .zone-room-manage-panel .add-stack {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 12px;
-      padding: 10px;
+      padding: 12px;
       background: var(--surface-raised);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -1586,48 +1617,50 @@
 
     .zone-room-manage-panel .add-stack input {
       width: 100%;
-      height: 32px;
-      padding: 0 8px;
+      height: 36px;
+      padding: 0 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font: inherit;
       font-size: 0.8125rem;
+      box-sizing: border-box;
     }
 
     .zone-room-manage-panel .rc-num-pair {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .zone-room-manage-panel .rc-num-inline {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       width: 100%;
     }
 
     .zone-room-manage-panel .rc-num-inline input {
       flex: 1;
       min-width: 0;
-      height: 32px;
-      padding: 0 8px;
+      height: 36px;
+      padding: 0 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font: inherit;
       font-size: 0.8125rem;
+      box-sizing: border-box;
     }
 
     .zone-room-manage-panel .rc-num-suffix {
       flex-shrink: 0;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 700;
       color: var(--accent);
       white-space: nowrap;
     }
 
     .zone-room-manage-panel .btn-add {
-      height: 32px;
+      height: 36px;
       padding: 0 12px;
       background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
       color: #fff;
@@ -1637,14 +1670,15 @@
       font-weight: 600;
       font-size: 0.8125rem;
       cursor: pointer;
-      margin-top: 4px;
+      margin-top: 2px;
+      align-self: stretch;
     }
 
     .zone-room-edit-list {
       list-style: none;
       margin: 0;
       padding: 0;
-      max-height: 320px;
+      max-height: 380px;
       overflow-y: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -1653,7 +1687,7 @@
 
     .zone-room-edit-list li.room-editor {
       display: block;
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--border);
       font-size: 0.8125rem;
     }
@@ -1663,24 +1697,25 @@
     }
 
     .zone-room-edit-list .re-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 8px;
-      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
     .zone-room-edit-list .re-grid input {
       width: 100%;
-      height: 32px;
-      padding: 0 8px;
+      height: 36px;
+      padding: 0 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font: inherit;
       font-size: 0.8rem;
+      box-sizing: border-box;
     }
 
     .zone-room-edit-list .re-grid .re-span2 {
-      grid-column: 1 / -1;
+      grid-column: auto;
     }
 
     .zone-room-edit-list .re-actions {
@@ -4296,6 +4331,7 @@
         padding: 12px 14px;
       }
 
+      .notice-board__text,
       #noticeText {
         font-size: 1rem;
       }
@@ -4484,6 +4520,7 @@
         font-size: 15px;
       }
 
+      .notice-board__text,
       #noticeText {
         font-size: 0.95rem;
       }
@@ -4757,7 +4794,16 @@
       <div class="topbar-main">
         <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
           <div class="notice-board__label">공지</div>
-          <div id="noticeText"></div>
+          <div class="notice-board__content">
+            <div class="notice-board__text" id="noticeText"></div>
+            <img
+              id="noticeImage"
+              class="notice-thumb-image"
+              alt="공지 첨부 사진"
+              hidden
+              title="클릭하면 크게 · 다시 클릭하면 작게"
+            />
+          </div>
         </div>
       </div>
       <div class="topbar-actions">
@@ -4807,7 +4853,7 @@
             id="sidebarBtnMbInv"
             aria-pressed="false"
           >
-            MB &amp; 인벤 변경
+            MB &amp; 인벤
           </button>
           <button
             type="button"
@@ -4853,32 +4899,10 @@
         <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
         </div>
       </nav>
-      <nav class="sidebar-section sidebar-section--lists" aria-label="리스트">
-        <div class="sidebar-title">리스트</div>
-        <div class="sidebar-nav">
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnCancelList" aria-pressed="false">
-            취소리스트
-          </button>
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnUseList" aria-pressed="false">
-            사용리스트
-          </button>
-        </div>
-      </nav>
     </aside>
 
     <div class="layout-main-area">
     <main class="main">
-      <section class="hk-sidebar-list-panel" id="hkSidebarListPanel" hidden aria-live="polite">
-        <div class="hk-sidebar-list-panel__head">
-          <h2 id="hkSidebarListPanelTitle">목록</h2>
-          <button type="button" class="hk-sidebar-list-panel__close" id="hkSidebarListPanelClose">
-            닫기
-          </button>
-        </div>
-        <ul class="hk-sidebar-list-panel__list" id="hkSidebarListPanelBody"></ul>
-        <p class="hk-sidebar-list-panel__empty" id="hkSidebarListPanelEmpty" hidden>내역이 없습니다.</p>
-      </section>
-
       <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
         <h2 id="frontChatPanelTitle">프론트 채팅</h2>
         <p class="front-chat-panel__hint">프론트 모드에서만 사용하는 공용 대화방입니다. 메시지는 모든 프론트 화면에 동기화됩니다.</p>
@@ -4905,7 +4929,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="../../DD/index.HTML"
+          src="../DD/index.HTML"
           loading="lazy"
         ></iframe>
       </section>
@@ -4948,7 +4972,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -5449,14 +5473,19 @@
       var roomList = document.getElementById("roomListFront");
       var roomEmpty = document.getElementById("roomListEmpty");
       var noticeText = document.getElementById("noticeText");
-      var zoneLabels = { VIP: "VIP", RC: "R/C", CASINO: "CASINO" };
+      var noticeImage = document.getElementById("noticeImage");
+      var zoneLabels = {
+        VIP: "VIP",
+        RC: "R/C",
+        CASINO: "CASINO",
+        MOBILE_CI: "모바일체크인",
+      };
       var currentZone = null;
       var maintenanceMode = false;
       var frontMode = false;
       var memoStack = [];
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
-      var sidebarListView = null;
       var sidebarMainView = "request";
       var requestLogEntries = [];
       var orderLogEntries = [];
@@ -5465,6 +5494,7 @@
       var frontChatToastHideTimer = null;
       var pendingFrontChatAlert = false;
       var lastKnownNotice = null;
+      var lastKnownNoticeImage = null;
       var noticeChangeReady = false;
       var noticeToastHideTimer = null;
       var pendingOrderIssueAlert = false;
@@ -5502,7 +5532,7 @@
       var ZONE_STATUS_CODES = ["IP", "CL", "PU", "DI", "OS", "OO"];
       var zoneStatusFilters = {};
       var CHANGE_ACK_LS = "lotte-hk-change-ack-v1";
-      var ROOM_BLINK_DISMISS_LS = "lotte-hk-room-blink-dismiss-v1";
+      var ROOM_BLINK_DISMISS_LS = "lotte-hk-room-blink-dismiss-v2";
       var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
       var pendingDeferredSyncApply = null;
@@ -6731,12 +6761,6 @@
         if (changed.indexOf("hkStorage") >= 0) {
           refreshMain({ detectNoticeChange: true });
         }
-        if (
-          changed.indexOf("hkCancelLog") >= 0 ||
-          changed.indexOf("hkUseLog") >= 0
-        ) {
-          if (sidebarListView) openSidebarList(sidebarListView);
-        }
         if (changed.indexOf("hkChangeLog") >= 0) {
           if (!getRoomChangeLogEntries().length) {
             clearAllChangeAlerts();
@@ -6802,13 +6826,29 @@
         } catch (e) {}
       }
 
-      function isRoomChangeSuppressed(entry) {
-        if (!entry || !entry.zone || !entry.room) return false;
-        var dismissedAt = loadRoomBlinkDismissMap()[roomAlertKey(entry.zone, entry.room)];
-        if (!dismissedAt) return false;
-        var entryAt = new Date(entry.at || 0).getTime();
-        if (isNaN(entryAt)) return true;
-        return entryAt <= dismissedAt;
+      function isRoomChangeDismissed(zone, room) {
+        var latest = getLatestRoomChangeEntry(zone, room);
+        if (!latest || !latest.id) return true;
+        var dismissedId = loadRoomBlinkDismissMap()[roomAlertKey(zone, room)];
+        return dismissedId === latest.id;
+      }
+
+      function getLatestRoomChangeEntry(zone, room) {
+        var roomNorm = normalizeRoomKey(room);
+        var latest = null;
+        var latestAt = -1;
+        getRoomChangeLogEntries().forEach(function (entry) {
+          if (!entry || !entry.zone || entry.zone !== zone) return;
+          if (normalizeRoomKey(entry.room) !== roomNorm) return;
+          if (isInitialRoomAddEntry(entry)) return;
+          var entryAt = new Date(entry.at || 0).getTime();
+          if (isNaN(entryAt)) entryAt = 0;
+          if (!latest || entryAt >= latestAt) {
+            latest = entry;
+            latestAt = entryAt;
+          }
+        });
+        return latest;
       }
 
       function loadRequestModifyAcks() {
@@ -7398,7 +7438,6 @@
         });
         currentZone = z;
         showSidebarZoneView(z);
-        clearZoneAlert(z);
         expandedRoomHistoryKey = null;
         closeZoneRoomManagePanel();
         expandZoneBlock();
@@ -7437,13 +7476,13 @@
 
       function registerChangeAlert(entry, opts) {
         opts = opts || {};
-        if (!entry || !entry.id || isChangeAcked(entry.id)) return;
+        if (!entry || !entry.id || !entry.zone || !entry.room) return;
         if (isInitialRoomAddEntry(entry)) return;
-        if (isRoomChangeSuppressed(entry)) return;
-        if (entry.zone) pendingZoneAlerts[entry.zone] = true;
-        if (entry.zone && entry.room) {
-          pendingRoomAlerts[roomAlertKey(entry.zone, entry.room)] = entry.id;
-        }
+        var latest = getLatestRoomChangeEntry(entry.zone, entry.room);
+        if (!latest || latest.id !== entry.id) return;
+        if (isRoomChangeDismissed(entry.zone, entry.room)) return;
+        pendingZoneAlerts[entry.zone] = true;
+        pendingRoomAlerts[roomAlertKey(entry.zone, entry.room)] = entry.id;
         if (!opts.silent) {
           applyZoneAlertUi();
           var activeZone = getActiveZone();
@@ -7455,8 +7494,24 @@
         opts = opts || {};
         pendingZoneAlerts = {};
         pendingRoomAlerts = {};
+        var latestByRoom = {};
         getRoomChangeLogEntries().forEach(function (entry) {
-          registerChangeAlert(entry, { silent: true });
+          if (!entry || !entry.zone || !entry.room) return;
+          if (isInitialRoomAddEntry(entry)) return;
+          var key = roomAlertKey(entry.zone, entry.room);
+          var entryAt = new Date(entry.at || 0).getTime();
+          if (isNaN(entryAt)) entryAt = 0;
+          var prev = latestByRoom[key];
+          if (!prev) {
+            latestByRoom[key] = { entry: entry, at: entryAt };
+            return;
+          }
+          if (entryAt >= prev.at) {
+            latestByRoom[key] = { entry: entry, at: entryAt };
+          }
+        });
+        Object.keys(latestByRoom).forEach(function (key) {
+          registerChangeAlert(latestByRoom[key].entry, { silent: true });
         });
         applyZoneAlertUi();
         if (!opts.skipRender) {
@@ -7470,7 +7525,8 @@
       }
 
       function isRoomChangePending(zone, room) {
-        return !!pendingRoomAlerts[roomAlertKey(zone, room)];
+        if (isRoomChangeDismissed(zone, room)) return false;
+        return !!getLatestRoomChangeEntry(zone, room);
       }
 
       function applyZoneAlertUi() {
@@ -7486,29 +7542,27 @@
         applyZoneAlertUi();
       }
 
+      function refreshZoneAlertFromRooms(zone) {
+        if (!zone) return;
+        var data = HKStorage.load();
+        var hasPending = (data.rooms[zone] || []).some(function (r) {
+          return isRoomChangePending(zone, r.number);
+        });
+        if (hasPending) pendingZoneAlerts[zone] = true;
+        else delete pendingZoneAlerts[zone];
+      }
+
       function dismissRoomFlash(zone, room) {
-        var roomNorm = normalizeRoomKey(room);
         var key = roomAlertKey(zone, room);
-        delete pendingRoomAlerts[key];
-        var maxAt = 0;
-        getRoomChangeLogEntries().forEach(function (entry) {
-          if (!entry || !entry.id) return;
-          if (entry.zone !== zone) return;
-          if (normalizeRoomKey(entry.room) !== roomNorm) return;
-          ackChangeId(entry.id);
-          var entryAt = new Date(entry.at || 0).getTime();
-          if (!isNaN(entryAt) && entryAt > maxAt) maxAt = entryAt;
-        });
-        if (maxAt > 0) {
+        var latest = getLatestRoomChangeEntry(zone, room);
+        if (latest && latest.id) {
           var dismissMap = loadRoomBlinkDismissMap();
-          dismissMap[key] = Math.max(dismissMap[key] || 0, maxAt);
+          dismissMap[key] = latest.id;
           saveRoomBlinkDismissMap(dismissMap);
+          ackChangeId(latest.id);
         }
-        var zonePrefix = String(zone || "") + ":";
-        var hasPendingInZone = Object.keys(pendingRoomAlerts).some(function (roomKey) {
-          return roomKey.indexOf(zonePrefix) === 0;
-        });
-        if (!hasPendingInZone) delete pendingZoneAlerts[zone];
+        delete pendingRoomAlerts[key];
+        refreshZoneAlertFromRooms(zone);
         applyZoneAlertUi();
       }
 
@@ -8499,7 +8553,6 @@
         });
         saveOrderLog();
         renderOrderPanels();
-        if (sidebarListView === "cancel") openSidebarList("cancel");
       }
 
       function appendUseLog(entry) {
@@ -8512,19 +8565,6 @@
           urgent: !!entry.urgent,
           entryId: entry.id || "",
         });
-      }
-
-      function setSidebarListNavActive() {
-        var b1 = document.getElementById("sidebarBtnCancelList");
-        var b2 = document.getElementById("sidebarBtnUseList");
-        if (b1) {
-          b1.classList.toggle("is-active", sidebarListView === "cancel");
-          b1.setAttribute("aria-pressed", sidebarListView === "cancel" ? "true" : "false");
-        }
-        if (b2) {
-          b2.classList.toggle("is-active", sidebarListView === "use");
-          b2.setAttribute("aria-pressed", sidebarListView === "use" ? "true" : "false");
-        }
       }
 
       function updateSidebarPrimaryNavActive() {
@@ -8569,9 +8609,6 @@
             t.setAttribute("aria-selected", "false");
           });
         }
-        if (sidebarMainView !== "list") {
-          setSidebarListNavActive();
-        }
       }
 
       function applySidebarMainView(view) {
@@ -8584,7 +8621,6 @@
         var showDd = view === "dd";
         var showInven = view === "inven";
         var showZone = view === "zone";
-        var showList = view === "list";
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
@@ -8595,7 +8631,6 @@
         var ddEmbedPanel = document.getElementById("ddEmbedPanel");
         var invenEmbedPanel = document.getElementById("invenEmbedPanel");
         var zoneBlock = document.getElementById("zoneBlock");
-        var listPanel = document.getElementById("hkSidebarListPanel");
         var mainEl = document.querySelector(".main");
         if (requestStack) requestStack.hidden = !showRequest;
         if (reqPanel) reqPanel.hidden = !showRequest;
@@ -8608,7 +8643,6 @@
         if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
-        if (listPanel && !showList) listPanel.hidden = true;
         if (mainEl) {
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
@@ -8641,7 +8675,6 @@
       }
 
       function showSidebarRequestView() {
-        closeSidebarList();
         collapseZoneBlock();
         currentZone = null;
         setZonePanelOpen(false);
@@ -8652,7 +8685,6 @@
       }
 
       function showSidebarOrderView() {
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         clearOrderSidebarAlerts();
@@ -8660,7 +8692,6 @@
       }
 
       function showSidebarMbInvView() {
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         clearMbInvSidebarAlerts();
@@ -8668,7 +8699,6 @@
       }
 
       function showSidebarMbCheckView() {
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         clearMbCheckSidebarAlerts();
@@ -8677,7 +8707,6 @@
 
       function showSidebarFrontView() {
         if (!frontMode) return;
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("front");
@@ -8685,7 +8714,6 @@
 
       function showSidebarDdView() {
         if (!frontMode) return;
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
@@ -8695,7 +8723,6 @@
 
       function showSidebarInvenView() {
         if (!frontMode) return;
-        closeSidebarList();
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
@@ -8704,105 +8731,7 @@
       }
 
       function showSidebarZoneView(zone) {
-        closeSidebarList();
         applySidebarMainView("zone");
-      }
-
-      function openSidebarList(kind) {
-        sidebarListView = kind;
-        applySidebarMainView("list");
-        collapseZoneBlock();
-        var panel = document.getElementById("hkSidebarListPanel");
-        var title = document.getElementById("hkSidebarListPanelTitle");
-        var ul = document.getElementById("hkSidebarListPanelBody");
-        var empty = document.getElementById("hkSidebarListPanelEmpty");
-        if (!panel || !ul) return;
-        if (title) title.textContent = kind === "cancel" ? "취소리스트" : "사용리스트";
-        ul.innerHTML = "";
-        var rows =
-          typeof HKSync !== "undefined"
-            ? kind === "cancel"
-              ? HKSync.getCancelLog()
-              : HKSync.getUseLog()
-            : [];
-        if (rows.length === 0) {
-          if (empty) empty.hidden = false;
-        } else {
-          if (empty) empty.hidden = true;
-          rows.forEach(function (row) {
-            var li = document.createElement("li");
-            li.className = "hk-sidebar-list-panel__item";
-            if (kind === "cancel") {
-              var main = document.createElement("div");
-              var isOrderCancel = row.kind === "order" || isOrderEntryId(row.entryId);
-              var kindPrefix = "";
-              if (isOrderCancel) kindPrefix = "오더 · ";
-              else if (row.kind === "mb") kindPrefix = "MB 변경 · ";
-              else if (row.kind === "inv") kindPrefix = "인벤 변경 · ";
-              else if (row.kind === "mbcheck") kindPrefix = "MB CHECK · ";
-              var roomDisp = row.room ? String(row.room) : "—";
-              if (row.kind === "mb" || row.kind === "inv") {
-                roomDisp = roomDisp.replace(/→/g, " → ");
-              } else if (roomDisp !== "—") {
-                roomDisp = formatRoomNoDisplay(roomDisp);
-              }
-              main.textContent =
-                kindPrefix +
-                "객실 " +
-                roomDisp +
-                " · 취소 처리: " +
-                (row.name || "—");
-              li.appendChild(main);
-              if ((isOrderCancel || row.kind === "mb" || row.kind === "inv" || row.kind === "mbcheck") && row.memo) {
-                var memoLine = document.createElement("div");
-                memoLine.className = "hk-sidebar-list-panel__item-meta";
-                memoLine.textContent = "메모 : " + String(row.memo);
-                li.appendChild(memoLine);
-              }
-              var meta = document.createElement("div");
-              meta.className = "hk-sidebar-list-panel__item-meta";
-              if (row.at) setLineWithEmTime(meta, "기록 ", formatReqAt(row.at));
-              li.appendChild(meta);
-            } else {
-              var main2 = document.createElement("div");
-              var rmU = row.room ? formatRoomNoDisplay(String(row.room)) : "—";
-              var stU =
-                row.status && String(row.status).trim() ? String(row.status).trim() : "상태 없음";
-              var schU =
-                row.sched && String(row.sched).trim() ? String(row.sched).trim() : "—";
-              main2.appendChild(
-                document.createTextNode("객실 " + rmU + " · " + stU + " · 처리·예정 ")
-              );
-              var schSpan = document.createElement("span");
-              schSpan.className = "hk-time-em";
-              schSpan.textContent = schU;
-              main2.appendChild(schSpan);
-              li.appendChild(main2);
-              var meta2 = document.createElement("div");
-              meta2.className = "hk-sidebar-list-panel__item-meta";
-              if (row.at) setLineWithEmTime(meta2, "사용 ", formatReqAt(row.at));
-              li.appendChild(meta2);
-            }
-            ul.appendChild(li);
-          });
-        }
-        panel.hidden = false;
-        setSidebarListNavActive();
-      }
-
-      function closeSidebarList() {
-        sidebarListView = null;
-        var panel = document.getElementById("hkSidebarListPanel");
-        if (panel) panel.hidden = true;
-        setSidebarListNavActive();
-        if (sidebarMainView === "list") {
-          applySidebarMainView("request");
-        }
-      }
-
-      function toggleSidebarList(kind) {
-        if (sidebarListView === kind) closeSidebarList();
-        else openSidebarList(kind);
       }
 
       function openCancelNameModal(entryId) {
@@ -9164,6 +9093,18 @@
           knownRequestSnapshots[entry.id] = requestContentSignature(entry);
         });
         applyRequestSidebarAlertUi();
+      }
+
+      function rebuildRequestModifyAlerts() {
+        var ackMap = loadRequestModifyAcks();
+        requestLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id || !isScheduledRequestEntry(entry)) return;
+          if (!Object.prototype.hasOwnProperty.call(ackMap, entry.id)) return;
+          var sig = requestContentSignature(entry);
+          if (ackMap[entry.id] !== sig) {
+            registerRequestModifyAlert(entry.id, true);
+          }
+        });
       }
 
       function detectNewRequestItems() {
@@ -10516,13 +10457,29 @@
         if (!noticeText) return;
         var data = HKStorage.load();
         var next = data.notice != null ? String(data.notice) : "";
-        if (noticeChangeReady && opts.detectChange && next !== lastKnownNotice) {
+        var nextImg = data.noticeImage != null ? String(data.noticeImage).trim() : "";
+        if (
+          noticeChangeReady &&
+          opts.detectChange &&
+          (next !== lastKnownNotice || nextImg !== lastKnownNoticeImage)
+        ) {
           showNoticeChangedToast();
           flashNoticeBoard();
         }
         lastKnownNotice = next;
+        lastKnownNoticeImage = nextImg;
         noticeChangeReady = true;
         noticeText.textContent = next;
+        if (noticeImage) {
+          noticeImage.classList.remove("is-expanded");
+          if (nextImg) {
+            noticeImage.src = nextImg;
+            noticeImage.hidden = false;
+          } else {
+            noticeImage.removeAttribute("src");
+            noticeImage.hidden = true;
+          }
+        }
       }
 
       function hideNoticeChangedToast() {
@@ -11329,7 +11286,6 @@
               if (useEntry) appendUseLog(useEntry);
               removeRequestEntry(ridU);
               renderRequestLogPanel();
-              if (sidebarListView === "use") openSidebarList("use");
             }
             return;
           }
@@ -11494,7 +11450,14 @@
 
       var noticeBoardEl = document.getElementById("noticeBoard");
       if (noticeBoardEl) {
-        noticeBoardEl.addEventListener("click", stopNoticeBoardFlash);
+        noticeBoardEl.addEventListener("click", function (e) {
+          if (e.target && e.target.id === "noticeImage") {
+            e.stopPropagation();
+            e.target.classList.toggle("is-expanded");
+            return;
+          }
+          stopNoticeBoardFlash();
+        });
       }
 
       var linkRoomingFromFront = document.getElementById("linkRoomingFromFront");
@@ -11531,6 +11494,7 @@
         applyFrontChatSidebarAlertUi();
         applyMbSidebarAlertUi();
         rebuildChangeAlertsFromLog({ skipRender: true });
+        rebuildRequestModifyAlerts();
         applyZoneAlertUi();
       }
 
@@ -11591,9 +11555,7 @@
           isOwnChatAuthor: isOwnChatAuthor,
           appendCancelNameLog: appendCancelNameLog,
           openCancelConfirmModal: openCancelConfirmModal,
-          onCancelListRefresh: function () {
-            if (sidebarListView === "cancel") openSidebarList("cancel");
-          },
+          onCancelListRefresh: function () {},
         });
         HKMbWorkflow.renderMbInvPanels();
         HKMbWorkflow.renderMbCheckPanels();
@@ -12016,28 +11978,6 @@
         }
       })();
 
-      (function setupSidebarLists() {
-        var bCancel = document.getElementById("sidebarBtnCancelList");
-        var bUse = document.getElementById("sidebarBtnUseList");
-        var closeBtn = document.getElementById("hkSidebarListPanelClose");
-        if (bCancel) {
-          bCancel.addEventListener("click", function () {
-            toggleSidebarList("cancel");
-          });
-        }
-        if (bUse) {
-          bUse.addEventListener("click", function () {
-            toggleSidebarList("use");
-          });
-        }
-        if (closeBtn) {
-          closeBtn.addEventListener("click", function () {
-            closeSidebarList();
-          });
-        }
-        setSidebarListNavActive();
-      })();
-
       (function setupCancelConfirmModal() {
         var dlg = document.getElementById("hkCancelConfirm");
         if (!dlg) return;
@@ -12111,7 +12051,6 @@
                 appendCancelNameLog(roomSnap, nameVal, id);
                 removeRequestEntry(id);
                 renderRequestLogPanel();
-                if (sidebarListView === "cancel") openSidebarList("cancel");
               }
             }
           });
