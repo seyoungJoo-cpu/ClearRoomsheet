@@ -741,9 +741,10 @@
     </section>
 
     <section class="card">
-      <h2>구역별 객실 등록</h2>
+      <h2>특이객실 그룹</h2>
       <p style="margin: 0 0 16px; font-size: 0.875rem; color: var(--text-muted);">
-        객실번호·메모를 등록하면 메인 화면에 카드 형태로 표시됩니다. VIP·CASINO·추가 그룹은 객실번호를 <strong>201,202</strong>처럼 쉼표로 여러 개 한 번에 등록할 수 있습니다. (R/C 제외) 상태는 루밍 XML에서 자동으로 가져옵니다.
+        프론트 모드에서 각 특이객실 그룹의 <strong>+</strong> 버튼으로 객실번호·FD·두잉을 등록·수정합니다.
+        여기서는 그룹 추가·이름 변경·삭제만 할 수 있습니다.
       </p>
       <div class="zone-group-add">
         <label for="newZoneLabel">그룹 추가</label>
@@ -758,7 +759,7 @@
           <button type="button" class="btn-primary" id="btnAddZoneGroup">추가</button>
         </div>
         <p class="zone-group-add__hint">
-          CASINO처럼 정비 화면 사이드바에 표시됩니다. 추가한 그룹 이름은 카드 제목에서 바로 수정할 수 있습니다. 객실 변경 시 해당 탭이 노란색으로 깜빡입니다.
+          CASINO처럼 정비 화면 사이드바에 표시됩니다. 추가한 그룹 이름은 아래 카드에서 바로 수정할 수 있습니다.
         </p>
       </div>
       <div class="zone-grid" id="zoneGrid"></div>
@@ -869,9 +870,6 @@
           el.closest(".notice-block") ||
           el.id === "noticeInput" ||
           el.id === "newZoneLabel" ||
-          el.classList.contains("re-num") ||
-          el.classList.contains("re-memo1") ||
-          el.classList.contains("re-memo2") ||
           el.classList.contains("zone-card__title-input")
         );
       }
@@ -990,7 +988,7 @@
           vacRows.forEach(function (row) {
             var nr = normalizeRoomDigits(row.room);
             var label = formatFoStatusDisplay(row.foStatus);
-            if (nr && label) m[nr] = label;
+            if (nr && label === "IN") m[nr] = "IN";
           });
         }
         if (roomResvMap && typeof roomResvMap === "object") {
@@ -999,7 +997,7 @@
             var val = roomResvMap[key];
             if (!nr || val == null) return;
             var label = formatFoStatusDisplay(val) || String(val).trim();
-            if (label === "IN" || label === "O") m[nr] = label;
+            if (label === "IN") m[nr] = "IN";
           });
         }
         return m;
@@ -1008,7 +1006,8 @@
       function lookupRoomResvDisplay(roomInput) {
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
-        return XML_ROOM_RESV_MAP[nr] || "";
+        var val = XML_ROOM_RESV_MAP[nr] || "";
+        return val === "IN" ? "IN" : "";
       }
 
       function hkStatusSuffix(status) {
@@ -1031,9 +1030,9 @@
         var resv = lookupRoomResvDisplay(roomInput);
         if (resv) {
           var rv = document.createElement("span");
-          rv.className = "hk-resv-badge hk-resv--" + (resv === "IN" ? "in" : "o");
+          rv.className = "hk-resv-badge hk-resv--in";
           rv.textContent = resv;
-          rv.title = "FO " + resv;
+          rv.title = "FO IN";
           container.appendChild(rv);
         }
         if (!st && !resv) container.classList.add("is-missing");
@@ -1066,7 +1065,6 @@
           payload && payload.roomResvMap ? payload.roomResvMap : null
         );
         if (isAdminUserEditing()) return;
-        renderRooms(HKStorage.load());
       }
 
       function handleHkSyncChange(changed, payload) {
@@ -1085,46 +1083,6 @@
         if (changed.indexOf("hkStorage") >= 0) {
           refresh();
         }
-      }
-
-      function buildRoomChangeLines(prev, next) {
-        var lines = [];
-        var fields = [
-          { key: "number", label: "객실번호", fmt: formatRoomNoDisplay },
-          { key: "memo1", label: "FD" },
-          { key: "memo2", label: "두잉" },
-        ];
-        fields.forEach(function (f) {
-          var a = String((prev && prev[f.key]) || "").trim();
-          var b = String((next && next[f.key]) || "").trim();
-          if (a === b) return;
-          var fa = f.fmt ? f.fmt(a) : a;
-          var fb = f.fmt ? f.fmt(b) : b;
-          lines.push(f.label + ': "' + (fa || "—") + '" → "' + (fb || "—") + '"');
-        });
-        return lines;
-      }
-
-      function buildRoomChangeEntry(zone, prevRow, next) {
-        var changeLines = buildRoomChangeLines(prevRow, next);
-        if (!changeLines.length) return null;
-        var entry = {
-          id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
-          at: new Date().toISOString(),
-          zone: zone,
-          room: next.number || (prevRow && prevRow.number) || "",
-          changes: changeLines,
-          by: getAdminAuthorName(),
-        };
-        if (!prevRow) entry.kind = "add";
-        return entry;
-      }
-
-      function publishRoomChange(entry) {
-        if (typeof HKSync !== "undefined" && HKSync.pushRoomChange) {
-          return HKSync.pushRoomChange(entry);
-        }
-        return Promise.resolve();
       }
 
       function toast(msg) {
@@ -2403,115 +2361,6 @@
         return s;
       }
 
-      function parseBulkRoomNumbers(raw) {
-        var seen = {};
-        var out = [];
-        String(raw || "")
-          .split(/[,，]/)
-          .forEach(function (part) {
-            var n = part.trim();
-            if (!n || seen[n]) return;
-            seen[n] = true;
-            out.push(n);
-          });
-        return out;
-      }
-
-      function publishRoomChangesSequential(entries) {
-        var chain = Promise.resolve();
-        (entries || []).forEach(function (entry) {
-          chain = chain.then(function () {
-            return publishRoomChange(entry);
-          });
-        });
-        return chain;
-      }
-
-      function clearZoneAddForm(card, zone) {
-        if (!card) return;
-        if (zone === "RC") {
-          var inf = card.querySelector(".af-num-from");
-          var int = card.querySelector(".af-num-to");
-          if (inf) inf.value = "";
-          if (int) int.value = "";
-        } else {
-          var nb = card.querySelector(".af-num");
-          if (nb) nb.value = "";
-        }
-        var m1 = card.querySelector(".af-memo1");
-        var m2 = card.querySelector(".af-memo2");
-        if (m1) m1.value = "";
-        if (m2) m2.value = "";
-      }
-
-      function createZoneAddStack(zoneId, label) {
-        var stack = document.createElement("div");
-        stack.className = "add-stack";
-        stack.setAttribute("aria-label", label + " 객실 추가");
-
-        if (zoneId === "RC") {
-          var pair = document.createElement("div");
-          pair.className = "rc-num-pair";
-          var fromWrap = document.createElement("div");
-          fromWrap.className = "rc-num-inline";
-          var fromInput = document.createElement("input");
-          fromInput.type = "text";
-          fromInput.className = "af-num-from";
-          fromInput.placeholder = "객실번호";
-          fromInput.autocomplete = "off";
-          var fromSuffix = document.createElement("span");
-          fromSuffix.className = "rc-num-suffix";
-          fromSuffix.textContent = "에서";
-          fromWrap.appendChild(fromInput);
-          fromWrap.appendChild(fromSuffix);
-          var toWrap = document.createElement("div");
-          toWrap.className = "rc-num-inline";
-          var toInput = document.createElement("input");
-          toInput.type = "text";
-          toInput.className = "af-num-to";
-          toInput.placeholder = "객실번호";
-          toInput.autocomplete = "off";
-          var toSuffix = document.createElement("span");
-          toSuffix.className = "rc-num-suffix";
-          toSuffix.textContent = "로";
-          toWrap.appendChild(toInput);
-          toWrap.appendChild(toSuffix);
-          pair.appendChild(fromWrap);
-          pair.appendChild(toWrap);
-          stack.appendChild(pair);
-        } else {
-          var numInput = document.createElement("input");
-          numInput.type = "text";
-          numInput.className = "af-num";
-          numInput.placeholder = "객실번호 (예: 201,202)";
-          numInput.autocomplete = "off";
-          stack.appendChild(numInput);
-        }
-
-        var memo1 = document.createElement("input");
-        memo1.type = "text";
-        memo1.className = "af-memo1";
-        memo1.placeholder = "FD";
-        memo1.autocomplete = "off";
-        stack.appendChild(memo1);
-
-        var memo2 = document.createElement("input");
-        memo2.type = "text";
-        memo2.className = "af-memo2";
-        memo2.placeholder = "두잉";
-        memo2.autocomplete = "off";
-        stack.appendChild(memo2);
-
-        var addBtn = document.createElement("button");
-        addBtn.type = "button";
-        addBtn.className = "btn-add";
-        addBtn.setAttribute("data-action", "add");
-        addBtn.textContent = "추가";
-        stack.appendChild(addBtn);
-
-        return stack;
-      }
-
       function isDuplicateZoneLabel(data, label, exceptZoneId) {
         return (data.customZones || []).some(function (z) {
           if (!z) return false;
@@ -2552,9 +2401,6 @@
           HKSync.pushStorageNow();
         }
         inp.value = newLabel;
-        var card = inp.closest(".zone-card");
-        var stack = card && card.querySelector(".add-stack");
-        if (stack) stack.setAttribute("aria-label", newLabel + " 객실 추가");
         toast("그룹 이름이 변경되었습니다.");
       }
 
@@ -2565,41 +2411,29 @@
 
         var head = document.createElement("div");
         head.className = "zone-card__head";
-        if (HKStorage.isStandardZone(zoneId)) {
-          var h3 = document.createElement("h3");
-          h3.textContent = label;
-          head.appendChild(h3);
-        } else {
-          var titleWrap = document.createElement("div");
-          titleWrap.className = "zone-card__title-wrap";
-          var titleInput = document.createElement("input");
-          titleInput.type = "text";
-          titleInput.className = "zone-card__title-input";
-          titleInput.value = label;
-          titleInput.setAttribute("data-zone", zoneId);
-          titleInput.setAttribute("maxlength", "24");
-          titleInput.setAttribute("autocomplete", "off");
-          titleInput.setAttribute("aria-label", "그룹 이름");
-          titleInput.title = "그룹 이름 수정";
-          titleWrap.appendChild(titleInput);
-          head.appendChild(titleWrap);
-          var actions = document.createElement("div");
-          actions.className = "zone-card__head-actions";
-          var delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "zone-card__delete";
-          delBtn.setAttribute("data-action", "delete-zone");
-          delBtn.textContent = "삭제";
-          actions.appendChild(delBtn);
-          head.appendChild(actions);
-        }
+        var titleWrap = document.createElement("div");
+        titleWrap.className = "zone-card__title-wrap";
+        var titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.className = "zone-card__title-input";
+        titleInput.value = label;
+        titleInput.setAttribute("data-zone", zoneId);
+        titleInput.setAttribute("maxlength", "24");
+        titleInput.setAttribute("autocomplete", "off");
+        titleInput.setAttribute("aria-label", "그룹 이름");
+        titleInput.title = "그룹 이름 수정";
+        titleWrap.appendChild(titleInput);
+        head.appendChild(titleWrap);
+        var actions = document.createElement("div");
+        actions.className = "zone-card__head-actions";
+        var delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "zone-card__delete";
+        delBtn.setAttribute("data-action", "delete-zone");
+        delBtn.textContent = "삭제";
+        actions.appendChild(delBtn);
+        head.appendChild(actions);
         card.appendChild(head);
-        card.appendChild(createZoneAddStack(zoneId, label));
-
-        var ul = document.createElement("ul");
-        ul.className = "room-list";
-        ul.setAttribute("data-list", zoneId);
-        card.appendChild(ul);
         return card;
       }
 
@@ -2607,83 +2441,20 @@
         var grid = document.getElementById("zoneGrid");
         if (!grid) return;
         grid.innerHTML = "";
-        HKStorage.getZoneOrder(data).forEach(function (zoneId) {
+        var customZones = data.customZones || [];
+        if (!customZones.length) {
+          var empty = document.createElement("p");
+          empty.className = "zone-group-add__hint";
+          empty.style.margin = "8px 0 0";
+          empty.textContent = "추가된 그룹이 없습니다. 위에서 그룹을 추가하세요.";
+          grid.appendChild(empty);
+          return;
+        }
+        customZones.forEach(function (z) {
+          if (!z || !z.id) return;
           grid.appendChild(
-            createZoneCard(zoneId, HKStorage.getZoneLabel(zoneId, data))
+            createZoneCard(z.id, z.label || HKStorage.getZoneLabel(z.id, data))
           );
-        });
-      }
-
-      function renderRooms(data, opts) {
-        opts = opts || {};
-        if (!opts.force && isAdminUserEditing()) return;
-        HKStorage.getZoneOrder(data).forEach(function (zone) {
-          var ul = document.querySelector('.room-list[data-list="' + zone + '"]');
-          if (!ul) return;
-          var rooms = data.rooms[zone] || [];
-          ul.innerHTML = "";
-          if (rooms.length === 0) {
-            var empty = document.createElement("li");
-            empty.className = "empty-hint";
-            empty.textContent = "등록된 객실이 없습니다.";
-            ul.appendChild(empty);
-            return;
-          }
-          rooms.forEach(function (room, idx) {
-            var li = document.createElement("li");
-            li.className = "room-editor";
-            var grid = document.createElement("div");
-            grid.className = "re-grid";
-
-            var inNum = document.createElement("input");
-            inNum.type = "text";
-            inNum.className = "re-num";
-            inNum.value = formatRoomNoDisplay(room.number || "");
-            inNum.placeholder = "객실번호";
-            grid.appendChild(inNum);
-
-            var stSpan = document.createElement("span");
-            var xmlSt = lookupRoomStatusFromXml(room.number || "");
-            appendAdminStatusBadges(stSpan, xmlSt, room.number || "");
-            stSpan.title = "루밍 XML ROOM_STATUS · FO";
-            grid.appendChild(stSpan);
-
-            var inM1 = document.createElement("input");
-            inM1.type = "text";
-            inM1.className = "re-memo1 re-span2";
-            inM1.placeholder = "FD";
-            inM1.value = room.memo1 || "";
-            grid.appendChild(inM1);
-
-            var inM2 = document.createElement("input");
-            inM2.type = "text";
-            inM2.className = "re-memo2 re-span2";
-            inM2.placeholder = "두잉";
-            inM2.value = room.memo2 || "";
-            grid.appendChild(inM2);
-
-            li.appendChild(grid);
-
-            var actions = document.createElement("div");
-            actions.className = "re-actions";
-            var btnSave = document.createElement("button");
-            btnSave.type = "button";
-            btnSave.className = "btn-save-row";
-            btnSave.textContent = "변경";
-            btnSave.setAttribute("data-zone", zone);
-            btnSave.setAttribute("data-index", String(idx));
-            var btnRm = document.createElement("button");
-            btnRm.type = "button";
-            btnRm.className = "btn-remove";
-            btnRm.textContent = "삭제";
-            btnRm.setAttribute("data-zone", zone);
-            btnRm.setAttribute("data-index", String(idx));
-            actions.appendChild(btnSave);
-            actions.appendChild(btnRm);
-            li.appendChild(actions);
-
-            ul.appendChild(li);
-          });
         });
       }
 
@@ -2701,7 +2472,6 @@
           noticeEl.value = data.notice;
         }
         renderZoneGrid(data);
-        renderRooms(data, opts);
       }
 
       document.getElementById("btnAddZoneGroup").addEventListener("click", function () {
@@ -2756,18 +2526,6 @@
         toast("공지가 변경되었습니다.");
       });
 
-      function readRoomFromEditor(li) {
-        var num = (li.querySelector(".re-num") && li.querySelector(".re-num").value.trim()) || "";
-        var memo1 = (li.querySelector(".re-memo1") && li.querySelector(".re-memo1").value) || "";
-        var memo2 = (li.querySelector(".re-memo2") && li.querySelector(".re-memo2").value) || "";
-        return {
-          number: num,
-          status: lookupRoomStatusFromXml(num),
-          memo1: memo1,
-          memo2: memo2,
-        };
-      }
-
       document.getElementById("zoneGrid").addEventListener("focusout", function (e) {
         if (e.target.classList.contains("zone-card__title-input")) {
           commitZoneRename(e.target);
@@ -2818,163 +2576,6 @@
           }
           refresh({ force: true });
           toast("그룹이 삭제되었습니다.");
-          return;
-        }
-        if (t.classList.contains("btn-add")) {
-          var card = t.closest(".zone-card");
-          if (!card) return;
-          var zone = card.getAttribute("data-zone");
-          var num = "";
-          if (zone === "RC") {
-            var nFrom =
-              (card.querySelector(".af-num-from") && card.querySelector(".af-num-from").value.trim()) ||
-              "";
-            var nTo =
-              (card.querySelector(".af-num-to") && card.querySelector(".af-num-to").value.trim()) || "";
-            if (!nFrom && !nTo) {
-              toast("객실번호를 입력하세요.");
-              return;
-            }
-            if (nFrom && nTo) num = nFrom + " -> " + nTo;
-            else num = nFrom || nTo;
-          } else {
-            var numRaw =
-              (card.querySelector(".af-num") && card.querySelector(".af-num").value.trim()) || "";
-            if (!numRaw) {
-              toast("객실번호를 입력하세요.");
-              return;
-            }
-            var numbers = parseBulkRoomNumbers(numRaw);
-            if (!numbers.length) {
-              toast("객실번호를 입력하세요.");
-              return;
-            }
-            var dataBulk = HKStorage.load();
-            if (!dataBulk.rooms[zone]) dataBulk.rooms[zone] = [];
-            var existingNums = {};
-            (dataBulk.rooms[zone] || []).forEach(function (r) {
-              existingNums[r.number || ""] = true;
-            });
-            var memo1Bulk =
-              (card.querySelector(".af-memo1") && card.querySelector(".af-memo1").value) || "";
-            var memo2Bulk =
-              (card.querySelector(".af-memo2") && card.querySelector(".af-memo2").value) || "";
-            var toAdd = [];
-            var skipped = [];
-            numbers.forEach(function (n) {
-              if (existingNums[n]) {
-                skipped.push(n);
-                return;
-              }
-              existingNums[n] = true;
-              toAdd.push(n);
-            });
-            if (!toAdd.length) {
-              toast("이미 등록된 객실번호입니다.");
-              return;
-            }
-            var changeEntries = [];
-            toAdd.forEach(function (n) {
-              var row = {
-                number: n,
-                status: lookupRoomStatusFromXml(n),
-                memo1: memo1Bulk,
-                memo2: memo2Bulk,
-                time: "",
-              };
-              dataBulk.rooms[zone].push(row);
-              var entry = buildRoomChangeEntry(zone, null, row);
-              if (entry) changeEntries.push(entry);
-            });
-            HKStorage.save(dataBulk, { skipSync: true });
-            publishRoomChangesSequential(changeEntries).then(function () {
-              clearZoneAddForm(card, zone);
-              renderRooms(HKStorage.load());
-              var msg =
-                toAdd.length === 1
-                  ? "객실이 추가되었습니다."
-                  : "객실 " + toAdd.length + "개가 추가되었습니다.";
-              if (skipped.length) {
-                msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
-              }
-              toast(msg);
-            });
-            return;
-          }
-          var data = HKStorage.load();
-          var dup = (data.rooms[zone] || []).some(function (r) {
-            return (r.number || "") === num;
-          });
-          if (dup) {
-            toast("이미 등록된 객실번호입니다.");
-            return;
-          }
-          var status = lookupRoomStatusFromXml(num);
-          var memo1 = (card.querySelector(".af-memo1") && card.querySelector(".af-memo1").value) || "";
-          var memo2 = (card.querySelector(".af-memo2") && card.querySelector(".af-memo2").value) || "";
-          var newRow = {
-            number: num,
-            status: status,
-            memo1: memo1,
-            memo2: memo2,
-            time: "",
-          };
-          var addEntry = buildRoomChangeEntry(zone, null, newRow);
-          data.rooms[zone].push(newRow);
-          HKStorage.save(data, { skipSync: true });
-          publishRoomChange(addEntry).then(function () {
-            clearZoneAddForm(card, zone);
-            renderRooms(HKStorage.load());
-            toast("객실이 추가되었습니다.");
-          });
-          return;
-        }
-        if (t.classList.contains("btn-save-row")) {
-          var li = t.closest(".room-editor");
-          if (!li) return;
-          var z = t.getAttribute("data-zone");
-          var ix = parseInt(t.getAttribute("data-index"), 10);
-          var data = HKStorage.load();
-          var next = readRoomFromEditor(li);
-          if (!next.number) {
-            toast("객실번호를 입력하세요.");
-            return;
-          }
-          var others = data.rooms[z].filter(function (_, i) {
-            return i !== ix;
-          });
-          var dup = others.some(function (r) {
-            return (r.number || "") === next.number;
-          });
-          if (dup) {
-            toast("다른 행과 같은 객실번호입니다.");
-            return;
-          }
-          var prevRow = data.rooms[z][ix];
-          next.time = prevRow && prevRow.time != null ? prevRow.time : "";
-          var changeEntry = buildRoomChangeEntry(z, prevRow, next);
-          if (!changeEntry) {
-            toast("변경된 내용이 없습니다.");
-            return;
-          }
-          data.rooms[z][ix] = next;
-          HKStorage.save(data, { skipSync: true });
-          publishRoomChange(changeEntry).then(function () {
-            renderRooms(HKStorage.load());
-            toast("변경되었습니다.");
-          });
-          return;
-        }
-        if (t.classList.contains("btn-remove")) {
-          var z2 = t.getAttribute("data-zone");
-          var ix2 = parseInt(t.getAttribute("data-index"), 10);
-          var data2 = HKStorage.load();
-          if (data2.rooms[z2] && !isNaN(ix2)) {
-            data2.rooms[z2].splice(ix2, 1);
-            HKStorage.save(data2);
-            renderRooms(HKStorage.load());
-            toast("삭제되었습니다.");
-          }
         }
       });
 

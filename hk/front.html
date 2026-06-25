@@ -92,6 +92,34 @@
       color: var(--accent);
     }
 
+    .topbar-quick-nav {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .topbar-quick-nav .sidebar-nav__btn,
+    .topbar-quick-nav a.sidebar-nav__link {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 3px 8px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-align: center;
+      background: #eceef1;
+      border: 1px solid #dfe3e8;
+      color: #64748b;
+      border-radius: 6px;
+    }
+
+    .topbar-quick-nav .sidebar-nav__btn:hover,
+    .topbar-quick-nav a.sidebar-nav__link:hover {
+      background: #e4e7eb;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
     .chat-color-picker {
       position: fixed;
       z-index: 200;
@@ -1184,33 +1212,6 @@
       flex-shrink: 0;
     }
 
-    .sidebar-footer {
-      margin-top: auto;
-      flex-shrink: 0;
-      padding: 8px;
-      border-top: 1px solid #e2e5e9;
-      background: #f3f4f6;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .sidebar-footer .sidebar-nav__btn,
-    .sidebar-footer a.sidebar-nav__link {
-      background: #eceef1;
-      border-color: #dfe3e8;
-      color: #64748b;
-      font-size: 0.78rem;
-      font-weight: 600;
-    }
-
-    .sidebar-footer .sidebar-nav__btn:hover,
-    .sidebar-footer a.sidebar-nav__link:hover {
-      background: #e4e7eb;
-      border-color: #cbd5e1;
-      color: #475569;
-    }
-
     .sidebar-title {
       padding: 6px 10px 4px;
       font-weight: 600;
@@ -1534,6 +1535,188 @@
     .zone-block__collapse:hover {
       border-color: var(--accent);
       background: var(--surface-raised);
+    }
+
+    .zone-block__toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .zone-block__add {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      font: inherit;
+      font-size: 1.125rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .zone-block__add:hover,
+    .zone-block__add.is-open {
+      border-color: var(--accent);
+      background: #eff6ff;
+    }
+
+    .zone-room-manage-panel {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-inset);
+    }
+
+    .zone-room-manage-panel .add-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 10px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .zone-room-manage-panel .add-stack input {
+      width: 100%;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .zone-room-manage-panel .rc-num-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .zone-room-manage-panel .rc-num-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .zone-room-manage-panel .rc-num-inline input {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .zone-room-manage-panel .rc-num-suffix {
+      flex-shrink: 0;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .zone-room-manage-panel .btn-add {
+      height: 32px;
+      padding: 0 12px;
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .zone-room-edit-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-raised);
+    }
+
+    .zone-room-edit-list li.room-editor {
+      display: block;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    .zone-room-edit-list li.room-editor:last-child {
+      border-bottom: none;
+    }
+
+    .zone-room-edit-list .re-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 8px;
+      margin-bottom: 8px;
+    }
+
+    .zone-room-edit-list .re-grid input {
+      width: 100%;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+
+    .zone-room-edit-list .re-grid .re-span2 {
+      grid-column: 1 / -1;
+    }
+
+    .zone-room-edit-list .re-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .zone-room-edit-list .btn-save-row {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: #eff6ff;
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+
+    .zone-room-edit-list .btn-remove {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .zone-room-edit-list .empty-hint {
+      padding: 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
     }
 
     .zone-block.is-collapsed .zone-block__body {
@@ -2586,7 +2769,9 @@
       color: #0f766e;
     }
 
-    .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active {
+    .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active,
+    .sidebar .sidebar-nav__btn#sidebarBtnDd.is-active,
+    .sidebar .sidebar-nav__btn#sidebarBtnInven.is-active {
       background: #0f766e;
       border-color: #0f766e;
       color: #fff;
@@ -2913,6 +3098,42 @@
       margin: 0 0 12px;
       font-size: 0.8125rem;
       color: var(--text-muted);
+    }
+
+    .front-embed-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      max-height: calc(100vh - 140px);
+    }
+
+    .front-embed-panel[hidden] {
+      display: none !important;
+    }
+
+    .front-embed-panel__frame {
+      flex: 1;
+      min-height: min(560px, calc(100vh - 180px));
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .main.main--front #frontChatPanel,
+    .main.main--dd #ddEmbedPanel,
+    .main.main--inven #invenEmbedPanel {
+      flex: 1;
+      min-height: 0;
+      margin-bottom: 0;
+      max-height: none;
     }
 
     .front-chat__messages {
@@ -3377,6 +3598,214 @@
       color: #fff;
     }
 
+    .request-type-filters__toggle--view {
+      margin-left: auto;
+    }
+
+    .hk-room-board-panel {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      margin-bottom: 0;
+    }
+
+    .hk-room-board-panel[hidden] {
+      display: none !important;
+    }
+
+    .hk-room-board-empty {
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+    }
+
+    .hk-room-board-panel .sheet-outer {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      background: #f3f4f6;
+    }
+
+    .hk-room-board-panel .sheet-triple-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hk-room-board-panel .wing-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .hk-room-board-panel .wing-panel-villa {
+      flex: 0 0 auto;
+      max-width: 11rem;
+    }
+
+    .hk-room-board-panel .wing-panel-main {
+      flex: 1 1 260px;
+    }
+
+    .hk-room-board-panel .wing-panel-annex {
+      flex: 1 1 260px;
+    }
+
+    .hk-room-board-panel .wing-banner {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #9ca3af;
+      border-bottom: none;
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .hk-room-board-panel .wing-banner-villa {
+      background: #dbeafe;
+    }
+
+    .hk-room-board-panel .sheet-block-cols {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: 1px solid #9ca3af;
+      background: #fff;
+    }
+
+    .hk-room-board-panel .floor-columns {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      min-height: 72px;
+    }
+
+    .hk-room-board-panel .floor-col {
+      flex: 1 1 0;
+      min-width: 48px;
+      border-right: 1px solid #d1d5db;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hk-room-board-panel .floor-col:last-child {
+      border-right: none;
+    }
+
+    .hk-room-board-panel .floor-head {
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.28rem 0.15rem;
+      background: #f9fafb;
+      border-bottom: 1px solid #9ca3af;
+      color: #111827;
+      white-space: nowrap;
+    }
+
+    .hk-room-board-panel .pair-stack {
+      flex: 1;
+      padding: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: stretch;
+    }
+
+    .hk-room-board-panel .pair-row,
+    .hk-room-board-panel .villa-list-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid #bfc5ce;
+      font-size: 0.68rem;
+      line-height: 1.15;
+      color: #111827;
+      background: #fff;
+      font-weight: 600;
+    }
+
+    .hk-room-board-panel .pair-row .cell,
+    .hk-room-board-panel .villa-list-row .cell {
+      padding: 2px 3px;
+      text-align: center;
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .hk-room-board-panel .pair-row .cell:last-child,
+    .hk-room-board-panel .villa-list-row .cell:last-child {
+      border-right: none;
+    }
+
+    .hk-room-board-panel .pair-row.st-ip,
+    .hk-room-board-panel .villa-list-row.st-ip {
+      background: #d9f5d9;
+    }
+
+    .hk-room-board-panel .pair-row.st-di,
+    .hk-room-board-panel .villa-list-row.st-di {
+      background: #fee2e2;
+    }
+
+    .hk-room-board-panel .pair-row.st-pu,
+    .hk-room-board-panel .villa-list-row.st-pu {
+      background: #fef9c3;
+    }
+
+    .hk-room-board-panel .pair-row.st-cl,
+    .hk-room-board-panel .villa-list-row.st-cl {
+      background: #bae6fd;
+    }
+
+    .hk-room-board-panel .pair-row.st-oo,
+    .hk-room-board-panel .villa-list-row.st-oo {
+      background: #e5e7eb;
+    }
+
+    .hk-room-board-panel .pair-row.st-os,
+    .hk-room-board-panel .villa-list-row.st-os {
+      background: #ffedd5;
+    }
+
+    .hk-room-board-panel .pair-row.st-neutral,
+    .hk-room-board-panel .villa-list-row.st-neutral {
+      background: #fff;
+    }
+
+    .hk-room-board-panel .pair-row .cell.sched-time {
+      font-size: 0.62rem;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .hk-room-board-panel .pair-row .cell.sched-time .hk-time-em {
+      font-weight: 800;
+    }
+
+    .hk-room-board-panel .villa-list-body {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 72px;
+    }
+
+    .hk-room-board-panel .floor-empty {
+      flex: 1;
+      min-height: 2rem;
+      font-size: 0.65rem;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .request-type-filters__body {
       margin-top: 10px;
     }
@@ -3832,6 +4261,13 @@
         padding-top: 0;
       }
 
+      .topbar-quick-nav .sidebar-nav__btn,
+      .topbar-quick-nav a.sidebar-nav__link {
+        min-height: 32px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+
       .topbar-actions {
         flex-direction: row;
         flex-wrap: wrap;
@@ -3875,22 +4311,6 @@
         border-right: none;
         border-bottom: 2px solid var(--border);
         min-height: 0;
-      }
-
-      .sidebar-footer {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 0;
-        border-top: 1px solid #e2e5e9;
-      }
-
-      .sidebar-footer .sidebar-nav__btn,
-      .sidebar-footer a.sidebar-nav__link {
-        flex: 1 1 calc(50% - 4px);
-        min-height: 44px;
-        text-align: center;
-        padding: 10px 8px;
       }
 
       .sidebar-nav {
@@ -4291,6 +4711,12 @@
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
+        <nav class="topbar-quick-nav" aria-label="교대 · 루밍">
+          <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
+            교대
+          </button>
+          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
+        </nav>
       </div>
       <div class="topbar-head-tools">
         <button
@@ -4404,6 +4830,22 @@
           >
             프론트
           </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnDd"
+            aria-pressed="false"
+          >
+            DD
+          </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnInven"
+            aria-pressed="false"
+          >
+            인벤
+          </button>
         </div>
       </nav>
       <nav class="sidebar-section sidebar-section--zones" aria-label="특이객실 선택">
@@ -4421,12 +4863,6 @@
             사용리스트
           </button>
         </div>
-      </nav>
-      <nav class="sidebar-footer" aria-label="교대 · 루밍">
-        <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
-          교대
-        </button>
-        <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
       </nav>
     </aside>
 
@@ -4464,23 +4900,60 @@
         </form>
       </section>
 
+      <section class="front-embed-panel" id="ddEmbedPanel" hidden aria-label="DD">
+        <iframe
+          class="front-embed-panel__frame"
+          id="ddEmbedFrame"
+          title="DD 고객 확인 문자 도우미"
+          src="../../DD/index.HTML"
+          loading="lazy"
+        ></iframe>
+      </section>
+
+      <section class="front-embed-panel" id="invenEmbedPanel" hidden aria-label="인벤">
+        <iframe
+          class="front-embed-panel__frame"
+          id="invenEmbedFrame"
+          title="인벤토리 투입물품"
+          src="../../inven/index.HTML"
+          loading="lazy"
+        ></iframe>
+      </section>
+
       <section class="zone-block is-collapsed" id="zoneBlock" aria-label="특이객실 등록 객실">
         <div class="zone-block__toolbar">
           <h2 class="zone-block__title" id="zoneBlockTitle">등록 객실</h2>
-          <button
-            type="button"
-            class="zone-block__collapse"
-            id="zoneCollapseBtn"
-            aria-expanded="false"
-            aria-controls="zoneBlockBody"
-          >
-            펼치기
-          </button>
+          <div class="zone-block__toolbar-actions">
+            <button
+              type="button"
+              class="zone-block__add"
+              id="zoneAddRoomBtn"
+              hidden
+              aria-expanded="false"
+              aria-controls="zoneRoomManagePanel"
+              title="객실 등록·수정"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              class="zone-block__collapse"
+              id="zoneCollapseBtn"
+              aria-expanded="false"
+              aria-controls="zoneBlockBody"
+            >
+              펼치기
+            </button>
+          </div>
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
             왼쪽 사이드바에서 VIP / R/C / CASINO 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
+          <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
+            <div id="zoneRoomAddMount"></div>
+            <ul class="zone-room-edit-list" id="zoneRoomEditList" aria-live="polite"></ul>
+          </div>
           <div class="main-placeholder" id="mainZoneBody" hidden>
             <div class="zone-main-head-row">
               <p class="zone-main-head" id="zoneMainHead">
@@ -4519,7 +4992,7 @@
               </div>
             </div>
             <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
-            <p class="room-list-empty" id="roomListEmpty" hidden>관리자에서 이 특이객실 객실을 등록하세요.</p>
+            <p class="room-list-empty" id="roomListEmpty" hidden>등록된 객실이 없습니다.</p>
           </div>
         </div>
       </section>
@@ -4538,7 +5011,7 @@
             />
           </div>
           <div class="field">
-            <label for="orderFoDisplay">IN/O</label>
+            <label for="orderFoDisplay">IN</label>
             <div class="order-fo-display" id="orderFoDisplay" aria-live="polite">—</div>
           </div>
           <div class="field field--memo">
@@ -4788,11 +5261,23 @@
             >
               TYPE 필터
             </button>
+            <button
+              type="button"
+              class="request-type-filters__toggle request-type-filters__toggle--view"
+              id="btnRequestRoomBoardView"
+              aria-pressed="false"
+            >
+              보기
+            </button>
           </div>
           <div class="request-type-filters__body" id="requestTypeFilterBody" hidden>
             <div class="request-type-filters__list" id="requestTypeFilterList"></div>
           </div>
         </div>
+      </section>
+
+      <section class="hk-room-board-panel" id="requestRoomBoardPanel" hidden aria-label="객실 상태 판">
+        <div id="requestRoomBoardMount" class="hk-room-board-mount"></div>
       </section>
 
       <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
@@ -5017,8 +5502,15 @@
       var ZONE_STATUS_CODES = ["IP", "CL", "PU", "DI", "OS", "OO"];
       var zoneStatusFilters = {};
       var CHANGE_ACK_LS = "lotte-hk-change-ack-v1";
+      var ROOM_BLINK_DISMISS_LS = "lotte-hk-room-blink-dismiss-v1";
+      var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
       var pendingDeferredSyncApply = null;
+      var cachedVacBoardRows = [];
+      var requestRoomBoardOpen = false;
+      var HK_BOARD_ANNEX_TAIL_MIN = 51;
+      var HK_BOARD_DROP_ROOMS = { "0012": true, "0023": true };
+      var HK_BOARD_MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
 
       function isTextInputActive(el) {
         el = el || document.activeElement;
@@ -5046,8 +5538,15 @@
         );
       }
 
+      function isZoneRoomManageEditing() {
+        var el = document.activeElement;
+        if (!el || !el.closest) return false;
+        if (!el.closest("#zoneRoomManagePanel")) return false;
+        return isTextInputActive();
+      }
+
       function isHkUserEditing() {
-        return hasOpenHkEditors();
+        return hasOpenHkEditors() || isZoneRoomManageEditing();
       }
 
       function deferHkSyncUiApply(applyFn) {
@@ -5835,6 +6334,7 @@
 
       function refreshRequestTypeFilterViews() {
         renderRequestLogPanel({ force: true });
+        if (requestRoomBoardOpen) renderRequestRoomBoard();
       }
 
       function onSchedTypeFilterChanged() {
@@ -5938,6 +6438,14 @@
         });
       })();
 
+      (function setupRequestRoomBoardView() {
+        var btn = document.getElementById("btnRequestRoomBoardView");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+          toggleRequestRoomBoardView();
+        });
+      })();
+
       (function setupZoneTypeFilterToggle() {
         var btn = document.getElementById("zoneTypeFilterToggle");
         var body = document.getElementById("zoneTypeFilterBody");
@@ -5963,7 +6471,7 @@
           vacRows.forEach(function (row) {
             var nr = normalizeRoomDigits(row.room);
             var label = formatFoStatusDisplay(row.foStatus);
-            if (nr && label) m[nr] = label;
+            if (nr && label === "IN") m[nr] = "IN";
           });
         }
         if (roomResvMap && typeof roomResvMap === "object") {
@@ -5972,7 +6480,7 @@
             var val = roomResvMap[key];
             if (!nr || val == null) return;
             var label = formatFoStatusDisplay(val) || String(val).trim();
-            if (label === "IN" || label === "O") m[nr] = label;
+            if (label === "IN") m[nr] = "IN";
           });
         }
         return m;
@@ -5981,12 +6489,12 @@
       function lookupRoomResvDisplay(roomInput) {
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
-        return XML_ROOM_RESV_MAP[nr] || "";
+        var val = XML_ROOM_RESV_MAP[nr] || "";
+        return val === "IN" ? "IN" : "";
       }
 
       function resvBadgeClass(label) {
         if (label === "IN") return "hk-resv-badge hk-resv--in";
-        if (label === "O") return "hk-resv-badge hk-resv--o";
         return "hk-resv-badge";
       }
 
@@ -6018,9 +6526,15 @@
         group.className = opts.groupClass || "hk-status-group";
         var resv = lookupRoomResvDisplay(roomInput);
         var rv = document.createElement("span");
-        rv.className = resv ? resvBadgeClass(resv) : "hk-resv-badge";
-        rv.textContent = resv || "—";
-        if (!resv && opts.missingClass) rv.classList.add(opts.missingClass);
+        if (resv === "IN") {
+          rv.className = resvBadgeClass(resv);
+          rv.textContent = resv;
+          rv.title = "FO IN";
+        } else {
+          rv.className = "hk-resv-badge";
+          rv.textContent = "—";
+          if (opts.missingClass) rv.classList.add(opts.missingClass);
+        }
         group.appendChild(rv);
         return group;
       }
@@ -6033,16 +6547,12 @@
         var fo = lookupRoomResvDisplay(room);
         display.textContent = "";
         display.className = "order-fo-display";
-        if (!room) {
+        if (!room || fo !== "IN") {
           display.textContent = "—";
           return;
         }
-        if (fo) {
-          display.className = "order-fo-display " + (fo === "IN" ? "hk-resv--in" : "hk-resv--o");
-          display.textContent = fo;
-        } else {
-          display.textContent = "—";
-        }
+        display.className = "order-fo-display hk-resv--in";
+        display.textContent = "IN";
       }
 
       function rebuildRoomStatusMap(vacRows) {
@@ -6093,6 +6603,16 @@
         if (payload.vacRows && payload.vacRows.length) {
           XML_ROOM_STATUS_MAP = rebuildRoomStatusMap(payload.vacRows);
           applyVacRowsToTypeMap(payload.vacRows);
+          cachedVacBoardRows = payload.vacRows
+            .map(function (row) {
+              var nr = normalizeRoomDigits(row.room);
+              if (!nr) return null;
+              return {
+                room: nr,
+                status: normalizeRoomStatus(row.status),
+              };
+            })
+            .filter(Boolean);
         }
         XML_ROOM_RESV_MAP = rebuildRoomResvMap(
           payload && payload.vacRows ? payload.vacRows : [],
@@ -6109,6 +6629,7 @@
         renderOrderPanels();
         refreshMain();
         updateOrderFoDisplay();
+        if (requestRoomBoardOpen) renderRequestRoomBoard();
       }
 
       function syncRequestLogFromServer() {
@@ -6220,7 +6741,7 @@
           if (!getRoomChangeLogEntries().length) {
             clearAllChangeAlerts();
           } else {
-            syncChangeAlertsFromLog();
+            rebuildChangeAlertsFromLog();
           }
         }
         if (changed.indexOf("hkLastRoomChange") >= 0 && payload && payload.hkLastRoomChange) {
@@ -6262,6 +6783,61 @@
         var map = loadAckedChangeIds();
         map[id] = true;
         saveAckedChangeIds(map);
+      }
+
+      function loadRoomBlinkDismissMap() {
+        try {
+          var raw = sessionStorage.getItem(ROOM_BLINK_DISMISS_LS);
+          if (!raw) return {};
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveRoomBlinkDismissMap(map) {
+        try {
+          sessionStorage.setItem(ROOM_BLINK_DISMISS_LS, JSON.stringify(map || {}));
+        } catch (e) {}
+      }
+
+      function isRoomChangeSuppressed(entry) {
+        if (!entry || !entry.zone || !entry.room) return false;
+        var dismissedAt = loadRoomBlinkDismissMap()[roomAlertKey(entry.zone, entry.room)];
+        if (!dismissedAt) return false;
+        var entryAt = new Date(entry.at || 0).getTime();
+        if (isNaN(entryAt)) return true;
+        return entryAt <= dismissedAt;
+      }
+
+      function loadRequestModifyAcks() {
+        try {
+          var raw = sessionStorage.getItem(REQUEST_MODIFY_ACK_LS);
+          if (!raw) return {};
+          var parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveRequestModifyAcks(map) {
+        try {
+          sessionStorage.setItem(REQUEST_MODIFY_ACK_LS, JSON.stringify(map || {}));
+        } catch (e) {}
+      }
+
+      function isRequestModifyAcked(entryId, sig) {
+        if (!entryId) return false;
+        return loadRequestModifyAcks()[entryId] === sig;
+      }
+
+      function ackRequestModifySignature(entryId, sig) {
+        if (!entryId || sig == null) return;
+        var map = loadRequestModifyAcks();
+        map[entryId] = sig;
+        saveRequestModifyAcks(map);
       }
 
       function normalizeRoomKey(room) {
@@ -6330,6 +6906,489 @@
         });
       }
 
+      var zoneRoomManageOpen = false;
+      var hkActionToastTimer = null;
+
+      function showHkActionToast(msg) {
+        var toast = document.getElementById("hkNoticeToast");
+        if (!toast) return;
+        var textEl = toast.querySelector(".hk-notice-toast__text");
+        if (textEl) textEl.textContent = msg;
+        toast.hidden = false;
+        requestAnimationFrame(function () {
+          toast.classList.add("is-visible");
+        });
+        if (hkActionToastTimer) clearTimeout(hkActionToastTimer);
+        hkActionToastTimer = setTimeout(function () {
+          toast.classList.remove("is-visible");
+          toast.hidden = true;
+        }, 2200);
+      }
+
+      function parseBulkRoomNumbers(raw) {
+        var seen = {};
+        var out = [];
+        String(raw || "")
+          .split(/[,，]/)
+          .forEach(function (part) {
+            var n = part.trim();
+            if (!n || seen[n]) return;
+            seen[n] = true;
+            out.push(n);
+          });
+        return out;
+      }
+
+      function buildRoomChangeLines(prev, next) {
+        var lines = [];
+        var fields = [
+          { key: "number", label: "객실번호", fmt: formatRoomNoDisplay },
+          { key: "memo1", label: "FD" },
+          { key: "memo2", label: "두잉" },
+        ];
+        fields.forEach(function (f) {
+          var a = String((prev && prev[f.key]) || "").trim();
+          var b = String((next && next[f.key]) || "").trim();
+          if (a === b) return;
+          var fa = f.fmt ? f.fmt(a) : a;
+          var fb = f.fmt ? f.fmt(b) : b;
+          lines.push(f.label + ': "' + (fa || "—") + '" → "' + (fb || "—") + '"');
+        });
+        return lines;
+      }
+
+      function buildRoomChangeEntry(zone, prevRow, next) {
+        var changeLines = buildRoomChangeLines(prevRow, next);
+        if (!changeLines.length) return null;
+        var entry = {
+          id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
+          at: new Date().toISOString(),
+          zone: zone,
+          room: next.number || (prevRow && prevRow.number) || "",
+          changes: changeLines,
+          by: getOperatorName() || "",
+        };
+        if (!prevRow) entry.kind = "add";
+        return entry;
+      }
+
+      function publishRoomChange(entry) {
+        if (typeof HKSync !== "undefined" && HKSync.pushRoomChange) {
+          return HKSync.pushRoomChange(entry);
+        }
+        return Promise.resolve();
+      }
+
+      function publishRoomChangesSequential(entries) {
+        var chain = Promise.resolve();
+        (entries || []).forEach(function (entry) {
+          chain = chain.then(function () {
+            return publishRoomChange(entry);
+          });
+        });
+        return chain;
+      }
+
+      function clearFrontZoneAddForm(container, zone) {
+        if (!container) return;
+        if (zone === "RC") {
+          var inf = container.querySelector(".af-num-from");
+          var int = container.querySelector(".af-num-to");
+          if (inf) inf.value = "";
+          if (int) int.value = "";
+        } else {
+          var nb = container.querySelector(".af-num");
+          if (nb) nb.value = "";
+        }
+        var m1 = container.querySelector(".af-memo1");
+        var m2 = container.querySelector(".af-memo2");
+        if (m1) m1.value = "";
+        if (m2) m2.value = "";
+      }
+
+      function createFrontZoneAddStack(zoneId, label) {
+        var stack = document.createElement("div");
+        stack.className = "add-stack";
+        stack.setAttribute("aria-label", label + " 객실 추가");
+
+        if (zoneId === "RC") {
+          var pair = document.createElement("div");
+          pair.className = "rc-num-pair";
+          var fromWrap = document.createElement("div");
+          fromWrap.className = "rc-num-inline";
+          var fromInput = document.createElement("input");
+          fromInput.type = "text";
+          fromInput.className = "af-num-from";
+          fromInput.placeholder = "객실번호";
+          fromInput.autocomplete = "off";
+          var fromSuffix = document.createElement("span");
+          fromSuffix.className = "rc-num-suffix";
+          fromSuffix.textContent = "에서";
+          fromWrap.appendChild(fromInput);
+          fromWrap.appendChild(fromSuffix);
+          var toWrap = document.createElement("div");
+          toWrap.className = "rc-num-inline";
+          var toInput = document.createElement("input");
+          toInput.type = "text";
+          toInput.className = "af-num-to";
+          toInput.placeholder = "객실번호";
+          toInput.autocomplete = "off";
+          var toSuffix = document.createElement("span");
+          toSuffix.className = "rc-num-suffix";
+          toSuffix.textContent = "로";
+          toWrap.appendChild(toInput);
+          toWrap.appendChild(toSuffix);
+          pair.appendChild(fromWrap);
+          pair.appendChild(toWrap);
+          stack.appendChild(pair);
+        } else {
+          var numInput = document.createElement("input");
+          numInput.type = "text";
+          numInput.className = "af-num";
+          numInput.placeholder = "객실번호 (예: 201,202)";
+          numInput.autocomplete = "off";
+          stack.appendChild(numInput);
+        }
+
+        var memo1 = document.createElement("input");
+        memo1.type = "text";
+        memo1.className = "af-memo1";
+        memo1.placeholder = "FD";
+        memo1.autocomplete = "off";
+        stack.appendChild(memo1);
+
+        var memo2 = document.createElement("input");
+        memo2.type = "text";
+        memo2.className = "af-memo2";
+        memo2.placeholder = "두잉";
+        memo2.autocomplete = "off";
+        stack.appendChild(memo2);
+
+        var addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "btn-add";
+        addBtn.setAttribute("data-action", "add");
+        addBtn.textContent = "추가";
+        stack.appendChild(addBtn);
+
+        return stack;
+      }
+
+      function readFrontRoomFromEditor(li) {
+        var num = (li.querySelector(".re-num") && li.querySelector(".re-num").value.trim()) || "";
+        var memo1 = (li.querySelector(".re-memo1") && li.querySelector(".re-memo1").value) || "";
+        var memo2 = (li.querySelector(".re-memo2") && li.querySelector(".re-memo2").value) || "";
+        return {
+          number: num,
+          status: lookupRoomStatusFromXml(num),
+          memo1: memo1,
+          memo2: memo2,
+        };
+      }
+
+      function updateZoneAddRoomBtnUi() {
+        var btn = document.getElementById("zoneAddRoomBtn");
+        var zone = getActiveZone();
+        if (!btn) return;
+        var show = frontMode && !!zone;
+        btn.hidden = !show;
+        btn.classList.toggle("is-open", zoneRoomManageOpen);
+        btn.setAttribute("aria-expanded", zoneRoomManageOpen ? "true" : "false");
+      }
+
+      function closeZoneRoomManagePanel() {
+        zoneRoomManageOpen = false;
+        var panel = document.getElementById("zoneRoomManagePanel");
+        if (panel) panel.hidden = true;
+        updateZoneAddRoomBtnUi();
+      }
+
+      function openZoneRoomManagePanel() {
+        if (!frontMode || !getActiveZone()) return;
+        if (!getOperatorName()) {
+          alert("이름을 입력하세요.");
+          return;
+        }
+        zoneRoomManageOpen = true;
+        var panel = document.getElementById("zoneRoomManagePanel");
+        if (panel) panel.hidden = false;
+        expandZoneBlock();
+        renderZoneRoomManagePanel(getActiveZone(), { force: true });
+        updateZoneAddRoomBtnUi();
+      }
+
+      function toggleZoneRoomManagePanel() {
+        if (zoneRoomManageOpen) closeZoneRoomManagePanel();
+        else openZoneRoomManagePanel();
+      }
+
+      function renderZoneRoomManagePanel(zone, opts) {
+        opts = opts || {};
+        if (!frontMode || !zone) {
+          closeZoneRoomManagePanel();
+          return;
+        }
+        if (!zoneRoomManageOpen) return;
+        if (!opts.force && isZoneRoomManageEditing()) return;
+
+        var addMount = document.getElementById("zoneRoomAddMount");
+        var editList = document.getElementById("zoneRoomEditList");
+        if (!addMount || !editList) return;
+
+        var label = zoneLabels[zone] || HKStorage.getZoneLabel(zone, HKStorage.load());
+        addMount.innerHTML = "";
+        addMount.appendChild(createFrontZoneAddStack(zone, label));
+
+        var data = HKStorage.load();
+        var rooms = (data.rooms && data.rooms[zone]) || [];
+        editList.innerHTML = "";
+        if (rooms.length === 0) {
+          var empty = document.createElement("li");
+          empty.className = "empty-hint";
+          empty.textContent = "등록된 객실이 없습니다.";
+          editList.appendChild(empty);
+          return;
+        }
+
+        rooms.forEach(function (room, idx) {
+          var li = document.createElement("li");
+          li.className = "room-editor";
+          var grid = document.createElement("div");
+          grid.className = "re-grid";
+
+          var inNum = document.createElement("input");
+          inNum.type = "text";
+          inNum.className = "re-num";
+          inNum.value = formatRoomNoDisplay(room.number || "");
+          inNum.placeholder = "객실번호";
+          grid.appendChild(inNum);
+
+          var stWrap = document.createElement("div");
+          var xmlSt = lookupRoomStatusFromXml(room.number || "");
+          stWrap.appendChild(
+            buildRoomStatusGroup(xmlSt, room.number || "", { statusClass: "room-card__status" })
+          );
+          grid.appendChild(stWrap);
+
+          var inM1 = document.createElement("input");
+          inM1.type = "text";
+          inM1.className = "re-memo1 re-span2";
+          inM1.placeholder = "FD";
+          inM1.value = room.memo1 || "";
+          grid.appendChild(inM1);
+
+          var inM2 = document.createElement("input");
+          inM2.type = "text";
+          inM2.className = "re-memo2 re-span2";
+          inM2.placeholder = "두잉";
+          inM2.value = room.memo2 || "";
+          grid.appendChild(inM2);
+
+          li.appendChild(grid);
+
+          var actions = document.createElement("div");
+          actions.className = "re-actions";
+          var btnSave = document.createElement("button");
+          btnSave.type = "button";
+          btnSave.className = "btn-save-row";
+          btnSave.textContent = "변경";
+          btnSave.setAttribute("data-zone", zone);
+          btnSave.setAttribute("data-index", String(idx));
+          var btnRm = document.createElement("button");
+          btnRm.type = "button";
+          btnRm.className = "btn-remove";
+          btnRm.textContent = "삭제";
+          btnRm.setAttribute("data-zone", zone);
+          btnRm.setAttribute("data-index", String(idx));
+          actions.appendChild(btnSave);
+          actions.appendChild(btnRm);
+          li.appendChild(actions);
+          editList.appendChild(li);
+        });
+      }
+
+      function handleZoneRoomManageClick(e) {
+        if (!frontMode) return;
+        var t = e.target;
+        var panel = document.getElementById("zoneRoomManagePanel");
+        if (!panel || !panel.contains(t)) return;
+        var zone = getActiveZone();
+        if (!zone) return;
+
+        if (t.classList.contains("btn-add")) {
+          if (!getOperatorName()) {
+            alert("이름을 입력하세요.");
+            return;
+          }
+          var addRoot = document.getElementById("zoneRoomAddMount");
+          var num = "";
+          if (zone === "RC") {
+            var nFrom =
+              (addRoot.querySelector(".af-num-from") && addRoot.querySelector(".af-num-from").value.trim()) ||
+              "";
+            var nTo =
+              (addRoot.querySelector(".af-num-to") && addRoot.querySelector(".af-num-to").value.trim()) || "";
+            if (!nFrom && !nTo) {
+              showHkActionToast("객실번호를 입력하세요.");
+              return;
+            }
+            if (nFrom && nTo) num = nFrom + " -> " + nTo;
+            else num = nFrom || nTo;
+          } else {
+            var numRaw =
+              (addRoot.querySelector(".af-num") && addRoot.querySelector(".af-num").value.trim()) || "";
+            if (!numRaw) {
+              showHkActionToast("객실번호를 입력하세요.");
+              return;
+            }
+            var numbers = parseBulkRoomNumbers(numRaw);
+            if (!numbers.length) {
+              showHkActionToast("객실번호를 입력하세요.");
+              return;
+            }
+            var dataBulk = HKStorage.load();
+            if (!dataBulk.rooms[zone]) dataBulk.rooms[zone] = [];
+            var existingNums = {};
+            (dataBulk.rooms[zone] || []).forEach(function (r) {
+              existingNums[r.number || ""] = true;
+            });
+            var memo1Bulk =
+              (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value) || "";
+            var memo2Bulk =
+              (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value) || "";
+            var toAdd = [];
+            var skipped = [];
+            numbers.forEach(function (n) {
+              if (existingNums[n]) {
+                skipped.push(n);
+                return;
+              }
+              existingNums[n] = true;
+              toAdd.push(n);
+            });
+            if (!toAdd.length) {
+              showHkActionToast("이미 등록된 객실번호입니다.");
+              return;
+            }
+            var changeEntries = [];
+            toAdd.forEach(function (n) {
+              var row = {
+                number: n,
+                status: lookupRoomStatusFromXml(n),
+                memo1: memo1Bulk,
+                memo2: memo2Bulk,
+                time: "",
+              };
+              dataBulk.rooms[zone].push(row);
+              var entry = buildRoomChangeEntry(zone, null, row);
+              if (entry) changeEntries.push(entry);
+            });
+            HKStorage.save(dataBulk, { skipSync: true });
+            publishRoomChangesSequential(changeEntries).then(function () {
+              if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+                HKSync.pushStorageNow();
+              }
+              clearFrontZoneAddForm(addRoot, zone);
+              renderZoneRoomManagePanel(zone, { force: true });
+              renderRoomsForZone(zone, { force: true });
+              var msg =
+                toAdd.length === 1
+                  ? "객실이 추가되었습니다."
+                  : "객실 " + toAdd.length + "개가 추가되었습니다.";
+              if (skipped.length) {
+                msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
+              }
+              showHkActionToast(msg);
+            });
+            return;
+          }
+          var data = HKStorage.load();
+          var dup = (data.rooms[zone] || []).some(function (r) {
+            return (r.number || "") === num;
+          });
+          if (dup) {
+            showHkActionToast("이미 등록된 객실번호입니다.");
+            return;
+          }
+          var memo1 = (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value) || "";
+          var memo2 = (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value) || "";
+          var newRow = {
+            number: num,
+            status: lookupRoomStatusFromXml(num),
+            memo1: memo1,
+            memo2: memo2,
+            time: "",
+          };
+          var addEntry = buildRoomChangeEntry(zone, null, newRow);
+          if (!data.rooms[zone]) data.rooms[zone] = [];
+          data.rooms[zone].push(newRow);
+          HKStorage.save(data, { skipSync: true });
+          publishRoomChange(addEntry).then(function () {
+            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+              HKSync.pushStorageNow();
+            }
+            clearFrontZoneAddForm(addRoot, zone);
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("객실이 추가되었습니다.");
+          });
+          return;
+        }
+
+        if (t.classList.contains("btn-save-row")) {
+          var li = t.closest(".room-editor");
+          if (!li) return;
+          var ix = parseInt(t.getAttribute("data-index"), 10);
+          var dataSave = HKStorage.load();
+          var next = readFrontRoomFromEditor(li);
+          if (!next.number) {
+            showHkActionToast("객실번호를 입력하세요.");
+            return;
+          }
+          var others = (dataSave.rooms[zone] || []).filter(function (_, i) {
+            return i !== ix;
+          });
+          var dupSave = others.some(function (r) {
+            return (r.number || "") === next.number;
+          });
+          if (dupSave) {
+            showHkActionToast("다른 행과 같은 객실번호입니다.");
+            return;
+          }
+          var prevRow = dataSave.rooms[zone][ix];
+          next.time = prevRow && prevRow.time != null ? prevRow.time : "";
+          next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
+          var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
+          if (!changeEntry) {
+            showHkActionToast("변경된 내용이 없습니다.");
+            return;
+          }
+          dataSave.rooms[zone][ix] = next;
+          HKStorage.save(dataSave, { skipSync: true });
+          publishRoomChange(changeEntry).then(function () {
+            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+              HKSync.pushStorageNow();
+            }
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("변경되었습니다.");
+          });
+          return;
+        }
+
+        if (t.classList.contains("btn-remove")) {
+          var ix2 = parseInt(t.getAttribute("data-index"), 10);
+          var dataRm = HKStorage.load();
+          if (dataRm.rooms[zone] && !isNaN(ix2)) {
+            dataRm.rooms[zone].splice(ix2, 1);
+            HKStorage.save(dataRm);
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("삭제되었습니다.");
+          }
+        }
+      }
+
       function activateZoneTab(tab) {
         if (!tab) return;
         var z = tab.getAttribute("data-zone");
@@ -6341,9 +7400,11 @@
         showSidebarZoneView(z);
         clearZoneAlert(z);
         expandedRoomHistoryKey = null;
+        closeZoneRoomManagePanel();
         expandZoneBlock();
         updateZoneBlockTitle(z);
         setZonePanelOpen(true);
+        updateZoneAddRoomBtnUi();
         renderRoomsForZone(z);
       }
 
@@ -6368,26 +7429,44 @@
         openRoomHistoryKeys = {};
         saveOpenRoomHistoryKeys();
         saveAckedChangeIds({});
+        saveRoomBlinkDismissMap({});
         applyZoneAlertUi();
         var zone = getActiveZone();
         if (zone) renderRoomsForZone(zone);
       }
 
-      function registerChangeAlert(entry) {
+      function registerChangeAlert(entry, opts) {
+        opts = opts || {};
         if (!entry || !entry.id || isChangeAcked(entry.id)) return;
+        if (isInitialRoomAddEntry(entry)) return;
+        if (isRoomChangeSuppressed(entry)) return;
         if (entry.zone) pendingZoneAlerts[entry.zone] = true;
         if (entry.zone && entry.room) {
           pendingRoomAlerts[roomAlertKey(entry.zone, entry.room)] = entry.id;
         }
+        if (!opts.silent) {
+          applyZoneAlertUi();
+          var activeZone = getActiveZone();
+          if (activeZone === entry.zone) renderRoomsForZone(activeZone);
+        }
+      }
+
+      function rebuildChangeAlertsFromLog(opts) {
+        opts = opts || {};
+        pendingZoneAlerts = {};
+        pendingRoomAlerts = {};
+        getRoomChangeLogEntries().forEach(function (entry) {
+          registerChangeAlert(entry, { silent: true });
+        });
         applyZoneAlertUi();
-        var activeZone = getActiveZone();
-        if (activeZone === entry.zone) renderRoomsForZone(activeZone);
+        if (!opts.skipRender) {
+          var activeZone = getActiveZone();
+          if (activeZone) renderRoomsForZone(activeZone);
+        }
       }
 
       function syncChangeAlertsFromLog() {
-        getRoomChangeLogEntries().forEach(function (entry) {
-          registerChangeAlert(entry);
-        });
+        rebuildChangeAlertsFromLog();
       }
 
       function isRoomChangePending(zone, room) {
@@ -6409,13 +7488,50 @@
 
       function dismissRoomFlash(zone, room) {
         var roomNorm = normalizeRoomKey(room);
-        delete pendingRoomAlerts[roomAlertKey(zone, room)];
+        var key = roomAlertKey(zone, room);
+        delete pendingRoomAlerts[key];
+        var maxAt = 0;
         getRoomChangeLogEntries().forEach(function (entry) {
           if (!entry || !entry.id) return;
           if (entry.zone !== zone) return;
           if (normalizeRoomKey(entry.room) !== roomNorm) return;
           ackChangeId(entry.id);
+          var entryAt = new Date(entry.at || 0).getTime();
+          if (!isNaN(entryAt) && entryAt > maxAt) maxAt = entryAt;
         });
+        if (maxAt > 0) {
+          var dismissMap = loadRoomBlinkDismissMap();
+          dismissMap[key] = Math.max(dismissMap[key] || 0, maxAt);
+          saveRoomBlinkDismissMap(dismissMap);
+        }
+        var zonePrefix = String(zone || "") + ":";
+        var hasPendingInZone = Object.keys(pendingRoomAlerts).some(function (roomKey) {
+          return roomKey.indexOf(zonePrefix) === 0;
+        });
+        if (!hasPendingInZone) delete pendingZoneAlerts[zone];
+        applyZoneAlertUi();
+      }
+
+      function handleRoomChangeAlertDismiss(card, e) {
+        if (!card || !card.classList.contains("is-change-alert")) return false;
+        if (
+          e.target.closest(
+            ".room-time-editor, .room-memo2-editor, .room-card__history"
+          )
+        ) {
+          return false;
+        }
+        var ix = parseInt(card.getAttribute("data-room-index"), 10);
+        var zone = getActiveZone();
+        if (isNaN(ix) || !zone) return false;
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][ix];
+        if (!room) return false;
+        e.preventDefault();
+        e.stopPropagation();
+        dismissRoomFlash(zone, room.number);
+        renderRoomsForZone(zone);
+        return true;
       }
 
       function toggleRoomHistoryPanel(zone, room) {
@@ -6972,6 +8088,300 @@
         setLineWithEmTime(containerEl, "처리·예정 · ", sched);
       }
 
+      function hkBoardClassifyRoom(roomStr) {
+        var r = normalizeRoomDigits(roomStr);
+        if (!r) return null;
+        var floor = parseInt(r.slice(0, 2), 10);
+        var tail = parseInt(r.slice(2), 10);
+        if (Number.isNaN(floor) || Number.isNaN(tail)) return null;
+        var annex = tail >= HK_BOARD_ANNEX_TAIL_MIN;
+        if (floor === 0 && !annex && tail >= 1 && tail <= 4) {
+          return { wing: "villa", villaNum: tail, annex: false, room: r };
+        }
+        if (floor === 0 && !annex) {
+          return { wing: "main", floor: 0, annex: false, room: r };
+        }
+        if (!annex && floor >= 1 && floor <= 12) {
+          return { wing: "main", floor: floor, annex: false, room: r };
+        }
+        if (annex && floor >= 1 && floor <= 11) {
+          return { wing: "annex", floor: floor, annex: true, room: r };
+        }
+        return { wing: "extra", floor: floor, annex: annex, room: r };
+      }
+
+      function hkBoardBucketKey(wing, floor) {
+        return wing + "-" + floor;
+      }
+
+      function hkBoardFormatRoomDisplay(norm4) {
+        var f = parseInt(norm4.slice(0, 2), 10);
+        var t = parseInt(norm4.slice(2), 10);
+        if (Number.isNaN(f) || Number.isNaN(t)) return norm4;
+        return String(f) + String(t).padStart(2, "0");
+      }
+
+      function hkBoardPairStatusClass(status) {
+        var u = normalizeRoomStatus(status);
+        if (u === "IP") return "st-ip";
+        if (u === "DI") return "st-di";
+        if (u === "PU") return "st-pu";
+        if (u === "CL") return "st-cl";
+        if (u === "OO") return "st-oo";
+        if (u === "OS") return "st-os";
+        return "st-neutral";
+      }
+
+      function hkBoardDedupeRows(rows) {
+        var map = {};
+        rows.forEach(function (r) {
+          if (!r || !r.room) return;
+          map[r.room] = { room: r.room, status: r.status || "" };
+        });
+        return Object.keys(map).map(function (k) {
+          return map[k];
+        });
+      }
+
+      function hkBoardBuildSchedTimeMap() {
+        var best = {};
+        requestLogEntries.forEach(function (entry) {
+          if (!entry) return;
+          var sched = entry.sched != null ? String(entry.sched).trim() : "";
+          if (!sched) return;
+          var nr = normalizeRoomDigits(entry.room);
+          if (!nr) return;
+          var at = new Date(entry.at || 0).getTime();
+          if (isNaN(at)) at = 0;
+          if (!best[nr] || at >= best[nr].at) {
+            best[nr] = { sched: sched, at: at };
+          }
+        });
+        var out = {};
+        Object.keys(best).forEach(function (k) {
+          out[k] = best[k].sched;
+        });
+        return out;
+      }
+
+      function hkBoardBuildBuckets(flat, schedMap) {
+        schedMap = schedMap || {};
+        var buckets = {};
+        flat.forEach(function (rec) {
+          var cl = hkBoardClassifyRoom(rec.room);
+          if (!cl || cl.wing === "extra") return;
+          var key =
+            cl.wing === "villa"
+              ? hkBoardBucketKey("villa", cl.villaNum)
+              : hkBoardBucketKey(cl.wing, cl.floor);
+          if (!buckets[key]) buckets[key] = [];
+          buckets[key].push({
+            room: rec.room,
+            status: rec.status || "",
+            sched: schedMap[rec.room] || "",
+          });
+        });
+        Object.keys(buckets).forEach(function (key) {
+          buckets[key].sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+        });
+        return buckets;
+      }
+
+      function hkBoardGetMainFloorItems(buckets, floorNum) {
+        if (floorNum === 1) {
+          var a = buckets[hkBoardBucketKey("main", 0)] || [];
+          var b = buckets[hkBoardBucketKey("main", 1)] || [];
+          var z = a.concat(b);
+          z.sort(function (x, y) {
+            return x.room.localeCompare(y.room, undefined, { numeric: true });
+          });
+          return z;
+        }
+        return buckets[hkBoardBucketKey("main", floorNum)] || [];
+      }
+
+      function hkBoardFillSchedCell(cell, schedText) {
+        cell.className = "cell sched-time";
+        cell.textContent = "";
+        var sched = String(schedText || "").trim();
+        if (!sched) {
+          cell.textContent = "—";
+          return;
+        }
+        var em = document.createElement("span");
+        em.className = "hk-time-em";
+        em.textContent = sched;
+        em.title = "정비완료 예상 " + sched;
+        cell.appendChild(em);
+      }
+
+      function hkBoardRenderFloorColumn(headLabel, items) {
+        var col = document.createElement("div");
+        col.className = "floor-col";
+        var fh = document.createElement("div");
+        fh.className = "floor-head";
+        fh.textContent = headLabel;
+        col.appendChild(fh);
+        var stack = document.createElement("div");
+        stack.className = "pair-stack";
+        if (!items.length) {
+          var empty = document.createElement("div");
+          empty.className = "floor-empty";
+          empty.textContent = "—";
+          stack.appendChild(empty);
+        } else {
+          items.forEach(function (it) {
+            var row = document.createElement("div");
+            row.className = "pair-row " + hkBoardPairStatusClass(it.status);
+            var c1 = document.createElement("div");
+            c1.className = "cell room-num";
+            c1.textContent = hkBoardFormatRoomDisplay(it.room);
+            var c2 = document.createElement("div");
+            hkBoardFillSchedCell(c2, it.sched);
+            row.appendChild(c1);
+            row.appendChild(c2);
+            stack.appendChild(row);
+          });
+        }
+        col.appendChild(stack);
+        return col;
+      }
+
+      function hkBoardRenderWingPanel(titleText, floorPrefix, wingKey, floorNums, buckets, panelClass) {
+        var panel = document.createElement("div");
+        panel.className = "wing-panel " + panelClass;
+        var ban = document.createElement("div");
+        ban.className = "wing-banner";
+        ban.textContent = titleText;
+        panel.appendChild(ban);
+        var colsWrap = document.createElement("div");
+        colsWrap.className = "sheet-block-cols floor-columns";
+        var useMainMerge = wingKey === "main";
+        floorNums.forEach(function (f) {
+          var items = useMainMerge
+            ? hkBoardGetMainFloorItems(buckets, f)
+            : buckets[hkBoardBucketKey(wingKey, f)] || [];
+          var label = floorPrefix + String(f).padStart(2, "0");
+          colsWrap.appendChild(hkBoardRenderFloorColumn(label, items));
+        });
+        panel.appendChild(colsWrap);
+        return panel;
+      }
+
+      function hkBoardRenderVillaPanel(buckets) {
+        var panel = document.createElement("div");
+        panel.className = "wing-panel wing-panel-villa";
+        var ban = document.createElement("div");
+        ban.className = "wing-banner wing-banner-villa";
+        ban.textContent = "빌라동";
+        panel.appendChild(ban);
+        var body = document.createElement("div");
+        body.className = "sheet-block-cols villa-list-body";
+        for (var v = 1; v <= 4; v++) {
+          var items = buckets[hkBoardBucketKey("villa", v)] || [];
+          var it = items[0];
+          var row = document.createElement("div");
+          row.className =
+            "villa-list-row " + (it ? hkBoardPairStatusClass(it.status) : "st-neutral");
+          var c1 = document.createElement("div");
+          c1.className = "cell room-num";
+          c1.textContent = String(v).padStart(3, "0");
+          var c2 = document.createElement("div");
+          hkBoardFillSchedCell(c2, it ? it.sched : "");
+          row.appendChild(c1);
+          row.appendChild(c2);
+          body.appendChild(row);
+        }
+        panel.appendChild(body);
+        return panel;
+      }
+
+      function syncRequestRoomBoardUi() {
+        var panel = document.getElementById("requestRoomBoardPanel");
+        var sched = document.getElementById("schedCardsPanel");
+        var btn = document.getElementById("btnRequestRoomBoardView");
+        if (btn) {
+          btn.classList.toggle("is-on", requestRoomBoardOpen);
+          btn.setAttribute("aria-pressed", requestRoomBoardOpen ? "true" : "false");
+        }
+        if (panel) panel.hidden = !requestRoomBoardOpen;
+        if (sched) sched.hidden = requestRoomBoardOpen;
+        if (requestRoomBoardOpen) renderRequestRoomBoard();
+      }
+
+      function toggleRequestRoomBoardView() {
+        requestRoomBoardOpen = !requestRoomBoardOpen;
+        syncRequestRoomBoardUi();
+      }
+
+      function renderRequestRoomBoard() {
+        var mount = document.getElementById("requestRoomBoardMount");
+        if (!mount || !requestRoomBoardOpen) return;
+        mount.innerHTML = "";
+        if (!cachedVacBoardRows.length) {
+          var empty = document.createElement("div");
+          empty.className = "hk-room-board-empty";
+          empty.textContent =
+            "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드하면 객실 판이 표시됩니다.";
+          mount.appendChild(empty);
+          return;
+        }
+        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+        var rows = cachedVacBoardRows.filter(function (rec) {
+          if (HK_BOARD_DROP_ROOMS[rec.room]) return false;
+          if (filterNorm && !roomMatchesSchedSearch(rec.room, filterNorm)) return false;
+          if (!roomPassesSchedTypeFilter(rec.room)) return false;
+          return true;
+        });
+        var deduped = hkBoardDedupeRows(rows);
+        var boardRows = deduped.filter(function (rec) {
+          var cl = hkBoardClassifyRoom(rec.room);
+          return cl && cl.wing !== "extra";
+        });
+        if (!boardRows.length) {
+          var emptyF = document.createElement("div");
+          emptyF.className = "hk-room-board-empty";
+          emptyF.textContent = filterNorm
+            ? "입력한 객실번호·TYPE 조건에 맞는 객실이 없습니다."
+            : "표시할 객실이 없습니다.";
+          mount.appendChild(emptyF);
+          return;
+        }
+        var schedMap = hkBoardBuildSchedTimeMap();
+        var buckets = hkBoardBuildBuckets(boardRows, schedMap);
+        var outer = document.createElement("div");
+        outer.className = "sheet-outer";
+        var triple = document.createElement("div");
+        triple.className = "sheet-triple-row";
+        triple.appendChild(hkBoardRenderVillaPanel(buckets));
+        triple.appendChild(
+          hkBoardRenderWingPanel(
+            "본관",
+            "본관",
+            "main",
+            HK_BOARD_MAIN_FLOOR_ORDER,
+            buckets,
+            "wing-panel-main"
+          )
+        );
+        var annexFloors = [];
+        for (var af = 1; af <= 11; af++) annexFloors.push(af);
+        triple.appendChild(
+          hkBoardRenderWingPanel(
+            "별관",
+            "별관",
+            "annex",
+            annexFloors,
+            buckets,
+            "wing-panel-annex"
+          )
+        );
+        outer.appendChild(triple);
+        mount.appendChild(outer);
+      }
+
       function findRequestEntry(id) {
         for (var i = 0; i < requestLogEntries.length; i++) {
           if (requestLogEntries[i].id === id) return requestLogEntries[i];
@@ -7123,6 +8533,8 @@
         var mbInvNav = document.getElementById("sidebarBtnMbInv");
         var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
         var frontNav = document.getElementById("sidebarBtnFront");
+        var ddNav = document.getElementById("sidebarBtnDd");
+        var invenNav = document.getElementById("sidebarBtnInven");
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
@@ -7143,6 +8555,14 @@
           frontNav.classList.toggle("is-active", sidebarMainView === "front");
           frontNav.setAttribute("aria-pressed", sidebarMainView === "front" ? "true" : "false");
         }
+        if (ddNav) {
+          ddNav.classList.toggle("is-active", sidebarMainView === "dd");
+          ddNav.setAttribute("aria-pressed", sidebarMainView === "dd" ? "true" : "false");
+        }
+        if (invenNav) {
+          invenNav.classList.toggle("is-active", sidebarMainView === "inven");
+          invenNav.setAttribute("aria-pressed", sidebarMainView === "inven" ? "true" : "false");
+        }
         if (sidebarMainView !== "zone") {
           getZoneTabs().forEach(function (t) {
             t.classList.remove("active");
@@ -7161,6 +8581,8 @@
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
         var showFront = view === "front";
+        var showDd = view === "dd";
+        var showInven = view === "inven";
         var showZone = view === "zone";
         var showList = view === "list";
         var reqPanel = document.querySelector(".request-panel");
@@ -7170,6 +8592,8 @@
         var mbInvPanel = document.getElementById("mbInvPanel");
         var mbCheckPanel = document.getElementById("mbCheckPanel");
         var frontChatPanel = document.getElementById("frontChatPanel");
+        var ddEmbedPanel = document.getElementById("ddEmbedPanel");
+        var invenEmbedPanel = document.getElementById("invenEmbedPanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var listPanel = document.getElementById("hkSidebarListPanel");
         var mainEl = document.querySelector(".main");
@@ -7180,6 +8604,8 @@
         if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
+        if (ddEmbedPanel) ddEmbedPanel.hidden = !showDd || !frontMode;
+        if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (listPanel && !showList) listPanel.hidden = true;
@@ -7188,6 +8614,9 @@
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--mb-inv", showMbInv);
           mainEl.classList.toggle("main--mb-check", showMbCheck);
+          mainEl.classList.toggle("main--front", showFront);
+          mainEl.classList.toggle("main--dd", showDd);
+          mainEl.classList.toggle("main--inven", showInven);
         }
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
@@ -7252,6 +8681,26 @@
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("front");
+      }
+
+      function showSidebarDdView() {
+        if (!frontMode) return;
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        hideFrontChatToast();
+        clearFrontChatSidebarAlert();
+        applySidebarMainView("dd");
+      }
+
+      function showSidebarInvenView() {
+        if (!frontMode) return;
+        closeSidebarList();
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        hideFrontChatToast();
+        clearFrontChatSidebarAlert();
+        applySidebarMainView("inven");
       }
 
       function showSidebarZoneView(zone) {
@@ -7613,7 +9062,9 @@
 
       function markRequestEntrySavedLocally(entry) {
         if (!entry || !entry.id) return;
-        knownRequestSnapshots[entry.id] = requestContentSignature(entry);
+        var sig = requestContentSignature(entry);
+        knownRequestSnapshots[entry.id] = sig;
+        ackRequestModifySignature(entry.id, sig);
         delete pendingRequestModifyIds[entry.id];
         if (!hasPendingRequestModifyCards()) {
           pendingRequestModifyAlert = false;
@@ -7669,6 +9120,9 @@
       }
 
       function registerRequestModifyAlert(entryId, blinkCard) {
+        var entry = entryId ? findRequestEntry(entryId) : null;
+        var sig = entry ? requestContentSignature(entry) : "";
+        if (entryId && isRequestModifyAcked(entryId, sig)) return;
         pendingRequestModifyAlert = true;
         if (blinkCard && entryId) pendingRequestModifyIds[entryId] = true;
         applyRequestSidebarAlertUi();
@@ -7681,6 +9135,10 @@
 
       function ackRequestModifyCard(entryId) {
         if (!entryId || !pendingRequestModifyIds[entryId]) return;
+        var entry = findRequestEntry(entryId);
+        if (entry) {
+          ackRequestModifySignature(entryId, requestContentSignature(entry));
+        }
         delete pendingRequestModifyIds[entryId];
         if (!hasPendingRequestModifyCards()) pendingRequestModifyAlert = false;
         applyRequestSidebarAlertUi();
@@ -7688,6 +9146,13 @@
       }
 
       function clearRequestSidebarAlerts() {
+        Object.keys(pendingRequestModifyIds).forEach(function (id) {
+          if (!pendingRequestModifyIds[id]) return;
+          var entry = findRequestEntry(id);
+          if (entry) {
+            ackRequestModifySignature(id, requestContentSignature(entry));
+          }
+        });
         pendingRequestAlert = false;
         pendingRequestModifyAlert = false;
         pendingRequestModifyIds = {};
@@ -7720,7 +9185,9 @@
 
           if (prevSig !== sig) {
             knownRequestSnapshots[entry.id] = sig;
-            registerRequestModifyAlert(entry.id, isScheduledRequestEntry(entry));
+            if (!isRequestModifyAcked(entry.id, sig)) {
+              registerRequestModifyAlert(entry.id, isScheduledRequestEntry(entry));
+            }
           }
         });
         Object.keys(knownRequestSnapshots).forEach(function (id) {
@@ -8676,6 +10143,7 @@
             hint.hidden = true;
           }
         }
+        if (requestRoomBoardOpen) renderRequestRoomBoard();
       }
 
       function openRequestSchedEditor(entryId) {
@@ -9284,7 +10752,9 @@
         roomList.innerHTML = "";
         if (rooms.length === 0) {
           roomEmpty.hidden = false;
-          roomEmpty.textContent = "관리자에서 이 특이객실 객실을 등록하세요.";
+          roomEmpty.textContent = frontMode
+            ? "등록된 객실이 없습니다. 상단 + 버튼으로 추가하세요."
+            : "등록된 객실이 없습니다. 프론트 모드에서 + 버튼으로 추가하세요.";
         } else {
           var shownCount = 0;
           var statusPassCount = 0;
@@ -9402,6 +10872,7 @@
         applyNotice({ detectChange: !!opts.detectNoticeChange });
         if (currentZone) {
           renderRoomsForZone(currentZone);
+          if (zoneRoomManageOpen) renderZoneRoomManagePanel(currentZone);
         } else {
           renderRoomsForZone(null);
         }
@@ -9437,13 +10908,24 @@
           btnFront.setAttribute("aria-pressed", frontMode ? "true" : "false");
         }
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
-        if (!frontMode && sidebarMainView === "front") {
+        if (
+          !frontMode &&
+          (sidebarMainView === "front" ||
+            sidebarMainView === "dd" ||
+            sidebarMainView === "inven")
+        ) {
           showSidebarRequestView();
         } else if (sidebarMainView === "front") {
           applySidebarMainView("front");
+        } else if (sidebarMainView === "dd") {
+          applySidebarMainView("dd");
+        } else if (sidebarMainView === "inven") {
+          applySidebarMainView("inven");
         }
         if (!frontMode) hideFrontChatToast();
         if (!frontMode) clearFrontChatSidebarAlert();
+        if (!frontMode) closeZoneRoomManagePanel();
+        updateZoneAddRoomBtnUi();
         if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
@@ -9897,6 +11379,9 @@
           if (e.target.closest(".room-time-editor")) return;
           if (e.target.closest(".room-memo2-editor")) return;
 
+          var alertCard = e.target.closest(".room-card.is-change-alert");
+          if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return;
+
           var histCard = e.target.closest(".room-card.is-history-toggle");
           if (histCard && handleRoomHistoryToggle(histCard, e)) return;
 
@@ -9928,6 +11413,9 @@
           if (e.key !== "Enter" && e.key !== " ") return;
           if (e.target.closest(".room-memo2-editor")) return;
 
+          var alertCard = e.target.closest(".room-card.is-change-alert");
+          if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return;
+
           var histCard = e.target.closest(".room-card.is-history-toggle");
           if (histCard && handleRoomHistoryToggle(histCard, e)) return;
 
@@ -9952,6 +11440,16 @@
 
       var zoneBlock = document.getElementById("zoneBlock");
       var zoneCollapseBtn = document.getElementById("zoneCollapseBtn");
+      var zoneAddRoomBtn = document.getElementById("zoneAddRoomBtn");
+      if (zoneAddRoomBtn) {
+        zoneAddRoomBtn.addEventListener("click", function () {
+          toggleZoneRoomManagePanel();
+        });
+      }
+      var zoneRoomManagePanel = document.getElementById("zoneRoomManagePanel");
+      if (zoneRoomManagePanel) {
+        zoneRoomManagePanel.addEventListener("click", handleZoneRoomManageClick);
+      }
       if (zoneBlock && zoneCollapseBtn) {
         zoneCollapseBtn.addEventListener("click", function () {
           var collapsed = zoneBlock.classList.toggle("is-collapsed");
@@ -10032,6 +11530,8 @@
         applyRequestSidebarAlertUi();
         applyFrontChatSidebarAlertUi();
         applyMbSidebarAlertUi();
+        rebuildChangeAlertsFromLog({ skipRender: true });
+        applyZoneAlertUi();
       }
 
       loadSchedTypeFiltersFromStorage();
@@ -10062,7 +11562,7 @@
         });
       }
       renderSidebarZoneTabs();
-      syncChangeAlertsFromLog();
+      rebuildChangeAlertsFromLog({ skipRender: !getActiveZone() });
       applyZoneAlertUi();
       setZonePanelOpen(false);
       initStaticPhotoButtons();
@@ -10457,6 +11957,8 @@
         var bMbInv = document.getElementById("sidebarBtnMbInv");
         var bMbCheck = document.getElementById("sidebarBtnMbCheck");
         var bFront = document.getElementById("sidebarBtnFront");
+        var bDd = document.getElementById("sidebarBtnDd");
+        var bInven = document.getElementById("sidebarBtnInven");
         if (bReq) {
           bReq.addEventListener("click", function () {
             if (sidebarMainView === "request") {
@@ -10496,6 +11998,20 @@
             if (!frontMode) return;
             if (sidebarMainView === "front") return;
             showSidebarFrontView();
+          });
+        }
+        if (bDd) {
+          bDd.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "dd") return;
+            showSidebarDdView();
+          });
+        }
+        if (bInven) {
+          bInven.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "inven") return;
+            showSidebarInvenView();
           });
         }
       })();

@@ -559,13 +559,6 @@
       margin-left: 0.15rem;
     }
 
-    .pair-row.vac-asn-in-highlight,
-    .villa-list-row.vac-asn-in-highlight {
-      outline: 1px solid #0f172a;
-      outline-offset: -1px;
-      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
-    }
-
     .pair-row.extended-stay-strike,
     .villa-list-row.extended-stay-strike {
       position: relative;
@@ -1180,7 +1173,7 @@
       <div class="board-layout">
         <aside class="sidebar" aria-label="화면 전환">
           <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
-          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 필터">VAC</button>
+          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 또는 FO IN(투숙·OCC)">VAC</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
@@ -1198,9 +1191,6 @@
             <div class="summary-toolbar">
               <div id="vacStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
-              <label class="out-toggle" title="ASN 탭과 동일 조건(도착·블록 필터)에 해당하는 객실 강조">
-                <input type="checkbox" class="chk-vac-asn-in" /> IN
-              </label>
             </div>
             <div id="vacBlockFilters" class="asn-block-filters" hidden></div>
             <div id="vacBoardMount"></div>
@@ -1908,9 +1898,6 @@
       /** OUT 체크 시 Departed / Departed, Arrival 예약행 연보라 표시 */
       var outDepartedHighlight = false;
 
-      /** VAC 탭 IN: ASN 보드에 나오는 객실과 동일 집합(RESV + 블록 필터) 굵은 테두리 */
-      var vacHighlightAsnIn = false;
-
       /** 상태 요약 체크: IP·CL·PU·DI (전 탭 공통, 모두 켜면 필터 없음) */
       var statusRoomFilters = {
         IP: true,
@@ -1938,12 +1925,6 @@
         return isOutDepartedResv(item) ? " out-departed-highlight" : "";
       }
 
-      /** @param {Record<string,boolean>|null} asnInRoomSet */
-      function vacAsnInOutlineClass(roomNorm, asnInRoomSet) {
-        if (!asnInRoomSet || !roomNorm || !asnInRoomSet[roomNorm]) return "";
-        return " vac-asn-in-highlight";
-      }
-
       /** 499·VAC·ASN·F.ASN 보드: 연박 추가 목록 객실에 작은 「연박」 레이블 */
       function extendedStayStrikeClass(roomNorm) {
         if (!roomNorm || !extendedStayRooms[roomNorm]) return "";
@@ -1951,20 +1932,13 @@
       }
 
       /** ASN 탭 최종 표시 집합과 동일 (모두/FIT/코드 필터 반영) */
-      function buildAsnVisibleRoomSet(dedupedRows) {
-        var set = {};
-        applyAsnBlockFilter(dedupedRows.filter(isAsnResvMatch)).forEach(function (r) {
-          set[r.room] = true;
-        });
-        return set;
-      }
-
       function normalizeResvStatus(s) {
         return String(s || "").replace(/\s+/g, " ").trim();
       }
 
       function isVacResvMatch(rec) {
-        return !!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
+        if (!!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)]) return true;
+        return isFoInRoom(rec);
       }
 
       /** ASN 탭: 도착 계열 RESV_STATUS 만 */
@@ -3044,7 +3018,7 @@
         el.appendChild(totChip);
       }
 
-      function renderFloorColumn(headLabel, items, roomFormatter, boardMode, asnInRoomSet) {
+      function renderFloorColumn(headLabel, items, roomFormatter, boardMode) {
         boardMode = boardMode || "499";
         var rf =
           typeof roomFormatter === "function" ? roomFormatter : formatRoomDisplay;
@@ -3068,7 +3042,6 @@
               "pair-row " +
               boardRowStatusClass(it, boardMode) +
               outDepartedHighlightClass(it) +
-              vacAsnInOutlineClass(it.room, asnInRoomSet) +
               extendedStayStrikeClass(it.room, boardMode);
             var c1 = document.createElement("div");
             c1.className = "cell room-num";
@@ -3084,7 +3057,7 @@
         return col;
       }
 
-      function renderVillaPanel(buckets, boardMode, asnInRoomSet) {
+      function renderVillaPanel(buckets, boardMode) {
         boardMode = boardMode || "499";
         var panel = document.createElement("div");
         panel.className = "wing-panel wing-panel-villa";
@@ -3103,7 +3076,6 @@
             "villa-list-row " +
             (it ? boardRowStatusClass(it, boardMode) : pairStatusClass(st)) +
             outDepartedHighlightClass(it) +
-            vacAsnInOutlineClass(it ? it.room : "", asnInRoomSet) +
             extendedStayStrikeClass(it ? it.room : "", boardMode);
           var c1 = document.createElement("div");
           c1.className = "cell room-num";
@@ -3125,8 +3097,7 @@
         floorNums,
         buckets,
         panelClass,
-        boardMode,
-        asnInRoomSet
+        boardMode
       ) {
         var panel = document.createElement("div");
         panel.className = "wing-panel " + panelClass;
@@ -3143,7 +3114,7 @@
             : buckets[bucketKey(wingKey, f)] || [];
           var label = floorPrefix + String(f).padStart(2, "0");
           colsWrap.appendChild(
-            renderFloorColumn(label, items, undefined, boardMode, asnInRoomSet)
+            renderFloorColumn(label, items, undefined, boardMode)
           );
         });
         panel.appendChild(colsWrap);
@@ -3163,7 +3134,7 @@
           mountId = "vacBoardMount";
           filterFn = isVacResvMatch;
           emptyFiltered =
-            "VAC 조건의 RESV_STATUS(Due Out, Departed, 도찀 조합, Not Reserved, Arrival 등)에 해당하는 객실이 없습니다.";
+            "VAC 조건(RESV_STATUS 또는 FO IN·투숙 OCC)에 해당하는 객실이 없습니다.";
         } else if (mode === "ovac") {
           summaryElId = "oVacStatusSummaryBar";
           mountId = "oVacBoardMount";
@@ -3198,10 +3169,6 @@
         });
         var deduped = dedupeByRoomLastWins(filtered);
         var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
-
-        /** VAC에서만: ASN 탭 최종 보드와 동일 객실 집합 */
-        var asnInRoomSet =
-          mode === "vac" && vacHighlightAsnIn ? buildAsnVisibleRoomSet(deduped) : null;
 
         var workRows;
         if (mode === "asn") {
@@ -3287,7 +3254,7 @@
 
         var triple = document.createElement("div");
         triple.className = "sheet-triple-row";
-        triple.appendChild(renderVillaPanel(buckets, mode, asnInRoomSet));
+        triple.appendChild(renderVillaPanel(buckets, mode));
         triple.appendChild(
           renderWingPanel(
             "본관",
@@ -3296,8 +3263,7 @@
             MAIN_FLOOR_ORDER,
             buckets,
             "wing-panel-main",
-            mode,
-            asnInRoomSet
+            mode
           )
         );
         var annexFloors = [];
@@ -3310,8 +3276,7 @@
             annexFloors,
             buckets,
             "wing-panel-annex",
-            mode,
-            asnInRoomSet
+            mode
           )
         );
         outer.appendChild(triple);
@@ -3335,7 +3300,6 @@
               "pair-row " +
               pairStatusClass(s.status) +
               outDepartedHighlightClass(s) +
-              vacAsnInOutlineClass(s.room, asnInRoomSet) +
               extendedStayStrikeClass(s.room, mode);
             row.style.display = "inline-grid";
             row.style.gridTemplateColumns = "1fr 1fr";
@@ -3737,23 +3701,6 @@
         });
       }
       wireFoFilterChecks();
-
-      function wireVacAsnInCheckbox() {
-        var va = document.getElementById("viewVac");
-        if (!va || va.dataset.vacAsnInWired) return;
-        va.dataset.vacAsnInWired = "1";
-        va.querySelectorAll(".chk-vac-asn-in").forEach(function (cb) {
-          cb.checked = vacHighlightAsnIn;
-          cb.addEventListener("change", function () {
-            vacHighlightAsnIn = !!cb.checked;
-            va.querySelectorAll(".chk-vac-asn-in").forEach(function (x) {
-              x.checked = vacHighlightAsnIn;
-            });
-            refreshBoards();
-          });
-        });
-      }
-      wireVacAsnInCheckbox();
 
       function wireAsnBlockFilterUI() {
         var va = document.getElementById("viewAsn");
