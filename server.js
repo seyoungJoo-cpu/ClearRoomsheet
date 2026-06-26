@@ -457,6 +457,7 @@ app.get("/health", function (req, res) {
 
 app.use("/inven", express.static(path.join(__dirname, "inven")));
 app.use("/DD", express.static(path.join(__dirname, "DD")));
+app.use("/chichi", express.static(path.join(__dirname, "chichi")));
 app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, "0.0.0.0", function () {

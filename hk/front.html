@@ -2798,7 +2798,8 @@
 
     .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active,
     .sidebar .sidebar-nav__btn#sidebarBtnDd.is-active,
-    .sidebar .sidebar-nav__btn#sidebarBtnInven.is-active {
+    .sidebar .sidebar-nav__btn#sidebarBtnInven.is-active,
+    .sidebar .sidebar-nav__btn#sidebarBtnChichi.is-active {
       background: #0f766e;
       border-color: #0f766e;
       color: #fff;
@@ -3156,7 +3157,8 @@
 
     .main.main--front #frontChatPanel,
     .main.main--dd #ddEmbedPanel,
-    .main.main--inven #invenEmbedPanel {
+    .main.main--inven #invenEmbedPanel,
+    .main.main--chichi #chichiEmbedPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -4886,6 +4888,14 @@
           >
             인벤
           </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn sidebar-nav__btn--compact"
+            id="sidebarBtnChichi"
+            aria-pressed="false"
+          >
+            고객취향확인
+          </button>
         </div>
       </nav>
       <nav class="sidebar-section sidebar-section--zones" aria-label="특이객실 선택">
@@ -4934,6 +4944,16 @@
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
           src="/inven/index.HTML"
+          loading="lazy"
+        ></iframe>
+      </section>
+
+      <section class="front-embed-panel" id="chichiEmbedPanel" hidden aria-label="고객취향확인">
+        <iframe
+          class="front-embed-panel__frame"
+          id="chichiEmbedFrame"
+          title="고객취향확인"
+          src="/chichi/index.HTML"
           loading="lazy"
         ></iframe>
       </section>
@@ -8570,6 +8590,7 @@
         var frontNav = document.getElementById("sidebarBtnFront");
         var ddNav = document.getElementById("sidebarBtnDd");
         var invenNav = document.getElementById("sidebarBtnInven");
+        var chichiNav = document.getElementById("sidebarBtnChichi");
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
@@ -8598,6 +8619,10 @@
           invenNav.classList.toggle("is-active", sidebarMainView === "inven");
           invenNav.setAttribute("aria-pressed", sidebarMainView === "inven" ? "true" : "false");
         }
+        if (chichiNav) {
+          chichiNav.classList.toggle("is-active", sidebarMainView === "chichi");
+          chichiNav.setAttribute("aria-pressed", sidebarMainView === "chichi" ? "true" : "false");
+        }
         if (sidebarMainView !== "zone") {
           getZoneTabs().forEach(function (t) {
             t.classList.remove("active");
@@ -8615,6 +8640,7 @@
         var showFront = view === "front";
         var showDd = view === "dd";
         var showInven = view === "inven";
+        var showChichi = view === "chichi";
         var showZone = view === "zone";
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
@@ -8625,6 +8651,7 @@
         var frontChatPanel = document.getElementById("frontChatPanel");
         var ddEmbedPanel = document.getElementById("ddEmbedPanel");
         var invenEmbedPanel = document.getElementById("invenEmbedPanel");
+        var chichiEmbedPanel = document.getElementById("chichiEmbedPanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var mainEl = document.querySelector(".main");
         if (requestStack) requestStack.hidden = !showRequest;
@@ -8636,6 +8663,7 @@
         if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
         if (ddEmbedPanel) ddEmbedPanel.hidden = !showDd || !frontMode;
         if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
+        if (chichiEmbedPanel) chichiEmbedPanel.hidden = !showChichi || !frontMode;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (mainEl) {
@@ -8646,6 +8674,7 @@
           mainEl.classList.toggle("main--front", showFront);
           mainEl.classList.toggle("main--dd", showDd);
           mainEl.classList.toggle("main--inven", showInven);
+          mainEl.classList.toggle("main--chichi", showChichi);
         }
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
@@ -8723,6 +8752,15 @@
         hideFrontChatToast();
         clearFrontChatSidebarAlert();
         applySidebarMainView("inven");
+      }
+
+      function showSidebarChichiView() {
+        if (!frontMode) return;
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        hideFrontChatToast();
+        clearFrontChatSidebarAlert();
+        applySidebarMainView("chichi");
       }
 
       function showSidebarZoneView(zone) {
@@ -10863,7 +10901,8 @@
           !frontMode &&
           (sidebarMainView === "front" ||
             sidebarMainView === "dd" ||
-            sidebarMainView === "inven")
+            sidebarMainView === "inven" ||
+            sidebarMainView === "chichi")
         ) {
           showSidebarRequestView();
         } else if (sidebarMainView === "front") {
@@ -10872,6 +10911,8 @@
           applySidebarMainView("dd");
         } else if (sidebarMainView === "inven") {
           applySidebarMainView("inven");
+        } else if (sidebarMainView === "chichi") {
+          applySidebarMainView("chichi");
         }
         if (!frontMode) hideFrontChatToast();
         if (!frontMode) clearFrontChatSidebarAlert();
@@ -11911,6 +11952,7 @@
         var bFront = document.getElementById("sidebarBtnFront");
         var bDd = document.getElementById("sidebarBtnDd");
         var bInven = document.getElementById("sidebarBtnInven");
+        var bChichi = document.getElementById("sidebarBtnChichi");
         if (bReq) {
           bReq.addEventListener("click", function () {
             if (sidebarMainView === "request") {
@@ -11964,6 +12006,13 @@
             if (!frontMode) return;
             if (sidebarMainView === "inven") return;
             showSidebarInvenView();
+          });
+        }
+        if (bChichi) {
+          bChichi.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "chichi") return;
+            showSidebarChichiView();
           });
         }
       })();

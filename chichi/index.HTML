@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>JEJU LOTTE HOTEL 취향</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #4f46e5;
+    --primary-soft: #eef2ff;
+    --pref: #0ea5e9;
+    --room: #10b981;
+    --warn: #f59e0b;
+    --vip: #ec4899;
+    --danger: #ef4444;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text); background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh; }
+
+  .header {
+    background: linear-gradient(135deg, #e8d4b8 0%, #d4b896 50%, #b89070 100%);
+    color: #3e2723;
+    padding: 32px 24px 28px;
+    box-shadow: var(--shadow);
+  }
+  .header-inner { max-width: 1280px; margin: 0 auto; }
+  .header h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: #2c1810;
+  }
+  .header p { margin: 0; opacity: 0.78; font-size: 14px; color: #4a2f1f; }
+
+  .container { max-width: 1280px; margin: 24px auto; padding: 0 24px; }
+
+  .upload-card {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 24px;
+  }
+
+  .dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 36px 20px;
+    text-align: center;
+    transition: all .2s ease;
+    background: #f8fafc;
+    cursor: pointer;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    transform: translateY(-1px);
+  }
+  .dropzone-icon { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+  .dropzone-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+  .dropzone-sub { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .upload-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .file-info {
+    flex: 1;
+    min-width: 220px;
+    background: #f1f5f9;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .file-info b { color: var(--text); }
+
+  .btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all .15s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(79, 70, 229, 0.42); }
+  .btn-primary:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: #f1f5f9; color: var(--text); }
+  .btn-ghost:hover { background: #e2e8f0; }
+
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .summary-tile {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    border-left: 6px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .summary-tile.pref  { border-left-color: var(--pref); }
+  .summary-tile.room  { border-left-color: var(--room); }
+  .summary-tile.warn  { border-left-color: var(--warn); }
+  .summary-tile.vip   { border-left-color: var(--vip); }
+  .summary-tile.anniv { border-left-color: #a855f7; }
+  .summary-tile.lvoc  { border-left-color: #fbbf24; }
+  .summary-tile.ups   { border-left-color: #14b8a6; }
+  .summary-tile .label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+  .summary-tile .value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  .summary-tile .sub { font-size: 11px; color: var(--muted); }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .tabs-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 4px 14px;
+    padding-left: 2px;
+    transition: opacity .2s ease;
+  }
+  .tabs-note b { color: #475569; font-weight: 600; }
+  .tabs-note.hidden-note { opacity: 0; height: 0; margin: 0 4px; pointer-events: none; }
+  .tab {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all .15s ease;
+  }
+  .tab:hover { background: #f8fafc; }
+  .tab.active { color: #fff; border-color: transparent; }
+  .tab.active[data-cat="all"]      { background: #334155; }
+  .tab.active[data-cat="pref"]     { background: var(--pref); }
+  .tab.active[data-cat="prefRoom"] { background: var(--pref); }
+  .tab.active[data-cat="room"]     { background: var(--room); }
+  .tab.active[data-cat="warn"]     { background: var(--warn); }
+  .tab.active[data-cat="complaint"]{ background: var(--warn); }
+  .tab.active[data-cat="vip"]      { background: var(--vip); }
+  .tab.active[data-cat="anniv"]    { background: #a855f7; }
+  .tab.active[data-cat="lvoc"]     { background: #f59e0b; }
+  .tab.active[data-cat="ups"]      { background: #0d9488; }
+  .tab .count {
+    background: rgba(15, 23, 42, 0.08);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+  .tab.active .count { background: rgba(255,255,255,0.25); color: #fff; }
+
+  .table-card {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .table-header h2 { margin: 0; font-size: 16px; }
+  .search-input {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    width: 220px;
+  }
+  .table-actions { display: inline-flex; gap: 8px; }
+  .btn-sm {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    transition: all .15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-sm:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .btn-sm.excel { color: #065f46; border-color: #a7f3d0; }
+  .btn-sm.excel:hover { background: #ecfdf5; }
+  .btn-sm.print { color: #1e40af; border-color: #bfdbfe; }
+  .btn-sm.print:hover { background: #eff6ff; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #f8fafc;
+    color: var(--muted);
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    user-select: none;
+  }
+  thead th.sortable { cursor: pointer; transition: background .15s ease; }
+  thead th.sortable:hover { background: #eef2ff; color: var(--primary); }
+  thead th.sortable::after {
+    content: '↕';
+    color: #cbd5e1;
+    font-size: 11px;
+    margin-left: 6px;
+    font-weight: 500;
+  }
+  thead th.sortable.asc::after  { content: '▲'; color: var(--primary); font-size: 10px; }
+  thead th.sortable.desc::after { content: '▼'; color: var(--primary); font-size: 10px; }
+  tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+  tbody tr:hover { background: #fafbfc; }
+  td.memo {
+    max-width: 720px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+    color: #1f2937;
+  }
+  td.center { text-align: center; }
+  td.bold { font-weight: 600; }
+  td.actions { text-align: center; padding: 8px 4px; }
+  .row-del {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 16px;
+    line-height: 1;
+    transition: all .15s ease;
+  }
+  .row-del:hover { background: #fee2e2; color: #dc2626; }
+  .row-del:active { transform: scale(0.92); }
+
+  .restore-bar {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .restore-bar button {
+    background: #fff;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .restore-bar button:hover { background: #fef3c7; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 0 4px 4px 0;
+  }
+  .tag.pref  { background: #e0f2fe; color: #075985; }
+  .tag.room  { background: #d1fae5; color: #065f46; }
+  .tag.warn  { background: #fef3c7; color: #92400e; }
+  .tag.vip   { background: #fce7f3; color: #9d174d; }
+  .tag.anniv { background: #f3e8ff; color: #6b21a8; }
+  .tag.lvoc  { background: #fef9c3; color: #854d0e; }
+  .tag.ups   { background: #ccfbf1; color: #115e59; }
+
+  .empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .empty .em-icon { font-size: 36px; margin-bottom: 8px; }
+
+  .hidden { display: none; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    background: #f1f5f9;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 24px 12px 40px;
+  }
+
+  @media (max-width: 720px) {
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    .header h1 { font-size: 20px; }
+  }
+
+  /* ----------------- 인쇄 (A4 가로, 한 페이지에 모든 열 맞춤) ----------------- */
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    html, body { background: #fff; color: #000; }
+    .header, .upload-card, .summary-bar, .tabs, .tabs-note,
+    .table-header, .search-input, .table-actions, footer, .hidden,
+    .row-del, .col-actions, td.actions, th.col-actions-th { display: none !important; }
+    .container { margin: 0; padding: 0; max-width: none; }
+    #resultArea { margin: 0; }
+    .table-card { box-shadow: none; border-radius: 0; }
+    .table-wrap { overflow: visible; }
+
+    /* 출력용 제목 */
+    .print-title {
+      display: block !important;
+      text-align: left;
+      padding: 4mm 0 3mm;
+      font-size: 14pt;
+      font-weight: 700;
+      color: #000;
+      border-bottom: 1.5pt solid #000;
+      margin-bottom: 3mm;
+    }
+    .print-title small {
+      font-weight: 500;
+      font-size: 9pt;
+      color: #555;
+      margin-left: 8pt;
+    }
+
+    /* 모든 열이 한 페이지 폭에 들어가도록 table-layout: fixed + 줄어든 폰트 */
+    table {
+      width: 100% !important;
+      table-layout: fixed;
+      font-size: 8.5pt;
+      page-break-inside: auto;
+    }
+    thead { display: table-header-group; }   /* 페이지마다 헤더 반복 */
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    thead th {
+      background: #f1f5f9 !important;
+      color: #000 !important;
+      font-size: 8pt;
+      padding: 4pt 5pt;
+      border: 0.5pt solid #000;
+      text-transform: none;
+      letter-spacing: 0;
+      position: static;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    thead th.sortable::after,
+    thead th.sortable.asc::after,
+    thead th.sortable.desc::after { content: ''; }
+    tbody td {
+      padding: 3pt 5pt;
+      border: 0.5pt solid #999;
+      vertical-align: top;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    td.memo {
+      max-width: none;
+      white-space: pre-wrap;
+      font-size: 8pt;
+    }
+    .tag {
+      border: 0.4pt solid #888;
+      background: #fff !important;
+      color: #000 !important;
+      padding: 0 3pt;
+      font-size: 7.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* 가로 A4(277mm 가용) 기준 열 폭 배분 */
+    col.col-ci      { width: 9%; }
+    col.col-co      { width: 9%; }
+    col.col-conf    { width: 10%; }
+    col.col-room    { width: 7%; }
+    col.col-name    { width: 13%; }
+    col.col-memo    { width: 52%; }
+  }
+  .print-title { display: none; }
+
+  .auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: linear-gradient(160deg, #e2e8f0 0%, #f1f5f9 50%, #f8fafc 100%);
+  }
+  .auth-gate.hidden { display: none; }
+  .auth-card {
+    width: min(400px, 100%);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .auth-card h2 { margin: 0 0 8px; font-size: 20px; }
+  .auth-card p { margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+  .auth-card input[type="password"] {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .auth-card button {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+  }
+  .auth-error {
+    min-height: 20px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--danger);
+    font-weight: 600;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  body.locked { overflow: hidden; }
+  body.locked .app-main {
+    visibility: hidden;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body class="locked">
+<div id="auth-gate" class="auth-gate" aria-hidden="false">
+  <div class="auth-card">
+    <h2>취향 분류 접근</h2>
+    <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
+    <form id="auth-form" autocomplete="off">
+      <label for="auth-password" class="sr-only">비밀번호</label>
+      <input id="auth-password" type="password" placeholder="비밀번호" required autofocus>
+      <button type="submit">확인</button>
+    </form>
+    <div id="auth-error" class="auth-error" role="alert"></div>
+  </div>
+</div>
+
+<div class="app-main">
+<div class="header">
+  <div class="header-inner">
+    <h1>JEJU LOTTE HOTEL 취향</h1>
+    <p>예약 XML을 업로드하면 자동으로 <b>VIP · LVOC(칭찬) · 컴플레인 · 기념일 · UPS · 고객취향(객실배정)</b>으로 분류합니다.</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="upload-card">
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-icon">📂</div>
+      <p class="dropzone-title">여기에 XML 파일을 끌어다 놓으세요</p>
+      <p class="dropzone-sub">또는 클릭해서 파일을 선택하세요 · 예: res_detail6561995.xml</p>
+      <input type="file" id="fileInput" class="hidden" accept=".xml,application/xml,text/xml" multiple />
+    </div>
+    <div class="upload-actions">
+      <div class="file-info" id="fileInfo">선택된 파일이 없습니다.</div>
+      <button class="btn btn-ghost" id="resetBtn">초기화</button>
+      <button class="btn btn-primary" id="uploadBtn" disabled>업로드 & 분석</button>
+    </div>
+  </div>
+
+  <div id="resultArea" class="hidden">
+    <div class="summary-bar">
+      <div class="summary-tile vip"><span class="label">VIP</span><span class="value" id="cnt-vip">0</span><span class="sub">VIP 코드 / RQ GM·AGM·VGM / 임원</span></div>
+      <div class="summary-tile lvoc"><span class="label">LVOC (칭찬)</span><span class="value" id="cnt-lvoc">0</span><span class="sub">▷칭찬◁ / 감사 인사 · 편지</span></div>
+      <div class="summary-tile warn"><span class="label">컴플레인</span><span class="value" id="cnt-complaint">0</span><span class="sub">컴플 / 사고 · 분실 / 사과 · 보상</span></div>
+      <div class="summary-tile anniv"><span class="label">기념일</span><span class="value" id="cnt-anniv">0</span><span class="sub">생일·생신 · 칠순·팔순 · 결혼 · 태교</span></div>
+      <div class="summary-tile ups"><span class="label">UPS</span><span class="value" id="cnt-ups">0</span><span class="sub">UPS 기록 / 업셀 / 유료 업그레이드</span></div>
+      <div class="summary-tile pref"><span class="label">고객취향 (객실배정)</span><span class="value" id="cnt-prefRoom">0</span><span class="sub">AJ 강력요청 · 이전투숙/응대 · 알러지 · 업그레이드 · 층/뷰 · 룸지정</span></div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-cat="all">📋 전체 <span class="count" id="tab-cnt-all">0</span></div>
+      <div class="tab" data-cat="vip">⭐ VIP <span class="count" id="tab-cnt-vip">0</span></div>
+      <div class="tab" data-cat="lvoc">💐 LVOC(칭찬) <span class="count" id="tab-cnt-lvoc">0</span></div>
+      <div class="tab" data-cat="complaint">⚠️ 컴플레인 <span class="count" id="tab-cnt-complaint">0</span></div>
+      <div class="tab" data-cat="anniv">🎉 기념일 <span class="count" id="tab-cnt-anniv">0</span></div>
+      <div class="tab" data-cat="ups">⬆️ UPS <span class="count" id="tab-cnt-ups">0</span></div>
+      <div class="tab" data-cat="prefRoom">🌿 고객취향(객실배정) <span class="count" id="tab-cnt-prefRoom">0</span></div>
+    </div>
+    <div class="tabs-note" id="tabsNote">전체 탭에는 <b>VIP · 컴플레인 · 기념일 · 고객취향(객실배정)</b>만 표시됩니다 (LVOC · UPS 제외).</div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2 id="tableTitle">전체</h2>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div id="restoreBar" class="restore-bar hidden">
+            <span><b id="restoreCount">0</b>개 행 숨김</span>
+            <button id="restoreBtn">전체 복원</button>
+          </div>
+          <input type="text" class="search-input" id="searchInput" placeholder="이름·예약번호·객실번호·메모 검색" />
+          <div class="table-actions">
+            <button class="btn-sm excel" id="excelBtn" title="현재 탭 내용을 엑셀로 다운로드">📊 엑셀 다운로드</button>
+            <button class="btn-sm print" id="printBtn" title="현재 탭 내용을 A4 가로 1페이지 폭에 맞춰 인쇄">🖨️ 인쇄</button>
+          </div>
+        </div>
+      </div>
+      <div class="print-title" id="printTitle"></div>
+      <div class="table-wrap">
+        <table id="resultTable">
+          <colgroup>
+            <col class="col-ci" />
+            <col class="col-co" />
+            <col class="col-conf" />
+            <col class="col-room" />
+            <col class="col-name" />
+            <col class="col-memo" />
+            <col class="col-actions" />
+          </colgroup>
+          <thead>
+            <tr id="tableHead">
+              <th class="sortable" data-sort="arrival"   style="width: 110px;">C/I</th>
+              <th class="sortable" data-sort="departure" style="width: 110px;">C/O</th>
+              <th class="sortable" data-sort="confirm"   style="width: 120px;">예약번호</th>
+              <th class="sortable" data-sort="room"      style="width: 100px;">객실번호</th>
+              <th class="sortable" data-sort="name"      style="width: 170px;">이름</th>
+              <th>메모 내용</th>
+              <th class="col-actions-th" style="width: 44px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty hidden">
+        <div class="em-icon">🗂️</div>
+        <div>해당 카테고리에 분류된 예약이 없습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>HTML · JavaScript · CSS only · 키워드 기반 룰 엔진(AI) · 모든 처리는 브라우저 안에서만 이루어집니다.</footer>
+</div>
+</div>
+
+<script>
+(function () {
+  const ACCESS_PASSWORD = "74321";
+  const AUTH_STORAGE_KEY = "chwihyang_html_unlocked";
+  const authGate = document.getElementById("auth-gate");
+  const authForm = document.getElementById("auth-form");
+  const authPassword = document.getElementById("auth-password");
+  const authError = document.getElementById("auth-error");
+
+  function unlockApp() {
+    document.body.classList.remove("locked");
+    authGate.classList.add("hidden");
+    authGate.setAttribute("aria-hidden", "true");
+    sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+  }
+
+  authForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (authPassword.value === ACCESS_PASSWORD) {
+      authError.textContent = "";
+      unlockApp();
+      return;
+    }
+    authError.textContent = "비밀번호가 올바르지 않습니다.";
+    authPassword.value = "";
+    authPassword.focus();
+  });
+
+  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+    unlockApp();
+  }
+})();
+
+/* ============================================================
+ *  XML 호텔 예약 → 카테고리 분류기
+ *  카테고리: VIP / 컴플레인 / 기념일 / 고객취향(객실배정)
+ *  + 전체 탭(모든 예약 표시) / 컬럼 정렬 지원
+ * ============================================================ */
+
+const STATE = {
+  files: [],
+  records: [],
+  currentCat: 'all',
+  sort: { col: 'arrival', dir: 'asc' },  // 기본: C/I 오름차순
+  visibleRows: [],                        // 현재 화면에 표시 중인 행 (엑셀·인쇄용)
+  hiddenIds: new Set()                    // 사용자가 X로 숨긴 행 id
+};
+
+const CAT_META = {
+  all:       { label: '전체',                emoji: '📋' },
+  vip:       { label: 'VIP',                 emoji: '⭐' },
+  lvoc:      { label: 'LVOC(칭찬)',          emoji: '💐' },
+  complaint: { label: '컴플레인',            emoji: '⚠️' },
+  anniv:     { label: '기념일',              emoji: '🎉' },
+  ups:       { label: 'UPS',                 emoji: '⬆️' },
+  prefRoom:  { label: '고객취향(객실배정)',  emoji: '🌿' }
+};
+const CAT_ORDER = ['vip', 'lvoc', 'complaint', 'anniv', 'ups', 'prefRoom'];
+
+/* ---------- 1. 키워드 사전 (룰 엔진) ---------- */
+const KEYWORDS = {
+  lvoc: [
+    // ★ VOC 칭찬 마커 (반드시 LVOC 카테고리)
+    '▷칭찬◁','▶칭찬◀','>>칭찬<<','>칭찬<',
+    'lvoc','LVOC',
+    // 단순 칭찬 표현 - VOC 메모 본문에 자주 등장
+    '칭찬 글','칭찬글','감사 인사','감사인사','감사 메시지','감사메시지',
+    '편지','감사 편지','감사편지','감동'
+  ],
+  ups: [
+    // 업셀(객실 업그레이드 판매) 기록
+    'ups 기록','ups기록','ups有','ups 有','ups:','UPS:',
+    '업셀 기록','업셀기록','up-sell','upsell','up sell',
+    '유료 업그레이드','유료업그레이드'
+  ],
+  vip: [
+    // ★ 임원 요청건 (절대 누락 금지)
+    'rq gm','rq agm','rq vgm','rq.gm','rq.agm','rq.vgm','rqgm','rqagm','rqvgm',
+    'rq/gm','rq/agm','rq/vgm','rq-gm','rq-agm','rq-vgm',
+    'gm 요청','agm 요청','vgm 요청','gm요청','agm요청','vgm요청',
+    'gm request','agm request','vgm request',
+    // VIP 코드
+    'vip','v01','v02','v03','v04','v05','v06','v07','v08','v09','v10',
+    // 직책/임원
+    '회장','회장님','사장','사장님','대표이사','부사장','전무','상무','이사','임원','executive',
+    '셀럽','연예인','유명인','국회의원','의원','시장','구청장','도지사','장관','차관',
+    'gm','agm','vgm','dgm','fom','f.o.m','부장','지배인','지점장','대표',
+    // 특별 응대
+    'comp house','컴프','compliment','complimentary',
+    '특별 관리','특별관리','특별 손님','특별손님','특별 환영','vip 응대','vip 처리'
+  ],
+  complaint: [
+    // 명시적 컴플레인·클레임
+    '컴플레인','컴플','complaint','클레임','claim',
+    // 민원·부정 감정 (칭찵 문맥과 겹치지 않는 표현 위주)
+    '민원','불만','항의','짜증','화남','화내','폭언','욕설','어택','난동',
+    // 사고·분실·하자
+    '사고','부상','다침','다치','분실','도난','파손','손상','깨짐','고장','누수','벌레','곰팡이',
+    // VOC 부정 (영문)
+    'dissatisfied','unhappy','terrible','awful','disappointed','refund demand','poor service'
+  ],
+  anniv: [
+    // 일반
+    '생일','생신','기념일','축하','버스데이',
+    // 연령별 잔치
+    '칠순','팔순','구순','백수','회갑','환갑','진갑','미수','돌잔치','백일잔치',
+    // 결혼/웨딩
+    '웨딩','웨딩식','웨딩촬영','웨딩맞이','웨딩주간',
+    '허니문','신혼','결혼','결혼기념일','프로포즈','약혼','상견례',
+    // 태교/임신 기념 여행
+    '태교','태교여행','태교 여행','임신','만삭',
+    // 영문
+    'birthday','anniversary','honeymoon','proposal','wedding','babymoon'
+  ],
+  prefRoom: [
+    // ===== 고객취향(객실배정) 키워드 =====
+    // ★ 반드시 포함되어야 할 강력 요청 표현
+    'aj 강력요청','aj강력요청','aj 강력 요청','aj강력 요청',
+    '강력요청','강력 요청',
+    // 이전 투숙 / 응대 기록
+    '고객님','이전 투숙','이전투숙','재방문','재투숙','이전 스테이','지난 투숙','과거 투숙','응대',
+    // 알러지
+    '알러지','알레르기','allergy',
+    // 업그레이드 요청
+    '업그레이드','업그래이드','upgrade','u/g','ug','업그레이드 적용','업그레이드 혜택','룸업',
+    // 위치/뷰
+    '고층','저층','중층','동일층','같은층','같은 층','인접','컨넥팅','connecting','코너룸','코너 룸',
+    '오션뷰','오션 뷰','시뷰','시 뷰','마운틴뷰','마운틴 뷰','가든뷰','가든 뷰','시티뷰','시티 뷰',
+    '뷰 요청','뷰요청','ocean view','garden view','mountain view',
+    // 객실 카테고리/타입 지정
+    '룸 카테고리','룸카테고리','수트','스위트','suite','풀빌라','pool villa',
+    // 명시적 어사인 요청
+    '룸 배정','룸배정','객실 배정','객실배정','room assign','어사인',
+    '룸 지정','룸지정','객실 지정','객실지정','지정 요청','지정요청',
+    'same floor','같은 라인','같은라인',
+    'p룸','p 룸','피룸','피 룸'
+  ]
+};
+
+/* 노이즈 패턴: 예약 시스템 덤프 / 예약실 → 프론트 안내성 메모 */
+const NOISE_PATTERNS = [
+  // 예약 시스템 덤프류
+  /b\.?com\s+(request|collect)/i,
+  /newbook/i,
+  /snt-?net/i,
+  /sales channels/i,
+  /method of settlement/i,
+  /accommodation cost/i,
+  /amounts claimed/i,
+  /total cost/i,
+  /booking no\.?:/i,
+  /req_text=\s*\|/i,
+  /membership number:/i,
+  /^\s*payment\s*:/i,
+  /credit ?card/i,
+  /mail:.*@/i,
+  /apv-no/i,
+  /currency \(c\.c=/i,
+  /gender :unknown/i,
+  /^rate name/i,
+
+  // ----- 예약실 → 프론트 안내성 메모 (개별 고객 요청 아님) -----
+  // PLZ / PLS (예약실이 프론트에 부탁할 때 붙이는 접미어)
+  /\bpl[sz]\b/i,
+  // 참고사항 / 업무연락 / 특전 / 정상가 / 선제공
+  /참고\s*사항/,
+  /업무\s*연락/,
+  /특전/,
+  /정상가/,
+  /선제공/,
+  // 가격/요금 안내 (40만/NET, 50만 / NET ...)
+  /\d+\s*만\s*\/\s*net/i,
+  /\d+\s*만\s*원?\s*net/i,
+  // 업그레이드 제공 / UG 제공 (패키지 정책)
+  /(ug|u\/g|업\s*그\s*레\s*이\s*드)\s*제\s*공/i,
+  // n월 한정 / 한정 ENCFT 류
+  /\d+\s*월\s*한정/,
+  /한정\s*[a-z]{3,}/i,
+  // 패키지/하이브리드 안내
+  /(pkg|패키지)\s*참고/i,
+  /하이브리드/,
+  // 식음/시설 운영 안내 (라세느 업무·특전, 미니바 특전, 페닌슐라 미운영 등)
+  /(라세느|페닌슐라|미니바|인룸다이닝|in[- ]?room dining)\s*(업무|특전|연락|미운영|운영)/,
+  // 객실 코드 화살표 (ENCFG -> ENCFT 류 패키지 룰)
+  /[A-Z]{3,}\s*[-\u2192>]+\s*[A-Z]{3,}/,
+  // C/I시 / C/O시 ~ 특전·선제공 (패키지 운영 지침)
+  /c\s*\/\s*[io]\s*시.*(특전|선제공|업무|제공)/i,
+
+  // ----- OTA(부킹닷컴/익스피디아 등) 시스템 자동 메모 -----
+  /\/\/gc\/\//,                       // //gc// ... //gc// 마커
+  /~\s*request\b.*\brequest\s*~/i,    // ~REQUEST Non-Smoking REQUEST~
+  /~bookerisgenius~/i,                // ~BookerIsGenius~
+  /raterewrite\s*[:：]/i,             // RateRewrite:
+  /\bto\s*code\s*\(/i,                // ToCode(...)
+  /\bfrom\s*code\s*\(/i,               // FromCode(0)
+  /\bfrom\s*name\s*\(/i,               // FromName(...)
+  /additional\s*notes\s*[:：]/i,      // AdditionalNotes:
+  /\bhigh\s*floor\b/i,                // HighFloor 태그
+  /requesting\s+(honeymoon|upgrade)/i,
+  /엑스트라넷/,                       // Booking Extranet 안내
+  /가상\s*신용카드/,                  // OTA 가상카드 결제 안내
+  /노쇼\s*위약금/,
+  /country\s*rate/i,
+  /\bgenius\b/i,                      // 부킹 Genius 등급
+
+  // ----- 프론트 내부 체크리스트 / 상품 안내성 -----
+  /특이\s*사항\s*[:：]\s*[가-힣A-Za-z]+\s*[xX×ㅇok]/, // 특이사항:알러지x,위약금ok,...
+  /위약금\s*ok/i,
+  /pkg\s*소멸/i,
+  /소멸\s*안내/,
+  /환불\s*불가\s*상품/,
+  /취소\s*[,/]?\s*환불\s*불가/,
+  /환불\s*및\s*취소\s*불가/,
+  /구매\s*\d+\s*시간/,                 // 구매 72시간 후 ...
+
+  // 예약자명 변경 안내 + 시스템 꼬리 (| , Desc=)
+  /예약자명\s+.+\s*으로\s*부탁/i,
+  /\|\s*,\s*desc\s*=/i,
+
+  // 모바일 숙박권 양도·백화점 VIP라운지·지류 교체 안내 (예약실/백화점 안내)
+  /모바일\s*숙박권/,
+  /양도\s*문의/,
+  /지류\s*숙박권\s*교체/,
+  /백화점\s*vip\s*라운지/i,
+  /안내\s*요망/,
+
+  // 특이사항: 위약금·알러지 체크 + 인플루언서 할인 등 내부 체크리스트
+  /특이\s*사항\s*[:：].*위약금.*알러지/i,
+  /특이\s*사항\s*[:：].*인플루언서/i,
+  /특이\s*사항\s*[:：].*\d+\s*%\s*할인/,
+
+  // 사원할인·동반자 등록 안내 (Accom 등록 + 증빙서류 지참)
+  /accom\s*등록/i,
+  /실\s*투숙객/,
+  /동반자\s*등록/,
+  /가족\s*관계\s*증명서/,
+  /사원증\s*지참/,
+  /지참\s*안내/,
+
+  // 라운지/디저트 운영 스케줄 안내 (요일 묶음 표기)
+  /\(\s*[월화수목금토일]{2,}\s*\)/,        // (월수금일), (화목토) 등
+  /봄\s*다롱/,                              // 봄다롱 과자집
+  /텃밭\s*케이크/,
+  /플라워\s*(파운드|쿠키|케이크)/,
+  /과자집/,
+
+  // 시스템 처리 기록 (SMS 발송 / 객실변경 + 직원ID + 처리일자)
+  /sms\s*발송/i,                                          // P룸체인지 SMS 발송 등
+  /(객실\s*변경|룸\s*변경|룸\s*체인지)\s+[A-Z]{4,}\s+\d{6}/i, // 객실변경 RESYJOH 250326
+
+  // OTA(부킹닷컴 등) 표준 선호 옵션 자동 텍스트
+  /금연\s*객실\s*선호/,
+  /흡연\s*객실\s*선호/,
+  /코너\s*룸?\s*제외/,
+  /뛰어난\s*전망/,
+  /훌륭한\s*전망/,
+
+  // ----- 쿠폰/바우처 KEEP 요청 (예약실 → 프론트) -----
+  /pl[sz]\s*keep/i,                // PLS KEEP / PLZ KEEP
+  /keep\s*vou/i,                   // KEEP VOU 2EA 등
+  /리\s*플\s*레\s*시/,             // #리플레시 쿠폰명
+  /\bvou\s*\d+\s*ea\b/i,           // VOU 2EA
+
+  // ----- 패키지 구성 안내 -----
+  /^[-\+*•＋]?\s*구성\s*[:：]/,    // - 구성: ...
+  /구성\s*[:：].*\d+\s*박/,        // 구성: ~ N박 ~
+  /인\s*추\s*비/,                  // 인추비 (인원 추가 비용)
+  /\d+\s*박\s*[+＋]\s*\d+\s*인\s*조식/,   // 1박+2인 조식
+  /\d+\s*인\s*조식\s*포함/,               // 2인 조식 포함
+  /\(\s*\d+\s*인\s*조식/,                 // (2인 조식 포함)
+  /\d+\s*박\s*\(\s*\d+\s*인\s*조식/,      // 1박 (2인 조식
+  /조식\s*\d+\s*(인|명)\s*\d+\s*회/,      // 조식 2인 1회
+  /조식\s*\d+\s*회/,               // 조식 1회 / 조식 2회
+  /^[+＋\-*•]\s*조식/,             // + 조식..., - 조식... 으로 시작
+
+  // ----- 처리 기록 (소인/대인 조식 추가 + by GST + 직원ID + 날짜) -----
+  /소인\s*\d+\s*인/,               // 소인1인
+  /대인\s*\d+\s*인/,
+  /조식\s*추가\s*by/i,             // 조식 추가 by GST-...
+  /by\s+gst[-_\s]*\d{6}\s+[A-Z]{4,}/i, // by GST-060526 RESMCKIM
+  /\b[-]\s*\d{6}\s+[A-Z]{4,}\b/,   // -060526 RESMCKIM 처리기록 꼬리
+
+  // ----- 조식 사전 할인가/요금 안내 (예약실 패키지 안내) -----
+  /조식.*(사전\s*요청|사전\s*할인|할인\s*가|요금\s*안내)/, // 조식 사전 요청시 할인가 / 조식 사전할인가 요금 안내
+  /\d{1,3},\d{3}\s*\/\s*net/i,         // 40,000/NET / 25,000/NET / 44,000/NET 가격 표기
+  /\d{1,3},\d{3}\s*원?\s*net/i,
+  /(성인|소인|어른|아이)\s*\d{1,3},\d{3}/, // ( 성인 40,000, 소인 25,000 ... )
+
+  // ----- 월별 프로모션 / UG 적용 가능 / 현장 추가 안내 등 운영 지침 -----
+  /\d+\s*월\s*프로모션/,                       // 5월 프로모션
+  /프로모션.*(ug|u\/g|업\s*그\s*레\s*이\s*드)\s*적용/i, // 프로모션 ~ UG 적용
+  /(ug|u\/g)\s*적용\s*가능/i,                   // UG 적용 가능(하나)
+  /추가\s*요금\s*없이.*적용/,                   // 추가 요금 없이 (무료) 적용
+  /무료\s*적용\s*ok/i,                          // 무료 적용 OK
+  /현장\s*추가\s*안내/,                         // 현장 추가 안내
+  /현장\s*안내\s*ok/i,                          // 현장 안내 OK
+  /추가\s*조식\s*현장/,                         // 추가 조식 현장 추가 안내
+
+  // ----- 부서/사번 처리 기록 (O/C 처리, 영업지원팀 사번 등) -----
+  /사\s*번\s*[:：]\s*\d{6,}/,                   // 사번 : 20011712
+  /\bo\s*\/\s*c\s*처리/i,                       // O/C 처리
+  /리조트\s*영업\s*지원\s*팀/,                  // 리조트영업지원팀
+  /\(\s*사\s*번/,                               // (사번 : ...)
+
+  // ----- 인원+조식포함+금액 (성2,소1조식포함/863,460원) -----
+  /성\s*\d+\s*,\s*소\s*\d+.*조식\s*포함/i,
+  /조식\s*포함\s*[\/／]\s*\d{1,3},\d{3}/,
+
+  // ----- 무료취소·위약금 안내·TO BOOKER 처리기록 -----
+  /무료\s*취소\s*조건/,
+  /예약건\s*무료\s*취소/,
+  /100%\s*위약금/,
+  /본\s*건\s*취소\s*\/\s*변경/,
+  /안내\s*ok\s*to\s*booker/i,
+  /\bto\s*booker\b/i
+];
+
+/* ---------- 2. XML 파싱 ---------- */
+function parseXMLFile(text) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'text/xml');
+  const errs = doc.getElementsByTagName('parsererror');
+  if (errs.length) throw new Error('XML 파싱 오류: ' + errs[0].textContent.slice(0, 120));
+
+  const reservations = doc.getElementsByTagName('G_RESERVATION');
+  const records = [];
+  for (const r of reservations) {
+    const rec = {
+      arrival:        getText(r, 'ARRIVAL'),
+      departure:      getText(r, 'DEPARTURE'),
+      confirmationNo: getText(r, 'CONFIRMATION_NO'),
+      roomNo:         getText(r, 'ROOM_NO') || getText(r, 'DISP_ROOM_NO'),
+      fullName:       getText(r, 'FULL_NAME'),
+      vipField:       getText(r, 'VIP'),
+      comments:       collectComments(r),
+      compHouse:      getText(r, 'COMP_HOUSE'),
+      memTypes:       collectMemberships(r)
+    };
+    records.push(rec);
+  }
+  return records;
+}
+
+function getText(parent, tag) {
+  const el = parent.getElementsByTagName(tag)[0];
+  if (!el) return '';
+  return (el.textContent || '').trim();
+}
+
+function collectComments(reservation) {
+  const out = [];
+  // 예약 코멘트 (G_COMMENT_RESV_NAME_ID > RES_COMMENT)
+  const blocks = reservation.getElementsByTagName('G_COMMENT_RESV_NAME_ID');
+  for (const b of blocks) {
+    const t = (b.getElementsByTagName('RES_COMMENT')[0]?.textContent || '').trim();
+    const type = (b.getElementsByTagName('RES_COMMENT_TYPE')[0]?.textContent || '').trim();
+    if (t) out.push({ type, text: t });
+  }
+  // 고객 프로파일 메모 (G_COMMENT_NAME_ID > PROFILE_NOTE)
+  const profileBlocks = reservation.getElementsByTagName('G_COMMENT_NAME_ID');
+  for (const b of profileBlocks) {
+    const t = (b.getElementsByTagName('PROFILE_NOTE')[0]?.textContent || '').trim();
+    const desc = (b.getElementsByTagName('PROFILE_NOTE_DESCRIPTION')[0]?.textContent || '').trim();
+    if (t) out.push({ type: 'PROFILE' + (desc ? ':' + desc : ''), text: t });
+  }
+  // TRACE_TEXT 도 메모에 가까운 정보 (체크인 안내 등)
+  const traces = reservation.getElementsByTagName('G_DEPT_ID');
+  for (const tr of traces) {
+    const t = (tr.getElementsByTagName('TRACE_TEXT')[0]?.textContent || '').trim();
+    if (t) out.push({ type: 'TRACE', text: t });
+  }
+  return out;
+}
+
+function collectMemberships(reservation) {
+  const out = [];
+  const lvls = reservation.getElementsByTagName('G_MEM_TYPE_LEVEL');
+  for (const m of lvls) {
+    const type  = (m.getElementsByTagName('MEMBERSHIP_TYPE_DESC1')[0]?.textContent || '').trim();
+    const level = (m.getElementsByTagName('MEMBERSHIP_LEVEL_DESC1')[0]?.textContent || '').trim();
+    if (type || level) out.push(`${type}${level ? ' ' + level : ''}`);
+  }
+  return out;
+}
+
+/* ---------- 3. 메모 분석 / 분류 ---------- */
+function cleanLine(line) {
+  // HTML 엔티티 단순 처리
+  return line.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&').trim();
+}
+
+function hasKorean(s) {
+  return /[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/.test(s);
+}
+
+// 영어 라인이라도 무조건 유지해야 하는 핵심 VIP 패턴 (RQ GM/AGM/VGM 류)
+const VIP_KEEP_PATTERNS = [
+  /\brq[\s.\-/]*v?a?gm\b/i,
+  /\b(v?a?gm)\s*(request|요청)/i
+];
+
+// ★ 응대 메모 화이트리스트: 이 패턴이 들어있으면 노이즈 검사·길이 발췌 우회
+const KEEP_PATTERNS = [
+  /고객\s*님/,
+  /이전\s*투숙/,
+  /재\s*방문/,
+  /재\s*투숙/,
+  /지난\s*투숙/,
+  /과거\s*투숙/,
+  /#\s*\d{5,}/        // #41053819 같은 이전 예약번호 참조
+];
+
+function isKeepLine(line) {
+  return KEEP_PATTERNS.some(p => p.test(line));
+}
+
+function isNoiseLine(line) {
+  if (!line) return true;
+  if (line.length < 2) return true;
+  // 노이즈 패턴이 KEEP 화이트리스트보다 우선 (쿠폰번호 KEEP 등 차단)
+  if (NOISE_PATTERNS.some(p => p.test(line))) return true;
+  // 영어로만 적혀있는 라인은 제외 (단, 핵심 VIP 표기 / 응대 메모 패턴은 예외)
+  if (!hasKorean(line)
+      && !VIP_KEEP_PATTERNS.some(p => p.test(line))
+      && !isKeepLine(line)) return true;
+  return false;
+}
+
+function splitMeaningfulSentences(rawText) {
+  if (!rawText) return [];
+  // 줄(개행) 단위로만 분리. 노이즈가 아닌 줄은 발췌하지 않고 통째로 보존.
+  const lines = rawText.split(/\r?\n+/);
+  const out = [];
+  for (let l of lines) {
+    l = cleanLine(l);
+    if (!l) continue;
+    if (isNoiseLine(l)) continue;
+    out.push(l);
+  }
+  return dedupe(out);
+}
+
+function extractMeaningfulSpans(longLine) {
+  // 긴 라인에서 카테고리 키워드 주위의 짧은 문장만 추출
+  const lower = longLine.toLowerCase();
+  const allKws = []
+    .concat(KEYWORDS.prefRoom)
+    .concat(KEYWORDS.complaint)
+    .concat(KEYWORDS.anniv)
+    .concat(KEYWORDS.vip);
+
+  const spans = [];
+  const hits = new Set();
+  for (const kw of allKws) {
+    let idx = 0;
+    while ((idx = lower.indexOf(kw.toLowerCase(), idx)) !== -1) {
+      hits.add(idx);
+      idx += kw.length;
+    }
+  }
+  for (const i of hits) {
+    const start = Math.max(0, longLine.lastIndexOf('.', i));
+    const start2 = Math.max(start, longLine.lastIndexOf(',', i));
+    const realStart = Math.max(start2, longLine.lastIndexOf('|', i)) + 1;
+    let end = longLine.indexOf('.', i);
+    if (end === -1) end = longLine.indexOf('|', i);
+    if (end === -1) end = Math.min(longLine.length, i + 80);
+    const span = longLine.substring(Math.max(0, realStart), Math.min(longLine.length, end + 1)).trim();
+    if (span && span.length < 200) spans.push(span);
+  }
+  return dedupe(spans);
+}
+
+function dedupe(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const s of arr) {
+    const key = s.replace(/\s+/g, ' ').trim();
+    if (!seen.has(key) && key) {
+      seen.add(key);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+function matchesLvocText(text) {
+  const lower = text.toLowerCase();
+  for (const kw of KEYWORDS.lvoc) {
+    if (lower.includes(kw.toLowerCase())) return true;
+  }
+  return false;
+}
+
+/** 칭찬·LVOC 문맥이면 컴플레인으로 분류하지 않음. 단, 명확한 민원·사고 키워드가 같이 있으면 유지. */
+function suppressComplaintForPraiseContext(text) {
+  const complaintStrong = /(민원|컴플레인|컴플|불만|항의|클레임|complaint|claim|사고|분실|도난|파손|누수|폭언|욕설|어택)/i.test(text);
+  if (matchesLvocText(text)) return !complaintStrong;
+  const praiseLike = /(단순\s*칭찬|칭찬\s*글|감사\s*합니다|고맙습니다|감동|편지)/i.test(text);
+  if (!praiseLike) return false;
+  return !complaintStrong;
+}
+
+// 객실배정 카테고리에서 제외할 표현 (R/C, 룸체인지, 금연/흡연, PARTY 등)
+const PREF_ROOM_EXCLUDE = [
+  /\br\s*\/\s*c\b/i,
+  /룸\s*체인지/,
+  /room\s*change/i,
+  /룸\s*변경/,
+  /객실\s*변경/,
+  /\b금연\b/,
+  /\b흡연\b/,
+  /non[- ]?smoking/i,
+  /\bsmoking\b/i,
+  /\bparty\b/i,
+  /파티/
+];
+
+function matchCategory(text) {
+  const lower = text.toLowerCase();
+  const cats = {};
+  for (const cat of CAT_ORDER) cats[cat] = false;
+  for (const cat of CAT_ORDER) {
+    for (const kw of KEYWORDS[cat]) {
+      if (lower.includes(kw.toLowerCase())) { cats[cat] = true; break; }
+    }
+  }
+  // 칭찬/LVOC 문맥이면 컴플레인 제거 (섞임 방지)
+  if (cats.complaint && suppressComplaintForPraiseContext(text)) cats.complaint = false;
+  // 객실배정에서 제외할 표현은 prefRoom 끄기
+  //  단, 'AJ 강력요청' / '강력요청'이 들어있으면 무조건 prefRoom 유지
+  if (cats.prefRoom) {
+    const isStrongRequest = /(aj\s*강력\s*요청|aj강력요청|강력\s*요청|강력요청)/i.test(text);
+    if (!isStrongRequest && PREF_ROOM_EXCLUDE.some(p => p.test(text))) {
+      cats.prefRoom = false;
+    }
+  }
+  // UPS 기록은 고객취향(객실배정)에 들어가지 않음
+  if (cats.ups) cats.prefRoom = false;
+  return cats;
+}
+
+/* ---------- 4. 한 예약을 분석해서 카테고리별 표시 항목 만들기 ---------- */
+function analyzeRecord(rec) {
+  const lvocNoteLines = [];
+  const profileChunks = []; // PROFILE_NOTE 코멘트 단위 (배열의 배열)
+  const otherChunks   = []; // RES / TRACE 등 코멘트 단위
+
+  for (const c of rec.comments) {
+    const sents = splitMeaningfulSentences(c.text);
+    if (!sents.length) continue;
+    const isLvocNote = sents.some(s => matchCategory(s).lvoc);
+    if (isLvocNote) {
+      lvocNoteLines.push(...sents);
+    } else if (c.type && c.type.startsWith('PROFILE')) {
+      profileChunks.push(sents);
+    } else {
+      otherChunks.push(sents);
+    }
+  }
+
+  const meaningful = [...lvocNoteLines, ...profileChunks.flat(), ...otherChunks.flat()];
+  const allText = meaningful.join('\n');
+
+  const cats = matchCategory(allText);
+
+  if (rec.vipField && rec.vipField.trim()) cats.vip = true;
+  if (lvocNoteLines.length > 0) cats.lvoc = true;
+
+  const perCat = {};
+  for (const cat of CAT_ORDER) perCat[cat] = [];
+
+  /** 한 코멘트 블록 안에 컴플레인이 한 줄이라도 있으면, 노이즈 제거된 본문 전체를 컴플레인에 1건으로 */
+  function pushComplaintChunkIfAny(sents) {
+    const chunk = sents.join('\n');
+    if (!chunk) return;
+    const complaintHit = sents.some(s => matchCategory(s).complaint)
+      || matchCategory(chunk).complaint;
+    if (!complaintHit) return;
+    if (suppressComplaintForPraiseContext(chunk)) return;
+    perCat.complaint.push(chunk);
+  }
+
+  // 1) 일반 메모(RES/TRACE 등): 컴플레인은 코멘트 통째로, 나머지는 줄 단위
+  for (const sents of otherChunks) {
+    pushComplaintChunkIfAny(sents);
+    for (const s of sents) {
+      const m = matchCategory(s);
+      for (const cat of CAT_ORDER) {
+        if (cat === 'complaint') continue;
+        if (m[cat]) perCat[cat].push(s);
+      }
+    }
+  }
+
+  // 2) 프로파일 노트: 컴플레인은 코멘트 통째로, LVOC·UPS만 줄 단위
+  for (const sents of profileChunks) {
+    pushComplaintChunkIfAny(sents);
+    for (const s of sents) {
+      const m = matchCategory(s);
+      if (m.lvoc) perCat.lvoc.push(s);
+      if (m.ups) perCat.ups.push(s);
+    }
+  }
+
+  for (const cat of CAT_ORDER) {
+    if (perCat[cat].length > 0) cats[cat] = true;
+  }
+
+  // 3) LVOC 노트
+  for (const s of lvocNoteLines) {
+    perCat.lvoc.push(s);
+    const m = matchCategory(s);
+    for (const cat of CAT_ORDER) {
+      if (cat === 'lvoc' || cat === 'prefRoom' || cat === 'complaint') continue;
+      if (m[cat]) perCat[cat].push(s);
+    }
+  }
+
+  if (cats.vip && perCat.vip.length === 0 && rec.vipField) {
+    perCat.vip = ['VIP 코드: ' + rec.vipField];
+  }
+
+  const sort = {
+    arrival:   toSortableDate(rec.arrival),
+    departure: toSortableDate(rec.departure),
+    confirm:   rec.confirmationNo || '',
+    room:      paddedRoom(rec.roomNo),
+    name:      extractPrimaryName(rec.fullName)
+  };
+
+  const id = [
+    rec.confirmationNo || '',
+    rec.roomNo || '',
+    rec.arrival || '',
+    extractPrimaryName(rec.fullName)
+  ].join('__');
+
+  return { id, rec, cats, perCat, sort };
+}
+
+function toSortableDate(s) {
+  if (!s) return 0;
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+  if (m) return parseInt('20' + m[3] + m[2] + m[1], 10);
+  return 0;
+}
+
+function paddedRoom(s) {
+  if (!s) return '';
+  if (/^\d+$/.test(s)) return s.padStart(8, '0');
+  return s;
+}
+
+function extractPrimaryName(full) {
+  if (!full) return '';
+  const parts = full.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  return parts[1] || parts[0] || '';
+}
+
+/* ---------- 5. 렌더링 ---------- */
+function fmtName(full) {
+  if (!full) return '-';
+  const parts = full.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const en = parts[0] || '';
+  const kr = parts[1] || '';
+  if (kr && en) return `<b>${escapeHtml(kr)}</b><div style="font-size:11px;color:#94a3b8">${escapeHtml(en)}</div>`;
+  return `<b>${escapeHtml(en || kr)}</b>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  // 14-05-26 → 26/05/14 형태로
+  const m = d.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+  if (m) return `20${m[3]}-${m[2]}-${m[1]}`;
+  return d;
+}
+
+function fmtMemo(lines, opts) {
+  opts = opts || {};
+  if (!lines || !lines.length) {
+    return opts.silent
+      ? '<span style="color:#cbd5e1;">-</span>'
+      : '<span style="color:#94a3b8;">표시할 메모가 없습니다.</span>';
+  }
+  return lines.map(l => `• ${escapeHtml(l)}`).join('\n');
+}
+
+// 전체 탭에서 보여줄 카테고리 (LVOC, UPS 제외)
+const ALL_TAB_CATS = ['vip', 'complaint', 'anniv', 'prefRoom'];
+
+function fmtMemoAll(perCat) {
+  const parts = [];
+  for (const cat of ALL_TAB_CATS) {
+    const lines = perCat[cat];
+    if (!lines || !lines.length) continue;
+    const tagClass = ({
+      vip:'vip', complaint:'warn', anniv:'anniv', prefRoom:'pref'
+    })[cat];
+    const tag = `<span class="tag ${tagClass}">${CAT_META[cat].emoji} ${escapeHtml(CAT_META[cat].label)}</span>`;
+    parts.push(tag + '\n' + lines.map(l => `• ${escapeHtml(l)}`).join('\n'));
+  }
+  if (!parts.length) return '<span style="color:#cbd5e1;">-</span>';
+  return parts.join('\n\n');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
+  }[ch]));
+}
+
+/* ---------- 정렬 ---------- */
+function sortRecords(rows) {
+  const { col, dir } = STATE.sort;
+  const sign = dir === 'asc' ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    const va = a.sort[col];
+    const vb = b.sort[col];
+    if (typeof va === 'number' && typeof vb === 'number') {
+      return (va - vb) * sign;
+    }
+    return String(va).localeCompare(String(vb), 'ko') * sign;
+  });
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('#tableHead th.sortable').forEach(th => {
+    th.classList.remove('asc', 'desc');
+    if (th.dataset.sort === STATE.sort.col) th.classList.add(STATE.sort.dir);
+  });
+}
+
+function render() {
+  const cat = STATE.currentCat;
+  const search = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+
+  // 카테고리 필터링 — 메모가 한 줄이라도 있는 예약만 표시
+  let rowsForCat = (cat === 'all')
+    ? STATE.records.filter(r => ALL_TAB_CATS.some(c => r.perCat[c] && r.perCat[c].length > 0))
+    : STATE.records.filter(r => r.perCat[cat] && r.perCat[cat].length > 0);
+
+  // 사용자가 X 버튼으로 숨긴 행은 제외
+  rowsForCat = rowsForCat.filter(r => !STATE.hiddenIds.has(r.id));
+
+  // 검색 필터링
+  const searched = rowsForCat.filter(r => {
+    if (!search) return true;
+    const memoBlob = (cat === 'all')
+      ? ALL_TAB_CATS.flatMap(c => r.perCat[c] || []).join(' ')
+      : r.perCat[cat].join(' ');
+    const blob = [
+      r.rec.fullName, r.rec.confirmationNo, r.rec.roomNo, r.rec.arrival, r.rec.departure, memoBlob
+    ].join(' ').toLowerCase();
+    return blob.includes(search);
+  });
+
+  // 정렬
+  const filtered = sortRecords(searched);
+  STATE.visibleRows = filtered;
+
+  if (!filtered.length) {
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    for (const r of filtered) {
+      const tr = document.createElement('tr');
+      const memoHtml = (cat === 'all') ? fmtMemoAll(r.perCat) : fmtMemo(r.perCat[cat], { silent: true });
+      tr.innerHTML = `
+        <td class="center">${escapeHtml(fmtDate(r.rec.arrival))}</td>
+        <td class="center">${escapeHtml(fmtDate(r.rec.departure))}</td>
+        <td class="bold">${escapeHtml(r.rec.confirmationNo || '-')}</td>
+        <td class="center bold">${escapeHtml(r.rec.roomNo || '-')}</td>
+        <td>${fmtName(r.rec.fullName)}</td>
+        <td class="memo">${memoHtml}</td>
+        <td class="actions">
+          <button class="row-del" data-row-id="${escapeHtml(r.id)}" title="이 행 숨기기">✕</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  const meta = CAT_META[cat];
+  const allCount = (cat === 'all') ? rowsForCat.length : STATE.records.length;
+  const suffix = (cat === 'all')
+    ? ` (${filtered.length}건${rowsForCat.length !== filtered.length ? ' / 메모 있는 ' + rowsForCat.length + '건' : ''})`
+    : ` (${filtered.length}건${rowsForCat.length !== filtered.length ? ' / 분류 ' + rowsForCat.length + '건' : ''})`;
+  document.getElementById('tableTitle').textContent = meta.label + suffix;
+
+  // 인쇄용 타이틀
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const dateStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  document.getElementById('printTitle').innerHTML =
+    `JEJU LOTTE HOTEL 취향 · ${escapeHtml(meta.label)}` +
+    `<small>${filtered.length}건 · 출력일 ${dateStr}</small>`;
+
+  updateSortIndicators();
+  updateRestoreBar();
+}
+
+function updateRestoreBar() {
+  const bar = document.getElementById('restoreBar');
+  const cnt = document.getElementById('restoreCount');
+  const n = STATE.hiddenIds.size;
+  cnt.textContent = n;
+  bar.classList.toggle('hidden', n === 0);
+}
+
+function updateCounters() {
+  const counts = {};
+  for (const c of CAT_ORDER) counts[c] = 0;
+  let allWithMemo = 0;
+  for (const r of STATE.records) {
+    let hasAllTabMemo = false;
+    for (const c of CAT_ORDER) {
+      if (r.cats[c]) counts[c]++;
+    }
+    for (const c of ALL_TAB_CATS) {
+      if (r.perCat[c] && r.perCat[c].length > 0) { hasAllTabMemo = true; break; }
+    }
+    if (hasAllTabMemo) allWithMemo++;
+  }
+  for (const c of CAT_ORDER) {
+    document.getElementById('cnt-' + c).textContent = counts[c];
+    document.getElementById('tab-cnt-' + c).textContent = counts[c];
+  }
+  document.getElementById('tab-cnt-all').textContent = allWithMemo;
+}
+
+/* ---------- 6. UI 이벤트 ---------- */
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const fileInfo   = document.getElementById('fileInfo');
+const uploadBtn  = document.getElementById('uploadBtn');
+const resetBtn   = document.getElementById('resetBtn');
+const resultArea = document.getElementById('resultArea');
+const tabsEl     = document.getElementById('tabs');
+const searchInp  = document.getElementById('searchInput');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault(); dropzone.classList.add('dragover');
+});
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer && e.dataTransfer.files) {
+    handleFiles(e.dataTransfer.files);
+  }
+});
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+function handleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => /\.xml$/i.test(f.name));
+  if (!files.length) {
+    fileInfo.innerHTML = '<span style="color:#ef4444;">XML 파일만 업로드 가능합니다.</span>';
+    uploadBtn.disabled = true;
+    STATE.files = [];
+    return;
+  }
+  STATE.files = files;
+  fileInfo.innerHTML = `<b>${files.length}개 파일 선택됨:</b> ` +
+    files.map(f => `${escapeHtml(f.name)} <span class="pill">${Math.round(f.size/1024)} KB</span>`).join(', ');
+  uploadBtn.disabled = false;
+}
+
+uploadBtn.addEventListener('click', async () => {
+  if (!STATE.files.length) return;
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = '분석 중...';
+  try {
+    const all = [];
+    for (const f of STATE.files) {
+      const text = await f.text();
+      const recs = parseXMLFile(text);
+      all.push(...recs);
+    }
+    STATE.records = all.map(analyzeRecord);
+    STATE.hiddenIds.clear();
+    updateCounters();
+    resultArea.classList.remove('hidden');
+    render();
+    window.scrollTo({ top: resultArea.offsetTop - 12, behavior: 'smooth' });
+  } catch (err) {
+    alert('파일 분석 중 오류가 발생했습니다.\n' + err.message);
+    console.error(err);
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '업로드 & 분석';
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  STATE.files = [];
+  STATE.records = [];
+  STATE.hiddenIds.clear();
+  fileInput.value = '';
+  fileInfo.innerHTML = '선택된 파일이 없습니다.';
+  uploadBtn.disabled = true;
+  resultArea.classList.add('hidden');
+});
+
+tabsEl.addEventListener('click', (e) => {
+  const t = e.target.closest('.tab');
+  if (!t) return;
+  for (const x of tabsEl.querySelectorAll('.tab')) x.classList.remove('active');
+  t.classList.add('active');
+  STATE.currentCat = t.dataset.cat;
+  const noteEl = document.getElementById('tabsNote');
+  if (noteEl) noteEl.classList.toggle('hidden-note', STATE.currentCat !== 'all');
+  render();
+});
+
+searchInp.addEventListener('input', render);
+
+/* ---------- 엑셀 다운로드 ---------- */
+function memoForExcel(perCat, cat) {
+  if (cat === 'all') {
+    const parts = [];
+    for (const c of ALL_TAB_CATS) {
+      const lines = perCat[c];
+      if (!lines || !lines.length) continue;
+      parts.push(`[${CAT_META[c].label}]`);
+      for (const l of lines) parts.push('• ' + l);
+    }
+    return parts.join('\n');
+  }
+  const lines = perCat[cat] || [];
+  return lines.map(l => '• ' + l).join('\n');
+}
+
+function downloadExcel() {
+  if (!STATE.visibleRows.length) {
+    alert('다운로드할 데이터가 없습니다.');
+    return;
+  }
+  const cat = STATE.currentCat;
+  const meta = CAT_META[cat];
+  const today = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const dateStr = `${today.getFullYear()}${pad(today.getMonth()+1)}${pad(today.getDate())}`;
+
+  // 엑셀이 잘 읽는 HTML 테이블 + UTF-8 BOM 방식 (.xls)
+  const rowsHtml = STATE.visibleRows.map(r => {
+    const name = (r.rec.fullName || '').replace(/\s+/g, ' ').trim();
+    const memo = memoForExcel(r.perCat, cat);
+    return `<tr>
+      <td>${escapeHtml(fmtDate(r.rec.arrival))}</td>
+      <td>${escapeHtml(fmtDate(r.rec.departure))}</td>
+      <td>${escapeHtml(r.rec.confirmationNo || '')}</td>
+      <td>${escapeHtml(r.rec.roomNo || '')}</td>
+      <td>${escapeHtml(name)}</td>
+      <td style="mso-data-placement:same-cell;">${escapeHtml(memo).replace(/\n/g,'<br>')}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<style>
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 4px 6px; vertical-align: top; font-family: 'Malgun Gothic', Arial, sans-serif; font-size: 11pt; }
+  th { background: #f1f5f9; font-weight: bold; }
+  td { mso-number-format:"\\@"; }
+</style>
+</head>
+<body>
+<h3>JEJU LOTTE HOTEL 취향 · ${escapeHtml(meta.label)} (${STATE.visibleRows.length}건)</h3>
+<table>
+  <thead><tr>
+    <th>C/I</th><th>C/O</th><th>예약번호</th><th>객실번호</th><th>이름</th><th>메모 내용</th>
+  </tr></thead>
+  <tbody>${rowsHtml}</tbody>
+</table>
+</body></html>`;
+
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `취향분류_${meta.label}_${dateStr}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------- 인쇄 ---------- */
+function printTable() {
+  if (!STATE.visibleRows.length) {
+    alert('인쇄할 데이터가 없습니다.');
+    return;
+  }
+  window.print();
+}
+
+document.getElementById('excelBtn').addEventListener('click', downloadExcel);
+document.getElementById('printBtn').addEventListener('click', printTable);
+
+// 행 X 버튼: 이벤트 위임
+document.getElementById('tableBody').addEventListener('click', (e) => {
+  const btn = e.target.closest('.row-del');
+  if (!btn) return;
+  const id = btn.getAttribute('data-row-id');
+  if (id) {
+    STATE.hiddenIds.add(id);
+    render();
+  }
+});
+
+// 전체 복원 버튼
+document.getElementById('restoreBtn').addEventListener('click', () => {
+  STATE.hiddenIds.clear();
+  render();
+});
+
+// 컬럼 헤더 클릭 → 정렬
+document.getElementById('tableHead').addEventListener('click', (e) => {
+  const th = e.target.closest('th.sortable');
+  if (!th) return;
+  const col = th.dataset.sort;
+  if (STATE.sort.col === col) {
+    STATE.sort.dir = STATE.sort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    STATE.sort.col = col;
+    STATE.sort.dir = 'asc';
+  }
+  render();
+});
+
+// 초기 정렬 표시
+updateSortIndicators();
+</script>
+</body>
+</html>
