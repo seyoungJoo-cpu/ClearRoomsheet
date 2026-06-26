@@ -7434,11 +7434,26 @@
           var ix2 = parseInt(t.getAttribute("data-index"), 10);
           var dataRm = HKStorage.load();
           if (dataRm.rooms[zone] && !isNaN(ix2)) {
+            var removedRow = dataRm.rooms[zone][ix2];
             dataRm.rooms[zone].splice(ix2, 1);
-            HKStorage.save(dataRm);
-            renderZoneRoomManagePanel(zone, { force: true });
-            renderRoomsForZone(zone, { force: true });
-            showHkActionToast("삭제되었습니다.");
+            HKStorage.save(dataRm, { skipSync: true });
+            var deleteEntry = {
+              id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
+              at: new Date().toISOString(),
+              zone: zone,
+              room: removedRow && removedRow.number ? removedRow.number : "",
+              kind: "delete",
+              changes: ["객실 삭제"],
+              by: getOperatorName() || "",
+            };
+            publishRoomChange(deleteEntry).then(function () {
+              if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+                HKSync.pushStorageNow();
+              }
+              renderZoneRoomManagePanel(zone, { force: true });
+              renderRoomsForZone(zone, { force: true });
+              showHkActionToast("삭제되었습니다.");
+            });
           }
         }
       }

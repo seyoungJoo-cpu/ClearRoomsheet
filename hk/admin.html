@@ -883,8 +883,9 @@
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지·구역 객실·요청·오더·MB·채팅 등 전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤
-        <strong>초기화</strong>합니다. HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
+        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀)·요청·오더·MB &amp; 인벤·MB CHECK·프론트 채팅·객실 변경 이력·취소/사용 리스트·루밍 XML 등
+        전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
+        HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
         <strong>프론트 채팅</strong>·<strong>오더 알림·문제발생</strong>은 함께 저장하고 화면에 유지합니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
@@ -1303,6 +1304,12 @@
         return category === "inv" ? "인벤 변경" : "MB 변경";
       }
 
+      function formatRoomChangeKindLabel(kind) {
+        if (kind === "add") return "추가";
+        if (kind === "delete") return "삭제";
+        return "수정";
+      }
+
       function formatMbCheckPhaseLabel(phase) {
         var p = phase != null ? String(phase).trim() : "alert";
         if (p === "accepted") return "접수";
@@ -1492,6 +1499,29 @@
         };
       }
 
+      function buildCloseDaySummaryRows(snapshot) {
+        var zoneLabels = HKStorage.getZoneOrder(snapshot.data).map(function (zoneId) {
+          return HKStorage.getZoneLabel(zoneId, snapshot.data);
+        });
+        var noticeImg =
+          snapshot.data.noticeImage != null ? String(snapshot.data.noticeImage).trim() : "";
+        return [
+          ["내보내기 시각", formatAt(snapshot.exportedAt)],
+          ["공지", snapshot.data.notice ? "있음" : "없음"],
+          ["공지 첨부사진", noticeImg ? "있음" : "없음"],
+          ["특이객실 구역", zoneLabels.join(", ") || "—"],
+          ["요청 알림", String((snapshot.requestLog || []).length) + "건"],
+          ["오더", String((snapshot.orderLog || []).length) + "건"],
+          ["MB & 인벤 변경", String((snapshot.mbInvLog || []).length) + "건"],
+          ["MB CHECK", String((snapshot.mbCheckLog || []).length) + "건"],
+          ["프론트 채팅", String((snapshot.frontChat || []).length) + "건"],
+          ["객실 변경 이력", String((snapshot.changeLog || []).length) + "건"],
+          ["취소리스트", String((snapshot.cancelLog || []).length) + "건"],
+          ["사용리스트", String((snapshot.useLog || []).length) + "건"],
+          ["루밍 업로드", (snapshot.rooming && snapshot.rooming.uploadSummary) || "—"],
+        ];
+      }
+
       function collectCloseDaySnapshot() {
         var data = HKStorage.load();
         var sync = typeof HKSync !== "undefined" ? HKSync : null;
@@ -1513,9 +1543,19 @@
       function buildCloseDaySections(snapshot) {
         var sections = [
           {
+            title: "내보내기 요약",
+            headers: ["항목", "내용"],
+            rows: buildCloseDaySummaryRows(snapshot),
+          },
+          {
             title: "공지",
-            headers: ["내용", "이미지"],
-            rows: [[snapshot.data.notice || "", snapshot.data.noticeImage ? "Y" : "N"]],
+            headers: ["내용", "첨부사진"],
+            rows: [
+              [
+                snapshot.data.notice || "",
+                excelImageCell(snapshot.data.noticeImage),
+              ],
+            ],
           },
           {
             title: "커스텀 구역",
@@ -1865,7 +1905,7 @@
                   ? HKStorage.getZoneLabel(entry.zone, snapshot.data)
                   : entry.zone || "",
                 formatRoomNoDisplay(entry.room || ""),
-                entry.kind === "add" ? "추가" : "수정",
+                formatRoomChangeKindLabel(entry.kind),
                 changes,
                 entry.by || "",
               ];
@@ -2208,6 +2248,89 @@
         return html.join("");
       }
 
+      function renderReportMbCheckCards(snapshot) {
+        var entries = snapshot.mbCheckLog || [];
+        if (!entries.length) return '<p class="report-empty">(내역 없음)</p>';
+        var html = [];
+        entries.forEach(function (entry) {
+          html.push('<article class="record-card record-card--mbcheck">');
+          html.push('<div class="record-card__head">');
+          html.push(
+            '<span class="record-card__room">' +
+              escHtml(formatRoomNoDisplay(entry.room || "")) +
+              "</span>"
+          );
+          html.push(
+            '<span class="badge">' + escHtml(formatMbCheckPhaseLabel(entry.phase)) + "</span>"
+          );
+          html.push("</div>");
+          html.push('<div class="meta-grid">');
+          html.push(renderReportMetaItem("요청", formatAt(entry.at)));
+          html.push(renderReportMetaItem("요청자", entry.by));
+          html.push(renderReportMetaItem("접수", formatAt(entry.acceptedAt)));
+          html.push(renderReportMetaItem("접수자", entry.acceptedBy));
+          html.push(renderReportMetaItem("GST", formatAt(entry.gstAt)));
+          html.push(renderReportMetaItem("GST 처리", entry.gstBy));
+          html.push(renderReportMetaItem("포스팅", formatAt(entry.postedAt)));
+          html.push(renderReportMetaItem("포스팅 처리", entry.postedBy));
+          html.push(renderReportMetaItem("재요청", formatAt(entry.rerequestedAt)));
+          html.push(renderReportMetaItem("재요청자", entry.rerequestedBy));
+          html.push(renderReportMetaItem("취소", formatAt(entry.cancelledAt)));
+          html.push(renderReportMetaItem("취소자", entry.cancelledBy));
+          html.push(renderReportMetaItem("ID", entry.id));
+          html.push("</div>");
+          if (entry.memo) {
+            html.push(
+              '<div class="record-card__memo">' +
+                escHtml(String(entry.memo)).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          html.push("</article>");
+        });
+        return html.join("");
+      }
+
+      function renderReportChangeLogCards(snapshot) {
+        var entries = snapshot.changeLog || [];
+        if (!entries.length) return '<p class="report-empty">(변경 이력 없음)</p>';
+        var html = [];
+        entries.forEach(function (entry) {
+          var changes = Array.isArray(entry.changes) ? entry.changes.join("\n") : "";
+          html.push('<article class="record-card record-card--change">');
+          html.push('<div class="record-card__head">');
+          html.push(
+            '<span class="record-card__room">' +
+              escHtml(
+                (entry.zone
+                  ? HKStorage.getZoneLabel(entry.zone, snapshot.data)
+                  : entry.zone || "—") +
+                  " · " +
+                  formatRoomNoDisplay(entry.room || "")
+              ) +
+              "</span>"
+          );
+          html.push(
+            '<span class="badge">' + escHtml(formatRoomChangeKindLabel(entry.kind)) + "</span>"
+          );
+          html.push("</div>");
+          html.push('<div class="meta-grid">');
+          html.push(renderReportMetaItem("시각", formatAt(entry.at)));
+          html.push(renderReportMetaItem("처리자", entry.by));
+          html.push(renderReportMetaItem("ID", entry.id));
+          html.push("</div>");
+          if (changes) {
+            html.push(
+              '<div class="record-card__memo">' +
+                escHtml(changes).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          html.push("</article>");
+        });
+        return html.join("");
+      }
+
       function renderReportTableSection(section) {
         var html = ['<div class="table-wrap"><table class="report-table"><thead><tr>'];
         section.headers.forEach(function (header) {
@@ -2234,6 +2357,7 @@
       }
 
       function renderReportSectionBody(section, snapshot) {
+        if (section.title === "내보내기 요약") return renderReportTableSection(section);
         if (section.title === "공지") {
           var notice = snapshot.data.notice || "";
           var noticeImg =
@@ -2260,6 +2384,8 @@
         if (section.title === "오더 채팅 (상세)") return renderReportOrderChatGroups(snapshot);
         if (section.title === "MB & 인벤 변경") return renderReportMbInvCards(snapshot);
         if (section.title === "MB & 인벤 채팅 (상세)") return renderReportMbInvChatGroups(snapshot);
+        if (section.title === "MB CHECK") return renderReportMbCheckCards(snapshot);
+        if (section.title === "객실 변경 이력") return renderReportChangeLogCards(snapshot);
         return renderReportTableSection(section);
       }
 
@@ -2301,6 +2427,8 @@
           ".record-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;background:#fafafa;}",
           ".record-card--order{border-left:4px solid #b91c1c;}",
           ".record-card--mb{border-left:4px solid #7c3aed;}",
+          ".record-card--mbcheck{border-left:4px solid #0369a1;}",
+          ".record-card--change{border-left:4px solid #ca8a04;}",
           ".record-card__head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}",
           ".record-card__room{font-weight:800;font-size:.9375rem;}",
           ".badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#e2e8f0;font-size:.6875rem;font-weight:700;}",
@@ -2445,7 +2573,7 @@
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, 특이객실, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
