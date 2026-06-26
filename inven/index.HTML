@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인벤토리 투입물품</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fc;
+      --panel: #ffffff;
+      --line: #cfd8e6;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .wrap {
+      max-width: 1280px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .controls > * {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    button {
+      cursor: pointer;
+      border-color: var(--accent);
+    }
+    .hidden-file {
+      display: none;
+    }
+    .file-name {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 8px 4px;
+      min-width: 180px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .drop-zone {
+      border: 1px dashed var(--accent);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      background: #f8fbff;
+    }
+    .drop-zone.active {
+      border-style: solid;
+      color: var(--text);
+      background: #eaf2ff;
+    }
+    .upload-desc {
+      margin: 0 0 10px;
+      padding: 0 0 10px;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+    }
+    .drop-hint {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .table-wrap {
+      max-height: 72vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      padding: 8px 10px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 2;
+    }
+    th.section {
+      text-align: center;
+      color: var(--accent);
+    }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable::after {
+      content: attr(data-order-mark);
+      color: var(--muted);
+      margin-left: 4px;
+      font-size: 11px;
+    }
+    .room-col {
+      min-width: 80px;
+    }
+    .item-col {
+      min-width: 110px;
+    }
+    .confirmation-col {
+      min-width: 80px;
+    }
+    .seq-col {
+      min-width: 56px;
+      text-align: center;
+    }
+    td.remark {
+      white-space: pre-wrap;
+      min-width: 280px;
+    }
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(160deg, #e8eef8 0%, var(--bg) 50%, #f8fafc 100%);
+    }
+    .auth-gate.hidden {
+      display: none;
+    }
+    .auth-card {
+      width: min(400px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 28px 24px;
+      box-shadow: 0 12px 28px rgba(30, 41, 59, 0.1);
+      text-align: center;
+    }
+    .auth-card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .auth-card p {
+      margin: 0 0 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .auth-card input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+    .auth-card button {
+      width: 100%;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+    .auth-error {
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #dc2626;
+      font-weight: 600;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    body.locked {
+      overflow: hidden;
+    }
+    body.locked .app-main {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="locked">
+  <div id="auth-gate" class="auth-gate" aria-hidden="false">
+    <div class="auth-card">
+      <h2>인벤토리 접근</h2>
+      <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
+      <form id="auth-form" autocomplete="off">
+        <label for="auth-password" class="sr-only">비밀번호</label>
+        <input id="auth-password" type="password" placeholder="비밀번호" required autofocus>
+        <button type="submit">확인</button>
+      </form>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="wrap app-main">
+    <div class="card">
+      <h1>인벤토리 투입물품</h1>
+      <p class="meta" id="todayBanner" style="margin-top:0">TRUNC_ARRIVAL 기준일(오늘): —</p>
+      <div id="dropZone" class="drop-zone">
+        <p class="upload-desc">INVEN TRACE(FRD), inventory Forecast(inv) 레포트 입니다.</p>
+        <p class="drop-hint">여기에 XML 파일을 드래그 앤 드롭하세요. (파일명에 inventory / gitraces 포함 시 자동 분류)</p>
+      </div>
+      <div class="controls">
+        <input id="invFile" class="hidden-file" type="file" accept=".xml" />
+        <button id="invUploadBtn" type="button">Inventory XML 업로드</button>
+        <span id="invFileName" class="file-name">선택된 파일 없음</span>
+        <input id="gitFile" class="hidden-file" type="file" accept=".xml" />
+        <button id="gitUploadBtn" type="button">Gitraces XML 업로드</button>
+        <span id="gitFileName" class="file-name">선택된 파일 없음</span>
+        <button id="loadBtn">만들기</button>
+      </div>
+      <div class="meta" id="meta">XML 2개를 선택한 다음 "만들기"를 누르세요.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="section" colspan="5">본관동</th>
+              <th class="section" colspan="5">별관동</th>
+            </tr>
+            <tr>
+              <th class="seq-col">순번</th>
+              <th class="sortable room-col" data-side="main" data-key="room" data-order-mark="">룸번호</th>
+              <th class="sortable confirmation-col" data-side="main" data-key="confirmationNo" data-order-mark="">예약번호</th>
+              <th class="sortable item-col" data-side="main" data-key="itemCode1" data-order-mark="">대여물품</th>
+              <th class="sortable" data-side="main" data-key="trace" data-order-mark="">트레이스</th>
+              <th class="seq-col">순번</th>
+              <th class="sortable room-col" data-side="annex" data-key="room" data-order-mark="">룸번호</th>
+              <th class="sortable confirmation-col" data-side="annex" data-key="confirmationNo" data-order-mark="">예약번호</th>
+              <th class="sortable item-col" data-side="annex" data-key="itemCode1" data-order-mark="">대여물품</th>
+              <th class="sortable" data-side="annex" data-key="trace" data-order-mark="">트레이스</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ACCESS_PASSWORD = "74321";
+    const AUTH_STORAGE_KEY = "inven_html_unlocked";
+
+    const authGate = document.getElementById("auth-gate");
+    const authForm = document.getElementById("auth-form");
+    const authPassword = document.getElementById("auth-password");
+    const authError = document.getElementById("auth-error");
+
+    function unlockApp() {
+      document.body.classList.remove("locked");
+      authGate.classList.add("hidden");
+      authGate.setAttribute("aria-hidden", "true");
+      sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+    }
+
+    function showAuthError(message) {
+      authError.textContent = message;
+    }
+
+    authForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const value = authPassword.value;
+      if (value === ACCESS_PASSWORD) {
+        showAuthError("");
+        unlockApp();
+        return;
+      }
+      showAuthError("비밀번호가 올바르지 않습니다.");
+      authPassword.value = "";
+      authPassword.focus();
+    });
+
+    if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+      unlockApp();
+    }
+
+    const invFileEl = document.getElementById("invFile");
+    const gitFileEl = document.getElementById("gitFile");
+    const invUploadBtn = document.getElementById("invUploadBtn");
+    const gitUploadBtn = document.getElementById("gitUploadBtn");
+    const invFileNameEl = document.getElementById("invFileName");
+    const gitFileNameEl = document.getElementById("gitFileName");
+    const loadBtn = document.getElementById("loadBtn");
+    const dropZone = document.getElementById("dropZone");
+    const sortableHeaders = Array.from(document.querySelectorAll("th.sortable"));
+    const tbody = document.getElementById("tbody");
+    const meta = document.getElementById("meta");
+    const todayBanner = document.getElementById("todayBanner");
+
+    let dataframeRows = [];
+
+    function todayTruncArrivalString() {
+      const n = new Date();
+      const dd = String(n.getDate()).padStart(2, "0");
+      const mm = String(n.getMonth() + 1).padStart(2, "0");
+      const yy = String(n.getFullYear() % 100).padStart(2, "0");
+      return `${dd}-${mm}-${yy}`;
+    }
+
+    function parseTruncArrival(s) {
+      const m = /^(\d{1,2})-(\d{1,2})-(\d{2})$/.exec((s || "").trim());
+      if (!m) return null;
+      return { d: Number(m[1]), mo: Number(m[2]), y: Number(m[3]) };
+    }
+
+    function isTruncArrivalToday(truncRaw) {
+      const parsed = parseTruncArrival(truncRaw);
+      if (!parsed) return false;
+      const n = new Date();
+      return (
+        parsed.d === n.getDate() &&
+        parsed.mo === n.getMonth() + 1 &&
+        parsed.y === n.getFullYear() % 100
+      );
+    }
+    let selectedInvFile = null;
+    let selectedGitFile = null;
+    const sortState = {
+      main: { key: null, order: null },
+      annex: { key: null, order: null }
+    };
+
+    const ITEM_CODE1_LABELS = {
+      BBS: "소독기",
+      BBT: "아기욕조",
+      BEG: "가드",
+      BIPILL: "바이오",
+      BOPILL: "바디필로우",
+      CBF: "발판",
+      CRIB: "아기침대",
+      CTS: "커버",
+      EXB: "엑배",
+      HUMI: "가습기",
+      IRON: "다리미",
+      KBD: "한실이불",
+      KOPILL: "한실베개",
+      MFPILL: "메모리폼",
+      WOPILL: "양모",
+      ZBPILL: "젠메밀"
+    };
+
+    function formatItemCode1WithQty(itemCodeRaw, qtyRaw) {
+      const codes = String(itemCodeRaw || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!codes.length) return "";
+      const qtyParts = String(qtyRaw || "")
+        .split(",")
+        .map((s) => s.trim());
+      const fallbackQty = String(qtyRaw || "").trim();
+      return codes
+        .map((code, i) => {
+          const upper = code.toUpperCase();
+          const label = ITEM_CODE1_LABELS[upper] || code;
+          let q = "";
+          if (qtyParts[i] !== undefined && qtyParts[i] !== "") {
+            q = qtyParts[i];
+          } else if (qtyParts.length === 1 && qtyParts[0] !== "") {
+            q = qtyParts[0];
+          } else if (codes.length === 1 && fallbackQty) {
+            q = fallbackQty;
+          }
+          return q ? `${label} ${q}` : label;
+        })
+        .join(", ");
+    }
+
+    const escapeHtml = (v) =>
+      (v || "")
+        .toString()
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+
+    function text(node, tag) {
+      const el = node.getElementsByTagName(tag)[0];
+      return (el && el.textContent ? el.textContent : "").trim();
+    }
+
+    async function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file, "utf-8");
+      });
+    }
+
+    function parseXml(xmlString) {
+      return new DOMParser().parseFromString(xmlString, "application/xml");
+    }
+
+    function buildTraceMap(gitXmlDoc) {
+      const map = new Map();
+      const guests = gitXmlDoc.getElementsByTagName("G_GUEST_NAME");
+      for (const guest of guests) {
+        const room = text(guest, "ROOM");
+        const trace = text(guest, "TRACE_TEXT");
+        if (!room || !trace) continue;
+        if (!map.has(room)) map.set(room, []);
+        const arr = map.get(room);
+        if (!arr.includes(trace)) arr.push(trace);
+      }
+      return map;
+    }
+
+    function itemCode1FromReportRow(reportEl) {
+      for (let p = reportEl.parentElement; p; p = p.parentElement) {
+        if (p.tagName === "G_ITEM_CODE1") {
+          return text(p, "ITEM_CODE1");
+        }
+      }
+      return "";
+    }
+
+    function buildDataFrame(invXmlDoc, traceMap) {
+      const rows = [];
+      const reports = invXmlDoc.getElementsByTagName("G_REPORT_ID");
+      for (const row of reports) {
+        const truncArrival = text(row, "TRUNC_ARRIVAL");
+        if (!isTruncArrivalToday(truncArrival)) continue;
+        const room = text(row, "ROOM");
+        if (!room) continue;
+        const roomTail = Number.parseInt(room.slice(-2), 10);
+        const building = Number.isNaN(roomTail)
+          ? ""
+          : roomTail <= 50
+            ? "본관동"
+            : "별관동";
+        rows.push({
+          originalIndex: rows.length,
+          building,
+          room,
+          confirmationNo: text(row, "CONFIRMATION_NO"),
+          itemCode1: itemCode1FromReportRow(row),
+          reservedQty1: text(row, "RESERVED_QTY1"),
+          trace: (traceMap.get(room) || []).join(" | ")
+        });
+      }
+      return rows;
+    }
+
+    function compareValue(a, b, key, order) {
+      const av = (a[key] || "").toString();
+      const bv = (b[key] || "").toString();
+      const dir = order === "asc" ? 1 : -1;
+      const cmp = av.localeCompare(bv, "ko", { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp * dir;
+      return (a.originalIndex - b.originalIndex) * dir;
+    }
+
+    function sortByState(rows, side) {
+      const { key, order } = sortState[side];
+      if (!key || !order) {
+        return rows.slice().sort((a, b) => a.originalIndex - b.originalIndex);
+      }
+      return rows.slice().sort((a, b) => compareValue(a, b, key, order));
+    }
+
+    function updateSortHeaderMarks() {
+      for (const th of sortableHeaders) {
+        const side = th.dataset.side;
+        const key = th.dataset.key;
+        const state = sortState[side];
+        if (state.key !== key || !state.order) {
+          th.dataset.orderMark = "";
+        } else {
+          th.dataset.orderMark = state.order === "asc" ? "▲" : "▼";
+        }
+      }
+    }
+
+    function renderRows() {
+      const mainRows = sortByState(dataframeRows.filter((r) => r.building === "본관동"), "main");
+      const annexRows = sortByState(dataframeRows.filter((r) => r.building === "별관동"), "annex");
+      const rowCount = Math.max(mainRows.length, annexRows.length);
+      const toCells = (r, idx) =>
+        r
+          ? `
+              <td class="seq-col">${idx + 1}</td>
+              <td class="room-col">${escapeHtml(r.room)}</td>
+              <td class="confirmation-col">${escapeHtml(r.confirmationNo)}</td>
+              <td class="item-col">${escapeHtml(formatItemCode1WithQty(r.itemCode1, r.reservedQty1))}</td>
+              <td class="remark">${escapeHtml(r.trace)}</td>
+            `
+          : `
+              <td class="seq-col"></td>
+              <td class="room-col"></td>
+              <td class="confirmation-col"></td>
+              <td class="item-col"></td>
+              <td></td>
+            `;
+
+      let html = "";
+      for (let i = 0; i < rowCount; i += 1) {
+        html += `
+          <tr>
+            ${toCells(mainRows[i], i)}
+            ${toCells(annexRows[i], i)}
+          </tr>
+        `;
+      }
+      tbody.innerHTML = html;
+
+      const matched = dataframeRows.filter((r) => r.trace).length;
+      const todayStr = todayTruncArrivalString();
+      todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${todayStr}`;
+      meta.textContent = `전체 rows: ${dataframeRows.length}, 트레이스 매칭: ${matched}, 본관동: ${mainRows.length}, 별관동: ${annexRows.length}`;
+    }
+
+    loadBtn.addEventListener("click", async () => {
+      const invFile = selectedInvFile || invFileEl.files[0];
+      const gitFile = selectedGitFile || gitFileEl.files[0];
+      if (!invFile || !gitFile) {
+        meta.textContent = "Inventory XML과 Gitraces XML을 모두 선택해 주세요.";
+        return;
+      }
+
+      try {
+        meta.textContent = "XML 파싱 중...";
+        const invXmlText = await readFileAsText(invFile);
+        const gitXmlText = await readFileAsText(gitFile);
+        const invDoc = parseXml(invXmlText);
+        const gitDoc = parseXml(gitXmlText);
+        const traceMap = buildTraceMap(gitDoc);
+        dataframeRows = buildDataFrame(invDoc, traceMap);
+        renderRows();
+      } catch (err) {
+        meta.textContent = `오류: ${err && err.message ? err.message : err}`;
+      }
+    });
+
+    invUploadBtn.addEventListener("click", () => invFileEl.click());
+    gitUploadBtn.addEventListener("click", () => gitFileEl.click());
+
+    invFileEl.addEventListener("change", () => {
+      selectedInvFile = invFileEl.files[0] || null;
+      const name = selectedInvFile ? selectedInvFile.name : "선택된 파일 없음";
+      invFileNameEl.textContent = name;
+    });
+
+    gitFileEl.addEventListener("change", () => {
+      selectedGitFile = gitFileEl.files[0] || null;
+      const name = selectedGitFile ? selectedGitFile.name : "선택된 파일 없음";
+      gitFileNameEl.textContent = name;
+    });
+
+    function assignDroppedFile(file) {
+      const name = (file.name || "").toLowerCase();
+      if (!name.endsWith(".xml")) return false;
+      if (name.includes("gitraces") || name.includes("trace")) {
+        selectedGitFile = file;
+        gitFileNameEl.textContent = file.name;
+        return true;
+      }
+      if (name.includes("inventory") || name.includes("forecast") || !selectedInvFile) {
+        selectedInvFile = file;
+        invFileNameEl.textContent = file.name;
+        return true;
+      }
+      if (!selectedGitFile) {
+        selectedGitFile = file;
+        gitFileNameEl.textContent = file.name;
+        return true;
+      }
+      return false;
+    }
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.add("active");
+      });
+    });
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("active");
+      });
+    });
+    dropZone.addEventListener("drop", (e) => {
+      const files = Array.from(e.dataTransfer.files || []);
+      if (!files.length) return;
+      let assigned = 0;
+      for (const file of files) {
+        if (assignDroppedFile(file)) assigned += 1;
+      }
+      meta.textContent = assigned
+        ? `드롭 완료: ${assigned}개 파일 인식됨. "만들기"를 누르세요.`
+        : "XML 파일만 업로드할 수 있습니다.";
+    });
+
+    sortableHeaders.forEach((th) => {
+      th.addEventListener("click", () => {
+        const side = th.dataset.side;
+        const key = th.dataset.key;
+        const state = sortState[side];
+
+        if (state.key !== key || state.order === null) {
+          state.key = key;
+          state.order = "asc";
+        } else if (state.order === "asc") {
+          state.order = "desc";
+        } else {
+          state.key = null;
+          state.order = null;
+        }
+        updateSortHeaderMarks();
+        renderRows();
+      });
+    });
+
+    updateSortHeaderMarks();
+    todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${todayTruncArrivalString()}`;
+  </script>
+</body>
+</html>

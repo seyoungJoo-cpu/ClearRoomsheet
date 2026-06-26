@@ -13,7 +13,7 @@ services:
     name: makeroom
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: git submodule update --init --recursive 2>/dev/null; npm install
     startCommand: npm start
     healthCheckPath: /health
     envVars:

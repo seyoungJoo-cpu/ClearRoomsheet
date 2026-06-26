@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DD 고객 확인 문자 도우미</title>
+  <style>
+    :root {
+      --bg: #eef2ff;
+      --card: #ffffff;
+      --line: #d6def2;
+      --text: #1e2a3a;
+      --muted: #66748a;
+      --primary: #3258ff;
+      --primary-soft: #eef2ff;
+      --danger: #e04141;
+      --ok: #1f8f45;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Malgun Gothic", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      width: min(1580px, 98vw);
+      margin: 26px auto 44px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    .sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 320px 1fr;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(35, 64, 130, 0.08);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    textarea, input[type="text"], input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fff;
+    }
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #fff;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #3258ff 0%, #5f7bff 100%);
+      color: #fff;
+      border-color: #3258ff;
+    }
+    button.ghost {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: #cfe0ff;
+    }
+    .stat {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #f8faff;
+    }
+    .kpi strong { font-size: 18px; }
+    .kpi small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+    }
+    .status {
+      font-size: 13px;
+      margin: 6px 0 12px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      background: #f8faff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid #8c98b0;
+      border-radius: 0;
+      overflow: hidden;
+      table-layout: fixed;
+    }
+    .result-table th, .result-table td {
+      border: 1px solid #8c98b0;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 15px;
+      vertical-align: middle;
+    }
+    .result-table th {
+      background: #b6bfce;
+      font-size: 15px;
+      color: #111827;
+      font-weight: 700;
+    }
+    .result-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    .result-table th.sortable:hover {
+      background: #a9b4c6;
+    }
+    .result-table td {
+      background: #f4f6d3;
+      font-weight: 600;
+    }
+    .result-table td.idx-cell {
+      width: 34px;
+      background: #e8edf8;
+      font-size: 16px;
+    }
+    .result-table td.room-cell {
+      width: 72px;
+      background: #e8edf8;
+      font-size: 20px;
+    }
+    .result-table th.copy-head,
+    .result-table td.copy-cell {
+      width: 76px;
+      background: #eef3ff;
+    }
+    .result-table th.trace-head,
+    .result-table td.trace-cell {
+      width: 42%;
+      text-align: left;
+      padding-left: 10px;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .result-table th.c171-head,
+    .result-table td.c171-cell {
+      width: 120px;
+      background: #eef3ff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .result-table th.room-status-head,
+    .result-table td.room-status-cell {
+      width: 130px;
+      background: #eef3ff;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .room-status-badge {
+      display: inline-block;
+      min-width: 38px;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-weight: 700;
+      color: #1e2a3a;
+    }
+    .room-status-ip { background: #dcfce7; }   /* 연초록 */
+    .room-status-di { background: #fee2e2; }   /* 연빨강 */
+    .room-status-pu { background: #fef9c3; }   /* 연노랑 */
+    .room-status-cl { background: #e0f2fe; }   /* 하늘색 */
+    .result-table td.phone-cell {
+      width: 760px;
+      font-size: 17px;
+      letter-spacing: 0.5px;
+    }
+    .no-phone-text {
+      font-size: 11px;
+      color: #1e2a3a;
+      font-weight: 600;
+    }
+    .phone-copy-btn {
+      margin-left: 6px;
+      border: 1px solid #c7d3ec;
+      background: #f5f8ff;
+      color: #2f4dbd;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .ok { color: var(--ok); font-weight: 600; }
+    .warn { color: var(--danger); font-weight: 600; }
+    .hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-note {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #6f7f99;
+    }
+    .paste-zone {
+      margin-top: 8px;
+      border: 1px dashed #a9b7db;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #f8faff;
+      color: #4b5c7a;
+      font-size: 13px;
+    }
+    .paste-zone.active {
+      border-color: #4c6dff;
+      background: #edf2ff;
+    }
+    .xml-drop-zone {
+      margin-top: 8px;
+      border: 2px dashed #8c9fd4;
+      border-radius: 12px;
+      padding: 18px 14px;
+      background: #f8faff;
+      color: #3d4f6f;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      line-height: 1.5;
+      user-select: none;
+    }
+    .xml-drop-zone .xml-drop-sub {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #6f7f99;
+    }
+    .xml-drop-zone.active {
+      border-color: #4c6dff;
+      background: #edf2ff;
+    }
+    .xml-assigned-summary {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #4b5c7a;
+      line-height: 1.45;
+    }
+    .footer-link {
+      margin-top: 14px;
+      font-size: 14px;
+    }
+    .footer-link a {
+      color: #2f4dbd;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 950px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(160deg, #dfe8ff 0%, #eef2ff 45%, #f8faff 100%);
+    }
+    .auth-gate.hidden {
+      display: none;
+    }
+    .auth-card {
+      width: min(400px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 14px 32px rgba(35, 64, 130, 0.12);
+      text-align: center;
+    }
+    .auth-card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .auth-card p {
+      margin: 0 0 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .auth-card input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 15px;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+    .auth-card button {
+      width: 100%;
+      border: 1px solid #3258ff;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #3258ff 0%, #5f7bff 100%);
+      color: #fff;
+    }
+    .auth-error {
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    body.locked {
+      overflow: hidden;
+    }
+    body.locked .app-main {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="locked">
+  <div id="auth-gate" class="auth-gate" aria-hidden="false">
+    <div class="auth-card">
+      <h2>DD 도우미 접근</h2>
+      <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
+      <form id="auth-form" autocomplete="off">
+        <label for="auth-password" class="sr-only">비밀번호</label>
+        <input id="auth-password" type="password" placeholder="비밀번호" required autofocus>
+        <button type="submit">확인</button>
+      </form>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="wrap app-main">
+    <h1>DD(Do not Disturb) 고객 확인 문자 도우미</h1>
+    <p class="sub">DD 고객이 실수로 누른 경우를 확인하기 위한 문자 발송 대상 관리 페이지</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>입력</h2>
+        <label for="photo1">1) DD 명단 사진 업로드 #1</label>
+        <input id="photo1" type="file" accept="image/*" autocomplete="off">
+        <div id="pasteZone1" class="paste-zone" tabindex="0">또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)</div>
+        <div class="btn-row">
+          <button class="primary" id="extractBtn1">업로드 #1 (DD 객실번호 추출)</button>
+          <button id="resetUpload1Btn">초기화 #1</button>
+        </div>
+        <div class="hint">사진 업로드 또는 붙여넣기 후 버튼을 누르면 DD 객실번호를 자동 추출해 아래 목록에 추가합니다.</div>
+
+        <label for="photo2" style="margin-top: 10px;">1-2) DD 명단 사진 업로드 #2</label>
+        <input id="photo2" type="file" accept="image/*" autocomplete="off">
+        <div id="pasteZone2" class="paste-zone" tabindex="0">또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)</div>
+        <div class="btn-row">
+          <button class="primary" id="extractBtn2">업로드 #2 (DD 객실번호 추출)</button>
+          <button id="resetUpload2Btn">초기화 #2</button>
+        </div>
+
+        <label for="ddRooms" style="margin-top: 10px;">2) DD 객실번호 목록 (쉼표, 공백, 줄바꿈 가능)</label>
+        <textarea id="ddRooms" placeholder="예: 0177, 0933, 1023"></textarea>
+
+        <div style="margin-top: 10px;">
+          <label for="xmlBundleInput">3) XML 파일 (한 곳에 드래그 앤 드롭 또는 클릭)</label>
+          <div id="xmlDropZone" class="xml-drop-zone" tabindex="0" role="button" aria-label="XML 파일 드롭 영역">
+            여기에 XML 파일을 드래그 앤 드롭하세요.
+            <span class="xml-drop-sub">파일명에 <strong>landscape</strong> → 휴대폰번호, <strong>gitraces</strong> → TRACE, <strong>resroomplan</strong> → 객실정비 상태 (자동 분류)</span>
+          </div>
+          <input id="xmlBundleInput" type="file" accept=".xml,text/xml,application/xml" multiple style="display: none;">
+          <div id="xmlAssignedSummary" class="xml-assigned-summary"></div>
+          <div class="btn-row" style="margin-top: 8px;">
+            <button type="button" id="clearXmlBtn">XML 선택 초기화</button>
+          </div>
+        </div>
+
+        <label for="template" style="margin-top: 10px;">4) 문자 템플릿 ({ROOM}, {NAME})</label>
+        <textarea id="template">안녕하십니까 고객님
+롯데호텔 제주입니다.
+
+다름이 아니라 현재 고객님께서
+투숙하고 계신 객실에 방해하지
+말라는 DO NOT DISTURB 버튼이
+켜져 있어 객실 청소를 도와드리지
+못하였습니다.
+간혹 이 버튼이 잘못 켜지는 경우가
+있어 문자 드립니다.
+
+저희 호텔은 오후 5시까지 청소를
+도와드리고 있으며 이후 시간대에는
+쓰레기 수거 및 타올 교체와 같은
+약식 서비스를 도와 드리고 있습니다.
+
+청소를 원하시거나 그외 문의사항이
+있으신 경우 호텔 인포메이션 대표번호
+064-731-1000 혹은 객실에서
+전화하실 경우 0번을 눌러주시면
+즉시 도움을 드릴 수 있도록
+하겠습니다. 감사합니다.
+오늘도 좋은 하루 되십시오.</textarea>
+
+        <div class="btn-row">
+          <button class="primary" id="runBtn">DD 대상 추출</button>
+          <button class="ghost" id="copyTemplateBtn">문자 템플릿 복사</button>
+        </div>
+        <div class="hint">전화번호는 자동으로 정규화됩니다. (예: 821012345678 -> 01012345678)</div>
+      </section>
+
+      <section class="card">
+        <div class="stat">
+          <div class="kpi"><strong id="kpiRooms">0</strong><small>DD 객실</small></div>
+          <div class="kpi"><strong id="kpiFound">0</strong><small>번호 매칭 성공</small></div>
+          <div class="kpi"><strong id="kpiMissing">0</strong><small>번호 없음</small></div>
+        </div>
+
+        <div class="status" id="status">XML을 드롭(또는 선택)한 뒤 "DD 대상 추출"을 눌러주세요.</div>
+        <div class="btn-row" style="margin: 0 0 8px;">
+          <button class="ghost" id="copyPhoneOnlyBtn">전화번호만 복사</button>
+        </div>
+
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort-key="idx" data-label="구분">구분</th>
+              <th class="sortable" data-sort-key="room" data-label="객실번호">객실번호</th>
+              <th class="sortable" data-sort-key="contact" data-label="연락처">연락처</th>
+              <th class="copy-head">복사</th>
+              <th class="c171-head sortable" data-sort-key="c171" data-label="상태">상태</th>
+              <th class="trace-head sortable" data-sort-key="trace" data-label="TRACE">TRACE</th>
+              <th class="room-status-head sortable" data-sort-key="roomStatus" data-label="객실정비상태">객실정비상태</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+
+      </section>
+    </div>
+    <div class="footer-link">
+      <a href="https://neoloris.hotel.lotte.net/gerp.web/action/login.do" target="_blank" rel="noopener noreferrer">네오로리스</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    // 필요 시 아래 비밀번호를 변경하세요.
+    const ACCESS_PASSWORD = "74321";
+    const AUTH_STORAGE_KEY = "dd_html_unlocked";
+
+    const authGate = document.getElementById("auth-gate");
+    const authForm = document.getElementById("auth-form");
+    const authPassword = document.getElementById("auth-password");
+    const authError = document.getElementById("auth-error");
+
+    function unlockApp() {
+      document.body.classList.remove("locked");
+      authGate.classList.add("hidden");
+      authGate.setAttribute("aria-hidden", "true");
+      sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+    }
+
+    function showAuthError(message) {
+      authError.textContent = message;
+    }
+
+    authForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const value = authPassword.value;
+      if (value === ACCESS_PASSWORD) {
+        showAuthError("");
+        unlockApp();
+        return;
+      }
+      showAuthError("비밀번호가 올바르지 않습니다.");
+      authPassword.value = "";
+      authPassword.focus();
+    });
+
+    if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+      unlockApp();
+    }
+
+    const xmlDropZone = document.getElementById("xmlDropZone");
+    const xmlBundleInput = document.getElementById("xmlBundleInput");
+    const xmlAssignedSummary = document.getElementById("xmlAssignedSummary");
+    const clearXmlBtn = document.getElementById("clearXmlBtn");
+    let assignedPhoneXml = null;
+    let assignedTraceXml = null;
+    let assignedRoomStatusXml = null;
+    const ddRooms = document.getElementById("ddRooms");
+    const template = document.getElementById("template");
+    const photo1 = document.getElementById("photo1");
+    const photo2 = document.getElementById("photo2");
+    const pasteZone1 = document.getElementById("pasteZone1");
+    const pasteZone2 = document.getElementById("pasteZone2");
+    const extractBtn1 = document.getElementById("extractBtn1");
+    const extractBtn2 = document.getElementById("extractBtn2");
+    const resetUpload1Btn = document.getElementById("resetUpload1Btn");
+    const resetUpload2Btn = document.getElementById("resetUpload2Btn");
+    const runBtn = document.getElementById("runBtn");
+    const copyTemplateBtn = document.getElementById("copyTemplateBtn");
+    const copyPhoneOnlyBtn = document.getElementById("copyPhoneOnlyBtn");
+    const tbody = document.getElementById("tbody");
+    const statusEl = document.getElementById("status");
+    const kpiRooms = document.getElementById("kpiRooms");
+    const kpiFound = document.getElementById("kpiFound");
+    const kpiMissing = document.getElementById("kpiMissing");
+    const sortHeaders = Array.from(document.querySelectorAll(".result-table th.sortable"));
+
+    let currentRows = [];
+    let sortState = { key: null, direction: "asc" };
+    let pastedImageBlob1 = null;
+    let pastedImageBlob2 = null;
+    function normalizeRoom(value) {
+      const digits = (value || "").toString().replace(/\D/g, "");
+      if (!digits) return "";
+      return digits.padStart(4, "0").slice(-4);
+    }
+
+    function normalizePhone(raw) {
+      if (!raw) return "";
+      const digits = raw.replace(/\D/g, "");
+      if (!digits) return "";
+
+      if (digits.startsWith("8210") && digits.length >= 12) {
+        return "0" + digits.slice(2, 12);
+      }
+      if (digits.startsWith("010")) {
+        return digits.slice(0, 11);
+      }
+      return "";
+    }
+
+    function parseRooms(text) {
+      return Array.from(
+        new Set(
+          text
+            .split(/[\s,]+/)
+            .map(normalizeRoom)
+            .filter(Boolean)
+        )
+      );
+    }
+
+    function appendRoomsToList(newRooms) {
+      const existing = parseRooms(ddRooms.value);
+      const merged = Array.from(new Set([...existing, ...newRooms]));
+      ddRooms.value = merged.join(", ");
+      return {
+        addedCount: merged.length - existing.length,
+        totalCount: merged.length
+      };
+    }
+
+    function parseDdRoomsFromOcr(text) {
+      const rooms = [];
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+      lines.forEach((line) => {
+        if (/객실번호|연락처|구분|DND|C_I\/O/i.test(line)) return;
+        const normalized = line.replace(/[oO]/g, "0");
+        const compact = normalized.replace(/\s+/g, "");
+
+        // Case 0: 객실명 단일 컬럼 (예: 0917)
+        const onlyRoom = compact.match(/^(\d{3,4})$/);
+        if (onlyRoom) {
+          const room = normalizeRoom(onlyRoom[1]);
+          if (room !== "0000") rooms.push(room);
+          return;
+        }
+
+        // Case 1: "1 933 8210..." 형태 (순번 + 객실번호 + 연락처)
+        const indexed = normalized.match(/^\D*\d{1,2}\D+(\d{3,4})\D+\d{8,}/);
+        if (indexed) {
+          rooms.push(normalizeRoom(indexed[1]));
+          return;
+        }
+
+        // Case 2: "933 8210..." 형태 (객실번호 + 연락처)
+        const roomThenPhone = normalized.match(/^\D*(\d{3,4})\D+\d{8,}/);
+        if (roomThenPhone) {
+          rooms.push(normalizeRoom(roomThenPhone[1]));
+        }
+      });
+
+      return Array.from(new Set(rooms.filter((room) => room && room !== "0000")));
+    }
+
+    function readXmlFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("XML 파일을 읽는 중 오류가 발생했습니다."));
+        reader.readAsText(file, "UTF-8");
+      });
+    }
+
+    function classifyXmlFileName(fileName) {
+      const n = (fileName || "").toLowerCase();
+      if (n.includes("landscape")) return "phone";
+      if (n.includes("gitraces")) return "trace";
+      if (n.includes("resroomplan")) return "room";
+      return null;
+    }
+
+    function updateXmlAssignedSummary() {
+      const parts = [];
+      if (assignedPhoneXml) parts.push(`휴대폰번호: ${assignedPhoneXml.name}`);
+      if (assignedTraceXml) parts.push(`TRACE: ${assignedTraceXml.name}`);
+      if (assignedRoomStatusXml) parts.push(`객실정비 상태: ${assignedRoomStatusXml.name}`);
+      xmlAssignedSummary.innerHTML = parts.length
+        ? parts.map((p) => `• ${p}`).join("<br>")
+        : "• 등록된 XML 없음 (파일명에 landscape / gitraces / resroomplan 포함)";
+    }
+
+    function processXmlFileList(fileList) {
+      const raw = Array.from(fileList || []);
+      const xmlFiles = raw.filter((f) => {
+        const name = (f.name || "").toLowerCase();
+        return name.endsWith(".xml") || f.type === "text/xml" || f.type === "application/xml";
+      });
+      if (!xmlFiles.length) {
+        statusEl.textContent = "XML 파일(.xml)만 넣어주세요.";
+        return;
+      }
+      const unclassified = [];
+      for (const file of xmlFiles) {
+        const slot = classifyXmlFileName(file.name);
+        if (slot === "phone") assignedPhoneXml = file;
+        else if (slot === "trace") assignedTraceXml = file;
+        else if (slot === "room") assignedRoomStatusXml = file;
+        else unclassified.push(file.name);
+      }
+      updateXmlAssignedSummary();
+      if (unclassified.length) {
+        statusEl.textContent = `분류되지 않은 파일: ${unclassified.join(", ")} (파일명에 landscape / gitraces / resroomplan 필요)`;
+      } else {
+        statusEl.textContent = `XML ${xmlFiles.length}개 반영했습니다.`;
+      }
+    }
+
+    function resetXmlAssignmentsQuiet() {
+      assignedPhoneXml = null;
+      assignedTraceXml = null;
+      assignedRoomStatusXml = null;
+      xmlBundleInput.value = "";
+      updateXmlAssignedSummary();
+    }
+
+    function clearAssignedXml() {
+      resetXmlAssignmentsQuiet();
+      statusEl.textContent = "XML 선택을 초기화했습니다.";
+    }
+
+    function parseXmlToMap(xmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlText, "text/xml");
+      const parserError = doc.querySelector("parsererror");
+      if (parserError) {
+        throw new Error("XML 파싱에 실패했습니다. 파일 형식을 확인해주세요.");
+      }
+
+      const map = new Map();
+      const nodes = doc.querySelectorAll("G_C123");
+
+      nodes.forEach((node) => {
+        const room = normalizeRoom(node.querySelector("C129")?.textContent || "");
+        const firstName = (node.querySelector("C135")?.textContent || "").trim();
+        const lastName = (node.querySelector("C138")?.textContent || "").trim();
+        const name = [firstName, lastName].filter(Boolean).join(" ").trim() || "(이름 없음)";
+        const phoneRaw = (node.querySelector("C168")?.textContent || "").trim();
+        const phone = normalizePhone(phoneRaw);
+        const statusC170 = (node.querySelector("C170")?.textContent || "").trim();
+        const statusC171 = (node.querySelector("C171")?.textContent || "").trim();
+        const statusRaw =
+          (node.querySelector("RESV_STATUS")?.textContent || "") +
+          " " +
+          (node.querySelector("STATUS")?.textContent || "") +
+          " " +
+          (node.querySelector("RESV STATUS")?.textContent || "") +
+          " " +
+          statusC170 +
+          " " +
+          statusC171;
+        const statusCode = (node.querySelector("C165")?.textContent || "").trim().toUpperCase();
+        const dueOutPattern = /due\s*out|dueout|du\s*out|duout|d\/o|due-out|due_out|check\s*out|checkout|co\s*today|today\s*co|금일\s*체크아웃|당일\s*체크아웃/i;
+        const checkInPattern = /check(?:ed)?\s*in|체크인/i;
+        const statusText = `${statusC171} ${statusC170} ${statusRaw}`;
+        // C171/C170 텍스트를 우선 신뢰: CHECK IN이면 due-out으로 보지 않음.
+        const isDueOut = dueOutPattern.test(statusText) && !checkInPattern.test(statusC171);
+        if (!room) return;
+
+        const score = phone ? 1 : 0;
+        const prev = map.get(room);
+        if (!prev || score >= prev.score) {
+          map.set(room, { room, name, phone, score, isDueOut, c171Value: statusC171 || "-" });
+        }
+      });
+      return map;
+    }
+
+    function parseTraceXmlToMap(xmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlText, "text/xml");
+      const parserError = doc.querySelector("parsererror");
+      if (parserError) {
+        throw new Error("TRACE XML 파싱에 실패했습니다. 파일 형식을 확인해주세요.");
+      }
+
+      const map = new Map();
+      const nodes = doc.querySelectorAll("G_GUEST_NAME");
+      nodes.forEach((node) => {
+        const room = normalizeRoom(node.querySelector("ROOM")?.textContent || "");
+        const trace = (node.querySelector("TRACE_TEXT")?.textContent || "").trim();
+        if (!room || !trace) return;
+        if (!map.has(room)) {
+          map.set(room, trace);
+        } else {
+          map.set(room, `${map.get(room)} / ${trace}`);
+        }
+      });
+      return map;
+    }
+
+    function parseRoomStatusXmlToMap(xmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlText, "text/xml");
+      const parserError = doc.querySelector("parsererror");
+      if (parserError) {
+        throw new Error("객실 정비 상태 XML 파싱에 실패했습니다. 파일 형식을 확인해주세요.");
+      }
+
+      const map = new Map();
+      const statusNodes = Array.from(doc.querySelectorAll("ROOM_STATUS"));
+      statusNodes.forEach((statusNode) => {
+        const statusText = (statusNode.textContent || "").trim();
+        if (!statusText) return;
+        const parent = statusNode.parentElement;
+        const room = normalizeRoom(
+          parent?.querySelector("C129")?.textContent ||
+          parent?.querySelector("ROOM")?.textContent ||
+          parent?.querySelector("ROOM_NO")?.textContent ||
+          parent?.querySelector("ROOM_NUM")?.textContent ||
+          ""
+        );
+        if (!room || map.has(room)) return;
+        map.set(room, statusText);
+      });
+      return map;
+    }
+
+    function renderRows(rows) {
+      tbody.innerHTML = "";
+      rows.forEach((r, idx) => {
+        const tr = document.createElement("tr");
+        const contactText = r.contactText || r.phone || "전화번호 없음";
+        const contactHtml = (contactText === "전화번호 없음" || contactText === "당일 체크아웃 예정")
+          ? `<span class="no-phone-text">${contactText}</span>`
+          : contactText;
+        const c171Text = r.c171Value || "-";
+        const roomStatusText = r.roomStatus || "-";
+        const roomStatusKey = roomStatusText.toUpperCase();
+        const roomStatusClass = {
+          IP: "room-status-ip",
+          DI: "room-status-di",
+          PU: "room-status-pu",
+          CL: "room-status-cl"
+        }[roomStatusKey] || "";
+        const roomStatusHtml = roomStatusClass
+          ? `<span class="room-status-badge ${roomStatusClass}">${roomStatusText}</span>`
+          : roomStatusText;
+        const traceText = r.traceText || "-";
+        tr.innerHTML = `
+          <td class="idx-cell">${idx + 1}</td>
+          <td class="room-cell">${Number(r.room)}</td>
+          <td class="phone-cell">${contactHtml}</td>
+          <td class="copy-cell">${r.phone ? `<button class="phone-copy-btn" data-phone="${r.phone}">복사</button>` : "-"}</td>
+          <td class="c171-cell">${c171Text}</td>
+          <td class="trace-cell">${traceText}</td>
+          <td class="room-status-cell">${roomStatusHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll(".phone-copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          copyText(btn.dataset.phone || "", "전화번호를 복사했습니다.");
+          btn.textContent = "재복사";
+        });
+      });
+    }
+
+    function normalizeSortText(value) {
+      return (value || "").toString().trim().toLowerCase();
+    }
+
+    function sortRows(rows) {
+      if (!sortState.key) return [...rows];
+
+      const sorted = [...rows].sort((a, b) => {
+        let aValue = "";
+        let bValue = "";
+
+        if (sortState.key === "idx") {
+          aValue = Number(a.sourceIndex ?? 0);
+          bValue = Number(b.sourceIndex ?? 0);
+        } else if (sortState.key === "room") {
+          aValue = Number(a.room || 0);
+          bValue = Number(b.room || 0);
+        } else if (sortState.key === "contact") {
+          aValue = normalizeSortText(a.contactText || a.phone || "");
+          bValue = normalizeSortText(b.contactText || b.phone || "");
+        } else if (sortState.key === "trace") {
+          aValue = normalizeSortText(a.traceText || "");
+          bValue = normalizeSortText(b.traceText || "");
+        } else if (sortState.key === "c171") {
+          aValue = normalizeSortText(a.c171Value || "");
+          bValue = normalizeSortText(b.c171Value || "");
+        } else if (sortState.key === "roomStatus") {
+          aValue = normalizeSortText(a.roomStatus || "");
+          bValue = normalizeSortText(b.roomStatus || "");
+        }
+
+        if (aValue < bValue) return sortState.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortState.direction === "asc" ? 1 : -1;
+        return Number(a.sourceIndex ?? 0) - Number(b.sourceIndex ?? 0);
+      });
+
+      return sorted;
+    }
+
+    function updateSortHeaderUi() {
+      sortHeaders.forEach((th) => {
+        const label = th.dataset.label || th.textContent || "";
+        const isActive = sortState.key === th.dataset.sortKey;
+        const arrow = isActive ? (sortState.direction === "asc" ? " ▲" : " ▼") : "";
+        th.textContent = `${label}${arrow}`;
+      });
+    }
+
+    function renderCurrentRows() {
+      renderRows(sortRows(currentRows));
+      updateSortHeaderUi();
+    }
+
+    function bindSortHandlers() {
+      sortHeaders.forEach((th) => {
+        th.addEventListener("click", () => {
+          const clickedKey = th.dataset.sortKey;
+          if (!clickedKey) return;
+          if (sortState.key === clickedKey) {
+            if (sortState.direction === "asc") {
+              sortState.direction = "desc";
+            } else {
+              sortState.key = null;
+              sortState.direction = "asc";
+            }
+          } else {
+            sortState.key = clickedKey;
+            sortState.direction = "asc";
+          }
+          renderCurrentRows();
+        });
+      });
+      updateSortHeaderUi();
+    }
+
+    function selectedRows() {
+      return currentRows.filter((row) => row.rowType === "dd" && !!row.phone);
+    }
+
+    async function runMatch() {
+      try {
+        if (!assignedPhoneXml) {
+          alert("휴대폰번호 XML을 넣어주세요. (파일명에 landscape 포함)");
+          return;
+        }
+        const rooms = parseRooms(ddRooms.value);
+        if (!rooms.length) {
+          alert("DD 객실번호를 1개 이상 입력해주세요.");
+          return;
+        }
+
+        statusEl.textContent = "XML 분석 중...";
+        const xmlText = await readXmlFile(assignedPhoneXml);
+        const roomMap = parseXmlToMap(xmlText);
+        let traceMap = new Map();
+        let roomStatusMap = new Map();
+        if (assignedTraceXml) {
+          const traceXmlText = await readXmlFile(assignedTraceXml);
+          traceMap = parseTraceXmlToMap(traceXmlText);
+        }
+        if (assignedRoomStatusXml) {
+          const roomStatusXmlText = await readXmlFile(assignedRoomStatusXml);
+          roomStatusMap = parseRoomStatusXmlToMap(roomStatusXmlText);
+        }
+
+        const ddRows = rooms.map((room, index) => {
+          const found = roomMap.get(room);
+          if (!found) {
+            return { room, name: "(매칭 실패)", phone: "", rowType: "dd", contactText: "전화번호 없음", c171Value: "빈방", roomStatus: roomStatusMap.get(room) || "-", traceText: traceMap.get(room) || "-", sourceIndex: index };
+          }
+          if (found.isDueOut) {
+            return { ...found, phone: "", rowType: "dd", contactText: "당일 체크아웃 예정", roomStatus: roomStatusMap.get(room) || "-", traceText: traceMap.get(room) || "-", sourceIndex: index };
+          }
+          if (!found.phone) {
+            return { ...found, rowType: "dd", contactText: "전화번호 없음", roomStatus: roomStatusMap.get(room) || "-", traceText: traceMap.get(room) || "-", sourceIndex: index };
+          }
+          return { ...found, rowType: "dd", contactText: found.phone, roomStatus: roomStatusMap.get(room) || "-", traceText: traceMap.get(room) || "-", sourceIndex: index };
+        });
+
+        currentRows = ddRows;
+        renderCurrentRows();
+
+        const foundCount = ddRows.filter((r) => r.phone).length;
+        const missingCount = ddRows.length - foundCount;
+        kpiRooms.textContent = String(ddRows.length);
+        kpiFound.textContent = String(foundCount);
+        kpiMissing.textContent = String(missingCount);
+        statusEl.textContent = `완료: DD ${ddRows.length}개 객실 기준으로 번호 ${foundCount}개 매칭, ${missingCount}개 전화번호 없음`;
+      } catch (error) {
+        statusEl.textContent = "오류: " + error.message;
+      }
+    }
+
+    async function extractDdRoomsFromPhoto(sourceNumber) {
+      try {
+        const fileInput = sourceNumber === 1 ? photo1 : photo2;
+        const pastedImageBlob = sourceNumber === 1 ? pastedImageBlob1 : pastedImageBlob2;
+        const actionBtn = sourceNumber === 1 ? extractBtn1 : extractBtn2;
+        const imageSource = fileInput.files[0] || pastedImageBlob;
+        if (!imageSource) {
+          alert("DD 명단 사진을 업로드하거나 캡처 이미지를 붙여넣어주세요.");
+          return;
+        }
+        if (!window.Tesseract) {
+          alert("OCR 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.");
+          return;
+        }
+
+        actionBtn.disabled = true;
+        statusEl.textContent = `사진 #${sourceNumber} OCR 분석 중... (몇 초~수십 초 소요)`;
+        const result = await window.Tesseract.recognize(imageSource, "eng+kor");
+        const rooms = parseDdRoomsFromOcr(result.data?.text || "");
+
+        if (!rooms.length) {
+          statusEl.textContent = "사진에서 객실번호를 찾지 못했습니다. 사진을 더 선명하게 올리거나 직접 입력해주세요.";
+          return;
+        }
+        const merged = appendRoomsToList(rooms);
+        statusEl.textContent = `사진 #${sourceNumber} 분석 완료: ${rooms.length}개 추출, DD 목록에 ${merged.addedCount}개 추가 (총 ${merged.totalCount}개)`;
+      } catch (error) {
+        statusEl.textContent = "사진 분석 오류: " + error.message;
+      } finally {
+        const actionBtn = sourceNumber === 1 ? extractBtn1 : extractBtn2;
+        actionBtn.disabled = false;
+      }
+    }
+
+    async function copyText(value, okText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        statusEl.textContent = okText;
+      } catch (_) {
+        alert("클립보드 복사에 실패했습니다. 브라우저 권한을 확인해주세요.");
+      }
+    }
+
+    function attachPasteHandler(pasteZone, sourceNumber) {
+      pasteZone.addEventListener("paste", (event) => {
+        const items = event.clipboardData?.items || [];
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            if (sourceNumber === 1) {
+              pastedImageBlob1 = file;
+              photo1.value = "";
+            } else {
+              pastedImageBlob2 = file;
+              photo2.value = "";
+            }
+            pasteZone.textContent = `캡처 이미지 #${sourceNumber}이(가) 붙여넣어졌습니다. 이제 '업로드 #${sourceNumber}' 버튼을 누르세요.`;
+            statusEl.textContent = `붙여넣은 이미지 #${sourceNumber}를 인식할 준비가 되었습니다.`;
+            event.preventDefault();
+            return;
+          }
+        }
+        statusEl.textContent = `붙여넣기 #${sourceNumber}에서 이미지를 찾지 못했습니다.`;
+      });
+      pasteZone.addEventListener("focus", () => pasteZone.classList.add("active"));
+      pasteZone.addEventListener("blur", () => pasteZone.classList.remove("active"));
+    }
+
+    xmlDropZone.addEventListener("click", () => xmlBundleInput.click());
+    xmlDropZone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        xmlBundleInput.click();
+      }
+    });
+    xmlDropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      xmlDropZone.classList.add("active");
+    });
+    xmlDropZone.addEventListener("dragleave", (e) => {
+      if (!xmlDropZone.contains(e.relatedTarget)) xmlDropZone.classList.remove("active");
+    });
+    xmlDropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      xmlDropZone.classList.remove("active");
+      processXmlFileList(e.dataTransfer?.files);
+    });
+    xmlBundleInput.addEventListener("change", () => {
+      processXmlFileList(xmlBundleInput.files);
+      xmlBundleInput.value = "";
+    });
+    clearXmlBtn.addEventListener("click", clearAssignedXml);
+
+    runBtn.addEventListener("click", runMatch);
+    extractBtn1.addEventListener("click", () => extractDdRoomsFromPhoto(1));
+    extractBtn2.addEventListener("click", () => extractDdRoomsFromPhoto(2));
+    resetUpload1Btn.addEventListener("click", () => {
+      photo1.value = "";
+      pastedImageBlob1 = null;
+      pasteZone1.textContent = "또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)";
+      statusEl.textContent = "업로드 #1 입력을 초기화했습니다.";
+    });
+    resetUpload2Btn.addEventListener("click", () => {
+      photo2.value = "";
+      pastedImageBlob2 = null;
+      pasteZone2.textContent = "또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)";
+      statusEl.textContent = "업로드 #2 입력을 초기화했습니다.";
+    });
+    attachPasteHandler(pasteZone1, 1);
+    attachPasteHandler(pasteZone2, 2);
+    photo1.addEventListener("change", () => {
+      if (photo1.files[0]) {
+        pastedImageBlob1 = null;
+        pasteZone1.textContent = "파일 업로드 #1이 선택되었습니다. 필요하면 여기서 Ctrl+V로 캡처를 붙여넣을 수 있습니다.";
+      }
+    });
+    photo2.addEventListener("change", () => {
+      if (photo2.files[0]) {
+        pastedImageBlob2 = null;
+        pasteZone2.textContent = "파일 업로드 #2가 선택되었습니다. 필요하면 여기서 Ctrl+V로 캡처를 붙여넣을 수 있습니다.";
+      }
+    });
+    copyTemplateBtn.addEventListener("click", () => {
+      const text = template.value.trim();
+      if (!text) {
+        alert("복사할 문자 템플릿 내용이 없습니다.");
+        return;
+      }
+      copyText(text, "문자 템플릿을 복사했습니다.");
+    });
+    copyPhoneOnlyBtn.addEventListener("click", () => {
+      const text = selectedRows().map((r) => r.phone).join("\n");
+      if (!text) {
+        alert("복사할 전화번호가 없습니다.");
+        return;
+      }
+      copyText(text, "전화번호만 복사했습니다.");
+    });
+    bindSortHandlers();
+    resetXmlAssignmentsQuiet();
+    window.addEventListener("load", () => {
+      photo1.value = "";
+      photo2.value = "";
+      resetXmlAssignmentsQuiet();
+      pastedImageBlob1 = null;
+      pastedImageBlob2 = null;
+      pasteZone1.textContent = "또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)";
+      pasteZone2.textContent = "또는 캡처 이미지를 여기에 붙여넣기 (Ctrl+V)";
+    });
+  </script>
+</body>
+</html>
