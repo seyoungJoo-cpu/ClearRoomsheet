@@ -7010,7 +7010,7 @@
           vacRows.forEach(function (row) {
             var nr = normalizeRoomDigits(row.room);
             var label = formatFoStatusDisplay(row.foStatus);
-            if (nr && label === "IN") m[nr] = "IN";
+            if (nr && (label === "IN" || label === "O")) m[nr] = label;
           });
         }
         if (roomResvMap && typeof roomResvMap === "object") {
@@ -7019,17 +7019,21 @@
             var val = roomResvMap[key];
             if (!nr || val == null) return;
             var label = formatFoStatusDisplay(val) || String(val).trim();
-            if (label === "IN") m[nr] = "IN";
+            if (label === "IN" || label === "O") m[nr] = label;
           });
         }
         return m;
       }
 
-      function lookupRoomResvDisplay(roomInput) {
+      function lookupRoomFoStatus(roomInput) {
         var nr = roomNumberForStatusLookup(roomInput);
         if (!nr) return "";
         var val = XML_ROOM_RESV_MAP[nr] || "";
-        return val === "IN" ? "IN" : "";
+        return val === "O" || val === "IN" ? val : "";
+      }
+
+      function lookupRoomResvDisplay(roomInput) {
+        return lookupRoomFoStatus(roomInput) === "IN" ? "IN" : "";
       }
 
       function resvBadgeClass(label) {
@@ -9731,7 +9735,7 @@
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
-          "· 타입(MNDDM) 입실 가능한 객실 (IP 우선, 없으면 정비 예정 빠른 순)\n" +
+          "· 타입(MNDDM) 입실 가능한 객실 (IP·O 우선, 없으면 정비 예정 빠른 순)\n" +
           "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
           "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
@@ -10275,7 +10279,7 @@
             appendAiChatBotResponse(
               "TYPE " +
                 intent.typeCode +
-                " · 입실 가능(IP) 객실 " +
+                " · 입실 가능(IP·O) 객실 " +
                 checkinResult.rooms.length +
                 "개",
               checkinResult.rooms
@@ -10285,7 +10289,7 @@
           appendAiChatBotResponse(
             "TYPE " +
               intent.typeCode +
-              " · IP 없음 → 정비 예정 빠른 순 (" +
+              " · IP·O 없음 → 정비 예정 빠른 순 (" +
               checkinResult.rooms.length +
               "개)",
             checkinResult.rooms
@@ -10675,8 +10679,7 @@
       function isAiRoomCheckInReady(roomNr, status) {
         var st = normalizeRoomStatus(status);
         if (st !== "IP") return false;
-        if (lookupRoomResvDisplay(roomNr) === "IN") return false;
-        return true;
+        return lookupRoomFoStatus(roomNr) === "O";
       }
 
       function mapAiTypeRoomRow(r, etaLabel, availableNow) {
@@ -10717,14 +10720,14 @@
             mode: "ready",
             typeCode: typeCode,
             rooms: ready.map(function (r) {
-              return mapAiTypeRoomRow(r, "입실 가능 (IP)", true);
+              return mapAiTypeRoomRow(r, "입실 가능 (IP·O)", true);
             }),
           };
         }
         var pending = all.filter(function (r) {
           var st = normalizeRoomStatus(r.status);
           if (!st || st === "OO" || st === "OS") return false;
-          if (lookupRoomResvDisplay(r.room) === "IN") return false;
+          if (lookupRoomFoStatus(r.room) === "IN") return false;
           return true;
         });
         var sorted = sortAiRoomsBySched(pending);
