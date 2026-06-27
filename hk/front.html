@@ -6,10 +6,6 @@
   <title>정비관리 · Lotte Hotel</title>
   <script src="hk-entry-guard.js"></script>
   <link rel="stylesheet" href="hk-theme.css" />
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.9/dist/xspreadsheet.css"
-  />
   <style>
     :root {
       --sidebar-w: 176px;
@@ -2958,47 +2954,116 @@
       font-weight: 500;
     }
 
-    /* 인벤 통보 — x-spreadsheet */
+    /* 인벤 통보 — 이미지 보드 */
     .inven-notify-panel {
       display: flex;
       flex-direction: column;
       min-height: 0;
-    }
-
-    .inven-notify-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      align-items: start;
-      min-width: 0;
     }
 
-    .inven-notify-wing-host {
-      min-width: 0;
-      min-height: 540px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      overflow: hidden;
+    .inven-notify-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+    }
+
+    .inven-notify-toolbar__hint {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .inven-notify-btn-delete:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .inven-notify-board {
+      position: relative;
+      flex: 1;
+      min-height: calc(100vh - 240px);
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      overflow: auto;
+      outline: none;
+    }
+
+    .inven-notify-board:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .inven-notify-board--readonly {
+      border-style: solid;
+      background: #f1f5f9;
+    }
+
+    .inven-notify-board__empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+      font-size: 0.9375rem;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .inven-notify-board__empty[hidden] {
+      display: none !important;
+    }
+
+    .inven-notify-img-item {
+      position: absolute;
+      box-sizing: border-box;
       background: #fff;
+      border: 2px solid rgba(148, 163, 184, 0.5);
+      border-radius: 4px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+      cursor: grab;
+      touch-action: none;
     }
 
-    .inven-notify-wing-host .x-spreadsheet {
-      width: 100% !important;
+    .inven-notify-img-item:active {
+      cursor: grabbing;
     }
 
-    .inven-notify-load-error {
-      margin: 12px 0;
-      padding: 12px;
-      border-radius: 8px;
-      background: #fef2f2;
-      color: #b91c1c;
-      font-size: 0.875rem;
+    .inven-notify-img-item.is-selected {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25), 0 8px 24px rgba(15, 23, 42, 0.15);
     }
 
-    @media (max-width: 960px) {
-      .inven-notify-grid {
-        grid-template-columns: 1fr;
-      }
+    .inven-notify-board--readonly .inven-notify-img-item {
+      cursor: default;
+    }
+
+    .inven-notify-img-item img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 2px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .inven-notify-resize-handle {
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 16px;
+      height: 16px;
+      background: #2563eb;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      cursor: se-resize;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      z-index: 2;
     }
 
     .mb-workflow__subhead {
@@ -5566,7 +5631,7 @@
         <p class="order-panel__hint" id="invenNotifyHint">
           조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
         </p>
-        <div class="inven-notify-sheet" id="invenNotifySheet"></div>
+        <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
 
       <section class="order-panel mb-check-panel" id="mbCheckPanel" hidden aria-labelledby="mbCheckPanelTitle">
@@ -5855,10 +5920,10 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
   <script src="hk-sync.js"></script>
+  <script src="hk-alert-ack.js"></script>
   <script src="hk-chat-colors.js"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/x-data-spreadsheet@1.1.9/dist/xspreadsheet.js"></script>
   <script src="hk-inven-notify.js"></script>
   <script>
     (function () {
@@ -7226,10 +7291,30 @@
         } catch (e) {}
       }
 
+      function mergeAlertAckFromStorage() {
+        if (typeof HKAlertAck === "undefined") return;
+        HKAlertAck.mergeInto({
+          knownRequestAlertKeys: knownRequestAlertKeys,
+          knownOrderAlertIds: knownOrderAlertIds,
+          knownOrderIssueIds: knownOrderIssueIds,
+          knownMbInvAlertKeys: knownMbInvAlertKeys,
+          knownMbInvIssueIds: knownMbInvIssueIds,
+          knownMbCheckAlertKeys: knownMbCheckAlertKeys,
+          knownMbCheckAcceptedIds: knownMbCheckAcceptedIds,
+          knownMbCheckGstIds: knownMbCheckGstIds,
+          knownFrontChatIds: knownFrontChatIds,
+        });
+      }
+
       function isRoomChangeDismissed(zone, room) {
         var latest = getLatestRoomChangeEntry(zone, room);
         if (!latest || !latest.id) return true;
-        var dismissedId = loadRoomBlinkDismissMap()[roomAlertKey(zone, room)];
+        var key = roomAlertKey(zone, room);
+        var dismissedId = loadRoomBlinkDismissMap()[key];
+        if (typeof HKAlertAck !== "undefined") {
+          var persisted = HKAlertAck.getZoneRoomDismissId(key);
+          if (persisted !== undefined) dismissedId = persisted;
+        }
         return dismissedId === latest.id;
       }
 
@@ -7270,11 +7355,18 @@
 
       function isRequestModifyAcked(entryId, sig) {
         if (!entryId) return false;
+        if (typeof HKAlertAck !== "undefined") {
+          var stored = HKAlertAck.getRequestModifySig(entryId);
+          if (stored !== undefined && stored === sig) return true;
+        }
         return loadRequestModifyAcks()[entryId] === sig;
       }
 
       function ackRequestModifySignature(entryId, sig) {
         if (!entryId || sig == null) return;
+        if (typeof HKAlertAck !== "undefined") {
+          HKAlertAck.markRequestModify(entryId, sig);
+        }
         var map = loadRequestModifyAcks();
         map[entryId] = sig;
         saveRequestModifyAcks(map);
@@ -7974,6 +8066,9 @@
           var dismissMap = loadRoomBlinkDismissMap();
           dismissMap[key] = latest.id;
           saveRoomBlinkDismissMap(dismissMap);
+          if (typeof HKAlertAck !== "undefined") {
+            HKAlertAck.markZoneRoomDismiss(key, latest.id);
+          }
           ackChangeId(latest.id);
         }
         delete pendingRoomAlerts[key];
@@ -9146,6 +9241,16 @@
         updateSidebarPrimaryNavActive();
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
+          requestAnimationFrame(function () {
+            var board = document.getElementById("invenNotifyBoard");
+            if (
+              board &&
+              typeof HKInvenNotify !== "undefined" &&
+              HKInvenNotify.isFrontModeActive()
+            ) {
+              board.focus();
+            }
+          });
         }
         if (showAi) {
           requestAnimationFrame(function () {
@@ -11041,6 +11146,7 @@
             knownOrderAlertIds[entry.id] = true;
           }
         });
+        mergeAlertAckFromStorage();
       }
 
       function isRequestPendingAlert(entry) {
@@ -11099,6 +11205,7 @@
           }
           knownRequestSnapshots[entry.id] = requestContentSignature(entry);
         });
+        mergeAlertAckFromStorage();
       }
 
       function applyRequestSidebarAlertUi() {
@@ -11113,6 +11220,10 @@
 
       function registerRequestAlert(key) {
         if (!key) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasRequestKey(key)) {
+          knownRequestAlertKeys[key] = true;
+          return;
+        }
         knownRequestAlertKeys[key] = true;
         if (sidebarMainView !== "request") {
           pendingRequestAlert = true;
@@ -11154,28 +11265,35 @@
             ackRequestModifySignature(id, requestContentSignature(entry));
           }
         });
-        pendingRequestAlert = false;
-        pendingRequestModifyAlert = false;
-        pendingRequestModifyIds = {};
         requestLogEntries.forEach(function (entry) {
           if (!entry || !entry.id) return;
           if (isRequestPendingAlert(entry)) {
-            knownRequestAlertKeys[requestAlertKey(entry)] = true;
+            var rkey = requestAlertKey(entry);
+            knownRequestAlertKeys[rkey] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markRequestKey(rkey);
           }
-          knownRequestSnapshots[entry.id] = requestContentSignature(entry);
+          var sig = requestContentSignature(entry);
+          knownRequestSnapshots[entry.id] = sig;
+          if (isScheduledRequestEntry(entry) && typeof HKAlertAck !== "undefined") {
+            HKAlertAck.markRequestModify(entry.id, sig);
+          }
         });
+        pendingRequestAlert = false;
+        pendingRequestModifyAlert = false;
+        pendingRequestModifyIds = {};
         applyRequestSidebarAlertUi();
       }
 
       function rebuildRequestModifyAlerts() {
-        var ackMap = loadRequestModifyAcks();
         requestLogEntries.forEach(function (entry) {
           if (!entry || !entry.id || !isScheduledRequestEntry(entry)) return;
-          if (!Object.prototype.hasOwnProperty.call(ackMap, entry.id)) return;
           var sig = requestContentSignature(entry);
-          if (ackMap[entry.id] !== sig) {
-            registerRequestModifyAlert(entry.id, true);
-          }
+          var hadAck =
+            (typeof HKAlertAck !== "undefined" && HKAlertAck.hasRequestModify(entry.id)) ||
+            Object.prototype.hasOwnProperty.call(loadRequestModifyAcks(), entry.id);
+          if (!hadAck) return;
+          if (isRequestModifyAcked(entry.id, sig)) return;
+          registerRequestModifyAlert(entry.id, true);
         });
       }
 
@@ -11222,6 +11340,11 @@
       }
 
       function clearFrontChatSidebarAlert() {
+        frontChatMessages.forEach(function (msg, idx) {
+          var mid = getFrontChatMessageId(msg, idx);
+          if (typeof HKAlertAck !== "undefined") HKAlertAck.markFrontChatId(mid);
+          knownFrontChatIds[mid] = true;
+        });
         pendingFrontChatAlert = false;
         applyFrontChatSidebarAlertUi();
       }
@@ -11238,6 +11361,10 @@
 
       function registerOrderIssueAlert(entryId) {
         if (!entryId) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasOrderIssueId(entryId)) {
+          knownOrderIssueIds[entryId] = true;
+          return;
+        }
         knownOrderIssueIds[entryId] = true;
         if (sidebarMainView !== "order") {
           pendingOrderIssueAlert = true;
@@ -11247,6 +11374,10 @@
 
       function registerOrderAlert(entryId) {
         if (!entryId) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasOrderId(entryId)) {
+          knownOrderAlertIds[entryId] = true;
+          return;
+        }
         knownOrderAlertIds[entryId] = true;
         if (sidebarMainView !== "order") {
           pendingOrderAlert = true;
@@ -11255,6 +11386,17 @@
       }
 
       function clearOrderSidebarAlerts() {
+        orderLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getOrderPhase(entry) === "alert") {
+            knownOrderAlertIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markOrderId(entry.id);
+          }
+          if (isOrderIssueOpen(entry)) {
+            knownOrderIssueIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markOrderIssueId(entry.id);
+          }
+        });
         pendingOrderIssueAlert = false;
         pendingOrderAlert = false;
         applyOrderSidebarAlertUi();
@@ -11343,6 +11485,7 @@
             knownMbCheckGstIds[entry.id] = true;
           }
         });
+        mergeAlertAckFromStorage();
       }
 
       function applyMbSidebarAlertUi() {
@@ -11364,6 +11507,10 @@
 
       function registerMbInvAlert(key) {
         if (!key) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasMbInvKey(key)) {
+          knownMbInvAlertKeys[key] = true;
+          return;
+        }
         knownMbInvAlertKeys[key] = true;
         if (sidebarMainView !== "mbInv") {
           pendingMbInvAlert = true;
@@ -11373,6 +11520,10 @@
 
       function registerMbInvIssue(entryId) {
         if (!entryId) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasMbInvIssueId(entryId)) {
+          knownMbInvIssueIds[entryId] = true;
+          return;
+        }
         knownMbInvIssueIds[entryId] = true;
         if (sidebarMainView !== "mbInv") {
           pendingMbInvIssue = true;
@@ -11382,6 +11533,10 @@
 
       function registerMbCheckAlert(key) {
         if (!key) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasMbCheckKey(key)) {
+          knownMbCheckAlertKeys[key] = true;
+          return;
+        }
         knownMbCheckAlertKeys[key] = true;
         if (sidebarMainView !== "mbCheck") {
           pendingMbCheckAlert = true;
@@ -11391,6 +11546,10 @@
 
       function registerMbCheckAccepted(entryId) {
         if (!entryId) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasMbCheckAcceptedId(entryId)) {
+          knownMbCheckAcceptedIds[entryId] = true;
+          return;
+        }
         knownMbCheckAcceptedIds[entryId] = true;
         if (sidebarMainView !== "mbCheck") {
           pendingMbCheckAccepted = true;
@@ -11400,6 +11559,10 @@
 
       function registerMbCheckGst(entryId) {
         if (!entryId) return;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasMbCheckGstId(entryId)) {
+          knownMbCheckGstIds[entryId] = true;
+          return;
+        }
         knownMbCheckGstIds[entryId] = true;
         if (sidebarMainView !== "mbCheck") {
           pendingMbCheckGst = true;
@@ -11408,12 +11571,48 @@
       }
 
       function clearMbInvSidebarAlerts() {
+        var entries =
+          typeof HKSync !== "undefined" && HKSync.getMbInvLog
+            ? HKSync.getMbInvLog()
+            : [];
+        entries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbInvPhase(entry) === "alert") {
+            var key = mbInvAlertKey(entry);
+            knownMbInvAlertKeys[key] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markMbInvKey(key);
+          }
+          if (isMbInvIssueOpen(entry)) {
+            knownMbInvIssueIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markMbInvIssueId(entry.id);
+          }
+        });
         pendingMbInvAlert = false;
         pendingMbInvIssue = false;
         applyMbSidebarAlertUi();
       }
 
       function clearMbCheckSidebarAlerts() {
+        var entries =
+          typeof HKSync !== "undefined" && HKSync.getMbCheckLog
+            ? HKSync.getMbCheckLog()
+            : [];
+        entries.forEach(function (entry) {
+          if (!entry || !entry.id) return;
+          if (getMbCheckPhase(entry) === "alert") {
+            var key = mbCheckAlertKey(entry);
+            knownMbCheckAlertKeys[key] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markMbCheckKey(key);
+          }
+          if (getMbCheckPhase(entry) === "accepted") {
+            knownMbCheckAcceptedIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markMbCheckAcceptedId(entry.id);
+          }
+          if (getMbCheckPhase(entry) === "gst") {
+            knownMbCheckGstIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markMbCheckGstId(entry.id);
+          }
+        });
         pendingMbCheckAlert = false;
         pendingMbCheckAccepted = false;
         pendingMbCheckGst = false;
@@ -13133,6 +13332,7 @@
         frontChatMessages.forEach(function (msg, idx) {
           knownFrontChatIds[getFrontChatMessageId(msg, idx)] = true;
         });
+        mergeAlertAckFromStorage();
       }
 
       function isViewingFrontChat() {
@@ -13228,6 +13428,10 @@
         frontChatMessages.forEach(function (msg, idx) {
           var mid = getFrontChatMessageId(msg, idx);
           if (knownFrontChatIds[mid]) return;
+          if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasFrontChatId(mid)) {
+            knownFrontChatIds[mid] = true;
+            return;
+          }
           knownFrontChatIds[mid] = true;
           if (!notify) return;
           var byNorm = msg.by != null ? String(msg.by).trim().toLowerCase() : "";
@@ -13589,6 +13793,7 @@
       initFrontChatTracking();
       initOrderIssueTracking();
       initRequestAlertTracking();
+      initMbWorkflowAlertTracking();
       applyOrderSidebarAlertUi();
       applyRequestSidebarAlertUi();
       applyFrontChatSidebarAlertUi();

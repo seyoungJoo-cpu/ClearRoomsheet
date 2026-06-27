@@ -1,185 +1,60 @@
 /**
- * 인벤 통보 — x-data-spreadsheet (셀 합치기/나누기 · 행·열 추가 · 크기 조절)
- * 프론트 모드에서만 편집
+ * 인벤 통보 — 이미지 보드 (붙여넣기 · 드래그 · 크기 조절, 프론트 모드만 편집)
  */
 (function (global) {
-  var COLS = 5;
-  var PRE_DATA_START = 3;
-  var PRE_DATA_ROWS = 6;
-  var AFTER_HDR_ROW = 10;
-  var AFTER_LABEL_ROW = 11;
-  var AFTER_DATA_START = 12;
-  var AFTER_DATA_ROWS = 18;
-  var DEFAULT_ROW_LEN = 55;
-  var SHEET_HEIGHT = 540;
-
   var saveTimer = null;
   var skipNextRemoteRender = false;
   var lastRenderEditable = null;
-  var instances = { main: null, annex: null };
+  var uiReady = false;
+  var interacting = false;
+  var selectedId = null;
 
-  function colLetter(c) {
-    var n = c + 1;
-    var s = "";
-    while (n > 0) {
-      var m = (n - 1) % 26;
-      s = String.fromCharCode(65 + m) + s;
-      n = Math.floor((n - 1) / 26);
-    }
-    return s;
+  var els = {
+    mount: null,
+    toolbar: null,
+    board: null,
+    empty: null,
+    fileInput: null,
+    btnPhoto: null,
+    btnDelete: null,
+    hint: null,
+  };
+
+  var state = { version: 3, images: [] };
+
+  function newId() {
+    return "inv-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
   }
 
-  function mergeRange(r, c, rs, cs) {
-    return colLetter(c) + (r + 1) + ":" + colLetter(c + cs - 1) + (r + rs);
-  }
-
-  function templateStyles() {
-    return [
-      { bgcolor: "#ffffff", align: "center", valign: "middle", bold: true, fontsize: 13 },
-      { bgcolor: "#f8cbad", align: "center", valign: "middle", bold: true, fontsize: 10 },
-      { bgcolor: "#ff99cc", align: "center", valign: "middle", bold: true },
-      { bgcolor: "#ffffff", align: "left", valign: "middle" },
-      { bgcolor: "#fce4d6", align: "center", valign: "middle", bold: true, fontsize: 10 },
-      { bgcolor: "#ff99cc", align: "center", valign: "middle", bold: true, fontsize: 11 },
-      { bgcolor: "#ffffff", align: "center", valign: "middle", color: "#64748b" },
-    ];
-  }
-
-  function mkCell(text, style, merge) {
-    var c = { text: text != null ? String(text) : "" };
-    if (style != null) c.style = style;
-    if (merge) c.merge = merge;
-    return c;
-  }
-
-  function ensureRowObj(rows, ri) {
-    if (!rows[ri]) rows[ri] = { cells: {} };
-    if (!rows[ri].cells) rows[ri].cells = {};
-    return rows[ri].cells;
-  }
-
-  function setSheetCell(sheet, ri, ci, text) {
-    var cells = ensureRowObj(sheet.rows, ri);
-    cells[ci] = mkCell(text, cells[ci] && cells[ci].style != null ? cells[ci].style : 3);
-  }
-
-  function buildTemplateSheet(wingLabel) {
-    var rows = {};
-    var merges = [
-      mergeRange(0, 0, 1, COLS),
-      mergeRange(1, 0, 1, COLS),
-      mergeRange(9, 0, 1, COLS),
-      mergeRange(AFTER_LABEL_ROW, 0, 1, COLS),
-    ];
-
-    ensureRowObj(rows, 0)[0] = mkCell(wingLabel, 0, [COLS, 1]);
-    ensureRowObj(rows, 1)[0] = mkCell(
-      "인벤 뽑기 전 투입 완료 객실 (VIP, 고객요청 등)",
-      1,
-      [COLS, 1]
-    );
-    ensureRowObj(rows, 2)[0] = mkCell("객실번호", 2);
-    ensureRowObj(rows, 2)[1] = mkCell("내용", 2);
-
-    var i;
-    for (i = 0; i < PRE_DATA_ROWS; i++) {
-      ensureRowObj(rows, PRE_DATA_START + i)[0] = mkCell("", 3);
-      ensureRowObj(rows, PRE_DATA_START + i)[1] = mkCell("", 3);
-    }
-
-    ensureRowObj(rows, 9)[0] = mkCell("14시 이후 어싸인 지정 및 두잉 통보건", 4, [COLS, 1]);
-    ensureRowObj(rows, AFTER_HDR_ROW)[0] = mkCell("", 2);
-    ensureRowObj(rows, AFTER_HDR_ROW)[1] = mkCell("객실번호", 2);
-    ensureRowObj(rows, AFTER_HDR_ROW)[2] = mkCell("예약번호", 2);
-    ensureRowObj(rows, AFTER_HDR_ROW)[3] = mkCell("내용", 2);
-    ensureRowObj(rows, AFTER_HDR_ROW)[4] = mkCell("17시기준 미투입", 2);
-    ensureRowObj(rows, AFTER_LABEL_ROW)[0] = mkCell(wingLabel, 5, [COLS, 1]);
-
-    for (i = 0; i < AFTER_DATA_ROWS; i++) {
-      var ri = AFTER_DATA_START + i;
-      ensureRowObj(rows, ri)[0] = mkCell(String(i + 1), 6);
-      ensureRowObj(rows, ri)[1] = mkCell("", 3);
-      ensureRowObj(rows, ri)[2] = mkCell("", 3);
-      ensureRowObj(rows, ri)[3] = mkCell("", 3);
-      ensureRowObj(rows, ri)[4] = mkCell("", 3);
-    }
-
+  function normalizeImage(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var src = raw.src != null ? String(raw.src).trim() : "";
+    if (!src) return null;
     return {
-      name: wingLabel,
-      merges: merges,
-      rows: rows,
-      styles: templateStyles(),
-      cols: {
-        0: { width: 42 },
-        1: { width: 76 },
-        2: { width: 92 },
-        3: { width: 168 },
-        4: { width: 108 },
-      },
+      id: raw.id ? String(raw.id) : newId(),
+      src: src,
+      x: typeof raw.x === "number" ? raw.x : parseFloat(raw.x) || 0,
+      y: typeof raw.y === "number" ? raw.y : parseFloat(raw.y) || 0,
+      w: Math.max(80, typeof raw.w === "number" ? raw.w : parseFloat(raw.w) || 400),
+      h: Math.max(60, typeof raw.h === "number" ? raw.h : parseFloat(raw.h) || 300),
+      zIndex: typeof raw.z === "number" ? raw.z : parseInt(raw.zIndex, 10) || 1,
     };
-  }
-
-  function fillLegacyWing(sheet, wing) {
-    if (!wing || typeof wing !== "object") return;
-    var pre = Array.isArray(wing.preInv) ? wing.preInv : [];
-    var after = Array.isArray(wing.after14) ? wing.after14 : [];
-    var i;
-    for (i = 0; i < pre.length && i < PRE_DATA_ROWS; i++) {
-      setSheetCell(sheet, PRE_DATA_START + i, 0, pre[i].room || "");
-      setSheetCell(sheet, PRE_DATA_START + i, 1, pre[i].content || "");
-    }
-    for (i = 0; i < after.length && i < AFTER_DATA_ROWS; i++) {
-      var ri = AFTER_DATA_START + i;
-      setSheetCell(sheet, ri, 1, after[i].room || "");
-      setSheetCell(sheet, ri, 2, after[i].resv || "");
-      setSheetCell(sheet, ri, 3, after[i].content || "");
-      setSheetCell(sheet, ri, 4, after[i].status17 || "");
-    }
-  }
-
-  function migrateLegacyToV2(data) {
-    return {
-      version: 2,
-      main: (function () {
-        var s = buildTemplateSheet("본관");
-        fillLegacyWing(s, data.main);
-        return s;
-      })(),
-      annex: (function () {
-        var s = buildTemplateSheet("별관");
-        fillLegacyWing(s, data.annex);
-        return s;
-      })(),
-    };
-  }
-
-  function isV2Sheet(sheet) {
-    return !!(sheet && sheet.rows && typeof sheet.rows === "object");
   }
 
   function normalizeInvenNotify(data) {
-    if (!data || typeof data !== "object") {
-      return {
-        version: 2,
-        main: buildTemplateSheet("본관"),
-        annex: buildTemplateSheet("별관"),
-      };
+    if (data && data.version >= 3 && Array.isArray(data.images)) {
+      var images = [];
+      data.images.forEach(function (img) {
+        var n = normalizeImage(img);
+        if (n) images.push(n);
+      });
+      return { version: 3, images: images };
     }
-    if (data.version >= 2 && isV2Sheet(data.main) && isV2Sheet(data.annex)) {
-      return { version: 2, main: data.main, annex: data.annex };
-    }
-    if (data.main || data.annex) {
-      return migrateLegacyToV2(data);
-    }
-    return {
-      version: 2,
-      main: buildTemplateSheet("본관"),
-      annex: buildTemplateSheet("별관"),
-    };
+    return { version: 3, images: [] };
   }
 
   function defaultInvenNotify() {
-    return normalizeInvenNotify(null);
+    return { version: 3, images: [] };
   }
 
   function loadInvenNotify() {
@@ -195,205 +70,458 @@
     global.HKStorage.save(storage);
   }
 
-  function getSpreadsheetApi() {
-    if (typeof global.x_spreadsheet === "function") return global.x_spreadsheet;
-    if (global.x_spreadsheet && typeof global.x_spreadsheet.default === "function") {
-      return global.x_spreadsheet.default;
-    }
-    return null;
-  }
-
   function isFrontModeActive() {
     var btn = document.getElementById("btnFront");
     return !!(btn && btn.classList.contains("is-on"));
   }
 
-  function getSheetDataFromInstance(inst) {
-    if (!inst || typeof inst.getData !== "function") return null;
-    var data = inst.getData();
-    if (Array.isArray(data) && data.length) return data[0];
-    if (data && data.rows) return data;
-    return null;
-  }
-
-  function collectFromInstances() {
-    return {
-      version: 2,
-      main:
-        getSheetDataFromInstance(instances.main) || buildTemplateSheet("본관"),
-      annex:
-        getSheetDataFromInstance(instances.annex) || buildTemplateSheet("별관"),
-    };
-  }
-
-  function scheduleSaveFromInstances() {
+  function scheduleSave() {
     if (!isFrontModeActive()) return;
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       saveTimer = null;
-      saveInvenNotify(collectFromInstances());
-    }, 500);
+      saveInvenNotify(state);
+    }, 400);
   }
 
-  function destroySpreadsheets() {
-    instances.main = null;
-    instances.annex = null;
-    var sheet = document.getElementById("invenNotifySheet");
-    if (sheet) sheet.innerHTML = "";
-  }
-
-  function createSpreadsheet(mountEl, sheetData, editable) {
-    var xsFn = getSpreadsheetApi();
-    if (!xsFn) return null;
-    var inst = xsFn(mountEl, {
-      mode: editable ? "edit" : "read",
-      showToolbar: editable,
-      showContextmenu: editable,
-      showGrid: true,
-      showBottomBar: false,
-      row: { len: DEFAULT_ROW_LEN, height: 26 },
-      col: { len: 12, width: 90, indexWidth: 48, minWidth: 32 },
-      view: {
-        height: function () {
-          return SHEET_HEIGHT;
-        },
-        width: function () {
-          return mountEl.clientWidth > 0 ? mountEl.clientWidth : 480;
-        },
-      },
-    });
-    inst.loadData(sheetData);
-    if (editable) {
-      inst.change(function () {
-        scheduleSaveFromInstances();
-      });
+  function compressImage(file, done) {
+    if (!file) return;
+    var mime = file.type ? String(file.type) : "";
+    if (mime.indexOf("image/") !== 0 && !(file instanceof Blob)) {
+      alert("이미지 파일만 붙여넣을 수 있습니다.");
+      return;
     }
-    return inst;
+    if (file.size > 8 * 1024 * 1024) {
+      alert("8MB 이하 이미지만 사용할 수 있습니다.");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var maxW = 1600;
+        var w = img.width;
+        var h = img.height;
+        if (w > maxW) {
+          h = Math.round(h * (maxW / w));
+          w = maxW;
+        }
+        var canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        var quality = 0.85;
+        var dataUrl = canvas.toDataURL("image/jpeg", quality);
+        while (dataUrl.length > 900000 && quality > 0.35) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+        if (dataUrl.length > 900000) {
+          alert("이미지가 너무 큽니다. 더 작은 사진을 사용해 주세요.");
+          return;
+        }
+        done(dataUrl, w, h);
+      };
+      img.onerror = function () {
+        alert("이미지를 읽을 수 없습니다.");
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function getBoardSize() {
+    if (!els.board) return { w: 800, h: 600 };
+    return {
+      w: els.board.clientWidth || 800,
+      h: els.board.clientHeight || 600,
+    };
+  }
+
+  function nextZIndex() {
+    var max = 0;
+    state.images.forEach(function (img) {
+      if (img.zIndex > max) max = img.zIndex;
+    });
+    return max + 1;
+  }
+
+  function addImageFromDataUrl(dataUrl, naturalW, naturalH, posX, posY) {
+    var board = getBoardSize();
+    var maxW = Math.min(board.w - 24, 1200);
+    var w = Math.min(naturalW || maxW, maxW);
+    var h = naturalH && naturalW ? Math.round(w * (naturalH / naturalW)) : Math.round(w * 0.75);
+    var x = typeof posX === "number" ? posX : Math.max(12, (board.w - w) / 2);
+    var y = typeof posY === "number" ? posY : 24 + state.images.length * 16;
+
+    state.images.push({
+      id: newId(),
+      src: dataUrl,
+      x: x,
+      y: y,
+      w: w,
+      h: h,
+      zIndex: nextZIndex(),
+    });
+    selectedId = state.images[state.images.length - 1].id;
+    renderImages();
+    updateEmpty();
+    updateToolbar();
+    scheduleSave();
+  }
+
+  function addImageFromFile(file, posX, posY) {
+    compressImage(file, function (dataUrl, w, h) {
+      addImageFromDataUrl(dataUrl, w, h, posX, posY);
+    });
+  }
+
+  function findImage(id) {
+    for (var i = 0; i < state.images.length; i++) {
+      if (state.images[i].id === id) return state.images[i];
+    }
+    return null;
+  }
+
+  function selectImage(id) {
+    selectedId = id;
+    if (!els.board) return;
+    els.board.querySelectorAll(".inven-notify-img-item").forEach(function (el) {
+      el.classList.toggle("is-selected", el.getAttribute("data-id") === id);
+    });
+    updateToolbar();
+  }
+
+  function deleteSelected() {
+    if (!selectedId || !isFrontModeActive()) return;
+    state.images = state.images.filter(function (img) {
+      return img.id !== selectedId;
+    });
+    selectedId = null;
+    renderImages();
+    updateEmpty();
+    updateToolbar();
+    scheduleSave();
+  }
+
+  function applyItemGeometry(el, img) {
+    el.style.left = img.x + "px";
+    el.style.top = img.y + "px";
+    el.style.width = img.w + "px";
+    el.style.height = img.h + "px";
+    el.style.zIndex = String(img.zIndex || 1);
+  }
+
+  function setupDrag(itemEl, img, editable) {
+    if (!editable) return;
+    itemEl.addEventListener("mousedown", function (e) {
+      if (!isFrontModeActive()) return;
+      if (e.target.classList.contains("inven-notify-resize-handle")) return;
+      e.preventDefault();
+      selectImage(img.id);
+      interacting = true;
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var origX = img.x;
+      var origY = img.y;
+
+      function onMove(ev) {
+        img.x = Math.max(0, origX + (ev.clientX - startX));
+        img.y = Math.max(0, origY + (ev.clientY - startY));
+        applyItemGeometry(itemEl, img);
+      }
+
+      function onUp() {
+        interacting = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        scheduleSave();
+      }
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  }
+
+  function setupResize(handleEl, itemEl, img, editable) {
+    if (!editable) return;
+    handleEl.addEventListener("mousedown", function (e) {
+      if (!isFrontModeActive()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      selectImage(img.id);
+      interacting = true;
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var origW = img.w;
+      var origH = img.h;
+
+      function onMove(ev) {
+        img.w = Math.max(80, origW + (ev.clientX - startX));
+        img.h = Math.max(60, origH + (ev.clientY - startY));
+        applyItemGeometry(itemEl, img);
+      }
+
+      function onUp() {
+        interacting = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        scheduleSave();
+      }
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  }
+
+  function renderImages() {
+    if (!els.board) return;
+    els.board.querySelectorAll(".inven-notify-img-item").forEach(function (n) {
+      n.remove();
+    });
+    var editable = isFrontModeActive();
+
+    state.images.forEach(function (img) {
+      var item = document.createElement("div");
+      item.className =
+        "inven-notify-img-item" + (img.id === selectedId ? " is-selected" : "");
+      item.setAttribute("data-id", img.id);
+      applyItemGeometry(item, img);
+
+      var image = document.createElement("img");
+      image.src = img.src;
+      image.alt = "인벤 통보 이미지";
+      image.draggable = false;
+      item.appendChild(image);
+
+      if (editable) {
+        var handle = document.createElement("span");
+        handle.className = "inven-notify-resize-handle";
+        handle.title = "크기 조절";
+        item.appendChild(handle);
+        setupResize(handle, item, img, editable);
+      }
+
+      setupDrag(item, img, editable);
+
+      item.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (editable) selectImage(img.id);
+      });
+
+      els.board.appendChild(item);
+    });
+  }
+
+  function updateEmpty() {
+    if (!els.empty) return;
+    els.empty.hidden = state.images.length > 0;
+  }
+
+  function updateToolbar() {
+    if (!els.toolbar) return;
+    var editable = isFrontModeActive();
+    els.toolbar.hidden = !editable;
+    if (els.btnDelete) {
+      els.btnDelete.disabled = !editable || !selectedId;
+    }
+  }
+
+  function updateHint() {
+    if (!els.hint) return;
+    els.hint.textContent = isFrontModeActive()
+      ? "보드를 클릭한 뒤 Ctrl+V로 이미지 붙여넣기 · 드래그로 이동 · 우하단 핸들로 크기 조절 · Del 키 또는 선택 삭제"
+      : "조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.";
+  }
+
+  function handlePaste(e) {
+    if (!isFrontModeActive()) return;
+    var panel = document.getElementById("invenNotifyPanel");
+    if (!panel || panel.hidden) return;
+    if (!els.board) return;
+
+    var file = null;
+    if (e.clipboardData && e.clipboardData.items) {
+      for (var i = 0; i < e.clipboardData.items.length; i++) {
+        var it = e.clipboardData.items[i];
+        if (it.type && it.type.indexOf("image") === 0) {
+          file = it.getAsFile();
+          break;
+        }
+      }
+    }
+    if (!file) return;
+    e.preventDefault();
+    addImageFromFile(file);
+  }
+
+  function handleKeydown(e) {
+    if (!isFrontModeActive()) return;
+    var panel = document.getElementById("invenNotifyPanel");
+    if (!panel || panel.hidden) return;
+    if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+      e.preventDefault();
+      deleteSelected();
+    }
+  }
+
+  function ensureUi() {
+    var mount = document.getElementById("invenNotifyMount");
+    if (!mount) return false;
+    if (uiReady && els.mount === mount) return true;
+
+    mount.innerHTML = "";
+
+    var toolbar = document.createElement("div");
+    toolbar.className = "inven-notify-toolbar";
+    toolbar.id = "invenNotifyToolbar";
+    toolbar.hidden = true;
+
+    var btnPhoto = document.createElement("button");
+    btnPhoto.type = "button";
+    btnPhoto.className = "hk-photo-btn";
+    btnPhoto.id = "btnInvenNotifyPhoto";
+    btnPhoto.textContent = "사진 추가";
+
+    var btnDelete = document.createElement("button");
+    btnDelete.type = "button";
+    btnDelete.className = "btn-order inven-notify-btn-delete";
+    btnDelete.id = "btnInvenNotifyDelete";
+    btnDelete.textContent = "선택 삭제";
+    btnDelete.disabled = true;
+
+    var toolbarHint = document.createElement("span");
+    toolbarHint.className = "inven-notify-toolbar__hint";
+    toolbarHint.textContent = "Ctrl+V 붙여넣기";
+
+    toolbar.appendChild(btnPhoto);
+    toolbar.appendChild(btnDelete);
+    toolbar.appendChild(toolbarHint);
+
+    var board = document.createElement("div");
+    board.className = "inven-notify-board";
+    board.id = "invenNotifyBoard";
+    board.setAttribute("tabindex", "0");
+    board.setAttribute("role", "application");
+    board.setAttribute("aria-label", "인벤 통보 이미지 보드");
+
+    var empty = document.createElement("p");
+    empty.className = "inven-notify-board__empty";
+    empty.id = "invenNotifyEmpty";
+    empty.textContent = "프론트 모드에서 Ctrl+V 또는 사진 추가로 이미지를 넣으세요.";
+    board.appendChild(empty);
+
+    var fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.id = "invenNotifyFileInput";
+    fileInput.hidden = true;
+
+    mount.appendChild(toolbar);
+    mount.appendChild(board);
+    mount.appendChild(fileInput);
+
+    els.mount = mount;
+    els.toolbar = toolbar;
+    els.board = board;
+    els.empty = empty;
+    els.fileInput = fileInput;
+    els.btnPhoto = btnPhoto;
+    els.btnDelete = btnDelete;
+    els.hint = document.getElementById("invenNotifyHint");
+
+    btnPhoto.addEventListener("click", function () {
+      if (!isFrontModeActive()) return;
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function () {
+      if (!fileInput.files || !fileInput.files[0]) return;
+      addImageFromFile(fileInput.files[0]);
+      fileInput.value = "";
+    });
+
+    btnDelete.addEventListener("click", function () {
+      deleteSelected();
+    });
+
+    board.addEventListener("click", function () {
+      if (!isFrontModeActive()) return;
+      board.focus();
+      selectedId = null;
+      board.querySelectorAll(".inven-notify-img-item").forEach(function (el) {
+        el.classList.remove("is-selected");
+      });
+      updateToolbar();
+    });
+
+    if (!uiReady) {
+      document.addEventListener("paste", handlePaste);
+      document.addEventListener("keydown", handleKeydown);
+    }
+
+    uiReady = true;
+    return true;
   }
 
   function isUserEditingInvenNotify() {
-    var active = document.activeElement;
-    if (!active || !active.closest) return false;
-    return !!active.closest("#invenNotifySheet, .x-spreadsheet");
-  }
-
-  function sheetHasContent(sheet) {
-    if (!sheet || !sheet.rows) return false;
-    return Object.keys(sheet.rows).some(function (rk) {
-      var row = sheet.rows[rk];
-      if (!row || !row.cells) return false;
-      return Object.keys(row.cells).some(function (ck) {
-        var cell = row.cells[ck];
-        var text = cell && cell.text != null ? String(cell.text).trim() : "";
-        return !!text;
-      });
-    });
+    return interacting;
   }
 
   function hasContent(data) {
-    var d = normalizeInvenNotify(data);
-    return sheetHasContent(d.main) || sheetHasContent(d.annex);
+    return normalizeInvenNotify(data).images.length > 0;
   }
 
   function exportFlatRows(invenNotify) {
-    var d = normalizeInvenNotify(invenNotify);
-    var out = [];
-    [["main", "본관"], ["annex", "별관"]].forEach(function (pair) {
-      var sheet = d[pair[0]];
-      if (!sheet || !sheet.rows) return;
-      Object.keys(sheet.rows)
-        .map(function (k) {
-          return parseInt(k, 10);
-        })
-        .sort(function (a, b) {
-          return a - b;
-        })
-        .forEach(function (ri) {
-          var row = sheet.rows[ri];
-          if (!row || !row.cells) return;
-          Object.keys(row.cells)
-            .map(function (k) {
-              return parseInt(k, 10);
-            })
-            .sort(function (a, b) {
-              return a - b;
-            })
-            .forEach(function (ci) {
-              var text =
-                row.cells[ci].text != null ? String(row.cells[ci].text).trim() : "";
-              if (!text) return;
-              out.push([pair[1], String(ri + 1), String(ci + 1), text]);
-            });
-        });
+    return normalizeInvenNotify(invenNotify).images.map(function (img, i) {
+      return [
+        String(i + 1),
+        Math.round(img.x) + "," + Math.round(img.y),
+        Math.round(img.w) + "×" + Math.round(img.h),
+        img.src ? "있음" : "—",
+      ];
     });
-    return out;
   }
 
   function renderInvenNotifyPanel(force) {
-    var sheetWrap = document.getElementById("invenNotifySheet");
-    var hint = document.getElementById("invenNotifyHint");
     var panel = document.getElementById("invenNotifyPanel");
-    if (!sheetWrap || !panel || panel.hidden) return;
+    if (!panel || panel.hidden) return;
+    if (!ensureUi()) return;
 
     if (saveTimer) {
       clearTimeout(saveTimer);
       saveTimer = null;
-      if (isFrontModeActive()) saveInvenNotify(collectFromInstances());
+      if (isFrontModeActive()) saveInvenNotify(state);
     }
 
     var editable = isFrontModeActive();
-    if (
-      lastRenderEditable &&
-      !editable &&
-      (instances.main || instances.annex)
-    ) {
-      saveInvenNotify(collectFromInstances());
-    }
-
     if (!force && skipNextRemoteRender) {
       skipNextRemoteRender = false;
       if (editable === lastRenderEditable && isUserEditingInvenNotify()) return;
     }
-    if (!force && isUserEditingInvenNotify() && editable) return;
+    if (!force && isUserEditingInvenNotify()) return;
 
-    var xsFn = getSpreadsheetApi();
-    if (!xsFn) {
-      sheetWrap.innerHTML =
-        '<p class="inven-notify-load-error">스프레드시트 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.</p>';
-      return;
+    if (force || !interacting) {
+      state = loadInvenNotify();
     }
 
-    var data = loadInvenNotify();
     lastRenderEditable = editable;
+    updateHint();
+    updateToolbar();
 
-    if (hint) {
-      hint.textContent = editable
-        ? "엑셀처럼 셀 편집 · 행/열 추가 · 합치기/나누기 · 크기 조절 (상단 도구 모음 · 우클릭). 저장은 자동 동기화됩니다."
-        : "조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.";
+    if (els.board) {
+      els.board.classList.toggle("inven-notify-board--readonly", !editable);
     }
 
-    destroySpreadsheets();
-
-    var grid = document.createElement("div");
-    grid.className = "inven-notify-grid";
-
-    var mainHost = document.createElement("div");
-    mainHost.className = "inven-notify-wing-host";
-    mainHost.setAttribute("data-wing", "main");
-    grid.appendChild(mainHost);
-
-    var annexHost = document.createElement("div");
-    annexHost.className = "inven-notify-wing-host";
-    annexHost.setAttribute("data-wing", "annex");
-    grid.appendChild(annexHost);
-
-    sheetWrap.appendChild(grid);
-
-    instances.main = createSpreadsheet(mainHost, data.main, editable);
-    instances.annex = createSpreadsheet(annexHost, data.annex, editable);
+    renderImages();
+    updateEmpty();
   }
 
   function initInvenNotify() {
+    ensureUi();
     renderInvenNotifyPanel(true);
   }
 
@@ -407,6 +535,5 @@
     isFrontModeActive: isFrontModeActive,
     hasContent: hasContent,
     exportFlatRows: exportFlatRows,
-    buildTemplateSheet: buildTemplateSheet,
   };
 })(typeof window !== "undefined" ? window : this);

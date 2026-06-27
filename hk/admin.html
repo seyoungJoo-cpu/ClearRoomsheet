@@ -1594,7 +1594,7 @@
           },
           {
             title: "인벤 통보",
-            headers: ["구분", "행", "열", "내용"],
+            headers: ["번호", "위치", "크기", "첨부"],
             rows: buildInvenNotifyExportRows(snapshot.data.invenNotify),
           },
           {
@@ -2426,9 +2426,31 @@
             : '<p class="report-empty">(MB & 인벤 공지 없음)</p>';
         }
         if (section.title === "인벤 통보") {
-          var invRows = buildInvenNotifyExportRows(snapshot.data.invenNotify);
-          if (!invRows.length) return '<p class="report-empty">(인벤 통보 없음)</p>';
-          return renderReportTableSection(section);
+          var invData =
+            typeof HKInvenNotify !== "undefined"
+              ? HKInvenNotify.normalizeInvenNotify(snapshot.data.invenNotify)
+              : { images: [] };
+          var imgs = invData.images || [];
+          if (!imgs.length) return '<p class="report-empty">(인벤 통보 없음)</p>';
+          var parts = ['<div class="inven-notify-report">'];
+          imgs.forEach(function (img, i) {
+            parts.push(
+              '<figure style="margin:0 0 16px;"><figcaption style="font-size:0.8125rem;color:var(--muted);margin-bottom:6px;">#' +
+                (i + 1) +
+                " · " +
+                Math.round(img.w) +
+                "×" +
+                Math.round(img.h) +
+                "</figcaption>" +
+                '<img src="' +
+                String(img.src).replace(/"/g, "&quot;") +
+                '" alt="인벤 통보 ' +
+                (i + 1) +
+                '" style="max-width:100%;border-radius:8px;border:1px solid var(--border);"></figure>'
+            );
+          });
+          parts.push("</div>");
+          return parts.join("");
         }
         if (section.title === "프론트 채팅") return renderReportFrontChatSection(snapshot);
         if (section.title === "오더") return renderReportOrderCards(snapshot);
