@@ -3142,6 +3142,238 @@
       max-height: calc(100vh - 140px);
     }
 
+    .sidebar-section--zones {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section--ai {
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section--ai .sidebar-nav {
+      padding: 8px 8px 10px;
+    }
+
+    .sidebar .sidebar-nav__btn#sidebarBtnAi.is-active {
+      background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+      border-color: #4338ca;
+      color: #fff;
+    }
+
+    .main.main--ai #aiModePanel {
+      flex: 1;
+      min-height: 0;
+      margin-bottom: 0;
+      max-height: none;
+    }
+
+    .ai-mode-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: min(640px, calc(100vh - 180px));
+      padding: 14px 16px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      margin-bottom: 12px;
+    }
+
+    .ai-mode-panel[hidden] {
+      display: none !important;
+    }
+
+    .ai-mode-panel h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      color: #4338ca;
+    }
+
+    .ai-mode-panel__hint {
+      margin: 0 0 10px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .ai-mode-chat {
+      flex: 1;
+      min-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      margin-bottom: 10px;
+    }
+
+    .ai-mode-msg {
+      max-width: 92%;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .ai-mode-msg--user {
+      align-self: flex-end;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 10px 10px 2px 10px;
+      padding: 8px 10px;
+      color: #312e81;
+    }
+
+    .ai-mode-msg--bot {
+      align-self: flex-start;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 10px 2px;
+      padding: 10px 12px;
+      color: var(--text);
+    }
+
+    .ai-mode-msg__summary {
+      margin: 0 0 8px;
+      font-weight: 600;
+      color: #4338ca;
+    }
+
+    .ai-mode-room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .ai-mode-room-grid .room-card {
+      margin: 0;
+    }
+
+    .ai-mode-room-grid .room-card__eta {
+      margin: 6px 0 0;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #4338ca;
+    }
+
+    .ai-mode-entry-card {
+      margin: 0;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .ai-mode-entry-card--order {
+      border-left: 4px solid #b91c1c;
+    }
+
+    .ai-mode-entry-card--request {
+      border-left: 4px solid #0f766e;
+    }
+
+    .ai-mode-entry-card--mb {
+      border-left: 4px solid #7c3aed;
+    }
+
+    .ai-mode-entry-card__head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 800;
+      font-size: 0.8125rem;
+    }
+
+    .ai-mode-entry-card__badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      font-size: 0.625rem;
+      font-weight: 700;
+    }
+
+    .ai-mode-entry-card__badge--urgent {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .ai-mode-entry-card__line {
+      margin: 3px 0 0;
+      color: var(--text-muted);
+      font-size: 0.6875rem;
+    }
+
+    .ai-mode-entry-card__memo {
+      margin: 6px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.6875rem;
+    }
+
+    .ai-mode-help-list {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      font-size: 0.75rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .ai-mode-entry-card--change {
+      border-left: 4px solid #ca8a04;
+    }
+
+    .ai-mode-room-grid .room-card--available {
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
+    }
+
+    .ai-mode-form {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .ai-mode-form input {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+    }
+
+    .ai-mode-form button {
+      flex-shrink: 0;
+      height: 38px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+
+    .ai-mode-form button:hover {
+      filter: brightness(1.05);
+    }
+
     .front-embed-panel[hidden] {
       display: none !important;
     }
@@ -4903,6 +5135,18 @@
         <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
         </div>
       </nav>
+      <nav class="sidebar-section sidebar-section--ai" aria-label="AI 모드">
+        <div class="sidebar-nav">
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnAi"
+            aria-pressed="false"
+          >
+            AI 모드
+          </button>
+        </div>
+      </nav>
     </aside>
 
     <div class="layout-main-area">
@@ -4956,6 +5200,30 @@
           src="/chichi/index.HTML"
           loading="lazy"
         ></iframe>
+      </section>
+
+      <section class="ai-mode-panel" id="aiModePanel" hidden aria-labelledby="aiModePanelTitle">
+        <h2 id="aiModePanelTitle">AI 모드</h2>
+        <p class="ai-mode-panel__hint">
+          오늘 데이터(루밍 XML · 오더 · 정비요청 · MB 등)로 질문하세요.
+          예: <strong>오늘 현황</strong> ·
+          <strong>15시 이후 오더</strong> ·
+          <strong>예정 지난 요청</strong> ·
+          <strong>10층 CL</strong> ·
+          <strong>VIP 특이객실</strong> ·
+          <strong>도움말</strong>
+        </p>
+        <div class="ai-mode-chat" id="aiModeChat" aria-live="polite"></div>
+        <form class="ai-mode-form" id="aiModeForm">
+          <input
+            type="text"
+            id="aiModeInput"
+            placeholder="질문 입력 (예: 15시 이후 오더, TYPE 정비 가능 객실, 1205 상태)"
+            autocomplete="off"
+            aria-label="AI 질문"
+          />
+          <button type="submit">질문</button>
+        </form>
       </section>
 
       <section class="zone-block is-collapsed" id="zoneBlock" aria-label="특이객실 등록 객실">
@@ -8606,6 +8874,7 @@
         var ddNav = document.getElementById("sidebarBtnDd");
         var invenNav = document.getElementById("sidebarBtnInven");
         var chichiNav = document.getElementById("sidebarBtnChichi");
+        var aiNav = document.getElementById("sidebarBtnAi");
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
@@ -8638,6 +8907,10 @@
           chichiNav.classList.toggle("is-active", sidebarMainView === "chichi");
           chichiNav.setAttribute("aria-pressed", sidebarMainView === "chichi" ? "true" : "false");
         }
+        if (aiNav) {
+          aiNav.classList.toggle("is-active", sidebarMainView === "ai");
+          aiNav.setAttribute("aria-pressed", sidebarMainView === "ai" ? "true" : "false");
+        }
         if (sidebarMainView !== "zone") {
           getZoneTabs().forEach(function (t) {
             t.classList.remove("active");
@@ -8656,6 +8929,7 @@
         var showDd = view === "dd";
         var showInven = view === "inven";
         var showChichi = view === "chichi";
+        var showAi = view === "ai";
         var showZone = view === "zone";
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
@@ -8667,6 +8941,7 @@
         var ddEmbedPanel = document.getElementById("ddEmbedPanel");
         var invenEmbedPanel = document.getElementById("invenEmbedPanel");
         var chichiEmbedPanel = document.getElementById("chichiEmbedPanel");
+        var aiModePanel = document.getElementById("aiModePanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var mainEl = document.querySelector(".main");
         if (requestStack) requestStack.hidden = !showRequest;
@@ -8679,6 +8954,7 @@
         if (ddEmbedPanel) ddEmbedPanel.hidden = !showDd || !frontMode;
         if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
         if (chichiEmbedPanel) chichiEmbedPanel.hidden = !showChichi || !frontMode;
+        if (aiModePanel) aiModePanel.hidden = !showAi;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (mainEl) {
@@ -8690,6 +8966,7 @@
           mainEl.classList.toggle("main--dd", showDd);
           mainEl.classList.toggle("main--inven", showInven);
           mainEl.classList.toggle("main--chichi", showChichi);
+          mainEl.classList.toggle("main--ai", showAi);
         }
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
@@ -8704,6 +8981,12 @@
           feedbackColumn.hidden = !showRequest && !showOrder && !showMbInv && !showMbCheck;
         }
         updateSidebarPrimaryNavActive();
+        if (showAi) {
+          requestAnimationFrame(function () {
+            var inp = document.getElementById("aiModeInput");
+            if (inp) inp.focus();
+          });
+        }
         if (showFront) {
           hideFrontChatToast();
           clearFrontChatSidebarAlert();
@@ -8711,6 +8994,1398 @@
             renderFrontChatPanel(true);
           });
         }
+      }
+
+      function parseAiSchedMinutes(schedStr) {
+        if (!schedStr || typeof HKStorage === "undefined" || !HKStorage.parseTime24) return null;
+        var p = HKStorage.parseTime24(schedStr);
+        if (!p) return null;
+        return p.h * 60 + p.m;
+      }
+
+      function isAiSchedInFuture(schedStr) {
+        var mins = parseAiSchedMinutes(schedStr);
+        if (mins == null) return false;
+        var now = new Date();
+        return mins > now.getHours() * 60 + now.getMinutes();
+      }
+
+      function parseAiQueryTypeCode(text) {
+        var raw = String(text || "");
+        var m =
+          raw.match(/\(([A-Z0-9]+)\)/i) ||
+          raw.match(/타입\s*[(:]?\s*([A-Z0-9]+)/i) ||
+          raw.match(/TYPE\s+([A-Z0-9]+)/i);
+        if (m && m[1]) return normalizeRoomTypeCode(m[1]);
+        var upper = raw.toUpperCase();
+        var i;
+        for (i = 0; i < SCHED_TYPE_EXPLICIT_OPTIONS.length; i++) {
+          if (upper.indexOf(SCHED_TYPE_EXPLICIT_OPTIONS[i]) >= 0) {
+            return SCHED_TYPE_EXPLICIT_OPTIONS[i];
+          }
+        }
+        if (/스위트|SUITE/.test(raw)) return SCHED_TYPE_SUITE_KEY;
+        return "";
+      }
+
+      function isAiMaintenanceAvailQuery(text) {
+        return /정비\s*가능|지금\s*가능|가능한\s*객실|바로\s*가능|지금\s*정비/.test(String(text || ""));
+      }
+
+      function entryAtMinutesToday(iso) {
+        if (!iso) return null;
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return null;
+        var now = new Date();
+        if (d.toDateString() !== now.toDateString()) return null;
+        return d.getHours() * 60 + d.getMinutes();
+      }
+
+      function parseAiTimeFilter(text) {
+        var raw = String(text || "");
+        var pm = raw.match(/오후\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분?)?/);
+        if (pm) {
+          var hPm = parseInt(pm[1], 10);
+          if (hPm < 12) hPm += 12;
+          var mPm = pm[2] ? parseInt(pm[2], 10) : 0;
+          var dirPm = /이전|까지|before/i.test(raw) ? "before" : "after";
+          return {
+            minutes: hPm * 60 + mPm,
+            direction: dirPm,
+            label: pad2(hPm) + ":" + pad2(mPm),
+          };
+        }
+        var am = raw.match(/오전\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분?)?/);
+        if (am) {
+          var hAm = parseInt(am[1], 10);
+          if (hAm === 12) hAm = 0;
+          var mAm = am[2] ? parseInt(am[2], 10) : 0;
+          var dirAm = /이전|까지|before/i.test(raw) ? "before" : "after";
+          return {
+            minutes: hAm * 60 + mAm,
+            direction: dirAm,
+            label: pad2(hAm) + ":" + pad2(mAm),
+          };
+        }
+        var hm = raw.match(/(\d{1,2})\s*[：:]\s*(\d{2})\s*(이후|이전|부터|까지|after|before)?/i);
+        if (hm) {
+          var h1 = parseInt(hm[1], 10);
+          var m1 = parseInt(hm[2], 10);
+          var dir1 = hm[3] && /이전|까지|before/i.test(hm[3]) ? "before" : "after";
+          return { minutes: h1 * 60 + m1, direction: dir1, label: pad2(h1) + ":" + pad2(m1) };
+        }
+        var hOnly = raw.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분?)?\s*(이후|이전|부터|까지|after|before)?/i);
+        if (hOnly) {
+          var h2 = parseInt(hOnly[1], 10);
+          var m2 = hOnly[2] ? parseInt(hOnly[2], 10) : 0;
+          var dir2 = hOnly[3] && /이전|까지|before/i.test(hOnly[3]) ? "before" : "after";
+          return { minutes: h2 * 60 + m2, direction: dir2, label: pad2(h2) + ":" + pad2(m2) };
+        }
+        return null;
+      }
+
+      function filterEntriesByTimeToday(entries, timeFilter, atField) {
+        atField = atField || "at";
+        if (!timeFilter || !Array.isArray(entries)) return entries || [];
+        return entries.filter(function (entry) {
+          if (!entry) return false;
+          var mins = entryAtMinutesToday(entry[atField]);
+          if (mins == null) return false;
+          if (timeFilter.direction === "before") return mins <= timeFilter.minutes;
+          return mins >= timeFilter.minutes;
+        });
+      }
+
+      function sortEntriesByAtDesc(entries, atField) {
+        atField = atField || "at";
+        return (entries || []).slice().sort(function (a, b) {
+          return new Date(b[atField] || 0).getTime() - new Date(a[atField] || 0).getTime();
+        });
+      }
+
+      function sortEntriesByAtAsc(entries, atField) {
+        atField = atField || "at";
+        return (entries || []).slice().sort(function (a, b) {
+          return new Date(a[atField] || 0).getTime() - new Date(b[atField] || 0).getTime();
+        });
+      }
+
+      function parseAiSchedDeadlineFilter(text) {
+        if (!/예정|처리|까지|마감|이전/.test(String(text || ""))) return null;
+        return parseAiTimeFilter(text);
+      }
+
+      function parseAiFloorFromText(text) {
+        var m = String(text || "").match(/(\d{1,2})\s*층/);
+        if (!m) return null;
+        var f = parseInt(m[1], 10);
+        if (!Number.isNaN(f) && f >= 0 && f <= 12) return f;
+        return null;
+      }
+
+      function parseAiZoneIdFromText(text) {
+        var q = String(text || "");
+        if (/\bVIP\b/i.test(q)) return "VIP";
+        if (/R\s*\/?\s*C\b|\bRC\b/i.test(q)) return "RC";
+        if (/CASINO|카지노/i.test(q)) return "CASINO";
+        if (/모바일|MOBILE/i.test(q)) return "MOBILE_CI";
+        var data = HKStorage.load();
+        var found = null;
+        (data.customZones || []).forEach(function (z) {
+          if (!z || !z.label || !z.id) return;
+          if (q.indexOf(z.label) >= 0) found = z.id;
+        });
+        return found;
+      }
+
+      function getAiRoomFloor(roomNr) {
+        var nr = normalizeRoomDigits(roomNr);
+        if (!nr || nr.length < 2) return null;
+        var f = parseInt(nr.slice(0, 2), 10);
+        return Number.isNaN(f) ? null : f;
+      }
+
+      function filterRequestsBySchedTime(entries, timeFilter) {
+        if (!timeFilter) return entries || [];
+        return (entries || []).filter(function (entry) {
+          var sched = entry.sched != null ? String(entry.sched).trim() : "";
+          if (!sched) return false;
+          var mins = parseAiSchedMinutes(sched);
+          if (mins == null) return false;
+          if (timeFilter.direction === "before") return mins <= timeFilter.minutes;
+          return mins >= timeFilter.minutes;
+        });
+      }
+
+      function queryAiStatusCounts() {
+        var counts = { IP: 0, CL: 0, PU: 0, DI: 0, OO: 0, OS: 0, IN: 0, other: 0 };
+        if (!cachedVacBoardRows.length) return counts;
+        hkBoardDedupeRows(cachedVacBoardRows).forEach(function (rec) {
+          if (!rec || HK_BOARD_DROP_ROOMS[rec.room]) return;
+          var st = normalizeRoomStatus(rec.status);
+          if (counts[st] != null) counts[st] += 1;
+          else counts.other += 1;
+          if (lookupRoomResvDisplay(rec.room) === "IN") counts.IN += 1;
+        });
+        return counts;
+      }
+
+      function queryAiDailySummaryText() {
+        syncOrderLogFromServer();
+        syncRequestLogFromServer();
+        var sc = queryAiStatusCounts();
+        var todayOrders = orderLogEntries.filter(function (e) {
+          return entryAtMinutesToday(e.at) != null;
+        });
+        var pendingOrders = orderLogEntries.filter(function (e) {
+          return getOrderPhase(e) === "alert";
+        });
+        var issueOrders = orderLogEntries.filter(isOrderIssueOpen);
+        var urgentOrders = orderLogEntries.filter(function (e) {
+          return !!e.urgent && getOrderPhase(e) !== "cancelled";
+        });
+        var pendingReqs = requestLogEntries.filter(isRequestPendingAlert);
+        var schedReqs = requestLogEntries.filter(isScheduledRequestEntry);
+        var urgentReqs = requestLogEntries.filter(function (e) {
+          return !!e.urgent;
+        });
+        var overdue = queryAiOverdueScheduledRequests();
+        var mbIssue =
+          typeof HKSync !== "undefined" && HKSync.getMbInvLog
+            ? HKSync.getMbInvLog().filter(isMbInvIssueOpen).length
+            : 0;
+        var lines = [
+          "【오늘 HK 현황】",
+          "XML 객실 — IP:" +
+            sc.IP +
+            " CL:" +
+            sc.CL +
+            " PU:" +
+            sc.PU +
+            " DI:" +
+            sc.DI +
+            " OO:" +
+            sc.OO +
+            " OS:" +
+            sc.OS +
+            " · IN:" +
+            sc.IN,
+          "오더 — 오늘 " +
+            todayOrders.length +
+            "건 · 대기(알림) " +
+            pendingOrders.length +
+            " · 문제 " +
+            issueOrders.length +
+            " · 긴급 " +
+            urgentOrders.length,
+          "정비요청 — 대기 " +
+            pendingReqs.length +
+            " · 처리·예정 " +
+            schedReqs.length +
+            " · 긴급 " +
+            urgentReqs.length +
+            " · 예정 지남 " +
+            overdue.length,
+          "MB & 인벤 문제 " + mbIssue + "건",
+        ];
+        if (!cachedVacBoardRows.length) {
+          lines.push("(루밍 XML 없음 — 객실 상태 집계 제외)");
+        }
+        return lines.join("\n");
+      }
+
+      function mapVacRecToAiRoom(rec, etaLabel, availableNow) {
+        var schedMap = hkBoardBuildSchedTimeMap();
+        return {
+          room: rec.room,
+          status: normalizeRoomStatus(rec.status),
+          type: lookupRoomTypeFromXml(rec.room) || "",
+          sched: schedMap[rec.room] || "",
+          etaLabel: etaLabel || "",
+          availableNow: !!availableNow,
+        };
+      }
+
+      function queryAiInRooms() {
+        if (!cachedVacBoardRows.length) return { error: "루밍 XML이 없습니다." };
+        var rooms = hkBoardDedupeRows(cachedVacBoardRows)
+          .filter(function (rec) {
+            return rec && !HK_BOARD_DROP_ROOMS[rec.room] && lookupRoomResvDisplay(rec.room) === "IN";
+          })
+          .map(function (rec) {
+            return mapVacRecToAiRoom(rec, "투숙 IN", false);
+          });
+        rooms.sort(function (a, b) {
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+        return { rooms: rooms };
+      }
+
+      function queryAiFloorRooms(floor, statusOpt) {
+        if (!cachedVacBoardRows.length) return { error: "루밍 XML이 없습니다." };
+        var wantSt = statusOpt ? normalizeRoomStatus(statusOpt) : "";
+        var rooms = hkBoardDedupeRows(cachedVacBoardRows)
+          .filter(function (rec) {
+            if (!rec || HK_BOARD_DROP_ROOMS[rec.room]) return false;
+            if (getAiRoomFloor(rec.room) !== floor) return false;
+            if (wantSt && normalizeRoomStatus(rec.status) !== wantSt) return false;
+            return true;
+          })
+          .map(function (rec) {
+            return mapVacRecToAiRoom(rec, wantSt || normalizeRoomStatus(rec.status), false);
+          });
+        rooms.sort(function (a, b) {
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+        return { rooms: rooms, floor: floor, status: wantSt };
+      }
+
+      function queryAiZoneRooms(zoneId) {
+        var data = HKStorage.load();
+        var rooms = (data.rooms && data.rooms[zoneId]) || [];
+        if (!rooms.length) {
+          return {
+            error:
+              (HKStorage.getZoneLabel(zoneId, data) || zoneId) + " 등록 객실이 없습니다.",
+          };
+        }
+        var cards = rooms.map(function (room) {
+          var nr = room.number || "";
+          var st = lookupRoomStatusFromXml(nr);
+          var sched = hkBoardBuildSchedTimeMap()[normalizeRoomDigits(nr)] || "";
+          return {
+            room: normalizeRoomDigits(nr) || nr,
+            status: st || room.status || "—",
+            type: lookupRoomTypeFromXml(nr) || "",
+            sched: sched,
+            etaLabel:
+              (room.memo1 ? "FD " + room.memo1 : "") +
+              (room.memo2 ? " · 두잉 " + room.memo2 : ""),
+            availableNow: false,
+            zoneLabel: HKStorage.getZoneLabel(zoneId, data),
+          };
+        });
+        return { rooms: cards, zoneId: zoneId, label: HKStorage.getZoneLabel(zoneId, data) };
+      }
+
+      function queryAiOverdueScheduledRequests() {
+        syncRequestLogFromServer();
+        var nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+        return requestLogEntries.filter(function (entry) {
+          var sched = entry.sched != null ? String(entry.sched).trim() : "";
+          if (!sched) return false;
+          var mins = parseAiSchedMinutes(sched);
+          if (mins == null) return false;
+          return mins < nowMins;
+        });
+      }
+
+      function queryAiNextScheduledRequests(limit) {
+        syncRequestLogFromServer();
+        var nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+        var list = requestLogEntries.filter(function (entry) {
+          var sched = entry.sched != null ? String(entry.sched).trim() : "";
+          if (!sched) return false;
+          var mins = parseAiSchedMinutes(sched);
+          return mins != null && mins >= nowMins;
+        });
+        list.sort(function (a, b) {
+          return parseAiSchedMinutes(a.sched) - parseAiSchedMinutes(b.sched);
+        });
+        return list.slice(0, limit || 12);
+      }
+
+      function queryAiChangeLogEntries(todayOnly) {
+        var list = getRoomChangeLogEntries().slice();
+        if (todayOnly) {
+          list = list.filter(function (entry) {
+            return entryAtMinutesToday(entry.at) != null;
+          });
+        }
+        return sortEntriesByAtDesc(list);
+      }
+
+      function queryAiExtendedStayRooms() {
+        var payload =
+          typeof HKSync !== "undefined" && HKSync.getLastServerPayload
+            ? HKSync.getLastServerPayload()
+            : null;
+        var ext = payload && payload.extendedStayRooms ? payload.extendedStayRooms : {};
+        var rooms = Object.keys(ext)
+          .filter(function (k) {
+            return ext[k];
+          })
+          .map(function (k) {
+            var nr = normalizeRoomDigits(k);
+            return mapVacRecToAiRoom(
+              { room: nr || k, status: lookupRoomStatusFromXml(k) },
+              "연박",
+              false
+            );
+          });
+        rooms.sort(function (a, b) {
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+        return rooms;
+      }
+
+      function formatRoomChangeKindLabel(kind) {
+        if (kind === "add") return "추가";
+        if (kind === "delete") return "삭제";
+        return "수정";
+      }
+
+      function buildAiChangeLogCard(entry) {
+        var data = HKStorage.load();
+        var zoneLabel = entry.zone ? HKStorage.getZoneLabel(entry.zone, data) : entry.zone;
+        var changes = Array.isArray(entry.changes) ? entry.changes.join("\n") : "";
+        return buildAiGenericEntryCard(
+          (zoneLabel || "—") + " · " + formatRoomNoDisplay(entry.room || ""),
+          [
+            formatRoomChangeKindLabel(entry.kind),
+            formatReqAt(entry.at) || "—",
+            entry.by ? "처리 " + entry.by : "",
+            changes,
+          ],
+          "change"
+        );
+      }
+
+      function buildAiHelpMessage() {
+        return (
+          "【현황·요약】\n" +
+          "· 오늘 현황 / 공지 알려줘 / 연박 객실\n\n" +
+          "【오더】\n" +
+          "· 15시 이후 오더 · 대기 오더 · 긴급 오더\n" +
+          "· 문제발생 오더 · 오늘 오더\n\n" +
+          "【정비 요청】\n" +
+          "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
+          "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
+          "【객실·TYPE】\n" +
+          "· 타입(ENCFT) 지금 정비 가능한 객실\n" +
+          "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
+          "· VIP 특이객실 · 1205 상태\n\n" +
+          "【기타】\n" +
+          "· MB CHECK · MB & 인벤 변경 · MB 인벤 문제\n" +
+          "· 오늘 변경 이력"
+        );
+      }
+
+      function formatAiOrderPhase(entry) {
+        if (!entry) return "—";
+        if (isOrderIssueOpen(entry)) return "문제발생";
+        var p = getOrderPhase(entry);
+        if (p === "accepted") return "접수";
+        if (p === "cancelled") return "취소";
+        return "알림";
+      }
+
+      function formatAiRequestPhase(entry) {
+        if (!entry) return "—";
+        if (entry.sched && String(entry.sched).trim()) return "처리·예정";
+        return "대기";
+      }
+
+      function formatAiMbInvPhase(entry) {
+        if (!entry) return "—";
+        if (isMbInvIssueOpen(entry)) return "문제발생";
+        var p = getMbInvPhase(entry);
+        if (p === "accepted") return "접수";
+        if (p === "cancelled") return "취소";
+        return "알림";
+      }
+
+      function formatAiMbCheckPhase(entry) {
+        if (!entry) return "—";
+        return getMbCheckPhase(entry) === "alert"
+          ? "알림"
+          : getMbCheckPhase(entry) === "accepted"
+            ? "접수"
+            : getMbCheckPhase(entry) === "gst"
+              ? "GST"
+              : getMbCheckPhase(entry) === "posted"
+                ? "포스팅"
+                : getMbCheckPhase(entry) === "cancelled"
+                  ? "취소"
+                  : "—";
+      }
+
+      function detectAiIntent(text) {
+        var q = String(text || "").trim();
+        if (!q) return { type: "unknown" };
+        if (/^(help|도움|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
+          return { type: "help" };
+        }
+        if (/현황|요약|브리핑|전체\s*상황|지금\s*상황|오늘\s*현황/.test(q)) {
+          return { type: "summary" };
+        }
+        if (/공지/.test(q)) return { type: "notice" };
+        if (/연박/.test(q)) return { type: "extended_stay" };
+        if (/변경\s*(이력|내역)|히스토리/.test(q)) {
+          return { type: "change_log", todayOnly: /오늘/.test(q) };
+        }
+
+        var timeFilter = parseAiTimeFilter(q);
+        var schedDeadline = parseAiSchedDeadlineFilter(q);
+        var floor = parseAiFloorFromText(q);
+        var zoneId = parseAiZoneIdFromText(q);
+        var roomM = q.match(/(\d{3,4})\s*번?\s*(?:객실|호)?(?:\s*상태|\s*확인|\s*알려)?/);
+
+        if (/몇\s*개|개수|몇\s*객실|몇\s*건/i.test(q)) {
+          var countSt = q.match(/\b(IP|CL|PU|DI|OO|OS|IN)\b/i);
+          if (countSt) return { type: "status_count", status: countSt[1].toUpperCase() };
+        }
+        if (/예정\s*(지난|초과|지연)|늦은\s*예정|미완료\s*예정/.test(q)) {
+          return { type: "sched_overdue" };
+        }
+        if (/다음\s*예정|가장\s*빠른|빨리\s*끝|곧\s*끝/.test(q)) {
+          return { type: "sched_next" };
+        }
+        if (schedDeadline && /요청|예정|처리/.test(q)) {
+          return { type: "requests_sched_deadline", timeFilter: schedDeadline };
+        }
+        if (/(IN|투숙)\s*객실|객실.*\bIN\b|체크인\s*객실/.test(q)) {
+          return { type: "rooms_in" };
+        }
+        if (zoneId && /특이|객실|VIP|카지노|모바일|RC|R\/C/i.test(q)) {
+          return { type: "zone_rooms", zoneId: zoneId };
+        }
+        if (floor != null && /층|객실/.test(q)) {
+          var floorSt = q.match(/\b(IP|CL|PU|DI|OO|OS)\b/i);
+          return {
+            type: "rooms_floor",
+            floor: floor,
+            status: floorSt ? floorSt[1].toUpperCase() : "",
+          };
+        }
+
+        if (/오더/.test(q)) {
+          if (/긴급/.test(q)) return { type: "orders_urgent" };
+          if (/대기|미접수|알림/.test(q)) return { type: "orders_pending" };
+          if (/문제|이슈/.test(q)) return { type: "orders_issue" };
+          if (/접수/.test(q) && !/알림/.test(q)) return { type: "orders_accepted" };
+          if (/취소/.test(q)) return { type: "orders_cancelled" };
+          if (timeFilter) return { type: "orders_time", timeFilter: timeFilter };
+          if (/오늘|금일/.test(q)) return { type: "orders_today" };
+          return { type: "orders_all" };
+        }
+        if (/정비\s*요청|요청\s*알림|요청한/.test(q) && !isAiMaintenanceAvailQuery(q)) {
+          if (/긴급/.test(q)) return { type: "requests_urgent" };
+          if (/대기|미처리|시간\s*없/.test(q)) return { type: "requests_pending" };
+          if (/처리|예정/.test(q) && !schedDeadline) return { type: "requests_scheduled" };
+          if (timeFilter) return { type: "requests_time", timeFilter: timeFilter };
+          if (/오늘|금일/.test(q)) return { type: "requests_today" };
+          return { type: "requests_all" };
+        }
+        if (/MB\s*CHECK|엠비\s*체크/i.test(q)) return { type: "mbcheck" };
+        if (/MB|인벤/.test(q) && /문제|이슈/.test(q)) return { type: "mbinv_issue" };
+        if (/MB|인벤/.test(q) && /변경/.test(q)) return { type: "mbinv" };
+        if (isAiMaintenanceAvailQuery(q)) return { type: "type_avail" };
+        var statusM = q.match(/\b(IP|CL|PU|DI|OO|OS)\b/i);
+        if (statusM && /객실|상태|목록|보여|알려/.test(q)) {
+          return { type: "rooms_status", status: statusM[1].toUpperCase() };
+        }
+        var typeCode = parseAiQueryTypeCode(q);
+        if (typeCode && /객실|목록|몇|알려|보여/.test(q)) {
+          return { type: "type_list", typeCode: typeCode };
+        }
+        if (roomM) return { type: "room_info", room: roomM[1] };
+        return { type: "unknown" };
+      }
+
+      function buildAiOrderCard(entry) {
+        var li = document.createElement("li");
+        li.className = "ai-mode-entry-card ai-mode-entry-card--order";
+        var head = document.createElement("div");
+        head.className = "ai-mode-entry-card__head";
+        head.appendChild(
+          document.createTextNode(formatRoomNoDisplay(entry.room || "") || "—")
+        );
+        var badge = document.createElement("span");
+        badge.className = "ai-mode-entry-card__badge";
+        badge.textContent = formatAiOrderPhase(entry);
+        head.appendChild(badge);
+        if (entry.urgent) {
+          var ub = document.createElement("span");
+          ub.className = "ai-mode-entry-card__badge ai-mode-entry-card__badge--urgent";
+          ub.textContent = "긴급";
+          head.appendChild(ub);
+        }
+        li.appendChild(head);
+        var t1 = document.createElement("p");
+        t1.className = "ai-mode-entry-card__line";
+        t1.textContent = "오더 " + (formatReqAt(entry.at) || "—");
+        li.appendChild(t1);
+        if (entry.acceptedAt) {
+          var t2 = document.createElement("p");
+          t2.className = "ai-mode-entry-card__line";
+          t2.textContent = "접수 " + formatReqAt(entry.acceptedAt);
+          li.appendChild(t2);
+        }
+        if (entry.by) {
+          var t3 = document.createElement("p");
+          t3.className = "ai-mode-entry-card__line";
+          t3.textContent = "요청자 " + entry.by;
+          li.appendChild(t3);
+        }
+        if (entry.memo) {
+          var memo = document.createElement("p");
+          memo.className = "ai-mode-entry-card__memo";
+          memo.textContent = entry.memo;
+          li.appendChild(memo);
+        }
+        return li;
+      }
+
+      function buildAiRequestCard(entry) {
+        var li = document.createElement("li");
+        li.className = "ai-mode-entry-card ai-mode-entry-card--request";
+        var head = document.createElement("div");
+        head.className = "ai-mode-entry-card__head";
+        head.appendChild(
+          document.createTextNode(formatRoomNoDisplay(entry.room || "") || "—")
+        );
+        var badge = document.createElement("span");
+        badge.className = "ai-mode-entry-card__badge";
+        badge.textContent = formatAiRequestPhase(entry);
+        head.appendChild(badge);
+        if (entry.urgent) {
+          var ub = document.createElement("span");
+          ub.className = "ai-mode-entry-card__badge ai-mode-entry-card__badge--urgent";
+          ub.textContent = "긴급";
+          head.appendChild(ub);
+        }
+        li.appendChild(head);
+        var st = (entry.status || "").trim();
+        if (st) {
+          var stLine = document.createElement("p");
+          stLine.className = "ai-mode-entry-card__line";
+          stLine.textContent = "HK " + st;
+          li.appendChild(stLine);
+        }
+        var t1 = document.createElement("p");
+        t1.className = "ai-mode-entry-card__line";
+        t1.textContent = "접수 " + (formatReqAt(entry.at) || "—");
+        li.appendChild(t1);
+        if (entry.sched) {
+          var t2 = document.createElement("p");
+          t2.className = "ai-mode-entry-card__line";
+          t2.textContent = "처리·예정 " + entry.sched;
+          li.appendChild(t2);
+        }
+        if (entry.memo) {
+          var memo = document.createElement("p");
+          memo.className = "ai-mode-entry-card__memo";
+          memo.textContent = "FD: " + entry.memo;
+          li.appendChild(memo);
+        }
+        return li;
+      }
+
+      function buildAiGenericEntryCard(title, lines, kind) {
+        var li = document.createElement("li");
+        li.className = "ai-mode-entry-card ai-mode-entry-card--" + (kind || "mb");
+        var head = document.createElement("div");
+        head.className = "ai-mode-entry-card__head";
+        head.textContent = title || "—";
+        li.appendChild(head);
+        (lines || []).forEach(function (line) {
+          if (!line) return;
+          var p = document.createElement("p");
+          p.className = "ai-mode-entry-card__line";
+          p.textContent = line;
+          li.appendChild(p);
+        });
+        return li;
+      }
+
+      function queryAiOrdersFiltered(filterFn) {
+        syncOrderLogFromServer();
+        var list = orderLogEntries.filter(function (e) {
+          return e && (!filterFn || filterFn(e));
+        });
+        return sortEntriesByAtDesc(list);
+      }
+
+      function queryAiOrdersByTime(timeFilter) {
+        var list = filterEntriesByTimeToday(orderLogEntries, timeFilter, "at");
+        return sortEntriesByAtAsc(list);
+      }
+
+      function queryAiRequestsFiltered(filterFn) {
+        syncRequestLogFromServer();
+        var list = requestLogEntries.filter(function (e) {
+          return e && (!filterFn || filterFn(e));
+        });
+        return sortEntriesByAtDesc(list);
+      }
+
+      function queryAiRequestsByTime(timeFilter) {
+        var list = filterEntriesByTimeToday(requestLogEntries, timeFilter, "at");
+        return sortEntriesByAtAsc(list);
+      }
+
+      function queryAiRoomsByStatusCode(statusCode) {
+        if (!cachedVacBoardRows.length) {
+          return { error: "루밍 XML이 없습니다. 정비용 루밍에서 XML을 업로드해 주세요." };
+        }
+        var want = normalizeRoomStatus(statusCode);
+        var schedMap = hkBoardBuildSchedTimeMap();
+        var rows = hkBoardDedupeRows(cachedVacBoardRows)
+          .filter(function (rec) {
+            if (!rec || HK_BOARD_DROP_ROOMS[rec.room]) return false;
+            return normalizeRoomStatus(rec.status) === want;
+          })
+          .map(function (rec) {
+            return {
+              room: rec.room,
+              status: normalizeRoomStatus(rec.status),
+              type: lookupRoomTypeFromXml(rec.room) || "",
+              sched: schedMap[rec.room] || "",
+              etaLabel: want + " · " + (schedMap[rec.room] ? "예정 " + schedMap[rec.room] : "예정 없음"),
+              availableNow: want === "CL",
+            };
+          });
+        rows.sort(function (a, b) {
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+        return { rooms: rows, status: want };
+      }
+
+      function queryAiRoomInfo(roomInput) {
+        var nr = normalizeRoomDigits(roomInput);
+        if (!nr) return { error: "객실번호를 확인해 주세요." };
+        var status = lookupRoomStatusFromXml(nr);
+        var type = lookupRoomTypeFromXml(nr);
+        var resv = lookupRoomResvDisplay(nr);
+        var sched = hkBoardBuildSchedTimeMap()[nr] || "";
+        if (!status && !type && !sched) {
+          return {
+            error:
+              "객실 " +
+              formatRoomNoDisplay(nr) +
+              " 정보가 XML·요청 로그에 없습니다.",
+          };
+        }
+        return {
+          rooms: [
+            {
+              room: nr,
+              status: status || "—",
+              type: type || "",
+              sched: sched,
+              etaLabel: sched ? "처리·예정 " + sched : resv === "IN" ? "투숙 IN" : "처리·예정 없음",
+              availableNow: isAiRoomAvailableNow(nr, status),
+            },
+          ],
+        };
+      }
+
+      function queryAiMbInvEntries() {
+        var list =
+          typeof HKSync !== "undefined" && HKSync.getMbInvLog
+            ? HKSync.getMbInvLog().slice()
+            : [];
+        return sortEntriesByAtDesc(list);
+      }
+
+      function queryAiMbCheckEntries() {
+        var list =
+          typeof HKSync !== "undefined" && HKSync.getMbCheckLog
+            ? HKSync.getMbCheckLog().slice()
+            : [];
+        return sortEntriesByAtDesc(list);
+      }
+
+      function appendAiChatBotResult(summaryText, cardNodes, extraHtml) {
+        var chat = document.getElementById("aiModeChat");
+        if (!chat) return;
+        var msg = document.createElement("div");
+        msg.className = "ai-mode-msg ai-mode-msg--bot";
+        var summary = document.createElement("p");
+        summary.className = "ai-mode-msg__summary";
+        summary.textContent = summaryText;
+        msg.appendChild(summary);
+        if (extraHtml) {
+          var help = document.createElement("p");
+          help.className = "ai-mode-help-list";
+          help.style.whiteSpace = "pre-wrap";
+          help.textContent = extraHtml;
+          msg.appendChild(help);
+        }
+        if (cardNodes && cardNodes.length) {
+          var ul = document.createElement("ul");
+          ul.className = "ai-mode-room-grid";
+          cardNodes.forEach(function (node) {
+            ul.appendChild(node);
+          });
+          msg.appendChild(ul);
+        }
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function appendAiChatBotResponse(summaryText, rooms) {
+        var cards = (rooms || []).map(function (item) {
+          return buildAiResultRoomCard(item);
+        });
+        appendAiChatBotResult(summaryText, cards);
+      }
+
+      function appendAiChatBotError(text) {
+        appendAiChatBotResult(text, []);
+      }
+
+      function appendAiChatUserMessage(text) {
+        var chat = document.getElementById("aiModeChat");
+        if (!chat) return;
+        var msg = document.createElement("div");
+        msg.className = "ai-mode-msg ai-mode-msg--user";
+        msg.textContent = text;
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function handleAiModeQuestion(text) {
+        var q = String(text || "").trim();
+        if (!q) return;
+        appendAiChatUserMessage(q);
+        var intent = detectAiIntent(q);
+
+        if (intent.type === "help") {
+          appendAiChatBotResult("AI 모드 도움말", [], buildAiHelpMessage());
+          return;
+        }
+
+        if (intent.type === "summary") {
+          appendAiChatBotResult("오늘 HK 현황", [], queryAiDailySummaryText());
+          return;
+        }
+
+        if (intent.type === "notice") {
+          var nd = HKStorage.load();
+          var noticeBody = nd.notice != null ? String(nd.notice).trim() : "";
+          var hasImg = nd.noticeImage != null && String(nd.noticeImage).trim();
+          appendAiChatBotResult(
+            "공지",
+            [],
+            noticeBody || "(공지 내용 없음)" + (hasImg ? "\n(첨부 사진 있음)" : "")
+          );
+          return;
+        }
+
+        if (intent.type === "extended_stay") {
+          var extRooms = queryAiExtendedStayRooms();
+          if (!extRooms.length) {
+            appendAiChatBotResult("연박 객실 없음 (루밍 연박 데이터 기준)", [], "");
+            return;
+          }
+          appendAiChatBotResponse("연박 객실 " + extRooms.length + "개", extRooms);
+          return;
+        }
+
+        if (intent.type === "change_log") {
+          var chLog = queryAiChangeLogEntries(intent.todayOnly);
+          appendAiChatBotResult(
+            (intent.todayOnly ? "오늘 " : "") + "변경 이력 " + chLog.length + "건",
+            chLog.slice(0, 25).map(buildAiChangeLogCard)
+          );
+          return;
+        }
+
+        if (intent.type === "status_count") {
+          var counts = queryAiStatusCounts();
+          var key = intent.status;
+          var n = key === "IN" ? counts.IN : counts[key] != null ? counts[key] : 0;
+          appendAiChatBotResult(key + " 객실 " + n + "개 (XML 기준)", [], "");
+          return;
+        }
+
+        if (intent.type === "sched_overdue") {
+          var overdueList = queryAiOverdueScheduledRequests();
+          appendAiChatBotResult(
+            "예정 시간이 지난 요청 " + overdueList.length + "건",
+            overdueList.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "sched_next") {
+          var nextList = queryAiNextScheduledRequests(15);
+          appendAiChatBotResult(
+            "다음 처리·예정 요청 " + nextList.length + "건 (시간순)",
+            nextList.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_sched_deadline") {
+          syncRequestLogFromServer();
+          var deadlineReqs = filterRequestsBySchedTime(
+            requestLogEntries.filter(isScheduledRequestEntry),
+            intent.timeFilter
+          );
+          deadlineReqs.sort(function (a, b) {
+            return parseAiSchedMinutes(a.sched) - parseAiSchedMinutes(b.sched);
+          });
+          var dirD = intent.timeFilter.direction === "before" ? "이전" : "이후";
+          appendAiChatBotResult(
+            "처리·예정 " +
+              intent.timeFilter.label +
+              " " +
+              dirD +
+              " 요청 " +
+              deadlineReqs.length +
+              "건",
+            deadlineReqs.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "rooms_in") {
+          var inResult = queryAiInRooms();
+          if (inResult.error) {
+            appendAiChatBotError(inResult.error);
+            return;
+          }
+          appendAiChatBotResponse("투숙 IN 객실 " + inResult.rooms.length + "개", inResult.rooms);
+          return;
+        }
+
+        if (intent.type === "rooms_floor") {
+          var floorResult = queryAiFloorRooms(intent.floor, intent.status);
+          if (floorResult.error) {
+            appendAiChatBotError(floorResult.error);
+            return;
+          }
+          appendAiChatBotResponse(
+            intent.floor +
+              "층" +
+              (intent.status ? " · " + intent.status : "") +
+              " 객실 " +
+              floorResult.rooms.length +
+              "개",
+            floorResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "zone_rooms") {
+          var zoneResult = queryAiZoneRooms(intent.zoneId);
+          if (zoneResult.error) {
+            appendAiChatBotError(zoneResult.error);
+            return;
+          }
+          appendAiChatBotResponse(
+            (zoneResult.label || intent.zoneId) + " 특이객실 " + zoneResult.rooms.length + "개",
+            zoneResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "type_avail") {
+          var typeCode = parseAiQueryTypeCode(q);
+          if (!typeCode) {
+            appendAiChatBotError(
+              "TYPE 코드를 찾지 못했습니다.\n예: 타입(ENCFT) 지금 정비 가능한 객실 확인해줘"
+            );
+            return;
+          }
+          var typeResult = queryAiMaintenanceRooms(typeCode);
+          if (typeResult.error) {
+            appendAiChatBotError(typeResult.error);
+            return;
+          }
+          if (typeResult.mode === "available") {
+            appendAiChatBotResponse(
+              "TYPE " +
+                typeCode +
+                " · 지금 정비 가능한 객실 " +
+                typeResult.rooms.length +
+                "개",
+              typeResult.rooms
+            );
+            return;
+          }
+          appendAiChatBotResponse(
+            "TYPE " +
+              typeCode +
+              " · 지금 CL 가능 객실 없음 → 처리·예정 시간 순 (" +
+              typeResult.rooms.length +
+              "개)",
+            typeResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "orders_pending") {
+          var ordersPending = queryAiOrdersFiltered(function (e) {
+            return getOrderPhase(e) === "alert";
+          });
+          appendAiChatBotResult(
+            "대기(알림) 오더 " + ordersPending.length + "건",
+            ordersPending.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_urgent") {
+          var ordersUrgent = queryAiOrdersFiltered(function (e) {
+            return !!e.urgent && getOrderPhase(e) !== "cancelled";
+          });
+          appendAiChatBotResult(
+            "긴급 오더 " + ordersUrgent.length + "건",
+            ordersUrgent.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_time") {
+          syncOrderLogFromServer();
+          var ordersT = queryAiOrdersByTime(intent.timeFilter);
+          var dirLabel = intent.timeFilter.direction === "before" ? "이전" : "이후";
+          appendAiChatBotResult(
+            "오늘 " +
+              intent.timeFilter.label +
+              " " +
+              dirLabel +
+              " 오더 " +
+              ordersT.length +
+              "건",
+            ordersT.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_today") {
+          syncOrderLogFromServer();
+          var ordersToday = orderLogEntries.filter(function (e) {
+            return entryAtMinutesToday(e.at) != null;
+          });
+          ordersToday = sortEntriesByAtDesc(ordersToday);
+          appendAiChatBotResult(
+            "오늘 오더 " + ordersToday.length + "건",
+            ordersToday.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_issue") {
+          var ordersIssue = queryAiOrdersFiltered(function (e) {
+            return isOrderIssueOpen(e);
+          });
+          appendAiChatBotResult(
+            "문제발생 중 오더 " + ordersIssue.length + "건",
+            ordersIssue.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_accepted") {
+          var ordersAcc = queryAiOrdersFiltered(function (e) {
+            return getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
+          });
+          appendAiChatBotResult(
+            "접수된 오더 " + ordersAcc.length + "건",
+            ordersAcc.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_cancelled") {
+          var ordersCan = queryAiOrdersFiltered(function (e) {
+            return getOrderPhase(e) === "cancelled";
+          });
+          appendAiChatBotResult(
+            "취소된 오더 " + ordersCan.length + "건",
+            ordersCan.map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "orders_all") {
+          var ordersAll = queryAiOrdersFiltered();
+          appendAiChatBotResult(
+            "전체 오더 " + ordersAll.length + "건 (최신순)",
+            ordersAll.slice(0, 40).map(buildAiOrderCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_pending") {
+          var reqsPending = queryAiRequestsFiltered(isRequestPendingAlert);
+          appendAiChatBotResult(
+            "대기(시간 미입력) 요청 " + reqsPending.length + "건",
+            reqsPending.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_time") {
+          syncRequestLogFromServer();
+          var reqsT = queryAiRequestsByTime(intent.timeFilter);
+          var dirLabelR = intent.timeFilter.direction === "before" ? "이전" : "이후";
+          appendAiChatBotResult(
+            "오늘 " +
+              intent.timeFilter.label +
+              " " +
+              dirLabelR +
+              " 정비 요청 " +
+              reqsT.length +
+              "건",
+            reqsT.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_today") {
+          var reqsToday = queryAiRequestsFiltered(function (e) {
+            return entryAtMinutesToday(e.at) != null;
+          });
+          appendAiChatBotResult(
+            "오늘 정비 요청 " + reqsToday.length + "건",
+            reqsToday.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_urgent") {
+          var reqsUrgent = queryAiRequestsFiltered(function (e) {
+            return !!e.urgent;
+          });
+          appendAiChatBotResult(
+            "긴급 정비 요청 " + reqsUrgent.length + "건",
+            reqsUrgent.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_scheduled") {
+          var reqsSched = queryAiRequestsFiltered(isScheduledRequestEntry);
+          appendAiChatBotResult(
+            "처리·예정 입력된 요청 " + reqsSched.length + "건",
+            reqsSched.map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "requests_all") {
+          var reqsAll = queryAiRequestsFiltered();
+          appendAiChatBotResult(
+            "전체 정비 요청 " + reqsAll.length + "건 (최신순)",
+            reqsAll.slice(0, 40).map(buildAiRequestCard)
+          );
+          return;
+        }
+
+        if (intent.type === "rooms_status") {
+          var statusResult = queryAiRoomsByStatusCode(intent.status);
+          if (statusResult.error) {
+            appendAiChatBotError(statusResult.error);
+            return;
+          }
+          appendAiChatBotResponse(
+            "ROOM_STATUS " + statusResult.status + " 객실 " + statusResult.rooms.length + "개",
+            statusResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "type_list") {
+          if (!cachedVacBoardRows.length) {
+            appendAiChatBotError("루밍 XML이 없습니다.");
+            return;
+          }
+          var typeList = collectAiRoomsByType(intent.typeCode).map(function (r) {
+            return {
+              room: r.room,
+              status: r.status,
+              type: r.type,
+              sched: r.sched,
+              etaLabel: r.sched ? "예정 " + r.sched : "예정 없음",
+              availableNow: false,
+            };
+          });
+          appendAiChatBotResponse(
+            "TYPE " + intent.typeCode + " 객실 " + typeList.length + "개",
+            typeList
+          );
+          return;
+        }
+
+        if (intent.type === "room_info") {
+          var roomInfo = queryAiRoomInfo(intent.room);
+          if (roomInfo.error) {
+            appendAiChatBotError(roomInfo.error);
+            return;
+          }
+          appendAiChatBotResponse(
+            "객실 " + formatRoomNoDisplay(intent.room) + " 정보",
+            roomInfo.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "mbinv_issue") {
+          var mbInvIssue = queryAiMbInvEntries().filter(isMbInvIssueOpen);
+          appendAiChatBotResult(
+            "MB & 인벤 문제 " + mbInvIssue.length + "건",
+            mbInvIssue.slice(0, 30).map(function (entry) {
+              return buildAiGenericEntryCard(
+                (entry.category === "inv" ? "인벤" : "MB") +
+                  " " +
+                  formatRoomNoDisplay(entry.roomFrom || "") +
+                  " → " +
+                  formatRoomNoDisplay(entry.roomTo || ""),
+                [
+                  "문제발생",
+                  "요청 " + (formatReqAt(entry.at) || "—"),
+                  entry.memo || "",
+                ],
+                "mb"
+              );
+            })
+          );
+          return;
+        }
+
+        if (intent.type === "mbinv") {
+          var mbInv = queryAiMbInvEntries();
+          appendAiChatBotResult(
+            "MB & 인벤 변경 " + mbInv.length + "건",
+            mbInv.slice(0, 30).map(function (entry) {
+              return buildAiGenericEntryCard(
+                (entry.category === "inv" ? "인벤" : "MB") +
+                  " " +
+                  formatRoomNoDisplay(entry.roomFrom || "") +
+                  " → " +
+                  formatRoomNoDisplay(entry.roomTo || ""),
+                [
+                  formatAiMbInvPhase(entry),
+                  "요청 " + (formatReqAt(entry.at) || "—"),
+                  entry.by ? "요청자 " + entry.by : "",
+                  entry.memo || "",
+                ],
+                "mb"
+              );
+            })
+          );
+          return;
+        }
+
+        if (intent.type === "mbcheck") {
+          var mbChk = queryAiMbCheckEntries();
+          appendAiChatBotResult(
+            "MB CHECK " + mbChk.length + "건",
+            mbChk.slice(0, 30).map(function (entry) {
+              return buildAiGenericEntryCard(formatRoomNoDisplay(entry.room || ""), [
+                formatAiMbCheckPhase(entry),
+                "요청 " + (formatReqAt(entry.at) || "—"),
+                entry.by ? "요청자 " + entry.by : "",
+                entry.memo || "",
+              ]);
+            })
+          );
+          return;
+        }
+
+        appendAiChatBotResult(
+          "질문을 이해하지 못했습니다.",
+          [],
+          buildAiHelpMessage()
+        );
+      }
+
+      function ensureAiModeWelcome() {
+        var chat = document.getElementById("aiModeChat");
+        if (!chat || chat.childElementCount) return;
+        appendAiChatBotResult(
+          "안녕하세요. 오늘 데이터로 객실·오더·요청을 조회해 드립니다.",
+          [],
+          buildAiHelpMessage()
+        );
+      }
+      function aiRoomMatchesType(roomNr, typeCode) {
+        var want = normalizeRoomTypeCode(typeCode);
+        if (!want) return false;
+        if (want === SCHED_TYPE_SUITE_KEY) {
+          return getRoomTypeFilterBucket(roomNr) === SCHED_TYPE_SUITE_KEY;
+        }
+        return normalizeRoomTypeCode(lookupRoomTypeFromXml(roomNr)) === want;
+      }
+
+      function collectAiRoomsByType(typeCode) {
+        var schedMap = hkBoardBuildSchedTimeMap();
+        var rows = hkBoardDedupeRows(cachedVacBoardRows);
+        var out = [];
+        rows.forEach(function (rec) {
+          if (!rec || !rec.room || HK_BOARD_DROP_ROOMS[rec.room]) return;
+          if (!aiRoomMatchesType(rec.room, typeCode)) return;
+          out.push({
+            room: rec.room,
+            status: normalizeRoomStatus(rec.status),
+            type: lookupRoomTypeFromXml(rec.room) || typeCode,
+            sched: schedMap[rec.room] || "",
+          });
+        });
+        return out;
+      }
+
+      function isAiRoomAvailableNow(roomNr, status) {
+        var st = normalizeRoomStatus(status);
+        if (!st || st === "OO" || st === "OS") return false;
+        if (lookupRoomResvDisplay(roomNr) === "IN") return false;
+        var sched = hkBoardBuildSchedTimeMap()[roomNr] || "";
+        if (sched && isAiSchedInFuture(sched)) return false;
+        return st === "CL";
+      }
+
+      function sortAiRoomsBySched(rooms) {
+        return rooms.slice().sort(function (a, b) {
+          var ma = parseAiSchedMinutes(a.sched);
+          var mb = parseAiSchedMinutes(b.sched);
+          if (ma == null && mb == null) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          }
+          if (ma == null) return 1;
+          if (mb == null) return -1;
+          if (ma !== mb) return ma - mb;
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+      }
+
+      function queryAiMaintenanceRooms(typeCode) {
+        if (!cachedVacBoardRows.length) {
+          return {
+            error:
+              "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드한 뒤 다시 질문해 주세요.",
+          };
+        }
+        var all = collectAiRoomsByType(typeCode);
+        if (!all.length) {
+          return {
+            error:
+              "TYPE " +
+              typeCode +
+              " 에 해당하는 객실이 XML에 없습니다. TYPE 표시를 켜고 루밍 XML을 확인해 주세요.",
+          };
+        }
+        var available = all.filter(function (r) {
+          return isAiRoomAvailableNow(r.room, r.status);
+        });
+        if (available.length) {
+          available.sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+          return {
+            mode: "available",
+            typeCode: typeCode,
+            rooms: available.map(function (r) {
+              return {
+                room: r.room,
+                status: r.status,
+                type: r.type,
+                sched: r.sched,
+                etaLabel: "지금 정비 가능",
+                availableNow: true,
+              };
+            }),
+          };
+        }
+        var pending = all.filter(function (r) {
+          var st = normalizeRoomStatus(r.status);
+          return st && st !== "OO" && st !== "OS";
+        });
+        var sorted = sortAiRoomsBySched(pending);
+        return {
+          mode: "scheduled",
+          typeCode: typeCode,
+          rooms: sorted.map(function (r) {
+            return {
+              room: r.room,
+              status: r.status,
+              type: r.type,
+              sched: r.sched,
+              etaLabel: r.sched ? "처리·예정 " + r.sched : "예정 시간 없음",
+              availableNow: false,
+            };
+          }),
+        };
+      }
+
+      function buildAiResultRoomCard(item) {
+        var li = document.createElement("li");
+        li.className = "room-card" + (item.availableNow ? " room-card--available" : "");
+        var head = document.createElement("div");
+        head.className = "room-card__head";
+        var noBox = document.createElement("span");
+        noBox.className = "room-card__no-box";
+        var no = document.createElement("span");
+        no.className = "room-card__no";
+        no.textContent = formatRoomNoDisplay(item.room || "");
+        noBox.appendChild(no);
+        head.appendChild(noBox);
+        if (item.type) {
+          var typeEl = document.createElement("span");
+          typeEl.className = "room-card__type";
+          typeEl.textContent = normalizeRoomTypeCode(item.type);
+          head.appendChild(typeEl);
+        }
+        head.appendChild(
+          buildRoomStatusGroup(item.status, item.room, { statusClass: "room-card__status" })
+        );
+        li.appendChild(head);
+        var eta = document.createElement("p");
+        eta.className = "room-card__eta";
+        eta.textContent = item.etaLabel || "";
+        li.appendChild(eta);
+        if (item.sched && !item.availableNow) {
+          var schedLine = document.createElement("p");
+          schedLine.className = "room-card__time-display";
+          setLineWithEmTime(schedLine, "완료 예상 · ", item.sched);
+          li.appendChild(schedLine);
+        }
+        return li;
       }
 
       function showSidebarRequestView() {
@@ -8776,6 +10451,13 @@
         hideFrontChatToast();
         clearFrontChatSidebarAlert();
         applySidebarMainView("chichi");
+      }
+
+      function showSidebarAiView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("ai");
+        ensureAiModeWelcome();
       }
 
       function showSidebarZoneView(zone) {
@@ -11968,6 +13650,7 @@
         var bDd = document.getElementById("sidebarBtnDd");
         var bInven = document.getElementById("sidebarBtnInven");
         var bChichi = document.getElementById("sidebarBtnChichi");
+        var bAi = document.getElementById("sidebarBtnAi");
         if (bReq) {
           bReq.addEventListener("click", function () {
             if (sidebarMainView === "request") {
@@ -12030,6 +13713,25 @@
             showSidebarChichiView();
           });
         }
+        if (bAi) {
+          bAi.addEventListener("click", function () {
+            if (sidebarMainView === "ai") return;
+            showSidebarAiView();
+          });
+        }
+      })();
+
+      (function setupAiModeForm() {
+        var form = document.getElementById("aiModeForm");
+        var input = document.getElementById("aiModeInput");
+        if (!form || !input) return;
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var q = input.value.trim();
+          if (!q) return;
+          input.value = "";
+          handleAiModeQuestion(q);
+        });
       })();
 
       (function setupCancelConfirmModal() {
