@@ -1,13 +1,15 @@
 /**
  * 인벤 통보 — 이미지 보드 (붙여넣기 · 드래그 · 크기 조절, 프론트 모드만 편집)
+ * 「통보」 버튼을 눌러야 서버에 저장·동기화됩니다.
  */
 (function (global) {
-  var saveTimer = null;
   var skipNextRemoteRender = false;
   var lastRenderEditable = null;
   var uiReady = false;
   var interacting = false;
   var selectedId = null;
+  var draftDirty = false;
+  var publishFeedbackTimer = null;
 
   var els = {
     mount: null,
@@ -17,6 +19,8 @@
     fileInput: null,
     btnPhoto: null,
     btnDelete: null,
+    btnPublish: null,
+    toolbarHint: null,
     hint: null,
   };
 
@@ -75,13 +79,36 @@
     return !!(btn && btn.classList.contains("is-on"));
   }
 
-  function scheduleSave() {
+  function markDraftDirty() {
     if (!isFrontModeActive()) return;
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      saveTimer = null;
-      saveInvenNotify(state);
-    }, 400);
+    draftDirty = true;
+    updatePublishButton();
+    updateToolbarHint();
+  }
+
+  function publishInvenNotify() {
+    if (!isFrontModeActive()) {
+      alert("프론트 모드에서만 통보할 수 있습니다.");
+      return;
+    }
+    saveInvenNotify(state);
+    draftDirty = false;
+    updatePublishButton();
+    updateToolbarHint();
+    if (els.btnPublish) {
+      var prev = els.btnPublish.textContent;
+      els.btnPublish.textContent = "통보 완료";
+      els.btnPublish.classList.add("is-done");
+      if (publishFeedbackTimer) clearTimeout(publishFeedbackTimer);
+      publishFeedbackTimer = setTimeout(function () {
+        publishFeedbackTimer = null;
+        if (els.btnPublish) {
+          els.btnPublish.textContent = prev;
+          els.btnPublish.classList.remove("is-done");
+        }
+        updatePublishButton();
+      }, 1800);
+    }
   }
 
   function compressImage(file, done) {
@@ -168,7 +195,7 @@
     renderImages();
     updateEmpty();
     updateToolbar();
-    scheduleSave();
+    markDraftDirty();
   }
 
   function addImageFromFile(file, posX, posY) {
@@ -202,7 +229,7 @@
     renderImages();
     updateEmpty();
     updateToolbar();
-    scheduleSave();
+    markDraftDirty();
   }
 
   function applyItemGeometry(el, img) {
@@ -236,7 +263,7 @@
         interacting = false;
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        scheduleSave();
+        markDraftDirty();
       }
 
       document.addEventListener("mousemove", onMove);
@@ -267,7 +294,7 @@
         interacting = false;
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        scheduleSave();
+        markDraftDirty();
       }
 
       document.addEventListener("mousemove", onMove);
@@ -326,13 +353,37 @@
     if (els.btnDelete) {
       els.btnDelete.disabled = !editable || !selectedId;
     }
+    updatePublishButton();
+    updateToolbarHint();
+  }
+
+  function updatePublishButton() {
+    if (!els.btnPublish) return;
+    var editable = isFrontModeActive();
+    var showingDone = els.btnPublish.classList.contains("is-done");
+    if (!showingDone) {
+      els.btnPublish.textContent = draftDirty ? "통보 (미동기화)" : "통보";
+    }
+    els.btnPublish.disabled = !editable;
+    els.btnPublish.classList.toggle("inven-notify-btn-publish--dirty", draftDirty && !showingDone);
+  }
+
+  function updateToolbarHint() {
+    if (!els.toolbarHint) return;
+    if (!isFrontModeActive()) {
+      els.toolbarHint.textContent = "";
+      return;
+    }
+    els.toolbarHint.textContent = draftDirty
+      ? "변경 내용은 통보 버튼을 눌러야 다른 화면에 반영됩니다"
+      : "Ctrl+V 붙여넣기 · 드래그 이동 · 우하단 핸들로 크기 조절";
   }
 
   function updateHint() {
     if (!els.hint) return;
     els.hint.textContent = isFrontModeActive()
-      ? "보드를 클릭한 뒤 Ctrl+V로 이미지 붙여넣기 · 드래그로 이동 · 우하단 핸들로 크기 조절 · Del 키 또는 선택 삭제"
-      : "조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.";
+      ? "이미지를 배치한 뒤 「통보」 버튼을 누르면 다른 PC·정비관리 화면에 동기화됩니다."
+      : "통보된 내용을 조회합니다. 수정은 프론트 모드를 켠 뒤 가능합니다.";
   }
 
   function handlePaste(e) {
@@ -393,6 +444,12 @@
     btnDelete.textContent = "선택 삭제";
     btnDelete.disabled = true;
 
+    var btnPublish = document.createElement("button");
+    btnPublish.type = "button";
+    btnPublish.className = "btn-order inven-notify-btn-publish";
+    btnPublish.id = "btnInvenNotifyPublish";
+    btnPublish.textContent = "통보";
+
     var toolbarHint = document.createElement("span");
     toolbarHint.className = "inven-notify-toolbar__hint";
     toolbarHint.textContent = "Ctrl+V 붙여넣기";
@@ -400,6 +457,7 @@
     toolbar.appendChild(btnPhoto);
     toolbar.appendChild(btnDelete);
     toolbar.appendChild(toolbarHint);
+    toolbar.appendChild(btnPublish);
 
     var board = document.createElement("div");
     board.className = "inven-notify-board";
@@ -431,6 +489,8 @@
     els.fileInput = fileInput;
     els.btnPhoto = btnPhoto;
     els.btnDelete = btnDelete;
+    els.btnPublish = btnPublish;
+    els.toolbarHint = toolbarHint;
     els.hint = document.getElementById("invenNotifyHint");
 
     btnPhoto.addEventListener("click", function () {
@@ -446,6 +506,10 @@
 
     btnDelete.addEventListener("click", function () {
       deleteSelected();
+    });
+
+    btnPublish.addEventListener("click", function () {
+      publishInvenNotify();
     });
 
     board.addEventListener("click", function () {
@@ -468,7 +532,7 @@
   }
 
   function isUserEditingInvenNotify() {
-    return interacting;
+    return interacting || draftDirty;
   }
 
   function hasContent(data) {
@@ -491,20 +555,18 @@
     if (!panel || panel.hidden) return;
     if (!ensureUi()) return;
 
-    if (saveTimer) {
-      clearTimeout(saveTimer);
-      saveTimer = null;
-      if (isFrontModeActive()) saveInvenNotify(state);
-    }
-
     var editable = isFrontModeActive();
     if (!force && skipNextRemoteRender) {
       skipNextRemoteRender = false;
       if (editable === lastRenderEditable && isUserEditingInvenNotify()) return;
     }
-    if (!force && isUserEditingInvenNotify()) return;
+    if (!force && interacting) return;
+    if (!force && editable && draftDirty) return;
 
-    if (force || !interacting) {
+    if (!editable) {
+      draftDirty = false;
+      state = loadInvenNotify();
+    } else if (!draftDirty) {
       state = loadInvenNotify();
     }
 
@@ -514,6 +576,7 @@
 
     if (els.board) {
       els.board.classList.toggle("inven-notify-board--readonly", !editable);
+      els.board.classList.toggle("inven-notify-board--draft", editable && draftDirty);
     }
 
     renderImages();
@@ -530,10 +593,14 @@
     normalizeInvenNotify: normalizeInvenNotify,
     load: loadInvenNotify,
     save: saveInvenNotify,
+    publish: publishInvenNotify,
     render: renderInvenNotifyPanel,
     init: initInvenNotify,
     isFrontModeActive: isFrontModeActive,
     hasContent: hasContent,
     exportFlatRows: exportFlatRows,
+    isDraftDirty: function () {
+      return draftDirty;
+    },
   };
 })(typeof window !== "undefined" ? window : this);

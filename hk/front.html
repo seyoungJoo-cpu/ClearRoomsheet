@@ -2970,6 +2970,8 @@
     }
 
     .inven-notify-toolbar__hint {
+      flex: 1;
+      min-width: 120px;
       font-size: 0.8125rem;
       color: var(--text-muted);
     }
@@ -2977,6 +2979,54 @@
     .inven-notify-btn-delete:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    .inven-notify-btn-publish {
+      flex-shrink: 0;
+      font-weight: 700;
+      background: #2563eb;
+      border-color: #1d4ed8;
+      color: #fff;
+    }
+
+    .inven-notify-btn-publish:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    .inven-notify-btn-publish:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .inven-notify-btn-publish.inven-notify-btn-publish--dirty {
+      background: #dc2626;
+      border-color: #b91c1c;
+      animation: inven-notify-pulse 1.4s ease-in-out infinite;
+    }
+
+    .inven-notify-btn-publish.inven-notify-btn-publish--dirty:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+
+    .inven-notify-btn-publish.is-done {
+      background: #16a34a;
+      border-color: #15803d;
+      animation: none;
+    }
+
+    @keyframes inven-notify-pulse {
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35);
+      }
+      50% {
+        box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+      }
+    }
+
+    .inven-notify-board--draft {
+      border-color: #f59e0b;
+      background: #fffbeb;
     }
 
     .inven-notify-board {
@@ -5629,7 +5679,7 @@
       >
         <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
         <p class="order-panel__hint" id="invenNotifyHint">
-          조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
+          통보된 내용을 조회합니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
