@@ -115,6 +115,8 @@
       notice:
         "공지 내용을 여기에 표시합니다. (우측 상단 관리자에서 수정할 수 있습니다.)",
       noticeImage: "",
+      mbInvNotice: "",
+      invenNotify: null,
       customZones: [],
       rooms: {
         VIP: [],
@@ -152,6 +154,10 @@
     if (!data || typeof data !== "object") return d;
     if (typeof data.notice === "string") d.notice = data.notice;
     if (data.noticeImage != null) d.noticeImage = String(data.noticeImage);
+    if (typeof data.mbInvNotice === "string") d.mbInvNotice = data.mbInvNotice;
+    if (data.invenNotify && typeof data.invenNotify === "object") {
+      d.invenNotify = data.invenNotify;
+    }
 
     var customZones = [];
     var customById = {};

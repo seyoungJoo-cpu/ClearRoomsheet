@@ -2348,7 +2348,8 @@
 
     .main.main--order #orderPanel,
     .main.main--mb-inv #mbInvPanel,
-    .main.main--mb-check #mbCheckPanel {
+    .main.main--mb-check #mbCheckPanel,
+    .main.main--inven-notify #invenNotifyPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -2915,6 +2916,181 @@
     @media (max-width: 960px) {
       .mb-inv-panel__columns {
         grid-template-columns: 1fr;
+      }
+    }
+
+    .mb-inv-notice-board {
+      margin-top: 14px;
+      border: 2px solid #93c5fd;
+      border-radius: 10px;
+      background: #eff6ff;
+      padding: 12px 14px;
+      min-height: 72px;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .mb-inv-notice-board__label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #1d4ed8;
+      margin-bottom: 6px;
+    }
+
+    .mb-inv-notice-board__text {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .mb-inv-notice-board__text:empty::before {
+      content: "관리자에서 MB & 인벤 공지를 등록할 수 있습니다.";
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* 인벤 통보 — 엑셀형 표 */
+    .inven-notify-panel {
+      overflow-x: auto;
+    }
+
+    .inven-notify-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      min-width: 920px;
+      border: 1px solid #000;
+    }
+
+    .inven-notify-wing {
+      min-width: 0;
+      border-right: 1px solid #000;
+    }
+
+    .inven-notify-wing:last-child {
+      border-right: none;
+    }
+
+    .inven-notify-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
+    .inven-notify-table th,
+    .inven-notify-table td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      vertical-align: middle;
+      word-break: break-word;
+    }
+
+    .inven-notify-th-building {
+      background: #fff;
+      font-size: 1.125rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 6px 4px;
+    }
+
+    .inven-notify-th-section {
+      background: #f8cbad;
+      font-weight: 700;
+      text-align: center;
+      font-size: 0.6875rem;
+      padding: 4px 2px;
+    }
+
+    .inven-notify-th-section--after14 {
+      background: #fce4d6;
+    }
+
+    .inven-notify-th-room,
+    .inven-notify-td-room {
+      background: #ff99cc;
+      width: 14%;
+    }
+
+    .inven-notify-th-content,
+    .inven-notify-td-content {
+      width: auto;
+    }
+
+    .inven-notify-th-resv,
+    .inven-notify-td-resv {
+      width: 16%;
+    }
+
+    .inven-notify-th-status,
+    .inven-notify-td-status {
+      width: 18%;
+      font-size: 0.6875rem;
+    }
+
+    .inven-notify-th-idx,
+    .inven-notify-td-idx {
+      width: 24px;
+      text-align: center;
+      background: #fff;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .inven-notify-th-wing-label {
+      background: #ff99cc;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.8125rem;
+      padding: 3px 4px;
+    }
+
+    .inven-notify-cell-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+      padding: 2px 1px;
+      min-height: 1.4em;
+      outline: none;
+    }
+
+    .inven-notify-cell-input:focus {
+      background: #fffef0;
+      box-shadow: inset 0 0 0 1px #2563eb;
+    }
+
+    .inven-notify-cell-text {
+      display: block;
+      min-height: 1.4em;
+      white-space: pre-wrap;
+    }
+
+    .inven-notify-sheet--readonly .inven-notify-td-room,
+    .inven-notify-sheet--readonly .inven-notify-th-room {
+      background: #ffd6e8;
+    }
+
+    @media (max-width: 960px) {
+      .inven-notify-grid {
+        grid-template-columns: 1fr;
+        min-width: 0;
+      }
+
+      .inven-notify-wing {
+        border-right: none;
+        border-bottom: 1px solid #000;
+      }
+
+      .inven-notify-wing:last-child {
+        border-bottom: none;
       }
     }
 
@@ -5091,6 +5267,14 @@
           >
             MB CHECK
           </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn sidebar-nav__btn--compact"
+            id="sidebarBtnInvenNotify"
+            aria-pressed="false"
+          >
+            인벤 통보
+          </button>
         </div>
       </nav>
       <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
@@ -5218,7 +5402,7 @@
           <input
             type="text"
             id="aiModeInput"
-            placeholder="질문 입력 (예: 15시 이후 오더, TYPE 정비 가능 객실, 1205 상태)"
+            placeholder="질문 입력 (예: MNDDM 입실 가능, MNDDM IP, TYPE 정비 가능)"
             autocomplete="off"
             aria-label="AI 질문"
           />
@@ -5458,6 +5642,24 @@
             </section>
           </div>
         </div>
+
+        <section class="mb-inv-notice-board" id="mbInvNoticeBoard" aria-label="MB 인벤 메모장">
+          <div class="mb-inv-notice-board__label">메모장</div>
+          <div class="mb-inv-notice-board__text" id="mbInvNoticeText"></div>
+        </section>
+      </section>
+
+      <section
+        class="order-panel inven-notify-panel"
+        id="invenNotifyPanel"
+        hidden
+        aria-labelledby="invenNotifyPanelTitle"
+      >
+        <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
+        <p class="order-panel__hint" id="invenNotifyHint">
+          조회 전용입니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
+        </p>
+        <div class="inven-notify-sheet" id="invenNotifySheet"></div>
       </section>
 
       <section class="order-panel mb-check-panel" id="mbCheckPanel" hidden aria-labelledby="mbCheckPanelTitle">
@@ -5749,6 +5951,7 @@
   <script src="hk-chat-colors.js"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
+  <script src="hk-inven-notify.js"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -5756,6 +5959,7 @@
       var roomEmpty = document.getElementById("roomListEmpty");
       var noticeText = document.getElementById("noticeText");
       var noticeImage = document.getElementById("noticeImage");
+      var mbInvNoticeText = document.getElementById("mbInvNoticeText");
       var zoneLabels = {
         VIP: "VIP",
         RC: "R/C",
@@ -7042,6 +7246,12 @@
         }
         if (changed.indexOf("hkStorage") >= 0) {
           refreshMain({ detectNoticeChange: true });
+          if (
+            sidebarMainView === "invenNotify" &&
+            typeof HKInvenNotify !== "undefined"
+          ) {
+            HKInvenNotify.render();
+          }
         }
         if (changed.indexOf("hkChangeLog") >= 0) {
           if (!getRoomChangeLogEntries().length) {
@@ -8650,6 +8860,47 @@
         return panel;
       }
 
+      function getFilteredScheduledRequestEntries() {
+        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+        var list = requestLogEntries.filter(function (e) {
+          return (
+            isScheduledRequestEntry(e) &&
+            roomMatchesSchedSearch(e.room, filterNorm) &&
+            roomPassesSchedTypeFilter(e.room)
+          );
+        });
+        list.sort(function (a, b) {
+          return (a.sched || "").localeCompare(b.sched || "", undefined, { numeric: true });
+        });
+        return list;
+      }
+
+      function buildScheduledRequestBoardRows() {
+        var scheduled = getFilteredScheduledRequestEntries();
+        var xmlStatusByRoom = {};
+        cachedVacBoardRows.forEach(function (rec) {
+          if (!rec || !rec.room || HK_BOARD_DROP_ROOMS[rec.room]) return;
+          xmlStatusByRoom[rec.room] = rec.status || "";
+        });
+        var byRoom = {};
+        scheduled.forEach(function (entry) {
+          var nr = normalizeRoomDigits(entry.room);
+          if (!nr || HK_BOARD_DROP_ROOMS[nr]) return;
+          var at = new Date(entry.at || 0).getTime();
+          if (isNaN(at)) at = 0;
+          if (!byRoom[nr] || at >= byRoom[nr].at) {
+            byRoom[nr] = {
+              room: nr,
+              status: xmlStatusByRoom[nr] || entry.status || "",
+              at: at,
+            };
+          }
+        });
+        return Object.keys(byRoom).map(function (k) {
+          return { room: byRoom[k].room, status: byRoom[k].status };
+        });
+      }
+
       function syncRequestRoomBoardUi() {
         var panel = document.getElementById("requestRoomBoardPanel");
         var sched = document.getElementById("schedCardsPanel");
@@ -8672,32 +8923,23 @@
         var mount = document.getElementById("requestRoomBoardMount");
         if (!mount || !requestRoomBoardOpen) return;
         mount.innerHTML = "";
-        if (!cachedVacBoardRows.length) {
-          var empty = document.createElement("div");
-          empty.className = "hk-room-board-empty";
-          empty.textContent =
-            "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드하면 객실 판이 표시됩니다.";
-          mount.appendChild(empty);
-          return;
-        }
-        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
-        var rows = cachedVacBoardRows.filter(function (rec) {
-          if (HK_BOARD_DROP_ROOMS[rec.room]) return false;
-          if (filterNorm && !roomMatchesSchedSearch(rec.room, filterNorm)) return false;
-          if (!roomPassesSchedTypeFilter(rec.room)) return false;
-          return true;
-        });
-        var deduped = hkBoardDedupeRows(rows);
-        var boardRows = deduped.filter(function (rec) {
+        var boardRows = buildScheduledRequestBoardRows().filter(function (rec) {
           var cl = hkBoardClassifyRoom(rec.room);
           return cl && cl.wing !== "extra";
         });
         if (!boardRows.length) {
           var emptyF = document.createElement("div");
           emptyF.className = "hk-room-board-empty";
-          emptyF.textContent = filterNorm
-            ? "입력한 객실번호·TYPE 조건에 맞는 객실이 없습니다."
-            : "표시할 객실이 없습니다.";
+          var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+          var hasAnyScheduled = requestLogEntries.some(isScheduledRequestEntry);
+          if (!hasAnyScheduled) {
+            emptyF.textContent = "처리·예정 시간이 입력된 요청이 없습니다.";
+          } else if (filterNorm || isSchedTypeFilterRestricted()) {
+            emptyF.textContent =
+              "입력한 객실번호·TYPE 조건에 맞는 처리·예정 요청이 없습니다.";
+          } else {
+            emptyF.textContent = "표시할 처리·예정 요청이 없습니다.";
+          }
           mount.appendChild(emptyF);
           return;
         }
@@ -8870,6 +9112,7 @@
         var ord = document.getElementById("sidebarBtnOrder");
         var mbInvNav = document.getElementById("sidebarBtnMbInv");
         var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
+        var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
         var frontNav = document.getElementById("sidebarBtnFront");
         var ddNav = document.getElementById("sidebarBtnDd");
         var invenNav = document.getElementById("sidebarBtnInven");
@@ -8890,6 +9133,13 @@
         if (mbCheckNav) {
           mbCheckNav.classList.toggle("is-active", sidebarMainView === "mbCheck");
           mbCheckNav.setAttribute("aria-pressed", sidebarMainView === "mbCheck" ? "true" : "false");
+        }
+        if (invenNotifyNav) {
+          invenNotifyNav.classList.toggle("is-active", sidebarMainView === "invenNotify");
+          invenNotifyNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "invenNotify" ? "true" : "false"
+          );
         }
         if (frontNav) {
           frontNav.classList.toggle("is-active", sidebarMainView === "front");
@@ -8925,6 +9175,7 @@
         var showOrder = view === "order";
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
+        var showInvenNotify = view === "invenNotify";
         var showFront = view === "front";
         var showDd = view === "dd";
         var showInven = view === "inven";
@@ -8937,6 +9188,7 @@
         var orderPanel = document.getElementById("orderPanel");
         var mbInvPanel = document.getElementById("mbInvPanel");
         var mbCheckPanel = document.getElementById("mbCheckPanel");
+        var invenNotifyPanel = document.getElementById("invenNotifyPanel");
         var frontChatPanel = document.getElementById("frontChatPanel");
         var ddEmbedPanel = document.getElementById("ddEmbedPanel");
         var invenEmbedPanel = document.getElementById("invenEmbedPanel");
@@ -8950,6 +9202,7 @@
         if (orderPanel) orderPanel.hidden = !showOrder;
         if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
+        if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
         if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
         if (ddEmbedPanel) ddEmbedPanel.hidden = !showDd || !frontMode;
         if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
@@ -8962,6 +9215,7 @@
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--mb-inv", showMbInv);
           mainEl.classList.toggle("main--mb-check", showMbCheck);
+          mainEl.classList.toggle("main--inven-notify", showInvenNotify);
           mainEl.classList.toggle("main--front", showFront);
           mainEl.classList.toggle("main--dd", showDd);
           mainEl.classList.toggle("main--inven", showInven);
@@ -8978,9 +9232,13 @@
         if (mbInvFeedback) mbInvFeedback.hidden = !showMbInv;
         if (mbCheckFeedback) mbCheckFeedback.hidden = !showMbCheck;
         if (feedbackColumn) {
-          feedbackColumn.hidden = !showRequest && !showOrder && !showMbInv && !showMbCheck;
+          feedbackColumn.hidden =
+            !showRequest && !showOrder && !showMbInv && !showMbCheck && !showInvenNotify;
         }
         updateSidebarPrimaryNavActive();
+        if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
+          HKInvenNotify.render(true);
+        }
         if (showAi) {
           requestAnimationFrame(function () {
             var inp = document.getElementById("aiModeInput");
@@ -9029,7 +9287,15 @@
       }
 
       function isAiMaintenanceAvailQuery(text) {
-        return /정비\s*가능|지금\s*가능|가능한\s*객실|바로\s*가능|지금\s*정비/.test(String(text || ""));
+        var s = String(text || "");
+        if (isAiCheckInAvailQuery(s)) return false;
+        return /정비\s*가능|지금\s*가능|가능한\s*객실|바로\s*가능|지금\s*정비/.test(s);
+      }
+
+      function isAiCheckInAvailQuery(text) {
+        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실/.test(
+          String(text || "")
+        );
       }
 
       function entryAtMinutesToday(iso) {
@@ -9402,7 +9668,9 @@
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
-          "· 타입(ENCFT) 지금 정비 가능한 객실\n" +
+          "· 타입(MNDDM) 입실 가능한 객실 (IP 우선, 없으면 정비 예정 빠른 순)\n" +
+          "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
+          "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
           "· VIP 특이객실 · 1205 상태\n\n" +
           "【기타】\n" +
@@ -9520,13 +9788,24 @@
         if (/MB\s*CHECK|엠비\s*체크/i.test(q)) return { type: "mbcheck" };
         if (/MB|인벤/.test(q) && /문제|이슈/.test(q)) return { type: "mbinv_issue" };
         if (/MB|인벤/.test(q) && /변경/.test(q)) return { type: "mbinv" };
-        if (isAiMaintenanceAvailQuery(q)) return { type: "type_avail" };
+
+        var typeCode = parseAiQueryTypeCode(q);
         var statusM = q.match(/\b(IP|CL|PU|DI|OO|OS)\b/i);
-        if (statusM && /객실|상태|목록|보여|알려/.test(q)) {
+        if (typeCode && isAiCheckInAvailQuery(q)) {
+          return { type: "type_checkin", typeCode: typeCode };
+        }
+        if (typeCode && statusM) {
+          return {
+            type: "type_status",
+            typeCode: typeCode,
+            status: statusM[1].toUpperCase(),
+          };
+        }
+        if (isAiMaintenanceAvailQuery(q)) return { type: "type_avail" };
+        if (statusM && /객실|상태|목록|보여|알려|찾/.test(q)) {
           return { type: "rooms_status", status: statusM[1].toUpperCase() };
         }
-        var typeCode = parseAiQueryTypeCode(q);
-        if (typeCode && /객실|목록|몇|알려|보여/.test(q)) {
+        if (typeCode && /객실|목록|몇|알려|보여|찾/.test(q)) {
           return { type: "type_list", typeCode: typeCode };
         }
         if (roomM) return { type: "room_info", room: roomM[1] };
@@ -9923,6 +10202,56 @@
           return;
         }
 
+        if (intent.type === "type_checkin") {
+          var checkinResult = queryAiCheckInRooms(intent.typeCode);
+          if (checkinResult.error) {
+            appendAiChatBotError(checkinResult.error);
+            return;
+          }
+          if (checkinResult.mode === "ready") {
+            appendAiChatBotResponse(
+              "TYPE " +
+                intent.typeCode +
+                " · 입실 가능(IP) 객실 " +
+                checkinResult.rooms.length +
+                "개",
+              checkinResult.rooms
+            );
+            return;
+          }
+          appendAiChatBotResponse(
+            "TYPE " +
+              intent.typeCode +
+              " · IP 없음 → 정비 예정 빠른 순 (" +
+              checkinResult.rooms.length +
+              "개)",
+            checkinResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "type_status") {
+          var typeStatusResult = queryAiRoomsByTypeAndStatus(
+            intent.typeCode,
+            intent.status
+          );
+          if (typeStatusResult.error) {
+            appendAiChatBotError(typeStatusResult.error);
+            return;
+          }
+          appendAiChatBotResponse(
+            "TYPE " +
+              intent.typeCode +
+              " · " +
+              typeStatusResult.status +
+              " 객실 " +
+              typeStatusResult.rooms.length +
+              "개",
+            typeStatusResult.rooms
+          );
+          return;
+        }
+
         if (intent.type === "type_avail") {
           var typeCode = parseAiQueryTypeCode(q);
           if (!typeCode) {
@@ -10280,6 +10609,105 @@
         return st === "CL";
       }
 
+      function isAiRoomCheckInReady(roomNr, status) {
+        var st = normalizeRoomStatus(status);
+        if (st !== "IP") return false;
+        if (lookupRoomResvDisplay(roomNr) === "IN") return false;
+        return true;
+      }
+
+      function mapAiTypeRoomRow(r, etaLabel, availableNow) {
+        return {
+          room: r.room,
+          status: r.status,
+          type: r.type,
+          sched: r.sched,
+          etaLabel: etaLabel,
+          availableNow: !!availableNow,
+        };
+      }
+
+      function queryAiCheckInRooms(typeCode) {
+        if (!cachedVacBoardRows.length) {
+          return {
+            error:
+              "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드한 뒤 다시 질문해 주세요.",
+          };
+        }
+        var all = collectAiRoomsByType(typeCode);
+        if (!all.length) {
+          return {
+            error:
+              "TYPE " +
+              typeCode +
+              " 에 해당하는 객실이 XML에 없습니다. TYPE 표시를 켜고 루밍 XML을 확인해 주세요.",
+          };
+        }
+        var ready = all.filter(function (r) {
+          return isAiRoomCheckInReady(r.room, r.status);
+        });
+        if (ready.length) {
+          ready.sort(function (a, b) {
+            return a.room.localeCompare(b.room, undefined, { numeric: true });
+          });
+          return {
+            mode: "ready",
+            typeCode: typeCode,
+            rooms: ready.map(function (r) {
+              return mapAiTypeRoomRow(r, "입실 가능 (IP)", true);
+            }),
+          };
+        }
+        var pending = all.filter(function (r) {
+          var st = normalizeRoomStatus(r.status);
+          if (!st || st === "OO" || st === "OS") return false;
+          if (lookupRoomResvDisplay(r.room) === "IN") return false;
+          return true;
+        });
+        var sorted = sortAiRoomsBySched(pending);
+        return {
+          mode: "scheduled",
+          typeCode: typeCode,
+          rooms: sorted.map(function (r) {
+            return mapAiTypeRoomRow(
+              r,
+              r.sched ? "처리·예정 " + r.sched : "예정 시간 없음",
+              false
+            );
+          }),
+        };
+      }
+
+      function queryAiRoomsByTypeAndStatus(typeCode, statusCode) {
+        if (!cachedVacBoardRows.length) {
+          return { error: "루밍 XML이 없습니다. 정비용 루밍에서 XML을 업로드해 주세요." };
+        }
+        var want = normalizeRoomStatus(statusCode);
+        var filtered = collectAiRoomsByType(typeCode).filter(function (r) {
+          return normalizeRoomStatus(r.status) === want;
+        });
+        if (!filtered.length) {
+          return {
+            error:
+              "TYPE " + typeCode + " 중 " + want + " 상태 객실이 없습니다.",
+          };
+        }
+        filtered.sort(function (a, b) {
+          return a.room.localeCompare(b.room, undefined, { numeric: true });
+        });
+        return {
+          typeCode: typeCode,
+          status: want,
+          rooms: filtered.map(function (r) {
+            return mapAiTypeRoomRow(
+              r,
+              want + (r.sched ? " · 예정 " + r.sched : ""),
+              want === "CL" && isAiRoomAvailableNow(r.room, r.status)
+            );
+          }),
+        };
+      }
+
       function sortAiRoomsBySched(rooms) {
         return rooms.slice().sort(function (a, b) {
           var ma = parseAiSchedMinutes(a.sched);
@@ -10417,6 +10845,12 @@
         clearZoneTabSelection();
         clearMbCheckSidebarAlerts();
         applySidebarMainView("mbCheck");
+      }
+
+      function showSidebarInvenNotifyView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("invenNotify");
       }
 
       function showSidebarFrontView() {
@@ -11680,18 +12114,8 @@
         var hint = document.getElementById("schedCardsHint");
         if (!ul) return;
         ul.innerHTML = "";
-        var allScheduled = requestLogEntries.filter(function (e) {
-          return e.sched && String(e.sched).trim();
-        });
-        allScheduled.sort(function (a, b) {
-          return (a.sched || "").localeCompare(b.sched || "", undefined, { numeric: true });
-        });
-        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
-        var scheduled = allScheduled.filter(function (e) {
-          return (
-            roomMatchesSchedSearch(e.room, filterNorm) && roomPassesSchedTypeFilter(e.room)
-          );
-        });
+        var allScheduled = getFilteredScheduledRequestEntries();
+        var scheduled = allScheduled;
         scheduled.forEach(function (entry) {
           var sched = String(entry.sched).trim();
           var li = document.createElement("li");
@@ -12211,6 +12635,13 @@
         }
       }
 
+      function applyMbInvNotice() {
+        if (!mbInvNoticeText) return;
+        var data = HKStorage.load();
+        var next = data.mbInvNotice != null ? String(data.mbInvNotice) : "";
+        mbInvNoticeText.textContent = next;
+      }
+
       function hideNoticeChangedToast() {
         var toast = document.getElementById("hkNoticeToast");
         if (!toast) return;
@@ -12556,6 +12987,13 @@
         syncZoneLabelsFromStorage();
         currentZone = getActiveZone();
         applyNotice({ detectChange: !!opts.detectNoticeChange });
+        applyMbInvNotice();
+        if (
+          sidebarMainView === "invenNotify" &&
+          typeof HKInvenNotify !== "undefined"
+        ) {
+          HKInvenNotify.render();
+        }
         if (currentZone) {
           renderRoomsForZone(currentZone);
           if (zoneRoomManageOpen) renderZoneRoomManagePanel(currentZone);
@@ -12621,6 +13059,9 @@
         if (typeof HKMbWorkflow !== "undefined") {
           HKMbWorkflow.renderMbInvPanels();
           HKMbWorkflow.renderMbCheckPanels();
+        }
+        if (typeof HKInvenNotify !== "undefined") {
+          HKInvenNotify.render(true);
         }
       }
 
@@ -13288,6 +13729,9 @@
         HKMbWorkflow.renderMbInvPanels();
         HKMbWorkflow.renderMbCheckPanels();
       }
+      if (typeof HKInvenNotify !== "undefined") {
+        HKInvenNotify.init();
+      }
       refreshMain();
       showSidebarRequestView();
       renderOrderPanels();
@@ -13646,6 +14090,7 @@
         var bOrd = document.getElementById("sidebarBtnOrder");
         var bMbInv = document.getElementById("sidebarBtnMbInv");
         var bMbCheck = document.getElementById("sidebarBtnMbCheck");
+        var bInvenNotify = document.getElementById("sidebarBtnInvenNotify");
         var bFront = document.getElementById("sidebarBtnFront");
         var bDd = document.getElementById("sidebarBtnDd");
         var bInven = document.getElementById("sidebarBtnInven");
@@ -13683,6 +14128,12 @@
           bMbCheck.addEventListener("click", function () {
             if (sidebarMainView === "mbCheck") return;
             showSidebarMbCheckView();
+          });
+        }
+        if (bInvenNotify) {
+          bInvenNotify.addEventListener("click", function () {
+            if (sidebarMainView === "invenNotify") return;
+            showSidebarInvenNotifyView();
           });
         }
         if (bFront) {
