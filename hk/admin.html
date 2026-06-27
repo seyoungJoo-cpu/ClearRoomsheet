@@ -1514,76 +1514,17 @@
       }
 
       function hasInvenNotifyData(raw) {
-        var d =
-          typeof HKInvenNotify !== "undefined"
-            ? HKInvenNotify.normalizeInvenNotify(raw)
-            : raw || {};
-        function wingHas(w) {
-          if (!w) return false;
-          var pre = w.preInv || [];
-          var after = w.after14 || [];
-          var i;
-          for (i = 0; i < pre.length; i++) {
-            if ((pre[i].room || "").trim() || (pre[i].content || "").trim()) return true;
-          }
-          for (i = 0; i < after.length; i++) {
-            var r = after[i];
-            if (
-              (r.room || "").trim() ||
-              (r.resv || "").trim() ||
-              (r.content || "").trim() ||
-              (r.status17 || "").trim()
-            ) {
-              return true;
-            }
-          }
-          return false;
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.hasContent) {
+          return HKInvenNotify.hasContent(raw);
         }
-        return wingHas(d.main) || wingHas(d.annex);
+        return false;
       }
 
       function buildInvenNotifyExportRows(invenNotify) {
-        var d =
-          typeof HKInvenNotify !== "undefined"
-            ? HKInvenNotify.normalizeInvenNotify(invenNotify)
-            : invenNotify || {};
-        var rows = [];
-        ["main", "annex"].forEach(function (wingKey) {
-          var label = wingKey === "main" ? "본관" : "별관";
-          var wing = d[wingKey] || {};
-          (wing.preInv || []).forEach(function (r, i) {
-            if (!(r.room || "").trim() && !(r.content || "").trim()) return;
-            rows.push([
-              label,
-              "인벤 뽑기 전",
-              String(i + 1),
-              r.room || "",
-              "",
-              r.content || "",
-              "",
-            ]);
-          });
-          (wing.after14 || []).forEach(function (r, i) {
-            if (
-              !(r.room || "").trim() &&
-              !(r.resv || "").trim() &&
-              !(r.content || "").trim() &&
-              !(r.status17 || "").trim()
-            ) {
-              return;
-            }
-            rows.push([
-              label,
-              "14시 이후",
-              String(i + 1),
-              r.room || "",
-              r.resv || "",
-              r.content || "",
-              r.status17 || "",
-            ]);
-          });
-        });
-        return rows;
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.exportFlatRows) {
+          return HKInvenNotify.exportFlatRows(invenNotify);
+        }
+        return [];
       }
 
       function buildCloseDaySummaryRows(snapshot) {
@@ -1653,15 +1594,7 @@
           },
           {
             title: "인벤 통보",
-            headers: [
-              "구분",
-              "섹션",
-              "번호",
-              "객실번호",
-              "예약번호",
-              "내용",
-              "17시기준 미투입",
-            ],
+            headers: ["구분", "행", "열", "내용"],
             rows: buildInvenNotifyExportRows(snapshot.data.invenNotify),
           },
           {
