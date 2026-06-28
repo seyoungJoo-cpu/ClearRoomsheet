@@ -3442,9 +3442,26 @@
       color: #4338ca;
     }
 
+    .ai-mode-msg--has-cards {
+      max-width: 100%;
+      align-self: stretch;
+      width: 100%;
+    }
+
     .ai-mode-room-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .ai-mode-entry-list {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
       margin: 0;
       padding: 0;
@@ -3452,6 +3469,9 @@
     }
 
     .ai-mode-room-grid .room-card {
+      flex: 0 0 auto;
+      width: 168px;
+      max-width: 100%;
       margin: 0;
     }
 
@@ -7052,13 +7072,15 @@
         stEl.textContent = st || (opts.emptyLabel != null ? opts.emptyLabel : "—");
         if (!st && opts.missingClass) stEl.classList.add(opts.missingClass);
         group.appendChild(stEl);
-        var resv = lookupRoomResvDisplay(roomInput);
-        if (resv) {
-          var rv = document.createElement("span");
-          rv.className = resvBadgeClass(resv);
-          rv.textContent = resv;
-          rv.title = "FO " + resv;
-          group.appendChild(rv);
+        if (!opts.hideResv) {
+          var resv = lookupRoomResvDisplay(roomInput);
+          if (resv) {
+            var rv = document.createElement("span");
+            rv.className = resvBadgeClass(resv);
+            rv.textContent = resv;
+            rv.title = "FO " + resv;
+            group.appendChild(rv);
+          }
         }
         return group;
       }
@@ -9735,7 +9757,7 @@
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
-          "· 타입(MNDDM) 입실 가능한 객실 (IP·O 우선, 없으면 정비 예정 빠른 순)\n" +
+          "· 타입(MNDDM) 입실 가능한 객실 (IP·O만 입실, CL 불가 · 없으면 IN 제외 정비 예정 빠른 순)\n" +
           "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
           "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
@@ -10100,8 +10122,13 @@
           msg.appendChild(help);
         }
         if (cardNodes && cardNodes.length) {
+          msg.classList.add("ai-mode-msg--has-cards");
           var ul = document.createElement("ul");
-          ul.className = "ai-mode-room-grid";
+          var isEntryList =
+            cardNodes[0] &&
+            cardNodes[0].classList &&
+            cardNodes[0].classList.contains("ai-mode-entry-card");
+          ul.className = isEntryList ? "ai-mode-entry-list" : "ai-mode-room-grid";
           cardNodes.forEach(function (node) {
             ul.appendChild(node);
           });
@@ -10286,10 +10313,18 @@
             );
             return;
           }
+          if (!checkinResult.rooms.length) {
+            appendAiChatBotError(
+              "TYPE " +
+                intent.typeCode +
+                " · 입실 가능(IP·O) 객실 없음. IN 제외 · 정비 예정 대기 객실도 없습니다."
+            );
+            return;
+          }
           appendAiChatBotResponse(
             "TYPE " +
               intent.typeCode +
-              " · IP·O 없음 → 정비 예정 빠른 순 (" +
+              " · IP·O 없음 → IN 제외 · 정비 예정 빠른 순 (" +
               checkinResult.rooms.length +
               "개)",
             checkinResult.rooms
@@ -10682,7 +10717,8 @@
         return lookupRoomFoStatus(roomNr) === "O";
       }
 
-      function mapAiTypeRoomRow(r, etaLabel, availableNow) {
+      function mapAiTypeRoomRow(r, etaLabel, availableNow, extra) {
+        extra = extra || {};
         return {
           room: r.room,
           status: r.status,
@@ -10690,7 +10726,15 @@
           sched: r.sched,
           etaLabel: etaLabel,
           availableNow: !!availableNow,
+          hideFoBadge: !!extra.hideFoBadge,
         };
+      }
+
+      function isAiCheckInFallbackCandidate(roomNr, status) {
+        if (lookupRoomFoStatus(roomNr) === "IN") return false;
+        var st = normalizeRoomStatus(status);
+        if (!st || st === "OO" || st === "OS") return false;
+        return true;
       }
 
       function queryAiCheckInRooms(typeCode) {
@@ -10720,15 +10764,12 @@
             mode: "ready",
             typeCode: typeCode,
             rooms: ready.map(function (r) {
-              return mapAiTypeRoomRow(r, "입실 가능 (IP·O)", true);
+              return mapAiTypeRoomRow(r, "입실 가능 (IP·O)", true, { hideFoBadge: true });
             }),
           };
         }
         var pending = all.filter(function (r) {
-          var st = normalizeRoomStatus(r.status);
-          if (!st || st === "OO" || st === "OS") return false;
-          if (lookupRoomFoStatus(r.room) === "IN") return false;
-          return true;
+          return isAiCheckInFallbackCandidate(r.room, r.status);
         });
         var sorted = sortAiRoomsBySched(pending);
         return {
@@ -10737,8 +10778,9 @@
           rooms: sorted.map(function (r) {
             return mapAiTypeRoomRow(
               r,
-              r.sched ? "처리·예정 " + r.sched : "예정 시간 없음",
-              false
+              r.sched ? "정비 예정 " + r.sched : "예정 시간 없음",
+              false,
+              { hideFoBadge: true }
             );
           }),
         };
@@ -10866,7 +10908,10 @@
           head.appendChild(typeEl);
         }
         head.appendChild(
-          buildRoomStatusGroup(item.status, item.room, { statusClass: "room-card__status" })
+          buildRoomStatusGroup(item.status, item.room, {
+            statusClass: "room-card__status",
+            hideResv: !!item.hideFoBadge,
+          })
         );
         li.appendChild(head);
         var eta = document.createElement("p");
