@@ -18,6 +18,7 @@
   var selection = null;
   var colResizeActive = false;
   var rowDragActive = false;
+  var cellSelectDrag = { active: false, moved: false, anchorR: 0, anchorC: 0 };
   var sortState = { col: null, dir: null };
 
   var COL_LABELS = ["순번", "룸번호", "예약번호", "대여물품", "트레이스"];
@@ -282,19 +283,55 @@
     return { r0: r0, c0: c0, r1: r1, c1: c1 };
   }
 
+  function clampSelectionToSide(r0, c0, r1, c1, anchorC) {
+    var minC = Math.min(c0, c1);
+    var maxC = Math.max(c0, c1);
+    if (anchorC < 5) {
+      minC = Math.max(0, minC);
+      maxC = Math.min(4, maxC);
+    } else {
+      minC = Math.max(5, minC);
+      maxC = Math.min(9, maxC);
+    }
+    return normalizeSelection({
+      r0: Math.min(r0, r1),
+      c0: minC,
+      r1: Math.max(r0, r1),
+      c1: maxC,
+    });
+  }
+
   function setSelection(r, c, extend) {
     if (!isFrontModeActive()) return;
     if (extend && selection) {
-      selection = normalizeSelection({
-        r0: selection.r0,
-        c0: selection.c0,
-        r1: r,
-        c1: c,
-      });
+      selection = clampSelectionToSide(selection.r0, selection.c0, r, c, selection.c0);
     } else {
       selection = normalizeSelection({ r0: r, c0: c, r1: r, c1: c });
     }
     highlightSelection();
+  }
+
+  function setSelectionRange(anchorR, anchorC, r, c) {
+    selection = clampSelectionToSide(anchorR, anchorC, r, c, anchorC);
+    highlightSelection();
+  }
+
+  function cellFromEventTarget(target) {
+    if (!target || !target.closest) return null;
+    var td = target.closest(".inven-notify-table__cell");
+    if (!td || !els.tableBody || !els.tableBody.contains(td)) return null;
+    var r = parseInt(td.getAttribute("data-r"), 10);
+    var c = parseInt(td.getAttribute("data-c"), 10);
+    if (isNaN(r) || isNaN(c)) return null;
+    return { td: td, r: r, c: c };
+  }
+
+  function focusCellEditor(td) {
+    if (!td) return;
+    var edit =
+      td.querySelector(".inven-notify-cell-edit") ||
+      (td.getAttribute("contenteditable") === "true" ? td : null);
+    if (edit) edit.focus();
   }
 
   function clearSelection() {
@@ -526,7 +563,7 @@
   function mergeSelectedCells() {
     var sel = getSelectionOrCell();
     if (!sel) {
-      alert("병합할 셀 범위를 선택하세요. (Shift+클릭으로 범위 선택)");
+      alert("병합할 셀 범위를 선택하세요. (드래그 또는 Shift+클릭)");
       return;
     }
     if (sel.r0 === sel.r1 && sel.c0 === sel.c1) {
@@ -775,6 +812,54 @@
     });
   }
 
+  function bindCellDragSelect() {
+    if (!els.tableWrap || els.tableWrap.getAttribute("data-select-bound") === "1") return;
+    els.tableWrap.setAttribute("data-select-bound", "1");
+
+    els.tableWrap.addEventListener("mousedown", function (e) {
+      if (!isFrontModeActive() || e.button !== 0) return;
+      if (e.target.classList.contains("inven-notify-row-grip")) return;
+      if (e.target.classList.contains("inven-notify-col-resize")) return;
+      var hit = cellFromEventTarget(e.target);
+      if (!hit) return;
+
+      if (e.shiftKey && selection) {
+        e.preventDefault();
+        setSelection(hit.r, hit.c, true);
+        return;
+      }
+
+      e.preventDefault();
+      cellSelectDrag.active = true;
+      cellSelectDrag.moved = false;
+      cellSelectDrag.anchorR = hit.r;
+      cellSelectDrag.anchorC = hit.c;
+      setSelectionRange(hit.r, hit.c, hit.r, hit.c);
+      if (els.tableWrap) els.tableWrap.classList.add("is-cell-selecting");
+    });
+
+    document.addEventListener("mousemove", function (e) {
+      if (!cellSelectDrag.active) return;
+      var hit = cellFromEventTarget(document.elementFromPoint(e.clientX, e.clientY));
+      if (!hit) return;
+      cellSelectDrag.moved = true;
+      setSelectionRange(cellSelectDrag.anchorR, cellSelectDrag.anchorC, hit.r, hit.c);
+    });
+
+    document.addEventListener("mouseup", function () {
+      if (!cellSelectDrag.active) return;
+      cellSelectDrag.active = false;
+      if (els.tableWrap) els.tableWrap.classList.remove("is-cell-selecting");
+      if (!cellSelectDrag.moved && selection) {
+        var sel = normalizeSelection(selection);
+        var td = els.tableBody.querySelector(
+          '.inven-notify-table__cell[data-r="' + sel.r0 + '"][data-c="' + sel.c0 + '"]'
+        );
+        focusCellEditor(td);
+      }
+    });
+  }
+
   function bindRowDrag() {
     if (!els.tableBody || !isFrontModeActive()) return;
     var dragFrom = null;
@@ -842,14 +927,6 @@
       els.tableBody.querySelectorAll(".inven-notify-table__cell").forEach(function (td) {
         if (td.getAttribute("data-bound") === "1") return;
         td.setAttribute("data-bound", "1");
-
-        td.addEventListener("mousedown", function (e) {
-          if (e.target.classList.contains("inven-notify-row-grip")) return;
-          var r = parseInt(td.getAttribute("data-r"), 10);
-          var c = parseInt(td.getAttribute("data-c"), 10);
-          if (isNaN(r) || isNaN(c)) return;
-          setSelection(r, c, e.shiftKey);
-        });
 
         var editTargets = td.querySelectorAll(".inven-notify-cell-edit, [contenteditable='true']");
         if (!editTargets.length && td.getAttribute("contenteditable") === "true") {
@@ -936,7 +1013,7 @@
     }
     els.toolbarHint.textContent = draftDirty
       ? "변경 내용은 저장 버튼을 눌러야 다른 화면에 공유됩니다"
-      : "⠿ 드래그로 행 이동 · 헤더 클릭 정렬 · Shift+클릭 범위 선택";
+      : "셀 드래그로 범위 선택(병합) · ⠿ 행 이동 · 헤더 클릭 정렬";
   }
 
   function updateHint() {
@@ -1069,30 +1146,6 @@
     mount.appendChild(toolbar);
     mount.appendChild(tableWrap);
 
-    (function bindTablePanScroll() {
-      var panning = false;
-      var startX = 0;
-      var startLeft = 0;
-      tableWrap.addEventListener("mousedown", function (e) {
-        if (e.button !== 0) return;
-        if (e.target.closest(".inven-notify-table__cell, .inven-notify-table__th")) return;
-        panning = true;
-        startX = e.clientX;
-        startLeft = tableWrap.scrollLeft;
-        tableWrap.classList.add("is-panning");
-        e.preventDefault();
-      });
-      document.addEventListener("mousemove", function (e) {
-        if (!panning) return;
-        tableWrap.scrollLeft = startLeft - (e.clientX - startX);
-      });
-      document.addEventListener("mouseup", function () {
-        if (!panning) return;
-        panning = false;
-        tableWrap.classList.remove("is-panning");
-      });
-    })();
-
     els.mount = mount;
     els.empty = empty;
     els.toolbar = toolbar;
@@ -1103,12 +1156,13 @@
     els.toolbarHint = toolbarHint;
     els.hint = document.getElementById("invenNotifyHint");
 
+    bindCellDragSelect();
     uiReady = true;
     return true;
   }
 
   function isUserEditingInvenNotify() {
-    return draftDirty || colResizeActive || rowDragActive;
+    return draftDirty || colResizeActive || rowDragActive || cellSelectDrag.active;
   }
 
   function hasContent(data) {

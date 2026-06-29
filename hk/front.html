@@ -3128,16 +3128,15 @@
       border-radius: 10px;
       margin-bottom: 10px;
       background: #fff;
-      cursor: grab;
     }
 
-    .inven-notify-table-wrap.is-panning {
-      cursor: grabbing;
+    .inven-notify-table-wrap.is-cell-selecting {
       user-select: none;
+      cursor: cell;
     }
 
-    .inven-notify-table-wrap .inven-notify-table {
-      cursor: default;
+    .inven-notify-table-wrap.is-cell-selecting .inven-notify-table__cell {
+      cursor: cell;
     }
 
     .inven-notify-table {
@@ -6013,7 +6012,7 @@
           <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          저장된 표는 프론트 모드 없이도 조회됩니다. 헤더 클릭으로 정렬 · 프론트 모드에서 ⠿ 드래그로 행 이동 · 「저장」으로 공유합니다.
+          저장된 표는 프론트 모드 없이도 조회됩니다. 프론트 모드에서 셀 드래그로 범위 선택(병합) · 「저장」으로 공유합니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
