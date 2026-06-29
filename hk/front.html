@@ -9453,7 +9453,8 @@
         var m =
           raw.match(/\(([A-Z0-9]+)\)/i) ||
           raw.match(/타입\s*[(:]?\s*([A-Z0-9]+)/i) ||
-          raw.match(/TYPE\s+([A-Z0-9]+)/i);
+          raw.match(/TYPE\s+([A-Z0-9]+)/i) ||
+          raw.match(/(?:^|\s)([A-Z][A-Z0-9]{1,11})(?=\s+(?:가능|입실))/i);
         if (m && m[1]) return normalizeRoomTypeCode(m[1]);
         var upper = raw.toUpperCase();
         var i;
@@ -9473,9 +9474,18 @@
       }
 
       function isAiCheckInAvailQuery(text) {
-        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실|가능한\s*객실|가능한객실|가능\s*객실\s*찾/.test(
-          String(text || "")
+        var s = String(text || "");
+        if (/정비\s*가능|지금\s*정비/.test(s)) return false;
+        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실|가능한?\s*객실|가능\s*객실/.test(
+          s
         );
+      }
+
+      function isAiTypeCheckInStyleQuery(text) {
+        var s = String(text || "");
+        if (/정비\s*가능|지금\s*정비|CL\s*우선|정비\s*예정/.test(s)) return false;
+        if (isAiCheckInAvailQuery(s)) return true;
+        return /가능/.test(s) && /객실/.test(s);
       }
 
       function parseAiOrderItemQuery(text) {
@@ -9870,7 +9880,7 @@
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
-          "· 타입(MNDDM) 입실 가능한 객실 (IP·O만 입실 · 가능한 객실 찾아줘 동일)\n" +
+          "· 타입(ENCFT) 가능한 객실 / ENCFT 입실 가능 (IP·O, IN 제외)\n" +
           "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
           "· 물 오더 찾아줘 · 물 오더 몇개야?\n" +
           "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
@@ -10001,7 +10011,7 @@
 
         var typeCode = parseAiQueryTypeCode(q);
         var statusM = q.match(/\b(IP|CL|PU|DI|OO|OS)\b/i);
-        if (typeCode && isAiCheckInAvailQuery(q)) {
+        if (typeCode && isAiTypeCheckInStyleQuery(q)) {
           return { type: "type_checkin", typeCode: typeCode };
         }
         if (typeCode && statusM) {
