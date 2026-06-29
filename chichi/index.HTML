@@ -627,6 +627,14 @@
   const authPassword = document.getElementById("auth-password");
   const authError = document.getElementById("auth-error");
 
+  function isHkFrontEmbed() {
+    try {
+      return new URLSearchParams(window.location.search).get("embed") === "hkFront";
+    } catch (e) {
+      return false;
+    }
+  }
+
   function unlockApp() {
     document.body.classList.remove("locked");
     authGate.classList.add("hidden");
@@ -646,7 +654,7 @@
     authPassword.focus();
   });
 
-  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+  if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1" || isHkFrontEmbed()) {
     unlockApp();
   }
 })();

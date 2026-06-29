@@ -20,6 +20,11 @@
   var rowDragActive = false;
   var cellSelectDrag = { active: false, moved: false, anchorR: 0, anchorC: 0 };
   var sortState = { col: null, dir: null };
+  var undoStack = [];
+  var undoMax = 50;
+  var undoApplying = false;
+  var cellEditUndoKey = null;
+  var undoKeyboardBound = false;
 
   var COL_LABELS = ["순번", "룸번호", "예약번호", "대여물품", "트레이스"];
 
@@ -227,6 +232,73 @@
     return null;
   }
 
+  function cloneTable(table) {
+    return JSON.parse(JSON.stringify(normalizeTable(table)));
+  }
+
+  function pushUndoSnapshot() {
+    if (undoApplying || !isFrontModeActive()) return;
+    undoStack.push(cloneTable(state.table));
+    if (undoStack.length > undoMax) undoStack.shift();
+  }
+
+  function undoTable() {
+    if (!isFrontModeActive() || !undoStack.length) return;
+    undoApplying = true;
+    state.table = undoStack.pop();
+    cellEditUndoKey = null;
+    clearSelection();
+    sortState = { col: null, dir: null };
+    undoApplying = false;
+    markDraftDirty();
+    renderTable();
+    updateToolbarHint();
+  }
+
+  function resetInvenTable() {
+    if (!isFrontModeActive()) return;
+    if (
+      !confirm(
+        "표를 초기화할까요?\n\n저장되지 않은 변경은 사라지고, 마지막 저장본(없으면 빈 표)으로 돌아갑니다."
+      )
+    ) {
+      return;
+    }
+    syncTableFromDom();
+    pushUndoSnapshot();
+    var published = loadInvenNotify();
+    state.table = cloneTable(published.table);
+    sortState = { col: null, dir: null };
+    cellEditUndoKey = null;
+    clearSelection();
+    draftDirty = false;
+    clearDraftLocal();
+    updateSaveButton();
+    updateToolbarHint();
+    if (els.tableWrap) {
+      els.tableWrap.classList.toggle("inven-notify-table-wrap--draft", draftDirty);
+    }
+    renderTable();
+  }
+
+  function isInvenNotifyPanelActive() {
+    var panel = document.getElementById("invenNotifyPanel");
+    return !!(panel && !panel.hidden);
+  }
+
+  function bindUndoKeyboard() {
+    if (undoKeyboardBound) return;
+    undoKeyboardBound = true;
+    document.addEventListener("keydown", function (e) {
+      if (!isFrontModeActive() || !isInvenNotifyPanelActive()) return;
+      if (!(e.ctrlKey || e.metaKey) || e.key !== "z" || e.shiftKey) return;
+      if (e.target.closest && !e.target.closest("#invenNotifyPanel")) return;
+      e.preventDefault();
+      syncTableFromDom();
+      undoTable();
+    });
+  }
+
   function markDraftDirty() {
     if (!isFrontModeActive()) return;
     draftDirty = true;
@@ -247,6 +319,8 @@
     saveInvenNotify(state);
     draftDirty = false;
     clearDraftLocal();
+    undoStack = [];
+    cellEditUndoKey = null;
     updateSaveButton();
     updateToolbarHint();
     if (els.tableWrap) els.tableWrap.classList.remove("inven-notify-table-wrap--draft");
@@ -423,6 +497,7 @@
 
   function insertRow(at, side) {
     side = side || "main";
+    pushUndoSnapshot();
     var rows = state.table.rows;
     if (!rows.length) rows.push(normalizeTableRow({}));
     at = Math.max(0, Math.min(at, rows.length));
@@ -454,6 +529,7 @@
       alert("삭제할 행의 셀을 선택하세요.");
       return;
     }
+    pushUndoSnapshot();
     var side = getSelectionSide(sel);
     var r0 = sel.r0;
     var r1 = sel.r1;
@@ -480,6 +556,7 @@
 
   function reorderSideRowsByDrag(side, fromRow, toRow) {
     if (fromRow === toRow || isNaN(fromRow) || isNaN(toRow)) return;
+    pushUndoSnapshot();
     var rows = state.table.rows;
     if (!rows[fromRow]) return;
     if (!rows[toRow]) rows[toRow] = normalizeTableRow({});
@@ -518,6 +595,7 @@
       renderTable();
       return;
     }
+    if (isFrontModeActive()) pushUndoSnapshot();
     var sk = sideKeyFromFlat(sortState.col);
     var dir = sortState.dir === "asc" ? 1 : -1;
     state.table.rows.sort(function (a, b) {
@@ -551,6 +629,7 @@
       alert("지울 셀을 선택하세요.");
       return;
     }
+    pushUndoSnapshot();
     for (var r = sel.r0; r <= sel.r1; r++) {
       for (var c = sel.c0; c <= sel.c1; c++) {
         setCellValue(r, c, "");
@@ -570,6 +649,7 @@
       alert("두 개 이상의 셀을 선택하세요.");
       return;
     }
+    pushUndoSnapshot();
     var parts = [];
     for (var r = sel.r0; r <= sel.r1; r++) {
       for (var c = sel.c0; c <= sel.c1; c++) {
@@ -612,6 +692,7 @@
       alert("선택한 셀에 병합이 없습니다.");
       return;
     }
+    pushUndoSnapshot();
     state.table.merges.splice(hit.index, 1);
     markDraftDirty();
     renderTable();
@@ -626,6 +707,7 @@
       alert("본관과 별관 사이에는 열을 삽입할 수 없습니다.");
       return;
     }
+    pushUndoSnapshot();
     var sideIdx = at < 5 ? 0 : 1;
     var keyIdx = at % 5;
     var side = SIDES[sideIdx];
@@ -657,6 +739,7 @@
       alert("순번 열은 삭제할 수 없습니다.");
       return;
     }
+    pushUndoSnapshot();
     var sk = sideKeyFromFlat(at);
     var sideIdx = at < 5 ? 0 : 1;
     var ki = TABLE_KEYS.indexOf(sk.key);
@@ -937,6 +1020,11 @@
             var r = parseInt(td.getAttribute("data-r"), 10);
             var c = parseInt(td.getAttribute("data-c"), 10);
             if (isNaN(r) || isNaN(c)) return;
+            var editKey = r + ":" + c;
+            if (cellEditUndoKey !== editKey) {
+              pushUndoSnapshot();
+              cellEditUndoKey = editKey;
+            }
             setCellValue(r, c, editEl.textContent || "");
             markDraftDirty();
           });
@@ -955,6 +1043,7 @@
           e.stopPropagation();
           var col = parseInt(handle.getAttribute("data-col"), 10);
           if (isNaN(col)) return;
+          pushUndoSnapshot();
           colResizeActive = true;
           var startX = e.clientX;
           var startW = state.table.colWidths[col] || 72;
@@ -1013,7 +1102,7 @@
     }
     els.toolbarHint.textContent = draftDirty
       ? "변경 내용은 저장 버튼을 눌러야 다른 화면에 공유됩니다"
-      : "셀 드래그로 범위 선택(병합) · ⠿ 행 이동 · 헤더 클릭 정렬";
+      : "Ctrl+Z 되돌리기 · 셀 드래그 범위 선택 · ⠿ 행 이동 · 헤더 클릭 정렬";
   }
 
   function updateHint() {
@@ -1124,6 +1213,17 @@
         unmergeSelectedCells();
       })
     );
+    toolGroup.appendChild(
+      makeToolbarButton("되돌리기", "Ctrl+Z — 직전 작업 취소", function () {
+        syncTableFromDom();
+        undoTable();
+      })
+    );
+    toolGroup.appendChild(
+      makeToolbarButton("초기화", "마지막 저장본(없으면 빈 표)으로 되돌리기", function () {
+        resetInvenTable();
+      })
+    );
 
     var toolbarHint = document.createElement("span");
     toolbarHint.className = "inven-notify-toolbar__hint";
@@ -1157,6 +1257,7 @@
     els.hint = document.getElementById("invenNotifyHint");
 
     bindCellDragSelect();
+    bindUndoKeyboard();
     uiReady = true;
     return true;
   }
@@ -1192,6 +1293,7 @@
     if (!draftDirty) {
       state = cloneState(loadInvenNotify());
     }
+    pushUndoSnapshot();
     state.table.rows = normalized;
     state.table.updatedAt =
       meta && meta.updatedAt ? String(meta.updatedAt) : new Date().toISOString();
@@ -1242,6 +1344,8 @@
       state = cloneState(loadInvenNotify());
       draftDirty = false;
       sortState = { col: null, dir: null };
+      undoStack = [];
+      cellEditUndoKey = null;
       clearSelection();
     }
 

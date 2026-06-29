@@ -2977,18 +2977,22 @@
     .mb-inv-notice-board__images,
     .zone-memo-board__images {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 8px;
       margin-top: 8px;
+      width: 100%;
     }
 
     .mb-inv-notice-board__images img,
     .zone-memo-board__images img {
-      max-width: 160px;
-      max-height: 120px;
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: none;
       border-radius: 8px;
       border: 1px solid #bfdbfe;
-      object-fit: cover;
+      object-fit: contain;
       cursor: pointer;
     }
 
@@ -5687,7 +5691,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.HTML"
+          src="/DD/index.HTML?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -5697,7 +5701,7 @@
           class="front-embed-panel__frame"
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
-          src="/inven/index.HTML"
+          src="/inven/index.HTML?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -5707,7 +5711,7 @@
           class="front-embed-panel__frame"
           id="chichiEmbedFrame"
           title="고객취향확인"
-          src="/chichi/index.HTML"
+          src="/chichi/index.HTML?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -6012,7 +6016,7 @@
           <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          저장된 표는 프론트 모드 없이도 조회됩니다. 프론트 모드에서 셀 드래그로 범위 선택(병합) · 「저장」으로 공유합니다.
+          저장된 표는 프론트 모드 없이도 조회됩니다. 프론트 모드에서 편집 · Ctrl+Z 되돌리기 · 「저장」으로 공유합니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
