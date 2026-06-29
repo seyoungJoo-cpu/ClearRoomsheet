@@ -10215,7 +10215,7 @@
           "· 타입(ENCFT) 가능한 객실 / ENCFT 입실 가능 (IP·O, IN 제외)\n" +
           "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
           "· 물 오더 찾아줘 · 물 오더 몇개야?\n" +
-          "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
+          "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선, IN 제외)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
           "· VIP 특이객실 · 1205 상태\n\n" +
           "【기타】\n" +
@@ -10848,7 +10848,7 @@
           appendAiChatBotResponse(
             "TYPE " +
               typeCode +
-              " · 지금 CL 가능 객실 없음 → 처리·예정 시간 순 (" +
+              " · 지금 CL 가능 객실 없음 → IN 제외 · 처리·예정 시간 순 (" +
               typeResult.rooms.length +
               "개)",
             typeResult.rooms
@@ -11187,10 +11187,14 @@
         return out;
       }
 
+      function isAiRoomOccupiedIn(roomNr) {
+        return lookupRoomResvDisplay(roomNr) === "IN";
+      }
+
       function isAiRoomAvailableNow(roomNr, status) {
         var st = normalizeRoomStatus(status);
         if (!st || st === "OO" || st === "OS") return false;
-        if (lookupRoomResvDisplay(roomNr) === "IN") return false;
+        if (isAiRoomOccupiedIn(roomNr)) return false;
         var sched = hkBoardBuildSchedTimeMap()[roomNr] || "";
         if (sched && isAiSchedInFuture(sched)) return false;
         return st === "CL";
@@ -11354,10 +11358,19 @@
           };
         }
         var pending = all.filter(function (r) {
+          if (isAiRoomOccupiedIn(r.room)) return false;
           var st = normalizeRoomStatus(r.status);
           return st && st !== "OO" && st !== "OS";
         });
         var sorted = sortAiRoomsBySched(pending);
+        if (!sorted.length) {
+          return {
+            error:
+              "TYPE " +
+              typeCode +
+              " · 지금 정비 가능한 객실 없음 (투숙 IN 객실 제외)",
+          };
+        }
         return {
           mode: "scheduled",
           typeCode: typeCode,
