@@ -9448,8 +9448,94 @@
         return mins > now.getHours() * 60 + now.getMinutes();
       }
 
+      function aiLevenshtein(a, b) {
+        a = String(a || "");
+        b = String(b || "");
+        if (a === b) return 0;
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+        var row = [];
+        var i, j;
+        for (i = 0; i <= b.length; i++) row[i] = i;
+        for (i = 1; i <= a.length; i++) {
+          var prev = i;
+          for (j = 1; j <= b.length; j++) {
+            var val = row[j];
+            var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+            row[j] = Math.min(row[j] + 1, prev + 1, row[j - 1] + cost);
+            prev = val;
+          }
+        }
+        return row[b.length];
+      }
+
+      function normalizeAiQueryInput(text) {
+        var s = String(text || "")
+          .replace(/[？?！!.,，~～]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!s) return "";
+
+        var rules = [
+          [/격실|각실|객쉴|객실실/g, "객실"],
+          [/입쉴|임실|입실실/g, "입실"],
+          [/입실\s*가능|입실가능/g, "입실 가능"],
+          [/체크\s*인|체크인/g, "체크 인"],
+          [/가능한\s*객실|가능한객실/g, "가능한 객실"],
+          [/가능\s*객실|가능객실/g, "가능 객실"],
+          [/정비\s*요청|정비요청/g, "정비 요청"],
+          [/처리\s*예정|처리예정/g, "처리 예정"],
+          [/찾어\s*줘|찾아\s*조|찾아\s*주|찻아\s*줘|찾아죠/gi, "찾아줘"],
+          [/알려\s*조|알려\s*주|알려죠/gi, "알려줘"],
+          [/보여\s*조|보여\s*주|보여죠/gi, "보여줘"],
+          [/몇\s*게|몇\s*갠|몇\s*건|몇개야|몇\s*개야/gi, "몇개"],
+          [/오더|오타|오더|오더/gi, "오더"],
+          [/엠비\s*체크|엠비체크|mb\s*check/gi, "MB CHECK"],
+          [/엠비|엠\s*비/gi, "MB"],
+          [/인밴|인벤토리/gi, "인벤"],
+          [/카시노/gi, "카지노"],
+          [/모바일\s*체크\s*인/gi, "모바일체크인"],
+          [/스웨트/gi, "스위트"],
+          [/투숙\s*중/g, "투숙"],
+          [/타입\s*\(/gi, "타입("],
+          [/도움\s*말/g, "도움말"],
+          [/현\s*황/g, "현황"],
+          [/브리핑|브리핑/g, "브리핑"],
+          [/긍급/g, "긴급"],
+          [/미\s*접수/g, "미접수"],
+          [/문제\s*발생/g, "문제발생"],
+        ];
+        rules.forEach(function (rule) {
+          s = s.replace(rule[0], rule[1]);
+        });
+        return s.trim();
+      }
+
+      function fuzzyParseAiQueryTypeCode(text) {
+        var upper = String(text || "")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, " ");
+        var tokens = upper.split(/\s+/).filter(function (t) {
+          return t.length >= 3;
+        });
+        var best = "";
+        var bestScore = 999;
+        SCHED_TYPE_EXPLICIT_OPTIONS.forEach(function (opt) {
+          tokens.forEach(function (tok) {
+            if (Math.abs(tok.length - opt.length) > 2) return;
+            var d = aiLevenshtein(tok, opt);
+            var maxD = opt.length <= 4 ? 1 : 2;
+            if (d <= maxD && d < bestScore) {
+              bestScore = d;
+              best = opt;
+            }
+          });
+        });
+        return best;
+      }
+
       function parseAiQueryTypeCode(text) {
-        var raw = String(text || "");
+        var raw = normalizeAiQueryInput(text);
         var m =
           raw.match(/\(([A-Z0-9]+)\)/i) ||
           raw.match(/타입\s*[(:]?\s*([A-Z0-9]+)/i) ||
@@ -9464,32 +9550,32 @@
           }
         }
         if (/스위트|SUITE/.test(raw)) return SCHED_TYPE_SUITE_KEY;
-        return "";
+        return fuzzyParseAiQueryTypeCode(raw);
       }
 
       function isAiMaintenanceAvailQuery(text) {
-        var s = String(text || "");
+        var s = normalizeAiQueryInput(text);
         if (isAiCheckInAvailQuery(s)) return false;
         return /정비\s*가능|지금\s*정비|지금\s*가능|바로\s*가능/.test(s);
       }
 
       function isAiCheckInAvailQuery(text) {
-        var s = String(text || "");
+        var s = normalizeAiQueryInput(text);
         if (/정비\s*가능|지금\s*정비/.test(s)) return false;
-        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실|가능한?\s*객실|가능\s*객실/.test(
+        return /입실\s*가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실|가능한?\s*객실|가능\s*객실/.test(
           s
         );
       }
 
       function isAiTypeCheckInStyleQuery(text) {
-        var s = String(text || "");
+        var s = normalizeAiQueryInput(text);
         if (/정비\s*가능|지금\s*정비|CL\s*우선|정비\s*예정/.test(s)) return false;
         if (isAiCheckInAvailQuery(s)) return true;
         return /가능/.test(s) && /객실/.test(s);
       }
 
       function parseAiOrderItemQuery(text) {
-        var q = String(text || "").trim();
+        var q = normalizeAiQueryInput(text);
         var m = q.match(/(.+?)\s*오더/);
         if (!m) return "";
         var item = m[1]
@@ -9501,12 +9587,22 @@
       }
 
       function queryAiOrdersByMemoItem(item) {
-        var needle = String(item || "").trim().toLowerCase();
+        var needle = normalizeAiQueryInput(item).toLowerCase();
         if (!needle) return [];
-        return orderLogEntries.filter(function (e) {
+        var exact = orderLogEntries.filter(function (e) {
           if (getOrderPhase(e) === "cancelled") return false;
           var memo = (e.memo || "").toLowerCase();
           return memo.indexOf(needle) >= 0;
+        });
+        if (exact.length || needle.length < 2) return exact;
+        return orderLogEntries.filter(function (e) {
+          if (getOrderPhase(e) === "cancelled") return false;
+          var memo = (e.memo || "").toLowerCase();
+          if (memo.indexOf(needle) >= 0) return true;
+          return memo.split(/\s+/).some(function (word) {
+            if (word.length < 2) return false;
+            return aiLevenshtein(word, needle) <= 1;
+          });
         });
       }
 
@@ -9932,9 +10028,9 @@
       }
 
       function detectAiIntent(text) {
-        var q = String(text || "").trim();
+        var q = normalizeAiQueryInput(text);
         if (!q) return { type: "unknown" };
-        if (/^(help|도움|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
+        if (/^(help|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
           return { type: "help" };
         }
         if (/현황|요약|브리핑|전체\s*상황|지금\s*상황|오늘\s*현황/.test(q)) {
@@ -9952,7 +10048,7 @@
         var zoneId = parseAiZoneIdFromText(q);
         var roomM = q.match(/(\d{3,4})\s*번?\s*(?:객실|호)?(?:\s*상태|\s*확인|\s*알려)?/);
 
-        if (/몇\s*개|개수|몇\s*객실|몇\s*건/i.test(q)) {
+        if (/몇개|개수|몇\s*객실|몇\s*건/i.test(q)) {
           var countSt = q.match(/\b(IP|CL|PU|DI|OO|OS|IN)\b/i);
           if (countSt) return { type: "status_count", status: countSt[1].toUpperCase() };
         }
@@ -9983,7 +10079,7 @@
         if (/오더/.test(q)) {
           var orderItem = parseAiOrderItemQuery(q);
           if (orderItem) {
-            if (/몇\s*개|개수|몇\s*건/i.test(q)) {
+            if (/몇개|개수|몇\s*건/i.test(q)) {
               return { type: "orders_item_count", item: orderItem };
             }
             return { type: "orders_item", item: orderItem };
@@ -10025,10 +10121,13 @@
         if (statusM && /객실|상태|목록|보여|알려|찾/.test(q)) {
           return { type: "rooms_status", status: statusM[1].toUpperCase() };
         }
-        if (typeCode && /객실|목록|몇|알려|보여|찾/.test(q)) {
+        if (typeCode && /객실|목록|몇|알려|보여|찾/.test(q) && !isAiTypeCheckInStyleQuery(q)) {
           return { type: "type_list", typeCode: typeCode };
         }
         if (roomM) return { type: "room_info", room: roomM[1] };
+        if (typeCode && /가능|입실|객실/.test(q)) {
+          return { type: "type_checkin", typeCode: typeCode };
+        }
         return { type: "unknown" };
       }
 
@@ -10291,9 +10390,10 @@
       }
 
       function handleAiModeQuestion(text) {
-        var q = String(text || "").trim();
-        if (!q) return;
-        appendAiChatUserMessage(q);
+        var rawQ = String(text || "").trim();
+        if (!rawQ) return;
+        var q = normalizeAiQueryInput(rawQ);
+        appendAiChatUserMessage(rawQ);
         var intent = detectAiIntent(q);
 
         if (intent.type === "help") {
@@ -10819,7 +10919,8 @@
         var chat = document.getElementById("aiModeChat");
         if (!chat || chat.childElementCount) return;
         appendAiChatBotResult(
-          "안녕하세요. 오늘 데이터로 객실·오더·요청을 조회해 드립니다.",
+          "안녕하세요. 오늘 데이터로 객실·오더·요청을 조회해 드립니다.\n" +
+          "(띄어쓰기·오타가 있어도 최대한 이해해서 답합니다.)",
           [],
           buildAiHelpMessage()
         );
