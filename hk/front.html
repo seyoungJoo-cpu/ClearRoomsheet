@@ -3122,7 +3122,7 @@
     }
 
     .inven-notify-table-wrap {
-      max-height: 42vh;
+      max-height: calc(100vh - 220px);
       overflow: auto;
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -3163,7 +3163,55 @@
       background: #eff6ff;
     }
 
-    /* 인벤 통보 — 이미지 보드 */
+    .inven-notify-table__cell.is-selected {
+      background: #dbeafe !important;
+      box-shadow: inset 0 0 0 2px #2563eb;
+    }
+
+    .inven-notify-table__th {
+      position: relative;
+      user-select: none;
+    }
+
+    .inven-notify-col-resize {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 2;
+    }
+
+    .inven-notify-col-resize:hover {
+      background: rgba(37, 99, 235, 0.25);
+    }
+
+    .inven-notify-table-wrap--draft {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    }
+
+    .inven-notify-table-wrap--readonly {
+      border-color: var(--border);
+    }
+
+    .inven-notify-empty {
+      margin: 0;
+      padding: 24px 16px;
+      text-align: center;
+      font-size: 0.9375rem;
+      color: #94a3b8;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .inven-notify-empty[hidden] {
+      display: none !important;
+    }
+
+    /* 인벤 통보 — 스프레드시트 */
     .inven-notify-panel {
       display: flex;
       flex-direction: column;
@@ -3178,6 +3226,17 @@
       gap: 8px 12px;
     }
 
+    .inven-notify-toolbar__tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .inven-notify-tool-btn {
+      font-size: 0.75rem !important;
+      padding: 5px 8px !important;
+    }
+
     .inven-notify-toolbar__hint {
       flex: 1;
       min-width: 120px;
@@ -3185,12 +3244,7 @@
       color: var(--text-muted);
     }
 
-    .inven-notify-btn-delete:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .inven-notify-btn-publish {
+    .inven-notify-btn-save {
       flex-shrink: 0;
       font-weight: 700;
       background: #2563eb;
@@ -3198,26 +3252,26 @@
       color: #fff;
     }
 
-    .inven-notify-btn-publish:hover:not(:disabled) {
+    .inven-notify-btn-save:hover:not(:disabled) {
       background: #1d4ed8;
     }
 
-    .inven-notify-btn-publish:disabled {
+    .inven-notify-btn-save:disabled {
       opacity: 0.45;
       cursor: not-allowed;
     }
 
-    .inven-notify-btn-publish.inven-notify-btn-publish--dirty {
+    .inven-notify-btn-save.inven-notify-btn-save--dirty {
       background: #dc2626;
       border-color: #b91c1c;
       animation: inven-notify-pulse 1.4s ease-in-out infinite;
     }
 
-    .inven-notify-btn-publish.inven-notify-btn-publish--dirty:hover:not(:disabled) {
+    .inven-notify-btn-save.inven-notify-btn-save--dirty:hover:not(:disabled) {
       background: #b91c1c;
     }
 
-    .inven-notify-btn-publish.is-done {
+    .inven-notify-btn-save.is-done {
       background: #16a34a;
       border-color: #15803d;
       animation: none;
@@ -3231,98 +3285,6 @@
       50% {
         box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
       }
-    }
-
-    .inven-notify-board--draft {
-      border-color: #f59e0b;
-      background: #fffbeb;
-    }
-
-    .inven-notify-board {
-      position: relative;
-      flex: 1;
-      min-height: calc(100vh - 240px);
-      background: #f8fafc;
-      border: 2px dashed #cbd5e1;
-      border-radius: 10px;
-      overflow: auto;
-      outline: none;
-    }
-
-    .inven-notify-board:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    }
-
-    .inven-notify-board--readonly {
-      border-style: solid;
-      background: #f1f5f9;
-    }
-
-    .inven-notify-board__empty {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      padding: 24px;
-      text-align: center;
-      font-size: 0.9375rem;
-      color: #94a3b8;
-      pointer-events: none;
-    }
-
-    .inven-notify-board__empty[hidden] {
-      display: none !important;
-    }
-
-    .inven-notify-img-item {
-      position: absolute;
-      box-sizing: border-box;
-      background: #fff;
-      border: 2px solid rgba(148, 163, 184, 0.5);
-      border-radius: 4px;
-      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-      cursor: grab;
-      touch-action: none;
-    }
-
-    .inven-notify-img-item:active {
-      cursor: grabbing;
-    }
-
-    .inven-notify-img-item.is-selected {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25), 0 8px 24px rgba(15, 23, 42, 0.15);
-    }
-
-    .inven-notify-board--readonly .inven-notify-img-item {
-      cursor: default;
-    }
-
-    .inven-notify-img-item img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      border-radius: 2px;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .inven-notify-resize-handle {
-      position: absolute;
-      right: -7px;
-      bottom: -7px;
-      width: 16px;
-      height: 16px;
-      background: #2563eb;
-      border: 2px solid #fff;
-      border-radius: 4px;
-      cursor: se-resize;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-      z-index: 2;
     }
 
     .mb-workflow__subhead {
@@ -5988,7 +5950,7 @@
           <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          인벤「만들기」표가 자동 반영됩니다. 셀을 클릭해 수정할 수 있으며, 프론트 모드에서「통보」로 저장합니다.
+          저장된 표는 프론트 모드 없이도 조회됩니다. 편집·공유는 프론트 모드에서 「저장」으로 합니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
@@ -9626,16 +9588,6 @@
         updateSidebarPrimaryNavActive();
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
-          requestAnimationFrame(function () {
-            var board = document.getElementById("invenNotifyBoard");
-            if (
-              board &&
-              typeof HKInvenNotify !== "undefined" &&
-              HKInvenNotify.isFrontModeActive()
-            ) {
-              board.focus();
-            }
-          });
         }
         if (showAi) {
           requestAnimationFrame(function () {
@@ -14142,6 +14094,7 @@
         }
         if (typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
+          HKInvenNotify.onFrontModeChanged();
         }
         if (currentZone === "VIP") {
           applyZoneVipMemo();
@@ -14833,9 +14786,7 @@
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.importInvenTable(msg.rows, msg.meta || {});
-          if (sidebarMainView === "invenNotify") {
-            HKInvenNotify.render(true);
-          }
+          HKInvenNotify.render(true);
         }
       });
 
