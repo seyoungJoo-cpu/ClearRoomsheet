@@ -20,8 +20,34 @@
       status: "",
       memo1: "",
       memo2: "",
+      memo2Image: "",
       time: "",
+      tray: "",
     };
+  }
+
+  function defaultZoneMemo() {
+    return { text: "", images: [] };
+  }
+
+  function normalizeZoneMemoImages(images) {
+    var out = [];
+    if (!Array.isArray(images)) return out;
+    images.forEach(function (img) {
+      var s = img != null ? String(img).trim() : "";
+      if (s) out.push(s);
+    });
+    return out;
+  }
+
+  function normalizeZoneMemos(data) {
+    var out = { VIP: defaultZoneMemo() };
+    var src = data && data.zoneMemos && typeof data.zoneMemos === "object" ? data.zoneMemos : {};
+    if (src.VIP && typeof src.VIP === "object") {
+      out.VIP.text = src.VIP.text != null ? String(src.VIP.text) : "";
+      out.VIP.images = normalizeZoneMemoImages(src.VIP.images);
+    }
+    return out;
   }
 
   function z2(n) {
@@ -133,6 +159,7 @@
       noticeImages: [],
       mbInvNotice: "",
       invenNotify: null,
+      zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
       rooms: {
         VIP: [],
@@ -160,7 +187,9 @@
       d.status = x.status != null ? String(x.status).trim() : "";
       d.memo1 = x.memo1 != null ? String(x.memo1) : "";
       d.memo2 = x.memo2 != null ? String(x.memo2) : "";
+      d.memo2Image = x.memo2Image != null ? String(x.memo2Image) : "";
       d.time = x.time != null ? normalizeTimeField(x.time) : "";
+      d.tray = x.tray != null ? String(x.tray).trim() : "";
     }
     return d;
   }
@@ -175,6 +204,7 @@
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
     }
+    d.zoneMemos = normalizeZoneMemos(data);
 
     var customZones = [];
     var customById = {};
@@ -306,6 +336,11 @@
       merged.invenNotify = incoming.invenNotify;
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
       merged.invenNotify = base.invenNotify;
+    }
+    if (incoming.zoneMemos && typeof incoming.zoneMemos === "object") {
+      merged.zoneMemos = normalizeZoneMemos(incoming);
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "zoneMemos")) {
+      merged.zoneMemos = base.zoneMemos;
     }
     if (incoming.rooms && typeof incoming.rooms === "object") {
       merged.rooms = incoming.rooms;

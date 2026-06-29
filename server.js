@@ -329,6 +329,10 @@ function mergeHkStorage(prev, incoming) {
     invenNotify: Object.prototype.hasOwnProperty.call(incoming, "invenNotify")
       ? incoming.invenNotify
       : prev.invenNotify || null,
+    zoneMemos:
+      incoming.zoneMemos && typeof incoming.zoneMemos === "object"
+        ? incoming.zoneMemos
+        : prev.zoneMemos || { VIP: { text: "", images: [] } },
     customZones: customZones,
     rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [] },
   };

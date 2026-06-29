@@ -24,7 +24,41 @@
     hint: null,
   };
 
-  var state = { version: 3, images: [] };
+  var state = { version: 4, images: [], table: { updatedAt: "", rows: [] } };
+
+  var TABLE_KEYS = ["seq", "room", "confirmationNo", "itemCode1", "trace"];
+
+  function emptyTableSide() {
+    return { seq: "", room: "", confirmationNo: "", itemCode1: "", trace: "" };
+  }
+
+  function normalizeTableSide(raw) {
+    var side = emptyTableSide();
+    if (!raw || typeof raw !== "object") return side;
+    TABLE_KEYS.forEach(function (key) {
+      side[key] = raw[key] != null ? String(raw[key]) : "";
+    });
+    return side;
+  }
+
+  function normalizeTableRow(raw) {
+    return {
+      main: normalizeTableSide(raw && raw.main),
+      annex: normalizeTableSide(raw && raw.annex),
+    };
+  }
+
+  function normalizeTable(data) {
+    var table = { updatedAt: "", rows: [] };
+    if (!data || typeof data !== "object") return table;
+    table.updatedAt = data.updatedAt != null ? String(data.updatedAt) : "";
+    if (Array.isArray(data.rows)) {
+      data.rows.forEach(function (row) {
+        table.rows.push(normalizeTableRow(row));
+      });
+    }
+    return table;
+  }
 
   function newId() {
     return "inv-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
@@ -46,19 +80,19 @@
   }
 
   function normalizeInvenNotify(data) {
+    var images = [];
     if (data && data.version >= 3 && Array.isArray(data.images)) {
-      var images = [];
       data.images.forEach(function (img) {
         var n = normalizeImage(img);
         if (n) images.push(n);
       });
-      return { version: 3, images: images };
     }
-    return { version: 3, images: [] };
+    var table = normalizeTable(data && data.table);
+    return { version: 4, images: images, table: table };
   }
 
   function defaultInvenNotify() {
-    return { version: 3, images: [] };
+    return { version: 4, images: [], table: { updatedAt: "", rows: [] } };
   }
 
   function loadInvenNotify() {
@@ -343,7 +377,9 @@
 
   function updateEmpty() {
     if (!els.empty) return;
-    els.empty.hidden = state.images.length > 0;
+    var hasImages = state.images.length > 0;
+    var hasTable = state.table && state.table.rows && state.table.rows.length > 0;
+    els.empty.hidden = hasImages || hasTable;
   }
 
   function updateToolbar() {
@@ -426,6 +462,23 @@
 
     mount.innerHTML = "";
 
+    var tableWrap = document.createElement("div");
+    tableWrap.className = "inven-notify-table-wrap";
+    tableWrap.id = "invenNotifyTableWrap";
+    tableWrap.hidden = true;
+
+    var table = document.createElement("table");
+    table.className = "inven-notify-table";
+    table.innerHTML =
+      '<thead><tr>' +
+      '<th class="inven-notify-table__section" colspan="5">본관동</th>' +
+      '<th class="inven-notify-table__section" colspan="5">별관동</th>' +
+      "</tr><tr>" +
+      "<th>순번</th><th>룸번호</th><th>예약번호</th><th>대여물품</th><th>트레이스</th>" +
+      "<th>순번</th><th>룸번호</th><th>예약번호</th><th>대여물품</th><th>트레이스</th>" +
+      "</tr></thead><tbody id=\"invenNotifyTableBody\"></tbody>";
+    tableWrap.appendChild(table);
+
     var toolbar = document.createElement("div");
     toolbar.className = "inven-notify-toolbar";
     toolbar.id = "invenNotifyToolbar";
@@ -478,11 +531,14 @@
     fileInput.id = "invenNotifyFileInput";
     fileInput.hidden = true;
 
+    mount.appendChild(tableWrap);
     mount.appendChild(toolbar);
     mount.appendChild(board);
     mount.appendChild(fileInput);
 
     els.mount = mount;
+    els.tableWrap = tableWrap;
+    els.tableBody = document.getElementById("invenNotifyTableBody");
     els.toolbar = toolbar;
     els.board = board;
     els.empty = empty;
@@ -536,7 +592,91 @@
   }
 
   function hasContent(data) {
-    return normalizeInvenNotify(data).images.length > 0;
+    var n = normalizeInvenNotify(data);
+    return n.images.length > 0 || n.table.rows.length > 0;
+  }
+
+  function escapeHtml(v) {
+    return (v || "")
+      .toString()
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function renderTable() {
+    if (!els.tableWrap || !els.tableBody) return;
+    var rows = state.table && Array.isArray(state.table.rows) ? state.table.rows : [];
+    var editable = isFrontModeActive();
+    if (!rows.length) {
+      els.tableWrap.hidden = true;
+      els.tableBody.innerHTML = "";
+      return;
+    }
+    els.tableWrap.hidden = false;
+    var html = "";
+    rows.forEach(function (row, rowIdx) {
+      html += "<tr data-row-idx=\"" + rowIdx + "\">";
+      ["main", "annex"].forEach(function (side) {
+        var cells = row[side] || emptyTableSide();
+        TABLE_KEYS.forEach(function (key) {
+          var val = cells[key] != null ? String(cells[key]) : "";
+          if (editable) {
+            html +=
+              '<td class="inven-notify-table__cell" contenteditable="true" spellcheck="false" data-side="' +
+              side +
+              '" data-key="' +
+              key +
+              '">' +
+              escapeHtml(val) +
+              "</td>";
+          } else {
+            html += '<td class="inven-notify-table__cell">' + escapeHtml(val) + "</td>";
+          }
+        });
+      });
+      html += "</tr>";
+    });
+    els.tableBody.innerHTML = html;
+  }
+
+  function bindTableCellEditors() {
+    if (!els.tableBody || !isFrontModeActive()) return;
+    els.tableBody.querySelectorAll(".inven-notify-table__cell[contenteditable]").forEach(function (td) {
+      if (td.getAttribute("data-bound") === "1") return;
+      td.setAttribute("data-bound", "1");
+      td.addEventListener("input", function () {
+        var tr = td.closest("tr");
+        if (!tr) return;
+        var rowIdx = parseInt(tr.getAttribute("data-row-idx"), 10);
+        var side = td.getAttribute("data-side");
+        var key = td.getAttribute("data-key");
+        if (isNaN(rowIdx) || !side || !key || !state.table.rows[rowIdx]) return;
+        if (!state.table.rows[rowIdx][side]) state.table.rows[rowIdx][side] = emptyTableSide();
+        state.table.rows[rowIdx][side][key] = td.textContent || "";
+        markDraftDirty();
+      });
+    });
+  }
+
+  function importInvenTable(rows, meta) {
+    if (!Array.isArray(rows)) return;
+    var normalized = [];
+    rows.forEach(function (row) {
+      normalized.push(normalizeTableRow(row));
+    });
+    state.table = {
+      updatedAt: meta && meta.updatedAt ? String(meta.updatedAt) : new Date().toISOString(),
+      rows: normalized,
+    };
+    if (isFrontModeActive()) {
+      markDraftDirty();
+    } else {
+      saveInvenNotify(state);
+    }
+    renderTable();
+    bindTableCellEditors();
+    updateEmpty();
   }
 
   function exportFlatRows(invenNotify) {
@@ -579,6 +719,8 @@
       els.board.classList.toggle("inven-notify-board--draft", editable && draftDirty);
     }
 
+    renderTable();
+    bindTableCellEditors();
     renderImages();
     updateEmpty();
   }
@@ -599,6 +741,7 @@
     isFrontModeActive: isFrontModeActive,
     hasContent: hasContent,
     exportFlatRows: exportFlatRows,
+    importInvenTable: importInvenTable,
     isDraftDirty: function () {
       return draftDirty;
     },

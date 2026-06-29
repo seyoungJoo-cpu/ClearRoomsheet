@@ -2961,6 +2961,176 @@
       font-weight: 500;
     }
 
+    .zone-tray {
+      margin-top: 14px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 2px solid var(--border);
+      background: var(--surface-raised);
+    }
+
+    .zone-tray--in {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .zone-tray--deleted {
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+
+    .zone-tray__title {
+      margin: 0 0 8px;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .zone-tray--in .zone-tray__title {
+      color: #15803d;
+    }
+
+    .zone-tray--deleted .zone-tray__title {
+      color: #b91c1c;
+    }
+
+    .zone-tray__list {
+      margin: 0;
+    }
+
+    .room-card__actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-zone-checkin {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid #16a34a;
+      background: #22c55e;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn-zone-checkin:hover {
+      background: #16a34a;
+    }
+
+    .btn-zone-restore {
+      padding: 4px 8px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .zone-memo-board {
+      margin-top: 14px;
+      border: 2px solid #c4b5fd;
+      border-radius: 10px;
+      background: #f5f3ff;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(109, 40, 217, 0.08);
+    }
+
+    .zone-memo-board__label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #6d28d9;
+      margin-bottom: 6px;
+    }
+
+    .zone-memo-board__text {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 2.5em;
+    }
+
+    .zone-memo-board__text.is-editable {
+      outline: none;
+      border: 1px dashed #a78bfa;
+      border-radius: 6px;
+      padding: 6px 8px;
+      background: #fff;
+    }
+
+    .zone-memo-board__images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .zone-memo-board__images img {
+      max-width: 160px;
+      max-height: 120px;
+      border-radius: 8px;
+      border: 1px solid #ddd6fe;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .zone-memo-board__toolbar {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .inven-notify-table-wrap {
+      max-height: 42vh;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .inven-notify-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    .inven-notify-table th,
+    .inven-notify-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .inven-notify-table th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 1;
+      font-weight: 700;
+    }
+
+    .inven-notify-table__section {
+      text-align: center;
+      color: #2563eb;
+      font-weight: 800;
+    }
+
+    .inven-notify-table__cell[contenteditable="true"]:focus {
+      outline: 2px solid #2563eb;
+      background: #eff6ff;
+    }
+
     /* 인벤 통보 — 이미지 보드 */
     .inven-notify-panel {
       display: flex;
@@ -5462,7 +5632,7 @@
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
           src="/DD/index.HTML"
-          loading="lazy"
+          loading="eager"
         ></iframe>
       </section>
 
@@ -5472,7 +5642,7 @@
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
           src="/inven/index.HTML"
-          loading="lazy"
+          loading="eager"
         ></iframe>
       </section>
 
@@ -5482,7 +5652,7 @@
           id="chichiEmbedFrame"
           title="고객취향확인"
           src="/chichi/index.HTML"
-          loading="lazy"
+          loading="eager"
         ></iframe>
       </section>
 
@@ -5592,6 +5762,18 @@
             </div>
             <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
             <p class="room-list-empty" id="roomListEmpty" hidden>등록된 객실이 없습니다.</p>
+            <section class="zone-tray zone-tray--in" id="zoneTrayIn" hidden aria-label="입실 객실">
+              <h3 class="zone-tray__title">입실</h3>
+              <ul class="room-list-main zone-tray__list" id="zoneTrayInList"></ul>
+            </section>
+            <section class="zone-tray zone-tray--deleted" id="zoneTrayDeleted" hidden aria-label="삭제·수정 객실">
+              <h3 class="zone-tray__title">삭제·수정</h3>
+              <ul class="room-list-main zone-tray__list" id="zoneTrayDeletedList"></ul>
+            </section>
+            <section class="zone-memo-board" id="zoneVipMemoBoard" hidden aria-label="VIP 메모장">
+              <div class="zone-memo-board__label">VIP 메모장</div>
+              <div class="zone-memo-board__body" id="zoneVipMemoBody"></div>
+            </section>
           </div>
         </div>
       </section>
@@ -5774,7 +5956,7 @@
           <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          통보된 내용을 조회합니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
+          인벤「만들기」표가 자동 반영됩니다. 셀을 클릭해 수정할 수 있으며, 프론트 모드에서「통보」로 저장합니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
@@ -7849,6 +8031,7 @@
         }
 
         rooms.forEach(function (room, idx) {
+          if (getRoomTray(room)) return;
           var li = document.createElement("li");
           li.className = "room-editor";
           var grid = document.createElement("div");
@@ -8056,6 +8239,7 @@
           var prevRow = dataSave.rooms[zone][ix];
           next.time = prevRow && prevRow.time != null ? prevRow.time : "";
           next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
+          next.tray = "deleted";
           var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
           if (!changeEntry) {
             showHkActionToast("변경된 내용이 없습니다.");
@@ -8079,7 +8263,7 @@
           var dataRm = HKStorage.load();
           if (dataRm.rooms[zone] && !isNaN(ix2)) {
             var removedRow = dataRm.rooms[zone][ix2];
-            dataRm.rooms[zone].splice(ix2, 1);
+            dataRm.rooms[zone][ix2].tray = "deleted";
             HKStorage.save(dataRm, { skipSync: true });
             var deleteEntry = {
               id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
@@ -8711,7 +8895,8 @@
           var isPreview =
             img.parentElement && img.parentElement.classList.contains("hk-photo-preview");
           var isNotice = img.classList.contains("notice-thumb-image");
-          if (!isMsg && !isPreview && !isNotice) return;
+          var isZoneMemo = img.classList.contains("zone-memo-image");
+          if (!isMsg && !isPreview && !isNotice && !isZoneMemo) return;
           e.preventDefault();
           e.stopPropagation();
           openLightbox(img.src);
@@ -13393,6 +13578,281 @@
         ta.focus();
       }
 
+      function getRoomTray(room) {
+        if (!room) return "";
+        return room.tray != null ? String(room.tray).trim() : "";
+      }
+
+      function setRoomTrayForZone(zone, roomNumber, tray) {
+        var data = HKStorage.load();
+        var rooms = (data.rooms && data.rooms[zone]) || [];
+        var found = false;
+        rooms.forEach(function (r) {
+          if ((r.number || "") === roomNumber) {
+            r.tray = tray || "";
+            found = true;
+          }
+        });
+        if (!found) return false;
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        return true;
+      }
+
+      function buildZoneRoomCardLi(zone, room, idx, cardOpts) {
+        cardOpts = cardOpts || {};
+        var st = lookupRoomStatusFromXml(room.number || "").trim();
+        var m1 = (room.memo1 || "").trim();
+        var m2 = (room.memo2 || "").trim();
+        var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
+        var tm = (room.time || "").trim();
+
+        var li = document.createElement("li");
+        var roomPending = isRoomChangePending(zone, room.number);
+        var hasHistory = getRoomChangeEntriesForHistory(zone, room.number).length > 0;
+        var historyOpen = isRoomHistoryOpen(zone, room.number);
+        var canHistory = canToggleRoomHistory(zone, room.number);
+        li.className =
+          "room-card" +
+          (maintenanceMode && !cardOpts.trayMode ? " is-clickable" : "") +
+          (roomPending ? " is-change-alert" : "") +
+          (canHistory ? " is-history-toggle" : "") +
+          (historyOpen ? " is-history-open" : "");
+        li.setAttribute("data-room-index", String(idx));
+        if (canHistory) {
+          li.setAttribute("role", "button");
+          li.setAttribute("tabindex", "0");
+          li.title = historyOpen ? "변경 히스토리 접기" : "변경 히스토리 보기";
+        } else if (maintenanceMode && !cardOpts.trayMode) {
+          li.setAttribute("role", "button");
+          li.setAttribute("tabindex", "0");
+          li.title = "카드: 시간 입력 · 두잉: 아래 두잉 줄 클릭";
+        }
+
+        var surface = document.createElement("div");
+        surface.className = "room-card__surface";
+
+        var head = document.createElement("div");
+        head.className = "room-card__head";
+        var noBox = document.createElement("span");
+        noBox.className = "room-card__no-box";
+        var no = document.createElement("span");
+        no.className = "room-card__no";
+        no.textContent = formatRoomNoDisplay(room.number || "");
+        noBox.appendChild(no);
+        head.appendChild(noBox);
+        appendRoomTypeToCardHead(head, room.number || "");
+        head.appendChild(
+          buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
+        );
+        surface.appendChild(head);
+
+        var timeDisp = document.createElement("p");
+        timeDisp.className = "room-card__time-display";
+        setLineWithEmTime(timeDisp, "시간 · ", tm || "");
+        surface.appendChild(timeDisp);
+
+        var b1 = document.createElement("div");
+        b1.className = "room-card__memo-block";
+        var p1 = document.createElement("p");
+        p1.className = "room-card__memo" + (m1 ? "" : " is-empty");
+        p1.textContent = m1 ? "FD : " + m1 : "FD : —";
+        b1.appendChild(p1);
+        surface.appendChild(b1);
+
+        var b2 = document.createElement("div");
+        b2.className =
+          "room-card__memo-block room-card__memo-block--m2" +
+          (maintenanceMode && !cardOpts.trayMode ? " is-editable" : "");
+        var p2 = document.createElement("p");
+        p2.className =
+          "room-card__memo room-card__memo2-text" + (m2 || m2Img ? "" : " is-empty");
+        p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
+        b2.appendChild(p2);
+        hkAppendImageEl(b2, m2Img);
+        surface.appendChild(b2);
+
+        if (cardOpts.showCheckIn && frontMode) {
+          var actionsIn = document.createElement("div");
+          actionsIn.className = "room-card__actions";
+          var btnIn = document.createElement("button");
+          btnIn.type = "button";
+          btnIn.className = "btn-zone-checkin";
+          btnIn.textContent = "입실";
+          btnIn.setAttribute("data-zone", zone);
+          btnIn.setAttribute("data-room", room.number || "");
+          actionsIn.appendChild(btnIn);
+          surface.appendChild(actionsIn);
+        }
+
+        if (cardOpts.showRestore && frontMode) {
+          var actionsRestore = document.createElement("div");
+          actionsRestore.className = "room-card__actions";
+          var btnRestore = document.createElement("button");
+          btnRestore.type = "button";
+          btnRestore.className = "btn-zone-restore";
+          btnRestore.textContent = "목록 복원";
+          btnRestore.setAttribute("data-zone", zone);
+          btnRestore.setAttribute("data-room", room.number || "");
+          actionsRestore.appendChild(btnRestore);
+          surface.appendChild(actionsRestore);
+        }
+
+        li.appendChild(surface);
+
+        if (historyOpen && hasHistory) {
+          var historyBlock = buildRoomCardHistoryBlock(zone, room.number);
+          if (historyBlock) li.appendChild(historyBlock);
+        }
+
+        return li;
+      }
+
+      function handleZoneTrayActionClick(e) {
+        var t = e.target;
+        if (!t || !t.classList) return;
+        if (!t.classList.contains("btn-zone-checkin") && !t.classList.contains("btn-zone-restore")) {
+          return;
+        }
+        if (!frontMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var zone = t.getAttribute("data-zone") || getActiveZone();
+        var roomNo = t.getAttribute("data-room") || "";
+        if (!zone || !roomNo) return;
+        if (t.classList.contains("btn-zone-checkin")) {
+          setRoomTrayForZone(zone, roomNo, "in");
+          showHkActionToast("입실 칸으로 이동했습니다.");
+        } else {
+          setRoomTrayForZone(zone, roomNo, "");
+          showHkActionToast("객실 목록으로 복원했습니다.");
+        }
+        renderRoomsForZone(zone, { force: true });
+      }
+
+      function renderZoneTrays(zone, rooms) {
+        var trayIn = document.getElementById("zoneTrayIn");
+        var trayInList = document.getElementById("zoneTrayInList");
+        var trayDel = document.getElementById("zoneTrayDeleted");
+        var trayDelList = document.getElementById("zoneTrayDeletedList");
+        if (!trayIn || !trayInList || !trayDel || !trayDelList) return;
+        trayInList.innerHTML = "";
+        trayDelList.innerHTML = "";
+        var inCount = 0;
+        var delCount = 0;
+        rooms.forEach(function (room, idx) {
+          var tray = getRoomTray(room);
+          if (tray === "in") {
+            trayInList.appendChild(
+              buildZoneRoomCardLi(zone, room, idx, { trayMode: true, showRestore: true })
+            );
+            inCount += 1;
+          } else if (tray === "deleted") {
+            trayDelList.appendChild(
+              buildZoneRoomCardLi(zone, room, idx, { trayMode: true, showRestore: true })
+            );
+            delCount += 1;
+          }
+        });
+        trayIn.hidden = inCount === 0;
+        trayDel.hidden = delCount === 0;
+      }
+
+      function saveZoneVipMemo(patch) {
+        var data = HKStorage.load();
+        if (!data.zoneMemos) data.zoneMemos = { VIP: { text: "", images: [] } };
+        if (!data.zoneMemos.VIP) data.zoneMemos.VIP = { text: "", images: [] };
+        if (patch.text != null) data.zoneMemos.VIP.text = String(patch.text);
+        if (patch.images) data.zoneMemos.VIP.images = patch.images.slice();
+        HKStorage.save(data);
+      }
+
+      function pickZoneVipMemoPhoto() {
+        var input = document.getElementById("zoneVipMemoPhotoInput");
+        if (!input) {
+          input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          input.id = "zoneVipMemoPhotoInput";
+          input.hidden = true;
+          document.body.appendChild(input);
+          input.addEventListener("change", function () {
+            var f = input.files && input.files[0];
+            input.value = "";
+            if (!f) return;
+            hkCompressImage(f, function (url) {
+              var data = HKStorage.load();
+              var images =
+                (data.zoneMemos && data.zoneMemos.VIP && data.zoneMemos.VIP.images) || [];
+              images = images.slice();
+              images.push(url);
+              saveZoneVipMemo({ images: images });
+              renderZoneVipMemoBoard("VIP");
+            });
+          });
+        }
+        input.click();
+      }
+
+      function renderZoneVipMemoBoard(zone) {
+        var board = document.getElementById("zoneVipMemoBoard");
+        var body = document.getElementById("zoneVipMemoBody");
+        if (!board || !body) return;
+        if (zone !== "VIP") {
+          board.hidden = true;
+          return;
+        }
+        board.hidden = false;
+        var data = HKStorage.load();
+        var memo = (data.zoneMemos && data.zoneMemos.VIP) || { text: "", images: [] };
+        var text = memo.text != null ? String(memo.text) : "";
+        var images = Array.isArray(memo.images) ? memo.images : [];
+        body.innerHTML = "";
+        var textEl = document.createElement("div");
+        textEl.className = "zone-memo-board__text" + (frontMode ? " is-editable" : "");
+        textEl.textContent = text;
+        if (frontMode) {
+          textEl.setAttribute("contenteditable", "true");
+          textEl.setAttribute("spellcheck", "false");
+          textEl.addEventListener("blur", function () {
+            saveZoneVipMemo({ text: textEl.textContent || "" });
+          });
+        }
+        body.appendChild(textEl);
+        if (images.length) {
+          var imgWrap = document.createElement("div");
+          imgWrap.className = "zone-memo-board__images";
+          images.forEach(function (src) {
+            if (!src) return;
+            var img = document.createElement("img");
+            img.src = src;
+            img.alt = "VIP 메모 사진";
+            img.className = "zone-memo-image";
+            imgWrap.appendChild(img);
+          });
+          body.appendChild(imgWrap);
+        }
+        if (frontMode) {
+          var toolbar = document.createElement("div");
+          toolbar.className = "zone-memo-board__toolbar";
+          var btnPhoto = document.createElement("button");
+          btnPhoto.type = "button";
+          btnPhoto.className = "hk-photo-btn";
+          btnPhoto.textContent = "사진 추가";
+          btnPhoto.addEventListener("click", function () {
+            pickZoneVipMemoPhoto();
+          });
+          toolbar.appendChild(btnPhoto);
+          body.appendChild(toolbar);
+        }
+      }
+
+      function applyZoneVipMemo() {
+        renderZoneVipMemoBoard(getActiveZone());
+      }
+
       function renderRoomsForZone(zone, opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
@@ -13404,6 +13864,8 @@
           roomEmpty.hidden = true;
           label.textContent = "—";
           updateZoneBlockTitle(null);
+          renderZoneTrays("", []);
+          renderZoneVipMemoBoard(null);
           return;
         }
         var data = HKStorage.load();
@@ -13420,89 +13882,15 @@
           var shownCount = 0;
           var statusPassCount = 0;
           rooms.forEach(function (room, idx) {
+            if (getRoomTray(room)) return;
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
             statusPassCount += 1;
             if (!roomPassesSchedTypeFilter(room.number)) return;
             shownCount += 1;
-            var m1 = (room.memo1 || "").trim();
-            var m2 = (room.memo2 || "").trim();
-            var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
-            var tm = (room.time || "").trim();
-
-            var li = document.createElement("li");
-            var roomPending = isRoomChangePending(zone, room.number);
-            var hasHistory = getRoomChangeEntriesForHistory(zone, room.number).length > 0;
-            var historyOpen = isRoomHistoryOpen(zone, room.number);
-            var canHistory = canToggleRoomHistory(zone, room.number);
-            li.className =
-              "room-card" +
-              (maintenanceMode ? " is-clickable" : "") +
-              (roomPending ? " is-change-alert" : "") +
-              (canHistory ? " is-history-toggle" : "") +
-              (historyOpen ? " is-history-open" : "");
-            li.setAttribute("data-room-index", String(idx));
-            if (canHistory) {
-              li.setAttribute("role", "button");
-              li.setAttribute("tabindex", "0");
-              li.title = historyOpen
-                ? "변경 히스토리 접기"
-                : "변경 히스토리 보기";
-            } else if (maintenanceMode) {
-              li.setAttribute("role", "button");
-              li.setAttribute("tabindex", "0");
-              li.title = "카드: 시간 입력 · 두잉: 아래 두잉 줄 클릭";
-            }
-
-            var surface = document.createElement("div");
-            surface.className = "room-card__surface";
-
-            var head = document.createElement("div");
-            head.className = "room-card__head";
-            var noBox = document.createElement("span");
-            noBox.className = "room-card__no-box";
-            var no = document.createElement("span");
-            no.className = "room-card__no";
-            no.textContent = formatRoomNoDisplay(room.number || "");
-            noBox.appendChild(no);
-            head.appendChild(noBox);
-            appendRoomTypeToCardHead(head, room.number || "");
-            head.appendChild(
-              buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
-            );
-            surface.appendChild(head);
-
-            var timeDisp = document.createElement("p");
-            timeDisp.className = "room-card__time-display";
-            setLineWithEmTime(timeDisp, "시간 · ", tm || "");
-            surface.appendChild(timeDisp);
-
-            var b1 = document.createElement("div");
-            b1.className = "room-card__memo-block";
-            var p1 = document.createElement("p");
-            p1.className = "room-card__memo" + (m1 ? "" : " is-empty");
-            p1.textContent = m1 ? "FD : " + m1 : "FD : —";
-            b1.appendChild(p1);
-            surface.appendChild(b1);
-
-            var b2 = document.createElement("div");
-            b2.className =
-              "room-card__memo-block room-card__memo-block--m2" +
-              (maintenanceMode ? " is-editable" : "");
-            var p2 = document.createElement("p");
-            p2.className =
-              "room-card__memo room-card__memo2-text" + (m2 || m2Img ? "" : " is-empty");
-            p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
-            b2.appendChild(p2);
-            hkAppendImageEl(b2, m2Img);
-            surface.appendChild(b2);
-            li.appendChild(surface);
-
-            if (historyOpen && hasHistory) {
-              var historyBlock = buildRoomCardHistoryBlock(zone, room.number);
-              if (historyBlock) li.appendChild(historyBlock);
-            }
-
+            var li = buildZoneRoomCardLi(zone, room, idx, {
+              showCheckIn: true,
+            });
             roomList.appendChild(li);
           });
           if (shownCount === 0) {
@@ -13517,6 +13905,8 @@
             roomEmpty.hidden = true;
           }
         }
+        renderZoneTrays(zone, rooms);
+        renderZoneVipMemoBoard(zone);
       }
 
       function refreshMain(opts) {
@@ -13532,6 +13922,7 @@
         currentZone = getActiveZone();
         applyNotice({ detectChange: !!opts.detectNoticeChange });
         applyMbInvNotice();
+        applyZoneVipMemo();
         if (
           sidebarMainView === "invenNotify" &&
           typeof HKInvenNotify !== "undefined"
@@ -13606,6 +13997,9 @@
         }
         if (typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
+        }
+        if (currentZone === "VIP") {
+          applyZoneVipMemo();
         }
       }
 
@@ -14054,6 +14448,7 @@
 
       if (roomList) {
         roomList.addEventListener("click", function (e) {
+          if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
           if (e.target.closest(".room-time-editor")) return;
           if (e.target.closest(".room-memo2-editor")) return;
 
@@ -14284,6 +14679,23 @@
       if (typeof HKInvenNotify !== "undefined") {
         HKInvenNotify.init();
       }
+
+      window.addEventListener("message", function (ev) {
+        var msg = ev.data;
+        if (!msg || typeof msg !== "object") return;
+        if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
+          HKInvenNotify.importInvenTable(msg.rows, msg.meta || {});
+          if (sidebarMainView === "invenNotify") {
+            HKInvenNotify.render(true);
+          }
+        }
+      });
+
+      var mainZoneBodyEl = document.getElementById("mainZoneBody");
+      if (mainZoneBodyEl) {
+        mainZoneBodyEl.addEventListener("click", handleZoneTrayActionClick);
+      }
+
       refreshMain();
       showSidebarRequestView();
       renderOrderPanels();

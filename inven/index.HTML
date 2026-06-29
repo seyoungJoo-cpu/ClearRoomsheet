@@ -295,6 +295,7 @@
   <script>
     const ACCESS_PASSWORD = "74321";
     const AUTH_STORAGE_KEY = "inven_html_unlocked";
+    const STATE_STORAGE_KEY = "hk-inven-embed-state-v1";
 
     const authGate = document.getElementById("auth-gate");
     const authForm = document.getElementById("auth-form");
@@ -562,6 +563,68 @@
       const todayStr = todayTruncArrivalString();
       todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${todayStr}`;
       meta.textContent = `전체 rows: ${dataframeRows.length}, 트레이스 매칭: ${matched}, 본관동: ${mainRows.length}, 별관동: ${annexRows.length}`;
+      saveEmbedState();
+      notifyParentTable(mainRows, annexRows, rowCount);
+    }
+
+    function saveEmbedState() {
+      try {
+        localStorage.setItem(
+          STATE_STORAGE_KEY,
+          JSON.stringify({
+            dataframeRows,
+            sortState,
+            invFileName: selectedInvFile ? selectedInvFile.name : "",
+            gitFileName: selectedGitFile ? selectedGitFile.name : "",
+          })
+        );
+      } catch (err) {}
+    }
+
+    function restoreEmbedState() {
+      try {
+        const raw = localStorage.getItem(STATE_STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved.dataframeRows) && saved.dataframeRows.length) {
+          dataframeRows = saved.dataframeRows;
+          if (saved.sortState) {
+            sortState.main = saved.sortState.main || sortState.main;
+            sortState.annex = saved.sortState.annex || sortState.annex;
+          }
+          updateSortHeaderMarks();
+          renderRows();
+        }
+      } catch (err) {}
+    }
+
+    function notifyParentTable(mainRows, annexRows, rowCount) {
+      if (window.parent === window) return;
+      const rows = [];
+      for (let i = 0; i < rowCount; i += 1) {
+        const toSide = (r, idx) =>
+          r
+            ? {
+                seq: String(idx + 1),
+                room: r.room || "",
+                confirmationNo: r.confirmationNo || "",
+                itemCode1: formatItemCode1WithQty(r.itemCode1, r.reservedQty1),
+                trace: r.trace || "",
+              }
+            : { seq: "", room: "", confirmationNo: "", itemCode1: "", trace: "" };
+        rows.push({
+          main: toSide(mainRows[i], i),
+          annex: toSide(annexRows[i], i),
+        });
+      }
+      window.parent.postMessage(
+        {
+          type: "HK_INVEN_TABLE",
+          rows,
+          meta: { updatedAt: new Date().toISOString(), source: "inven" },
+        },
+        "*"
+      );
     }
 
     loadBtn.addEventListener("click", async () => {
@@ -668,6 +731,7 @@
 
     updateSortHeaderMarks();
     todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${todayTruncArrivalString()}`;
+    restoreEmbedState();
   </script>
 </body>
 </html>

@@ -48,13 +48,13 @@
 
     .link-front {
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
       text-decoration: none;
-      padding: 6px 10px;
+      padding: 10px 20px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       background: var(--surface-raised);
-      font-size: 0.8125rem;
+      font-size: 1.0625rem;
       transition: border-color 0.15s, background 0.15s, color 0.15s;
     }
 
@@ -877,6 +877,27 @@
         <textarea id="mbInvNoticeInput" placeholder="MB &amp; 인벤 메모장 내용을 입력하세요."></textarea>
       </div>
       <button type="button" class="btn-primary" id="saveMbInvNotice">메모장 저장</button>
+    </section>
+
+    <section class="card">
+      <h2>VIP 특이객실 메모장</h2>
+      <div class="notice-field">
+        <label for="vipZoneMemoInput">메모 내용</label>
+        <p style="margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
+          저장하면 정비 화면 <strong>VIP</strong> 특이객실 목록 하단 메모장에 표시됩니다. 사진도 첨부할 수 있습니다.
+        </p>
+        <textarea id="vipZoneMemoInput" placeholder="VIP 메모장 내용을 입력하세요."></textarea>
+      </div>
+      <div class="notice-images-aside" id="vipZoneMemoImagesAside" hidden>
+        <p class="notice-images-aside__label">첨부 사진</p>
+        <div class="notice-images-grid" id="vipZoneMemoImagesGrid"></div>
+        <button type="button" class="btn-secondary" id="btnClearVipZoneMemoImages" hidden>사진 전체 삭제</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button type="button" class="btn-secondary" id="btnAddVipZoneMemoImage">사진 추가</button>
+        <input type="file" id="vipZoneMemoImageFile" accept="image/*" multiple hidden />
+        <button type="button" class="btn-primary" id="saveVipZoneMemo">VIP 메모장 저장</button>
+      </div>
     </section>
 
     <section class="card">
@@ -2834,13 +2855,26 @@
         var data = HKStorage.load();
         var noticeEl = document.getElementById("noticeInput");
         var mbInvNoticeEl = document.getElementById("mbInvNoticeInput");
+        var vipMemoEl = document.getElementById("vipZoneMemoInput");
         var editingNotice = noticeEl && document.activeElement === noticeEl;
         var editingMbInvNotice = mbInvNoticeEl && document.activeElement === mbInvNoticeEl;
+        var editingVipMemo = vipMemoEl && document.activeElement === vipMemoEl;
         if (noticeEl && !editingNotice) {
           noticeEl.value = data.notice;
         }
         if (mbInvNoticeEl && !editingMbInvNotice) {
           mbInvNoticeEl.value = data.mbInvNotice != null ? data.mbInvNotice : "";
+        }
+        if (vipMemoEl && !editingVipMemo) {
+          var vipMemo = (data.zoneMemos && data.zoneMemos.VIP) || { text: "", images: [] };
+          vipMemoEl.value = vipMemo.text != null ? String(vipMemo.text) : "";
+        }
+        if (!editingVipMemo) {
+          var vipImages =
+            data.zoneMemos && data.zoneMemos.VIP && Array.isArray(data.zoneMemos.VIP.images)
+              ? data.zoneMemos.VIP.images
+              : [];
+          setAdminVipMemoImages(vipImages);
         }
         if (!editingNotice) {
           setAdminNoticeImages(
@@ -2855,6 +2889,46 @@
       }
 
       var adminNoticeImages = [];
+      var adminVipMemoImages = [];
+
+      function setAdminVipMemoImages(images) {
+        adminVipMemoImages = Array.isArray(images)
+          ? images
+              .map(function (img) {
+                return img != null ? String(img).trim() : "";
+              })
+              .filter(Boolean)
+          : [];
+        renderAdminVipMemoImages();
+      }
+
+      function renderAdminVipMemoImages() {
+        var grid = document.getElementById("vipZoneMemoImagesGrid");
+        var aside = document.getElementById("vipZoneMemoImagesAside");
+        var clearBtn = document.getElementById("btnClearVipZoneMemoImages");
+        if (!grid) return;
+        grid.innerHTML = "";
+        adminVipMemoImages.forEach(function (src, index) {
+          var wrap = document.createElement("div");
+          wrap.className = "notice-image-item";
+          var img = document.createElement("img");
+          img.src = src;
+          img.alt = "VIP 메모 사진 " + (index + 1);
+          var rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "notice-image-item__remove";
+          rm.textContent = "삭제";
+          rm.addEventListener("click", function () {
+            adminVipMemoImages.splice(index, 1);
+            renderAdminVipMemoImages();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(rm);
+          grid.appendChild(wrap);
+        });
+        if (aside) aside.hidden = !adminVipMemoImages.length;
+        if (clearBtn) clearBtn.hidden = !adminVipMemoImages.length;
+      }
 
       function setAdminNoticeImages(images) {
         adminNoticeImages = Array.isArray(images)
@@ -3065,6 +3139,45 @@
         HKStorage.save(data);
         toast("MB & 인벤 메모장이 저장되었습니다.");
       });
+
+      document.getElementById("saveVipZoneMemo").addEventListener("click", function () {
+        var data = HKStorage.load();
+        var input = document.getElementById("vipZoneMemoInput");
+        if (!data.zoneMemos) data.zoneMemos = { VIP: { text: "", images: [] } };
+        if (!data.zoneMemos.VIP) data.zoneMemos.VIP = { text: "", images: [] };
+        data.zoneMemos.VIP.text = input ? input.value : "";
+        data.zoneMemos.VIP.images = adminVipMemoImages.slice();
+        HKStorage.save(data);
+        toast("VIP 메모장이 저장되었습니다.");
+      });
+
+      (function setupVipZoneMemoImageUi() {
+        var addBtn = document.getElementById("btnAddVipZoneMemoImage");
+        var fileIn = document.getElementById("vipZoneMemoImageFile");
+        var clearBtn = document.getElementById("btnClearVipZoneMemoImages");
+        if (addBtn && fileIn) {
+          addBtn.addEventListener("click", function () {
+            fileIn.click();
+          });
+          fileIn.addEventListener("change", function () {
+            var files = Array.from(fileIn.files || []);
+            fileIn.value = "";
+            if (!files.length) return;
+            files.forEach(function (file) {
+              adminCompressImage(file, function (dataUrl) {
+                adminVipMemoImages.push(dataUrl);
+                renderAdminVipMemoImages();
+              });
+            });
+          });
+        }
+        if (clearBtn) {
+          clearBtn.addEventListener("click", function () {
+            adminVipMemoImages = [];
+            renderAdminVipMemoImages();
+          });
+        }
+      })();
 
       setupNoticeImageUi();
 

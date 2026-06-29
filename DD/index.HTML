@@ -897,6 +897,46 @@
     function renderCurrentRows() {
       renderRows(sortRows(currentRows));
       updateSortHeaderUi();
+      saveDdEmbedState();
+    }
+
+    const DD_STATE_KEY = "hk-dd-embed-state-v1";
+
+    function saveDdEmbedState() {
+      try {
+        localStorage.setItem(
+          DD_STATE_KEY,
+          JSON.stringify({
+            ddRooms: ddRooms.value,
+            currentRows,
+            sortState,
+            template: template.value,
+          })
+        );
+      } catch (err) {}
+    }
+
+    function restoreDdEmbedState() {
+      try {
+        const raw = localStorage.getItem(DD_STATE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.ddRooms != null) ddRooms.value = saved.ddRooms;
+        if (saved.template != null) template.value = saved.template;
+        if (Array.isArray(saved.currentRows) && saved.currentRows.length) {
+          currentRows = saved.currentRows;
+          if (saved.sortState) {
+            sortState.key = saved.sortState.key || null;
+            sortState.direction = saved.sortState.direction || "asc";
+          }
+          renderRows(sortRows(currentRows));
+          updateSortHeaderUi();
+          const foundCount = currentRows.filter((r) => r.phone).length;
+          kpiRooms.textContent = String(currentRows.length);
+          kpiFound.textContent = String(foundCount);
+          kpiMissing.textContent = String(currentRows.length - foundCount);
+        }
+      } catch (err) {}
     }
 
     function bindSortHandlers() {
@@ -1118,6 +1158,7 @@
       copyText(text, "전화번호만 복사했습니다.");
     });
     bindSortHandlers();
+    restoreDdEmbedState();
     resetXmlAssignmentsQuiet();
     window.addEventListener("load", () => {
       photo1.value = "";
