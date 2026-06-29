@@ -7781,7 +7781,35 @@
       }
 
       function normalizeRoomKey(room) {
-        return String(room || "").replace(/\s/g, "").trim();
+        var nr = normalizeRoomDigits(roomNumberForStatusLookup(room) || room);
+        if (nr) return nr;
+        return String(room || "")
+          .replace(/\s/g, "")
+          .trim()
+          .toLowerCase();
+      }
+
+      function roomDigitsLoose(val) {
+        var nr = normalizeRoomDigits(roomNumberForStatusLookup(val) || val);
+        if (nr) return nr.replace(/^0+/, "") || "0";
+        var d = String(val || "").replace(/\D/g, "");
+        if (!d) return "";
+        if (d.length <= 4) return d.replace(/^0+/, "") || "0";
+        return d.slice(-4).replace(/^0+/, "") || "0";
+      }
+
+      function roomsAreSame(roomA, roomB) {
+        var a = normalizeRoomDigits(roomNumberForStatusLookup(roomA) || roomA);
+        var b = normalizeRoomDigits(roomNumberForStatusLookup(roomB) || roomB);
+        if (a && b) return a === b;
+        return normalizeRoomKey(roomA) === normalizeRoomKey(roomB);
+      }
+
+      function canonicalRoomInput(roomInput) {
+        var raw = String(roomInput || "").trim();
+        if (!raw) return "";
+        if (/->/.test(raw) || /에서/.test(raw)) return raw;
+        return normalizeRoomDigits(roomNumberForStatusLookup(raw) || raw) || raw;
       }
 
       function roomAlertKey(zone, room) {
@@ -8707,12 +8735,25 @@
         return el.value.replace(/\s/g, "");
       }
 
-      function roomMatchesSchedSearch(roomVal, filterNorm) {
-        if (!filterNorm) return true;
-        var r = String(roomVal || "")
-          .replace(/\s/g, "")
-          .toLowerCase();
-        return r.indexOf(filterNorm) !== -1;
+      function roomMatchesSchedSearch(roomVal, filterRaw) {
+        var filterD = roomDigitsLoose(filterRaw);
+        if (!filterD) return true;
+        var roomD = roomDigitsLoose(roomVal);
+        if (!roomD) {
+          var r = String(roomVal || "")
+            .replace(/\s/g, "")
+            .toLowerCase();
+          var f = String(filterRaw || "")
+            .replace(/\s/g, "")
+            .toLowerCase();
+          return r.indexOf(f) !== -1;
+        }
+        if (roomsAreSame(roomVal, filterRaw)) return true;
+        return (
+          roomD.indexOf(filterD) >= 0 ||
+          roomD.endsWith(filterD) ||
+          filterD.endsWith(roomD)
+        );
       }
 
       function pad2(n) {
@@ -9127,7 +9168,7 @@
           if (!entry) return;
           var sched = entry.sched != null ? String(entry.sched).trim() : "";
           if (!sched) return;
-          var nr = normalizeRoomDigits(entry.room);
+          var nr = normalizeRoomDigits(roomNumberForStatusLookup(entry.room) || entry.room);
           if (!nr) return;
           var at = new Date(entry.at || 0).getTime();
           if (isNaN(at)) at = 0;
@@ -9277,11 +9318,11 @@
       }
 
       function getFilteredScheduledRequestEntries() {
-        var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+        var filterRaw = getRequestRoomFilterRaw();
         var list = requestLogEntries.filter(function (e) {
           return (
             isScheduledRequestEntry(e) &&
-            roomMatchesSchedSearch(e.room, filterNorm) &&
+            roomMatchesSchedSearch(e.room, filterRaw) &&
             roomPassesSchedTypeFilter(e.room)
           );
         });
@@ -11578,7 +11619,10 @@
           return !(entry.sched && String(entry.sched).trim());
         });
         var pending = allPending.filter(function (entry) {
-          return roomPassesSchedTypeFilter(entry.room);
+          return (
+            roomPassesSchedTypeFilter(entry.room) &&
+            roomMatchesSchedSearch(entry.room, getRequestRoomFilterRaw())
+          );
         });
         pending.sort(function (a, b) {
           var ta = new Date(a.at || 0).getTime();
@@ -12687,16 +12731,16 @@
           return getOrderPhase(e) === "cancelled";
         });
 
-        var filterNorm = getOrderRoomFilterRaw().toLowerCase();
-        if (filterNorm) {
+        var filterRaw = getOrderRoomFilterRaw();
+        if (filterRaw) {
           issueEntries = issueEntries.filter(function (e) {
-            return roomMatchesSchedSearch(e.room, filterNorm);
+            return roomMatchesSchedSearch(e.room, filterRaw);
           });
           acceptedEntries = acceptedEntries.filter(function (e) {
-            return roomMatchesSchedSearch(e.room, filterNorm);
+            return roomMatchesSchedSearch(e.room, filterRaw);
           });
           cancelledEntries = cancelledEntries.filter(function (e) {
-            return roomMatchesSchedSearch(e.room, filterNorm);
+            return roomMatchesSchedSearch(e.room, filterRaw);
           });
         }
 
@@ -12790,7 +12834,7 @@
 
         if (issueEmpty) {
           issueEmpty.hidden = issueEntries.length > 0;
-          if (!issueEntries.length && filterNorm) {
+          if (!issueEntries.length && filterRaw) {
             issueEmpty.textContent = "입력한 객실번호에 해당하는 문제 발생 건이 없습니다.";
           } else {
             issueEmpty.textContent = "문제 발생 건이 없습니다.";
@@ -12798,7 +12842,7 @@
         }
         if (acceptedEmpty) {
           acceptedEmpty.hidden = acceptedEntries.length > 0;
-          if (!acceptedEntries.length && filterNorm) {
+          if (!acceptedEntries.length && filterRaw) {
             acceptedEmpty.textContent = "입력한 객실번호에 해당하는 접수완료 건이 없습니다.";
           } else {
             acceptedEmpty.textContent = "접수완료 건이 없습니다.";
@@ -12806,7 +12850,7 @@
         }
         if (cancelledEmpty) {
           cancelledEmpty.hidden = cancelledEntries.length > 0;
-          if (!cancelledEntries.length && filterNorm) {
+          if (!cancelledEntries.length && filterRaw) {
             cancelledEmpty.textContent = "입력한 객실번호에 해당하는 취소 건이 없습니다.";
           } else {
             cancelledEmpty.textContent = "취소된 오더가 없습니다.";
@@ -12814,7 +12858,7 @@
         }
         setIssueSectionVisible(
           document.getElementById("orderIssueSection"),
-          issueEntries.length > 0 || (!filterNorm && orderLogEntries.some(isOrderIssueOpen))
+          issueEntries.length > 0 || (!filterRaw && orderLogEntries.some(isOrderIssueOpen))
         );
       }
 
@@ -13751,7 +13795,7 @@
         var rooms = (data.rooms && data.rooms[zone]) || [];
         var found = false;
         rooms.forEach(function (r) {
-          if ((r.number || "") === roomNumber) {
+          if (roomsAreSame(r.number || "", roomNumber)) {
             r.tray = tray || "";
             found = true;
           }
@@ -14919,10 +14963,14 @@
         if (hint) hint.hidden = true;
       }
 
-      function normalizeRoomKey(s) {
-        return String(s || "")
-          .replace(/\s/g, "")
-          .toLowerCase();
+      function hasScheduledRequestForRoom(roomInput) {
+        syncRequestLogFromServer();
+        for (var i = 0; i < requestLogEntries.length; i++) {
+          var e = requestLogEntries[i];
+          if (!isScheduledRequestEntry(e)) continue;
+          if (roomsAreSame(e.room, roomInput)) return true;
+        }
+        return false;
       }
 
       function hasPendingRequestInFeedback(roomInput) {
@@ -14932,12 +14980,13 @@
           var e = requestLogEntries[i];
           var pending = !(e.sched && String(e.sched).trim());
           if (!pending) continue;
-          if (normalizeRoomKey(e.room) === want) return true;
+          if (roomsAreSame(e.room, roomInput)) return true;
         }
         return false;
       }
 
       function appendOrderLog(room, memoText, isUrgent, memoImage) {
+        room = canonicalRoomInput(room);
         var fo = lookupRoomResvDisplay(room);
         var id = "ord-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         orderLogEntries.unshift({
@@ -14990,6 +15039,7 @@
       }
 
       function appendRequestLog(room, statusVal, isUrgent, memoText, memoImage) {
+        room = canonicalRoomInput(room);
         var id = "req-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         requestLogEntries.unshift({
           id: id,
@@ -15058,6 +15108,15 @@
         if (hasPendingRequestInFeedback(room)) {
           alert("이미 요청하셨습니다.");
           return;
+        }
+        if (hasScheduledRequestForRoom(room)) {
+          if (
+            !confirm(
+              "이미 요청 답변되었습니다 중복으로 요청하시겠습니까?"
+            )
+          ) {
+            return;
+          }
         }
         updateRoomStatusDisplay();
         var st = lookupRoomStatusFromXml(room);
