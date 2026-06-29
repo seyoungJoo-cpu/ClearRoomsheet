@@ -17,6 +17,10 @@
 
   var selection = null;
   var colResizeActive = false;
+  var rowDragActive = false;
+  var sortState = { col: null, dir: null };
+
+  var COL_LABELS = ["순번", "룸번호", "예약번호", "대여물품", "트레이스"];
 
   var els = {
     mount: null,
@@ -320,12 +324,88 @@
     return null;
   }
 
-  function insertRow(at) {
+  function getSelectionSide(sel) {
+    if (!sel) return null;
+    return sel.c0 < 5 ? "main" : "annex";
+  }
+
+  function isSideEmpty(row, side) {
+    if (!row || !row[side]) return true;
+    return TABLE_KEYS.every(function (key) {
+      return !(row[side][key] != null && String(row[side][key]).trim());
+    });
+  }
+
+  function isRowFullyEmpty(row) {
+    return isSideEmpty(row, "main") && isSideEmpty(row, "annex");
+  }
+
+  function trimTrailingEmptyRows() {
     var rows = state.table.rows;
-    var newRow = normalizeTableRow({});
-    rows.splice(at, 0, newRow);
+    while (rows.length && isRowFullyEmpty(rows[rows.length - 1])) {
+      rows.pop();
+    }
+    if (!rows.length) return;
+    var last = rows.length - 1;
+    while (last >= 0 && isRowFullyEmpty(rows[last])) {
+      rows.pop();
+      last -= 1;
+    }
+  }
+
+  function shiftSideMergesAfterDelete(side, r0, count) {
+    var c0 = side === "main" ? 0 : 5;
+    var c1 = c0 + 4;
+    var r1 = r0 + count - 1;
+    state.table.merges = (state.table.merges || []).filter(function (m) {
+      var inSide = m.c >= c0 && m.c <= c1;
+      if (!inSide) return true;
+      if (m.r + m.rowspan <= r0) return true;
+      if (m.r > r1) return true;
+      return false;
+    });
     (state.table.merges || []).forEach(function (m) {
-      if (m.r >= at) m.r += 1;
+      var inSide = m.c >= c0 && m.c <= c1;
+      if (!inSide) return;
+      if (m.r > r1) m.r -= count;
+    });
+  }
+
+  function copySideData(src, dst, side) {
+    if (!dst[side]) dst[side] = emptyTableSide();
+    if (!src || !src[side]) {
+      TABLE_KEYS.forEach(function (k) {
+        dst[side][k] = "";
+      });
+      return;
+    }
+    TABLE_KEYS.forEach(function (k) {
+      dst[side][k] = src[side][k] != null ? String(src[side][k]) : "";
+    });
+  }
+
+  function insertRow(at, side) {
+    side = side || "main";
+    var rows = state.table.rows;
+    if (!rows.length) rows.push(normalizeTableRow({}));
+    at = Math.max(0, Math.min(at, rows.length));
+    if (at >= rows.length) {
+      var newRow = normalizeTableRow({});
+      newRow[side] = emptyTableSide();
+      rows.push(newRow);
+    } else {
+      rows.push(normalizeTableRow({}));
+      for (var r = rows.length - 1; r > at; r--) {
+        if (!rows[r]) rows[r] = normalizeTableRow({});
+        if (!rows[r - 1]) rows[r - 1] = normalizeTableRow({});
+        copySideData(rows[r - 1], rows[r], side);
+      }
+      if (!rows[at]) rows[at] = normalizeTableRow({});
+      rows[at][side] = emptyTableSide();
+    }
+    (state.table.merges || []).forEach(function (m) {
+      var inSide = side === "main" ? m.c < 5 : m.c >= 5;
+      if (inSide && m.r >= at) m.r += 1;
     });
     markDraftDirty();
     renderTable();
@@ -337,21 +417,95 @@
       alert("삭제할 행의 셀을 선택하세요.");
       return;
     }
+    var side = getSelectionSide(sel);
     var r0 = sel.r0;
     var r1 = sel.r1;
     var count = r1 - r0 + 1;
-    state.table.rows.splice(r0, count);
-    state.table.merges = (state.table.merges || []).filter(function (m) {
-      if (m.r + m.rowspan <= r0) return true;
-      if (m.r >= r1 + 1) {
-        m.r -= count;
-        return true;
-      }
-      return false;
-    });
+    var rows = state.table.rows;
+    if (!rows.length) return;
+
+    for (var r = r0; r < rows.length - count; r++) {
+      if (!rows[r]) rows[r] = normalizeTableRow({});
+      var src = rows[r + count] || normalizeTableRow({});
+      copySideData(src, rows[r], side);
+    }
+    for (var r2 = Math.max(0, rows.length - count); r2 < rows.length; r2++) {
+      if (!rows[r2]) rows[r2] = normalizeTableRow({});
+      rows[r2][side] = emptyTableSide();
+    }
+
+    shiftSideMergesAfterDelete(side, r0, count);
+    trimTrailingEmptyRows();
     clearSelection();
     markDraftDirty();
     renderTable();
+  }
+
+  function reorderSideRowsByDrag(side, fromRow, toRow) {
+    if (fromRow === toRow || isNaN(fromRow) || isNaN(toRow)) return;
+    var rows = state.table.rows;
+    if (!rows[fromRow]) return;
+    if (!rows[toRow]) rows[toRow] = normalizeTableRow({});
+    var sideCopy = JSON.parse(JSON.stringify(rows[fromRow][side] || emptyTableSide()));
+    if (fromRow < toRow) {
+      for (var r = fromRow; r < toRow; r++) {
+        if (!rows[r]) rows[r] = normalizeTableRow({});
+        if (!rows[r + 1]) rows[r + 1] = normalizeTableRow({});
+        copySideData(rows[r + 1], rows[r], side);
+      }
+      rows[toRow][side] = sideCopy;
+    } else {
+      for (var r2 = fromRow; r2 > toRow; r2--) {
+        if (!rows[r2]) rows[r2] = normalizeTableRow({});
+        if (!rows[r2 - 1]) rows[r2 - 1] = normalizeTableRow({});
+        copySideData(rows[r2 - 1], rows[r2], side);
+      }
+      rows[toRow][side] = sideCopy;
+    }
+    markDraftDirty();
+    renderTable();
+  }
+
+  function sortByColumn(col) {
+    if (sortState.col === col) {
+      if (sortState.dir === "asc") sortState.dir = "desc";
+      else if (sortState.dir === "desc") {
+        sortState.col = null;
+        sortState.dir = null;
+      } else sortState.dir = "asc";
+    } else {
+      sortState.col = col;
+      sortState.dir = "asc";
+    }
+    if (sortState.col == null) {
+      renderTable();
+      return;
+    }
+    var sk = sideKeyFromFlat(sortState.col);
+    var dir = sortState.dir === "asc" ? 1 : -1;
+    state.table.rows.sort(function (a, b) {
+      var av = (a[sk.side] && a[sk.side][sk.key]) != null ? String(a[sk.side][sk.key]) : "";
+      var bv = (b[sk.side] && b[sk.side][sk.key]) != null ? String(b[sk.side][sk.key]) : "";
+      var cmp = av.localeCompare(bv, "ko", { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) return cmp * dir;
+      return 0;
+    });
+    if (isFrontModeActive()) markDraftDirty();
+    renderTable();
+  }
+
+  function updateSortHeaderMarks() {
+    if (!els.tableWrap) return;
+    els.tableWrap.querySelectorAll(".inven-notify-table__th").forEach(function (th) {
+      var col = parseInt(th.getAttribute("data-col"), 10);
+      if (sortState.col === col && sortState.dir) {
+        th.setAttribute("data-sort", sortState.dir);
+        th.classList.add("is-sorted");
+      } else {
+        th.removeAttribute("data-sort");
+        th.classList.remove("is-sorted");
+      }
+    });
   }
 
   function clearSelectedCells() {
@@ -489,11 +643,13 @@
 
   function syncTableFromDom() {
     if (!els.tableBody) return;
-    els.tableBody.querySelectorAll(".inven-notify-table__cell[contenteditable]").forEach(function (td) {
+    els.tableBody.querySelectorAll(".inven-notify-table__cell").forEach(function (td) {
       var r = parseInt(td.getAttribute("data-r"), 10);
       var c = parseInt(td.getAttribute("data-c"), 10);
       if (isNaN(r) || isNaN(c)) return;
-      setCellValue(r, c, td.textContent || "");
+      var editEl = td.querySelector(".inven-notify-cell-edit");
+      var text = editEl ? editEl.textContent : td.textContent;
+      setCellValue(r, c, text || "");
     });
   }
 
@@ -533,8 +689,28 @@
           if (mk.merge.colspan > 1) attrs += ' colspan="' + mk.merge.colspan + '"';
         }
         if (editable) {
-          html +=
-            "<td" + attrs + ' contenteditable="true" spellcheck="false">' + escapeHtml(val) + "</td>";
+          if (c === 0 || c === 5) {
+            var sideAttr = c < 5 ? "main" : "annex";
+            html +=
+              "<td" +
+              attrs +
+              '><span class="inven-notify-row-grip" draggable="true" data-r="' +
+              rowIdx +
+              '" data-side="' +
+              sideAttr +
+              '" title="드래그하여 ' +
+              (sideAttr === "main" ? "본관동" : "별관동") +
+              ' 행 이동">⠿</span><span class="inven-notify-cell-edit" contenteditable="true" spellcheck="false">' +
+              escapeHtml(val) +
+              "</span></td>";
+          } else {
+            html +=
+              "<td" +
+              attrs +
+              ' contenteditable="true" spellcheck="false">' +
+              escapeHtml(val) +
+              "</td>";
+          }
         } else {
           html += "<td" + attrs + ">" + escapeHtml(val) + "</td>";
         }
@@ -555,12 +731,19 @@
       var headRow = tableEl.querySelector("thead tr:nth-child(2)");
       if (headRow) {
         headRow.innerHTML = "";
-        var labels = ["순번", "룸번호", "예약번호", "대여물품", "트레이스"];
         for (var h = 0; h < COL_COUNT; h++) {
           var th = document.createElement("th");
-          th.className = "inven-notify-table__th";
+          th.className = "inven-notify-table__th inven-notify-table__th--sortable";
           th.setAttribute("data-col", String(h));
-          th.textContent = labels[h % 5];
+          th.title = "클릭: 정렬 (오름차순 → 내림차순 → 해제)";
+          var labelSpan = document.createElement("span");
+          labelSpan.className = "inven-notify-table__th-label";
+          labelSpan.textContent = COL_LABELS[h % 5];
+          th.appendChild(labelSpan);
+          if (sortState.col === h && sortState.dir) {
+            th.setAttribute("data-sort", sortState.dir);
+            th.classList.add("is-sorted");
+          }
           if (editable) {
             var grip = document.createElement("span");
             grip.className = "inven-notify-col-resize";
@@ -575,32 +758,118 @@
 
     bindTableInteractions();
     highlightSelection();
+    updateSortHeaderMarks();
   }
 
-  function bindTableInteractions() {
+  function bindHeaderSort() {
+    if (!els.tableWrap) return;
+    els.tableWrap.querySelectorAll(".inven-notify-table__th--sortable").forEach(function (th) {
+      if (th.getAttribute("data-sort-bound") === "1") return;
+      th.setAttribute("data-sort-bound", "1");
+      th.addEventListener("click", function (e) {
+        if (e.target.classList.contains("inven-notify-col-resize")) return;
+        var col = parseInt(th.getAttribute("data-col"), 10);
+        if (isNaN(col)) return;
+        sortByColumn(col);
+      });
+    });
+  }
+
+  function bindRowDrag() {
     if (!els.tableBody || !isFrontModeActive()) return;
+    var dragFrom = null;
 
-    els.tableBody.querySelectorAll(".inven-notify-table__cell[contenteditable]").forEach(function (td) {
-      if (td.getAttribute("data-bound") === "1") return;
-      td.setAttribute("data-bound", "1");
+    els.tableBody.querySelectorAll(".inven-notify-row-grip").forEach(function (grip) {
+      if (grip.getAttribute("data-drag-bound") === "1") return;
+      grip.setAttribute("data-drag-bound", "1");
 
-      td.addEventListener("mousedown", function (e) {
-        var r = parseInt(td.getAttribute("data-r"), 10);
-        var c = parseInt(td.getAttribute("data-c"), 10);
-        if (isNaN(r) || isNaN(c)) return;
-        setSelection(r, c, e.shiftKey);
+      grip.addEventListener("dragstart", function (e) {
+        rowDragActive = true;
+        dragFrom = {
+          r: parseInt(grip.getAttribute("data-r"), 10),
+          side: grip.getAttribute("data-side"),
+        };
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", dragFrom.r + ":" + dragFrom.side);
+        var tr = grip.closest("tr");
+        if (tr) tr.classList.add("is-dragging");
       });
 
-      td.addEventListener("input", function () {
-        var r = parseInt(td.getAttribute("data-r"), 10);
-        var c = parseInt(td.getAttribute("data-c"), 10);
-        if (isNaN(r) || isNaN(c)) return;
-        setCellValue(r, c, td.textContent || "");
-        markDraftDirty();
+      grip.addEventListener("dragend", function () {
+        rowDragActive = false;
+        dragFrom = null;
+        els.tableBody.querySelectorAll("tr").forEach(function (tr) {
+          tr.classList.remove("is-dragging", "is-drop-target");
+        });
       });
     });
 
-    if (els.tableWrap) {
+    els.tableBody.querySelectorAll("tr").forEach(function (tr) {
+      if (tr.getAttribute("data-drop-bound") === "1") return;
+      tr.setAttribute("data-drop-bound", "1");
+
+      tr.addEventListener("dragover", function (e) {
+        if (!rowDragActive) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        tr.classList.add("is-drop-target");
+      });
+
+      tr.addEventListener("dragleave", function () {
+        tr.classList.remove("is-drop-target");
+      });
+
+      tr.addEventListener("drop", function (e) {
+        e.preventDefault();
+        tr.classList.remove("is-drop-target");
+        if (!dragFrom) return;
+        var toRow = parseInt(tr.getAttribute("data-row-idx"), 10);
+        if (isNaN(toRow) || isNaN(dragFrom.r)) return;
+        syncTableFromDom();
+        reorderSideRowsByDrag(dragFrom.side, dragFrom.r, toRow);
+        dragFrom = null;
+        rowDragActive = false;
+      });
+    });
+  }
+
+  function bindTableInteractions() {
+    bindHeaderSort();
+
+    if (!els.tableBody) return;
+
+    if (isFrontModeActive()) {
+      els.tableBody.querySelectorAll(".inven-notify-table__cell").forEach(function (td) {
+        if (td.getAttribute("data-bound") === "1") return;
+        td.setAttribute("data-bound", "1");
+
+        td.addEventListener("mousedown", function (e) {
+          if (e.target.classList.contains("inven-notify-row-grip")) return;
+          var r = parseInt(td.getAttribute("data-r"), 10);
+          var c = parseInt(td.getAttribute("data-c"), 10);
+          if (isNaN(r) || isNaN(c)) return;
+          setSelection(r, c, e.shiftKey);
+        });
+
+        var editTargets = td.querySelectorAll(".inven-notify-cell-edit, [contenteditable='true']");
+        if (!editTargets.length && td.getAttribute("contenteditable") === "true") {
+          editTargets = [td];
+        }
+        editTargets.forEach(function (editEl) {
+          editEl.addEventListener("input", function () {
+            var r = parseInt(td.getAttribute("data-r"), 10);
+            var c = parseInt(td.getAttribute("data-c"), 10);
+            if (isNaN(r) || isNaN(c)) return;
+            setCellValue(r, c, editEl.textContent || "");
+            markDraftDirty();
+          });
+        });
+      });
+
+      bindRowDrag();
+    }
+
+    if (els.tableWrap && isFrontModeActive()) {
       els.tableWrap.querySelectorAll(".inven-notify-col-resize").forEach(function (handle) {
         if (handle.getAttribute("data-bound") === "1") return;
         handle.setAttribute("data-bound", "1");
@@ -667,7 +936,7 @@
     }
     els.toolbarHint.textContent = draftDirty
       ? "변경 내용은 저장 버튼을 눌러야 다른 화면에 공유됩니다"
-      : "Shift+클릭으로 범위 선택 · 열 경계 드래그로 너비 조절";
+      : "⠿ 드래그로 행 이동 · 헤더 클릭 정렬 · Shift+클릭 범위 선택";
   }
 
   function updateHint() {
@@ -722,21 +991,23 @@
     toolGroup.className = "inven-notify-toolbar__tools";
 
     toolGroup.appendChild(
-      makeToolbarButton("행 위 삽입", "선택 행 위에 빈 행 삽입", function () {
+      makeToolbarButton("행 위 삽입", "선택 영역(본관/별관) 위에 빈 행 삽입", function () {
         syncTableFromDom();
         var sel = getSelectionOrCell();
-        insertRow(sel ? sel.r0 : 0);
+        var side = sel ? getSelectionSide(sel) : "main";
+        insertRow(sel ? sel.r0 : 0, side);
       })
     );
     toolGroup.appendChild(
-      makeToolbarButton("행 아래 삽입", "선택 행 아래에 빈 행 삽입", function () {
+      makeToolbarButton("행 아래 삽입", "선택 영역(본관/별관) 아래에 빈 행 삽입", function () {
         syncTableFromDom();
         var sel = getSelectionOrCell();
-        insertRow(sel ? sel.r1 + 1 : state.table.rows.length);
+        var side = sel ? getSelectionSide(sel) : "main";
+        insertRow(sel ? sel.r1 + 1 : state.table.rows.length, side);
       })
     );
     toolGroup.appendChild(
-      makeToolbarButton("행 삭제", "선택한 행 삭제", function () {
+      makeToolbarButton("행 삭제", "선택 영역 행 삭제 (본관/별관 구분)", function () {
         syncTableFromDom();
         deleteSelectedRows();
       })
@@ -798,6 +1069,30 @@
     mount.appendChild(toolbar);
     mount.appendChild(tableWrap);
 
+    (function bindTablePanScroll() {
+      var panning = false;
+      var startX = 0;
+      var startLeft = 0;
+      tableWrap.addEventListener("mousedown", function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest(".inven-notify-table__cell, .inven-notify-table__th")) return;
+        panning = true;
+        startX = e.clientX;
+        startLeft = tableWrap.scrollLeft;
+        tableWrap.classList.add("is-panning");
+        e.preventDefault();
+      });
+      document.addEventListener("mousemove", function (e) {
+        if (!panning) return;
+        tableWrap.scrollLeft = startLeft - (e.clientX - startX);
+      });
+      document.addEventListener("mouseup", function () {
+        if (!panning) return;
+        panning = false;
+        tableWrap.classList.remove("is-panning");
+      });
+    })();
+
     els.mount = mount;
     els.empty = empty;
     els.toolbar = toolbar;
@@ -813,7 +1108,7 @@
   }
 
   function isUserEditingInvenNotify() {
-    return draftDirty || colResizeActive;
+    return draftDirty || colResizeActive || rowDragActive;
   }
 
   function hasContent(data) {
@@ -892,6 +1187,7 @@
     } else {
       state = cloneState(loadInvenNotify());
       draftDirty = false;
+      sortState = { col: null, dir: null };
       clearSelection();
     }
 
