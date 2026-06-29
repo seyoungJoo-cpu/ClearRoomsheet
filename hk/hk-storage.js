@@ -110,11 +110,27 @@
       });
   }
 
+  function normalizeNoticeImages(data) {
+    var images = [];
+    if (data && Array.isArray(data.noticeImages)) {
+      data.noticeImages.forEach(function (img) {
+        var s = img != null ? String(img).trim() : "";
+        if (s) images.push(s);
+      });
+    }
+    if (!images.length && data && data.noticeImage != null) {
+      var single = String(data.noticeImage).trim();
+      if (single) images.push(single);
+    }
+    return images;
+  }
+
   function defaultData() {
     return {
       notice:
         "공지 내용을 여기에 표시합니다. (우측 상단 관리자에서 수정할 수 있습니다.)",
       noticeImage: "",
+      noticeImages: [],
       mbInvNotice: "",
       invenNotify: null,
       customZones: [],
@@ -153,7 +169,8 @@
     var d = defaultData();
     if (!data || typeof data !== "object") return d;
     if (typeof data.notice === "string") d.notice = data.notice;
-    if (data.noticeImage != null) d.noticeImage = String(data.noticeImage);
+    d.noticeImages = normalizeNoticeImages(data);
+    d.noticeImage = d.noticeImages[0] || "";
     if (typeof data.mbInvNotice === "string") d.mbInvNotice = data.mbInvNotice;
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
@@ -266,8 +283,42 @@
     }
   }
 
+  function mergeRemoteStorage(prev, incoming) {
+    var base = normalize(prev || defaultData());
+    if (!incoming || typeof incoming !== "object") return base;
+    var merged = Object.assign({}, base);
+    if (typeof incoming.notice === "string") merged.notice = incoming.notice;
+    if (Array.isArray(incoming.noticeImages)) {
+      merged.noticeImages = normalizeNoticeImages(incoming);
+    } else if (incoming.noticeImage != null) {
+      merged.noticeImages = normalizeNoticeImages({
+        noticeImage: incoming.noticeImage,
+        noticeImages: base.noticeImages,
+      });
+    }
+    merged.noticeImage = merged.noticeImages[0] || "";
+    if (typeof incoming.mbInvNotice === "string") {
+      merged.mbInvNotice = incoming.mbInvNotice;
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNotice")) {
+      merged.mbInvNotice = base.mbInvNotice;
+    }
+    if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
+      merged.invenNotify = incoming.invenNotify;
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
+      merged.invenNotify = base.invenNotify;
+    }
+    if (incoming.rooms && typeof incoming.rooms === "object") {
+      merged.rooms = incoming.rooms;
+    }
+    if (Array.isArray(incoming.customZones)) {
+      merged.customZones = incoming.customZones.slice();
+    }
+    return normalize(merged);
+  }
+
   function applyRemote(data) {
-    global.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalize(data)));
+    var merged = mergeRemoteStorage(load(), data);
+    global.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   }
 
   global.HKStorage = {
@@ -284,5 +335,6 @@
     getZoneLabel: getZoneLabel,
     getZoneLabelsMap: getZoneLabelsMap,
     makeCustomZoneId: makeCustomZoneId,
+    normalizeNoticeImages: normalizeNoticeImages,
   };
 })(typeof window !== "undefined" ? window : this);

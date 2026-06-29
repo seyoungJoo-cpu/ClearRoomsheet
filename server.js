@@ -291,17 +291,44 @@ function mergeHkStorage(prev, incoming) {
   if (!prev || typeof prev !== "object") return incoming;
 
   var customZones = mergeHkCustomZones(prev, incoming);
+  var noticeImages = [];
+  if (Object.prototype.hasOwnProperty.call(incoming, "noticeImages")) {
+    if (Array.isArray(incoming.noticeImages)) {
+      incoming.noticeImages.forEach(function (img) {
+        var s = img != null ? String(img).trim() : "";
+        if (s) noticeImages.push(s);
+      });
+    }
+  } else if (Array.isArray(prev.noticeImages)) {
+    noticeImages = prev.noticeImages.slice();
+  }
+  if (!noticeImages.length) {
+    var noticeImgSrc = Object.prototype.hasOwnProperty.call(incoming, "noticeImage")
+      ? incoming.noticeImage != null
+        ? String(incoming.noticeImage).trim()
+        : ""
+      : prev.noticeImage != null
+        ? String(prev.noticeImage).trim()
+        : "";
+    if (noticeImgSrc) noticeImages.push(noticeImgSrc);
+  }
+
   var out = {
     notice: Object.prototype.hasOwnProperty.call(incoming, "notice")
       ? incoming.notice
       : prev.notice,
-    noticeImage: Object.prototype.hasOwnProperty.call(incoming, "noticeImage")
-      ? incoming.noticeImage != null
-        ? String(incoming.noticeImage)
+    noticeImage: noticeImages[0] || "",
+    noticeImages: noticeImages,
+    mbInvNotice: Object.prototype.hasOwnProperty.call(incoming, "mbInvNotice")
+      ? typeof incoming.mbInvNotice === "string"
+        ? incoming.mbInvNotice
         : ""
-      : prev.noticeImage != null
-        ? String(prev.noticeImage)
+      : prev.mbInvNotice != null
+        ? String(prev.mbInvNotice)
         : "",
+    invenNotify: Object.prototype.hasOwnProperty.call(incoming, "invenNotify")
+      ? incoming.invenNotify
+      : prev.invenNotify || null,
     customZones: customZones,
     rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [] },
   };

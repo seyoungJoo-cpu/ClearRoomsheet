@@ -193,6 +193,32 @@
       color: var(--accent);
     }
 
+    .notice-images-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 240px;
+    }
+
+    .notice-image-item {
+      position: relative;
+    }
+
+    .notice-image-item__remove {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border: none;
+      border-radius: 50%;
+      background: #b91c1c;
+      color: #fff;
+      font-size: 0.75rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
     .notice-thumb-image {
       display: block;
       width: 72px;
@@ -828,18 +854,13 @@
             <div class="notice-compose__actions">
               <button type="button" class="btn-notice-photo" id="btnNoticePhoto">사진</button>
               <button type="button" class="btn-notice-photo-clear" id="btnNoticePhotoClear" hidden>
-                사진 삭제
+                사진 전체 삭제
               </button>
               <span class="notice-compose__paste-hint">Ctrl+V 붙여넣기</span>
             </div>
           </div>
           <div class="notice-compose__aside" id="noticeImageAside" hidden>
-            <img
-              id="noticeImagePreview"
-              class="notice-thumb-image"
-              alt="공지 첨부 사진"
-              title="클릭하면 크게 보기"
-            />
+            <div class="notice-images-grid" id="noticeImagesPreview"></div>
           </div>
         </div>
       </div>
@@ -1531,12 +1552,14 @@
         var zoneLabels = HKStorage.getZoneOrder(snapshot.data).map(function (zoneId) {
           return HKStorage.getZoneLabel(zoneId, snapshot.data);
         });
-        var noticeImg =
-          snapshot.data.noticeImage != null ? String(snapshot.data.noticeImage).trim() : "";
+        var noticeImgs =
+          typeof HKStorage !== "undefined" && HKStorage.normalizeNoticeImages
+            ? HKStorage.normalizeNoticeImages(snapshot.data)
+            : [];
         return [
           ["내보내기 시각", formatAt(snapshot.exportedAt)],
           ["공지", snapshot.data.notice ? "있음" : "없음"],
-          ["공지 첨부사진", noticeImg ? "있음" : "없음"],
+          ["공지 첨부사진", noticeImgs.length ? noticeImgs.length + "장" : "없음"],
           ["MB & 인벤 공지", snapshot.data.mbInvNotice ? "있음" : "없음"],
           ["인벤 통보", hasInvenNotifyData(snapshot.data.invenNotify) ? "있음" : "없음"],
           ["특이객실 구역", zoneLabels.join(", ") || "—"],
@@ -1580,12 +1603,21 @@
           {
             title: "공지",
             headers: ["내용", "첨부사진"],
-            rows: [
-              [
-                snapshot.data.notice || "",
-                excelImageCell(snapshot.data.noticeImage),
-              ],
-            ],
+            rows: (function () {
+              var imgs =
+                typeof HKStorage !== "undefined" && HKStorage.normalizeNoticeImages
+                  ? HKStorage.normalizeNoticeImages(snapshot.data)
+                  : [];
+              if (!imgs.length) {
+                return [[snapshot.data.notice || "", ""]];
+              }
+              return imgs.map(function (img, i) {
+                return [
+                  i === 0 ? snapshot.data.notice || "" : "",
+                  excelImageCell(img),
+                ];
+              });
+            })(),
           },
           {
             title: "MB & 인벤 공지",
@@ -2400,21 +2432,28 @@
         if (section.title === "내보내기 요약") return renderReportTableSection(section);
         if (section.title === "공지") {
           var notice = snapshot.data.notice || "";
-          var noticeImg =
-            snapshot.data.noticeImage != null ? String(snapshot.data.noticeImage).trim() : "";
+          var noticeImgs =
+            typeof HKStorage !== "undefined" && HKStorage.normalizeNoticeImages
+              ? HKStorage.normalizeNoticeImages(snapshot.data)
+              : snapshot.data.noticeImage
+                ? [String(snapshot.data.noticeImage)]
+                : [];
           var htmlParts = [];
           if (notice) {
             htmlParts.push(
               '<div class="notice-box">' + escHtml(notice).replace(/\n/g, "<br>") + "</div>"
             );
           }
-          if (noticeImg) {
+          noticeImgs.forEach(function (noticeImg, i) {
+            if (!noticeImg) return;
             htmlParts.push(
               '<div style="margin-top:10px;"><img src="' +
                 noticeImg.replace(/"/g, "&quot;") +
-                '" alt="공지 첨부" style="max-width:min(360px,100%);border-radius:8px;border:1px solid var(--border);"></div>'
+                '" alt="공지 첨부 ' +
+                (i + 1) +
+                '" style="max-width:min(360px,100%);border-radius:8px;border:1px solid var(--border);"></div>'
             );
-          }
+          });
           return htmlParts.length
             ? htmlParts.join("")
             : '<p class="report-empty">(공지 없음)</p>';
@@ -2804,30 +2843,73 @@
           mbInvNoticeEl.value = data.mbInvNotice != null ? data.mbInvNotice : "";
         }
         if (!editingNotice) {
-          setAdminNoticeImagePreview(data.noticeImage || "");
+          setAdminNoticeImages(
+            typeof HKStorage.normalizeNoticeImages === "function"
+              ? HKStorage.normalizeNoticeImages(data)
+              : data.noticeImage
+                ? [String(data.noticeImage)]
+                : []
+          );
         }
         renderZoneGrid(data);
       }
 
-      var adminNoticeImage = "";
+      var adminNoticeImages = [];
 
-      function setAdminNoticeImagePreview(dataUrl) {
-        adminNoticeImage = dataUrl || "";
-        var aside = document.getElementById("noticeImageAside");
-        var img = document.getElementById("noticeImagePreview");
-        var clearBtn = document.getElementById("btnNoticePhotoClear");
-        if (img) {
-          if (adminNoticeImage) {
-            img.src = adminNoticeImage;
-            img.hidden = false;
-          } else {
-            img.removeAttribute("src");
-            img.hidden = true;
-          }
-        }
-        if (aside) aside.hidden = !adminNoticeImage;
-        if (clearBtn) clearBtn.hidden = !adminNoticeImage;
+      function setAdminNoticeImages(images) {
+        adminNoticeImages = Array.isArray(images)
+          ? images
+              .map(function (img) {
+                return img != null ? String(img).trim() : "";
+              })
+              .filter(Boolean)
+          : [];
+        renderAdminNoticeImages();
       }
+
+      function appendAdminNoticeImage(dataUrl) {
+        if (!dataUrl) return;
+        adminNoticeImages.push(dataUrl);
+        renderAdminNoticeImages();
+      }
+
+      function renderAdminNoticeImages() {
+        var aside = document.getElementById("noticeImageAside");
+        var grid = document.getElementById("noticeImagesPreview");
+        var clearBtn = document.getElementById("btnNoticePhotoClear");
+        if (!grid) return;
+        grid.innerHTML = "";
+        adminNoticeImages.forEach(function (src, index) {
+          var wrap = document.createElement("div");
+          wrap.className = "notice-image-item";
+          var img = document.createElement("img");
+          img.className = "notice-thumb-image";
+          img.src = src;
+          img.alt = "공지 첨부 사진 " + (index + 1);
+          img.title = "클릭하면 크게 보기";
+          img.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (adminOpenLightbox) adminOpenLightbox(src);
+          });
+          var rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "notice-image-item__remove";
+          rm.textContent = "×";
+          rm.title = "이 사진 삭제";
+          rm.addEventListener("click", function (e) {
+            e.stopPropagation();
+            adminNoticeImages.splice(index, 1);
+            renderAdminNoticeImages();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(rm);
+          grid.appendChild(wrap);
+        });
+        if (aside) aside.hidden = !adminNoticeImages.length;
+        if (clearBtn) clearBtn.hidden = !adminNoticeImages.length;
+      }
+
+      var adminOpenLightbox = null;
 
       function adminCompressImage(file, done) {
         if (!file) {
@@ -2932,33 +3014,29 @@
         var noticeInput = document.getElementById("noticeInput");
         var photoBtn = document.getElementById("btnNoticePhoto");
         var clearBtn = document.getElementById("btnNoticePhotoClear");
-        var preview = document.getElementById("noticeImagePreview");
-        var openLightbox = setupAdminImageLightbox();
-        if (preview && openLightbox) {
-          preview.addEventListener("click", function (e) {
-            e.stopPropagation();
-            if (preview.src) openLightbox(preview.src);
-          });
-        }
+        adminOpenLightbox = setupAdminImageLightbox();
         if (photoBtn) {
           var fileIn = document.createElement("input");
           fileIn.type = "file";
           fileIn.accept = "image/*";
+          fileIn.multiple = true;
           fileIn.hidden = true;
           photoBtn.parentNode.appendChild(fileIn);
           photoBtn.addEventListener("click", function () {
             fileIn.click();
           });
           fileIn.addEventListener("change", function () {
-            var f = fileIn.files && fileIn.files[0];
+            var files = fileIn.files;
             fileIn.value = "";
-            if (!f) return;
-            adminCompressImage(f, setAdminNoticeImagePreview);
+            if (!files || !files.length) return;
+            Array.prototype.forEach.call(files, function (f) {
+              adminCompressImage(f, appendAdminNoticeImage);
+            });
           });
         }
         if (clearBtn) {
           clearBtn.addEventListener("click", function () {
-            setAdminNoticeImagePreview("");
+            setAdminNoticeImages([]);
           });
         }
         if (noticeInput) {
@@ -2966,7 +3044,7 @@
             var file = adminExtractImageFileFromPaste(ev);
             if (!file) return;
             ev.preventDefault();
-            adminCompressImage(file, setAdminNoticeImagePreview);
+            adminCompressImage(file, appendAdminNoticeImage);
           });
         }
       }
@@ -2974,7 +3052,8 @@
       document.getElementById("saveNotice").addEventListener("click", function () {
         var data = HKStorage.load();
         data.notice = document.getElementById("noticeInput").value;
-        data.noticeImage = adminNoticeImage || "";
+        data.noticeImages = adminNoticeImages.slice();
+        data.noticeImage = adminNoticeImages[0] || "";
         HKStorage.save(data);
         toast("공지가 변경되었습니다.");
       });

@@ -367,6 +367,13 @@
       word-break: break-word;
     }
 
+    .notice-board__images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
     .notice-thumb-image {
       display: block;
       width: 64px;
@@ -4025,6 +4032,54 @@
     }
 
     /* 하단 정비 요청 */
+    .panel-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .panel-head-row h2,
+    .panel-head-row .sched-cards-panel__title {
+      margin: 0;
+    }
+
+    .panel-alert-ack-btn {
+      flex-shrink: 0;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      background: #fffbeb;
+      color: #b45309;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .panel-alert-ack-btn:hover {
+      background: #fef3c7;
+    }
+
+    .panel-alert-ack-btn[hidden] {
+      display: none !important;
+    }
+
+    .request-feedback__head,
+    .order-feedback__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .request-feedback__head h2,
+    .order-feedback__head h2 {
+      margin: 0;
+    }
+
     .request-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -5242,12 +5297,12 @@
           <div class="notice-board__label">공지</div>
           <div class="notice-board__content">
             <div class="notice-board__text" id="noticeText"></div>
+            <div class="notice-board__images" id="noticeImagesMount"></div>
             <img
               id="noticeImage"
               class="notice-thumb-image"
               alt="공지 첨부 사진"
               hidden
-              title="클릭하면 크게 보기"
             />
           </div>
         </div>
@@ -5378,7 +5433,10 @@
     <div class="layout-main-area">
     <main class="main">
       <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
-        <h2 id="frontChatPanelTitle">프론트 채팅</h2>
+        <div class="panel-head-row">
+          <h2 id="frontChatPanelTitle">프론트 채팅</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckFrontChatPanel" hidden>확인</button>
+        </div>
         <p class="front-chat-panel__hint">프론트 모드에서만 사용하는 공용 대화방입니다. 메시지는 모든 프론트 화면에 동기화됩니다.</p>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
         <p class="front-chat__empty" id="frontChatEmpty">메시지가 없습니다. 아래에서 대화를 시작하세요.</p>
@@ -5458,6 +5516,15 @@
           <div class="zone-block__toolbar-actions">
             <button
               type="button"
+              class="panel-alert-ack-btn"
+              id="btnAckZoneAlerts"
+              hidden
+              title="특이객실 변경 알림 확인"
+            >
+              확인
+            </button>
+            <button
+              type="button"
               class="zone-block__add"
               id="zoneAddRoomBtn"
               hidden
@@ -5530,7 +5597,10 @@
       </section>
 
       <section class="order-panel" id="orderPanel" hidden aria-labelledby="orderPanelTitle">
-        <h2 id="orderPanelTitle">오더</h2>
+        <div class="panel-head-row">
+          <h2 id="orderPanelTitle">오더</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
+        </div>
         <form class="order-row" id="orderForm">
           <div class="field field--room-no">
             <label for="orderRoomNo">객실번호</label>
@@ -5589,7 +5659,10 @@
       </section>
 
       <section class="order-panel mb-inv-panel" id="mbInvPanel" hidden aria-labelledby="mbInvPanelTitle">
-        <h2 id="mbInvPanelTitle">MB &amp; 인벤 변경</h2>
+        <div class="panel-head-row">
+          <h2 id="mbInvPanelTitle">MB &amp; 인벤 변경</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckMbInvPanel" hidden>확인</button>
+        </div>
 
         <div class="mb-inv-panel__columns">
           <div class="mb-inv-panel__col mb-inv-panel__col--mb">
@@ -5697,7 +5770,9 @@
         hidden
         aria-labelledby="invenNotifyPanelTitle"
       >
-        <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
+        <div class="panel-head-row">
+          <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
+        </div>
         <p class="order-panel__hint" id="invenNotifyHint">
           통보된 내용을 조회합니다. 수정은 프론트 모드를 켠 뒤 가능합니다.
         </p>
@@ -5705,7 +5780,10 @@
       </section>
 
       <section class="order-panel mb-check-panel" id="mbCheckPanel" hidden aria-labelledby="mbCheckPanelTitle">
-        <h2 id="mbCheckPanelTitle">MB CHECK</h2>
+        <div class="panel-head-row">
+          <h2 id="mbCheckPanelTitle">MB CHECK</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckMbCheckPanel" hidden>확인</button>
+        </div>
         <form class="mb-check-change-form" id="mbCheckForm">
           <div class="order-row">
             <div class="field field--room-no">
@@ -5746,7 +5824,10 @@
 
       <div class="request-main-stack" id="requestMainStack">
       <section class="request-panel" aria-labelledby="requestTitle">
-        <h2 id="requestTitle">정비 요청</h2>
+        <div class="panel-head-row">
+          <h2 id="requestTitle">정비 요청</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckRequestPanel" hidden>확인</button>
+        </div>
         <form class="request-row" id="requestForm">
           <div class="field">
             <label for="roomNo">객실번호</label>
@@ -5831,7 +5912,10 @@
       </section>
 
       <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
-        <h2 class="sched-cards-panel__title" id="schedCardsTitle">처리·예정 요청</h2>
+        <div class="panel-head-row">
+          <h2 class="sched-cards-panel__title" id="schedCardsTitle">처리·예정 요청</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckSchedPanel" hidden>확인</button>
+        </div>
         <p class="sched-cards-panel__hint" id="schedCardsHint">
           요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.
         </p>
@@ -5845,6 +5929,7 @@
     <aside class="request-feedback" id="requestFeedback" aria-label="정비 요청 알림">
       <div class="request-feedback__head">
         <h2>정비 요청 알림</h2>
+        <button type="button" class="panel-alert-ack-btn" id="btnAckRequestFeedback" hidden>확인</button>
       </div>
       <p class="request-feedback__hint" id="requestFeedbackHint" hidden></p>
       <ul class="request-feedback__list" id="requestFeedbackList"></ul>
@@ -5855,6 +5940,7 @@
     <aside class="order-feedback" id="orderFeedback" aria-label="오더 알림" hidden>
       <div class="order-feedback__head">
         <h2>오더 알림</h2>
+        <button type="button" class="panel-alert-ack-btn" id="btnAckOrderFeedback" hidden>확인</button>
       </div>
       <ul class="order-feedback__list" id="orderFeedbackList"></ul>
       <p class="order-feedback__empty" id="orderFeedbackEmpty">
@@ -5864,6 +5950,7 @@
     <aside class="order-feedback" id="mbInvFeedback" aria-label="MB 인벤 알림" hidden>
       <div class="order-feedback__head">
         <h2>MB &amp; 인벤 알림</h2>
+        <button type="button" class="panel-alert-ack-btn" id="btnAckMbInvFeedback" hidden>확인</button>
       </div>
       <ul class="order-feedback__list" id="mbInvFeedbackList"></ul>
       <p class="order-feedback__empty" id="mbInvFeedbackEmpty">
@@ -5873,6 +5960,7 @@
     <aside class="order-feedback" id="mbCheckFeedback" aria-label="MB CHECK 알림" hidden>
       <div class="order-feedback__head">
         <h2>MB CHECK 알림</h2>
+        <button type="button" class="panel-alert-ack-btn" id="btnAckMbCheckFeedback" hidden>확인</button>
       </div>
       <ul class="order-feedback__list" id="mbCheckFeedbackList"></ul>
       <p class="order-feedback__empty" id="mbCheckFeedbackEmpty">
@@ -6024,6 +6112,7 @@
       var pendingFrontChatAlert = false;
       var lastKnownNotice = null;
       var lastKnownNoticeImage = null;
+      var lastKnownNoticeImagesJson = "";
       var noticeChangeReady = false;
       var noticeToastHideTimer = null;
       var pendingOrderIssueAlert = false;
@@ -7195,6 +7284,7 @@
         refreshMain();
         updateOrderFoDisplay();
         if (requestRoomBoardOpen) renderRequestRoomBoard();
+        renderSchedRequestCards();
       }
 
       function syncRequestLogFromServer() {
@@ -8117,6 +8207,7 @@
           var z = btn.getAttribute("data-zone");
           btn.classList.toggle("is-change-alert", !!pendingZoneAlerts[z]);
         });
+        syncPanelAckButtons();
       }
 
       function clearZoneAlert(zone) {
@@ -9378,13 +9469,35 @@
       function isAiMaintenanceAvailQuery(text) {
         var s = String(text || "");
         if (isAiCheckInAvailQuery(s)) return false;
-        return /정비\s*가능|지금\s*가능|가능한\s*객실|바로\s*가능|지금\s*정비/.test(s);
+        return /정비\s*가능|지금\s*정비|지금\s*가능|바로\s*가능/.test(s);
       }
 
       function isAiCheckInAvailQuery(text) {
-        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실/.test(
+        return /입실\s*가능|입실가능|체크\s*인\s*가능|입실\s*가능한|입실\s*가능\s*객실|가능한\s*객실|가능한객실|가능\s*객실\s*찾/.test(
           String(text || "")
         );
+      }
+
+      function parseAiOrderItemQuery(text) {
+        var q = String(text || "").trim();
+        var m = q.match(/(.+?)\s*오더/);
+        if (!m) return "";
+        var item = m[1]
+          .replace(/^(찾아줘|알려줘|보여줘|몇개|몇\s*개|개수|몇\s*건)\s*/gi, "")
+          .replace(/\s*(찾아줘|알려줘|보여줘|몇개|몇\s*개|개수|몇\s*건)[?.!]*$/gi, "")
+          .trim();
+        if (!item || /^(전체|모든|대기|긴급|문제|접수|취소|오늘|금일|오더)$/i.test(item)) return "";
+        return item;
+      }
+
+      function queryAiOrdersByMemoItem(item) {
+        var needle = String(item || "").trim().toLowerCase();
+        if (!needle) return [];
+        return orderLogEntries.filter(function (e) {
+          if (getOrderPhase(e) === "cancelled") return false;
+          var memo = (e.memo || "").toLowerCase();
+          return memo.indexOf(needle) >= 0;
+        });
       }
 
       function entryAtMinutesToday(iso) {
@@ -9757,8 +9870,9 @@
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
-          "· 타입(MNDDM) 입실 가능한 객실 (IP·O만 입실, CL 불가 · 없으면 IN 제외 정비 예정 빠른 순)\n" +
+          "· 타입(MNDDM) 입실 가능한 객실 (IP·O만 입실 · 가능한 객실 찾아줘 동일)\n" +
           "· 타입(MNDDM) 중 IP 찾아줘 · MNDDM IP\n" +
+          "· 물 오더 찾아줘 · 물 오더 몇개야?\n" +
           "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
           "· VIP 특이객실 · 1205 상태\n\n" +
@@ -9857,6 +9971,13 @@
         }
 
         if (/오더/.test(q)) {
+          var orderItem = parseAiOrderItemQuery(q);
+          if (orderItem) {
+            if (/몇\s*개|개수|몇\s*건/i.test(q)) {
+              return { type: "orders_item_count", item: orderItem };
+            }
+            return { type: "orders_item", item: orderItem };
+          }
           if (/긴급/.test(q)) return { type: "orders_urgent" };
           if (/대기|미접수|알림/.test(q)) return { type: "orders_pending" };
           if (/문제|이슈/.test(q)) return { type: "orders_issue" };
@@ -10385,6 +10506,23 @@
               typeResult.rooms.length +
               "개)",
             typeResult.rooms
+          );
+          return;
+        }
+
+        if (intent.type === "orders_item" || intent.type === "orders_item_count") {
+          var itemOrders = queryAiOrdersByMemoItem(intent.item);
+          if (!itemOrders.length) {
+            appendAiChatBotError('"' + intent.item + '" 관련 오더가 없습니다.');
+            return;
+          }
+          appendAiChatBotResult(
+            '"' +
+              intent.item +
+              '" 오더 ' +
+              itemOrders.length +
+              "건",
+            itemOrders.slice(0, 40).map(buildAiOrderCard)
           );
           return;
         }
@@ -11314,6 +11452,7 @@
             pendingRequestAlert || pendingRequestModifyAlert
           );
         }
+        syncPanelAckButtons();
       }
 
       function registerRequestAlert(key) {
@@ -11380,6 +11519,74 @@
         pendingRequestModifyAlert = false;
         pendingRequestModifyIds = {};
         applyRequestSidebarAlertUi();
+        renderSchedRequestCards();
+      }
+
+      function hasAnyZoneAlert() {
+        return Object.keys(pendingZoneAlerts).some(function (z) {
+          return !!pendingZoneAlerts[z];
+        });
+      }
+
+      function syncPanelAckButtons() {
+        var el;
+        el = document.getElementById("btnAckRequestPanel");
+        if (el) el.hidden = !(pendingRequestAlert || pendingRequestModifyAlert);
+        el = document.getElementById("btnAckRequestFeedback");
+        if (el) el.hidden = !pendingRequestAlert;
+        el = document.getElementById("btnAckSchedPanel");
+        if (el) el.hidden = !pendingRequestModifyAlert;
+        el = document.getElementById("btnAckOrderPanel");
+        if (el) el.hidden = !(pendingOrderAlert || pendingOrderIssueAlert);
+        el = document.getElementById("btnAckOrderFeedback");
+        if (el) el.hidden = !(pendingOrderAlert || pendingOrderIssueAlert);
+        el = document.getElementById("btnAckMbInvPanel");
+        if (el) el.hidden = !(pendingMbInvAlert || pendingMbInvIssue);
+        el = document.getElementById("btnAckMbInvFeedback");
+        if (el) el.hidden = !(pendingMbInvAlert || pendingMbInvIssue);
+        el = document.getElementById("btnAckMbCheckPanel");
+        if (el) {
+          el.hidden = !(
+            pendingMbCheckAlert ||
+            pendingMbCheckAccepted ||
+            pendingMbCheckGst
+          );
+        }
+        el = document.getElementById("btnAckMbCheckFeedback");
+        if (el) {
+          el.hidden = !(
+            pendingMbCheckAlert ||
+            pendingMbCheckAccepted ||
+            pendingMbCheckGst
+          );
+        }
+        el = document.getElementById("btnAckFrontChatPanel");
+        if (el) el.hidden = !pendingFrontChatAlert;
+        el = document.getElementById("btnAckZoneAlerts");
+        if (el) el.hidden = !hasAnyZoneAlert();
+      }
+
+      function setupPanelAckButtons() {
+        [
+          ["btnAckRequestPanel", clearRequestSidebarAlerts],
+          ["btnAckRequestFeedback", clearRequestSidebarAlerts],
+          ["btnAckSchedPanel", clearRequestSidebarAlerts],
+          ["btnAckOrderPanel", clearOrderSidebarAlerts],
+          ["btnAckOrderFeedback", clearOrderSidebarAlerts],
+          ["btnAckMbInvPanel", clearMbInvSidebarAlerts],
+          ["btnAckMbInvFeedback", clearMbInvSidebarAlerts],
+          ["btnAckMbCheckPanel", clearMbCheckSidebarAlerts],
+          ["btnAckMbCheckFeedback", clearMbCheckSidebarAlerts],
+          ["btnAckFrontChatPanel", clearFrontChatSidebarAlert],
+          ["btnAckZoneAlerts", clearAllChangeAlerts],
+        ].forEach(function (pair) {
+          var btn = document.getElementById(pair[0]);
+          if (!btn) return;
+          btn.addEventListener("click", function () {
+            pair[1]();
+            syncPanelAckButtons();
+          });
+        });
       }
 
       function rebuildRequestModifyAlerts() {
@@ -11429,6 +11636,7 @@
         if (frontNav) {
           frontNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
         }
+        syncPanelAckButtons();
       }
 
       function registerFrontChatAlert() {
@@ -11455,6 +11663,7 @@
             pendingOrderIssueAlert || pendingOrderAlert
           );
         }
+        syncPanelAckButtons();
       }
 
       function registerOrderIssueAlert(entryId) {
@@ -11601,6 +11810,7 @@
             pendingMbCheckAlert || pendingMbCheckAccepted || pendingMbCheckGst
           );
         }
+        syncPanelAckButtons();
       }
 
       function registerMbInvAlert(key) {
@@ -12340,7 +12550,7 @@
           no.className = "room-card__no";
           no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
           noBox.appendChild(no);
-          var st = (entry.status || "").trim();
+          var st = lookupRoomStatusFromXml(entry.room) || (entry.status || "").trim();
           head.appendChild(noBox);
           appendRoomTypeToCardHead(head, entry.room);
           head.appendChild(
@@ -12811,33 +13021,51 @@
         ta.focus();
       }
 
+      function getNoticeImagesFromData(data) {
+        if (typeof HKStorage !== "undefined" && HKStorage.normalizeNoticeImages) {
+          return HKStorage.normalizeNoticeImages(data);
+        }
+        var single = data && data.noticeImage != null ? String(data.noticeImage).trim() : "";
+        return single ? [single] : [];
+      }
+
+      function renderNoticeImages(images) {
+        var mount = document.getElementById("noticeImagesMount");
+        if (!mount) return;
+        mount.innerHTML = "";
+        (images || []).forEach(function (src, i) {
+          if (!src) return;
+          var img = document.createElement("img");
+          img.className = "notice-thumb-image";
+          img.src = src;
+          img.alt = "공지 첨부 사진 " + (i + 1);
+          img.title = "클릭하면 크게 보기";
+          mount.appendChild(img);
+        });
+        if (noticeImage) noticeImage.hidden = true;
+      }
+
       function applyNotice(opts) {
         opts = opts || {};
         if (!noticeText) return;
         var data = HKStorage.load();
         var next = data.notice != null ? String(data.notice) : "";
-        var nextImg = data.noticeImage != null ? String(data.noticeImage).trim() : "";
+        var nextImages = getNoticeImagesFromData(data);
+        var nextImagesJson = JSON.stringify(nextImages);
         if (
           noticeChangeReady &&
           opts.detectChange &&
-          (next !== lastKnownNotice || nextImg !== lastKnownNoticeImage)
+          (next !== lastKnownNotice || nextImagesJson !== lastKnownNoticeImagesJson)
         ) {
           showNoticeChangedToast();
           flashNoticeBoard();
         }
         lastKnownNotice = next;
-        lastKnownNoticeImage = nextImg;
+        lastKnownNoticeImage = nextImages[0] || "";
+        lastKnownNoticeImagesJson = nextImagesJson;
         noticeChangeReady = true;
         noticeText.textContent = next;
-        if (noticeImage) {
-          if (nextImg) {
-            noticeImage.src = nextImg;
-            noticeImage.hidden = false;
-          } else {
-            noticeImage.removeAttribute("src");
-            noticeImage.hidden = true;
-          }
-        }
+        renderNoticeImages(nextImages);
       }
 
       function applyMbInvNotice() {
@@ -13892,9 +14120,11 @@
       initOrderIssueTracking();
       initRequestAlertTracking();
       initMbWorkflowAlertTracking();
+      setupPanelAckButtons();
       applyOrderSidebarAlertUi();
       applyRequestSidebarAlertUi();
       applyFrontChatSidebarAlertUi();
+      syncPanelAckButtons();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
         HKSync.start().finally(function () {
