@@ -946,7 +946,7 @@
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀)·요청·오더·MB &amp; 인벤·MB CHECK·프론트 채팅·객실 변경 이력·취소/사용 리스트·루밍 XML 등
+        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보 표·요청·오더·MB &amp; 인벤·MB CHECK·프론트 채팅·객실 변경 이력·취소/사용 리스트·루밍 XML 등
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
         <strong>프론트 채팅</strong>·<strong>오더 알림·문제발생</strong>은 함께 저장하고 화면에 유지합니다.
@@ -1571,7 +1571,79 @@
         return false;
       }
 
+      function getMbInvNoticeImages(data) {
+        var images = [];
+        if (data && Array.isArray(data.mbInvNoticeImages)) {
+          data.mbInvNoticeImages.forEach(function (img) {
+            var s = img != null ? String(img).trim() : "";
+            if (s) images.push(s);
+          });
+        }
+        return images;
+      }
+
+      function getVipZoneMemo(data) {
+        var memo = data && data.zoneMemos && data.zoneMemos.VIP;
+        if (!memo || typeof memo !== "object") return { text: "", images: [] };
+        var images = [];
+        if (Array.isArray(memo.images)) {
+          memo.images.forEach(function (img) {
+            var s = img != null ? String(img).trim() : "";
+            if (s) images.push(s);
+          });
+        }
+        return { text: memo.text != null ? String(memo.text) : "", images: images };
+      }
+
+      function formatTrayExportLabel(tray) {
+        if (tray === "in") return "입실";
+        if (tray === "deleted") return "삭제·수정";
+        return "";
+      }
+
+      function countTrayRooms(data) {
+        var counts = { in: 0, deleted: 0 };
+        HKStorage.getZoneOrder(data).forEach(function (zoneId) {
+          (data.rooms[zoneId] || []).forEach(function (room) {
+            var t = room.tray != null ? String(room.tray).trim() : "";
+            if (t === "in") counts.in += 1;
+            else if (t === "deleted") counts.deleted += 1;
+          });
+        });
+        return counts;
+      }
+
+      function collectTrayRoomRows(data, trayValue) {
+        var rows = [];
+        HKStorage.getZoneOrder(data).forEach(function (zoneId) {
+          (data.rooms[zoneId] || []).forEach(function (room) {
+            var t = room.tray != null ? String(room.tray).trim() : "";
+            if (t !== trayValue) return;
+            rows.push([
+              HKStorage.getZoneLabel(zoneId, data),
+              formatRoomNoDisplay(room.number || ""),
+              lookupRoomStatusFromXml(room.number || "") || "",
+              room.status || "",
+              room.memo1 || "",
+              room.memo2 || "",
+              excelImageCell(room.memo2Image),
+              room.time || "",
+            ]);
+          });
+        });
+        rows.sort(function (a, b) {
+          return (
+            String(a[0]).localeCompare(String(b[0]), "ko") ||
+            String(a[1]).localeCompare(String(b[1]), undefined, { numeric: true })
+          );
+        });
+        return rows;
+      }
+
       function buildInvenNotifyExportRows(invenNotify) {
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.exportCloseDayRows) {
+          return HKInvenNotify.exportCloseDayRows(invenNotify);
+        }
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.exportFlatRows) {
           return HKInvenNotify.exportFlatRows(invenNotify);
         }
@@ -1586,12 +1658,20 @@
           typeof HKStorage !== "undefined" && HKStorage.normalizeNoticeImages
             ? HKStorage.normalizeNoticeImages(snapshot.data)
             : [];
+        var mbInvImgs = getMbInvNoticeImages(snapshot.data);
+        var vipMemo = getVipZoneMemo(snapshot.data);
+        var trayCounts = countTrayRooms(snapshot.data);
         return [
           ["내보내기 시각", formatAt(snapshot.exportedAt)],
           ["공지", snapshot.data.notice ? "있음" : "없음"],
           ["공지 첨부사진", noticeImgs.length ? noticeImgs.length + "장" : "없음"],
           ["MB & 인벤 공지", snapshot.data.mbInvNotice ? "있음" : "없음"],
+          ["MB & 인벤 사진", mbInvImgs.length ? mbInvImgs.length + "장" : "없음"],
+          ["VIP 메모장", vipMemo.text || vipMemo.images.length ? "있음" : "없음"],
+          ["VIP 메모 사진", vipMemo.images.length ? vipMemo.images.length + "장" : "없음"],
           ["인벤 통보", hasInvenNotifyData(snapshot.data.invenNotify) ? "있음" : "없음"],
+          ["입실 트레이", String(trayCounts.in) + "건"],
+          ["삭제·수정 트레이", String(trayCounts.deleted) + "건"],
           ["특이객실 구역", zoneLabels.join(", ") || "—"],
           ["요청 알림", String((snapshot.requestLog || []).length) + "건"],
           ["오더", String((snapshot.orderLog || []).length) + "건"],
@@ -1651,12 +1731,47 @@
           },
           {
             title: "MB & 인벤 공지",
-            headers: ["내용"],
-            rows: [[snapshot.data.mbInvNotice || ""]],
+            headers: ["내용", "첨부사진"],
+            rows: (function () {
+              var mbImgs = getMbInvNoticeImages(snapshot.data);
+              if (!mbImgs.length) {
+                return [[snapshot.data.mbInvNotice || "", ""]];
+              }
+              return mbImgs.map(function (img, i) {
+                return [
+                  i === 0 ? snapshot.data.mbInvNotice || "" : "",
+                  excelImageCell(img),
+                ];
+              });
+            })(),
+          },
+          {
+            title: "VIP 메모장",
+            headers: ["내용", "첨부사진"],
+            rows: (function () {
+              var vip = getVipZoneMemo(snapshot.data);
+              if (!vip.images.length) {
+                return [[vip.text || "", ""]];
+              }
+              return vip.images.map(function (img, i) {
+                return [i === 0 ? vip.text || "" : "", excelImageCell(img)];
+              });
+            })(),
           },
           {
             title: "인벤 통보",
-            headers: ["번호", "위치", "크기", "첨부"],
+            headers: [
+              "본관순번",
+              "본관룸",
+              "본관예약번호",
+              "본관대여물품",
+              "본관트레이스",
+              "별관순번",
+              "별관룸",
+              "별관예약번호",
+              "별관대여물품",
+              "별관트레이스",
+            ],
             rows: buildInvenNotifyExportRows(snapshot.data.invenNotify),
           },
           {
@@ -1690,7 +1805,7 @@
         HKStorage.getZoneOrder(snapshot.data).forEach(function (zoneId) {
           sections.push({
             title: HKStorage.getZoneLabel(zoneId, snapshot.data) + " 객실",
-            headers: ["객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+            headers: ["객실번호", "XML상태", "등록상태", "트레이", "FD", "두잉", "두잉사진", "시간"],
             rows: (snapshot.data.rooms[zoneId] || []).map(function (room) {
               var num = formatRoomNoDisplay(room.number || "");
               var xmlSt = lookupRoomStatusFromXml(room.number || "") || "";
@@ -1698,6 +1813,7 @@
                 num,
                 xmlSt,
                 room.status || "",
+                formatTrayExportLabel(room.tray != null ? String(room.tray).trim() : ""),
                 room.memo1 || "",
                 room.memo2 || "",
                 excelImageCell(room.memo2Image),
@@ -1705,6 +1821,17 @@
               ];
             }),
           });
+        });
+
+        sections.push({
+          title: "입실 트레이",
+          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+          rows: collectTrayRoomRows(snapshot.data, "in"),
+        });
+        sections.push({
+          title: "삭제·수정 트레이",
+          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+          rows: collectTrayRoomRows(snapshot.data, "deleted"),
         });
 
         var blockMap = (snapshot.rooming && snapshot.rooming.blockMap) || {};
@@ -2490,36 +2617,78 @@
         }
         if (section.title === "MB & 인벤 공지") {
           var mbInvNotice = snapshot.data.mbInvNotice || "";
-          return mbInvNotice
-            ? '<div class="notice-box">' + escHtml(mbInvNotice).replace(/\n/g, "<br>") + "</div>"
-            : '<p class="report-empty">(MB & 인벤 공지 없음)</p>';
-        }
-        if (section.title === "인벤 통보") {
-          var invData =
-            typeof HKInvenNotify !== "undefined"
-              ? HKInvenNotify.normalizeInvenNotify(snapshot.data.invenNotify)
-              : { images: [] };
-          var imgs = invData.images || [];
-          if (!imgs.length) return '<p class="report-empty">(인벤 통보 없음)</p>';
-          var parts = ['<div class="inven-notify-report">'];
-          imgs.forEach(function (img, i) {
-            parts.push(
-              '<figure style="margin:0 0 16px;"><figcaption style="font-size:0.8125rem;color:var(--muted);margin-bottom:6px;">#' +
+          var mbInvImgs = getMbInvNoticeImages(snapshot.data);
+          var mbHtml = [];
+          if (mbInvNotice) {
+            mbHtml.push(
+              '<div class="notice-box">' + escHtml(mbInvNotice).replace(/\n/g, "<br>") + "</div>"
+            );
+          }
+          mbInvImgs.forEach(function (img, i) {
+            if (!img) return;
+            mbHtml.push(
+              '<div style="margin-top:10px;"><img src="' +
+                String(img).replace(/"/g, "&quot;") +
+                '" alt="MB & 인벤 메모 ' +
                 (i + 1) +
-                " · " +
-                Math.round(img.w) +
-                "×" +
-                Math.round(img.h) +
-                "</figcaption>" +
-                '<img src="' +
-                String(img.src).replace(/"/g, "&quot;") +
-                '" alt="인벤 통보 ' +
-                (i + 1) +
-                '" style="max-width:100%;border-radius:8px;border:1px solid var(--border);"></figure>'
+                '" style="max-width:min(360px,100%);border-radius:8px;border:1px solid var(--border);"></div>'
             );
           });
-          parts.push("</div>");
-          return parts.join("");
+          return mbHtml.length
+            ? mbHtml.join("")
+            : '<p class="report-empty">(MB & 인벤 공지 없음)</p>';
+        }
+        if (section.title === "VIP 메모장") {
+          var vip = getVipZoneMemo(snapshot.data);
+          var vipHtml = [];
+          if (vip.text) {
+            vipHtml.push(
+              '<div class="notice-box">' + escHtml(vip.text).replace(/\n/g, "<br>") + "</div>"
+            );
+          }
+          vip.images.forEach(function (img, i) {
+            if (!img) return;
+            vipHtml.push(
+              '<div style="margin-top:10px;"><img src="' +
+                String(img).replace(/"/g, "&quot;") +
+                '" alt="VIP 메모 ' +
+                (i + 1) +
+                '" style="max-width:min(360px,100%);border-radius:8px;border:1px solid var(--border);"></div>'
+            );
+          });
+          return vipHtml.length
+            ? vipHtml.join("")
+            : '<p class="report-empty">(VIP 메모장 없음)</p>';
+        }
+        if (section.title === "인벤 통보") {
+          var invRows = buildInvenNotifyExportRows(snapshot.data.invenNotify);
+          if (!invRows.length) return '<p class="report-empty">(인벤 통보 없음)</p>';
+          var invHeaders = [
+            "본관순번",
+            "본관룸",
+            "본관예약번호",
+            "본관대여물품",
+            "본관트레이스",
+            "별관순번",
+            "별관룸",
+            "별관예약번호",
+            "별관대여물품",
+            "별관트레이스",
+          ];
+          var invParts = ['<div class="table-wrap"><table class="report-table"><thead><tr>'];
+          invHeaders.forEach(function (h) {
+            invParts.push("<th>" + escHtml(h) + "</th>");
+          });
+          invParts.push("</tr></thead><tbody>");
+          invRows.forEach(function (row) {
+            invParts.push("<tr>");
+            row.forEach(function (cell) {
+              invParts.push("<td>" + escHtml(cell == null ? "" : String(cell)) + "</td>");
+            });
+            invParts.push("</tr>");
+          });
+          invParts.push("</tbody></table></div>");
+          return invParts.join("");
         }
         if (section.title === "프론트 채팅") return renderReportFrontChatSection(snapshot);
         if (section.title === "오더") return renderReportOrderCards(snapshot);
@@ -2715,7 +2884,7 @@
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, 특이객실, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;

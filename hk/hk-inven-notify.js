@@ -1303,6 +1303,28 @@
     updateToolbar();
   }
 
+  function exportCloseDayRows(invenNotify) {
+    var n = normalizeInvenNotify(invenNotify);
+    var rows = n.table.rows || [];
+    if (!rows.length) return [];
+    return rows.map(function (row, i) {
+      var m = row.main || emptyTableSide();
+      var a = row.annex || emptyTableSide();
+      return [
+        m.seq || String(i + 1),
+        m.room || "",
+        m.confirmationNo || "",
+        m.itemCode1 || "",
+        m.trace || "",
+        a.seq || String(i + 1),
+        a.room || "",
+        a.confirmationNo || "",
+        a.itemCode1 || "",
+        a.trace || "",
+      ];
+    });
+  }
+
   function exportFlatRows(invenNotify) {
     var n = normalizeInvenNotify(invenNotify);
     return n.table.rows.map(function (row, i) {
@@ -1395,6 +1417,7 @@
     isFrontModeActive: isFrontModeActive,
     hasContent: hasContent,
     exportFlatRows: exportFlatRows,
+    exportCloseDayRows: exportCloseDayRows,
     importInvenTable: importInvenTable,
     isDraftDirty: function () {
       return draftDirty;
