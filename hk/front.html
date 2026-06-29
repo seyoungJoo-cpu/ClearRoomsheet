@@ -2933,9 +2933,14 @@
       background: #eff6ff;
       padding: 12px 14px;
       min-height: 72px;
-      max-height: 200px;
+      max-height: 360px;
       overflow-y: auto;
       box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .mb-inv-notice-board:focus {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
     }
 
     .mb-inv-notice-board__label {
@@ -2959,6 +2964,47 @@
       content: "관리자에서 MB & 인벤 공지를 등록할 수 있습니다.";
       color: #94a3b8;
       font-weight: 500;
+    }
+
+    .mb-inv-notice-board__text.is-editable {
+      outline: none;
+      border: 1px dashed #93c5fd;
+      border-radius: 6px;
+      padding: 6px 8px;
+      background: #fff;
+    }
+
+    .mb-inv-notice-board__images,
+    .zone-memo-board__images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .mb-inv-notice-board__images img,
+    .zone-memo-board__images img {
+      max-width: 160px;
+      max-height: 120px;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .mb-inv-notice-board__toolbar,
+    .zone-memo-board__toolbar {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mb-inv-notice-board__paste-hint,
+    .zone-memo-board__paste-hint {
+      font-size: 0.6875rem;
+      color: #64748b;
+      align-self: center;
     }
 
     .zone-tray {
@@ -3066,27 +3112,13 @@
       background: #fff;
     }
 
-    .zone-memo-board__images {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
+    .zone-memo-board:focus {
+      outline: 2px solid #a78bfa;
+      outline-offset: 2px;
     }
 
     .zone-memo-board__images img {
-      max-width: 160px;
-      max-height: 120px;
-      border-radius: 8px;
-      border: 1px solid #ddd6fe;
-      object-fit: cover;
-      cursor: pointer;
-    }
-
-    .zone-memo-board__toolbar {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      flex-wrap: wrap;
+      border-color: #ddd6fe;
     }
 
     .inven-notify-table-wrap {
@@ -5770,7 +5802,7 @@
               <h3 class="zone-tray__title">삭제·수정</h3>
               <ul class="room-list-main zone-tray__list" id="zoneTrayDeletedList"></ul>
             </section>
-            <section class="zone-memo-board" id="zoneVipMemoBoard" hidden aria-label="VIP 메모장">
+            <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
               <div class="zone-memo-board__label">VIP 메모장</div>
               <div class="zone-memo-board__body" id="zoneVipMemoBody"></div>
             </section>
@@ -5940,9 +5972,9 @@
           </div>
         </div>
 
-        <section class="mb-inv-notice-board" id="mbInvNoticeBoard" aria-label="MB 인벤 메모장">
+        <section class="mb-inv-notice-board" id="mbInvNoticeBoard" tabindex="0" aria-label="MB 인벤 메모장">
           <div class="mb-inv-notice-board__label">메모장</div>
-          <div class="mb-inv-notice-board__text" id="mbInvNoticeText"></div>
+          <div id="mbInvNoticeBody"></div>
         </section>
       </section>
 
@@ -6272,7 +6304,7 @@
       var roomEmpty = document.getElementById("roomListEmpty");
       var noticeText = document.getElementById("noticeText");
       var noticeImage = document.getElementById("noticeImage");
-      var mbInvNoticeText = document.getElementById("mbInvNoticeText");
+      var mbInvNoticeBody = document.getElementById("mbInvNoticeBody");
       var zoneLabels = {
         VIP: "VIP",
         RC: "R/C",
@@ -8896,7 +8928,8 @@
             img.parentElement && img.parentElement.classList.contains("hk-photo-preview");
           var isNotice = img.classList.contains("notice-thumb-image");
           var isZoneMemo = img.classList.contains("zone-memo-image");
-          if (!isMsg && !isPreview && !isNotice && !isZoneMemo) return;
+          var isMbInvMemo = img.classList.contains("mb-inv-notice-image");
+          if (!isMsg && !isPreview && !isNotice && !isZoneMemo && !isMbInvMemo) return;
           e.preventDefault();
           e.stopPropagation();
           openLightbox(img.src);
@@ -13364,11 +13397,110 @@
         renderNoticeImages(nextImages);
       }
 
-      function applyMbInvNotice() {
-        if (!mbInvNoticeText) return;
+      function saveMbInvNoticePatch(patch) {
         var data = HKStorage.load();
-        var next = data.mbInvNotice != null ? String(data.mbInvNotice) : "";
-        mbInvNoticeText.textContent = next;
+        if (patch.text != null) data.mbInvNotice = String(patch.text);
+        if (patch.images) data.mbInvNoticeImages = patch.images.slice();
+        HKStorage.save(data);
+      }
+
+      function appendMbInvNoticeImage(url) {
+        if (!url) return;
+        var data = HKStorage.load();
+        var images = Array.isArray(data.mbInvNoticeImages) ? data.mbInvNoticeImages.slice() : [];
+        images.push(url);
+        saveMbInvNoticePatch({ images: images });
+        renderMbInvNoticeBoard();
+      }
+
+      function bindMemoBoardImagePaste(el, onImageUrl) {
+        if (!el || el.__hkMemoPasteBound) return;
+        el.__hkMemoPasteBound = true;
+        el.addEventListener("paste", function (ev) {
+          if (!frontMode) return;
+          var file = hkExtractImageFileFromPaste(ev);
+          if (!file) return;
+          ev.preventDefault();
+          hkCompressImage(file, onImageUrl);
+        });
+      }
+
+      function renderMbInvNoticeBoard() {
+        var board = document.getElementById("mbInvNoticeBoard");
+        var body = mbInvNoticeBody;
+        if (!board || !body) return;
+        var data = HKStorage.load();
+        var text = data.mbInvNotice != null ? String(data.mbInvNotice) : "";
+        var images = Array.isArray(data.mbInvNoticeImages) ? data.mbInvNoticeImages : [];
+        body.innerHTML = "";
+        var textEl = document.createElement("div");
+        textEl.className =
+          "mb-inv-notice-board__text" +
+          (text ? "" : " is-empty") +
+          (frontMode ? " is-editable" : "");
+        textEl.textContent = text;
+        if (frontMode) {
+          textEl.setAttribute("contenteditable", "true");
+          textEl.setAttribute("spellcheck", "false");
+          textEl.addEventListener("blur", function () {
+            saveMbInvNoticePatch({ text: textEl.textContent || "" });
+          });
+          bindMemoBoardImagePaste(textEl, appendMbInvNoticeImage);
+        }
+        body.appendChild(textEl);
+        if (images.length) {
+          var imgWrap = document.createElement("div");
+          imgWrap.className = "mb-inv-notice-board__images";
+          images.forEach(function (src) {
+            if (!src) return;
+            var img = document.createElement("img");
+            img.src = src;
+            img.alt = "MB & 인벤 메모 사진";
+            img.className = "mb-inv-notice-image";
+            imgWrap.appendChild(img);
+          });
+          body.appendChild(imgWrap);
+        }
+        if (frontMode) {
+          var toolbar = document.createElement("div");
+          toolbar.className = "mb-inv-notice-board__toolbar";
+          var btnPhoto = document.createElement("button");
+          btnPhoto.type = "button";
+          btnPhoto.className = "hk-photo-btn";
+          btnPhoto.textContent = "사진 추가";
+          btnPhoto.addEventListener("click", function () {
+            pickMbInvNoticePhoto();
+          });
+          toolbar.appendChild(btnPhoto);
+          var hint = document.createElement("span");
+          hint.className = "mb-inv-notice-board__paste-hint";
+          hint.textContent = "Ctrl+V 붙여넣기";
+          toolbar.appendChild(hint);
+          body.appendChild(toolbar);
+        }
+      }
+
+      function pickMbInvNoticePhoto() {
+        var input = document.getElementById("mbInvNoticePhotoInput");
+        if (!input) {
+          input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          input.id = "mbInvNoticePhotoInput";
+          input.hidden = true;
+          document.body.appendChild(input);
+          input.addEventListener("change", function () {
+            var f = input.files && input.files[0];
+            input.value = "";
+            if (!f) return;
+            hkCompressImage(f, appendMbInvNoticeImage);
+          });
+        }
+        input.click();
+      }
+
+      function applyMbInvNotice() {
+        renderMbInvNoticeBoard();
       }
 
       function hideNoticeChangedToast() {
@@ -13819,6 +13951,15 @@
           textEl.addEventListener("blur", function () {
             saveZoneVipMemo({ text: textEl.textContent || "" });
           });
+          bindMemoBoardImagePaste(textEl, function (url) {
+            var data = HKStorage.load();
+            var imgs =
+              (data.zoneMemos && data.zoneMemos.VIP && data.zoneMemos.VIP.images) || [];
+            imgs = imgs.slice();
+            imgs.push(url);
+            saveZoneVipMemo({ images: imgs });
+            renderZoneVipMemoBoard("VIP");
+          });
         }
         body.appendChild(textEl);
         if (images.length) {
@@ -13845,6 +13986,10 @@
             pickZoneVipMemoPhoto();
           });
           toolbar.appendChild(btnPhoto);
+          var hint = document.createElement("span");
+          hint.className = "zone-memo-board__paste-hint";
+          hint.textContent = "Ctrl+V 붙여넣기";
+          toolbar.appendChild(hint);
           body.appendChild(toolbar);
         }
       }
@@ -14000,6 +14145,9 @@
         }
         if (currentZone === "VIP") {
           applyZoneVipMemo();
+        }
+        if (sidebarMainView === "mbInv") {
+          renderMbInvNoticeBoard();
         }
       }
 
@@ -14695,6 +14843,29 @@
       if (mainZoneBodyEl) {
         mainZoneBodyEl.addEventListener("click", handleZoneTrayActionClick);
       }
+
+      (function setupMemoBoardPasteTargets() {
+        var mbBoard = document.getElementById("mbInvNoticeBoard");
+        if (mbBoard) {
+          bindMemoBoardImagePaste(mbBoard, function (url) {
+            if (!frontMode || sidebarMainView !== "mbInv") return;
+            appendMbInvNoticeImage(url);
+          });
+        }
+        var vipBoard = document.getElementById("zoneVipMemoBoard");
+        if (vipBoard) {
+          bindMemoBoardImagePaste(vipBoard, function (url) {
+            if (!frontMode || getActiveZone() !== "VIP") return;
+            var data = HKStorage.load();
+            var imgs =
+              (data.zoneMemos && data.zoneMemos.VIP && data.zoneMemos.VIP.images) || [];
+            imgs = imgs.slice();
+            imgs.push(url);
+            saveZoneVipMemo({ images: imgs });
+            renderZoneVipMemoBoard("VIP");
+          });
+        }
+      })();
 
       refreshMain();
       showSidebarRequestView();

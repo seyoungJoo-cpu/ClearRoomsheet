@@ -326,6 +326,13 @@ function mergeHkStorage(prev, incoming) {
       : prev.mbInvNotice != null
         ? String(prev.mbInvNotice)
         : "",
+    mbInvNoticeImages: Object.prototype.hasOwnProperty.call(incoming, "mbInvNoticeImages")
+      ? Array.isArray(incoming.mbInvNoticeImages)
+        ? incoming.mbInvNoticeImages.slice()
+        : []
+      : Array.isArray(prev.mbInvNoticeImages)
+        ? prev.mbInvNoticeImages.slice()
+        : [],
     invenNotify: Object.prototype.hasOwnProperty.call(incoming, "invenNotify")
       ? incoming.invenNotify
       : prev.invenNotify || null,

@@ -151,6 +151,17 @@
     return images;
   }
 
+  function normalizeMbInvNoticeImages(data) {
+    var images = [];
+    if (data && Array.isArray(data.mbInvNoticeImages)) {
+      data.mbInvNoticeImages.forEach(function (img) {
+        var s = img != null ? String(img).trim() : "";
+        if (s) images.push(s);
+      });
+    }
+    return images;
+  }
+
   function defaultData() {
     return {
       notice:
@@ -158,6 +169,7 @@
       noticeImage: "",
       noticeImages: [],
       mbInvNotice: "",
+      mbInvNoticeImages: [],
       invenNotify: null,
       zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
@@ -201,6 +213,7 @@
     d.noticeImages = normalizeNoticeImages(data);
     d.noticeImage = d.noticeImages[0] || "";
     if (typeof data.mbInvNotice === "string") d.mbInvNotice = data.mbInvNotice;
+    d.mbInvNoticeImages = normalizeMbInvNoticeImages(data);
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
     }
@@ -331,6 +344,11 @@
       merged.mbInvNotice = incoming.mbInvNotice;
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNotice")) {
       merged.mbInvNotice = base.mbInvNotice;
+    }
+    if (Array.isArray(incoming.mbInvNoticeImages)) {
+      merged.mbInvNoticeImages = normalizeMbInvNoticeImages(incoming);
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNoticeImages")) {
+      merged.mbInvNoticeImages = base.mbInvNoticeImages;
     }
     if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
       merged.invenNotify = incoming.invenNotify;

@@ -872,11 +872,20 @@
       <div class="notice-field">
         <label for="mbInvNoticeInput">메모장 내용</label>
         <p style="margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
-          엔터로 줄바꿈할 수 있습니다. 저장하면 정비 화면 <strong>MB &amp; 인벤</strong> 패널 하단 메모장에 표시됩니다.
+          엔터로 줄바꿈할 수 있습니다. 사진은 <strong>Ctrl+V</strong> 붙여넣기 또는 사진 버튼으로 첨부합니다. 저장하면 정비 화면 <strong>MB &amp; 인벤</strong> 패널 하단 메모장에 표시됩니다.
         </p>
         <textarea id="mbInvNoticeInput" placeholder="MB &amp; 인벤 메모장 내용을 입력하세요."></textarea>
       </div>
-      <button type="button" class="btn-primary" id="saveMbInvNotice">메모장 저장</button>
+      <div class="notice-images-aside" id="mbInvNoticeImagesAside" hidden>
+        <p class="notice-images-aside__label">첨부 사진</p>
+        <div class="notice-images-grid" id="mbInvNoticeImagesGrid"></div>
+        <button type="button" class="btn-secondary" id="btnClearMbInvNoticeImages" hidden>사진 전체 삭제</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button type="button" class="btn-secondary" id="btnAddMbInvNoticeImage">사진 추가</button>
+        <input type="file" id="mbInvNoticeImageFile" accept="image/*" multiple hidden />
+        <button type="button" class="btn-primary" id="saveMbInvNotice">메모장 저장</button>
+      </div>
     </section>
 
     <section class="card">
@@ -884,7 +893,7 @@
       <div class="notice-field">
         <label for="vipZoneMemoInput">메모 내용</label>
         <p style="margin: 0 0 8px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
-          저장하면 정비 화면 <strong>VIP</strong> 특이객실 목록 하단 메모장에 표시됩니다. 사진도 첨부할 수 있습니다.
+          저장하면 정비 화면 <strong>VIP</strong> 특이객실 목록 하단 메모장에 표시됩니다. 사진은 <strong>Ctrl+V</strong> 붙여넣기 또는 사진 버튼으로 첨부할 수 있습니다.
         </p>
         <textarea id="vipZoneMemoInput" placeholder="VIP 메모장 내용을 입력하세요."></textarea>
       </div>
@@ -2865,6 +2874,11 @@
         if (mbInvNoticeEl && !editingMbInvNotice) {
           mbInvNoticeEl.value = data.mbInvNotice != null ? data.mbInvNotice : "";
         }
+        if (!editingMbInvNotice) {
+          setAdminMbInvNoticeImages(
+            Array.isArray(data.mbInvNoticeImages) ? data.mbInvNoticeImages : []
+          );
+        }
         if (vipMemoEl && !editingVipMemo) {
           var vipMemo = (data.zoneMemos && data.zoneMemos.VIP) || { text: "", images: [] };
           vipMemoEl.value = vipMemo.text != null ? String(vipMemo.text) : "";
@@ -2890,6 +2904,46 @@
 
       var adminNoticeImages = [];
       var adminVipMemoImages = [];
+      var adminMbInvNoticeImages = [];
+
+      function setAdminMbInvNoticeImages(images) {
+        adminMbInvNoticeImages = Array.isArray(images)
+          ? images
+              .map(function (img) {
+                return img != null ? String(img).trim() : "";
+              })
+              .filter(Boolean)
+          : [];
+        renderAdminMbInvNoticeImages();
+      }
+
+      function renderAdminMbInvNoticeImages() {
+        var grid = document.getElementById("mbInvNoticeImagesGrid");
+        var aside = document.getElementById("mbInvNoticeImagesAside");
+        var clearBtn = document.getElementById("btnClearMbInvNoticeImages");
+        if (!grid) return;
+        grid.innerHTML = "";
+        adminMbInvNoticeImages.forEach(function (src, index) {
+          var wrap = document.createElement("div");
+          wrap.className = "notice-image-item";
+          var img = document.createElement("img");
+          img.src = src;
+          img.alt = "MB & 인벤 메모 사진 " + (index + 1);
+          var rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "notice-image-item__remove";
+          rm.textContent = "삭제";
+          rm.addEventListener("click", function () {
+            adminMbInvNoticeImages.splice(index, 1);
+            renderAdminMbInvNoticeImages();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(rm);
+          grid.appendChild(wrap);
+        });
+        if (aside) aside.hidden = !adminMbInvNoticeImages.length;
+        if (clearBtn) clearBtn.hidden = !adminMbInvNoticeImages.length;
+      }
 
       function setAdminVipMemoImages(images) {
         adminVipMemoImages = Array.isArray(images)
@@ -3136,9 +3190,50 @@
         var data = HKStorage.load();
         var input = document.getElementById("mbInvNoticeInput");
         data.mbInvNotice = input ? input.value : "";
+        data.mbInvNoticeImages = adminMbInvNoticeImages.slice();
         HKStorage.save(data);
         toast("MB & 인벤 메모장이 저장되었습니다.");
       });
+
+      (function setupMbInvNoticeImageUi() {
+        var addBtn = document.getElementById("btnAddMbInvNoticeImage");
+        var fileIn = document.getElementById("mbInvNoticeImageFile");
+        var clearBtn = document.getElementById("btnClearMbInvNoticeImages");
+        var textInput = document.getElementById("mbInvNoticeInput");
+        if (addBtn && fileIn) {
+          addBtn.addEventListener("click", function () {
+            fileIn.click();
+          });
+          fileIn.addEventListener("change", function () {
+            var files = Array.from(fileIn.files || []);
+            fileIn.value = "";
+            if (!files.length) return;
+            files.forEach(function (file) {
+              adminCompressImage(file, function (dataUrl) {
+                adminMbInvNoticeImages.push(dataUrl);
+                renderAdminMbInvNoticeImages();
+              });
+            });
+          });
+        }
+        if (clearBtn) {
+          clearBtn.addEventListener("click", function () {
+            adminMbInvNoticeImages = [];
+            renderAdminMbInvNoticeImages();
+          });
+        }
+        if (textInput) {
+          textInput.addEventListener("paste", function (ev) {
+            var file = adminExtractImageFileFromPaste(ev);
+            if (!file) return;
+            ev.preventDefault();
+            adminCompressImage(file, function (dataUrl) {
+              adminMbInvNoticeImages.push(dataUrl);
+              renderAdminMbInvNoticeImages();
+            });
+          });
+        }
+      })();
 
       document.getElementById("saveVipZoneMemo").addEventListener("click", function () {
         var data = HKStorage.load();
@@ -3155,6 +3250,7 @@
         var addBtn = document.getElementById("btnAddVipZoneMemoImage");
         var fileIn = document.getElementById("vipZoneMemoImageFile");
         var clearBtn = document.getElementById("btnClearVipZoneMemoImages");
+        var textInput = document.getElementById("vipZoneMemoInput");
         if (addBtn && fileIn) {
           addBtn.addEventListener("click", function () {
             fileIn.click();
@@ -3175,6 +3271,17 @@
           clearBtn.addEventListener("click", function () {
             adminVipMemoImages = [];
             renderAdminVipMemoImages();
+          });
+        }
+        if (textInput) {
+          textInput.addEventListener("paste", function (ev) {
+            var file = adminExtractImageFileFromPaste(ev);
+            if (!file) return;
+            ev.preventDefault();
+            adminCompressImage(file, function (dataUrl) {
+              adminVipMemoImages.push(dataUrl);
+              renderAdminVipMemoImages();
+            });
           });
         }
       })();
