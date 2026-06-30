@@ -1173,7 +1173,7 @@
       <div class="board-layout">
         <aside class="sidebar" aria-label="화면 전환">
           <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
-          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 또는 FO IN(투숙·OCC)">VAC</button>
+          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS (IN 체크 시 FO 투숙·OCC 포함, Stayover 제외)">VAC</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
@@ -1191,6 +1191,9 @@
             <div class="summary-toolbar">
               <div id="vacStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <label class="out-toggle" title="FO IN(투숙·OCC) 객실 표시 — Stayover 예약상태는 제외">
+                <input type="checkbox" class="chk-vac-fo-in" /> IN
+              </label>
             </div>
             <div id="vacBlockFilters" class="asn-block-filters" hidden></div>
             <div id="vacBoardMount"></div>
@@ -1898,6 +1901,9 @@
       /** OUT 체크 시 Departed / Departed, Arrival 예약행 연보라 표시 */
       var outDepartedHighlight = false;
 
+      /** VAC 탭 IN 체크 시 FO IN(투숙·OCC) 객실 추가 표시 (Stayover 제외) */
+      var vacShowFoIn = false;
+
       /** 상태 요약 체크: IP·CL·PU·DI (전 탭 공통, 모두 켜면 필터 없음) */
       var statusRoomFilters = {
         IP: true,
@@ -1936,9 +1942,15 @@
         return String(s || "").replace(/\s+/g, " ").trim();
       }
 
+      function isStayoverResv(rec) {
+        return normalizeResvStatus(rec && rec.resvStatus) === "Stayover";
+      }
+
       function isVacResvMatch(rec) {
+        if (isStayoverResv(rec)) return false;
         if (!!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)]) return true;
-        return isFoInRoom(rec);
+        if (vacShowFoIn && isFoInRoom(rec)) return true;
+        return false;
       }
 
       /** ASN 탭: 도착 계열 RESV_STATUS 만 */
@@ -3134,7 +3146,7 @@
           mountId = "vacBoardMount";
           filterFn = isVacResvMatch;
           emptyFiltered =
-            "VAC 조건(RESV_STATUS 또는 FO IN·투숙 OCC)에 해당하는 객실이 없습니다.";
+            "VAC 조건(RESV_STATUS · IN 체크 시 FO 투숙 OCC)에 해당하는 객실이 없습니다.";
         } else if (mode === "ovac") {
           summaryElId = "oVacStatusSummaryBar";
           mountId = "oVacBoardMount";
@@ -3653,6 +3665,23 @@
         });
       }
       wireOutDepartedCheckboxes();
+
+      var vacFoInChkWired = false;
+      function wireVacFoInCheckbox() {
+        if (vacFoInChkWired) return;
+        vacFoInChkWired = true;
+        document.querySelectorAll(".chk-vac-fo-in").forEach(function (cb) {
+          cb.checked = vacShowFoIn;
+          cb.addEventListener("change", function () {
+            vacShowFoIn = !!cb.checked;
+            document.querySelectorAll(".chk-vac-fo-in").forEach(function (x) {
+              x.checked = vacShowFoIn;
+            });
+            refreshBoards();
+          });
+        });
+      }
+      wireVacFoInCheckbox();
 
       var statusFilterWired = false;
       function wireStatusFilterChecks() {
