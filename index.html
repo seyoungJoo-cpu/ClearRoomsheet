@@ -599,6 +599,12 @@
       box-shadow: inset 0 0 0 1px #c4b5fd;
     }
 
+    .pair-row.vac-fo-in-highlight,
+    .villa-list-row.vac-fo-in-highlight {
+      background: #dbeafe !important;
+      box-shadow: inset 0 0 0 1px #93c5fd;
+    }
+
     /* 보드: 상단 라벨 + 열 그리드 (빌라 | 본관 | 별관 한 줄) */
     .sheet-outer {
       overflow-x: auto;
@@ -1185,7 +1191,7 @@
       <div class="board-layout">
         <aside class="sidebar" aria-label="화면 전환">
           <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
-          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS (IN 체크 시 FO 투숙·OCC 포함, Stayover 제외)">VAC</button>
+          <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 또는 FO 투숙(OCC), Stayover 제외">VAC</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
@@ -1203,7 +1209,7 @@
             <div class="summary-toolbar">
               <div id="vacStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
-              <label class="out-toggle" title="FO IN(투숙·OCC) 객실 표시 — Stayover 예약상태는 제외">
+              <label class="out-toggle" title="VAC 목록 중 FO IN(투숙·OCC) 객실 연한 파란색 강조">
                 <input type="checkbox" class="chk-vac-fo-in" /> IN
               </label>
             </div>
@@ -1910,8 +1916,8 @@
       /** OUT 체크 시 Departed / Departed, Arrival 예약행 연보라 표시 */
       var outDepartedHighlight = false;
 
-      /** VAC 탭 IN 체크 시 FO IN(투숙·OCC) 객실 추가 표시 (Stayover 제외) */
-      var vacShowFoIn = false;
+      /** VAC 탭 IN 체크 시 목록 중 FO IN(투숙·OCC) 객실 연한색 강조 */
+      var vacHighlightFoIn = false;
 
       /** 상태 요약 체크: IP·CL·PU·DI (전 탭 공통, 모두 켜면 필터 없음) */
       var statusRoomFilters = {
@@ -1940,6 +1946,11 @@
         return isOutDepartedResv(item) ? " out-departed-highlight" : "";
       }
 
+      function vacFoInHighlightClass(item, boardMode) {
+        if (!vacHighlightFoIn || boardMode !== "vac") return "";
+        return isFoInRoom(item) ? " vac-fo-in-highlight" : "";
+      }
+
       /** 499·VAC·ASN·F.ASN 보드: 연박 추가 목록 객실에 작은 「연박」 레이블 */
       function extendedStayStrikeClass(roomNorm) {
         if (!roomNorm || !extendedStayRooms[roomNorm]) return "";
@@ -1958,8 +1969,7 @@
       function isVacResvMatch(rec) {
         if (isStayoverResv(rec)) return false;
         if (!!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)]) return true;
-        if (vacShowFoIn && isFoInRoom(rec)) return true;
-        return false;
+        return isFoInRoom(rec);
       }
 
       /** ASN 탭: 도착 계열 RESV_STATUS 만 */
@@ -2977,6 +2987,7 @@
               "pair-row " +
               boardRowStatusClass(it, boardMode) +
               outDepartedHighlightClass(it) +
+              vacFoInHighlightClass(it, boardMode) +
               extendedStayStrikeClass(it.room, boardMode);
             var c1 = document.createElement("div");
             c1.className = "cell room-num";
@@ -3011,6 +3022,7 @@
             "villa-list-row " +
             (it ? boardRowStatusClass(it, boardMode) : pairStatusClass(st)) +
             outDepartedHighlightClass(it) +
+            vacFoInHighlightClass(it, boardMode) +
             extendedStayStrikeClass(it ? it.room : "", boardMode);
           var c1 = document.createElement("div");
           c1.className = "cell room-num";
@@ -3069,7 +3081,7 @@
           mountId = "vacBoardMount";
           filterFn = isVacResvMatch;
           emptyFiltered =
-            "VAC 조건(RESV_STATUS · IN 체크 시 FO 투숙 OCC)에 해당하는 객실이 없습니다.";
+            "VAC 조건(RESV_STATUS 또는 FO 투숙·OCC, Stayover 제외)에 해당하는 객실이 없습니다.";
         } else if (mode === "ovac") {
           summaryElId = "oVacStatusSummaryBar";
           mountId = "oVacBoardMount";
@@ -3264,6 +3276,7 @@
                 ? boardRowStatusClass(s, "fasn")
                 : pairStatusClass(s.status)) +
               outDepartedHighlightClass(s) +
+              vacFoInHighlightClass(s, mode) +
               extendedStayStrikeClass(s.room, mode);
             row.style.display = "inline-grid";
             row.style.gridTemplateColumns = "1fr 1fr";
@@ -3623,11 +3636,11 @@
         if (vacFoInChkWired) return;
         vacFoInChkWired = true;
         document.querySelectorAll(".chk-vac-fo-in").forEach(function (cb) {
-          cb.checked = vacShowFoIn;
+          cb.checked = vacHighlightFoIn;
           cb.addEventListener("change", function () {
-            vacShowFoIn = !!cb.checked;
+            vacHighlightFoIn = !!cb.checked;
             document.querySelectorAll(".chk-vac-fo-in").forEach(function (x) {
-              x.checked = vacShowFoIn;
+              x.checked = vacHighlightFoIn;
             });
             refreshBoards();
           });
