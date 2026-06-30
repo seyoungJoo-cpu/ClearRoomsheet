@@ -912,7 +912,7 @@
     <section class="card">
       <h2>특이객실 그룹</h2>
       <p style="margin: 0 0 16px; font-size: 0.875rem; color: var(--text-muted);">
-        프론트 모드에서 각 특이객실 그룹의 <strong>+</strong> 버튼으로 객실번호·FD·두잉을 등록·수정합니다.
+        프론트 모드에서 각 특이객실 그룹의 <strong>+</strong> 버튼으로 객실번호·FD·정비을 등록·수정합니다.
         여기서는 그룹 추가·이름 변경·삭제만 할 수 있습니다.
       </p>
       <div class="zone-group-add">
@@ -1805,7 +1805,7 @@
         HKStorage.getZoneOrder(snapshot.data).forEach(function (zoneId) {
           sections.push({
             title: HKStorage.getZoneLabel(zoneId, snapshot.data) + " 객실",
-            headers: ["객실번호", "XML상태", "등록상태", "트레이", "FD", "두잉", "두잉사진", "시간"],
+            headers: ["객실번호", "XML상태", "등록상태", "트레이", "FD", "정비", "정비사진", "시간"],
             rows: (snapshot.data.rooms[zoneId] || []).map(function (room) {
               var num = formatRoomNoDisplay(room.number || "");
               var xmlSt = lookupRoomStatusFromXml(room.number || "") || "";
@@ -1825,12 +1825,12 @@
 
         sections.push({
           title: "입실 트레이",
-          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "정비", "정비사진", "시간"],
           rows: collectTrayRoomRows(snapshot.data, "in"),
         });
         sections.push({
           title: "삭제·수정 트레이",
-          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "두잉", "두잉사진", "시간"],
+          headers: ["구역", "객실번호", "XML상태", "등록상태", "FD", "정비", "정비사진", "시간"],
           rows: collectTrayRoomRows(snapshot.data, "deleted"),
         });
 
@@ -1896,8 +1896,8 @@
               "긴급",
               "FD",
               "FD사진",
-              "두잉",
-              "두잉사진",
+              "정비",
+              "정비사진",
               "요청자",
             ],
             rows: (snapshot.requestLog || []).map(function (entry) {

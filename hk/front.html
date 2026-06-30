@@ -5539,7 +5539,7 @@
       </div>
       <div class="topbar-actions">
         <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
-        <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·두잉 입력">
+        <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·정비 입력">
           정비관리
         </button>
         <button
@@ -7912,7 +7912,7 @@
         var fields = [
           { key: "number", label: "객실번호", fmt: formatRoomNoDisplay },
           { key: "memo1", label: "FD" },
-          { key: "memo2", label: "두잉" },
+          { key: "memo2", label: "정비" },
         ];
         fields.forEach(function (f) {
           var a = String((prev && prev[f.key]) || "").trim();
@@ -8028,7 +8028,7 @@
         var memo2 = document.createElement("input");
         memo2.type = "text";
         memo2.className = "af-memo2";
-        memo2.placeholder = "두잉";
+        memo2.placeholder = "정비";
         memo2.autocomplete = "off";
         stack.appendChild(memo2);
 
@@ -8149,7 +8149,7 @@
           var inM2 = document.createElement("input");
           inM2.type = "text";
           inM2.className = "re-memo2 re-span2";
-          inM2.placeholder = "두잉";
+          inM2.placeholder = "정비";
           inM2.value = room.memo2 || "";
           grid.appendChild(inM2);
 
@@ -9341,7 +9341,7 @@
         });
         var byRoom = {};
         scheduled.forEach(function (entry) {
-          var nr = normalizeRoomDigits(entry.room);
+          var nr = normalizeRoomDigits(roomNumberForStatusLookup(entry.room) || entry.room);
           if (!nr || HK_BOARD_DROP_ROOMS[nr]) return;
           var at = new Date(entry.at || 0).getTime();
           if (isNaN(at)) at = 0;
@@ -9387,11 +9387,11 @@
         if (!boardRows.length) {
           var emptyF = document.createElement("div");
           emptyF.className = "hk-room-board-empty";
-          var filterNorm = getRequestRoomFilterRaw().toLowerCase();
+          var filterRaw = getRequestRoomFilterRaw();
           var hasAnyScheduled = requestLogEntries.some(isScheduledRequestEntry);
           if (!hasAnyScheduled) {
             emptyF.textContent = "처리·예정 시간이 입력된 요청이 없습니다.";
-          } else if (filterNorm || isSchedTypeFilterRestricted()) {
+          } else if (filterRaw || isSchedTypeFilterRestricted()) {
             emptyF.textContent =
               "입력한 객실번호·TYPE 조건에 맞는 처리·예정 요청이 없습니다.";
           } else {
@@ -10151,7 +10151,7 @@
             sched: sched,
             etaLabel:
               (room.memo1 ? "FD " + room.memo1 : "") +
-              (room.memo2 ? " · 두잉 " + room.memo2 : ""),
+              (room.memo2 ? " · 정비 " + room.memo2 : ""),
             availableNow: false,
             zoneLabel: HKStorage.getZoneLabel(zoneId, data),
           };
@@ -11683,7 +11683,7 @@
             m2Body.className = "request-feedback__item-memo2-body";
             if (memo2Str) {
               var m2Line = document.createElement("div");
-              m2Line.textContent = "두잉 : " + memo2Str;
+              m2Line.textContent = "정비 : " + memo2Str;
               m2Body.appendChild(m2Line);
             }
             hkAppendImageEl(m2Body, memo2Img);
@@ -12935,6 +12935,7 @@
         ul.innerHTML = "";
         var allScheduled = getFilteredScheduledRequestEntries();
         var scheduled = allScheduled;
+        var filterRaw = getRequestRoomFilterRaw();
         scheduled.forEach(function (entry) {
           var sched = String(entry.sched).trim();
           var li = document.createElement("li");
@@ -12988,7 +12989,7 @@
             m2P.style.color = "#4338ca";
             if (memo2Sched) {
               var m2Line = document.createElement("span");
-              m2Line.textContent = "두잉 : " + memo2Sched;
+              m2Line.textContent = "정비 : " + memo2Sched;
               m2P.appendChild(m2Line);
             }
             hkAppendImageEl(m2P, memo2SchedImg);
@@ -13047,7 +13048,7 @@
           if (allScheduled.length === 0) {
             hint.textContent = SCHED_PANEL_HINT_EMPTY;
             hint.hidden = false;
-          } else if (scheduled.length === 0 && filterNorm) {
+          } else if (scheduled.length === 0 && filterRaw) {
             hint.textContent = SCHED_PANEL_HINT_NO_MATCH;
             hint.hidden = false;
           } else if (scheduled.length === 0 && isSchedTypeFilterRestricted()) {
@@ -13360,8 +13361,8 @@
         var ed = document.createElement("div");
         ed.className = "request-feedback__memo2-editor";
         var ta = document.createElement("textarea");
-        ta.setAttribute("aria-label", "두잉");
-        ta.placeholder = "두잉 내용을 입력하세요. 비우면 삭제됩니다.";
+        ta.setAttribute("aria-label", "정비");
+        ta.placeholder = "정비 내용을 입력하세요. 비우면 삭제됩니다.";
         ta.value = entry.memo2 != null ? String(entry.memo2) : "";
         var act = document.createElement("div");
         act.className = "request-feedback__memo2-editor-actions";
@@ -13726,7 +13727,7 @@
         var ta = document.createElement("textarea");
         ta.className = "room-memo2-editor__ta";
         ta.value = room.memo2 != null ? String(room.memo2) : "";
-        ta.setAttribute("aria-label", "두잉");
+        ta.setAttribute("aria-label", "정비");
         var actions = document.createElement("div");
         actions.className = "room-memo2-editor__actions";
         var btnOk = document.createElement("button");
@@ -13835,7 +13836,7 @@
         } else if (maintenanceMode && !cardOpts.trayMode) {
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
-          li.title = "카드: 시간 입력 · 두잉: 아래 두잉 줄 클릭";
+          li.title = "카드: 시간 입력 · 정비: 아래 정비 줄 클릭";
         }
 
         var surface = document.createElement("div");
@@ -13876,7 +13877,7 @@
         var p2 = document.createElement("p");
         p2.className =
           "room-card__memo room-card__memo2-text" + (m2 || m2Img ? "" : " is-empty");
-        p2.textContent = m2 ? "두잉 : " + m2 : "두잉 : —";
+        p2.textContent = m2 ? "정비 : " + m2 : "정비 : —";
         b2.appendChild(p2);
         hkAppendImageEl(b2, m2Img);
         surface.appendChild(b2);
