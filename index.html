@@ -1195,7 +1195,7 @@
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
-          <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · 보드 화면 공유">F.ASN</button>
+          <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
         </aside>
         <div class="board-main">
           <div id="view499" class="view-panel">
@@ -1247,7 +1247,7 @@
               <summary>F.ASN XML 업로드 (정비 루밍·hk와 별도)</summary>
               <p class="fasn-upload-note">
                 <code>HKVACROOM</code> · <code>HK_ALLSTATUS</code> 형식.
-                499·VAC·ASN과 <strong>데이터는 분리</strong>되고, 아래 보드 <strong>화면은 동일</strong>합니다.
+                499·VAC·ASN과 <strong>XML은 분리</strong> · 업로드 시 <strong>다른 PC와 동기화</strong>됩니다.
               </p>
               <div class="dropzone" id="dzFasnUpload" tabindex="0" role="button" aria-label="F.ASN XML 업로드">
                 <div class="actions">
@@ -1360,7 +1360,7 @@
       /** 마지막으로 로드된 HKVACROOM 행(블록 오버레이 전) */
       var cachedVacRows = [];
 
-      /** F.ASN 전용 — 정비 루밍·hk 동기화와 분리 */
+      /** F.ASN 전용 XML — 메인 루밍·hk와 데이터 분리, /api/sync 로 PC 간 공유 */
       var FASN_LS_KEY = "makeroom-fasn-local-v1";
       var fasnVacRows = [];
       var fasnAllStatusRooms = [];
@@ -1658,6 +1658,9 @@
         if (payload.roomResvMap && Object.keys(payload.roomResvMap).length) return true;
         if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
         if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
+        if (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length) return true;
+        if (payload.fasnBlockMap && Object.keys(payload.fasnBlockMap).length) return true;
+        if (Array.isArray(payload.fasnAllStatusRooms) && payload.fasnAllStatusRooms.length) return true;
         return false;
       }
 
@@ -1671,7 +1674,7 @@
       }
 
       function saveRoomingStateToLocal() {
-        if (!hasLocalRoomingData()) return;
+        if (!hasLocalRoomingData() && !hasLocalFasnData()) return;
         try {
           localStorage.setItem(
             ROOMING_XML_LS_KEY,
@@ -1707,7 +1710,32 @@
         if (opts.includeExtendedStay !== false) {
           p.extendedStayRooms = extendedStayRooms;
         }
+        if (hasLocalFasnData()) {
+          p.fasnVacRows = fasnVacRows;
+          p.fasnAllStatusRooms = fasnAllStatusRooms;
+          p.fasnBlockMap = fasnAllStatusBlockMap;
+          p.fasnUploadSummary =
+            (document.getElementById("fasnUploadSummary") || {}).textContent || "";
+        }
         return p;
+      }
+
+      function applyFasnFromSharedState(data) {
+        if (!data) return;
+        if (data.fasnBlockMap) {
+          fasnAllStatusBlockMap = JSON.parse(JSON.stringify(data.fasnBlockMap));
+        }
+        if (data.fasnVacRows && data.fasnVacRows.length) {
+          fasnVacRows = dedupeByRoomLastWins(data.fasnVacRows);
+          rebuildFasnVacFoMapFromRows();
+        }
+        if (data.fasnAllStatusRooms) {
+          fasnAllStatusRooms = data.fasnAllStatusRooms.slice();
+        }
+        var fasnSum = document.getElementById("fasnUploadSummary");
+        if (fasnSum && data.fasnUploadSummary) {
+          fasnSum.textContent = data.fasnUploadSummary;
+        }
       }
 
       function applySharedState(data) {
@@ -1763,6 +1791,7 @@
           blockDisplayAliases = JSON.parse(JSON.stringify(data.blockDisplayAliases));
           persistBlockAliases();
         }
+        applyFasnFromSharedState(data);
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
         saveRoomingStateToLocal();
@@ -2667,18 +2696,7 @@
       }
 
       function saveFasnStateToLocal() {
-        if (!hasLocalFasnData()) return;
-        try {
-          localStorage.setItem(
-            FASN_LS_KEY,
-            JSON.stringify({
-              vacRows: fasnVacRows,
-              allStatusRooms: fasnAllStatusRooms,
-              blockMap: fasnAllStatusBlockMap,
-              uploadSummary: (document.getElementById("fasnUploadSummary") || {}).textContent || "",
-            })
-          );
-        } catch (e) {}
+        saveRoomingStateToLocal();
       }
 
       function loadFasnStateFromLocal() {
@@ -2687,12 +2705,15 @@
           if (!raw) return false;
           var data = JSON.parse(raw);
           if (!data || typeof data !== "object") return false;
-          if (data.vacRows && data.vacRows.length) fasnVacRows = data.vacRows.slice();
-          if (data.allStatusRooms) fasnAllStatusRooms = data.allStatusRooms.slice();
-          if (data.blockMap) fasnAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap));
-          rebuildFasnVacFoMapFromRows();
-          var sum = document.getElementById("fasnUploadSummary");
-          if (sum && data.uploadSummary) sum.textContent = data.uploadSummary;
+          if (hasLocalFasnData()) return true;
+          applyFasnFromSharedState({
+            fasnVacRows: data.vacRows,
+            fasnAllStatusRooms: data.allStatusRooms,
+            fasnBlockMap: data.blockMap,
+            fasnUploadSummary: data.uploadSummary || "",
+          });
+          saveRoomingStateToLocal();
+          schedulePushSharedState({ includeExtendedStay: false, syncLabel: "F.ASN 이전 저장 데이터 공유" });
           return hasLocalFasnData();
         } catch (e) {
           return false;
@@ -3334,6 +3355,7 @@
           mergeFasnAllStatusRoomList(payload.allStatusRooms);
         }
         saveFasnStateToLocal();
+        schedulePushSharedState({ includeExtendedStay: false });
         renderFAsnBoard();
       }
 

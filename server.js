@@ -424,6 +424,18 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary")) {
     out.uploadSummary = incoming.uploadSummary;
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnBlockMap")) {
+    out.fasnBlockMap = incoming.fasnBlockMap;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnVacRows")) {
+    out.fasnVacRows = mergeVacRowsPreservingFields(incoming.fasnVacRows, prev.fasnVacRows);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnAllStatusRooms")) {
+    out.fasnAllStatusRooms = incoming.fasnAllStatusRooms;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnUploadSummary")) {
+    out.fasnUploadSummary = incoming.fasnUploadSummary;
+  }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkStorage")) {
     out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
   }
