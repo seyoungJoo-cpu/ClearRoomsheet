@@ -436,6 +436,16 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "fasnUploadSummary")) {
     out.fasnUploadSummary = incoming.fasnUploadSummary;
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "roomingClearedAt")) {
+    if (incoming.roomingClearedAt) out.roomingClearedAt = incoming.roomingClearedAt;
+    else delete out.roomingClearedAt;
+  }
+  if (
+    (Array.isArray(incoming.vacRows) && incoming.vacRows.length > 0) ||
+    (Array.isArray(incoming.fasnVacRows) && incoming.fasnVacRows.length > 0)
+  ) {
+    delete out.roomingClearedAt;
+  }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkStorage")) {
     out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
   }

@@ -1399,6 +1399,7 @@
       var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
       var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
       var sharedStateVersion = 0;
+      var sharedRoomingClearedAt = "";
       var syncPollTimer = null;
       var syncPushTimer = null;
       var isApplyingRemote = false;
@@ -1722,57 +1723,63 @@
 
       function applyFasnFromSharedState(data) {
         if (!data) return;
-        if (data.fasnBlockMap) {
-          fasnAllStatusBlockMap = JSON.parse(JSON.stringify(data.fasnBlockMap));
+        if (Object.prototype.hasOwnProperty.call(data, "fasnBlockMap")) {
+          fasnAllStatusBlockMap = JSON.parse(JSON.stringify(data.fasnBlockMap || {}));
         }
-        if (data.fasnVacRows && data.fasnVacRows.length) {
-          fasnVacRows = dedupeByRoomLastWins(data.fasnVacRows);
+        if (Object.prototype.hasOwnProperty.call(data, "fasnVacRows") && Array.isArray(data.fasnVacRows)) {
+          fasnVacRows = data.fasnVacRows.length ? dedupeByRoomLastWins(data.fasnVacRows) : [];
           rebuildFasnVacFoMapFromRows();
         }
-        if (data.fasnAllStatusRooms) {
+        if (Object.prototype.hasOwnProperty.call(data, "fasnAllStatusRooms") && Array.isArray(data.fasnAllStatusRooms)) {
           fasnAllStatusRooms = data.fasnAllStatusRooms.slice();
         }
         var fasnSum = document.getElementById("fasnUploadSummary");
-        if (fasnSum && data.fasnUploadSummary) {
-          fasnSum.textContent = data.fasnUploadSummary;
+        if (fasnSum && Object.prototype.hasOwnProperty.call(data, "fasnUploadSummary")) {
+          fasnSum.textContent = data.fasnUploadSummary || "";
         }
       }
 
       function applySharedState(data) {
         if (!data) return;
         var uploadSummary = document.getElementById("uploadSummary");
-        if (uploadSummary && data.uploadSummary) uploadSummary.textContent = data.uploadSummary;
-        if (data.blockMap) {
-          cachedAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap));
+        if (uploadSummary && Object.prototype.hasOwnProperty.call(data, "uploadSummary")) {
+          uploadSummary.textContent = data.uploadSummary || "";
         }
-        if (data.vacRows && data.vacRows.length) {
-          cachedVacRows = dedupeByRoomLastWins(
-            data.vacRows.map(function (row) {
-              var old = null;
-              for (var i = 0; i < cachedVacRows.length; i++) {
-                if (cachedVacRows[i].room === row.room) {
-                  old = cachedVacRows[i];
-                  break;
+        if (Object.prototype.hasOwnProperty.call(data, "blockMap")) {
+          cachedAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap || {}));
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "vacRows") && Array.isArray(data.vacRows)) {
+          if (data.vacRows.length) {
+            cachedVacRows = dedupeByRoomLastWins(
+              data.vacRows.map(function (row) {
+                var old = null;
+                for (var i = 0; i < cachedVacRows.length; i++) {
+                  if (cachedVacRows[i].room === row.room) {
+                    old = cachedVacRows[i];
+                    break;
+                  }
                 }
-              }
-              if (!old) return row;
-              return {
-                room: row.room,
-                status: row.status || old.status || "",
-                resvStatus: row.resvStatus || old.resvStatus || "",
-                blockCode: row.blockCode || old.blockCode || "",
-                foStatus: row.foStatus || old.foStatus || "",
-                roomType: row.roomType || old.roomType || "",
-              };
-            })
-          );
+                if (!old) return row;
+                return {
+                  room: row.room,
+                  status: row.status || old.status || "",
+                  resvStatus: row.resvStatus || old.resvStatus || "",
+                  blockCode: row.blockCode || old.blockCode || "",
+                  foStatus: row.foStatus || old.foStatus || "",
+                  roomType: row.roomType || old.roomType || "",
+                };
+              })
+            );
+          } else {
+            cachedVacRows = [];
+          }
           rebuildVacFoMapFromRows();
         }
-        if (data.roomResvMap && typeof data.roomResvMap === "object") {
-          cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap));
+        if (Object.prototype.hasOwnProperty.call(data, "roomResvMap") && typeof data.roomResvMap === "object") {
+          cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap || {}));
         }
         rebuildCombinedRoomResvMap();
-        if (data.allStatusRooms) {
+        if (Object.prototype.hasOwnProperty.call(data, "allStatusRooms") && Array.isArray(data.allStatusRooms)) {
           cachedAllStatusRooms = data.allStatusRooms.slice();
         }
         if (data.extendedStayRooms !== undefined) {
@@ -1790,6 +1797,15 @@
         if (data.blockDisplayAliases) {
           blockDisplayAliases = JSON.parse(JSON.stringify(data.blockDisplayAliases));
           persistBlockAliases();
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "roomingClearedAt")) {
+          sharedRoomingClearedAt = data.roomingClearedAt ? String(data.roomingClearedAt) : "";
+          if (sharedRoomingClearedAt) {
+            try {
+              localStorage.removeItem(ROOMING_XML_LS_KEY);
+              localStorage.removeItem(FASN_LS_KEY);
+            } catch (e) {}
+          }
         }
         applyFasnFromSharedState(data);
         rebuildCachedRowsFromVacAndMap();
@@ -3329,6 +3345,10 @@
         renderFAsnBoard();
       }
 
+      function shouldLoadDefaultXmlFiles() {
+        return !hasLocalRoomingData() && !hasLocalFasnData() && !sharedRoomingClearedAt;
+      }
+
       function applyFasnPayload(payload) {
         if (!payload) return;
         var uploadErr = document.getElementById("fasnUploadErr");
@@ -3354,6 +3374,7 @@
         if (payload.allStatusRooms && payload.allStatusRooms.length) {
           mergeFasnAllStatusRoomList(payload.allStatusRooms);
         }
+        sharedRoomingClearedAt = "";
         saveFasnStateToLocal();
         schedulePushSharedState({ includeExtendedStay: false });
         renderFAsnBoard();
@@ -3449,6 +3470,7 @@
         if (payload.allStatusRooms && payload.allStatusRooms.length) {
           mergeAllStatusRoomList(payload.allStatusRooms);
         }
+        sharedRoomingClearedAt = "";
         rebuildCombinedRoomResvMap();
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
@@ -4008,7 +4030,7 @@
           });
         }
         pullSharedState(false).then(function (hasData) {
-          if (!hasData && !hasLocalRoomingData()) return loadDefaultXmlFiles();
+          if (!hasData && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
         if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
           window.__startRoomSync();
@@ -4018,7 +4040,7 @@
       window.addEventListener("pageshow", function () {
         if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
         pullSharedState(false).then(function (hasData) {
-          if (!hasData && !hasLocalRoomingData()) loadDefaultXmlFiles();
+          if (!hasData && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
       });
 

@@ -20,6 +20,13 @@
     "extendedStayRooms",
     "blockDisplayAliases",
     "uploadSummary",
+    "roomingClearedAt",
+  ];
+  var ROOMING_FASN_KEYS = [
+    "fasnVacRows",
+    "fasnAllStatusRooms",
+    "fasnBlockMap",
+    "fasnUploadSummary",
   ];
 
   var syncVersion = 0;
@@ -117,6 +124,11 @@
           snap[key] = lastServerPayload[key];
         }
       });
+      ROOMING_FASN_KEYS.forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(lastServerPayload, key)) {
+          snap[key] = lastServerPayload[key];
+        }
+      });
     }
     return snap;
   }
@@ -127,6 +139,9 @@
     if (snapshot.roomResvMap && Object.keys(snapshot.roomResvMap).length) return true;
     if (snapshot.blockMap && Object.keys(snapshot.blockMap).length) return true;
     if (Array.isArray(snapshot.allStatusRooms) && snapshot.allStatusRooms.length) return true;
+    if (Array.isArray(snapshot.fasnVacRows) && snapshot.fasnVacRows.length) return true;
+    if (snapshot.fasnBlockMap && Object.keys(snapshot.fasnBlockMap).length) return true;
+    if (Array.isArray(snapshot.fasnAllStatusRooms) && snapshot.fasnAllStatusRooms.length) return true;
     try {
       var raw = global.localStorage.getItem(ROOMING_XML_LS_KEY);
       if (!raw) return false;
@@ -136,6 +151,9 @@
       if (parsed.roomResvMap && Object.keys(parsed.roomResvMap).length) return true;
       if (parsed.blockMap && Object.keys(parsed.blockMap).length) return true;
       if (Array.isArray(parsed.allStatusRooms) && parsed.allStatusRooms.length) return true;
+      if (Array.isArray(parsed.fasnVacRows) && parsed.fasnVacRows.length) return true;
+      if (parsed.fasnBlockMap && Object.keys(parsed.fasnBlockMap).length) return true;
+      if (Array.isArray(parsed.fasnAllStatusRooms) && parsed.fasnAllStatusRooms.length) return true;
     } catch (e) {}
     return false;
   }
@@ -186,8 +204,54 @@
       });
   }
 
+  function isRoomingResetPayload(payload) {
+    if (!payload || typeof payload !== "object") return false;
+    if (!Object.prototype.hasOwnProperty.call(payload, "vacRows") || !Array.isArray(payload.vacRows)) {
+      return false;
+    }
+    if (payload.vacRows.length > 0) return false;
+    var map =
+      payload.roomResvMap && typeof payload.roomResvMap === "object" ? payload.roomResvMap : {};
+    if (Object.keys(map).length > 0) return false;
+    var blk = payload.blockMap && typeof payload.blockMap === "object" ? payload.blockMap : {};
+    if (Object.keys(blk).length > 0) return false;
+    var rooms = Array.isArray(payload.allStatusRooms) ? payload.allStatusRooms : [];
+    if (rooms.length > 0) return false;
+    return true;
+  }
+
+  function applyRoomingReset(payload) {
+    xmlSyncCache.vacRows = [];
+    xmlSyncCache.roomResvMap = {};
+    var cleared = {
+      vacRows: [],
+      roomResvMap: {},
+      allStatusRooms: [],
+      blockMap: {},
+      extendedStayRooms: {},
+      uploadSummary: "",
+      fasnVacRows: [],
+      fasnAllStatusRooms: [],
+      fasnBlockMap: {},
+      fasnUploadSummary: "",
+      roomingClearedAt:
+        payload && payload.roomingClearedAt
+          ? String(payload.roomingClearedAt)
+          : new Date().toISOString(),
+    };
+    lastServerPayload = Object.assign({}, lastServerPayload || {}, cleared);
+    try {
+      global.localStorage.removeItem(ROOMING_XML_LS_KEY);
+      global.localStorage.removeItem("makeroom-fasn-local-v1");
+    } catch (e) {}
+    return true;
+  }
+
   function mergeRoomingPayload(payload) {
     if (!payload || typeof payload !== "object") return false;
+    if (isRoomingResetPayload(payload)) {
+      return applyRoomingReset(payload);
+    }
     var touched = false;
     if (Object.prototype.hasOwnProperty.call(payload, "vacRows") && Array.isArray(payload.vacRows)) {
       if (payload.vacRows.length > 0 || !hasRoomingData()) {
@@ -219,11 +283,30 @@
         touched = true;
       }
     });
+    ROOMING_FASN_KEYS.forEach(function (key) {
+      if (!Object.prototype.hasOwnProperty.call(payload, key)) return;
+      var val = payload[key];
+      var isEmpty =
+        val == null ||
+        (Array.isArray(val) && !val.length) ||
+        (typeof val === "object" && !Array.isArray(val) && !Object.keys(val).length);
+      if (!isEmpty || !hasRoomingData()) {
+        lastServerPayload = Object.assign({}, lastServerPayload || {});
+        lastServerPayload[key] = val;
+        touched = true;
+      }
+    });
     if (touched) {
       lastServerPayload = Object.assign({}, lastServerPayload || {}, {
         vacRows: xmlSyncCache.vacRows.slice(),
         roomResvMap: Object.assign({}, xmlSyncCache.roomResvMap),
       });
+      if (
+        (Array.isArray(payload.vacRows) && payload.vacRows.length > 0) ||
+        (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length > 0)
+      ) {
+        delete lastServerPayload.roomingClearedAt;
+      }
       saveRoomingXmlToLocal();
     }
     return touched;
@@ -242,6 +325,12 @@
     if (!payload || typeof payload !== "object") return keys;
     if (Array.isArray(payload.vacRows)) keys.push("vacRows");
     if (Object.prototype.hasOwnProperty.call(payload, "roomResvMap")) keys.push("roomResvMap");
+    ROOMING_EXTRA_KEYS.forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) keys.push(key);
+    });
+    ROOMING_FASN_KEYS.forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) keys.push(key);
+    });
     return keys;
   }
 
@@ -896,27 +985,32 @@
       return lastServerPayload ? Object.assign({}, lastServerPayload) : null;
     },
     clearRoomingXml: function () {
+      var clearedAt = new Date().toISOString();
       xmlSyncCache.vacRows = [];
       xmlSyncCache.roomResvMap = {};
       try {
         global.localStorage.removeItem(ROOMING_XML_LS_KEY);
+        global.localStorage.removeItem("makeroom-fasn-local-v1");
       } catch (e) {}
-      if (lastServerPayload) {
-        lastServerPayload.vacRows = [];
-        lastServerPayload.roomResvMap = {};
-        lastServerPayload.allStatusRooms = [];
-        lastServerPayload.blockMap = {};
-        lastServerPayload.extendedStayRooms = {};
-        lastServerPayload.uploadSummary = "";
-      }
-      return postPayload({
+      var cleared = {
         vacRows: [],
         roomResvMap: {},
         allStatusRooms: [],
         blockMap: {},
         extendedStayRooms: {},
         uploadSummary: "",
-      }).then(function () {
+        fasnVacRows: [],
+        fasnAllStatusRooms: [],
+        fasnBlockMap: {},
+        fasnUploadSummary: "",
+        roomingClearedAt: clearedAt,
+      };
+      if (lastServerPayload) {
+        Object.assign(lastServerPayload, cleared);
+      } else {
+        lastServerPayload = Object.assign({}, cleared);
+      }
+      return postPayload(cleared).then(function () {
         emitChange(
           [
             "vacRows",
@@ -925,6 +1019,11 @@
             "blockMap",
             "extendedStayRooms",
             "uploadSummary",
+            "fasnVacRows",
+            "fasnAllStatusRooms",
+            "fasnBlockMap",
+            "fasnUploadSummary",
+            "roomingClearedAt",
           ],
           Object.assign({}, lastServerPayload || {}, xmlPayloadForListeners())
         );

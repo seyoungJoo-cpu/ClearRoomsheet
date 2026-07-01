@@ -937,8 +937,9 @@
     <section class="card rooming-xml-card">
       <h2>루밍 XML 초기화</h2>
       <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
-        정비루밍 화면에 업로드된 <strong>HKVACROOM · All Status XML</strong> 데이터를 서버에서 비웁니다.
-        객실 상태·FO·블록·연박 표시가 초기화됩니다. 공지·구역 객실·오더 등 HK 데이터는 유지됩니다.
+        정비루밍·F.ASN에 업로드된 <strong>HKVACROOM · All Status XML</strong>을 서버에서 비웁니다.
+        499·VAC·ASN·O.VAC·O.ASN·F.ASN 보드가 비워지며 <strong>다른 PC에도 동기화</strong>됩니다.
+        공지·구역 객실·오더 등 HK 데이터는 유지됩니다.
       </p>
       <button type="button" class="btn-clear-rooming-xml" id="btnClearRoomingXml">루밍 XML 초기화</button>
     </section>
@@ -2900,7 +2901,7 @@
       function performClearRoomingXml() {
         if (
           !confirm(
-            "루밍 XML 데이터를 초기화할까요?\n\nHKVACROOM·All Status 업로드 내용이 서버에서 삭제됩니다.\n공지·구역 객실·오더 등은 유지됩니다."
+            "루밍 XML 데이터를 초기화할까요?\n\nHKVACROOM·All Status·F.ASN XML 업로드 내용이 서버에서 삭제되며 다른 PC 루밍 화면도 비워집니다.\n공지·구역 객실·오더 등은 유지됩니다."
           )
         ) {
           return;
