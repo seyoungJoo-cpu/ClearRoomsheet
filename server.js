@@ -210,6 +210,37 @@ const sharedState = {
   payload: null,
 };
 
+const SYNC_STATE_FILE = path.join(__dirname, "sync-state.json");
+
+function loadSharedStateFromDisk() {
+  try {
+    if (!fs.existsSync(SYNC_STATE_FILE)) return;
+    const raw = fs.readFileSync(SYNC_STATE_FILE, "utf8");
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return;
+    if (data.version != null && !isNaN(data.version)) sharedState.version = data.version;
+    if (data.updatedAt != null) sharedState.updatedAt = data.updatedAt;
+    if (data.payload && typeof data.payload === "object") sharedState.payload = data.payload;
+    console.log(
+      "Sync: loaded state v" +
+        sharedState.version +
+        (sharedState.payload ? " (payload ok)" : " (empty)")
+    );
+  } catch (e) {
+    console.warn("Sync: could not load sync-state.json");
+  }
+}
+
+function saveSharedStateToDisk() {
+  try {
+    fs.writeFileSync(SYNC_STATE_FILE, JSON.stringify(sharedState));
+  } catch (e) {
+    console.warn("Sync: could not save sync-state.json");
+  }
+}
+
+loadSharedStateFromDisk();
+
 function checkSyncAuth(req, res, next) {
   const password = req.get("x-sync-password");
   if (password !== SYNC_PASSWORD) {
@@ -509,6 +540,7 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     version: sharedState.version,
     updatedAt: sharedState.updatedAt,
   });
+  saveSharedStateToDisk();
 });
 
 app.get("/health", function (req, res) {

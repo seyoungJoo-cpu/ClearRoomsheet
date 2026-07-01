@@ -1400,6 +1400,7 @@
       var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
       var sharedStateVersion = 0;
       var sharedRoomingClearedAt = "";
+      var lastAppliedSyncUpdatedAt = "";
       var syncPollTimer = null;
       var syncPushTimer = null;
       var isApplyingRemote = false;
@@ -1813,6 +1814,40 @@
         saveRoomingStateToLocal();
       }
 
+      function hasPayloadRoomingSyncData(payload) {
+        if (!payload || typeof payload !== "object") return false;
+        if (payload.roomingClearedAt) return true;
+        return hasPayloadRoomingData(payload);
+      }
+
+      function shouldApplyRemoteSync(data) {
+        if (!data) return false;
+        var serverVer = data.version != null ? data.version : 0;
+        if (serverVer > sharedStateVersion) return true;
+        if (serverVer < sharedStateVersion) return true;
+        if (data.updatedAt && data.updatedAt !== lastAppliedSyncUpdatedAt) return true;
+        return false;
+      }
+
+      function applyRemoteSyncFromServer(data, opts) {
+        opts = opts || {};
+        if (!data) return false;
+        var serverVer = data.version != null ? data.version : 0;
+        if (data.payload && (shouldApplyRemoteSync(data) || opts.forceApply)) {
+          isApplyingRemote = true;
+          saveSharedStateVersion(serverVer);
+          applySharedState(data.payload);
+          if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+          isApplyingRemote = false;
+          return true;
+        }
+        if (serverVer < sharedStateVersion) {
+          saveSharedStateVersion(serverVer);
+          if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+        }
+        return false;
+      }
+
       function pushSharedState(opts) {
         if (isApplyingRemote) return;
         opts = opts || {};
@@ -1830,6 +1865,7 @@
           })
           .then(function (data) {
             if (data && data.version != null) saveSharedStateVersion(data.version);
+            if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
             saveRoomingStateToLocal();
             var label = opts.syncLabel || "다른 PC와 공유됨";
             updateSyncStatus(label + " · " + formatSyncTime(data.updatedAt), true);
@@ -1855,33 +1891,51 @@
             return r.json();
           })
           .then(function (data) {
-            if (!data || !data.payload) {
+            if (!data) {
+              if (!isPoll) {
+                updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
+              }
+              return false;
+            }
+            if (!data.payload) {
               if (!isPoll) {
                 updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
               }
-              return hasLocalRoomingData();
-            }
-            if (data.version <= sharedStateVersion) {
-              if (!isPoll) {
-                if (hasPayloadRoomingData(data.payload)) {
-                  applySharedState(data.payload);
-                }
-                if (data.version > 0) {
-                  updateSyncStatus("다른 PC와 동기화됨 · " + formatSyncTime(data.updatedAt), true);
-                }
+              if (data.version != null && data.version < sharedStateVersion) {
+                saveSharedStateVersion(data.version);
+                if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
               }
-              return hasPayloadRoomingData(data.payload) || hasLocalRoomingData();
+              return hasLocalRoomingData() || hasLocalFasnData();
             }
-            isApplyingRemote = true;
-            saveSharedStateVersion(data.version);
-            applySharedState(data.payload);
-            isApplyingRemote = false;
-            updateSyncStatus(
-              (isPoll ? "다른 PC에서 업데이트됨 · " : "공유 데이터 불러옴 · ") +
-                formatSyncTime(data.updatedAt),
-              true
+
+            var applied = applyRemoteSyncFromServer(data, {
+              forceApply:
+                !isPoll &&
+                !lastAppliedSyncUpdatedAt &&
+                hasPayloadRoomingSyncData(data.payload),
+            });
+
+            if (applied) {
+              updateSyncStatus(
+                (isPoll ? "다른 PC에서 업데이트됨 · " : "공유 데이터 불러옴 · ") +
+                  formatSyncTime(data.updatedAt),
+                true
+              );
+              return true;
+            }
+
+            if (!isPoll) {
+              if (data.version > 0) {
+                updateSyncStatus("다른 PC와 동기화됨 · " + formatSyncTime(data.updatedAt), true);
+              } else if (hasPayloadRoomingSyncData(data.payload)) {
+                updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
+              }
+            }
+            return (
+              hasPayloadRoomingSyncData(data.payload) ||
+              hasLocalRoomingData() ||
+              hasLocalFasnData()
             );
-            return true;
           })
           .catch(function () {
             if (!isPoll) updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
@@ -3376,7 +3430,7 @@
         }
         sharedRoomingClearedAt = "";
         saveFasnStateToLocal();
-        schedulePushSharedState({ includeExtendedStay: false });
+        pushSharedState({ includeExtendedStay: false, syncLabel: "F.ASN · 다른 PC와 공유됨" });
         renderFAsnBoard();
       }
 
@@ -3474,7 +3528,7 @@
         rebuildCombinedRoomResvMap();
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
-        schedulePushSharedState({ includeExtendedStay: false });
+        pushSharedState({ includeExtendedStay: false, syncLabel: "다른 PC와 공유됨" });
         saveRoomingStateToLocal();
       }
 

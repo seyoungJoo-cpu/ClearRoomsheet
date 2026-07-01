@@ -18,3 +18,4 @@ node_modules/
 .vapid-keys.json
 push-subs.json
 .push-vapid-marker.txt
+sync-state.json

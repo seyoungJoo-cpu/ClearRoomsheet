@@ -30,6 +30,7 @@
   ];
 
   var syncVersion = 0;
+  var lastAppliedSyncUpdatedAt = "";
   var pollTimer = null;
   var pushTimer = null;
   var pendingPush = {};
@@ -254,8 +255,11 @@
     }
     var touched = false;
     if (Object.prototype.hasOwnProperty.call(payload, "vacRows") && Array.isArray(payload.vacRows)) {
-      if (payload.vacRows.length > 0 || !hasRoomingData()) {
-        xmlSyncCache.vacRows = mergeVacRowsIncoming(payload.vacRows, xmlSyncCache.vacRows);
+      if (payload.vacRows.length > 0 || isRoomingResetPayload(payload) || !hasRoomingData()) {
+        xmlSyncCache.vacRows =
+          payload.vacRows.length > 0
+            ? mergeVacRowsIncoming(payload.vacRows, [])
+            : [];
         touched = true;
       }
     }
@@ -559,6 +563,7 @@
       })
       .then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
+        if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
         return data;
       })
       .catch(function () {
@@ -729,6 +734,15 @@
     emitLocalCacheHydrate();
   }
 
+  function shouldApplyRemoteSync(data) {
+    if (!data) return false;
+    var serverVer = data.version != null ? data.version : 0;
+    if (serverVer > syncVersion) return true;
+    if (serverVer < syncVersion) return true;
+    if (data.updatedAt && data.updatedAt !== lastAppliedSyncUpdatedAt) return true;
+    return false;
+  }
+
   function pull(isPoll) {
     return fetch("/api/sync", {
       headers: { "X-Sync-Password": getSyncPassword() },
@@ -739,16 +753,28 @@
       })
       .then(function (data) {
         if (!data) return false;
-        if (data.version != null && data.version <= syncVersion) {
+        if (!data.payload) {
+          if (data.version != null && data.version < syncVersion) {
+            saveSyncVersion(data.version);
+            if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+          }
           if (!isPoll) {
             loadCachesFromLocal();
-            if (data.payload) mergeRoomingPayload(data.payload);
             emitLocalCacheHydrate();
           }
+          return false;
+        }
+        if (shouldApplyRemoteSync(data) || (!isPoll && !lastAppliedSyncUpdatedAt)) {
+          if (data.version != null) saveSyncVersion(data.version);
+          if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+          applyRemotePayload(data.payload);
           return true;
         }
-        if (data.version != null) saveSyncVersion(data.version);
-        if (data.payload) applyRemotePayload(data.payload);
+        if (!isPoll) {
+          loadCachesFromLocal();
+          if (data.payload) mergeRoomingPayload(data.payload);
+          emitLocalCacheHydrate();
+        }
         return true;
       })
       .catch(function () {
