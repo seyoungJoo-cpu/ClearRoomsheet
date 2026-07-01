@@ -1401,6 +1401,8 @@
       var sharedStateVersion = 0;
       var sharedRoomingClearedAt = "";
       var lastAppliedSyncUpdatedAt = "";
+      var lastRoomingUploadedAt = "";
+      var lastFasnUploadedAt = "";
       var syncPollTimer = null;
       var syncPushTimer = null;
       var isApplyingRemote = false;
@@ -1691,6 +1693,8 @@
           if (!raw) return false;
           var parsed = JSON.parse(raw);
           if (!parsed || typeof parsed !== "object") return false;
+          if (parsed.roomingUploadedAt) lastRoomingUploadedAt = String(parsed.roomingUploadedAt);
+          if (parsed.fasnUploadedAt) lastFasnUploadedAt = String(parsed.fasnUploadedAt);
           applySharedState(parsed);
           return hasLocalRoomingData();
         } catch (e) {
@@ -1700,24 +1704,32 @@
 
       function buildSharedStatePayload(opts) {
         opts = opts || {};
-        rebuildCombinedRoomResvMap();
-        var p = {
-          blockMap: cachedAllStatusBlockMap,
-          vacRows: cachedVacRows,
-          allStatusRooms: cachedAllStatusRooms,
-          roomResvMap: cachedRoomResvMap,
-          blockDisplayAliases: blockDisplayAliases,
-          uploadSummary: (document.getElementById("uploadSummary") || {}).textContent || "",
-        };
-        if (opts.includeExtendedStay !== false) {
-          p.extendedStayRooms = extendedStayRooms;
+        var p = {};
+        if (opts.roomingUpload) {
+          rebuildCombinedRoomResvMap();
+          p.blockMap = cachedAllStatusBlockMap;
+          p.vacRows = cachedVacRows;
+          p.allStatusRooms = cachedAllStatusRooms;
+          p.roomResvMap = cachedRoomResvMap;
+          p.uploadSummary = (document.getElementById("uploadSummary") || {}).textContent || "";
+          if (lastRoomingUploadedAt) p.roomingUploadedAt = lastRoomingUploadedAt;
         }
-        if (hasLocalFasnData()) {
+        if (opts.fasnUpload && hasLocalFasnData()) {
           p.fasnVacRows = fasnVacRows;
           p.fasnAllStatusRooms = fasnAllStatusRooms;
           p.fasnBlockMap = fasnAllStatusBlockMap;
           p.fasnUploadSummary =
             (document.getElementById("fasnUploadSummary") || {}).textContent || "";
+          if (lastFasnUploadedAt) p.fasnUploadedAt = lastFasnUploadedAt;
+        }
+        if (opts.roomingClear) {
+          p.roomingClearedAt = sharedRoomingClearedAt || new Date().toISOString();
+        }
+        if (opts.includeExtendedStay !== false) {
+          p.extendedStayRooms = extendedStayRooms;
+        }
+        if (opts.includeBlockAliases !== false) {
+          p.blockDisplayAliases = blockDisplayAliases;
         }
         return p;
       }
@@ -1802,12 +1814,16 @@
         if (Object.prototype.hasOwnProperty.call(data, "roomingClearedAt")) {
           sharedRoomingClearedAt = data.roomingClearedAt ? String(data.roomingClearedAt) : "";
           if (sharedRoomingClearedAt) {
+            lastRoomingUploadedAt = "";
+            lastFasnUploadedAt = "";
             try {
               localStorage.removeItem(ROOMING_XML_LS_KEY);
               localStorage.removeItem(FASN_LS_KEY);
             } catch (e) {}
           }
         }
+        if (data.roomingUploadedAt) lastRoomingUploadedAt = String(data.roomingUploadedAt);
+        if (data.fasnUploadedAt) lastFasnUploadedAt = String(data.fasnUploadedAt);
         applyFasnFromSharedState(data);
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
@@ -1832,6 +1848,10 @@
       function applyRemoteSyncFromServer(data, opts) {
         opts = opts || {};
         if (!data) return false;
+        if (syncPushTimer) {
+          clearTimeout(syncPushTimer);
+          syncPushTimer = null;
+        }
         var serverVer = data.version != null ? data.version : 0;
         if (data.payload && (shouldApplyRemoteSync(data) || opts.forceApply)) {
           isApplyingRemote = true;
@@ -1851,13 +1871,18 @@
       function pushSharedState(opts) {
         if (isApplyingRemote) return;
         opts = opts || {};
+        var body = buildSharedStatePayload(opts);
+        if (!opts.roomingUpload && !opts.fasnUpload && !opts.roomingClear) {
+          if (!body.extendedStayRooms && !body.blockDisplayAliases) return;
+        }
+        if (!Object.keys(body).length) return;
         fetch("/api/sync", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Sync-Password": getSyncPassword(),
           },
-          body: JSON.stringify(buildSharedStatePayload(opts)),
+          body: JSON.stringify(body),
         })
           .then(function (r) {
             if (!r.ok) throw new Error("sync failed");
@@ -2783,7 +2808,6 @@
             fasnUploadSummary: data.uploadSummary || "",
           });
           saveRoomingStateToLocal();
-          schedulePushSharedState({ includeExtendedStay: false, syncLabel: "F.ASN 이전 저장 데이터 공유" });
           return hasLocalFasnData();
         } catch (e) {
           return false;
@@ -3429,8 +3453,14 @@
           mergeFasnAllStatusRoomList(payload.allStatusRooms);
         }
         sharedRoomingClearedAt = "";
+        lastFasnUploadedAt = new Date().toISOString();
         saveFasnStateToLocal();
-        pushSharedState({ includeExtendedStay: false, syncLabel: "F.ASN · 다른 PC와 공유됨" });
+        pushSharedState({
+          fasnUpload: true,
+          includeExtendedStay: false,
+          includeBlockAliases: false,
+          syncLabel: "F.ASN · 다른 PC와 공유됨",
+        });
         renderFAsnBoard();
       }
 
@@ -3528,7 +3558,13 @@
         rebuildCombinedRoomResvMap();
         rebuildCachedRowsFromVacAndMap();
         refreshBoards();
-        pushSharedState({ includeExtendedStay: false, syncLabel: "다른 PC와 공유됨" });
+        lastRoomingUploadedAt = new Date().toISOString();
+        pushSharedState({
+          roomingUpload: true,
+          includeExtendedStay: false,
+          includeBlockAliases: false,
+          syncLabel: "다른 PC와 공유됨",
+        });
         saveRoomingStateToLocal();
       }
 
@@ -3570,7 +3606,7 @@
               rebuildCombinedRoomResvMap();
               rebuildCachedRowsFromVacAndMap();
               refreshBoards();
-              schedulePushSharedState({ includeExtendedStay: false });
+              saveRoomingStateToLocal();
               applyPayload({ summaries: summaries, errors: errors, rows: [], blockMapPatch: {}, allStatusRooms: [] });
             }
             if (done) done();
@@ -4072,8 +4108,6 @@
 
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
-        loadRoomingStateFromLocal();
-        loadFasnStateFromLocal();
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {
@@ -4083,8 +4117,12 @@
             saveRoomingStateToLocal();
           });
         }
-        pullSharedState(false).then(function (hasData) {
-          if (!hasData && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
+        pullSharedState(false).then(function (hasRemote) {
+          if (!hasRemote) {
+            if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+            if (!hasLocalFasnData()) loadFasnStateFromLocal();
+          }
+          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
         if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
           window.__startRoomSync();
@@ -4092,9 +4130,12 @@
       });
 
       window.addEventListener("pageshow", function () {
-        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
-        pullSharedState(false).then(function (hasData) {
-          if (!hasData && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
+        pullSharedState(false).then(function (hasRemote) {
+          if (!hasRemote) {
+            if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+            if (!hasLocalFasnData()) loadFasnStateFromLocal();
+          }
+          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
       });
 

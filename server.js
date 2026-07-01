@@ -406,6 +406,26 @@ function pickNonEmptyStr(incoming, fallback) {
   return fallback != null ? String(fallback).trim() : "";
 }
 
+function isNewerOrEqualUploadedAt(incomingAt, prevAt) {
+  const inc = incomingAt != null ? String(incomingAt).trim() : "";
+  if (!inc) return false;
+  const prev = prevAt != null ? String(prevAt).trim() : "";
+  if (!prev) return true;
+  return inc >= prev;
+}
+
+function canApplyRoomingMainSync(prev, incoming) {
+  if (!incoming || typeof incoming !== "object") return false;
+  if (incoming.roomingClearedAt) return true;
+  return isNewerOrEqualUploadedAt(incoming.roomingUploadedAt, prev && prev.roomingUploadedAt);
+}
+
+function canApplyFasnRoomingSync(prev, incoming) {
+  if (!incoming || typeof incoming !== "object") return false;
+  if (incoming.roomingClearedAt) return true;
+  return isNewerOrEqualUploadedAt(incoming.fasnUploadedAt, prev && prev.fasnUploadedAt);
+}
+
 function mergeVacRowsPreservingFields(incoming, existing) {
   const prevByRoom = {};
   (existing || []).forEach((r) => {
@@ -431,19 +451,21 @@ function mergeSyncPayload(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
   var out = Object.assign({}, prev);
-  if (Object.prototype.hasOwnProperty.call(incoming, "blockMap")) {
+  var applyMainRooming = canApplyRoomingMainSync(prev, incoming);
+  var applyFasnRooming = canApplyFasnRoomingSync(prev, incoming);
+  if (Object.prototype.hasOwnProperty.call(incoming, "blockMap") && applyMainRooming) {
     out.blockMap = incoming.blockMap;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "vacRows")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "vacRows") && applyMainRooming) {
     out.vacRows = mergeVacRowsPreservingFields(incoming.vacRows, prev.vacRows);
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "roomResvMap")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "roomResvMap") && applyMainRooming) {
     out.roomResvMap =
       incoming.roomResvMap && typeof incoming.roomResvMap === "object"
         ? Object.assign({}, incoming.roomResvMap)
         : {};
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms") && applyMainRooming) {
     out.allStatusRooms = incoming.allStatusRooms;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "extendedStayRooms")) {
@@ -452,20 +474,26 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "blockDisplayAliases")) {
     out.blockDisplayAliases = incoming.blockDisplayAliases;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary") && applyMainRooming) {
     out.uploadSummary = incoming.uploadSummary;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "fasnBlockMap")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "roomingUploadedAt") && applyMainRooming) {
+    out.roomingUploadedAt = incoming.roomingUploadedAt;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnBlockMap") && applyFasnRooming) {
     out.fasnBlockMap = incoming.fasnBlockMap;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "fasnVacRows")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnVacRows") && applyFasnRooming) {
     out.fasnVacRows = mergeVacRowsPreservingFields(incoming.fasnVacRows, prev.fasnVacRows);
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "fasnAllStatusRooms")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnAllStatusRooms") && applyFasnRooming) {
     out.fasnAllStatusRooms = incoming.fasnAllStatusRooms;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "fasnUploadSummary")) {
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnUploadSummary") && applyFasnRooming) {
     out.fasnUploadSummary = incoming.fasnUploadSummary;
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "fasnUploadedAt") && applyFasnRooming) {
+    out.fasnUploadedAt = incoming.fasnUploadedAt;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "roomingClearedAt")) {
     if (incoming.roomingClearedAt) out.roomingClearedAt = incoming.roomingClearedAt;
