@@ -15,7 +15,7 @@
 
   var LABELS = {
     admin: "관리자",
-    maint: "정비관리",
+    maint: "요청 관리",
     front: "프론트",
   };
 
