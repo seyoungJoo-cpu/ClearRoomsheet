@@ -2536,6 +2536,36 @@
       max-width: 260px;
     }
 
+    .order-work-list--deployed {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .order-work-list--deployed .order-work-item.is-chat-open {
+      width: 100%;
+      max-width: 260px;
+    }
+
+    .order-work-item--deployed.is-chat-toggle {
+      cursor: pointer;
+    }
+
+    .order-work-item--deployed.is-chat-toggle:hover {
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.18);
+    }
+
+    .order-work-item--deployed.is-chat-open {
+      cursor: default;
+    }
+
+    .order-work-item__chat-hint {
+      margin-top: 4px;
+      font-size: 0.625rem;
+      color: #047857;
+      font-weight: 600;
+    }
+
     .order-work-item {
       position: relative;
       padding: 6px 8px 18px;
@@ -5916,7 +5946,7 @@
 
         <section class="order-work-section order-work-section--deployed" id="orderDeployedSection" aria-labelledby="orderDeployedTitle">
           <h3 class="order-work-section__title" id="orderDeployedTitle">투입완료</h3>
-          <ul class="order-work-list" id="orderDeployedList" aria-live="polite"></ul>
+          <ul class="order-work-list order-work-list--deployed" id="orderDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
         </section>
       </section>
@@ -6416,7 +6446,7 @@
       var ROOM_BLINK_DISMISS_LS = "lotte-hk-room-blink-dismiss-v2";
       var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
-      var pendingDeferredSyncApply = null;
+      var openDeployedOrderChatId = "";
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
       var HK_BOARD_ANNEX_TAIL_MIN = 51;
@@ -12520,7 +12550,13 @@
         }
       }
 
-      function appendOrderChatUi(li, entry) {
+      function canUseOrderChat(entry) {
+        if (!entry) return false;
+        return isOrderIssueOpen(entry) || getOrderPhase(entry) === "deployed";
+      }
+
+      function appendOrderChatUi(li, entry, opts) {
+        opts = opts || {};
         var chatWrap = document.createElement("div");
         chatWrap.className = "order-chat";
 
@@ -12585,7 +12621,10 @@
         chatInput.type = "text";
         chatInput.placeholder = "메시지 입력";
         chatInput.autocomplete = "off";
-        chatInput.setAttribute("aria-label", "문제 발생 채팅 메시지");
+        chatInput.setAttribute(
+          "aria-label",
+          opts.chatLabel || "문제 발생 채팅 메시지"
+        );
         chatForm.appendChild(chatInput);
         chatForm.appendChild(hkCreatePhotoButton(chatKey));
         hkBindPhotoPaste(chatInput, chatKey, {
@@ -12760,9 +12799,27 @@
         li.appendChild(acts);
       }
 
+      function toggleDeployedOrderChat(orderId) {
+        if (!orderId) return;
+        openDeployedOrderChatId = openDeployedOrderChatId === orderId ? "" : orderId;
+        renderOrderPanels();
+        if (!openDeployedOrderChatId) return;
+        requestAnimationFrame(function () {
+          var card = document.querySelector(
+            '.order-work-section--deployed .order-work-item.is-chat-open[data-order-id="' +
+              orderId +
+              '"]'
+          );
+          if (!card) return;
+          card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          var chatInput = card.querySelector(".order-chat__form input");
+          if (chatInput) chatInput.focus();
+        });
+      }
+
       function appendOrderChat(orderId, text, image) {
         var entry = findOrderEntry(orderId);
-        if (!entry || !isOrderIssueOpen(entry)) return;
+        if (!entry || !canUseOrderChat(entry)) return;
         var msgText = String(text || "").trim();
         var msgImage = image != null ? String(image).trim() : "";
         if (!msgText && !msgImage) return;
@@ -12786,9 +12843,15 @@
         saveOrderLog();
         renderOrderPanels({ force: true });
         requestAnimationFrame(function () {
-          var card = document.querySelector(
-            '.order-work-section--issue .order-work-item[data-order-id="' + orderId + '"]'
-          );
+          var card =
+            document.querySelector(
+              '.order-work-section--issue .order-work-item[data-order-id="' + orderId + '"]'
+            ) ||
+            document.querySelector(
+              '.order-work-section--deployed .order-work-item.is-chat-open[data-order-id="' +
+                orderId +
+                '"]'
+            );
           if (!card) return;
           var msgList = card.querySelector(".order-chat__messages");
           if (msgList) msgList.scrollTop = msgList.scrollHeight;
@@ -12940,8 +13003,18 @@
         });
         deployedEntries.forEach(function (entry) {
           var li = document.createElement("li");
-          li.className = "order-work-item order-work-item--deployed";
+          var chatOpen = openDeployedOrderChatId === entry.id;
+          li.className =
+            "order-work-item order-work-item--deployed" +
+            (chatOpen ? " is-chat-open" : " is-chat-toggle");
           li.setAttribute("data-order-id", entry.id || "");
+          if (chatOpen) {
+            li.title = "대화 접기";
+          } else {
+            li.setAttribute("role", "button");
+            li.setAttribute("tabindex", "0");
+            li.title = "클릭하면 대화 보기";
+          }
           appendOrderItemCommon(li, entry);
           var deployedBy = entry.deployedBy != null ? String(entry.deployedBy).trim() : "";
           if (deployedBy) {
@@ -12951,6 +13024,16 @@
             depMeta.style.paddingTop = "6px";
             depMeta.textContent = "투입 : " + deployedBy;
             li.appendChild(depMeta);
+          }
+          if (!chatOpen) {
+            var chatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
+            var hint = document.createElement("div");
+            hint.className = "order-work-item__chat-hint";
+            hint.textContent =
+              chatCount > 0 ? "대화 " + chatCount + "건 · 클릭하여 보기" : "클릭하여 대화";
+            li.appendChild(hint);
+          } else {
+            appendOrderChatUi(li, entry, { chatLabel: "투입완료 오더 채팅 메시지" });
           }
           deployedList.appendChild(li);
         });
@@ -15350,12 +15433,39 @@
             return;
           }
           var issueBtn = e.target.closest(".order-work__issue-btn");
-          if (!issueBtn) return;
-          if (!maintenanceMode) return;
+          if (issueBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var orderId = issueBtn.getAttribute("data-order-id");
+            if (orderId) raiseOrderIssue(orderId);
+            return;
+          }
+          var deployedCard = e.target.closest(
+            ".order-work-section--deployed .order-work-item"
+          );
+          if (
+            deployedCard &&
+            !e.target.closest(".order-chat") &&
+            !e.target.closest(".order-work__wan-btn")
+          ) {
+            var depOrderId = deployedCard.getAttribute("data-order-id");
+            if (depOrderId) {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleDeployedOrderChat(depOrderId);
+            }
+          }
+        });
+        orderPanelEl.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          var deployedCard = e.target.closest(
+            ".order-work-section--deployed .order-work-item.is-chat-toggle"
+          );
+          if (!deployedCard) return;
           e.preventDefault();
-          e.stopPropagation();
-          var orderId = issueBtn.getAttribute("data-order-id");
-          if (orderId) raiseOrderIssue(orderId);
+          var depOrderId = deployedCard.getAttribute("data-order-id");
+          if (depOrderId) toggleDeployedOrderChat(depOrderId);
         });
         orderPanelEl.addEventListener("submit", function (e) {
           var chatForm = e.target.closest(".order-chat__form");
