@@ -696,6 +696,30 @@
       background: #eef2ff;
     }
 
+    .request-feedback__facility-btn {
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #0f766e;
+      background: #ccfbf1;
+      border: 1px solid #5eead4;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .request-feedback__facility-btn:hover {
+      background: #99f6e4;
+    }
+
+    .request-feedback__facility-btn.is-done {
+      color: #64748b;
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      cursor: default;
+    }
+
     .request-feedback__memo2-editor-wrap {
       margin-top: 8px;
       padding: 10px;
@@ -2370,6 +2394,7 @@
     }
 
     .main.main--order #orderPanel,
+    .main.main--facility #facilityPanel,
     .main.main--mb-inv #mbInvPanel,
     .main.main--mb-check #mbCheckPanel,
     .main.main--inven-notify #invenNotifyPanel {
@@ -5633,6 +5658,14 @@
           </button>
           <button
             type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnFacility"
+            aria-pressed="false"
+          >
+            시설 관리
+          </button>
+          <button
+            type="button"
             class="sidebar-nav__btn sidebar-nav__btn--compact"
             id="sidebarBtnMbInv"
             aria-pressed="false"
@@ -5959,6 +5992,74 @@
         </section>
       </section>
 
+      <section class="order-panel facility-panel" id="facilityPanel" hidden aria-labelledby="facilityPanelTitle">
+        <div class="panel-head-row">
+          <h2 id="facilityPanelTitle">시설 관리</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityPanel" hidden>확인</button>
+        </div>
+        <form class="order-row" id="facilityOrderForm">
+          <div class="field field--room-no">
+            <label for="facilityOrderRoomNo">객실번호</label>
+            <input
+              type="text"
+              id="facilityOrderRoomNo"
+              name="facilityOrderRoomNo"
+              placeholder="예: 1205"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field">
+            <label for="facilityOrderFoDisplay">IN</label>
+            <div class="order-fo-display" id="facilityOrderFoDisplay" aria-live="polite">—</div>
+          </div>
+          <div class="field field--memo">
+            <label for="facilityOrderMemo">메모</label>
+            <div class="hk-compose-row">
+              <input
+                type="text"
+                id="facilityOrderMemo"
+                name="facilityOrderMemo"
+                placeholder="메모 (선택)"
+                autocomplete="off"
+              />
+              <button type="button" class="hk-photo-btn" id="btnPhotoFacilityOrderMemo" title="사진 첨부">사진</button>
+            </div>
+            <div class="hk-photo-preview" data-photo-key="facilityOrderMemo" hidden></div>
+          </div>
+          <div class="field">
+            <label for="btnFacilityOrderUrgent">긴급</label>
+            <button type="button" class="btn-urgent" id="btnFacilityOrderUrgent" aria-pressed="false">
+              긴급
+            </button>
+          </div>
+          <button type="submit" class="btn-order">시설 오더</button>
+        </form>
+
+        <section class="order-work-section order-work-section--issue" id="facilityIssueSection" hidden aria-labelledby="facilityIssueTitle">
+          <h3 class="order-work-section__title" id="facilityIssueTitle">문제 발생</h3>
+          <ul class="order-work-list order-work-list--issue" id="facilityIssueList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityIssueEmpty">문제 발생 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--accepted" id="facilityAcceptedSection" aria-labelledby="facilityAcceptedTitle">
+          <h3 class="order-work-section__title" id="facilityAcceptedTitle">접수완료</h3>
+          <ul class="order-work-list" id="facilityAcceptedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityAcceptedEmpty">접수완료 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--cancelled" id="facilityCancelledSection" aria-labelledby="facilityCancelledTitle">
+          <h3 class="order-work-section__title" id="facilityCancelledTitle">취소</h3>
+          <ul class="order-work-list" id="facilityCancelledList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityCancelledEmpty">취소된 오더가 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--deployed" id="facilityDeployedSection" aria-labelledby="facilityDeployedTitle">
+          <h3 class="order-work-section__title" id="facilityDeployedTitle">투입완료</h3>
+          <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityDeployedEmpty">투입완료 건이 없습니다.</p>
+        </section>
+      </section>
+
       <section class="order-panel mb-inv-panel" id="mbInvPanel" hidden aria-labelledby="mbInvPanelTitle">
         <div class="panel-head-row">
           <h2 id="mbInvPanelTitle">MB &amp; 인벤 변경</h2>
@@ -6248,6 +6349,16 @@
         오더가 접수되면 이곳에 표시됩니다.
       </p>
     </aside>
+    <aside class="order-feedback" id="facilityFeedback" aria-label="시설 관리 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>시설 관리 알림</h2>
+        <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityFeedback" hidden>확인</button>
+      </div>
+      <ul class="order-feedback__list" id="facilityFeedbackList"></ul>
+      <p class="order-feedback__empty" id="facilityFeedbackEmpty">
+        시설 오더가 접수되면 이곳에 표시됩니다.
+      </p>
+    </aside>
     <aside class="order-feedback" id="mbInvFeedback" aria-label="MB 인벤 알림" hidden>
       <div class="order-feedback__head">
         <h2>MB &amp; 인벤 알림</h2>
@@ -6420,6 +6531,8 @@
       var knownOrderIssueIds = {};
       var pendingOrderAlert = false;
       var knownOrderAlertIds = {};
+      var pendingFacilityOrderAlert = false;
+      var pendingFacilityOrderIssueAlert = false;
       var pendingRequestAlert = false;
       var pendingRequestModifyAlert = false;
       /** 처리·예정 카드 깜빡임 — 정비관리 등에서 내용 수정 시 */
@@ -7497,6 +7610,22 @@
       function updateOrderFoDisplay() {
         var roomEl = document.getElementById("orderRoomNo");
         var display = document.getElementById("orderFoDisplay");
+        if (!display) return;
+        var room = roomEl ? roomEl.value.trim() : "";
+        var fo = lookupRoomResvDisplay(room);
+        display.textContent = "";
+        display.className = "order-fo-display";
+        if (!room || fo !== "IN") {
+          display.textContent = "—";
+          return;
+        }
+        display.className = "order-fo-display hk-resv--in";
+        display.textContent = "IN";
+      }
+
+      function updateFacilityOrderFoDisplay() {
+        var roomEl = document.getElementById("facilityOrderRoomNo");
+        var display = document.getElementById("facilityOrderFoDisplay");
         if (!display) return;
         var room = roomEl ? roomEl.value.trim() : "";
         var fo = lookupRoomResvDisplay(room);
@@ -8842,7 +8971,10 @@
       }
 
       function getOrderRoomFilterRaw() {
-        var el = document.getElementById("orderRoomNo");
+        var el =
+          sidebarMainView === "facility"
+            ? document.getElementById("facilityOrderRoomNo")
+            : document.getElementById("orderRoomNo");
         if (!el) return "";
         return el.value.replace(/\s/g, "");
       }
@@ -9150,6 +9282,7 @@
       function initStaticPhotoButtons() {
         hkBindPhotoButton(document.getElementById("btnPhotoFrontChat"), "frontChat");
         hkBindPhotoButton(document.getElementById("btnPhotoOrderMemo"), "orderMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoFacilityOrderMemo"), "facilityOrderMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoRequestMemo"), "requestMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoMbMemo"), "mbMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoInvMemo"), "invMemo");
@@ -9160,6 +9293,7 @@
           },
         });
         hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
+        hkBindPhotoPaste(document.getElementById("facilityOrderMemo"), "facilityOrderMemo");
         hkBindPhotoPaste(document.getElementById("requestMemo"), "requestMemo");
         hkBindPhotoPaste(document.getElementById("mbMemo"), "mbMemo");
         hkBindPhotoPaste(document.getElementById("invMemo"), "invMemo");
@@ -9695,6 +9829,11 @@
           ord.classList.toggle("is-active", sidebarMainView === "order");
           ord.setAttribute("aria-pressed", sidebarMainView === "order" ? "true" : "false");
         }
+        var fac = document.getElementById("sidebarBtnFacility");
+        if (fac) {
+          fac.classList.toggle("is-active", sidebarMainView === "facility");
+          fac.setAttribute("aria-pressed", sidebarMainView === "facility" ? "true" : "false");
+        }
         if (mbInvNav) {
           mbInvNav.classList.toggle("is-active", sidebarMainView === "mbInv");
           mbInvNav.setAttribute("aria-pressed", sidebarMainView === "mbInv" ? "true" : "false");
@@ -9742,6 +9881,7 @@
         sidebarMainView = view;
         var showRequest = view === "request";
         var showOrder = view === "order";
+        var showFacility = view === "facility";
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
         var showInvenNotify = view === "invenNotify";
@@ -9755,6 +9895,7 @@
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
+        var facilityPanel = document.getElementById("facilityPanel");
         var mbInvPanel = document.getElementById("mbInvPanel");
         var mbCheckPanel = document.getElementById("mbCheckPanel");
         var invenNotifyPanel = document.getElementById("invenNotifyPanel");
@@ -9769,6 +9910,7 @@
         if (reqPanel) reqPanel.hidden = !showRequest;
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
+        if (facilityPanel) facilityPanel.hidden = !showFacility;
         if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
@@ -9782,6 +9924,7 @@
         if (mainEl) {
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
+          mainEl.classList.toggle("main--facility", showFacility);
           mainEl.classList.toggle("main--mb-inv", showMbInv);
           mainEl.classList.toggle("main--mb-check", showMbCheck);
           mainEl.classList.toggle("main--inven-notify", showInvenNotify);
@@ -9794,15 +9937,22 @@
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
         var orderFeedback = document.getElementById("orderFeedback");
+        var facilityFeedback = document.getElementById("facilityFeedback");
         var mbInvFeedback = document.getElementById("mbInvFeedback");
         var mbCheckFeedback = document.getElementById("mbCheckFeedback");
         if (requestFeedback) requestFeedback.hidden = !showRequest;
         if (orderFeedback) orderFeedback.hidden = !showOrder;
+        if (facilityFeedback) facilityFeedback.hidden = !showFacility;
         if (mbInvFeedback) mbInvFeedback.hidden = !showMbInv;
         if (mbCheckFeedback) mbCheckFeedback.hidden = !showMbCheck;
         if (feedbackColumn) {
           feedbackColumn.hidden =
-            !showRequest && !showOrder && !showMbInv && !showMbCheck && !showInvenNotify;
+            !showRequest &&
+            !showOrder &&
+            !showFacility &&
+            !showMbInv &&
+            !showMbCheck &&
+            !showInvenNotify;
         }
         updateSidebarPrimaryNavActive();
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
@@ -11595,6 +11745,14 @@
         applySidebarMainView("order");
       }
 
+      function showSidebarFacilityView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        clearFacilitySidebarAlerts();
+        applySidebarMainView("facility");
+        updateFacilityOrderFoDisplay();
+      }
+
       function showSidebarMbInvView() {
         collapseZoneBlock();
         clearZoneTabSelection();
@@ -11823,6 +11981,16 @@
             memo2BtnP.textContent = memo2Str ? "메모2 수정" : "메모2 입력";
             memo2BtnP.setAttribute("aria-label", memo2Str ? "메모2 수정" : "메모2 입력");
             maintActs.appendChild(memo2BtnP);
+            var facilityBtn = document.createElement("button");
+            facilityBtn.type = "button";
+            var facilityDone = !!findFacilityOrderForRequest(entry.id);
+            facilityBtn.className =
+              "request-feedback__facility-btn" + (facilityDone ? " is-done" : "");
+            facilityBtn.setAttribute("data-req-id", entry.id);
+            facilityBtn.textContent = facilityDone ? "시설 오더됨" : "시설 확인";
+            facilityBtn.setAttribute("aria-label", facilityDone ? "시설 오더 생성됨" : "시설 확인 오더 생성");
+            if (facilityDone) facilityBtn.disabled = true;
+            maintActs.appendChild(facilityBtn);
             li.appendChild(maintActs);
           }
 
@@ -12056,6 +12224,10 @@
         if (el) el.hidden = !(pendingOrderAlert || pendingOrderIssueAlert);
         el = document.getElementById("btnAckOrderFeedback");
         if (el) el.hidden = !(pendingOrderAlert || pendingOrderIssueAlert);
+        el = document.getElementById("btnAckFacilityPanel");
+        if (el) el.hidden = !(pendingFacilityOrderAlert || pendingFacilityOrderIssueAlert);
+        el = document.getElementById("btnAckFacilityFeedback");
+        if (el) el.hidden = !(pendingFacilityOrderAlert || pendingFacilityOrderIssueAlert);
         el = document.getElementById("btnAckMbInvPanel");
         if (el) el.hidden = !(pendingMbInvAlert || pendingMbInvIssue);
         el = document.getElementById("btnAckMbInvFeedback");
@@ -12089,6 +12261,8 @@
           ["btnAckSchedPanel", clearRequestSidebarAlerts],
           ["btnAckOrderPanel", clearOrderSidebarAlerts],
           ["btnAckOrderFeedback", clearOrderSidebarAlerts],
+          ["btnAckFacilityPanel", clearFacilitySidebarAlerts],
+          ["btnAckFacilityFeedback", clearFacilitySidebarAlerts],
           ["btnAckMbInvPanel", clearMbInvSidebarAlerts],
           ["btnAckMbInvFeedback", clearMbInvSidebarAlerts],
           ["btnAckMbCheckPanel", clearMbCheckSidebarAlerts],
@@ -12179,7 +12353,18 @@
             pendingOrderIssueAlert || pendingOrderAlert
           );
         }
+        applyFacilitySidebarAlertUi();
         syncPanelAckButtons();
+      }
+
+      function applyFacilitySidebarAlertUi() {
+        var fac = document.getElementById("sidebarBtnFacility");
+        if (fac) {
+          fac.classList.toggle(
+            "is-order-alert",
+            pendingFacilityOrderIssueAlert || pendingFacilityOrderAlert
+          );
+        }
       }
 
       function registerOrderIssueAlert(entryId) {
@@ -12189,9 +12374,18 @@
           return;
         }
         knownOrderIssueIds[entryId] = true;
+        var entry = findOrderEntry(entryId);
+        if (entry && isFacilityOrder(entry)) {
+          if (sidebarMainView !== "facility") {
+            pendingFacilityOrderIssueAlert = true;
+          }
+        }
         if (sidebarMainView !== "order") {
           pendingOrderIssueAlert = true;
           applyOrderSidebarAlertUi();
+        } else {
+          applyFacilitySidebarAlertUi();
+          syncPanelAckButtons();
         }
       }
 
@@ -12202,10 +12396,34 @@
           return;
         }
         knownOrderAlertIds[entryId] = true;
+        var entry = findOrderEntry(entryId);
+        if (entry && isFacilityOrder(entry)) {
+          if (sidebarMainView !== "facility") {
+            pendingFacilityOrderAlert = true;
+          }
+        }
         if (sidebarMainView !== "order") {
           pendingOrderAlert = true;
-          applyOrderSidebarAlertUi();
         }
+        applyOrderSidebarAlertUi();
+      }
+
+      function clearFacilitySidebarAlerts() {
+        orderLogEntries.forEach(function (entry) {
+          if (!entry || !entry.id || !isFacilityOrder(entry)) return;
+          if (getOrderPhase(entry) === "alert") {
+            knownOrderAlertIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markOrderId(entry.id);
+          }
+          if (isOrderIssueOpen(entry)) {
+            knownOrderIssueIds[entry.id] = true;
+            if (typeof HKAlertAck !== "undefined") HKAlertAck.markOrderIssueId(entry.id);
+          }
+        });
+        pendingFacilityOrderIssueAlert = false;
+        pendingFacilityOrderAlert = false;
+        applyFacilitySidebarAlertUi();
+        syncPanelAckButtons();
       }
 
       function clearOrderSidebarAlerts() {
@@ -12486,6 +12704,7 @@
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
         renderOrderLogPanel(opts);
+        renderFacilityOrderLogPanel(opts);
         renderOrderWorkPanels(opts);
       }
 
@@ -12868,16 +13087,37 @@
         });
       }
 
+      function isFacilityOrder(entry) {
+        return !!(entry && String(entry.category || "").trim() === "facility");
+      }
+
+      function findFacilityOrderForRequest(reqId) {
+        if (!reqId) return null;
+        for (var i = 0; i < orderLogEntries.length; i++) {
+          var o = orderLogEntries[i];
+          if (o && o.sourceReqId === reqId && isFacilityOrder(o)) return o;
+        }
+        return null;
+      }
+
       function renderOrderWorkPanels(opts) {
         opts = opts || {};
-        var issueList = document.getElementById("orderIssueList");
-        var issueEmpty = document.getElementById("orderIssueEmpty");
-        var acceptedList = document.getElementById("orderAcceptedList");
-        var acceptedEmpty = document.getElementById("orderAcceptedEmpty");
-        var cancelledList = document.getElementById("orderCancelledList");
-        var cancelledEmpty = document.getElementById("orderCancelledEmpty");
-        var deployedList = document.getElementById("orderDeployedList");
-        var deployedEmpty = document.getElementById("orderDeployedEmpty");
+        renderOrderWorkPanelBundle("order", function () {
+          return true;
+        }, opts);
+        renderOrderWorkPanelBundle("facility", isFacilityOrder, opts);
+      }
+
+      function renderOrderWorkPanelBundle(prefix, entryFilter, opts) {
+        opts = opts || {};
+        var issueList = document.getElementById(prefix + "IssueList");
+        var issueEmpty = document.getElementById(prefix + "IssueEmpty");
+        var acceptedList = document.getElementById(prefix + "AcceptedList");
+        var acceptedEmpty = document.getElementById(prefix + "AcceptedEmpty");
+        var cancelledList = document.getElementById(prefix + "CancelledList");
+        var cancelledEmpty = document.getElementById(prefix + "CancelledEmpty");
+        var deployedList = document.getElementById(prefix + "DeployedList");
+        var deployedEmpty = document.getElementById(prefix + "DeployedEmpty");
         if (!issueList || !acceptedList || !cancelledList || !deployedList) return;
 
         issueList.innerHTML = "";
@@ -12886,16 +13126,16 @@
         deployedList.innerHTML = "";
 
         var issueEntries = orderLogEntries.filter(function (e) {
-          return isOrderIssueOpen(e);
+          return entryFilter(e) && isOrderIssueOpen(e);
         });
         var acceptedEntries = orderLogEntries.filter(function (e) {
-          return getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
+          return entryFilter(e) && getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
         });
         var cancelledEntries = orderLogEntries.filter(function (e) {
-          return getOrderPhase(e) === "cancelled";
+          return entryFilter(e) && getOrderPhase(e) === "cancelled";
         });
         var deployedEntries = orderLogEntries.filter(function (e) {
-          return getOrderPhase(e) === "deployed";
+          return entryFilter(e) && getOrderPhase(e) === "deployed";
         });
 
         var filterRaw = getOrderRoomFilterRaw();
@@ -13079,18 +13319,23 @@
           }
         }
         setIssueSectionVisible(
-          document.getElementById("orderIssueSection"),
-          issueEntries.length > 0 || (!filterRaw && orderLogEntries.some(isOrderIssueOpen))
+          document.getElementById(prefix + "IssueSection"),
+          issueEntries.length > 0 ||
+            (!filterRaw &&
+              orderLogEntries.some(function (e) {
+                return entryFilter(e) && isOrderIssueOpen(e);
+              }))
         );
       }
 
-      function renderOrderLogPanel(opts) {
-        var list = document.getElementById("orderFeedbackList");
-        var empty = document.getElementById("orderFeedbackEmpty");
+      function renderOrderAlertFeedbackPanel(listId, emptyId, entryFilter, opts) {
+        opts = opts || {};
+        var list = document.getElementById(listId);
+        var empty = document.getElementById(emptyId);
         if (!list) return;
         list.innerHTML = "";
         var entries = orderLogEntries.filter(function (entry) {
-          return getOrderPhase(entry) === "alert";
+          return entryFilter(entry) && getOrderPhase(entry) === "alert";
         });
         entries.sort(function (a, b) {
           var ta = new Date(a.at || 0).getTime();
@@ -13105,6 +13350,7 @@
           li.setAttribute("data-order-id", entry.id || "");
           if (entry.urgent) li.classList.add("order-feedback__item--urgent");
           if (entry.fromMaint) li.classList.add("order-feedback__item--from-maint");
+          if (isFacilityOrder(entry)) li.classList.add("order-feedback__item--facility");
 
           appendOrderItemCommon(li, entry);
 
@@ -13148,6 +13394,21 @@
           list.appendChild(li);
         });
         if (empty) empty.hidden = entries.length > 0;
+      }
+
+      function renderOrderLogPanel(opts) {
+        renderOrderAlertFeedbackPanel("orderFeedbackList", "orderFeedbackEmpty", function () {
+          return true;
+        }, opts);
+      }
+
+      function renderFacilityOrderLogPanel(opts) {
+        renderOrderAlertFeedbackPanel(
+          "facilityFeedbackList",
+          "facilityFeedbackEmpty",
+          isFacilityOrder,
+          opts
+        );
       }
 
       function renderSchedRequestCards() {
@@ -14902,6 +15163,22 @@
             if (ridM2) openRequestMemo2Editor(ridM2);
             return;
           }
+          var facilityBtn = e.target.closest(".request-feedback__facility-btn");
+          if (facilityBtn) {
+            if (!maintenanceMode || facilityBtn.disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridFac = facilityBtn.getAttribute("data-req-id");
+            if (!ridFac) return;
+            var reqEntry = findRequestEntry(ridFac);
+            if (!reqEntry) return;
+            var orderId = createFacilityOrderFromRequest(reqEntry);
+            if (orderId) {
+              renderRequestLogPanel({ force: true });
+              showSidebarFacilityView();
+            }
+            return;
+          }
           var b = e.target.closest(".request-feedback__sched-btn");
           if (!b || !maintenanceMode) return;
           e.preventDefault();
@@ -15321,7 +15598,8 @@
         return false;
       }
 
-      function appendOrderLog(room, memoText, isUrgent, memoImage) {
+      function appendOrderLog(room, memoText, isUrgent, memoImage, extra) {
+        extra = extra || {};
         room = canonicalRoomInput(room);
         var fo = lookupRoomResvDisplay(room);
         var id = "ord-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
@@ -15333,14 +15611,49 @@
           foStatus: fo || "",
           phase: "alert",
           urgent: !!isUrgent,
-          fromMaint: !!maintenanceMode,
+          fromMaint: extra.fromMaint != null ? !!extra.fromMaint : !!maintenanceMode,
+          category: extra.category != null ? String(extra.category).trim() : "",
+          sourceReqId: extra.sourceReqId != null ? String(extra.sourceReqId).trim() : "",
           at: new Date().toISOString(),
           by: getOperatorName(),
         });
         knownOrderAlertIds[id] = true;
-        hkClearPhoto("orderMemo");
+        if (isFacilityOrder(orderLogEntries[0])) {
+          if (sidebarMainView !== "facility") pendingFacilityOrderAlert = true;
+        }
+        if (sidebarMainView !== "order") pendingOrderAlert = true;
+        applyOrderSidebarAlertUi();
+        hkClearPhoto(extra.photoKey || "orderMemo");
         saveOrderLog();
         renderOrderPanels({ force: true });
+        return id;
+      }
+
+      function createFacilityOrderFromRequest(reqEntry) {
+        if (!reqEntry || !maintenanceMode) return null;
+        var existing = findFacilityOrderForRequest(reqEntry.id);
+        if (existing) return existing.id;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              createFacilityOrderFromRequest(reqEntry);
+            },
+          });
+          return null;
+        }
+        var memoParts = ["시설 확인"];
+        var fdMemo = reqEntry.memo != null ? String(reqEntry.memo).trim() : "";
+        var maintMemo = reqEntry.memo2 != null ? String(reqEntry.memo2).trim() : "";
+        if (fdMemo) memoParts.push(fdMemo);
+        if (maintMemo) memoParts.push("정비: " + maintMemo);
+        var memoImage = reqEntry.memoImage || reqEntry.memo2Image || "";
+        return appendOrderLog(reqEntry.room, memoParts.join(" · "), !!reqEntry.urgent, memoImage, {
+          category: "facility",
+          sourceReqId: reqEntry.id,
+          fromMaint: true,
+          photoKey: "facilityOrderMemo",
+        });
       }
 
       function processOrderFormSubmit() {
@@ -15372,6 +15685,41 @@
           btnOrderUrgentEl.setAttribute("aria-pressed", "false");
         }
         updateOrderFoDisplay();
+      }
+
+      function processFacilityOrderFormSubmit() {
+        var roomEl = document.getElementById("facilityOrderRoomNo");
+        var memoEl = document.getElementById("facilityOrderMemo");
+        var btnUrgentEl = document.getElementById("btnFacilityOrderUrgent");
+        var room = roomEl && roomEl.value.trim();
+        var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
+        var memoImage = hkGetPhoto("facilityOrderMemo");
+        if (!room) {
+          if (roomEl) roomEl.focus();
+          return;
+        }
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              processFacilityOrderFormSubmit();
+            },
+          });
+          return;
+        }
+        appendOrderLog(room, memo, isUrgent, memoImage, {
+          category: "facility",
+          fromMaint: true,
+          photoKey: "facilityOrderMemo",
+        });
+        if (roomEl) roomEl.value = "";
+        if (memoEl) memoEl.value = "";
+        if (btnUrgentEl) {
+          btnUrgentEl.classList.remove("is-on");
+          btnUrgentEl.setAttribute("aria-pressed", "false");
+        }
+        updateFacilityOrderFoDisplay();
       }
 
       function appendRequestLog(room, statusVal, isUrgent, memoText, memoImage) {
@@ -15494,6 +15842,14 @@
         });
       }
 
+      var facilityOrderForm = document.getElementById("facilityOrderForm");
+      if (facilityOrderForm) {
+        facilityOrderForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          processFacilityOrderFormSubmit();
+        });
+      }
+
       (function setupOrderRoomAuto() {
         var orderRoomEl = document.getElementById("orderRoomNo");
         if (!orderRoomEl) return;
@@ -15505,9 +15861,23 @@
         updateOrderFoDisplay();
       })();
 
-      var orderFeedbackEl = document.getElementById("orderFeedback");
-      if (orderFeedbackEl) {
-        orderFeedbackEl.addEventListener("click", function (e) {
+        updateOrderFoDisplay();
+      })();
+
+      (function setupFacilityOrderRoomAuto() {
+        var facilityRoomEl = document.getElementById("facilityOrderRoomNo");
+        if (!facilityRoomEl) return;
+        facilityRoomEl.addEventListener("input", function () {
+          updateFacilityOrderFoDisplay();
+          renderOrderPanels({ force: true });
+        });
+        facilityRoomEl.addEventListener("change", updateFacilityOrderFoDisplay);
+        updateFacilityOrderFoDisplay();
+      })();
+
+      function bindOrderFeedbackUi(feedbackEl) {
+        if (!feedbackEl) return;
+        feedbackEl.addEventListener("click", function (e) {
           var cancelOrderBtn = e.target.closest(".request-feedback__cancel-btn");
           if (cancelOrderBtn && cancelOrderBtn.hasAttribute("data-order-id")) {
             if (!frontMode) return;
@@ -15527,9 +15897,12 @@
         });
       }
 
-      var orderPanelEl = document.getElementById("orderPanel");
-      if (orderPanelEl) {
-        orderPanelEl.addEventListener("click", function (e) {
+      bindOrderFeedbackUi(document.getElementById("orderFeedback"));
+      bindOrderFeedbackUi(document.getElementById("facilityFeedback"));
+
+      function bindOrderPanelUi(panelEl) {
+        if (!panelEl) return;
+        panelEl.addEventListener("click", function (e) {
           var acceptIssueBtn = e.target.closest(".order-work__accept-btn");
           if (acceptIssueBtn) {
             if (!maintenanceMode) return;
@@ -15573,7 +15946,7 @@
             }
           }
         });
-        orderPanelEl.addEventListener("keydown", function (e) {
+        panelEl.addEventListener("keydown", function (e) {
           if (e.key !== "Enter" && e.key !== " ") return;
           var deployedCard = e.target.closest(
             ".order-work-section--deployed .order-work-item.is-chat-toggle"
@@ -15583,7 +15956,7 @@
           var depOrderId = deployedCard.getAttribute("data-order-id");
           if (depOrderId) toggleDeployedOrderChat(depOrderId);
         });
-        orderPanelEl.addEventListener("submit", function (e) {
+        panelEl.addEventListener("submit", function (e) {
           var chatForm = e.target.closest(".order-chat__form");
           if (!chatForm) return;
           e.preventDefault();
@@ -15595,6 +15968,9 @@
           if (chatInput) chatInput.value = "";
         });
       }
+
+      bindOrderPanelUi(document.getElementById("orderPanel"));
+      bindOrderPanelUi(document.getElementById("facilityPanel"));
 
       document.addEventListener("click", function (e) {
         if (
@@ -15644,6 +16020,15 @@
           var on = !btnOrderUrgent.classList.contains("is-on");
           btnOrderUrgent.classList.toggle("is-on", on);
           btnOrderUrgent.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      var btnFacilityOrderUrgent = document.getElementById("btnFacilityOrderUrgent");
+      if (btnFacilityOrderUrgent) {
+        btnFacilityOrderUrgent.addEventListener("click", function () {
+          var on = !btnFacilityOrderUrgent.classList.contains("is-on");
+          btnFacilityOrderUrgent.classList.toggle("is-on", on);
+          btnFacilityOrderUrgent.setAttribute("aria-pressed", on ? "true" : "false");
         });
       }
 
@@ -15703,6 +16088,19 @@
           bOrd.addEventListener("click", function () {
             if (sidebarMainView === "order") return;
             showSidebarOrderView();
+          });
+        }
+        var bFac = document.getElementById("sidebarBtnFacility");
+        if (bFac) {
+          bFac.addEventListener("click", function () {
+            if (sidebarMainView === "facility") {
+              if (pendingFacilityOrderAlert || pendingFacilityOrderIssueAlert) {
+                clearFacilitySidebarAlerts();
+                renderOrderPanels({ force: true });
+              }
+              return;
+            }
+            showSidebarFacilityView();
           });
         }
         if (bMbInv) {
