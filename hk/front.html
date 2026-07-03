@@ -1286,9 +1286,11 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      max-height: 100%;
       overflow-x: hidden;
       overflow-y: auto;
       align-self: stretch;
+      -webkit-overflow-scrolling: touch;
     }
 
     .sidebar-brand {
@@ -3781,25 +3783,53 @@
     }
 
     .sidebar-section--zones {
-      flex: 1;
-      min-height: 0;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
       border-top: 1px solid var(--border);
       border-bottom: none;
     }
 
-    .sidebar-section--zones .sidebar-title {
+    .sidebar-section--zones.is-collapsed .sidebar-nav--zones {
+      display: none;
+    }
+
+    .sidebar-section__toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      width: 100%;
+      margin: 0;
+      padding: 8px 10px 6px;
+      font: inherit;
+      font-weight: 800;
+      font-size: 0.8125rem;
+      color: var(--accent);
+      text-align: left;
+      background: transparent;
+      border: none;
+      cursor: pointer;
       flex-shrink: 0;
-      padding-top: 8px;
+    }
+
+    .sidebar-section__toggle:hover {
+      background: var(--hover-bg);
+    }
+
+    .sidebar-section__toggle-label {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sidebar-section__toggle-hint {
+      flex-shrink: 0;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
     .sidebar-section--zones .sidebar-nav--zones {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
       gap: 4px;
       padding-bottom: 8px;
     }
@@ -6027,8 +6057,17 @@
           </button>
         </div>
       </nav>
-      <nav class="sidebar-section sidebar-section--zones" aria-label="특이객실 선택">
-        <div class="sidebar-title">특이객실</div>
+      <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
+        <button
+          type="button"
+          class="sidebar-section__toggle"
+          id="sidebarZonesToggle"
+          aria-expanded="false"
+          aria-controls="sidebarZoneNav"
+        >
+          <span class="sidebar-section__toggle-label">특이객실</span>
+          <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
+        </button>
         <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
         </div>
       </nav>
@@ -8597,6 +8636,27 @@
         return document.querySelectorAll("#sidebarZoneNav .zone-tab");
       }
 
+      function syncSidebarZonesCollapseUi() {
+        var section = document.querySelector(".sidebar-section--zones");
+        var toggle = document.getElementById("sidebarZonesToggle");
+        if (!section || !toggle) return;
+        var collapsed = section.classList.contains("is-collapsed");
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        var hint = toggle.querySelector(".sidebar-section__toggle-hint");
+        if (hint) hint.textContent = collapsed ? "펼치기" : "접기";
+      }
+
+      function setSidebarZonesCollapsed(collapsed) {
+        var section = document.querySelector(".sidebar-section--zones");
+        if (!section) return;
+        section.classList.toggle("is-collapsed", !!collapsed);
+        syncSidebarZonesCollapseUi();
+      }
+
+      function expandSidebarZonesSection() {
+        setSidebarZonesCollapsed(false);
+      }
+
       function renderSidebarZoneTabs() {
         var nav = document.getElementById("sidebarZoneNav");
         if (!nav || typeof HKStorage.getZoneOrder !== "function") return;
@@ -8622,6 +8682,8 @@
           if (pendingZoneAlerts[zoneId]) btn.classList.add("is-change-alert");
           nav.appendChild(btn);
         });
+        if (activeZone) expandSidebarZonesSection();
+        else syncSidebarZonesCollapseUi();
       }
 
       var zoneRoomManageOpen = false;
@@ -9163,6 +9225,7 @@
 
       function activateZoneTab(tab) {
         if (!tab) return;
+        expandSidebarZonesSection();
         var z = tab.getAttribute("data-zone");
         getZoneTabs().forEach(function (t) {
           t.classList.toggle("active", t === tab);
@@ -16497,6 +16560,15 @@
       }
 
       var sidebarZoneNav = document.getElementById("sidebarZoneNav");
+      var sidebarZonesToggle = document.getElementById("sidebarZonesToggle");
+      if (sidebarZonesToggle) {
+        sidebarZonesToggle.addEventListener("click", function () {
+          var section = document.querySelector(".sidebar-section--zones");
+          if (!section) return;
+          section.classList.toggle("is-collapsed");
+          syncSidebarZonesCollapseUi();
+        });
+      }
       if (sidebarZoneNav) {
         sidebarZoneNav.addEventListener("click", function (e) {
           var tab = e.target.closest(".zone-tab");
