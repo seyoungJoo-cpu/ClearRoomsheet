@@ -2942,14 +2942,18 @@
       display: none !important;
     }
 
+    .sidebar-section--front {
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      flex-shrink: 0;
+    }
+
     .sidebar-section--front .sidebar-title {
       color: #0f766e;
     }
 
     .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active,
-    .sidebar .sidebar-nav__btn#sidebarBtnDd.is-active,
-    .sidebar .sidebar-nav__btn#sidebarBtnInven.is-active,
-    .sidebar .sidebar-nav__btn#sidebarBtnChichi.is-active {
+    .sidebar .sidebar-nav__btn#sidebarBtnFrontEmbed.is-active {
       background: #0f766e;
       border-color: #0f766e;
       color: #fff;
@@ -3716,6 +3720,52 @@
       color: var(--text-muted);
     }
 
+    .front-embed-hub {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .front-embed-hub[hidden] {
+      display: none !important;
+    }
+
+    .front-embed-hub__tabs {
+      margin: 0 0 10px;
+      padding: 0;
+      border: none;
+      text-align: left;
+    }
+
+    .front-embed-hub__body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .front-embed-hub .front-embed-panel {
+      flex: 1;
+      min-height: 0;
+      margin-bottom: 0;
+      max-height: none;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .front-embed-hub .front-embed-panel__frame {
+      min-height: min(560px, calc(100vh - 220px));
+    }
+
     .front-embed-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -4184,9 +4234,7 @@
     }
 
     .main.main--front #frontChatPanel,
-    .main.main--dd #ddEmbedPanel,
-    .main.main--inven #invenEmbedPanel,
-    .main.main--chichi #chichiEmbedPanel {
+    .main.main--front-embed #frontEmbedHubPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -6009,27 +6057,11 @@
           </button>
           <button
             type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnDd"
+            class="sidebar-nav__btn sidebar-nav__btn--multiline"
+            id="sidebarBtnFrontEmbed"
             aria-pressed="false"
           >
-            DD
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnInven"
-            aria-pressed="false"
-          >
-            인벤
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--compact"
-            id="sidebarBtnChichi"
-            aria-pressed="false"
-          >
-            고객취향확인
+            DD·인벤·취향
           </button>
         </div>
       </nav>
@@ -6061,6 +6093,42 @@
         </form>
       </section>
 
+      <section class="front-embed-hub" id="frontEmbedHubPanel" hidden aria-label="DD·인벤·고객취향">
+        <div
+          class="facility-log-tabs front-embed-hub__tabs"
+          id="frontEmbedTabs"
+          role="tablist"
+          aria-label="DD·인벤·고객취향 구분"
+        >
+          <button
+            type="button"
+            class="facility-log-tab is-active"
+            data-embed-tab="dd"
+            role="tab"
+            aria-selected="true"
+          >
+            DD
+          </button>
+          <button
+            type="button"
+            class="facility-log-tab"
+            data-embed-tab="inven"
+            role="tab"
+            aria-selected="false"
+          >
+            인벤
+          </button>
+          <button
+            type="button"
+            class="facility-log-tab"
+            data-embed-tab="chichi"
+            role="tab"
+            aria-selected="false"
+          >
+            고객취향확인
+          </button>
+        </div>
+        <div class="front-embed-hub__body">
       <section class="front-embed-panel" id="ddEmbedPanel" hidden aria-label="DD">
         <iframe
           class="front-embed-panel__frame"
@@ -6089,6 +6157,8 @@
           src="/chichi/index.HTML?embed=hkFront"
           loading="eager"
         ></iframe>
+      </section>
+        </div>
       </section>
 
       <section class="ai-mode-panel" id="aiModePanel" hidden aria-labelledby="aiModePanelTitle">
@@ -6982,6 +7052,7 @@
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
       var sidebarMainView = "request";
+      var frontEmbedTab = "dd";
       var aiOrdersScope = "all";
       var requestLogEntries = [];
       var orderLogEntries = [];
@@ -10335,9 +10406,7 @@
         var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
         var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
         var frontNav = document.getElementById("sidebarBtnFront");
-        var ddNav = document.getElementById("sidebarBtnDd");
-        var invenNav = document.getElementById("sidebarBtnInven");
-        var chichiNav = document.getElementById("sidebarBtnChichi");
+        var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var aiNav = document.getElementById("sidebarBtnAi");
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
@@ -10387,17 +10456,12 @@
           frontNav.classList.toggle("is-active", sidebarMainView === "front");
           frontNav.setAttribute("aria-pressed", sidebarMainView === "front" ? "true" : "false");
         }
-        if (ddNav) {
-          ddNav.classList.toggle("is-active", sidebarMainView === "dd");
-          ddNav.setAttribute("aria-pressed", sidebarMainView === "dd" ? "true" : "false");
-        }
-        if (invenNav) {
-          invenNav.classList.toggle("is-active", sidebarMainView === "inven");
-          invenNav.setAttribute("aria-pressed", sidebarMainView === "inven" ? "true" : "false");
-        }
-        if (chichiNav) {
-          chichiNav.classList.toggle("is-active", sidebarMainView === "chichi");
-          chichiNav.setAttribute("aria-pressed", sidebarMainView === "chichi" ? "true" : "false");
+        if (frontEmbedNav) {
+          frontEmbedNav.classList.toggle("is-active", sidebarMainView === "frontEmbed");
+          frontEmbedNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "frontEmbed" ? "true" : "false"
+          );
         }
         if (aiNav) {
           aiNav.classList.toggle("is-active", sidebarMainView === "ai");
@@ -10422,9 +10486,7 @@
         var showMbCheck = view === "mbCheck";
         var showInvenNotify = view === "invenNotify";
         var showFront = view === "front";
-        var showDd = view === "dd";
-        var showInven = view === "inven";
-        var showChichi = view === "chichi";
+        var showFrontEmbed = view === "frontEmbed";
         var showAi = view === "ai";
         var showZone = view === "zone";
         var reqPanel = document.querySelector(".request-panel");
@@ -10438,9 +10500,7 @@
         var mbCheckPanel = document.getElementById("mbCheckPanel");
         var invenNotifyPanel = document.getElementById("invenNotifyPanel");
         var frontChatPanel = document.getElementById("frontChatPanel");
-        var ddEmbedPanel = document.getElementById("ddEmbedPanel");
-        var invenEmbedPanel = document.getElementById("invenEmbedPanel");
-        var chichiEmbedPanel = document.getElementById("chichiEmbedPanel");
+        var frontEmbedHubPanel = document.getElementById("frontEmbedHubPanel");
         var aiModePanel = document.getElementById("aiModePanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var mainEl = document.querySelector(".main");
@@ -10455,9 +10515,8 @@
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
         if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
-        if (ddEmbedPanel) ddEmbedPanel.hidden = !showDd || !frontMode;
-        if (invenEmbedPanel) invenEmbedPanel.hidden = !showInven || !frontMode;
-        if (chichiEmbedPanel) chichiEmbedPanel.hidden = !showChichi || !frontMode;
+        if (frontEmbedHubPanel) frontEmbedHubPanel.hidden = !showFrontEmbed || !frontMode;
+        syncFrontEmbedTabUi();
         if (aiModePanel) aiModePanel.hidden = !showAi;
         if (!showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
@@ -10471,9 +10530,7 @@
           mainEl.classList.toggle("main--mb-check", showMbCheck);
           mainEl.classList.toggle("main--inven-notify", showInvenNotify);
           mainEl.classList.toggle("main--front", showFront);
-          mainEl.classList.toggle("main--dd", showDd);
-          mainEl.classList.toggle("main--inven", showInven);
-          mainEl.classList.toggle("main--chichi", showChichi);
+          mainEl.classList.toggle("main--front-embed", showFrontEmbed);
           mainEl.classList.toggle("main--ai", showAi);
         }
         var feedbackColumn = document.getElementById("feedbackColumn");
@@ -12394,38 +12451,41 @@
         applySidebarMainView("invenNotify");
       }
 
+      function syncFrontEmbedTabUi() {
+        var showHub = sidebarMainView === "frontEmbed" && frontMode;
+        document.querySelectorAll("#frontEmbedTabs .facility-log-tab").forEach(function (btn) {
+          var tab = btn.getAttribute("data-embed-tab");
+          btn.classList.toggle("is-active", tab === frontEmbedTab);
+          btn.setAttribute("aria-selected", tab === frontEmbedTab ? "true" : "false");
+        });
+        var ddEmbedPanel = document.getElementById("ddEmbedPanel");
+        var invenEmbedPanel = document.getElementById("invenEmbedPanel");
+        var chichiEmbedPanel = document.getElementById("chichiEmbedPanel");
+        if (ddEmbedPanel) ddEmbedPanel.hidden = !showHub || frontEmbedTab !== "dd";
+        if (invenEmbedPanel) invenEmbedPanel.hidden = !showHub || frontEmbedTab !== "inven";
+        if (chichiEmbedPanel) chichiEmbedPanel.hidden = !showHub || frontEmbedTab !== "chichi";
+      }
+
+      function applyFrontEmbedTab(tab) {
+        if (tab === "dd" || tab === "inven" || tab === "chichi") frontEmbedTab = tab;
+        syncFrontEmbedTabUi();
+      }
+
+      function showSidebarFrontEmbedView(tab) {
+        if (!frontMode) return;
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        hideFrontChatToast();
+        clearFrontChatSidebarAlert();
+        if (tab) applyFrontEmbedTab(tab);
+        applySidebarMainView("frontEmbed");
+      }
+
       function showSidebarFrontView() {
         if (!frontMode) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("front");
-      }
-
-      function showSidebarDdView() {
-        if (!frontMode) return;
-        collapseZoneBlock();
-        clearZoneTabSelection();
-        hideFrontChatToast();
-        clearFrontChatSidebarAlert();
-        applySidebarMainView("dd");
-      }
-
-      function showSidebarInvenView() {
-        if (!frontMode) return;
-        collapseZoneBlock();
-        clearZoneTabSelection();
-        hideFrontChatToast();
-        clearFrontChatSidebarAlert();
-        applySidebarMainView("inven");
-      }
-
-      function showSidebarChichiView() {
-        if (!frontMode) return;
-        collapseZoneBlock();
-        clearZoneTabSelection();
-        hideFrontChatToast();
-        clearFrontChatSidebarAlert();
-        applySidebarMainView("chichi");
       }
 
       function showSidebarAiView() {
@@ -15834,20 +15894,13 @@
         applyFacilityLogSidebarUi();
         if (
           !frontMode &&
-          (sidebarMainView === "front" ||
-            sidebarMainView === "dd" ||
-            sidebarMainView === "inven" ||
-            sidebarMainView === "chichi")
+          (sidebarMainView === "front" || sidebarMainView === "frontEmbed")
         ) {
           showSidebarRequestView();
         } else if (sidebarMainView === "front") {
           applySidebarMainView("front");
-        } else if (sidebarMainView === "dd") {
-          applySidebarMainView("dd");
-        } else if (sidebarMainView === "inven") {
-          applySidebarMainView("inven");
-        } else if (sidebarMainView === "chichi") {
-          applySidebarMainView("chichi");
+        } else if (sidebarMainView === "frontEmbed") {
+          applySidebarMainView("frontEmbed");
         }
         if (!frontMode) hideFrontChatToast();
         if (!frontMode) clearFrontChatSidebarAlert();
@@ -17213,9 +17266,7 @@
         var bMbCheck = document.getElementById("sidebarBtnMbCheck");
         var bInvenNotify = document.getElementById("sidebarBtnInvenNotify");
         var bFront = document.getElementById("sidebarBtnFront");
-        var bDd = document.getElementById("sidebarBtnDd");
-        var bInven = document.getElementById("sidebarBtnInven");
-        var bChichi = document.getElementById("sidebarBtnChichi");
+        var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
         var bAi = document.getElementById("sidebarBtnAi");
         if (bReq) {
           bReq.addEventListener("click", function () {
@@ -17300,27 +17351,24 @@
             showSidebarFrontView();
           });
         }
-        if (bDd) {
-          bDd.addEventListener("click", function () {
+        if (bFrontEmbed) {
+          bFrontEmbed.addEventListener("click", function () {
             if (!frontMode) return;
-            if (sidebarMainView === "dd") return;
-            showSidebarDdView();
+            if (sidebarMainView === "frontEmbed") return;
+            showSidebarFrontEmbedView();
           });
         }
-        if (bInven) {
-          bInven.addEventListener("click", function () {
+        document.querySelectorAll("#frontEmbedTabs .facility-log-tab").forEach(function (btn) {
+          btn.addEventListener("click", function () {
             if (!frontMode) return;
-            if (sidebarMainView === "inven") return;
-            showSidebarInvenView();
+            var tab = btn.getAttribute("data-embed-tab");
+            if (sidebarMainView !== "frontEmbed") {
+              showSidebarFrontEmbedView(tab);
+              return;
+            }
+            applyFrontEmbedTab(tab);
           });
-        }
-        if (bChichi) {
-          bChichi.addEventListener("click", function () {
-            if (!frontMode) return;
-            if (sidebarMainView === "chichi") return;
-            showSidebarChichiView();
-          });
-        }
+        });
         if (bAi) {
           bAi.addEventListener("click", function () {
             if (sidebarMainView === "ai") return;
