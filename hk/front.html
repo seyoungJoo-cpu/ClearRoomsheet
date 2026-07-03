@@ -2540,14 +2540,19 @@
     }
 
     .order-work-list--deployed {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      align-items: start;
+    }
+
+    .order-work-list--deployed .order-work-item {
+      width: 100%;
+      max-width: 140px;
     }
 
     .order-work-list--deployed .order-work-item.is-chat-open {
-      width: 100%;
-      max-width: 260px;
+      max-width: 220px;
     }
 
     .order-work-item--deployed.is-chat-toggle {
