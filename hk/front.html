@@ -1300,6 +1300,19 @@
 
     .sidebar-section--primary .sidebar-nav {
       padding-top: 6px;
+      padding-bottom: 8px;
+    }
+
+    .sidebar-section--primary {
+      flex-shrink: 0;
+    }
+
+    .sidebar-nav__btn--multiline {
+      white-space: normal;
+      line-height: 1.3;
+      font-size: 0.72rem;
+      padding-top: 7px;
+      padding-bottom: 7px;
     }
 
     .sidebar-section {
@@ -3714,15 +3727,33 @@
     .sidebar-section--zones {
       flex: 1;
       min-height: 0;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
     }
 
-    .sidebar-section--zones {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin: 0 0 12px;
+    .sidebar-section--zones .sidebar-title {
+      flex-shrink: 0;
+      padding-top: 8px;
+    }
+
+    .sidebar-section--zones .sidebar-nav--zones {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      gap: 4px;
+      padding-bottom: 8px;
+    }
+
+    .sidebar-section--zones .sidebar-nav__btn.zone-tab {
+      width: 100%;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .facility-log-toolbar__status {
@@ -5464,15 +5495,16 @@
       }
 
       .sidebar-section--zones .sidebar-nav--zones {
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: column;
+        flex-wrap: nowrap;
       }
 
       .sidebar-section--zones .sidebar-nav__btn.zone-tab {
-        flex: 1 1 calc(33.33% - 6px);
-        min-height: 44px;
-        padding: 10px 8px;
-        text-align: center;
+        flex: 0 0 auto;
+        width: 100%;
+        min-height: 40px;
+        padding: 8px 10px;
+        text-align: left;
       }
 
       .zone-block__collapse {
@@ -5872,7 +5904,7 @@
           <hr class="sidebar-nav__rule" id="sidebarFacilityLogRule" hidden />
           <button
             type="button"
-            class="sidebar-nav__btn"
+            class="sidebar-nav__btn sidebar-nav__btn--multiline"
             id="sidebarBtnFacilityMisc"
             aria-pressed="false"
             hidden
@@ -5888,10 +5920,6 @@
           >
             당일습득물
           </button>
-        </div>
-      </nav>
-      <nav class="sidebar-section sidebar-section--primary sidebar-section--primary-tail" aria-label="House Keeping 메뉴 하단">
-        <div class="sidebar-nav">
           <button
             type="button"
             class="sidebar-nav__btn sidebar-nav__btn--compact"
