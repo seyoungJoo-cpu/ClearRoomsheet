@@ -8442,9 +8442,25 @@
         renderRoomsForZone(z);
       }
 
+      function dismissAllRoomAlertsInZone(zone) {
+        if (!zone) return;
+        var data = HKStorage.load();
+        var seen = {};
+        (data.rooms[zone] || []).forEach(function (r) {
+          if (!r || !r.number) return;
+          var num = String(r.number);
+          if (seen[num]) return;
+          seen[num] = true;
+          dismissRoomFlash(zone, num);
+        });
+      }
+
       function handleZoneTabClick(tab) {
         if (!tab) return;
         var z = tab.getAttribute("data-zone");
+        if (tab.classList.contains("is-change-alert")) {
+          dismissAllRoomAlertsInZone(z);
+        }
         var wasActive = tab.classList.contains("active");
         var block = document.getElementById("zoneBlock");
         var isExpanded = block && !block.classList.contains("is-collapsed");
@@ -13883,6 +13899,10 @@
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
           li.title = historyOpen ? "변경 히스토리 접기" : "변경 히스토리 보기";
+        } else if (roomPending) {
+          li.setAttribute("role", "button");
+          li.setAttribute("tabindex", "0");
+          li.title = "변경 알림 · 클릭하면 강조 해제";
         } else if (maintenanceMode && !cardOpts.trayMode) {
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
@@ -14721,60 +14741,61 @@
         return true;
       }
 
-      if (roomList) {
-        roomList.addEventListener("click", function (e) {
-          if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
-          if (e.target.closest(".room-time-editor")) return;
-          if (e.target.closest(".room-memo2-editor")) return;
+      function handleZoneRoomListPointerDown(e, allowMaintenanceActions) {
+        if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
+        if (e.target.closest(".room-time-editor") || e.target.closest(".room-memo2-editor")) return;
+        if (e.target.closest("#zoneRoomManagePanel")) return;
 
-          var alertCard = e.target.closest(".room-card.is-change-alert");
-          if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return;
+        var alertCard = e.target.closest(".room-card.is-change-alert");
+        if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return true;
 
-          var histCard = e.target.closest(".room-card.is-history-toggle");
-          if (histCard && handleRoomHistoryToggle(histCard, e)) return;
+        var histCard = e.target.closest(".room-card.is-history-toggle");
+        if (histCard && handleRoomHistoryToggle(histCard, e)) return true;
 
-          if (!maintenanceMode) return;
+        if (!allowMaintenanceActions || !maintenanceMode) return false;
 
-          var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
-          if (m2block) {
-            var cardM = m2block.closest(".room-card");
-            if (!cardM) return;
-            var ixM = parseInt(cardM.getAttribute("data-room-index"), 10);
-            if (isNaN(ixM)) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openMemo2Editor(cardM, getActiveZone(), ixM);
-            return;
-          }
-
-          var card = e.target.closest(".room-card.is-clickable");
-          if (!card) return;
-          if (card.querySelector(".room-time-editor")) return;
-          var ix = parseInt(card.getAttribute("data-room-index"), 10);
-          if (isNaN(ix)) return;
-          openTimeEditor(card, getActiveZone(), ix);
+        var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
+        if (m2block) {
+          var cardM = m2block.closest(".room-card");
+          if (!cardM) return false;
+          var ixM = parseInt(cardM.getAttribute("data-room-index"), 10);
+          if (isNaN(ixM)) return false;
           e.preventDefault();
           e.stopPropagation();
+          openMemo2Editor(cardM, getActiveZone(), ixM);
+          return true;
+        }
+
+        var card = e.target.closest(".room-card.is-clickable");
+        if (!card || card.querySelector(".room-time-editor")) return false;
+        var ix = parseInt(card.getAttribute("data-room-index"), 10);
+        if (isNaN(ix)) return false;
+        e.preventDefault();
+        e.stopPropagation();
+        openTimeEditor(card, getActiveZone(), ix);
+        return true;
+      }
+
+      var zoneBlockBody = document.getElementById("zoneBlockBody");
+      if (zoneBlockBody) {
+        zoneBlockBody.addEventListener("click", function (e) {
+          handleZoneRoomListPointerDown(e, false);
+        });
+        zoneBlockBody.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          if (e.target.closest(".room-memo2-editor")) return;
+          handleZoneRoomListPointerDown(e, false);
+        });
+      }
+
+      if (roomList) {
+        roomList.addEventListener("click", function (e) {
+          if (handleZoneRoomListPointerDown(e, true)) return;
         });
 
         roomList.addEventListener("keydown", function (e) {
           if (e.key !== "Enter" && e.key !== " ") return;
-          if (e.target.closest(".room-memo2-editor")) return;
-
-          var alertCard = e.target.closest(".room-card.is-change-alert");
-          if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return;
-
-          var histCard = e.target.closest(".room-card.is-history-toggle");
-          if (histCard && handleRoomHistoryToggle(histCard, e)) return;
-
-          if (!maintenanceMode) return;
-          var card = e.target.closest(".room-card.is-clickable");
-          if (!card) return;
-          if (card.querySelector(".room-time-editor")) return;
-          var ix = parseInt(card.getAttribute("data-room-index"), 10);
-          if (isNaN(ix)) return;
-          e.preventDefault();
-          openTimeEditor(card, getActiveZone(), ix);
+          handleZoneRoomListPointerDown(e, true);
         });
       }
 
