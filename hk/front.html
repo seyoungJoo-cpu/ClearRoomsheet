@@ -6596,8 +6596,12 @@
 
       function hasOpenHkEditors() {
         return !!document.querySelector(
-          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .front-chat__msg-edit"
+          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .order-feedback__memo-editor-wrap, .front-chat__msg-edit"
         );
+      }
+
+      function isRegularOrder(entry) {
+        return entry && !isFacilityOrder(entry);
       }
 
       function isZoneRoomManageEditing() {
@@ -12054,6 +12058,101 @@
         return null;
       }
 
+      function openFacilityOrderMemoEditor(orderId) {
+        if (!maintenanceMode) return;
+        var entry = findOrderEntry(orderId);
+        if (!entry || !isFacilityOrder(entry) || getOrderPhase(entry) !== "alert") return;
+        var li = document.querySelector(
+          '#facilityFeedbackList .order-feedback__item[data-order-id="' + orderId + '"]'
+        );
+        if (!li) return;
+        var oldWrap = li.querySelector(".order-feedback__memo-editor-wrap");
+        if (oldWrap) {
+          oldWrap.remove();
+          li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
+            function (b) {
+              b.style.visibility = "";
+            }
+          );
+          return;
+        }
+        document.querySelectorAll(".order-feedback__memo-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document
+          .querySelectorAll("#facilityFeedbackList .order-feedback__memo-btn, #facilityFeedbackList .order-feedback__accept-btn")
+          .forEach(function (b) {
+            b.style.visibility = "";
+          });
+        var memoEditKey = "facilityOrderMemoEdit:" + orderId;
+        hkClearPhoto(memoEditKey);
+        if (entry.memoImage) hkSetPhotoPreview(memoEditKey, entry.memoImage);
+        li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
+          function (b) {
+            b.style.visibility = "hidden";
+          }
+        );
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__memo-editor-wrap order-feedback__memo-editor-wrap";
+        var ed = document.createElement("div");
+        ed.className = "request-feedback__memo-editor";
+        var ta = document.createElement("textarea");
+        ta.setAttribute("aria-label", "시설 오더 메모");
+        ta.placeholder = "시설 오더 메모를 입력하세요.";
+        ta.value = entry.memo != null ? String(entry.memo) : "";
+        var act = document.createElement("div");
+        act.className = "request-feedback__memo-editor-actions";
+        var ok = document.createElement("button");
+        ok.type = "button";
+        ok.className = "request-feedback__memo-save";
+        ok.textContent = "적용";
+        var cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "취소";
+        act.appendChild(ok);
+        act.appendChild(cancel);
+        act.appendChild(hkCreatePhotoButton(memoEditKey));
+        ed.appendChild(ta);
+        ed.appendChild(act);
+        wrap.appendChild(ed);
+        wrap.appendChild(hkCreatePhotoPreview(memoEditKey));
+        li.appendChild(wrap);
+        hkBindPhotoPaste(ta, memoEditKey);
+
+        function done() {
+          hkClearPhoto(memoEditKey);
+          li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
+            function (b) {
+              b.style.visibility = "";
+            }
+          );
+          wrap.remove();
+          renderOrderPanels({ force: true });
+        }
+
+        ok.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          entry.memo = String(ta.value || "").trim();
+          entry.memoImage = hkGetPhoto(memoEditKey) || "";
+          saveOrderLog();
+          done();
+        });
+        cancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          done();
+        });
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") {
+            ev.preventDefault();
+            cancel.click();
+          }
+        });
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+        ta.focus();
+      }
+
       function initOrderIssueTracking() {
         knownOrderIssueIds = {};
         knownOrderAlertIds = {};
@@ -12379,8 +12478,7 @@
           if (sidebarMainView !== "facility") {
             pendingFacilityOrderIssueAlert = true;
           }
-        }
-        if (sidebarMainView !== "order") {
+        } else if (sidebarMainView !== "order") {
           pendingOrderIssueAlert = true;
           applyOrderSidebarAlertUi();
         } else {
@@ -12401,8 +12499,7 @@
           if (sidebarMainView !== "facility") {
             pendingFacilityOrderAlert = true;
           }
-        }
-        if (sidebarMainView !== "order") {
+        } else if (sidebarMainView !== "order") {
           pendingOrderAlert = true;
         }
         applyOrderSidebarAlertUi();
@@ -12901,7 +12998,7 @@
         if (frontMode) {
           if (!entry.fromMaint) return;
         } else if (maintenanceMode) {
-          if (entry.fromMaint) return;
+          if (entry.fromMaint && !isFacilityOrder(entry)) return;
         } else {
           return;
         }
@@ -13102,9 +13199,7 @@
 
       function renderOrderWorkPanels(opts) {
         opts = opts || {};
-        renderOrderWorkPanelBundle("order", function () {
-          return true;
-        }, opts);
+        renderOrderWorkPanelBundle("order", isRegularOrder, opts);
         renderOrderWorkPanelBundle("facility", isFacilityOrder, opts);
       }
 
@@ -13366,7 +13461,7 @@
             li.appendChild(frontAcceptActs);
           }
 
-          if (maintenanceMode && !entry.fromMaint) {
+          if (maintenanceMode && (!entry.fromMaint || isFacilityOrder(entry))) {
             var maintAcceptActs = document.createElement("div");
             maintAcceptActs.className = "order-feedback__maint-actions";
             var maintAcceptBtn = document.createElement("button");
@@ -13375,6 +13470,19 @@
             maintAcceptBtn.setAttribute("data-order-id", entry.id || "");
             maintAcceptBtn.textContent = "접수";
             maintAcceptActs.appendChild(maintAcceptBtn);
+            if (isFacilityOrder(entry)) {
+              var memoStrFac = entry.memo != null ? String(entry.memo).trim() : "";
+              var facilityMemoBtn = document.createElement("button");
+              facilityMemoBtn.type = "button";
+              facilityMemoBtn.className = "request-feedback__memo-btn order-feedback__memo-btn";
+              facilityMemoBtn.setAttribute("data-order-id", entry.id || "");
+              facilityMemoBtn.textContent = memoStrFac ? "메모 수정" : "메모 입력";
+              facilityMemoBtn.setAttribute(
+                "aria-label",
+                memoStrFac ? "시설 오더 메모 수정" : "시설 오더 메모 입력"
+              );
+              maintAcceptActs.appendChild(facilityMemoBtn);
+            }
             li.appendChild(maintAcceptActs);
           }
 
@@ -13397,9 +13505,7 @@
       }
 
       function renderOrderLogPanel(opts) {
-        renderOrderAlertFeedbackPanel("orderFeedbackList", "orderFeedbackEmpty", function () {
-          return true;
-        }, opts);
+        renderOrderAlertFeedbackPanel("orderFeedbackList", "orderFeedbackEmpty", isRegularOrder, opts);
       }
 
       function renderFacilityOrderLogPanel(opts) {
@@ -15620,8 +15726,9 @@
         knownOrderAlertIds[id] = true;
         if (isFacilityOrder(orderLogEntries[0])) {
           if (sidebarMainView !== "facility") pendingFacilityOrderAlert = true;
+        } else if (sidebarMainView !== "order") {
+          pendingOrderAlert = true;
         }
-        if (sidebarMainView !== "order") pendingOrderAlert = true;
         applyOrderSidebarAlertUi();
         hkClearPhoto(extra.photoKey || "orderMemo");
         saveOrderLog();
@@ -15885,12 +15992,22 @@
             return;
           }
           var acceptBtn = e.target.closest(".order-feedback__accept-btn");
-          if (!acceptBtn) return;
-          if (!maintenanceMode && !frontMode) return;
-          e.preventDefault();
-          e.stopPropagation();
-          var orderId = acceptBtn.getAttribute("data-order-id");
-          if (orderId) acceptOrderEntry(orderId);
+          if (acceptBtn) {
+            if (!maintenanceMode && !frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var orderId = acceptBtn.getAttribute("data-order-id");
+            if (orderId) acceptOrderEntry(orderId);
+            return;
+          }
+          var orderMemoBtn = e.target.closest(".order-feedback__memo-btn");
+          if (orderMemoBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var memoOrderId = orderMemoBtn.getAttribute("data-order-id");
+            if (memoOrderId) openFacilityOrderMemoEditor(memoOrderId);
+          }
         });
       }
 
