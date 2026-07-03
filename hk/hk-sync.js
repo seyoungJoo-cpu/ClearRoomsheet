@@ -626,8 +626,17 @@
   function applyRemotePayload(payload) {
     if (!payload || typeof payload !== "object") return;
     lastServerPayload = Object.assign({}, lastServerPayload || {}, payload);
-    applyCloseDayMarker(payload);
     var changed = [];
+    var prevCloseDayAt = "";
+    try {
+      prevCloseDayAt = global.localStorage.getItem(CLOSE_DAY_KEY) || "";
+    } catch (e) {}
+    if (payload.hkCloseDayAt) {
+      applyCloseDayMarker(payload);
+      if (String(payload.hkCloseDayAt) !== prevCloseDayAt) {
+        changed.push("hkCloseDayAt");
+      }
+    }
     isApplyingRemote = true;
 
     if (payload.hkStorage && global.HKStorage) {

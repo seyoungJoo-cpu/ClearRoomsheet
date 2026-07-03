@@ -350,9 +350,13 @@
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNoticeImages")) {
       merged.mbInvNoticeImages = base.mbInvNoticeImages;
     }
-    if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
-      merged.invenNotify = incoming.invenNotify;
-    } else if (!Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
+    if (Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
+      if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
+        merged.invenNotify = incoming.invenNotify;
+      } else {
+        merged.invenNotify = null;
+      }
+    } else {
       merged.invenNotify = base.invenNotify;
     }
     if (incoming.zoneMemos && typeof incoming.zoneMemos === "object") {

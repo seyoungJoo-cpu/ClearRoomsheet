@@ -255,6 +255,25 @@
     updateToolbarHint();
   }
 
+  function resetOnCloseDay() {
+    clearDraftLocal();
+    state = cloneState(defaultInvenNotify());
+    draftDirty = false;
+    sortState = { col: null, dir: null };
+    undoStack = [];
+    cellEditUndoKey = null;
+    clearSelection();
+    if (ensureUi()) {
+      if (els.tableWrap) {
+        els.tableWrap.classList.remove("inven-notify-table-wrap--draft");
+      }
+      renderTable();
+      updateSaveButton();
+      updateToolbarHint();
+      updateEmpty();
+    }
+  }
+
   function resetInvenTable() {
     if (!isFrontModeActive()) return;
     if (
@@ -1419,6 +1438,7 @@
     exportFlatRows: exportFlatRows,
     exportCloseDayRows: exportCloseDayRows,
     importInvenTable: importInvenTable,
+    resetOnCloseDay: resetOnCloseDay,
     isDraftDirty: function () {
       return draftDirty;
     },

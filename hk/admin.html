@@ -2871,6 +2871,9 @@
             hkChangeLog: [],
             hkLastRoomChange: null,
           }).finally(function () {
+            if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
+              HKInvenNotify.resetOnCloseDay();
+            }
             refresh();
             toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
           });
@@ -2878,6 +2881,9 @@
         }
 
         HKStorage.save(resetStorage, { skipSync: true });
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
+          HKInvenNotify.resetOnCloseDay();
+        }
         refresh();
         toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
       }

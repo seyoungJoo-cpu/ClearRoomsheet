@@ -1625,6 +1625,19 @@
       box-sizing: border-box;
     }
 
+    .zone-room-manage-panel .add-stack textarea.af-num {
+      width: 100%;
+      min-height: 52px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+      box-sizing: border-box;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
     .zone-room-manage-panel .rc-num-pair {
       display: flex;
       flex-direction: column;
@@ -7634,6 +7647,13 @@
             HKInvenNotify.render();
           }
         }
+        if (changed.indexOf("hkCloseDayAt") >= 0) {
+          handleCloseDayFromSync(payload);
+          refreshMain({ detectNoticeChange: true });
+          if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.render) {
+            HKInvenNotify.render(true);
+          }
+        }
         if (changed.indexOf("hkChangeLog") >= 0) {
           if (!getRoomChangeLogEntries().length) {
             clearAllChangeAlerts();
@@ -7897,7 +7917,7 @@
         var seen = {};
         var out = [];
         String(raw || "")
-          .split(/[,，]/)
+          .split(/[,，\s]+/)
           .forEach(function (part) {
             var n = part.trim();
             if (!n || seen[n]) return;
@@ -7905,6 +7925,36 @@
             out.push(n);
           });
         return out;
+      }
+
+      var FRONT_EMBED_STATE_KEYS = [
+        "hk-dd-embed-state-v1",
+        "hk-inven-embed-state-v1",
+        "hk-chichi-embed-state-v1",
+      ];
+
+      function resetFrontEmbedPanelsOnCloseDay() {
+        FRONT_EMBED_STATE_KEYS.forEach(function (key) {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {}
+        });
+        ["ddEmbedFrame", "invenEmbedFrame", "chichiEmbedFrame"].forEach(function (id) {
+          var frame = document.getElementById(id);
+          if (!frame) return;
+          var src = frame.getAttribute("src") || frame.src || "";
+          if (!src) return;
+          frame.src = "about:blank";
+          frame.src = src;
+        });
+      }
+
+      function handleCloseDayFromSync(payload) {
+        if (!payload || !payload.hkCloseDayAt) return;
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
+          HKInvenNotify.resetOnCloseDay();
+        }
+        resetFrontEmbedPanelsOnCloseDay();
       }
 
       function buildRoomChangeLines(prev, next) {
@@ -8013,7 +8063,7 @@
           var numInput = document.createElement("input");
           numInput.type = "text";
           numInput.className = "af-num";
-          numInput.placeholder = "객실번호 (예: 201,202)";
+          numInput.placeholder = "객실번호 (쉼표·공백·줄바꿈으로 여러 개)";
           numInput.autocomplete = "off";
           stack.appendChild(numInput);
         }
