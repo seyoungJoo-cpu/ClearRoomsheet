@@ -1313,6 +1313,7 @@
       function formatOrderPhaseLabel(phase) {
         var p = phase != null ? String(phase).trim() : "alert";
         if (p === "accepted") return "접수";
+        if (p === "deployed") return "투입완료";
         if (p === "issue") return "문제발생";
         if (p === "cancelled") return "취소";
         return "알림";

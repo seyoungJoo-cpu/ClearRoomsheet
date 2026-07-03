@@ -2512,6 +2512,10 @@
       color: #64748b;
     }
 
+    .order-work-section--deployed .order-work-section__title {
+      color: #047857;
+    }
+
     .order-work-list {
       list-style: none;
       margin: 0;
@@ -2586,6 +2590,10 @@
 
     .order-work-section--cancelled .order-work-item {
       border: 2px dashed #cbd5e1;
+    }
+
+    .order-work-section--deployed .order-work-item {
+      border: 2px solid #10b981;
     }
 
     .order-work-item--cancelled {
@@ -2683,8 +2691,8 @@
     }
 
     .order-work__wan-btn {
-      padding: 2px 5px;
-      font-size: 0.5625rem;
+      padding: 4px 8px;
+      font-size: 0.6875rem;
       font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
@@ -2692,18 +2700,12 @@
       border: 1px solid #059669;
       background: #ecfdf5;
       color: #047857;
-      min-width: 1.4em;
       line-height: 1.15;
+      white-space: nowrap;
     }
 
     .order-work__wan-btn:hover {
       background: #d1fae5;
-    }
-
-    .order-work__wan-btn.is-on {
-      background: #047857;
-      color: #fff;
-      border-color: #047857;
     }
 
     .order-feedback__maint-actions,
@@ -5910,6 +5912,12 @@
           <h3 class="order-work-section__title" id="orderCancelledTitle">취소</h3>
           <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--deployed" id="orderDeployedSection" aria-labelledby="orderDeployedTitle">
+          <h3 class="order-work-section__title" id="orderDeployedTitle">투입완료</h3>
+          <ul class="order-work-list" id="orderDeployedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
         </section>
       </section>
 
@@ -11828,7 +11836,7 @@
       function getOrderPhase(entry) {
         if (!entry) return "alert";
         var p = entry.phase != null ? String(entry.phase).trim() : "";
-        if (p === "accepted" || p === "issue" || p === "cancelled") return p;
+        if (p === "accepted" || p === "issue" || p === "cancelled" || p === "deployed") return p;
         return "alert";
       }
 
@@ -12705,13 +12713,30 @@
         return entry && entry.issueBtnVisible !== false;
       }
 
-      function toggleOrderIssueBtnVisible(orderId) {
+      function completeOrderDeployment(orderId) {
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
         if (!maintenanceMode) return;
-        entry.issueBtnVisible = !isIssueBtnVisible(entry);
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              completeOrderDeployment(orderId);
+            },
+          });
+          return;
+        }
+        entry.phase = "deployed";
+        entry.deployedAt = new Date().toISOString();
+        entry.deployedBy = getOperatorName();
         saveOrderLog();
         renderOrderPanels();
+        requestAnimationFrame(function () {
+          var card = document.querySelector(
+            '.order-work-section--deployed .order-work-item[data-order-id="' + orderId + '"]'
+          );
+          if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
       }
 
       function appendOrderAcceptedMaintActions(li, entry) {
@@ -12728,10 +12753,9 @@
         }
         var wanBtn = document.createElement("button");
         wanBtn.type = "button";
-        wanBtn.className =
-          "order-work__wan-btn" + (isIssueBtnVisible(entry) ? " is-on" : "");
+        wanBtn.className = "order-work__wan-btn";
         wanBtn.setAttribute("data-order-id", entry.id || "");
-        wanBtn.textContent = "완";
+        wanBtn.textContent = "투입 완료";
         acts.appendChild(wanBtn);
         li.appendChild(acts);
       }
@@ -12781,11 +12805,14 @@
         var acceptedEmpty = document.getElementById("orderAcceptedEmpty");
         var cancelledList = document.getElementById("orderCancelledList");
         var cancelledEmpty = document.getElementById("orderCancelledEmpty");
-        if (!issueList || !acceptedList || !cancelledList) return;
+        var deployedList = document.getElementById("orderDeployedList");
+        var deployedEmpty = document.getElementById("orderDeployedEmpty");
+        if (!issueList || !acceptedList || !cancelledList || !deployedList) return;
 
         issueList.innerHTML = "";
         acceptedList.innerHTML = "";
         cancelledList.innerHTML = "";
+        deployedList.innerHTML = "";
 
         var issueEntries = orderLogEntries.filter(function (e) {
           return isOrderIssueOpen(e);
@@ -12795,6 +12822,9 @@
         });
         var cancelledEntries = orderLogEntries.filter(function (e) {
           return getOrderPhase(e) === "cancelled";
+        });
+        var deployedEntries = orderLogEntries.filter(function (e) {
+          return getOrderPhase(e) === "deployed";
         });
 
         var filterRaw = getOrderRoomFilterRaw();
@@ -12806,6 +12836,9 @@
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
           cancelledEntries = cancelledEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterRaw);
+          });
+          deployedEntries = deployedEntries.filter(function (e) {
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
         }
@@ -12898,6 +12931,30 @@
           cancelledList.appendChild(li);
         });
 
+        deployedEntries.sort(function (a, b) {
+          var ta = new Date(a.deployedAt || a.acceptedAt || a.at || 0).getTime();
+          var tb = new Date(b.deployedAt || b.acceptedAt || b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        deployedEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-work-item order-work-item--deployed";
+          li.setAttribute("data-order-id", entry.id || "");
+          appendOrderItemCommon(li, entry);
+          var deployedBy = entry.deployedBy != null ? String(entry.deployedBy).trim() : "";
+          if (deployedBy) {
+            var depMeta = document.createElement("div");
+            depMeta.className = "order-feedback__item-memo";
+            depMeta.style.marginTop = "6px";
+            depMeta.style.paddingTop = "6px";
+            depMeta.textContent = "투입 : " + deployedBy;
+            li.appendChild(depMeta);
+          }
+          deployedList.appendChild(li);
+        });
+
         if (issueEmpty) {
           issueEmpty.hidden = issueEntries.length > 0;
           if (!issueEntries.length && filterRaw) {
@@ -12920,6 +12977,14 @@
             cancelledEmpty.textContent = "입력한 객실번호에 해당하는 취소 건이 없습니다.";
           } else {
             cancelledEmpty.textContent = "취소된 오더가 없습니다.";
+          }
+        }
+        if (deployedEmpty) {
+          deployedEmpty.hidden = deployedEntries.length > 0;
+          if (!deployedEntries.length && filterRaw) {
+            deployedEmpty.textContent = "입력한 객실번호에 해당하는 투입완료 건이 없습니다.";
+          } else {
+            deployedEmpty.textContent = "투입완료 건이 없습니다.";
           }
         }
         setIssueSectionVisible(
@@ -15281,7 +15346,7 @@
             e.preventDefault();
             e.stopPropagation();
             var wanId = wanBtn.getAttribute("data-order-id");
-            if (wanId) toggleOrderIssueBtnVisible(wanId);
+            if (wanId) completeOrderDeployment(wanId);
             return;
           }
           var issueBtn = e.target.closest(".order-work__issue-btn");
