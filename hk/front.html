@@ -6360,7 +6360,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityMiscPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
-          객실별로 메모를 남깁니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
+          오더처럼 접수하고 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityMiscStatus" aria-live="polite"></div>
@@ -6408,12 +6408,32 @@
             <input type="text" id="facilityMiscRoom" placeholder="예: 1205" autocomplete="off" />
           </div>
           <div class="field field--memo">
-            <label for="facilityMiscMemo">메시지</label>
-            <input type="text" id="facilityMiscMemo" placeholder="메시지 입력" autocomplete="off" />
+            <label for="facilityMiscMemo">메모</label>
+            <div class="hk-compose-row">
+              <input
+                type="text"
+                id="facilityMiscMemo"
+                placeholder="메모 (선택)"
+                autocomplete="off"
+              />
+              <button type="button" class="hk-photo-btn" id="btnPhotoFacilityMiscOrderMemo" title="사진 첨부">사진</button>
+            </div>
+            <div class="hk-photo-preview" data-photo-key="facilityMiscOrderMemo" hidden></div>
           </div>
-          <button type="submit" class="btn-order">등록</button>
+          <button type="submit" class="btn-order">접수</button>
         </form>
-        <ul class="facility-log-list" id="facilityMiscList" aria-live="polite"></ul>
+
+        <section class="order-work-section order-work-section--accepted" aria-labelledby="facilityMiscAcceptedTitle">
+          <h3 class="order-work-section__title" id="facilityMiscAcceptedTitle">접수</h3>
+          <ul class="order-work-list" id="facilityMiscAcceptedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityMiscAcceptedEmpty">접수 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--deployed" aria-labelledby="facilityMiscCompletedTitle">
+          <h3 class="order-work-section__title" id="facilityMiscCompletedTitle">완료</h3>
+          <ul class="order-work-list order-work-list--deployed" id="facilityMiscCompletedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityMiscCompletedEmpty">완료 건이 없습니다.</p>
+        </section>
       </section>
 
       <section
@@ -6427,7 +6447,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityDailyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
-          당일 습득물을 객실별로 기록합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
+          오더처럼 접수하고 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityDailyFoundStatus" aria-live="polite"></div>
@@ -6446,12 +6466,32 @@
             <input type="text" id="facilityDailyFoundRoom" placeholder="예: 1205" autocomplete="off" />
           </div>
           <div class="field field--memo">
-            <label for="facilityDailyFoundMemo">메시지</label>
-            <input type="text" id="facilityDailyFoundMemo" placeholder="메시지 입력" autocomplete="off" />
+            <label for="facilityDailyFoundMemo">메모</label>
+            <div class="hk-compose-row">
+              <input
+                type="text"
+                id="facilityDailyFoundMemo"
+                placeholder="메모 (선택)"
+                autocomplete="off"
+              />
+              <button type="button" class="hk-photo-btn" id="btnPhotoFacilityDailyOrderMemo" title="사진 첨부">사진</button>
+            </div>
+            <div class="hk-photo-preview" data-photo-key="facilityDailyFoundOrderMemo" hidden></div>
           </div>
-          <button type="submit" class="btn-order">등록</button>
+          <button type="submit" class="btn-order">접수</button>
         </form>
-        <ul class="facility-log-list" id="facilityDailyFoundList" aria-live="polite"></ul>
+
+        <section class="order-work-section order-work-section--accepted" aria-labelledby="facilityDailyFoundAcceptedTitle">
+          <h3 class="order-work-section__title" id="facilityDailyFoundAcceptedTitle">접수</h3>
+          <ul class="order-work-list" id="facilityDailyFoundAcceptedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityDailyFoundAcceptedEmpty">접수 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--deployed" aria-labelledby="facilityDailyFoundCompletedTitle">
+          <h3 class="order-work-section__title" id="facilityDailyFoundCompletedTitle">완료</h3>
+          <ul class="order-work-list order-work-list--deployed" id="facilityDailyFoundCompletedList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityDailyFoundCompletedEmpty">완료 건이 없습니다.</p>
+        </section>
       </section>
 
       <section class="order-panel mb-inv-panel" id="mbInvPanel" hidden aria-labelledby="mbInvPanelTitle">
@@ -9734,6 +9774,8 @@
         hkBindPhotoButton(document.getElementById("btnPhotoFrontChat"), "frontChat");
         hkBindPhotoButton(document.getElementById("btnPhotoOrderMemo"), "orderMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoFacilityOrderMemo"), "facilityOrderMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoFacilityMiscOrderMemo"), "facilityMiscOrderMemo");
+        hkBindPhotoButton(document.getElementById("btnPhotoFacilityDailyOrderMemo"), "facilityDailyFoundOrderMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoRequestMemo"), "requestMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoMbMemo"), "mbMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoInvMemo"), "invMemo");
@@ -9745,6 +9787,8 @@
         });
         hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
         hkBindPhotoPaste(document.getElementById("facilityOrderMemo"), "facilityOrderMemo");
+        hkBindPhotoPaste(document.getElementById("facilityMiscMemo"), "facilityMiscOrderMemo");
+        hkBindPhotoPaste(document.getElementById("facilityDailyFoundMemo"), "facilityDailyFoundOrderMemo");
         hkBindPhotoPaste(document.getElementById("requestMemo"), "requestMemo");
         hkBindPhotoPaste(document.getElementById("mbMemo"), "mbMemo");
         hkBindPhotoPaste(document.getElementById("invMemo"), "invMemo");
@@ -16562,13 +16606,11 @@
       if (typeof HKFacilityLogs !== "undefined") {
         HKFacilityLogs.init({
           formatAt: formatReqAt,
+          formatRoomNoDisplay: formatRoomNoDisplay,
+          setLineWithEmTime: setLineWithEmTime,
           getOperatorName: getOperatorName,
           showOperatorGate: showOperatorGate,
-          applyChatBubbleAlign: applyChatBubbleAlign,
-          applyChatBubbleColors: applyChatBubbleColors,
-          hkAppendMessageContent: hkAppendMessageContent,
-          hkCreatePhotoButton: hkCreatePhotoButton,
-          hkCreatePhotoPreview: hkCreatePhotoPreview,
+          hkAppendImageEl: hkAppendImageEl,
           hkBindPhotoPaste: hkBindPhotoPaste,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,

@@ -2185,7 +2185,7 @@
           },
           {
             title: "컴플레인·지난습득물·세탁",
-            headers: ["시각", "객실", "구분", "내용", "작성"],
+            headers: ["접수시각", "객실", "구분", "내용", "접수자", "상태", "완료시각", "완료자"],
             rows:
               typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayMiscRows
                 ? HKFacilityLogs.exportCloseDayMiscRows(snapshot.data.facilityMiscLog)
@@ -2193,7 +2193,7 @@
           },
           {
             title: "당일습득물",
-            headers: ["시각", "객실", "내용", "작성"],
+            headers: ["접수시각", "객실", "내용", "접수자", "상태", "완료시각", "완료자"],
             rows:
               typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayDailyRows
                 ? HKFacilityLogs.exportCloseDayDailyRows(snapshot.data.facilityDailyFoundLog)

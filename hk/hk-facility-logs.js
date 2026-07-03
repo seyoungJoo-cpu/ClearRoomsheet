@@ -1,6 +1,6 @@
 /**
  * 시설 관리 하위 업무 로그 — 컴플레인·지난습득물·세탁 / 당일습득물
- * 객실별 채팅 스레드. 관리자 전체 마감 후 10일간 유지 후 자동 초기화.
+ * 오더형(접수 → 완료). 관리자 전체 마감 후 10일간 유지.
  */
 (function (global) {
   var RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
@@ -27,46 +27,48 @@
     return { retainUntil: "", entries: [] };
   }
 
-  function normalizeChatMsg(raw) {
-    if (!raw || typeof raw !== "object") return null;
-    var text = raw.text != null ? String(raw.text).trim() : "";
-    var image = raw.image != null ? String(raw.image).trim() : "";
-    if (!text && !image) return null;
-    return {
-      at: raw.at != null ? String(raw.at) : new Date().toISOString(),
-      by: raw.by != null ? String(raw.by).trim() : "",
-      text: text,
-      image: image,
-    };
+  function getEntryPhase(entry) {
+    if (!entry) return "accepted";
+    var p = entry.phase != null ? String(entry.phase).trim() : "";
+    if (p === "completed") return "completed";
+    return "accepted";
   }
 
-  function normalizeEntry(raw) {
+  function normalizeOrderEntry(raw) {
     if (!raw || typeof raw !== "object") return null;
     var id = raw.id != null ? String(raw.id).trim() : "";
     if (!id) return null;
-    var chat = [];
-    if (Array.isArray(raw.chat)) {
+
+    var memo = raw.memo != null ? String(raw.memo).trim() : "";
+    var memoImage = raw.memoImage != null ? String(raw.memoImage).trim() : "";
+    var at = raw.at != null ? String(raw.at) : "";
+    var by = raw.by != null ? String(raw.by).trim() : "";
+
+    if (Array.isArray(raw.chat) && raw.chat.length) {
+      var texts = [];
       raw.chat.forEach(function (m) {
-        var n = normalizeChatMsg(m);
-        if (n) chat.push(n);
+        if (!m) return;
+        var t = m.text != null ? String(m.text).trim() : "";
+        if (t) texts.push(t);
+        if (!memoImage && m.image) memoImage = String(m.image).trim();
+        if (!by && m.by) by = String(m.by).trim();
+        if (!at && m.at) at = String(m.at);
       });
+      if (!memo) memo = texts.join("\n");
     }
-    var legacyMemo = raw.memo != null ? String(raw.memo).trim() : "";
-    if (!chat.length && legacyMemo) {
-      chat.push({
-        at: raw.at != null ? String(raw.at) : new Date().toISOString(),
-        by: raw.by != null ? String(raw.by).trim() : "",
-        text: legacyMemo,
-        image: "",
-      });
-    }
-    if (!chat.length) return null;
+
+    if (!memo && !memoImage) return null;
+
     return {
       id: id,
-      at: chat[0].at,
+      at: at || new Date().toISOString(),
       room: raw.room != null ? String(raw.room).trim() : "",
-      by: raw.by != null ? String(raw.by).trim() : chat[0].by || "",
-      chat: chat,
+      memo: memo,
+      memoImage: memoImage,
+      by: by,
+      phase: getEntryPhase(raw),
+      completedAt: raw.completedAt != null ? String(raw.completedAt) : "",
+      completedBy: raw.completedBy != null ? String(raw.completedBy).trim() : "",
     };
   }
 
@@ -87,7 +89,7 @@
       var list = [];
       if (Array.isArray(src[cat.key])) {
         src[cat.key].forEach(function (item) {
-          var n = normalizeEntry(item);
+          var n = normalizeOrderEntry(item);
           if (n) list.push(n);
         });
       }
@@ -102,7 +104,7 @@
     log.retainUntil = raw.retainUntil != null ? String(raw.retainUntil) : "";
     if (Array.isArray(raw.entries)) {
       raw.entries.forEach(function (item) {
-        var n = normalizeEntry(item);
+        var n = normalizeOrderEntry(item);
         if (n) log.entries.push(n);
       });
     }
@@ -154,31 +156,6 @@
     return logContentSignature(normalizeDailyFoundLog(loadDailyFoundLog()));
   }
 
-  function exportCloseDayMiscRows(raw) {
-    return collectMiscRows(normalizeMiscLog(raw)).map(function (r) {
-      return [formatAt(r.at), r.room || "", r.categoryLabel || "", r.memo || "", r.by || ""];
-    });
-  }
-
-  function exportCloseDayDailyRows(raw) {
-    return flattenEntryRows(normalizeDailyFoundLog(raw).entries || [], "").map(function (r) {
-      return [formatAt(r.at), r.room || "", r.memo || "", r.by || ""];
-    });
-  }
-
-  function countMiscEntries(raw) {
-    var log = normalizeMiscLog(raw);
-    var n = 0;
-    MISC_CATEGORIES.forEach(function (cat) {
-      n += (log.entries[cat.key] || []).length;
-    });
-    return n;
-  }
-
-  function countDailyEntries(raw) {
-    return (normalizeDailyFoundLog(raw).entries || []).length;
-  }
-
   function getOperatorName() {
     if (uiHooks.getOperatorName) return uiHooks.getOperatorName();
     try {
@@ -190,12 +167,6 @@
 
   function newEntryId() {
     return "fl-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
-  }
-
-  function normalizeRoomKey(room) {
-    var s = String(room || "").trim();
-    var digits = s.replace(/\D/g, "");
-    return digits || s;
   }
 
   function pad2(n) {
@@ -218,6 +189,11 @@
       ":" +
       pad2(d.getMinutes())
     );
+  }
+
+  function formatRoom(room) {
+    if (uiHooks.formatRoomNoDisplay) return uiHooks.formatRoomNoDisplay(String(room || ""));
+    return String(room || "—");
   }
 
   function escHtml(s) {
@@ -255,72 +231,108 @@
     );
   }
 
-  function flattenEntryRows(entries, categoryLabel) {
+  function orderToExportRow(entry, categoryLabel) {
+    return [
+      formatAt(entry.at),
+      entry.room || "",
+      categoryLabel || "",
+      entry.memo || (entry.memoImage ? "(사진)" : ""),
+      entry.by || "",
+      getEntryPhase(entry) === "completed" ? "완료" : "접수",
+      entry.completedAt ? formatAt(entry.completedAt) : "",
+      entry.completedBy || "",
+    ];
+  }
+
+  function collectMiscExportRows(log) {
     var rows = [];
-    (entries || []).forEach(function (entry) {
-      (entry.chat || []).forEach(function (msg) {
-        rows.push({
-          at: msg.at,
-          room: entry.room,
-          memo: msg.text || (msg.image ? "(사진)" : ""),
-          by: msg.by,
-          categoryLabel: categoryLabel || "",
-        });
+    MISC_CATEGORIES.forEach(function (cat) {
+      (log.entries[cat.key] || []).forEach(function (entry) {
+        rows.push(orderToExportRow(entry, cat.label));
       });
     });
     rows.sort(function (a, b) {
-      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+      return new Date(a[0] || 0).getTime() - new Date(b[0] || 0).getTime();
     });
     return rows;
   }
 
-  function buildRowsHtml(rows, includeCategory) {
+  function orderToDailyExportRow(entry) {
+    return [
+      formatAt(entry.at),
+      entry.room || "",
+      entry.memo || (entry.memoImage ? "(사진)" : ""),
+      entry.by || "",
+      getEntryPhase(entry) === "completed" ? "완료" : "접수",
+      entry.completedAt ? formatAt(entry.completedAt) : "",
+      entry.completedBy || "",
+    ];
+  }
+
+  function collectDailyExportRows(log) {
+    return (log.entries || [])
+      .map(function (entry) {
+        return orderToDailyExportRow(entry);
+      })
+      .sort(function (a, b) {
+        return new Date(a[0] || 0).getTime() - new Date(b[0] || 0).getTime();
+      });
+  }
+
+  function exportCloseDayMiscRows(raw) {
+    return collectMiscExportRows(normalizeMiscLog(raw));
+  }
+
+  function exportCloseDayDailyRows(raw) {
+    return collectDailyExportRows(normalizeDailyFoundLog(raw));
+  }
+
+  function countMiscEntries(raw) {
+    var log = normalizeMiscLog(raw);
+    var n = 0;
+    MISC_CATEGORIES.forEach(function (cat) {
+      n += (log.entries[cat.key] || []).length;
+    });
+    return n;
+  }
+
+  function countDailyEntries(raw) {
+    return (normalizeDailyFoundLog(raw).entries || []).length;
+  }
+
+  function buildExportTableHtml(rows, headers) {
     var head =
-      "<tr><th>시각</th><th>객실</th>" +
-      (includeCategory ? "<th>구분</th>" : "") +
-      "<th>내용</th><th>작성</th></tr>";
+      "<tr>" +
+      headers.map(function (h) {
+        return "<th>" + escHtml(h) + "</th>";
+      }).join("") +
+      "</tr>";
     var body = rows
-      .map(function (r) {
+      .map(function (row) {
         return (
-          "<tr><td>" +
-          escHtml(formatAt(r.at)) +
-          "</td><td>" +
-          escHtml(r.room || "—") +
-          "</td>" +
-          (includeCategory ? "<td>" + escHtml(r.categoryLabel || "") + "</td>" : "") +
-          "<td>" +
-          escHtml(r.memo || "") +
-          "</td><td>" +
-          escHtml(r.by || "") +
-          "</td></tr>"
+          "<tr>" +
+          row
+            .map(function (cell) {
+              return "<td>" + escHtml(cell) + "</td>";
+            })
+            .join("") +
+          "</tr>"
         );
       })
       .join("");
-    return "<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\">" + head + body + "</table>";
+    return '<table border="1" cellpadding="6" cellspacing="0">' + head + body + "</table>";
   }
 
-  function collectMiscRows(log) {
-    var rows = [];
-    MISC_CATEGORIES.forEach(function (cat) {
-      rows = rows.concat(flattenEntryRows(log.entries[cat.key] || [], cat.label));
-    });
-    rows.sort(function (a, b) {
-      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
-    });
-    return rows;
-  }
+  var EXPORT_HEADERS = ["접수시각", "객실", "구분", "내용", "접수자", "상태", "완료시각", "완료자"];
+  var EXPORT_HEADERS_DAILY = ["접수시각", "객실", "내용", "접수자", "상태", "완료시각", "완료자"];
 
   function downloadMiscHtml(log) {
-    var title = "컴플레인·지난습득물·세탁";
+    var rows = collectMiscExportRows(log);
     var html =
-      "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"UTF-8\"/><title>" +
-      escHtml(title) +
-      "</title></head><body><h1>" +
-      escHtml(title) +
-      "</h1><p>보내기: " +
+      '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><title>컴플레인·지난습득물·세탁</title></head><body><h1>컴플레인·지난습득물·세탁</h1><p>보내기: ' +
       escHtml(formatAt(new Date().toISOString())) +
       "</p>" +
-      buildRowsHtml(collectMiscRows(log), true) +
+      buildExportTableHtml(rows, EXPORT_HEADERS) +
       "</body></html>";
     downloadBlob(exportFilenameBase("시설_컴플레인습득세탁") + ".html", new Blob([html], { type: "text/html;charset=utf-8" }));
   }
@@ -328,7 +340,7 @@
   function downloadMiscExcel(log) {
     var sheet =
       "<html><head><meta charset=\"UTF-8\"/></head><body>" +
-      buildRowsHtml(collectMiscRows(log), true) +
+      buildExportTableHtml(collectMiscExportRows(log), EXPORT_HEADERS) +
       "</body></html>";
     downloadBlob(
       exportFilenameBase("시설_컴플레인습득세탁") + ".xls",
@@ -337,25 +349,23 @@
   }
 
   function downloadDailyHtml(log) {
-    var title = "당일습득물";
-    var rows = flattenEntryRows(log.entries || [], "");
+    var rows = collectDailyExportRows(log);
+    var dailyHeaders = ["접수시각", "객실", "내용", "접수자", "상태", "완료시각", "완료자"];
     var html =
-      "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"UTF-8\"/><title>" +
-      escHtml(title) +
-      "</title></head><body><h1>" +
-      escHtml(title) +
-      "</h1><p>보내기: " +
+      '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><title>당일습득물</title></head><body><h1>당일습득물</h1><p>보내기: ' +
       escHtml(formatAt(new Date().toISOString())) +
       "</p>" +
-      buildRowsHtml(rows, false) +
+      buildExportTableHtml(rows, dailyHeaders) +
       "</body></html>";
     downloadBlob(exportFilenameBase("시설_당일습득물") + ".html", new Blob([html], { type: "text/html;charset=utf-8" }));
   }
 
   function downloadDailyExcel(log) {
-    var rows = flattenEntryRows(log.entries || [], "");
+    var dailyHeaders = ["접수시각", "객실", "내용", "접수자", "상태", "완료시각", "완료자"];
     var sheet =
-      "<html><head><meta charset=\"UTF-8\"/></head><body>" + buildRowsHtml(rows, false) + "</body></html>";
+      "<html><head><meta charset=\"UTF-8\"/></head><body>" +
+      buildExportTableHtml(collectDailyExportRows(log), dailyHeaders) +
+      "</body></html>";
     downloadBlob(
       exportFilenameBase("시설_당일습득물") + ".xls",
       new Blob(["\ufeff", sheet], { type: "application/vnd.ms-excel;charset=utf-8" })
@@ -374,218 +384,211 @@
     };
   }
 
-  function findEntryIndex(entries, room) {
-    var key = normalizeRoomKey(room);
-    if (!key) return -1;
-    for (var i = 0; i < (entries || []).length; i++) {
-      if (normalizeRoomKey(entries[i].room) === key) return i;
+  function findEntryInList(list, entryId) {
+    for (var i = 0; i < (list || []).length; i++) {
+      if (list[i] && list[i].id === entryId) return list[i];
     }
-    return -1;
+    return null;
   }
 
-  function appendChatToLog(getLog, saveLog, entriesKey, room, text, image) {
-    var log = getLog();
-    var list = entriesKey ? log.entries[entriesKey] : log.entries;
-    if (!list) {
-      if (entriesKey) log.entries[entriesKey] = [];
-      list = entriesKey ? log.entries[entriesKey] : log.entries;
-    }
-    var msgText = String(text || "").trim();
-    var msgImage = image != null ? String(image).trim() : "";
-    if (!msgText && !msgImage) return;
+  function createMiscOrder(room, memo, image) {
+    var log = loadMiscLog();
+    if (!log.entries[activeMiscCategory]) log.entries[activeMiscCategory] = [];
     var name = getOperatorName();
-    var msg = {
-      at: new Date().toISOString(),
+    var now = new Date().toISOString();
+    log.entries[activeMiscCategory].push({
+      id: newEntryId(),
+      at: now,
+      room: String(room || "").trim(),
+      memo: String(memo || "").trim(),
+      memoImage: image || "",
       by: name,
-      text: msgText,
-      image: msgImage,
-    };
-    var ix = findEntryIndex(list, room);
-    if (ix >= 0) {
-      if (!Array.isArray(list[ix].chat)) list[ix].chat = [];
-      list[ix].chat.push(msg);
-    } else {
-      list.push({
-        id: newEntryId(),
-        at: msg.at,
-        room: String(room || "").trim(),
-        by: name,
-        chat: [msg],
-      });
-    }
-    saveLog(log);
-  }
-
-  function appendMiscChat(room, text, image) {
-    appendChatToLog(loadMiscLog, saveMiscLog, activeMiscCategory, room, text, image);
+      phase: "accepted",
+      completedAt: "",
+      completedBy: "",
+    });
+    saveMiscLog(log);
     renderMiscPanel();
   }
 
-  function appendDailyChat(room, text, image) {
-    appendChatToLog(loadDailyFoundLog, saveDailyFoundLog, null, room, text, image);
+  function createDailyOrder(room, memo, image) {
+    var log = loadDailyFoundLog();
+    var name = getOperatorName();
+    var now = new Date().toISOString();
+    log.entries.push({
+      id: newEntryId(),
+      at: now,
+      room: String(room || "").trim(),
+      memo: String(memo || "").trim(),
+      memoImage: image || "",
+      by: name,
+      phase: "accepted",
+      completedAt: "",
+      completedBy: "",
+    });
+    saveDailyFoundLog(log);
     renderDailyPanel();
   }
 
-  function appendRoomChatUi(li, entry, opts) {
-    opts = opts || {};
-    var chatWrap = document.createElement("div");
-    chatWrap.className = "order-chat";
-
-    var msgList = document.createElement("ul");
-    msgList.className = "order-chat__messages";
-    var chat = Array.isArray(entry.chat) ? entry.chat.slice() : [];
-    chat.sort(function (a, b) {
-      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
-    });
-    if (!chat.length) {
-      var emptyMsg = document.createElement("li");
-      emptyMsg.className = "order-chat__msg";
-      emptyMsg.style.background = "#f8fafc";
-      emptyMsg.textContent = "메시지가 없습니다. 아래에서 대화를 시작하세요.";
-      msgList.appendChild(emptyMsg);
-    } else {
-      chat.forEach(function (msg) {
-        var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
-        var msgLi = document.createElement("li");
-        msgLi.className = "order-chat__msg";
-        if (uiHooks.applyChatBubbleAlign) uiHooks.applyChatBubbleAlign(msgLi, byName);
-        var byEl = document.createElement("div");
-        byEl.className = "order-chat__msg-by";
-        byEl.textContent = byName;
-        msgLi.appendChild(byEl);
-        if (uiHooks.applyChatBubbleColors) {
-          uiHooks.applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
-        }
-        if (uiHooks.hkAppendMessageContent) {
-          uiHooks.hkAppendMessageContent(msgLi, msg.text, msg.image, "order-chat__msg-text");
-        } else {
-          var textEl = document.createElement("div");
-          textEl.className = "order-chat__msg-text";
-          textEl.textContent = msg.text || "";
-          msgLi.appendChild(textEl);
-        }
-        if (msg.at) {
-          var timeEl = document.createElement("div");
-          timeEl.className = "order-chat__msg-time";
-          timeEl.textContent = formatAt(msg.at);
-          msgLi.appendChild(timeEl);
-        }
-        msgList.appendChild(msgLi);
-      });
-    }
-    chatWrap.appendChild(msgList);
-
-    var chatKey = opts.photoKey || "facilityLog:" + entry.id;
-    var chatForm = document.createElement("form");
-    chatForm.className = "order-chat__form hk-compose-row";
-    chatForm.setAttribute("data-entry-id", entry.id || "");
-    var chatInput = document.createElement("input");
-    chatInput.type = "text";
-    chatInput.placeholder = "메시지 입력";
-    chatInput.autocomplete = "off";
-    chatInput.setAttribute("aria-label", opts.chatLabel || "객실 메모 채팅");
-    chatForm.appendChild(chatInput);
-    if (uiHooks.hkCreatePhotoButton) {
-      chatForm.appendChild(uiHooks.hkCreatePhotoButton(chatKey));
-    }
-    if (uiHooks.hkBindPhotoPaste) {
-      uiHooks.hkBindPhotoPaste(chatInput, chatKey, {
-        autoSend: function (text, image) {
-          opts.onSend(entry.id, text, image, chatKey);
-        },
-      });
-    }
-    var chatSend = document.createElement("button");
-    chatSend.type = "submit";
-    chatSend.className = "order-chat__send";
-    chatSend.textContent = "전송";
-    chatForm.appendChild(chatSend);
-    chatWrap.appendChild(chatForm);
-    if (uiHooks.hkCreatePhotoPreview) {
-      chatWrap.appendChild(uiHooks.hkCreatePhotoPreview(chatKey));
-    }
-
-    chatForm.addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      var text = String(chatInput.value || "").trim();
-      var image = uiHooks.hkGetPhoto ? uiHooks.hkGetPhoto(chatKey) : "";
-      if (!text && !image) return;
-      var send = function () {
-        opts.onSend(entry.id, text, image, chatKey);
-        chatInput.value = "";
-      };
-      if (!getOperatorName() && uiHooks.showOperatorGate) {
-        uiHooks.showOperatorGate({ mode: "initial", onSaved: send });
-        return;
-      }
-      send();
-    });
-
-    li.appendChild(chatWrap);
-    requestAnimationFrame(function () {
-      msgList.scrollTop = msgList.scrollHeight;
-    });
+  function completeMiscEntry(entryId) {
+    var log = loadMiscLog();
+    var list = log.entries[activeMiscCategory] || [];
+    var entry = findEntryInList(list, entryId);
+    if (!entry || getEntryPhase(entry) === "completed") return;
+    entry.phase = "completed";
+    entry.completedAt = new Date().toISOString();
+    entry.completedBy = getOperatorName();
+    saveMiscLog(log);
+    renderMiscPanel();
   }
 
-  function renderRoomThreadList(listEl, entries, opts) {
-    if (!listEl) return;
-    listEl.innerHTML = "";
-    var sorted = (entries || []).slice().sort(function (a, b) {
-      return new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime();
-    });
-    if (!sorted.length) {
-      var empty = document.createElement("li");
-      empty.className = "facility-log-empty";
-      empty.textContent = "등록된 객실이 없습니다. 아래에서 객실번호와 메시지를 입력하세요.";
-      listEl.appendChild(empty);
+  function completeDailyEntry(entryId) {
+    var log = loadDailyFoundLog();
+    var entry = findEntryInList(log.entries, entryId);
+    if (!entry || getEntryPhase(entry) === "completed") return;
+    entry.phase = "completed";
+    entry.completedAt = new Date().toISOString();
+    entry.completedBy = getOperatorName();
+    saveDailyFoundLog(log);
+    renderDailyPanel();
+  }
+
+  function appendOrderCard(li, entry, isCompleted) {
+    if (entry.at) {
+      var timeEl = document.createElement("div");
+      timeEl.className = "request-feedback__item-time";
+      if (uiHooks.setLineWithEmTime) {
+        uiHooks.setLineWithEmTime(timeEl, "접수 ", formatAt(entry.at));
+      } else {
+        timeEl.textContent = "접수 " + formatAt(entry.at);
+      }
+      li.appendChild(timeEl);
+    }
+
+    var row = document.createElement("div");
+    row.className = "request-feedback__item-row";
+    var r = document.createElement("span");
+    r.className = "request-feedback__item-room";
+    r.textContent = entry.room ? formatRoom(entry.room) : "—";
+    row.appendChild(r);
+    li.appendChild(row);
+
+    var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+    if (memoStr) {
+      var memEl = document.createElement("div");
+      memEl.className = "order-feedback__item-memo";
+      memEl.textContent = memoStr;
+      li.appendChild(memEl);
+    }
+    if (uiHooks.hkAppendImageEl) {
+      uiHooks.hkAppendImageEl(li, entry.memoImage);
+    }
+
+    var byName = entry.by != null ? String(entry.by).trim() : "";
+    if (byName) {
+      var byEl = document.createElement("div");
+      byEl.className = "order-feedback__item-by";
+      byEl.textContent = byName;
+      byEl.title = "접수: " + byName;
+      li.appendChild(byEl);
+    }
+
+    if (isCompleted) {
+      li.classList.add("order-work-item--deployed");
+      if (entry.completedAt) {
+        var doneEl = document.createElement("div");
+        doneEl.className = "request-feedback__item-time";
+        if (uiHooks.setLineWithEmTime) {
+          uiHooks.setLineWithEmTime(doneEl, "완료 ", formatAt(entry.completedAt));
+        } else {
+          doneEl.textContent = "완료 " + formatAt(entry.completedAt);
+        }
+        li.appendChild(doneEl);
+      }
+      var doneBy = entry.completedBy != null ? String(entry.completedBy).trim() : "";
+      if (doneBy) {
+        var doneByEl = document.createElement("div");
+        doneByEl.className = "order-feedback__item-by";
+        doneByEl.textContent = "완료: " + doneBy;
+        li.appendChild(doneByEl);
+      }
       return;
     }
-    sorted.forEach(function (entry) {
-      var li = document.createElement("li");
-      li.className = "facility-log-room";
-      li.setAttribute("data-entry-id", entry.id);
-      var head = document.createElement("div");
-      head.className = "facility-log-room__head";
-      var room = document.createElement("span");
-      room.className = "facility-log-room__no";
-      room.textContent = entry.room ? "객실 " + entry.room : "객실 —";
-      head.appendChild(room);
-      var meta = document.createElement("span");
-      meta.className = "facility-log-room__meta";
-      meta.textContent = formatAt(entry.at);
-      head.appendChild(meta);
-      if (opts.onDelete) {
-        var del = document.createElement("button");
-        del.type = "button";
-        del.className = "facility-log-room__del";
-        del.textContent = "삭제";
-        del.addEventListener("click", function () {
-          opts.onDelete(entry.id);
-        });
-        head.appendChild(del);
-      }
-      li.appendChild(head);
-      appendRoomChatUi(li, entry, {
-        photoKey: (opts.photoKeyPrefix || "facilityLog") + ":" + entry.id,
-        chatLabel: opts.chatLabel,
-        onSend: opts.onSend,
-      });
-      listEl.appendChild(li);
+
+    var acts = document.createElement("div");
+    acts.className = "order-work__actions order-work__actions--toggle";
+    var completeBtn = document.createElement("button");
+    completeBtn.type = "button";
+    completeBtn.className = "order-work__wan-btn facility-log__complete-btn";
+    completeBtn.setAttribute("data-entry-id", entry.id || "");
+    completeBtn.textContent = "완료";
+    completeBtn.setAttribute("aria-label", "완료 처리");
+    acts.appendChild(completeBtn);
+    li.appendChild(acts);
+  }
+
+  function renderOrderWorkLists(acceptedListEl, acceptedEmptyEl, completedListEl, completedEmptyEl, entries) {
+    if (!acceptedListEl || !completedListEl) return;
+    acceptedListEl.innerHTML = "";
+    completedListEl.innerHTML = "";
+
+    var accepted = (entries || []).filter(function (e) {
+      return getEntryPhase(e) !== "completed";
     });
+    var completed = (entries || []).filter(function (e) {
+      return getEntryPhase(e) === "completed";
+    });
+
+    accepted.sort(function (a, b) {
+      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+    });
+    completed.sort(function (a, b) {
+      return new Date(b.completedAt || b.at || 0).getTime() - new Date(a.completedAt || a.at || 0).getTime();
+    });
+
+    accepted.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "order-work-item";
+      li.setAttribute("data-entry-id", entry.id || "");
+      appendOrderCard(li, entry, false);
+      acceptedListEl.appendChild(li);
+    });
+
+    completed.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "order-work-item order-work-item--deployed";
+      li.setAttribute("data-entry-id", entry.id || "");
+      appendOrderCard(li, entry, true);
+      completedListEl.appendChild(li);
+    });
+
+    if (acceptedEmptyEl) acceptedEmptyEl.hidden = accepted.length > 0;
+    if (completedEmptyEl) completedEmptyEl.hidden = completed.length > 0;
   }
 
   function miscStatusText(log) {
     var parts = MISC_CATEGORIES.map(function (c) {
-      return c.label + " " + (log.entries[c.key] || []).length + "객실";
+      var list = log.entries[c.key] || [];
+      var open = list.filter(function (e) {
+        return getEntryPhase(e) !== "completed";
+      }).length;
+      var done = list.length - open;
+      return c.label + " 접수" + open + "·완료" + done;
     });
+    var base = parts.join(" · ");
     if (log.retainUntil) {
-      return parts.join(" · ") + " · 관리자 마감 후 " + formatAt(log.retainUntil) + "까지 보관";
+      return base + " · 관리자 마감 후 " + formatAt(log.retainUntil) + "까지 보관";
     }
-    return parts.join(" · ");
+    return base;
   }
 
   function dailyStatusText(log) {
-    var base = "객실 " + (log.entries || []).length + "개";
+    var list = log.entries || [];
+    var open = list.filter(function (e) {
+      return getEntryPhase(e) !== "completed";
+    }).length;
+    var done = list.length - open;
+    var base = "접수 " + open + " · 완료 " + done;
     if (log.retainUntil) {
       return base + " · 관리자 마감 후 " + formatAt(log.retainUntil) + "까지 보관";
     }
@@ -603,33 +606,13 @@
       btn.classList.toggle("is-active", key === activeMiscCategory);
       btn.setAttribute("aria-selected", key === activeMiscCategory ? "true" : "false");
     });
-    renderRoomThreadList(document.getElementById("facilityMiscList"), log.entries[activeMiscCategory] || [], {
-      photoKeyPrefix: "facilityMisc",
-      chatLabel: "컴플레인·지난습득물·세탁 객실 메모",
-      onSend: function (entryId, text, image, chatKey) {
-        var cur = loadMiscLog();
-        var list = cur.entries[activeMiscCategory] || [];
-        var entry = null;
-        for (var i = 0; i < list.length; i++) {
-          if (list[i].id === entryId) {
-            entry = list[i];
-            break;
-          }
-        }
-        if (!entry) return;
-        if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto(chatKey);
-        appendMiscChat(entry.room, text, image);
-      },
-      onDelete: function (entryId) {
-        if (!global.confirm("이 객실 스레드를 삭제할까요?")) return;
-        var next = loadMiscLog();
-        next.entries[activeMiscCategory] = (next.entries[activeMiscCategory] || []).filter(function (e) {
-          return e.id !== entryId;
-        });
-        saveMiscLog(next);
-        renderMiscPanel();
-      },
-    });
+    renderOrderWorkLists(
+      document.getElementById("facilityMiscAcceptedList"),
+      document.getElementById("facilityMiscAcceptedEmpty"),
+      document.getElementById("facilityMiscCompletedList"),
+      document.getElementById("facilityMiscCompletedEmpty"),
+      log.entries[activeMiscCategory] || []
+    );
   }
 
   function renderDailyPanel() {
@@ -638,35 +621,39 @@
     var log = loadDailyFoundLog();
     var statusEl = document.getElementById("facilityDailyFoundStatus");
     if (statusEl) statusEl.textContent = dailyStatusText(log);
-    renderRoomThreadList(document.getElementById("facilityDailyFoundList"), log.entries, {
-      photoKeyPrefix: "facilityDaily",
-      chatLabel: "당일습득물 객실 메모",
-      onSend: function (entryId, text, image, chatKey) {
-        var cur = loadDailyFoundLog();
-        var entry = null;
-        for (var i = 0; i < cur.entries.length; i++) {
-          if (cur.entries[i].id === entryId) {
-            entry = cur.entries[i];
-            break;
-          }
-        }
-        if (!entry) return;
-        if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto(chatKey);
-        appendDailyChat(entry.room, text, image);
-      },
-      onDelete: function (entryId) {
-        if (!global.confirm("이 객실 스레드를 삭제할까요?")) return;
-        var next = loadDailyFoundLog();
-        next.entries = next.entries.filter(function (e) {
-          return e.id !== entryId;
-        });
-        saveDailyFoundLog(next);
-        renderDailyPanel();
-      },
+    renderOrderWorkLists(
+      document.getElementById("facilityDailyFoundAcceptedList"),
+      document.getElementById("facilityDailyFoundAcceptedEmpty"),
+      document.getElementById("facilityDailyFoundCompletedList"),
+      document.getElementById("facilityDailyFoundCompletedEmpty"),
+      log.entries
+    );
+  }
+
+  function bindPanelCompleteActions(panelId, onComplete) {
+    var panel = document.getElementById(panelId);
+    if (!panel || panel.dataset.completeBound) return;
+    panel.dataset.completeBound = "1";
+    panel.addEventListener("click", function (e) {
+      var btn = e.target.closest(".facility-log__complete-btn");
+      if (!btn) return;
+      var entryId = btn.getAttribute("data-entry-id");
+      if (!entryId) return;
+      var run = function () {
+        onComplete(entryId);
+      };
+      if (!getOperatorName() && uiHooks.showOperatorGate) {
+        uiHooks.showOperatorGate({ mode: "initial", onSaved: run });
+        return;
+      }
+      run();
     });
   }
 
   function bindForms() {
+    bindPanelCompleteActions("facilityMiscPanel", completeMiscEntry);
+    bindPanelCompleteActions("facilityDailyFoundPanel", completeDailyEntry);
+
     var miscForm = document.getElementById("facilityMiscForm");
     if (miscForm && !miscForm.dataset.bound) {
       miscForm.dataset.bound = "1";
@@ -676,16 +663,18 @@
         var memoEl = document.getElementById("facilityMiscMemo");
         var room = roomEl ? String(roomEl.value || "").trim() : "";
         var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var image = uiHooks.hkGetPhoto ? uiHooks.hkGetPhoto("facilityMiscOrderMemo") : "";
         if (!room) {
           if (roomEl) roomEl.focus();
           return;
         }
-        if (!memo) {
+        if (!memo && !image) {
           if (memoEl) memoEl.focus();
           return;
         }
         var send = function () {
-          appendMiscChat(room, memo, "");
+          createMiscOrder(room, memo, image);
+          if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto("facilityMiscOrderMemo");
           if (roomEl) roomEl.value = "";
           if (memoEl) memoEl.value = "";
           if (memoEl) memoEl.focus();
@@ -707,16 +696,18 @@
         var memoEl = document.getElementById("facilityDailyFoundMemo");
         var room = roomEl ? String(roomEl.value || "").trim() : "";
         var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var image = uiHooks.hkGetPhoto ? uiHooks.hkGetPhoto("facilityDailyFoundOrderMemo") : "";
         if (!room) {
           if (roomEl) roomEl.focus();
           return;
         }
-        if (!memo) {
+        if (!memo && !image) {
           if (memoEl) memoEl.focus();
           return;
         }
         var send = function () {
-          appendDailyChat(room, memo, "");
+          createDailyOrder(room, memo, image);
+          if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto("facilityDailyFoundOrderMemo");
           if (roomEl) roomEl.value = "";
           if (memoEl) memoEl.value = "";
           if (memoEl) memoEl.focus();
