@@ -41,6 +41,7 @@
   };
 
   var state = defaultInvenNotify();
+  var uiHooks = {};
 
   function defaultInvenNotify() {
     return {
@@ -137,6 +138,10 @@
     storage.invenNotify = normalizeInvenNotify(data);
     skipNextRemoteRender = true;
     global.HKStorage.save(storage);
+  }
+
+  function getPublishedSignature() {
+    return JSON.stringify(normalizeInvenNotify(loadInvenNotify()));
   }
 
   function saveDraftLocal() {
@@ -357,6 +362,7 @@
         updateSaveButton();
       }, 1800);
     }
+    if (uiHooks.onPublished) uiHooks.onPublished();
   }
 
   function escapeHtml(v) {
@@ -1403,7 +1409,8 @@
     updateEmpty();
   }
 
-  function initInvenNotify() {
+  function initInvenNotify(hooks) {
+    uiHooks = hooks || {};
     ensureUi();
     renderInvenNotifyPanel(true);
   }
@@ -1439,6 +1446,7 @@
     exportCloseDayRows: exportCloseDayRows,
     importInvenTable: importInvenTable,
     resetOnCloseDay: resetOnCloseDay,
+    getPublishedSignature: getPublishedSignature,
     isDraftDirty: function () {
       return draftDirty;
     },

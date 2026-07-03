@@ -132,10 +132,51 @@
 
   function saveMiscLog(log) {
     saveStorage({ facilityMiscLog: normalizeMiscLog(log) });
+    if (uiHooks.onMiscLogChanged) uiHooks.onMiscLogChanged();
   }
 
   function saveDailyFoundLog(log) {
     saveStorage({ facilityDailyFoundLog: normalizeDailyFoundLog(log) });
+    if (uiHooks.onDailyLogChanged) uiHooks.onDailyLogChanged();
+  }
+
+  function logContentSignature(log) {
+    var copy = JSON.parse(JSON.stringify(log || {}));
+    delete copy.retainUntil;
+    return JSON.stringify(copy);
+  }
+
+  function getMiscSignature() {
+    return logContentSignature(normalizeMiscLog(loadMiscLog()));
+  }
+
+  function getDailySignature() {
+    return logContentSignature(normalizeDailyFoundLog(loadDailyFoundLog()));
+  }
+
+  function exportCloseDayMiscRows(raw) {
+    return collectMiscRows(normalizeMiscLog(raw)).map(function (r) {
+      return [formatAt(r.at), r.room || "", r.categoryLabel || "", r.memo || "", r.by || ""];
+    });
+  }
+
+  function exportCloseDayDailyRows(raw) {
+    return flattenEntryRows(normalizeDailyFoundLog(raw).entries || [], "").map(function (r) {
+      return [formatAt(r.at), r.room || "", r.memo || "", r.by || ""];
+    });
+  }
+
+  function countMiscEntries(raw) {
+    var log = normalizeMiscLog(raw);
+    var n = 0;
+    MISC_CATEGORIES.forEach(function (cat) {
+      n += (log.entries[cat.key] || []).length;
+    });
+    return n;
+  }
+
+  function countDailyEntries(raw) {
+    return (normalizeDailyFoundLog(raw).entries || []).length;
   }
 
   function getOperatorName() {
@@ -752,6 +793,12 @@
     onViewActivated: onViewActivated,
     refreshFromRemote: refreshFromRemote,
     prepareForAdminCloseDay: prepareForAdminCloseDay,
+    getMiscSignature: getMiscSignature,
+    getDailySignature: getDailySignature,
+    exportCloseDayMiscRows: exportCloseDayMiscRows,
+    exportCloseDayDailyRows: exportCloseDayDailyRows,
+    countMiscEntries: countMiscEntries,
+    countDailyEntries: countDailyEntries,
     MISC_CATEGORIES: MISC_CATEGORIES,
   };
 })(typeof window !== "undefined" ? window : this);

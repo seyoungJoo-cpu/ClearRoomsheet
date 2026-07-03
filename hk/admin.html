@@ -1673,6 +1673,18 @@
           ["VIP 메모장", vipMemo.text || vipMemo.images.length ? "있음" : "없음"],
           ["VIP 메모 사진", vipMemo.images.length ? vipMemo.images.length + "장" : "없음"],
           ["인벤 통보", hasInvenNotifyData(snapshot.data.invenNotify) ? "있음" : "없음"],
+          [
+            "컴플레인·지난습득물·세탁",
+            typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.countMiscEntries
+              ? String(HKFacilityLogs.countMiscEntries(snapshot.data.facilityMiscLog)) + "객실"
+              : "—",
+          ],
+          [
+            "당일습득물",
+            typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.countDailyEntries
+              ? String(HKFacilityLogs.countDailyEntries(snapshot.data.facilityDailyFoundLog)) + "객실"
+              : "—",
+          ],
           ["입실 트레이", String(trayCounts.in) + "건"],
           ["삭제·수정 트레이", String(trayCounts.deleted) + "건"],
           ["특이객실 구역", zoneLabels.join(", ") || "—"],
@@ -2170,6 +2182,22 @@
                 entry.entryId || "",
               ];
             }),
+          },
+          {
+            title: "컴플레인·지난습득물·세탁",
+            headers: ["시각", "객실", "구분", "내용", "작성"],
+            rows:
+              typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayMiscRows
+                ? HKFacilityLogs.exportCloseDayMiscRows(snapshot.data.facilityMiscLog)
+                : [],
+          },
+          {
+            title: "당일습득물",
+            headers: ["시각", "객실", "내용", "작성"],
+            rows:
+              typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayDailyRows
+                ? HKFacilityLogs.exportCloseDayDailyRows(snapshot.data.facilityDailyFoundLog)
+                : [],
           }
         );
 

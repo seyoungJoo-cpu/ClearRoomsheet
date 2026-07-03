@@ -19,6 +19,9 @@
       mbCheckGstIds: {},
       frontChatIds: {},
       zoneRoomDismiss: {},
+      facilityMiscSig: "",
+      facilityDailySig: "",
+      invenNotifySig: "",
     };
   }
 
@@ -64,6 +67,9 @@
     if (!s.mbCheckGstIds) s.mbCheckGstIds = {};
     if (!s.frontChatIds) s.frontChatIds = {};
     if (!s.zoneRoomDismiss) s.zoneRoomDismiss = {};
+    if (s.facilityMiscSig == null) s.facilityMiscSig = "";
+    if (s.facilityDailySig == null) s.facilityDailySig = "";
+    if (s.invenNotifySig == null) s.invenNotifySig = "";
     return { all: all, key: k, store: s };
   }
 
@@ -173,6 +179,36 @@
     },
     getZoneRoomDismissId: function (roomKey) {
       return getMapVal("zoneRoomDismiss", roomKey);
+    },
+    markFacilityMiscSig: function (sig) {
+      markMapVal("facilityMiscSig", "_", sig || "");
+    },
+    getFacilityMiscSig: function () {
+      return getMapVal("facilityMiscSig", "_") || "";
+    },
+    hasFacilityMiscSig: function (sig) {
+      if (!sig) return true;
+      return getMapVal("facilityMiscSig", "_") === sig;
+    },
+    markFacilityDailySig: function (sig) {
+      markMapVal("facilityDailySig", "_", sig || "");
+    },
+    getFacilityDailySig: function () {
+      return getMapVal("facilityDailySig", "_") || "";
+    },
+    hasFacilityDailySig: function (sig) {
+      if (!sig) return true;
+      return getMapVal("facilityDailySig", "_") === sig;
+    },
+    markInvenNotifySig: function (sig) {
+      markMapVal("invenNotifySig", "_", sig || "");
+    },
+    getInvenNotifySig: function () {
+      return getMapVal("invenNotifySig", "_") || "";
+    },
+    hasInvenNotifySig: function (sig) {
+      if (!sig) return true;
+      return getMapVal("invenNotifySig", "_") === sig;
     },
     mergeInto: function (target) {
       var s = readOp();

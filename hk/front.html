@@ -6340,6 +6340,7 @@
       >
         <div class="panel-head-row">
           <h2 id="facilityMiscPanelTitle">컴플레인 · 지난습득물 · 세탁</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityMiscPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
           객실별로 메모를 남깁니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
@@ -6406,6 +6407,7 @@
       >
         <div class="panel-head-row">
           <h2 id="facilityDailyFoundPanelTitle">당일습득물</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityDailyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
           당일 습득물을 객실별로 기록합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
@@ -6549,6 +6551,7 @@
       >
         <div class="panel-head-row">
           <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
+          <button type="button" class="panel-alert-ack-btn" id="btnAckInvenNotifyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
           저장된 표는 프론트 모드 없이도 조회됩니다. 프론트 모드에서 편집 · Ctrl+Z 되돌리기 · 「저장」으로 공유합니다.
@@ -6940,6 +6943,12 @@
       var knownOrderAlertIds = {};
       var pendingFacilityOrderAlert = false;
       var pendingFacilityOrderIssueAlert = false;
+      var pendingFacilityMiscAlert = false;
+      var pendingFacilityDailyAlert = false;
+      var pendingInvenNotifyAlert = false;
+      var knownFacilityMiscSig = "";
+      var knownFacilityDailySig = "";
+      var knownInvenNotifySig = "";
       var pendingRequestAlert = false;
       var pendingRequestModifyAlert = false;
       /** 처리·예정 카드 깜빡임 — 정비관리 등에서 내용 수정 시 */
@@ -8227,11 +8236,17 @@
         }
         if (changed.indexOf("hkStorage") >= 0) {
           refreshMain({ detectNoticeChange: true });
+          detectFacilityMiscChange();
+          detectFacilityDailyChange();
+          detectInvenNotifyChange();
           if (
             sidebarMainView === "invenNotify" &&
             typeof HKInvenNotify !== "undefined"
           ) {
             HKInvenNotify.render();
+          }
+          if (typeof HKFacilityLogs !== "undefined") {
+            HKFacilityLogs.refreshFromRemote();
           }
         }
         if (changed.indexOf("hkCloseDayAt") >= 0) {
@@ -8542,6 +8557,13 @@
           HKInvenNotify.resetOnCloseDay();
         }
         resetFrontEmbedPanelsOnCloseDay();
+        pendingFacilityMiscAlert = false;
+        pendingFacilityDailyAlert = false;
+        pendingInvenNotifyAlert = false;
+        initFacilityLogAlertTracking();
+        initInvenNotifyAlertTracking();
+        applyFacilityLogSidebarAlertUi();
+        applyInvenNotifySidebarAlertUi();
       }
 
       function buildRoomChangeLines(prev, next) {
@@ -12881,6 +12903,12 @@
         if (el) el.hidden = !(pendingFacilityOrderAlert || pendingFacilityOrderIssueAlert);
         el = document.getElementById("btnAckFacilityFeedback");
         if (el) el.hidden = !(pendingFacilityOrderAlert || pendingFacilityOrderIssueAlert);
+        el = document.getElementById("btnAckFacilityMiscPanel");
+        if (el) el.hidden = !pendingFacilityMiscAlert;
+        el = document.getElementById("btnAckFacilityDailyPanel");
+        if (el) el.hidden = !pendingFacilityDailyAlert;
+        el = document.getElementById("btnAckInvenNotifyPanel");
+        if (el) el.hidden = !pendingInvenNotifyAlert;
         el = document.getElementById("btnAckMbInvPanel");
         if (el) el.hidden = !(pendingMbInvAlert || pendingMbInvIssue);
         el = document.getElementById("btnAckMbInvFeedback");
@@ -12916,6 +12944,9 @@
           ["btnAckOrderFeedback", clearOrderSidebarAlerts],
           ["btnAckFacilityPanel", clearFacilitySidebarAlerts],
           ["btnAckFacilityFeedback", clearFacilitySidebarAlerts],
+          ["btnAckFacilityMiscPanel", clearFacilityMiscSidebarAlerts],
+          ["btnAckFacilityDailyPanel", clearFacilityDailySidebarAlerts],
+          ["btnAckInvenNotifyPanel", clearInvenNotifySidebarAlerts],
           ["btnAckMbInvPanel", clearMbInvSidebarAlerts],
           ["btnAckMbInvFeedback", clearMbInvSidebarAlerts],
           ["btnAckMbCheckPanel", clearMbCheckSidebarAlerts],
@@ -13020,6 +13051,104 @@
         }
       }
 
+      function getFacilityMiscSignature() {
+        if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.getMiscSignature) {
+          return HKFacilityLogs.getMiscSignature();
+        }
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : {};
+        return JSON.stringify(data.facilityMiscLog || {});
+      }
+
+      function getFacilityDailySignature() {
+        if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.getDailySignature) {
+          return HKFacilityLogs.getDailySignature();
+        }
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : {};
+        return JSON.stringify(data.facilityDailyFoundLog || {});
+      }
+
+      function getInvenNotifySignature() {
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.getPublishedSignature) {
+          return HKInvenNotify.getPublishedSignature();
+        }
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : {};
+        return JSON.stringify(data.invenNotify || {});
+      }
+
+      function initFacilityLogAlertTracking() {
+        knownFacilityMiscSig = getFacilityMiscSignature();
+        knownFacilityDailySig = getFacilityDailySignature();
+      }
+
+      function initInvenNotifyAlertTracking() {
+        knownInvenNotifySig = getInvenNotifySignature();
+      }
+
+      function applyFacilityLogSidebarAlertUi() {
+        var misc = document.getElementById("sidebarBtnFacilityMisc");
+        var daily = document.getElementById("sidebarBtnFacilityDailyFound");
+        if (misc) misc.classList.toggle("is-order-alert", pendingFacilityMiscAlert);
+        if (daily) daily.classList.toggle("is-order-alert", pendingFacilityDailyAlert);
+        syncPanelAckButtons();
+      }
+
+      function applyInvenNotifySidebarAlertUi() {
+        var nav = document.getElementById("sidebarBtnInvenNotify");
+        if (nav) nav.classList.toggle("is-order-alert", pendingInvenNotifyAlert);
+        syncPanelAckButtons();
+      }
+
+      function detectFacilityMiscChange() {
+        var sig = getFacilityMiscSignature();
+        if (sig === knownFacilityMiscSig) return;
+        knownFacilityMiscSig = sig;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasFacilityMiscSig(sig)) return;
+        if (sidebarMainView !== "facilityMisc") pendingFacilityMiscAlert = true;
+        applyFacilityLogSidebarAlertUi();
+      }
+
+      function detectFacilityDailyChange() {
+        var sig = getFacilityDailySignature();
+        if (sig === knownFacilityDailySig) return;
+        knownFacilityDailySig = sig;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasFacilityDailySig(sig)) return;
+        if (sidebarMainView !== "facilityDailyFound") pendingFacilityDailyAlert = true;
+        applyFacilityLogSidebarAlertUi();
+      }
+
+      function detectInvenNotifyChange() {
+        var sig = getInvenNotifySignature();
+        if (sig === knownInvenNotifySig) return;
+        knownInvenNotifySig = sig;
+        if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasInvenNotifySig(sig)) return;
+        if (sidebarMainView !== "invenNotify") pendingInvenNotifyAlert = true;
+        applyInvenNotifySidebarAlertUi();
+      }
+
+      function clearFacilityMiscSidebarAlerts() {
+        var sig = getFacilityMiscSignature();
+        knownFacilityMiscSig = sig;
+        if (typeof HKAlertAck !== "undefined") HKAlertAck.markFacilityMiscSig(sig);
+        pendingFacilityMiscAlert = false;
+        applyFacilityLogSidebarAlertUi();
+      }
+
+      function clearFacilityDailySidebarAlerts() {
+        var sig = getFacilityDailySignature();
+        knownFacilityDailySig = sig;
+        if (typeof HKAlertAck !== "undefined") HKAlertAck.markFacilityDailySig(sig);
+        pendingFacilityDailyAlert = false;
+        applyFacilityLogSidebarAlertUi();
+      }
+
+      function clearInvenNotifySidebarAlerts() {
+        var sig = getInvenNotifySignature();
+        knownInvenNotifySig = sig;
+        if (typeof HKAlertAck !== "undefined") HKAlertAck.markInvenNotifySig(sig);
+        pendingInvenNotifyAlert = false;
+        applyInvenNotifySidebarAlertUi();
+      }
+
       function registerOrderIssueAlert(entryId) {
         if (!entryId) return;
         if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasOrderIssueId(entryId)) {
@@ -13032,6 +13161,7 @@
           if (sidebarMainView !== "facility") {
             pendingFacilityOrderIssueAlert = true;
           }
+          applyFacilitySidebarAlertUi();
         } else if (sidebarMainView !== "order") {
           pendingOrderIssueAlert = true;
           applyOrderSidebarAlertUi();
@@ -16309,6 +16439,8 @@
         applyRequestSidebarAlertUi();
         applyFrontChatSidebarAlertUi();
         applyMbSidebarAlertUi();
+        applyFacilityLogSidebarAlertUi();
+        applyInvenNotifySidebarAlertUi();
         rebuildChangeAlertsFromLog({ skipRender: true });
         rebuildRequestModifyAlerts();
         applyZoneAlertUi();
@@ -16329,10 +16461,14 @@
       initOrderIssueTracking();
       initRequestAlertTracking();
       initMbWorkflowAlertTracking();
+      initFacilityLogAlertTracking();
+      initInvenNotifyAlertTracking();
       setupPanelAckButtons();
       applyOrderSidebarAlertUi();
       applyRequestSidebarAlertUi();
       applyFrontChatSidebarAlertUi();
+      applyFacilityLogSidebarAlertUi();
+      applyInvenNotifySidebarAlertUi();
       syncPanelAckButtons();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
@@ -16342,6 +16478,8 @@
           initOrderIssueTracking();
           initRequestAlertTracking();
           initMbWorkflowAlertTracking();
+          initFacilityLogAlertTracking();
+          initInvenNotifyAlertTracking();
         });
       }
       renderSidebarZoneTabs();
@@ -16380,7 +16518,11 @@
         HKMbWorkflow.renderMbCheckPanels();
       }
       if (typeof HKInvenNotify !== "undefined") {
-        HKInvenNotify.init();
+        HKInvenNotify.init({
+          onPublished: function () {
+            detectInvenNotifyChange();
+          },
+        });
       }
       if (typeof HKFacilityLogs !== "undefined") {
         HKFacilityLogs.init({
@@ -16395,6 +16537,8 @@
           hkBindPhotoPaste: hkBindPhotoPaste,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
+          onMiscLogChanged: detectFacilityMiscChange,
+          onDailyLogChanged: detectFacilityDailyChange,
         });
       }
 
@@ -17034,14 +17178,20 @@
         var bFacMisc = document.getElementById("sidebarBtnFacilityMisc");
         if (bFacMisc) {
           bFacMisc.addEventListener("click", function () {
-            if (sidebarMainView === "facilityMisc") return;
+            if (sidebarMainView === "facilityMisc") {
+              if (pendingFacilityMiscAlert) clearFacilityMiscSidebarAlerts();
+              return;
+            }
             showSidebarFacilityMiscView();
           });
         }
         var bFacDaily = document.getElementById("sidebarBtnFacilityDailyFound");
         if (bFacDaily) {
           bFacDaily.addEventListener("click", function () {
-            if (sidebarMainView === "facilityDailyFound") return;
+            if (sidebarMainView === "facilityDailyFound") {
+              if (pendingFacilityDailyAlert) clearFacilityDailySidebarAlerts();
+              return;
+            }
             showSidebarFacilityDailyFoundView();
           });
         }
@@ -17059,7 +17209,10 @@
         }
         if (bInvenNotify) {
           bInvenNotify.addEventListener("click", function () {
-            if (sidebarMainView === "invenNotify") return;
+            if (sidebarMainView === "invenNotify") {
+              if (pendingInvenNotifyAlert) clearInvenNotifySidebarAlerts();
+              return;
+            }
             showSidebarInvenNotifyView();
           });
         }
