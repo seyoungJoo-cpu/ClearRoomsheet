@@ -720,6 +720,12 @@
       cursor: default;
     }
 
+    .request-feedback__facility-btn.is-done.is-ok {
+      color: #047857;
+      background: #d1fae5;
+      border-color: #6ee7b7;
+    }
+
     .request-feedback__memo2-editor-wrap {
       margin-top: 8px;
       padding: 10px;
@@ -12509,13 +12515,23 @@
             maintActs.appendChild(memo2BtnP);
             var facilityBtn = document.createElement("button");
             facilityBtn.type = "button";
-            var facilityDone = facActive;
-            facilityBtn.className =
-              "request-feedback__facility-btn" + (facilityDone ? " is-done" : "");
             facilityBtn.setAttribute("data-req-id", entry.id);
-            facilityBtn.textContent = facilityDone ? "시설 오더됨" : "시설 확인";
-            facilityBtn.setAttribute("aria-label", facilityDone ? "시설 오더 생성됨" : "시설 확인 오더 생성");
-            if (facilityDone) facilityBtn.disabled = true;
+            var facStatus = getFacilityRequestStatus(entry.id);
+            if (facStatus === "ok") {
+              facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
+              facilityBtn.textContent = "시설OK";
+              facilityBtn.setAttribute("aria-label", "시설 확인 완료");
+              facilityBtn.disabled = true;
+            } else if (facStatus === "pending") {
+              facilityBtn.className = "request-feedback__facility-btn is-done";
+              facilityBtn.textContent = "시설 오더됨";
+              facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
+              facilityBtn.disabled = true;
+            } else {
+              facilityBtn.className = "request-feedback__facility-btn";
+              facilityBtn.textContent = "시설 확인";
+              facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
+            }
             maintActs.appendChild(facilityBtn);
             li.appendChild(maintActs);
           }
@@ -12537,14 +12553,8 @@
             cancelReqBtn.textContent = "요청 취소";
             cancelReqBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
             frontActs.appendChild(cancelReqBtn);
-            if (findFacilityOrderForRequest(entry.id)) {
-              var facilityDoneFront = document.createElement("button");
-              facilityDoneFront.type = "button";
-              facilityDoneFront.className = "request-feedback__facility-btn is-done";
-              facilityDoneFront.textContent = "시설요청됨";
-              facilityDoneFront.setAttribute("aria-label", "시설 요청됨");
-              facilityDoneFront.disabled = true;
-              frontActs.appendChild(facilityDoneFront);
+            if (getFacilityRequestStatus(entry.id) !== "none") {
+              appendFacilityRequestStatusBtn(frontActs, entry.id);
             }
             li.appendChild(frontActs);
           }
@@ -13754,6 +13764,35 @@
         return phase !== "cancelled" && phase !== "deployed";
       }
 
+      function getFacilityRequestStatus(reqId) {
+        var o = findFacilityOrderForRequest(reqId);
+        if (!o) return "none";
+        var phase = getOrderPhase(o);
+        if (phase === "deployed") return "ok";
+        if (phase === "cancelled") return "none";
+        return "pending";
+      }
+
+      function appendFacilityRequestStatusBtn(parent, reqId, opts) {
+        if (!parent || !reqId) return;
+        opts = opts || {};
+        var status = getFacilityRequestStatus(reqId);
+        if (status === "none") return;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "request-feedback__facility-btn is-done";
+        btn.disabled = true;
+        if (status === "ok") {
+          btn.classList.add("is-ok");
+          btn.textContent = "시설OK";
+          btn.setAttribute("aria-label", "시설 확인 완료");
+        } else {
+          btn.textContent = opts.pendingLabel || "시설요청됨";
+          btn.setAttribute("aria-label", opts.pendingAria || "시설 요청됨");
+        }
+        parent.appendChild(btn);
+      }
+
       function renderOrderWorkPanels(opts) {
         opts = opts || {};
         renderOrderWorkPanelBundle("order", isRegularOrder, opts);
@@ -14166,6 +14205,12 @@
               m2CardBtn.textContent = memo2Sched ? "메모2 수정" : "메모2 입력";
               m2CardBtn.setAttribute("aria-label", memo2Sched ? "메모2 수정" : "메모2 입력");
               actions.appendChild(m2CardBtn);
+              if (getFacilityRequestStatus(entry.id) !== "none") {
+                appendFacilityRequestStatusBtn(actions, entry.id, {
+                  pendingLabel: "시설 오더됨",
+                  pendingAria: "시설 오더 생성됨",
+                });
+              }
             }
             if (frontMode) {
               var memoCardBtn = document.createElement("button");
@@ -14182,14 +14227,8 @@
               useBtn.setAttribute("aria-label", "사용 완료하여 목록에서 제거");
               useBtn.textContent = "사용";
               actions.appendChild(useBtn);
-              if (findFacilityOrderForRequest(entry.id)) {
-                var facilityDoneSched = document.createElement("button");
-                facilityDoneSched.type = "button";
-                facilityDoneSched.className = "request-feedback__facility-btn is-done";
-                facilityDoneSched.textContent = "시설요청됨";
-                facilityDoneSched.setAttribute("aria-label", "시설 요청됨");
-                facilityDoneSched.disabled = true;
-                actions.appendChild(facilityDoneSched);
+              if (getFacilityRequestStatus(entry.id) !== "none") {
+                appendFacilityRequestStatusBtn(actions, entry.id);
               }
             }
             li.appendChild(actions);
