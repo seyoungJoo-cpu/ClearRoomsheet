@@ -4853,6 +4853,11 @@
       font-size: 0.72rem;
     }
 
+    .request-feedback__front-actions .request-feedback__facility-btn,
+    .sched-req-card__actions .request-feedback__facility-btn {
+      margin-top: 0;
+    }
+
     .request-row {
       display: flex;
       flex-wrap: wrap;
@@ -12015,6 +12020,15 @@
             cancelReqBtn.textContent = "요청 취소";
             cancelReqBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
             frontActs.appendChild(cancelReqBtn);
+            if (findFacilityOrderForRequest(entry.id)) {
+              var facilityDoneFront = document.createElement("button");
+              facilityDoneFront.type = "button";
+              facilityDoneFront.className = "request-feedback__facility-btn is-done";
+              facilityDoneFront.textContent = "시설요청됨";
+              facilityDoneFront.setAttribute("aria-label", "시설 요청됨");
+              facilityDoneFront.disabled = true;
+              frontActs.appendChild(facilityDoneFront);
+            }
             li.appendChild(frontActs);
           }
 
@@ -13618,6 +13632,15 @@
               useBtn.setAttribute("aria-label", "사용 완료하여 목록에서 제거");
               useBtn.textContent = "사용";
               actions.appendChild(useBtn);
+              if (findFacilityOrderForRequest(entry.id)) {
+                var facilityDoneSched = document.createElement("button");
+                facilityDoneSched.type = "button";
+                facilityDoneSched.className = "request-feedback__facility-btn is-done";
+                facilityDoneSched.textContent = "시설요청됨";
+                facilityDoneSched.setAttribute("aria-label", "시설 요청됨");
+                facilityDoneSched.disabled = true;
+                actions.appendChild(facilityDoneSched);
+              }
             }
             li.appendChild(actions);
           }
