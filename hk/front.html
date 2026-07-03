@@ -2283,16 +2283,19 @@
       color: var(--text-muted);
     }
 
-    .room-card__memo-block--m2.is-editable {
+    .room-card__memo-block--m2.is-editable,
+    .room-card__memo-block--m1.is-editable {
       cursor: pointer;
     }
 
-    .room-card__memo-block--m2.is-editable:hover .room-card__memo-target {
+    .room-card__memo-block--m2.is-editable:hover .room-card__memo2-text,
+    .room-card__memo-block--m1.is-editable:hover .room-card__memo1-text {
       outline: 1px dashed rgba(30, 58, 95, 0.45);
       outline-offset: 2px;
       border-radius: 4px;
     }
 
+    .room-memo1-editor,
     .room-memo2-editor {
       margin-top: 6px;
       padding: 10px;
@@ -5871,8 +5874,8 @@
               <h3 class="zone-tray__title">입실</h3>
               <ul class="room-list-main zone-tray__list" id="zoneTrayInList"></ul>
             </section>
-            <section class="zone-tray zone-tray--deleted" id="zoneTrayDeleted" hidden aria-label="삭제·수정 객실">
-              <h3 class="zone-tray__title">삭제·수정</h3>
+            <section class="zone-tray zone-tray--deleted" id="zoneTrayDeleted" hidden aria-label="삭제 객실">
+              <h3 class="zone-tray__title">삭제</h3>
               <ul class="room-list-main zone-tray__list" id="zoneTrayDeletedList"></ul>
             </section>
             <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
@@ -6475,7 +6478,7 @@
 
       function hasOpenHkEditors() {
         return !!document.querySelector(
-          ".room-time-editor, .room-memo2-editor, .request-feedback__sched-editor, .front-chat__msg-edit"
+          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .front-chat__msg-edit"
         );
       }
 
@@ -8415,7 +8418,7 @@
           var prevRow = dataSave.rooms[zone][ix];
           next.time = prevRow && prevRow.time != null ? prevRow.time : "";
           next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
-          next.tray = "deleted";
+          next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
           var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
           if (!changeEntry) {
             showHkActionToast("변경된 내용이 없습니다.");
@@ -13831,6 +13834,15 @@
         if (ed) ed.remove();
       }
 
+      function closeMemo1Editor() {
+        document.querySelectorAll(".room-memo1-editor").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".room-card__memo1-text").forEach(function (p) {
+          p.style.display = "";
+        });
+      }
+
       function closeMemo2Editor() {
         document.querySelectorAll(".room-memo2-editor").forEach(function (n) {
           n.remove();
@@ -13841,6 +13853,7 @@
       }
 
       function openTimeEditor(card, zone, idx) {
+        closeMemo1Editor();
         closeMemo2Editor();
         closeTimeEditor();
         var data = HKStorage.load();
@@ -13921,9 +13934,80 @@
         inp.select();
       }
 
-      function openMemo2Editor(card, zone, idx) {
-        closeTimeEditor();
+      function openMemo1Editor(card, zone, idx) {
+        closeMemo1Editor();
         closeMemo2Editor();
+        closeTimeEditor();
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][idx];
+        if (!room) return;
+
+        var block = card.querySelector(".room-card__memo-block--m1");
+        var p1 = card.querySelector(".room-card__memo1-text");
+        if (!block || !p1) return;
+
+        var wrap = document.createElement("div");
+        wrap.className = "room-memo1-editor room-memo2-editor";
+        var ta = document.createElement("textarea");
+        ta.className = "room-memo2-editor__ta";
+        ta.value = room.memo1 != null ? String(room.memo1) : "";
+        ta.setAttribute("aria-label", "FD");
+        var actions = document.createElement("div");
+        actions.className = "room-memo2-editor__actions";
+        var btnOk = document.createElement("button");
+        btnOk.type = "button";
+        btnOk.className = "room-memo2-editor__ok";
+        btnOk.textContent = "적용";
+        var btnCancel = document.createElement("button");
+        btnCancel.type = "button";
+        btnCancel.className = "room-memo2-editor__cancel";
+        btnCancel.textContent = "취소";
+        actions.appendChild(btnOk);
+        actions.appendChild(btnCancel);
+        wrap.appendChild(ta);
+        wrap.appendChild(actions);
+        block.appendChild(wrap);
+        p1.style.display = "none";
+
+        function commit() {
+          var d = HKStorage.load();
+          if (d.rooms[zone] && d.rooms[zone][idx]) {
+            d.rooms[zone][idx].memo1 = ta.value;
+            HKStorage.save(d);
+          }
+          closeMemo1Editor();
+          renderRoomsForZone(zone);
+        }
+
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+            ev.preventDefault();
+            commit();
+          }
+        });
+
+        btnOk.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          commit();
+        });
+
+        btnCancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          closeMemo1Editor();
+          renderRoomsForZone(zone);
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        ta.focus();
+      }
+
+      function openMemo2Editor(card, zone, idx) {
+        closeMemo1Editor();
+        closeMemo2Editor();
+        closeTimeEditor();
         var data = HKStorage.load();
         var room = data.rooms[zone] && data.rooms[zone][idx];
         if (!room) return;
@@ -14030,6 +14114,7 @@
         var m2 = (room.memo2 || "").trim();
         var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
         var tm = (room.time || "").trim();
+        var editableMemo = (maintenanceMode || frontMode) && !cardOpts.trayMode;
 
         var li = document.createElement("li");
         var roomPending = isRoomChangePending(zone, room.number);
@@ -14051,6 +14136,8 @@
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
           li.title = "변경 알림 · 클릭하면 강조 해제";
+        } else if (editableMemo) {
+          li.title = "FD·정비 줄 클릭하여 메모 입력";
         } else if (maintenanceMode && !cardOpts.trayMode) {
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
@@ -14081,9 +14168,11 @@
         surface.appendChild(timeDisp);
 
         var b1 = document.createElement("div");
-        b1.className = "room-card__memo-block";
+        b1.className =
+          "room-card__memo-block room-card__memo-block--m1" +
+          (editableMemo ? " is-editable" : "");
         var p1 = document.createElement("p");
-        p1.className = "room-card__memo" + (m1 ? "" : " is-empty");
+        p1.className = "room-card__memo room-card__memo1-text" + (m1 ? "" : " is-empty");
         p1.textContent = m1 ? "FD : " + m1 : "FD : —";
         b1.appendChild(p1);
         surface.appendChild(b1);
@@ -14091,7 +14180,7 @@
         var b2 = document.createElement("div");
         b2.className =
           "room-card__memo-block room-card__memo-block--m2" +
-          (maintenanceMode && !cardOpts.trayMode ? " is-editable" : "");
+          (editableMemo ? " is-editable" : "");
         var p2 = document.createElement("p");
         p2.className =
           "room-card__memo room-card__memo2-text" + (m2 || m2Img ? "" : " is-empty");
@@ -14296,6 +14385,7 @@
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
         if (!roomList || !roomEmpty || !label) return;
+        closeMemo1Editor();
         closeMemo2Editor();
         closeTimeEditor();
         if (!zone) {
@@ -14889,19 +14979,11 @@
         return true;
       }
 
-      function handleZoneRoomListPointerDown(e, allowMaintenanceActions) {
-        if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
-        if (e.target.closest(".room-time-editor") || e.target.closest(".room-memo2-editor")) return;
-        if (e.target.closest("#zoneRoomManagePanel")) return;
-
-        var alertCard = e.target.closest(".room-card.is-change-alert");
-        if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return true;
-
-        var histCard = e.target.closest(".room-card.is-history-toggle");
-        if (histCard && handleRoomHistoryToggle(histCard, e)) return true;
-
-        if (!allowMaintenanceActions || !maintenanceMode) return false;
-
+      function tryOpenRoomMemoEditorFromClick(e) {
+        if (!frontMode && !maintenanceMode) return false;
+        if (e.target.closest(".room-memo1-editor") || e.target.closest(".room-memo2-editor")) {
+          return false;
+        }
         var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
         if (m2block) {
           var cardM = m2block.closest(".room-card");
@@ -14913,6 +14995,35 @@
           openMemo2Editor(cardM, getActiveZone(), ixM);
           return true;
         }
+        var m1block = e.target.closest(".room-card__memo-block--m1.is-editable");
+        if (m1block) {
+          var cardF = m1block.closest(".room-card");
+          if (!cardF) return false;
+          var ixF = parseInt(cardF.getAttribute("data-room-index"), 10);
+          if (isNaN(ixF)) return false;
+          e.preventDefault();
+          e.stopPropagation();
+          openMemo1Editor(cardF, getActiveZone(), ixF);
+          return true;
+        }
+        return false;
+      }
+
+      function handleZoneRoomListPointerDown(e, allowMaintenanceActions) {
+        if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
+        if (e.target.closest(".room-time-editor") || e.target.closest(".room-memo2-editor")) return;
+        if (e.target.closest(".room-memo1-editor")) return;
+        if (e.target.closest("#zoneRoomManagePanel")) return;
+
+        var alertCard = e.target.closest(".room-card.is-change-alert");
+        if (alertCard && handleRoomChangeAlertDismiss(alertCard, e)) return true;
+
+        var histCard = e.target.closest(".room-card.is-history-toggle");
+        if (histCard && handleRoomHistoryToggle(histCard, e)) return true;
+
+        if (tryOpenRoomMemoEditorFromClick(e)) return true;
+
+        if (!allowMaintenanceActions || !maintenanceMode) return false;
 
         var card = e.target.closest(".room-card.is-clickable");
         if (!card || card.querySelector(".room-time-editor")) return false;
@@ -14931,7 +15042,7 @@
         });
         zoneBlockBody.addEventListener("keydown", function (e) {
           if (e.key !== "Enter" && e.key !== " ") return;
-          if (e.target.closest(".room-memo2-editor")) return;
+          if (e.target.closest(".room-memo2-editor") || e.target.closest(".room-memo1-editor")) return;
           handleZoneRoomListPointerDown(e, false);
         });
       }
