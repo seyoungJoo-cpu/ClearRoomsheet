@@ -9804,6 +9804,29 @@
         setLineWithEmTime(containerEl, "처리·예정 · ", sched);
       }
 
+      function appendFacilityPendingSchedEl(parent, entry, opts) {
+        if (!parent || !entry) return false;
+        opts = opts || {};
+        var facActive = hasActiveFacilityOrderForRequest(entry.id);
+        var facSchedStr =
+          entry.facilitySched != null ? String(entry.facilitySched).trim() : "";
+        if (!facActive || !facSchedStr) return false;
+        var schedEl = document.createElement(opts.tagName || "div");
+        schedEl.className =
+          opts.className || "request-feedback__sched is-facility-pending";
+        schedEl.appendChild(document.createTextNode("정비 시간 · "));
+        var facTimeEm = document.createElement("span");
+        facTimeEm.className = "hk-time-em";
+        facTimeEm.textContent = facSchedStr;
+        schedEl.appendChild(facTimeEm);
+        var facPendingHint = document.createElement("span");
+        facPendingHint.className = "request-feedback__facility-pending-hint";
+        facPendingHint.textContent = "시설 확인중";
+        schedEl.appendChild(facPendingHint);
+        parent.appendChild(schedEl);
+        return true;
+      }
+
       function hkBoardClassifyRoom(roomStr) {
         var r = normalizeRoomDigits(roomStr);
         if (!r) return null;
@@ -12517,26 +12540,13 @@
           }
 
           if (maintenanceMode) {
-            var facActive = hasActiveFacilityOrderForRequest(entry.id);
-            var facSchedStr =
-              entry.facilitySched != null ? String(entry.facilitySched).trim() : "";
-            var schedEl = document.createElement("div");
-            if (facActive && facSchedStr) {
-              schedEl.className = "request-feedback__sched is-facility-pending";
-              schedEl.appendChild(document.createTextNode("정비 시간 · "));
-              var facTimeEm = document.createElement("span");
-              facTimeEm.className = "hk-time-em";
-              facTimeEm.textContent = facSchedStr;
-              schedEl.appendChild(facTimeEm);
-              var facPendingHint = document.createElement("span");
-              facPendingHint.className = "request-feedback__facility-pending-hint";
-              facPendingHint.textContent = "시설 확인중";
-              schedEl.appendChild(facPendingHint);
-            } else {
+            if (!appendFacilityPendingSchedEl(li, entry)) {
+              var schedEl = document.createElement("div");
               schedEl.className = "request-feedback__sched is-empty";
               schedEl.textContent = "처리·예정 —";
+              li.appendChild(schedEl);
             }
-            li.appendChild(schedEl);
+            var facActive = hasActiveFacilityOrderForRequest(entry.id);
             var maintActs = document.createElement("div");
             maintActs.className = "request-feedback__maint-actions";
             if (facActive) {
@@ -12583,6 +12593,8 @@
             }
             maintActs.appendChild(facilityBtn);
             li.appendChild(maintActs);
+          } else if (frontMode) {
+            appendFacilityPendingSchedEl(li, entry);
           }
 
           if (frontMode) {
@@ -14316,6 +14328,12 @@
           sl.className = "room-card__time-display";
           appendSchedTimeDisplay(sl, entry);
           li.appendChild(sl);
+          if (frontMode || maintenanceMode) {
+            appendFacilityPendingSchedEl(li, entry, {
+              tagName: "p",
+              className: "room-card__time-display request-feedback__sched is-facility-pending",
+            });
+          }
 
           var acc = document.createElement("p");
           acc.className = "room-card__memo sched-req-card__received";
