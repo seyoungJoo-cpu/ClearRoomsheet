@@ -8060,9 +8060,9 @@
           pair.appendChild(toWrap);
           stack.appendChild(pair);
         } else {
-          var numInput = document.createElement("input");
-          numInput.type = "text";
+          var numInput = document.createElement("textarea");
           numInput.className = "af-num";
+          numInput.rows = 2;
           numInput.placeholder = "객실번호 (쉼표·공백·줄바꿈으로 여러 개)";
           numInput.autocomplete = "off";
           stack.appendChild(numInput);
