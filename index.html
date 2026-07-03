@@ -4112,6 +4112,7 @@
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {
             try {
+              localStorage.setItem("makeroom-hk-entry", "1");
               sessionStorage.setItem("makeroom-hk-entry", "1");
             } catch (e) {}
             saveRoomingStateToLocal();
