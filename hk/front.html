@@ -6059,9 +6059,9 @@
         </section>
 
         <section class="order-work-section order-work-section--deployed" id="facilityDeployedSection" aria-labelledby="facilityDeployedTitle">
-          <h3 class="order-work-section__title" id="facilityDeployedTitle">투입완료</h3>
+          <h3 class="order-work-section__title" id="facilityDeployedTitle">입실 가능</h3>
           <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityDeployedEmpty">투입완료 건이 없습니다.</p>
+          <p class="order-work-empty" id="facilityDeployedEmpty">입실 가능 건이 없습니다.</p>
         </section>
       </section>
 
@@ -13132,7 +13132,7 @@
         wanBtn.type = "button";
         wanBtn.className = "order-work__wan-btn";
         wanBtn.setAttribute("data-order-id", entry.id || "");
-        wanBtn.textContent = "투입 완료";
+        wanBtn.textContent = isFacilityOrder(entry) ? "입실 가능" : "투입 완료";
         acts.appendChild(wanBtn);
         li.appendChild(acts);
       }
@@ -13219,6 +13219,7 @@
 
       function renderOrderWorkPanelBundle(prefix, entryFilter, opts) {
         opts = opts || {};
+        var isFacilityPanel = prefix === "facility";
         var issueList = document.getElementById(prefix + "IssueList");
         var issueEmpty = document.getElementById(prefix + "IssueEmpty");
         var acceptedList = document.getElementById(prefix + "AcceptedList");
@@ -13379,7 +13380,7 @@
             depMeta.className = "order-feedback__item-memo";
             depMeta.style.marginTop = "6px";
             depMeta.style.paddingTop = "6px";
-            depMeta.textContent = "투입 : " + deployedBy;
+            depMeta.textContent = (isFacilityPanel ? "입실 : " : "투입 : ") + deployedBy;
             li.appendChild(depMeta);
           }
           if (!chatOpen) {
@@ -13390,7 +13391,9 @@
               chatCount > 0 ? "대화 " + chatCount + "건 · 클릭하여 보기" : "클릭하여 대화";
             li.appendChild(hint);
           } else {
-            appendOrderChatUi(li, entry, { chatLabel: "투입완료 오더 채팅 메시지" });
+            appendOrderChatUi(li, entry, {
+              chatLabel: isFacilityPanel ? "입실 가능 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
+            });
           }
           deployedList.appendChild(li);
         });
@@ -13422,9 +13425,13 @@
         if (deployedEmpty) {
           deployedEmpty.hidden = deployedEntries.length > 0;
           if (!deployedEntries.length && filterRaw) {
-            deployedEmpty.textContent = "입력한 객실번호에 해당하는 투입완료 건이 없습니다.";
+            deployedEmpty.textContent = isFacilityPanel
+              ? "입력한 객실번호에 해당하는 입실 가능 건이 없습니다."
+              : "입력한 객실번호에 해당하는 투입완료 건이 없습니다.";
           } else {
-            deployedEmpty.textContent = "투입완료 건이 없습니다.";
+            deployedEmpty.textContent = isFacilityPanel
+              ? "입실 가능 건이 없습니다."
+              : "투입완료 건이 없습니다.";
           }
         }
         setIssueSectionVisible(
