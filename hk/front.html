@@ -1243,6 +1243,14 @@
       font-weight: 600;
     }
 
+    .request-feedback__facility-pending-hint {
+      margin-left: 6px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      color: #0f766e;
+      opacity: 0.9;
+    }
+
     .request-feedback__facility-sched-btn {
       color: #0f766e;
       border-color: #5eead4;
@@ -2935,6 +2943,17 @@
       padding-bottom: 6px;
     }
 
+    .sidebar-nav__rule {
+      height: 0;
+      margin: 4px 2px 6px;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-nav__rule[hidden] {
+      display: none !important;
+    }
+
     .mb-workflow__tag {
       display: block;
       margin-bottom: 8px;
@@ -3698,34 +3717,7 @@
       overflow-y: auto;
     }
 
-    .sidebar-section--facility-sub {
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .sidebar-section--facility-sub .sidebar-title {
-      padding: 8px 12px 4px;
-      font-size: 0.625rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .sidebar-section--facility-sub .sidebar-nav {
-      padding: 0 8px 8px;
-      gap: 4px;
-    }
-
-    .sidebar-section--facility-sub .sidebar-nav__btn {
-      font-size: 0.6875rem;
-      line-height: 1.25;
-      padding: 8px 8px;
-      white-space: normal;
-      text-align: left;
-    }
-
-    .facility-log-toolbar {
+    .sidebar-section--zones {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -5901,21 +5893,13 @@
           >
             시설 관리
           </button>
-        </div>
-      </nav>
-      <nav
-        class="sidebar-section sidebar-section--facility-sub"
-        id="sidebarFacilitySubSection"
-        hidden
-        aria-label="시설 업무"
-      >
-        <div class="sidebar-title">시설 업무</div>
-        <div class="sidebar-nav">
+          <hr class="sidebar-nav__rule" id="sidebarFacilityLogRule" hidden />
           <button
             type="button"
             class="sidebar-nav__btn"
             id="sidebarBtnFacilityMisc"
             aria-pressed="false"
+            hidden
           >
             컴플레인·지난습득물·세탁
           </button>
@@ -5924,6 +5908,7 @@
             class="sidebar-nav__btn"
             id="sidebarBtnFacilityDailyFound"
             aria-pressed="false"
+            hidden
           >
             당일습득물
           </button>
@@ -6351,7 +6336,7 @@
             <button type="button" class="facility-log-close-btn" id="btnFacilityMiscClose">마감</button>
           </div>
         </div>
-        <div class="facility-log-tabs" id="facilityMiscTabs" role="tablist" aria-label="시설 업무 구분">
+        <div class="facility-log-tabs" id="facilityMiscTabs" role="tablist" aria-label="컴플레인·지난습득물·세탁 구분">
           <button
             type="button"
             class="facility-log-tab is-active"
@@ -12481,11 +12466,15 @@
             var schedEl = document.createElement("div");
             if (facActive && facSchedStr) {
               schedEl.className = "request-feedback__sched is-facility-pending";
-              schedEl.appendChild(document.createTextNode("시설 시간 · "));
+              schedEl.appendChild(document.createTextNode("정비 시간 · "));
               var facTimeEm = document.createElement("span");
               facTimeEm.className = "hk-time-em";
               facTimeEm.textContent = facSchedStr;
               schedEl.appendChild(facTimeEm);
+              var facPendingHint = document.createElement("span");
+              facPendingHint.className = "request-feedback__facility-pending-hint";
+              facPendingHint.textContent = "시설 확인중";
+              schedEl.appendChild(facPendingHint);
             } else {
               schedEl.className = "request-feedback__sched is-empty";
               schedEl.textContent = "처리·예정 —";
@@ -12498,11 +12487,8 @@
               facSchedBtn.type = "button";
               facSchedBtn.className = "request-feedback__facility-sched-btn";
               facSchedBtn.setAttribute("data-req-id", entry.id);
-              facSchedBtn.textContent = facSchedStr ? "시설 시간 수정" : "시설 시간";
-              facSchedBtn.setAttribute(
-                "aria-label",
-                facSchedStr ? "시설 시간 수정" : "시설 시간 입력"
-              );
+              facSchedBtn.textContent = "정비 시간";
+              facSchedBtn.setAttribute("aria-label", "정비 시간 입력");
               maintActs.appendChild(facSchedBtn);
             } else {
               var schedBtn = document.createElement("button");
@@ -14404,7 +14390,7 @@
         inp.classList.add("hk-time-em");
         inp.placeholder = "1430 또는 14:30";
         inp.value = entry.facilitySched || "";
-        inp.setAttribute("aria-label", "시설 시간");
+        inp.setAttribute("aria-label", "정비 시간");
         var ok = document.createElement("button");
         ok.type = "button";
         ok.className = "request-feedback__sched-save";
@@ -15538,20 +15524,29 @@
         renderRequestLogPanel();
       }
 
-      function applyMaintenanceModeUi() {
-        var btnMaint = document.getElementById("btnMaint");
-        var sidebarFacilitySubSection = document.getElementById("sidebarFacilitySubSection");
-        if (btnMaint) {
-          btnMaint.classList.toggle("is-on", maintenanceMode);
-          btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
-        }
-        if (sidebarFacilitySubSection) sidebarFacilitySubSection.hidden = !maintenanceMode;
+      function applyFacilityLogSidebarUi() {
+        var show = frontMode || maintenanceMode;
+        var misc = document.getElementById("sidebarBtnFacilityMisc");
+        var daily = document.getElementById("sidebarBtnFacilityDailyFound");
+        var rule = document.getElementById("sidebarFacilityLogRule");
+        if (misc) misc.hidden = !show;
+        if (daily) daily.hidden = !show;
+        if (rule) rule.hidden = !show;
         if (
-          !maintenanceMode &&
+          !show &&
           (sidebarMainView === "facilityMisc" || sidebarMainView === "facilityDailyFound")
         ) {
           showSidebarRequestView();
         }
+      }
+
+      function applyMaintenanceModeUi() {
+        var btnMaint = document.getElementById("btnMaint");
+        if (btnMaint) {
+          btnMaint.classList.toggle("is-on", maintenanceMode);
+          btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
+        }
+        applyFacilityLogSidebarUi();
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
             HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
@@ -15574,6 +15569,7 @@
           btnFront.setAttribute("aria-pressed", frontMode ? "true" : "false");
         }
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
+        applyFacilityLogSidebarUi();
         if (
           !frontMode &&
           (sidebarMainView === "front" ||
