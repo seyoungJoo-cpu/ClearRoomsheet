@@ -1218,6 +1218,41 @@
       border-color: var(--accent);
     }
 
+    .hk-confirm__textarea {
+      width: 100%;
+      min-height: 84px;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+      box-sizing: border-box;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .hk-confirm__textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 0;
+      border-color: var(--accent);
+    }
+
+    .request-feedback__sched.is-facility-pending {
+      color: #0f766e;
+      font-weight: 600;
+    }
+
+    .request-feedback__facility-sched-btn {
+      color: #0f766e;
+      border-color: #5eead4;
+      background: #ccfbf1;
+    }
+
+    .request-feedback__facility-sched-btn:hover {
+      background: #99f6e4;
+    }
+
     .hk-role-password-error {
       margin: -10px 0 12px;
       font-size: 0.8125rem;
@@ -3809,6 +3844,19 @@
 
     .ai-mode-entry-card--order {
       border-left: 4px solid #b91c1c;
+    }
+
+    .ai-mode-entry-card--order.ai-mode-entry-card--facility {
+      border-left-color: #0f766e;
+    }
+
+    .ai-mode-entry-card__head .hk-status-group {
+      margin-left: 4px;
+    }
+
+    .ai-mode-entry-card__head .hk-st-badge {
+      font-size: 0.625rem;
+      padding: 1px 6px;
     }
 
     .ai-mode-entry-card--request {
@@ -6488,6 +6536,36 @@
     </div>
   </div>
 
+  <div
+    class="hk-confirm"
+    id="hkFacilityConfirmDialog"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hkFacilityConfirmTitle"
+  >
+    <div class="hk-confirm__backdrop" id="hkFacilityConfirmBackdrop"></div>
+    <div class="hk-confirm__box hk-confirm__box--wide">
+      <p class="hk-confirm__msg" id="hkFacilityConfirmTitle">시설 오더 내용</p>
+      <p class="hk-confirm__sub" id="hkFacilityConfirmRoomHint"></p>
+      <label class="hk-confirm__label" for="hkFacilityConfirmMemoInput">시설 오더</label>
+      <textarea
+        class="hk-confirm__textarea"
+        id="hkFacilityConfirmMemoInput"
+        placeholder="예: 에어컨 점검, 샤워기 교체"
+        rows="3"
+      ></textarea>
+      <div class="hk-confirm__actions">
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkFacilityConfirmOk">
+          시설 오더 등록
+        </button>
+        <button type="button" class="hk-confirm__btn hk-confirm__btn--no" id="hkFacilityConfirmCancel">
+          취소
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="hk-image-lightbox" id="hkImageLightbox" hidden aria-hidden="true">
     <img class="hk-image-lightbox__img" id="hkImageLightboxImg" alt="첨부 사진 확대" />
   </div>
@@ -6521,6 +6599,7 @@
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
       var sidebarMainView = "request";
+      var aiOrdersScope = "all";
       var requestLogEntries = [];
       var orderLogEntries = [];
       var frontChatMessages = [];
@@ -6558,6 +6637,7 @@
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var operatorNameModalMode = "initial";
       var pendingOperatorNameCallback = null;
+      var pendingFacilityConfirmReqId = null;
       var SCHED_PANEL_HINT_EMPTY =
         "요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.";
       var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
@@ -6601,7 +6681,7 @@
 
       function hasOpenHkEditors() {
         return !!document.querySelector(
-          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .order-feedback__memo-editor-wrap, .front-chat__msg-edit"
+          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .request-feedback__facility-sched-editor-wrap, .order-feedback__memo-editor-wrap, .front-chat__msg-edit"
         );
       }
 
@@ -10134,7 +10214,7 @@
         return item;
       }
 
-      function queryAiOrdersByMemoItem(item) {
+      function queryAiOrdersByMemoItem(item, q) {
         var needle = normalizeAiQueryInput(item).toLowerCase();
         if (!needle) return [];
         var exact = orderLogEntries.filter(function (e) {
@@ -10142,16 +10222,19 @@
           var memo = (e.memo || "").toLowerCase();
           return memo.indexOf(needle) >= 0;
         });
-        if (exact.length || needle.length < 2) return exact;
-        return orderLogEntries.filter(function (e) {
-          if (getOrderPhase(e) === "cancelled") return false;
-          var memo = (e.memo || "").toLowerCase();
-          if (memo.indexOf(needle) >= 0) return true;
-          return memo.split(/\s+/).some(function (word) {
-            if (word.length < 2) return false;
-            return aiLevenshtein(word, needle) <= 1;
+        var matched = exact;
+        if (!exact.length && needle.length >= 2) {
+          matched = orderLogEntries.filter(function (e) {
+            if (getOrderPhase(e) === "cancelled") return false;
+            var memo = (e.memo || "").toLowerCase();
+            if (memo.indexOf(needle) >= 0) return true;
+            return memo.split(/\s+/).some(function (word) {
+              if (word.length < 2) return false;
+              return aiLevenshtein(word, needle) <= 1;
+            });
           });
-        });
+        }
+        return filterAiOrdersForScope(matched, q);
       }
 
       function entryAtMinutesToday(iso) {
@@ -10519,7 +10602,8 @@
           "· 오늘 현황 / 공지 알려줘 / 연박 객실\n\n" +
           "【오더】\n" +
           "· 15시 이후 오더 · 대기 오더 · 긴급 오더\n" +
-          "· 문제발생 오더 · 오늘 오더\n\n" +
+          "· 문제발생 오더 · 오늘 오더\n" +
+          "· 시설 오더 · 시설 대기 오더 (시설 관리에서 AI 진입 시 시설 오더만)\n\n" +
           "【정비 요청】\n" +
           "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
@@ -10532,8 +10616,53 @@
           "· VIP 특이객실 · 1205 상태\n\n" +
           "【기타】\n" +
           "· MB CHECK · MB & 인벤 변경 · MB 인벤 문제\n" +
-          "· 오늘 변경 이력"
+          "· 오늘 변경 이력\n\n" +
+          "※ 오더·요청 카드에 객실 정비 상태(IP·CL·PU·DI·OO·OS)가 표시됩니다."
         );
+      }
+
+      function resolveAiRoomHkStatus(roomInput, fallbackStatus) {
+        var xmlSt = lookupRoomStatusFromXml(roomInput);
+        if (xmlSt) return normalizeRoomStatus(xmlSt);
+        var fb = fallbackStatus != null ? String(fallbackStatus).trim().toUpperCase() : "";
+        if (fb && VALID_XML_STATUSES[fb]) return fb;
+        return fb || "";
+      }
+
+      function appendAiEntryCardRoomStatus(head, roomInput, fallbackStatus) {
+        if (!head) return;
+        var st = resolveAiRoomHkStatus(roomInput, fallbackStatus);
+        if (!st) return;
+        head.appendChild(
+          buildRoomStatusGroup(st, roomInput, {
+            statusClass: "ai-mode-entry-card__status hk-st-badge",
+            hideResv: true,
+          })
+        );
+      }
+
+      function getAiOrderScopeMatcher(q) {
+        var query = String(q || "");
+        if (/시설/.test(query)) return isFacilityOrder;
+        if (aiOrdersScope === "facility") return isFacilityOrder;
+        if (aiOrdersScope === "regular") return isRegularOrder;
+        return function () {
+          return true;
+        };
+      }
+
+      function filterAiOrdersForScope(entries, q) {
+        var match = getAiOrderScopeMatcher(q);
+        return (entries || []).filter(function (e) {
+          return e && match(e);
+        });
+      }
+
+      function formatAiOrderScopeLabel(q) {
+        if (/시설/.test(String(q || ""))) return "시설 ";
+        if (aiOrdersScope === "facility") return "시설 ";
+        if (aiOrdersScope === "regular") return "";
+        return "";
       }
 
       function formatAiOrderPhase(entry) {
@@ -10541,8 +10670,9 @@
         if (isOrderIssueOpen(entry)) return "문제발생";
         var p = getOrderPhase(entry);
         if (p === "accepted") return "접수";
+        if (p === "deployed") return isFacilityOrder(entry) ? "입실가능" : "투입완료";
         if (p === "cancelled") return "취소";
-        return "알림";
+        return isFacilityOrder(entry) ? "시설알림" : "알림";
       }
 
       function formatAiRequestPhase(entry) {
@@ -10681,12 +10811,15 @@
 
       function buildAiOrderCard(entry) {
         var li = document.createElement("li");
-        li.className = "ai-mode-entry-card ai-mode-entry-card--order";
+        li.className =
+          "ai-mode-entry-card ai-mode-entry-card--order" +
+          (isFacilityOrder(entry) ? " ai-mode-entry-card--facility" : "");
         var head = document.createElement("div");
         head.className = "ai-mode-entry-card__head";
         head.appendChild(
           document.createTextNode(formatRoomNoDisplay(entry.room || "") || "—")
         );
+        appendAiEntryCardRoomStatus(head, entry.room, "");
         var badge = document.createElement("span");
         badge.className = "ai-mode-entry-card__badge";
         badge.textContent = formatAiOrderPhase(entry);
@@ -10731,6 +10864,7 @@
         head.appendChild(
           document.createTextNode(formatRoomNoDisplay(entry.room || "") || "—")
         );
+        appendAiEntryCardRoomStatus(head, entry.room, entry.status);
         var badge = document.createElement("span");
         badge.className = "ai-mode-entry-card__badge";
         badge.textContent = formatAiRequestPhase(entry);
@@ -10742,13 +10876,6 @@
           head.appendChild(ub);
         }
         li.appendChild(head);
-        var st = (entry.status || "").trim();
-        if (st) {
-          var stLine = document.createElement("p");
-          stLine.className = "ai-mode-entry-card__line";
-          stLine.textContent = "HK " + st;
-          li.appendChild(stLine);
-        }
         var t1 = document.createElement("p");
         t1.className = "ai-mode-entry-card__line";
         t1.textContent = "접수 " + (formatReqAt(entry.at) || "—");
@@ -10758,6 +10885,12 @@
           t2.className = "ai-mode-entry-card__line";
           t2.textContent = "처리·예정 " + entry.sched;
           li.appendChild(t2);
+        }
+        if (entry.facilitySched) {
+          var tFac = document.createElement("p");
+          tFac.className = "ai-mode-entry-card__line";
+          tFac.textContent = "시설 시간 " + entry.facilitySched;
+          li.appendChild(tFac);
         }
         if (entry.memo) {
           var memo = document.createElement("p");
@@ -10785,17 +10918,18 @@
         return li;
       }
 
-      function queryAiOrdersFiltered(filterFn) {
+      function queryAiOrdersFiltered(filterFn, q) {
         syncOrderLogFromServer();
+        var scopeMatch = getAiOrderScopeMatcher(q);
         var list = orderLogEntries.filter(function (e) {
-          return e && (!filterFn || filterFn(e));
+          return e && scopeMatch(e) && (!filterFn || filterFn(e));
         });
         return sortEntriesByAtDesc(list);
       }
 
-      function queryAiOrdersByTime(timeFilter) {
+      function queryAiOrdersByTime(timeFilter, q) {
         var list = filterEntriesByTimeToday(orderLogEntries, timeFilter, "at");
-        return sortEntriesByAtAsc(list);
+        return sortEntriesByAtAsc(filterAiOrdersForScope(list, q));
       }
 
       function queryAiRequestsFiltered(filterFn) {
@@ -11169,13 +11303,14 @@
         }
 
         if (intent.type === "orders_item" || intent.type === "orders_item_count") {
-          var itemOrders = queryAiOrdersByMemoItem(intent.item);
+          var itemOrders = queryAiOrdersByMemoItem(intent.item, q);
           if (!itemOrders.length) {
             appendAiChatBotError('"' + intent.item + '" 관련 오더가 없습니다.');
             return;
           }
           appendAiChatBotResult(
-            '"' +
+            formatAiOrderScopeLabel(q) +
+              '"' +
               intent.item +
               '" 오더 ' +
               itemOrders.length +
@@ -11188,9 +11323,9 @@
         if (intent.type === "orders_pending") {
           var ordersPending = queryAiOrdersFiltered(function (e) {
             return getOrderPhase(e) === "alert";
-          });
+          }, q);
           appendAiChatBotResult(
-            "대기(알림) 오더 " + ordersPending.length + "건",
+            formatAiOrderScopeLabel(q) + "대기(알림) 오더 " + ordersPending.length + "건",
             ordersPending.map(buildAiOrderCard)
           );
           return;
@@ -11199,9 +11334,9 @@
         if (intent.type === "orders_urgent") {
           var ordersUrgent = queryAiOrdersFiltered(function (e) {
             return !!e.urgent && getOrderPhase(e) !== "cancelled";
-          });
+          }, q);
           appendAiChatBotResult(
-            "긴급 오더 " + ordersUrgent.length + "건",
+            formatAiOrderScopeLabel(q) + "긴급 오더 " + ordersUrgent.length + "건",
             ordersUrgent.map(buildAiOrderCard)
           );
           return;
@@ -11209,10 +11344,11 @@
 
         if (intent.type === "orders_time") {
           syncOrderLogFromServer();
-          var ordersT = queryAiOrdersByTime(intent.timeFilter);
+          var ordersT = queryAiOrdersByTime(intent.timeFilter, q);
           var dirLabel = intent.timeFilter.direction === "before" ? "이전" : "이후";
           appendAiChatBotResult(
-            "오늘 " +
+            formatAiOrderScopeLabel(q) +
+              "오늘 " +
               intent.timeFilter.label +
               " " +
               dirLabel +
@@ -11226,12 +11362,15 @@
 
         if (intent.type === "orders_today") {
           syncOrderLogFromServer();
-          var ordersToday = orderLogEntries.filter(function (e) {
-            return entryAtMinutesToday(e.at) != null;
-          });
+          var ordersToday = filterAiOrdersForScope(
+            orderLogEntries.filter(function (e) {
+              return entryAtMinutesToday(e.at) != null;
+            }),
+            q
+          );
           ordersToday = sortEntriesByAtDesc(ordersToday);
           appendAiChatBotResult(
-            "오늘 오더 " + ordersToday.length + "건",
+            formatAiOrderScopeLabel(q) + "오늘 오더 " + ordersToday.length + "건",
             ordersToday.map(buildAiOrderCard)
           );
           return;
@@ -11240,9 +11379,9 @@
         if (intent.type === "orders_issue") {
           var ordersIssue = queryAiOrdersFiltered(function (e) {
             return isOrderIssueOpen(e);
-          });
+          }, q);
           appendAiChatBotResult(
-            "문제발생 중 오더 " + ordersIssue.length + "건",
+            formatAiOrderScopeLabel(q) + "문제발생 중 오더 " + ordersIssue.length + "건",
             ordersIssue.map(buildAiOrderCard)
           );
           return;
@@ -11251,9 +11390,9 @@
         if (intent.type === "orders_accepted") {
           var ordersAcc = queryAiOrdersFiltered(function (e) {
             return getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
-          });
+          }, q);
           appendAiChatBotResult(
-            "접수된 오더 " + ordersAcc.length + "건",
+            formatAiOrderScopeLabel(q) + "접수된 오더 " + ordersAcc.length + "건",
             ordersAcc.map(buildAiOrderCard)
           );
           return;
@@ -11262,18 +11401,18 @@
         if (intent.type === "orders_cancelled") {
           var ordersCan = queryAiOrdersFiltered(function (e) {
             return getOrderPhase(e) === "cancelled";
-          });
+          }, q);
           appendAiChatBotResult(
-            "취소된 오더 " + ordersCan.length + "건",
+            formatAiOrderScopeLabel(q) + "취소된 오더 " + ordersCan.length + "건",
             ordersCan.map(buildAiOrderCard)
           );
           return;
         }
 
         if (intent.type === "orders_all") {
-          var ordersAll = queryAiOrdersFiltered();
+          var ordersAll = queryAiOrdersFiltered(null, q);
           appendAiChatBotResult(
-            "전체 오더 " + ordersAll.length + "건 (최신순)",
+            formatAiOrderScopeLabel(q) + "전체 오더 " + ordersAll.length + "건 (최신순)",
             ordersAll.slice(0, 40).map(buildAiOrderCard)
           );
           return;
@@ -11819,6 +11958,9 @@
       function showSidebarAiView() {
         collapseZoneBlock();
         clearZoneTabSelection();
+        if (sidebarMainView === "order") aiOrdersScope = "regular";
+        else if (sidebarMainView === "facility") aiOrdersScope = "facility";
+        else if (sidebarMainView === "request") aiOrdersScope = "all";
         applySidebarMainView("ai");
         ensureAiModeWelcome();
       }
@@ -11894,9 +12036,7 @@
           return;
         }
         list.innerHTML = "";
-        var allPending = requestLogEntries.filter(function (entry) {
-          return !(entry.sched && String(entry.sched).trim());
-        });
+        var allPending = requestLogEntries.filter(isRequestPendingAlert);
         var pending = allPending.filter(function (entry) {
           return (
             roomPassesSchedTypeFilter(entry.room) &&
@@ -11971,18 +12111,43 @@
           }
 
           if (maintenanceMode) {
+            var facActive = hasActiveFacilityOrderForRequest(entry.id);
+            var facSchedStr =
+              entry.facilitySched != null ? String(entry.facilitySched).trim() : "";
             var schedEl = document.createElement("div");
-            schedEl.className = "request-feedback__sched is-empty";
-            schedEl.textContent = "처리·예정 —";
+            if (facActive && facSchedStr) {
+              schedEl.className = "request-feedback__sched is-facility-pending";
+              schedEl.appendChild(document.createTextNode("시설 시간 · "));
+              var facTimeEm = document.createElement("span");
+              facTimeEm.className = "hk-time-em";
+              facTimeEm.textContent = facSchedStr;
+              schedEl.appendChild(facTimeEm);
+            } else {
+              schedEl.className = "request-feedback__sched is-empty";
+              schedEl.textContent = "처리·예정 —";
+            }
             li.appendChild(schedEl);
             var maintActs = document.createElement("div");
             maintActs.className = "request-feedback__maint-actions";
-            var schedBtn = document.createElement("button");
-            schedBtn.type = "button";
-            schedBtn.className = "request-feedback__sched-btn";
-            schedBtn.setAttribute("data-req-id", entry.id);
-            schedBtn.textContent = "시간 입력";
-            maintActs.appendChild(schedBtn);
+            if (facActive) {
+              var facSchedBtn = document.createElement("button");
+              facSchedBtn.type = "button";
+              facSchedBtn.className = "request-feedback__facility-sched-btn";
+              facSchedBtn.setAttribute("data-req-id", entry.id);
+              facSchedBtn.textContent = facSchedStr ? "시설 시간 수정" : "시설 시간";
+              facSchedBtn.setAttribute(
+                "aria-label",
+                facSchedStr ? "시설 시간 수정" : "시설 시간 입력"
+              );
+              maintActs.appendChild(facSchedBtn);
+            } else {
+              var schedBtn = document.createElement("button");
+              schedBtn.type = "button";
+              schedBtn.className = "request-feedback__sched-btn";
+              schedBtn.setAttribute("data-req-id", entry.id);
+              schedBtn.textContent = "시간 입력";
+              maintActs.appendChild(schedBtn);
+            }
             var memo2BtnP = document.createElement("button");
             memo2BtnP.type = "button";
             memo2BtnP.className = "request-feedback__memo2-btn";
@@ -11992,7 +12157,7 @@
             maintActs.appendChild(memo2BtnP);
             var facilityBtn = document.createElement("button");
             facilityBtn.type = "button";
-            var facilityDone = !!findFacilityOrderForRequest(entry.id);
+            var facilityDone = facActive;
             facilityBtn.className =
               "request-feedback__facility-btn" + (facilityDone ? " is-done" : "");
             facilityBtn.setAttribute("data-req-id", entry.id);
@@ -12183,7 +12348,9 @@
       }
 
       function isRequestPendingAlert(entry) {
-        return !(entry && entry.sched && String(entry.sched).trim());
+        if (!entry) return false;
+        if (entry.sched && String(entry.sched).trim()) return false;
+        return true;
       }
 
       function requestAlertKey(entry) {
@@ -12219,6 +12386,7 @@
           entry.status || "",
           entry.sched || "",
           entry.schedPrev || "",
+          entry.facilitySched || "",
           entry.memo || "",
           entry.memo2 || "",
           entry.memoImage || "",
@@ -13106,8 +13274,24 @@
         entry.phase = "deployed";
         entry.deployedAt = new Date().toISOString();
         entry.deployedBy = getOperatorName();
+        if (isFacilityOrder(entry) && entry.sourceReqId) {
+          var srcReq = findRequestEntry(entry.sourceReqId);
+          if (srcReq) {
+            var facSched =
+              srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "";
+            if (facSched) {
+              applyRequestSchedChange(srcReq, facSched);
+              delete srcReq.facilitySched;
+            }
+            markRequestEntrySavedLocally(srcReq);
+            saveRequestLog();
+          }
+        }
         saveOrderLog();
         renderOrderPanels();
+        if (isFacilityOrder(entry) && entry.sourceReqId) {
+          renderRequestLogPanel({ force: true });
+        }
         requestAnimationFrame(function () {
           var card = document.querySelector(
             '.order-work-section--deployed .order-work-item[data-order-id="' + orderId + '"]'
@@ -13209,6 +13393,13 @@
           if (o && o.sourceReqId === reqId && isFacilityOrder(o)) return o;
         }
         return null;
+      }
+
+      function hasActiveFacilityOrderForRequest(reqId) {
+        var o = findFacilityOrderForRequest(reqId);
+        if (!o) return false;
+        var phase = getOrderPhase(o);
+        return phase !== "cancelled" && phase !== "deployed";
       }
 
       function renderOrderWorkPanels(opts) {
@@ -13682,6 +13873,10 @@
 
       function openRequestSchedEditor(entryId) {
         if (!maintenanceMode) return;
+        if (hasActiveFacilityOrderForRequest(entryId)) {
+          openFacilityRequestSchedEditor(entryId);
+          return;
+        }
         var li =
           document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
           document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
@@ -13704,6 +13899,9 @@
           n.remove();
         });
         document.querySelectorAll(".request-feedback__memo2-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__facility-sched-editor-wrap").forEach(function (n) {
           n.remove();
         });
         document.querySelectorAll(".sched-card__edit-btn").forEach(function (b) {
@@ -13769,6 +13967,109 @@
             return;
           }
           applyRequestSchedChange(entry, p.value);
+          markRequestEntrySavedLocally(entry);
+          saveRequestLog();
+          done();
+        });
+
+        cancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          done();
+        });
+
+        inp.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            ok.click();
+          }
+        });
+
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+
+        inp.focus();
+        inp.select();
+      }
+
+      function openFacilityRequestSchedEditor(entryId) {
+        if (!maintenanceMode || !hasActiveFacilityOrderForRequest(entryId)) return;
+        var li = document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]');
+        if (!li) return;
+        var old = li.querySelector(".request-feedback__facility-sched-editor-wrap");
+        if (old) {
+          old.remove();
+          var rb = li.querySelector(".request-feedback__facility-sched-btn");
+          if (rb) rb.style.visibility = "";
+          var m2rest = li.querySelector(".request-feedback__memo2-btn");
+          if (m2rest) m2rest.style.visibility = "";
+          return;
+        }
+        document.querySelectorAll(".request-feedback__sched-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__facility-sched-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__memo2-editor-wrap").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".request-feedback__facility-sched-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        document.querySelectorAll(".request-feedback__memo2-btn").forEach(function (b) {
+          b.style.visibility = "";
+        });
+        var entry = findRequestEntry(entryId);
+        if (!entry) return;
+
+        var btn = li.querySelector(".request-feedback__facility-sched-btn");
+        if (btn) btn.style.visibility = "hidden";
+        var memo2Hide = li.querySelector(".request-feedback__memo2-btn");
+        if (memo2Hide) memo2Hide.style.visibility = "hidden";
+
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__facility-sched-editor-wrap";
+        var row = document.createElement("div");
+        row.className = "request-feedback__sched-editor";
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.classList.add("hk-time-em");
+        inp.placeholder = "1430 또는 14:30";
+        inp.value = entry.facilitySched || "";
+        inp.setAttribute("aria-label", "시설 시간");
+        var ok = document.createElement("button");
+        ok.type = "button";
+        ok.className = "request-feedback__sched-save";
+        ok.textContent = "적용";
+        var cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "취소";
+        row.appendChild(inp);
+        row.appendChild(ok);
+        row.appendChild(cancel);
+        wrap.appendChild(row);
+        li.appendChild(wrap);
+
+        function done() {
+          if (btn) btn.style.visibility = "";
+          if (memo2Hide) memo2Hide.style.visibility = "";
+          wrap.remove();
+          renderRequestLogPanel();
+        }
+
+        ok.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          var p = HKStorage.parseTime24(inp.value);
+          if (!p.ok) {
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430)\n비우면 삭제됩니다.");
+            return;
+          }
+          if (p.value) entry.facilitySched = p.value;
+          else delete entry.facilitySched;
           markRequestEntrySavedLocally(entry);
           saveRequestLog();
           done();
@@ -15308,11 +15609,16 @@
             if (!ridFac) return;
             var reqEntry = findRequestEntry(ridFac);
             if (!reqEntry) return;
-            var orderId = createFacilityOrderFromRequest(reqEntry);
-            if (orderId) {
-              renderRequestLogPanel({ force: true });
-              showSidebarFacilityView();
-            }
+            openFacilityConfirmModal(reqEntry);
+            return;
+          }
+          var facSchedB = e.target.closest(".request-feedback__facility-sched-btn");
+          if (facSchedB) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridFs = facSchedB.getAttribute("data-req-id");
+            if (ridFs) openFacilityRequestSchedEditor(ridFs);
             return;
           }
           var b = e.target.closest(".request-feedback__sched-btn");
@@ -15766,31 +16072,70 @@
         return id;
       }
 
-      function createFacilityOrderFromRequest(reqEntry) {
+      function createFacilityOrderFromRequest(reqEntry, facilityMemo) {
         if (!reqEntry || !maintenanceMode) return null;
         var existing = findFacilityOrderForRequest(reqEntry.id);
-        if (existing) return existing.id;
+        if (existing && hasActiveFacilityOrderForRequest(reqEntry.id)) return existing.id;
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
-              createFacilityOrderFromRequest(reqEntry);
+              createFacilityOrderFromRequest(reqEntry, facilityMemo);
             },
           });
           return null;
         }
-        var memoParts = ["시설 확인"];
-        var fdMemo = reqEntry.memo != null ? String(reqEntry.memo).trim() : "";
-        var maintMemo = reqEntry.memo2 != null ? String(reqEntry.memo2).trim() : "";
-        if (fdMemo) memoParts.push(fdMemo);
-        if (maintMemo) memoParts.push("정비: " + maintMemo);
+        var memo = facilityMemo != null ? String(facilityMemo).trim() : "";
+        if (!memo) memo = "시설 확인";
         var memoImage = reqEntry.memoImage || reqEntry.memo2Image || "";
-        return appendOrderLog(reqEntry.room, memoParts.join(" · "), !!reqEntry.urgent, memoImage, {
+        return appendOrderLog(reqEntry.room, memo, !!reqEntry.urgent, memoImage, {
           category: "facility",
           sourceReqId: reqEntry.id,
           fromMaint: true,
           photoKey: "facilityOrderMemo",
         });
+      }
+
+      function openFacilityConfirmModal(reqEntry) {
+        if (!reqEntry || !maintenanceMode) return;
+        if (hasActiveFacilityOrderForRequest(reqEntry.id)) return;
+        pendingFacilityConfirmReqId = reqEntry.id;
+        var hintEl = document.getElementById("hkFacilityConfirmRoomHint");
+        var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
+        if (hintEl) {
+          hintEl.textContent = reqEntry.room
+            ? "객실 " + formatRoomNoDisplay(String(reqEntry.room))
+            : "";
+        }
+        if (memoInp) {
+          var prefill = reqEntry.memo != null ? String(reqEntry.memo).trim() : "";
+          if (!prefill) {
+            var m2 = reqEntry.memo2 != null ? String(reqEntry.memo2).trim() : "";
+            if (m2) prefill = m2;
+          }
+          memoInp.value = prefill;
+        }
+        var dlg = document.getElementById("hkFacilityConfirmDialog");
+        if (!dlg) {
+          createFacilityOrderFromRequest(reqEntry, memoInp ? memoInp.value : "");
+          pendingFacilityConfirmReqId = null;
+          renderRequestLogPanel({ force: true });
+          showSidebarFacilityView();
+          return;
+        }
+        dlg.hidden = false;
+        if (memoInp) {
+          memoInp.focus();
+          memoInp.select();
+        }
+      }
+
+      function closeFacilityConfirmModal() {
+        var dlg = document.getElementById("hkFacilityConfirmDialog");
+        if (dlg) dlg.hidden = true;
+        pendingFacilityConfirmReqId = null;
+        var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
+        if (memoInp) memoInp.value = "";
       }
 
       function processOrderFormSubmit() {
@@ -16314,6 +16659,47 @@
         });
       })();
 
+      (function setupFacilityConfirmModal() {
+        var dlg = document.getElementById("hkFacilityConfirmDialog");
+        if (!dlg) return;
+        var ok = document.getElementById("hkFacilityConfirmOk");
+        var cancel = document.getElementById("hkFacilityConfirmCancel");
+        var backdrop = document.getElementById("hkFacilityConfirmBackdrop");
+        var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
+        if (ok) {
+          ok.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            var reqId = pendingFacilityConfirmReqId;
+            var reqEntry = reqId ? findRequestEntry(reqId) : null;
+            var memo = memoInp ? String(memoInp.value || "").trim() : "";
+            closeFacilityConfirmModal();
+            if (!reqEntry) return;
+            var orderId = createFacilityOrderFromRequest(reqEntry, memo);
+            if (orderId) {
+              renderRequestLogPanel({ force: true });
+              showSidebarFacilityView();
+            }
+          });
+        }
+        if (cancel) {
+          cancel.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            closeFacilityConfirmModal();
+          });
+        }
+        if (backdrop) {
+          backdrop.addEventListener("click", function () {
+            closeFacilityConfirmModal();
+          });
+        }
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Escape") return;
+          if (!dlg || dlg.hidden) return;
+          ev.preventDefault();
+          closeFacilityConfirmModal();
+        });
+      })();
+
       (function setupCancelConfirmModal() {
         var dlg = document.getElementById("hkCancelConfirm");
         if (!dlg) return;
@@ -16341,6 +16727,12 @@
         }
         document.addEventListener("keydown", function (ev) {
           if (ev.key !== "Escape") return;
+          var facilityDlg = document.getElementById("hkFacilityConfirmDialog");
+          if (facilityDlg && !facilityDlg.hidden) {
+            ev.preventDefault();
+            closeFacilityConfirmModal();
+            return;
+          }
           var nameDlg = document.getElementById("hkCancelNameDialog");
           if (nameDlg && !nameDlg.hidden) {
             ev.preventDefault();
