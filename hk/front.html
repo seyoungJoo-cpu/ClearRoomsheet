@@ -3995,6 +3995,41 @@
       list-style: none;
     }
 
+    .main.main--facility-misc .feedback-column,
+    .main.main--facility-daily-found .feedback-column {
+      width: min(360px, 42vw);
+    }
+
+    .facility-log-panel .order-work-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .facility-log-panel .facility-log-card {
+      width: 100%;
+      max-width: min(100%, 720px);
+      padding: 10px 12px 12px;
+    }
+
+    .facility-log-panel .facility-log-card .order-feedback__item-by {
+      position: static;
+      margin-top: 4px;
+    }
+
+    .facility-log-panel .facility-log-chat {
+      margin-top: 10px;
+    }
+
+    .facility-log-panel .facility-log-chat .order-chat__messages {
+      max-height: 220px;
+    }
+
+    .facility-log-panel .facility-log-chat .order-chat__form input {
+      min-width: 0;
+      flex: 1 1 120px;
+    }
+
     .main.main--facility-misc #facilityMiscPanel,
     .main.main--facility-daily-found #facilityDailyFoundPanel {
       flex: 1;
@@ -16770,9 +16805,14 @@
           getOperatorName: getOperatorName,
           showOperatorGate: showOperatorGate,
           hkAppendImageEl: hkAppendImageEl,
+          hkAppendMessageContent: hkAppendMessageContent,
+          hkCreatePhotoButton: hkCreatePhotoButton,
+          hkCreatePhotoPreview: hkCreatePhotoPreview,
           hkBindPhotoPaste: hkBindPhotoPaste,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
+          applyChatBubbleColors: applyChatBubbleColors,
+          applyChatBubbleAlign: applyChatBubbleAlign,
           onMiscLogChanged: detectFacilityMiscChange,
           onDailyLogChanged: detectFacilityDailyChange,
         });

@@ -36,6 +36,24 @@
     return "accepted";
   }
 
+  function normalizeChatList(rawChat) {
+    var chat = [];
+    if (!Array.isArray(rawChat)) return chat;
+    rawChat.forEach(function (m) {
+      if (!m) return;
+      var text = m.text != null ? String(m.text).trim() : "";
+      var image = m.image != null ? String(m.image).trim() : "";
+      if (!text && !image) return;
+      chat.push({
+        at: m.at != null ? String(m.at) : "",
+        by: m.by != null ? String(m.by).trim() : "",
+        text: text,
+        image: image,
+      });
+    });
+    return chat;
+  }
+
   function normalizeOrderEntry(raw) {
     if (!raw || typeof raw !== "object") return null;
     var id = raw.id != null ? String(raw.id).trim() : "";
@@ -45,18 +63,18 @@
     var memoImage = raw.memoImage != null ? String(raw.memoImage).trim() : "";
     var at = raw.at != null ? String(raw.at) : "";
     var by = raw.by != null ? String(raw.by).trim() : "";
+    var chat = normalizeChatList(raw.chat);
 
-    if (Array.isArray(raw.chat) && raw.chat.length) {
+    if (!memo && !memoImage && chat.length) {
       var texts = [];
-      raw.chat.forEach(function (m) {
-        if (!m) return;
-        var t = m.text != null ? String(m.text).trim() : "";
-        if (t) texts.push(t);
-        if (!memoImage && m.image) memoImage = String(m.image).trim();
-        if (!by && m.by) by = String(m.by).trim();
-        if (!at && m.at) at = String(m.at);
+      chat.forEach(function (m) {
+        if (m.text) texts.push(m.text);
+        if (!memoImage && m.image) memoImage = m.image;
+        if (!by && m.by) by = m.by;
+        if (!at && m.at) at = m.at;
       });
       if (!memo) memo = texts.join("\n");
+      chat = [];
     }
 
     if (!memo && !memoImage) return null;
@@ -68,6 +86,7 @@
       memo: memo,
       memoImage: memoImage,
       by: by,
+      chat: chat,
       phase: getEntryPhase(raw),
       acceptedAt: raw.acceptedAt != null ? String(raw.acceptedAt) : "",
       acceptedBy: raw.acceptedBy != null ? String(raw.acceptedBy).trim() : "",
@@ -407,6 +426,7 @@
       memo: String(memo || "").trim(),
       memoImage: image || "",
       by: name,
+      chat: [],
       phase: "alert",
       acceptedAt: "",
       acceptedBy: "",
@@ -429,6 +449,7 @@
       memo: String(memo || "").trim(),
       memoImage: image || "",
       by: name,
+      chat: [],
       phase: "alert",
       acceptedAt: "",
       acceptedBy: "",
@@ -540,6 +561,165 @@
     scrollFacilityLogItemIntoView(listId, entryId);
   }
 
+  function findMiscEntry(entryId) {
+    var log = loadMiscLog();
+    var result = null;
+    MISC_CATEGORIES.forEach(function (cat) {
+      if (result) return;
+      var entry = findEntryInList(log.entries[cat.key] || [], entryId);
+      if (entry) result = { log: log, entry: entry, category: cat.key };
+    });
+    return result;
+  }
+
+  function findDailyEntry(entryId) {
+    var log = loadDailyFoundLog();
+    var entry = findEntryInList(log.entries, entryId);
+    if (!entry) return null;
+    return { log: log, entry: entry };
+  }
+
+  function facilityLogChatKey(kind, entryId) {
+    return "facilityLogChat:" + kind + ":" + (entryId || "");
+  }
+
+  function appendFacilityLogChatUi(li, entry, kind) {
+    if (!entry || !entry.id) return;
+    var chatWrap = document.createElement("div");
+    chatWrap.className = "order-chat facility-log-chat";
+
+    var msgList = document.createElement("ul");
+    msgList.className = "order-chat__messages";
+    var chat = Array.isArray(entry.chat) ? entry.chat : [];
+    chat.sort(function (a, b) {
+      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+    });
+    if (chat.length === 0) {
+      var emptyMsg = document.createElement("li");
+      emptyMsg.className = "order-chat__msg";
+      emptyMsg.style.background = "#f8fafc";
+      emptyMsg.textContent = "메시지가 없습니다. 아래에서 대화를 시작하세요.";
+      msgList.appendChild(emptyMsg);
+    } else {
+      chat.forEach(function (msg) {
+        var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
+        var msgLi = document.createElement("li");
+        msgLi.className = "order-chat__msg";
+        if (uiHooks.applyChatBubbleAlign) uiHooks.applyChatBubbleAlign(msgLi, byName);
+        var byEl = document.createElement("div");
+        byEl.className = "order-chat__msg-by";
+        byEl.textContent = byName;
+        msgLi.appendChild(byEl);
+        if (uiHooks.applyChatBubbleColors) {
+          uiHooks.applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
+        }
+        if (uiHooks.hkAppendMessageContent) {
+          uiHooks.hkAppendMessageContent(msgLi, msg.text, msg.image, "order-chat__msg-text");
+        } else {
+          var textEl = document.createElement("div");
+          textEl.className = "order-chat__msg-text";
+          textEl.textContent = msg.text || (msg.image ? "(사진)" : "");
+          msgLi.appendChild(textEl);
+        }
+        if (msg.at) {
+          var timeEl = document.createElement("div");
+          timeEl.className = "order-chat__msg-time";
+          timeEl.textContent = formatAt(msg.at);
+          msgLi.appendChild(timeEl);
+        }
+        msgList.appendChild(msgLi);
+      });
+    }
+    chatWrap.appendChild(msgList);
+
+    var chatKey = facilityLogChatKey(kind, entry.id);
+    var chatForm = document.createElement("form");
+    chatForm.className = "order-chat__form facility-log-chat__form hk-compose-row";
+    chatForm.setAttribute("data-entry-id", entry.id);
+    chatForm.setAttribute("data-log-kind", kind);
+    var chatInput = document.createElement("input");
+    chatInput.type = "text";
+    chatInput.placeholder = "메시지 입력";
+    chatInput.autocomplete = "off";
+    chatInput.setAttribute("aria-label", "접수 건 대화 메시지");
+    chatForm.appendChild(chatInput);
+    if (uiHooks.hkCreatePhotoButton) {
+      chatForm.appendChild(uiHooks.hkCreatePhotoButton(chatKey));
+    }
+    if (uiHooks.hkBindPhotoPaste) {
+      uiHooks.hkBindPhotoPaste(chatInput, chatKey, {
+        autoSend: function (text, image) {
+          appendFacilityLogChat(kind, entry.id, text, image);
+        },
+      });
+    }
+    var chatSend = document.createElement("button");
+    chatSend.type = "submit";
+    chatSend.className = "order-chat__send";
+    chatSend.textContent = "전송";
+    chatForm.appendChild(chatSend);
+    chatWrap.appendChild(chatForm);
+    if (uiHooks.hkCreatePhotoPreview) {
+      chatWrap.appendChild(uiHooks.hkCreatePhotoPreview(chatKey));
+    }
+
+    li.appendChild(chatWrap);
+    requestAnimationFrame(function () {
+      msgList.scrollTop = msgList.scrollHeight;
+    });
+  }
+
+  function appendFacilityLogChat(kind, entryId, text, image) {
+    if (!entryId) return;
+    var msgText = String(text || "").trim();
+    var msgImage = image != null ? String(image).trim() : "";
+    if (!msgText && !msgImage) return;
+    var run = function () {
+      var chatMsg = {
+        at: new Date().toISOString(),
+        by: getOperatorName(),
+        text: msgText,
+        image: msgImage || "",
+      };
+      if (kind === "misc") {
+        var miscHit = findMiscEntry(entryId);
+        if (!miscHit || getEntryPhase(miscHit.entry) !== "accepted") return;
+        if (!Array.isArray(miscHit.entry.chat)) miscHit.entry.chat = [];
+        miscHit.entry.chat.push(chatMsg);
+        activeMiscCategory = miscHit.category;
+        saveMiscLog(miscHit.log);
+        renderMiscPanels();
+      } else {
+        var dailyHit = findDailyEntry(entryId);
+        if (!dailyHit || getEntryPhase(dailyHit.entry) !== "accepted") return;
+        if (!Array.isArray(dailyHit.entry.chat)) dailyHit.entry.chat = [];
+        dailyHit.entry.chat.push(chatMsg);
+        saveDailyFoundLog(dailyHit.log);
+        renderDailyPanels();
+      }
+      if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto(facilityLogChatKey(kind, entryId));
+      requestAnimationFrame(function () {
+        var card = document.querySelector(
+          '.facility-log-panel .order-work-item[data-entry-id="' +
+            entryId +
+            '"] .facility-log-chat__form input'
+        );
+        if (card) card.focus();
+        var msgList = document.querySelector(
+          '.facility-log-panel .order-work-item[data-entry-id="' +
+            entryId +
+            '"] .order-chat__messages'
+        );
+        if (msgList) msgList.scrollTop = msgList.scrollHeight;
+      });
+    };
+    if (!getOperatorName() && uiHooks.showOperatorGate) {
+      uiHooks.showOperatorGate({ mode: "initial", onSaved: run });
+      return;
+    }
+    run();
+  }
+
   function appendTimeLine(parent, label, iso) {
     if (!iso) return;
     var timeEl = document.createElement("div");
@@ -600,7 +780,7 @@
     li.appendChild(acts);
   }
 
-  function appendOrderCard(li, entry, isCompleted) {
+  function appendOrderCard(li, entry, isCompleted, logKind) {
     appendTimeLine(li, "등록", entry.at);
     if (!isCompleted) {
       appendTimeLine(li, "접수", entry.acceptedAt);
@@ -642,6 +822,10 @@
       return;
     }
 
+    if (logKind) {
+      appendFacilityLogChatUi(li, entry, logKind);
+    }
+
     var acts = document.createElement("div");
     acts.className = "order-work__actions order-work__actions--toggle";
     var completeBtn = document.createElement("button");
@@ -676,7 +860,7 @@
     if (empty) empty.hidden = alerts.length > 0;
   }
 
-  function renderOrderWorkLists(acceptedListEl, acceptedEmptyEl, completedListEl, completedEmptyEl, entries) {
+  function renderOrderWorkLists(acceptedListEl, acceptedEmptyEl, completedListEl, completedEmptyEl, entries, logKind) {
     if (!acceptedListEl || !completedListEl) return;
     acceptedListEl.innerHTML = "";
     completedListEl.innerHTML = "";
@@ -697,17 +881,17 @@
 
     accepted.forEach(function (entry) {
       var li = document.createElement("li");
-      li.className = "order-work-item";
+      li.className = "order-work-item facility-log-card";
       li.setAttribute("data-entry-id", entry.id || "");
-      appendOrderCard(li, entry, false);
+      appendOrderCard(li, entry, false, logKind);
       acceptedListEl.appendChild(li);
     });
 
     completed.forEach(function (entry) {
       var li = document.createElement("li");
-      li.className = "order-work-item order-work-item--deployed";
+      li.className = "order-work-item order-work-item--deployed facility-log-card";
       li.setAttribute("data-entry-id", entry.id || "");
-      appendOrderCard(li, entry, true);
+      appendOrderCard(li, entry, true, null);
       completedListEl.appendChild(li);
     });
 
@@ -820,7 +1004,8 @@
       document.getElementById("facilityMiscAcceptedEmpty"),
       document.getElementById("facilityMiscCompletedList"),
       document.getElementById("facilityMiscCompletedEmpty"),
-      log.entries[activeMiscCategory] || []
+      log.entries[activeMiscCategory] || [],
+      "misc"
     );
   }
 
@@ -835,7 +1020,8 @@
       document.getElementById("facilityDailyFoundAcceptedEmpty"),
       document.getElementById("facilityDailyFoundCompletedList"),
       document.getElementById("facilityDailyFoundCompletedEmpty"),
-      log.entries
+      log.entries,
+      "daily"
     );
   }
 
@@ -879,9 +1065,37 @@
     });
   }
 
+  function bindPanelChatActions(panelId) {
+    var panel = document.getElementById(panelId);
+    if (!panel || panel.dataset.chatBound) return;
+    panel.dataset.chatBound = "1";
+    panel.addEventListener("submit", function (e) {
+      var form = e.target.closest(".facility-log-chat__form");
+      if (!form || !panel.contains(form)) return;
+      e.preventDefault();
+      var entryId = form.getAttribute("data-entry-id");
+      var kind = form.getAttribute("data-log-kind");
+      if (!entryId || !kind) return;
+      var input = form.querySelector('input[type="text"]');
+      var text = input ? String(input.value || "").trim() : "";
+      var image =
+        uiHooks.hkGetPhoto && entryId
+          ? uiHooks.hkGetPhoto(facilityLogChatKey(kind, entryId))
+          : "";
+      if (!text && !image) {
+        if (input) input.focus();
+        return;
+      }
+      appendFacilityLogChat(kind, entryId, text, image);
+      if (input) input.value = "";
+    });
+  }
+
   function bindForms() {
     bindPanelCompleteActions("facilityMiscPanel", completeMiscEntry);
     bindPanelCompleteActions("facilityDailyFoundPanel", completeDailyEntry);
+    bindPanelChatActions("facilityMiscPanel");
+    bindPanelChatActions("facilityDailyFoundPanel");
     bindAlertAcceptActions("facilityMiscFeedback", acceptMiscEntry);
     bindAlertAcceptActions("facilityDailyFoundFeedback", acceptDailyEntry);
 
