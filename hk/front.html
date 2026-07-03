@@ -3831,6 +3831,15 @@
       cursor: pointer;
     }
 
+    .facility-log-room .order-chat {
+      margin-inline: 8px;
+      max-width: calc(100% - 16px);
+    }
+
+    .facility-log-room .order-chat__msg {
+      max-width: 78%;
+    }
+
     .facility-log-list {
       list-style: none;
       margin: 12px 0 0;
@@ -5926,6 +5935,7 @@
           >
             당일습득물
           </button>
+          <hr class="sidebar-nav__rule" id="sidebarFacilityLogBottomRule" hidden />
           <button
             type="button"
             class="sidebar-nav__btn sidebar-nav__btn--compact"
@@ -15570,9 +15580,11 @@
         var misc = document.getElementById("sidebarBtnFacilityMisc");
         var daily = document.getElementById("sidebarBtnFacilityDailyFound");
         var rule = document.getElementById("sidebarFacilityLogRule");
+        var bottomRule = document.getElementById("sidebarFacilityLogBottomRule");
         if (misc) misc.hidden = !show;
         if (daily) daily.hidden = !show;
         if (rule) rule.hidden = !show;
+        if (bottomRule) bottomRule.hidden = !show;
         if (
           !show &&
           (sidebarMainView === "facilityMisc" || sidebarMainView === "facilityDailyFound")
