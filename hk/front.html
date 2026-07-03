@@ -3739,8 +3739,7 @@
       gap: 6px;
     }
 
-    .facility-log-export-btn,
-    .facility-log-close-btn {
+    .facility-log-export-btn {
       height: 30px;
       padding: 0 10px;
       border-radius: 8px;
@@ -3756,17 +3755,55 @@
       background: #f8fafc;
     }
 
-    .facility-log-close-btn {
-      border-color: #0f766e;
-      background: #ccfbf1;
-      color: #0f766e;
+    .facility-log-room {
+      list-style: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px 12px;
+      background: #fff;
     }
 
-    .facility-log-close-btn:hover {
-      background: #99f6e4;
+    .facility-log-room__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
-    .facility-log-tabs {
+    .facility-log-room__no {
+      font-weight: 800;
+      font-size: 0.8125rem;
+    }
+
+    .facility-log-room__meta {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      flex: 1 1 auto;
+    }
+
+    .facility-log-room__del {
+      margin-left: auto;
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #b91c1c;
+      font-size: 0.625rem;
+      cursor: pointer;
+    }
+
+    .facility-log-list {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .facility-log-empty {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
@@ -3792,68 +3829,7 @@
       color: #0f766e;
     }
 
-    .facility-log-list {
-      list-style: none;
-      margin: 12px 0 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .facility-log-item {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      background: #fff;
-    }
-
-    .facility-log-item__head {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: baseline;
-      margin-bottom: 4px;
-    }
-
-    .facility-log-item__room {
-      font-weight: 800;
-      font-size: 0.8125rem;
-    }
-
-    .facility-log-item__time {
-      font-size: 0.625rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    .facility-log-item__memo {
-      margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.45;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .facility-log-item__by {
-      margin-top: 4px;
-      font-size: 0.625rem;
-      color: var(--text-muted);
-    }
-
-    .facility-log-item__del {
-      margin-top: 8px;
-      height: 26px;
-      padding: 0 8px;
-      border: 1px solid #fecaca;
-      border-radius: 6px;
-      background: #fff;
-      color: #b91c1c;
-      font-size: 0.625rem;
-      cursor: pointer;
-    }
-
-    .facility-log-empty {
+    .facility-log-tabs {
       margin: 0;
       padding: 16px;
       text-align: center;
@@ -6322,7 +6298,7 @@
           <h2 id="facilityMiscPanelTitle">컴플레인 · 지난습득물 · 세탁</h2>
         </div>
         <p class="order-panel__hint">
-          컴플레인·지난습득물·세탁 내용을 기록합니다. 마감 시 HTML·엑셀 저장 후 10일간 유지됩니다.
+          객실별로 메모를 남깁니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityMiscStatus" aria-live="polite"></div>
@@ -6333,7 +6309,6 @@
             <button type="button" class="facility-log-export-btn" id="btnFacilityMiscExportExcel">
               엑셀 저장
             </button>
-            <button type="button" class="facility-log-close-btn" id="btnFacilityMiscClose">마감</button>
           </div>
         </div>
         <div class="facility-log-tabs" id="facilityMiscTabs" role="tablist" aria-label="컴플레인·지난습득물·세탁 구분">
@@ -6371,8 +6346,8 @@
             <input type="text" id="facilityMiscRoom" placeholder="예: 1205" autocomplete="off" />
           </div>
           <div class="field field--memo">
-            <label for="facilityMiscMemo">내용</label>
-            <input type="text" id="facilityMiscMemo" placeholder="내용 입력" autocomplete="off" />
+            <label for="facilityMiscMemo">메시지</label>
+            <input type="text" id="facilityMiscMemo" placeholder="메시지 입력" autocomplete="off" />
           </div>
           <button type="submit" class="btn-order">등록</button>
         </form>
@@ -6389,7 +6364,7 @@
           <h2 id="facilityDailyFoundPanelTitle">당일습득물</h2>
         </div>
         <p class="order-panel__hint">
-          당일 습득물을 기록합니다. 마감 시 HTML·엑셀 저장 후 10일간 유지됩니다.
+          당일 습득물을 객실별로 기록합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityDailyFoundStatus" aria-live="polite"></div>
@@ -6400,7 +6375,6 @@
             <button type="button" class="facility-log-export-btn" id="btnFacilityDailyFoundExportExcel">
               엑셀 저장
             </button>
-            <button type="button" class="facility-log-close-btn" id="btnFacilityDailyFoundClose">마감</button>
           </div>
         </div>
         <form class="order-row" id="facilityDailyFoundForm">
@@ -6409,8 +6383,8 @@
             <input type="text" id="facilityDailyFoundRoom" placeholder="예: 1205" autocomplete="off" />
           </div>
           <div class="field field--memo">
-            <label for="facilityDailyFoundMemo">내용</label>
-            <input type="text" id="facilityDailyFoundMemo" placeholder="습득물 내용" autocomplete="off" />
+            <label for="facilityDailyFoundMemo">메시지</label>
+            <input type="text" id="facilityDailyFoundMemo" placeholder="메시지 입력" autocomplete="off" />
           </div>
           <button type="submit" class="btn-order">등록</button>
         </form>
@@ -16330,7 +16304,19 @@
         HKInvenNotify.init();
       }
       if (typeof HKFacilityLogs !== "undefined") {
-        HKFacilityLogs.init();
+        HKFacilityLogs.init({
+          formatAt: formatReqAt,
+          getOperatorName: getOperatorName,
+          showOperatorGate: showOperatorGate,
+          applyChatBubbleAlign: applyChatBubbleAlign,
+          applyChatBubbleColors: applyChatBubbleColors,
+          hkAppendMessageContent: hkAppendMessageContent,
+          hkCreatePhotoButton: hkCreatePhotoButton,
+          hkCreatePhotoPreview: hkCreatePhotoPreview,
+          hkBindPhotoPaste: hkBindPhotoPaste,
+          hkGetPhoto: hkGetPhoto,
+          hkClearPhoto: hkClearPhoto,
+        });
       }
 
       window.addEventListener("message", function (ev) {

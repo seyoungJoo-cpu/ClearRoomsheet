@@ -875,17 +875,17 @@
           엔터로 줄바꿈할 수 있습니다. 사진은 <strong>Ctrl+V</strong> 붙여넣기 또는 사진 버튼으로 첨부합니다. 저장하면 정비 화면 <strong>MB &amp; 인벤</strong> 패널 하단 메모장에 표시됩니다.
         </p>
         <textarea id="mbInvNoticeInput" placeholder="MB &amp; 인벤 메모장 내용을 입력하세요."></textarea>
-      </div>
+          </div>
       <div class="notice-images-aside" id="mbInvNoticeImagesAside" hidden>
         <p class="notice-images-aside__label">첨부 사진</p>
         <div class="notice-images-grid" id="mbInvNoticeImagesGrid"></div>
         <button type="button" class="btn-secondary" id="btnClearMbInvNoticeImages" hidden>사진 전체 삭제</button>
-      </div>
+        </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button type="button" class="btn-secondary" id="btnAddMbInvNoticeImage">사진 추가</button>
         <input type="file" id="mbInvNoticeImageFile" accept="image/*" multiple hidden />
         <button type="button" class="btn-primary" id="saveMbInvNotice">메모장 저장</button>
-      </div>
+              </div>
     </section>
 
     <section class="card">
@@ -896,17 +896,17 @@
           저장하면 정비 화면 <strong>VIP</strong> 특이객실 목록 하단 메모장에 표시됩니다. 사진은 <strong>Ctrl+V</strong> 붙여넣기 또는 사진 버튼으로 첨부할 수 있습니다.
         </p>
         <textarea id="vipZoneMemoInput" placeholder="VIP 메모장 내용을 입력하세요."></textarea>
-      </div>
+              </div>
       <div class="notice-images-aside" id="vipZoneMemoImagesAside" hidden>
         <p class="notice-images-aside__label">첨부 사진</p>
         <div class="notice-images-grid" id="vipZoneMemoImagesGrid"></div>
         <button type="button" class="btn-secondary" id="btnClearVipZoneMemoImages" hidden>사진 전체 삭제</button>
-      </div>
+            </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button type="button" class="btn-secondary" id="btnAddVipZoneMemoImage">사진 추가</button>
         <input type="file" id="vipZoneMemoImageFile" accept="image/*" multiple hidden />
         <button type="button" class="btn-primary" id="saveVipZoneMemo">VIP 메모장 저장</button>
-      </div>
+          </div>
     </section>
 
     <section class="card">
@@ -930,7 +930,7 @@
         <p class="zone-group-add__hint">
           CASINO처럼 정비 화면 사이드바에 표시됩니다. 추가한 그룹 이름은 아래 카드에서 바로 수정할 수 있습니다.
         </p>
-      </div>
+          </div>
       <div class="zone-grid" id="zoneGrid"></div>
     </section>
 
@@ -965,6 +965,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
+  <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js"></script>
   <script src="hk-chat-colors.js"></script>
   <script src="hk-inven-notify.js"></script>
@@ -2848,17 +2849,30 @@
         });
       }
 
-      function getResetStorageData() {
-        return HKStorage.defaultData();
+      function getResetStorageData(preservedFacility) {
+        var reset = HKStorage.defaultData();
+        if (preservedFacility) {
+          if (preservedFacility.facilityMiscLog) {
+            reset.facilityMiscLog = preservedFacility.facilityMiscLog;
+          }
+          if (preservedFacility.facilityDailyFoundLog) {
+            reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
+          }
+        }
+        return reset;
       }
 
       function runCloseDayExport() {
         var snapshot = collectCloseDaySnapshot();
         var preservedFrontChat = (snapshot.frontChat || []).slice();
         var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
+        var preservedFacility =
+          typeof HKFacilityLogs !== "undefined"
+            ? HKFacilityLogs.prepareForAdminCloseDay(snapshot.data)
+            : null;
         downloadCloseDayFiles(snapshot);
 
-        var resetStorage = getResetStorageData();
+        var resetStorage = getResetStorageData(preservedFacility);
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
           HKSync.pushSnapshot({
             hkStorage: resetStorage,
@@ -2876,7 +2890,7 @@
               HKInvenNotify.resetOnCloseDay();
             }
             refresh();
-            toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
+            toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생·시설업무 10일 유지)");
           });
           return;
         }
@@ -2886,13 +2900,13 @@
           HKInvenNotify.resetOnCloseDay();
         }
         refresh();
-        toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생 유지)");
+        toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생·시설업무 10일 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생은 화면에 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML, 컴플레인·습득·세탁·당일습득물)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
@@ -2951,8 +2965,8 @@
         if (!newLabel) {
           inp.value = current;
           toast("그룹 이름을 입력하세요.");
-          return;
-        }
+            return;
+          }
         if (newLabel === current) return;
         if (isDuplicateZoneLabel(data, newLabel, zoneId)) {
           inp.value = current;
@@ -3413,7 +3427,7 @@
       })();
 
       document.getElementById("saveVipZoneMemo").addEventListener("click", function () {
-        var data = HKStorage.load();
+          var data = HKStorage.load();
         var input = document.getElementById("vipZoneMemoInput");
         if (!data.zoneMemos) data.zoneMemos = { VIP: { text: "", images: [] } };
         if (!data.zoneMemos.VIP) data.zoneMemos.VIP = { text: "", images: [] };
@@ -3472,12 +3486,12 @@
           toast("그룹 이름을 입력하세요.");
           return;
         }
-        var data = HKStorage.load();
+          var data = HKStorage.load();
         var dupLabel = isDuplicateZoneLabel(data, label, null);
         if (dupLabel) {
           toast("이미 같은 이름의 그룹이 있습니다.");
-          return;
-        }
+            return;
+          }
         var id = HKStorage.makeCustomZoneId(label, data);
         if (!data.customZones) data.customZones = [];
         data.customZones.push({ id: id, label: label });
@@ -3548,8 +3562,8 @@
                 '" 을(를) 삭제할까요?\n등록된 객실도 함께 삭제됩니다.'
             )
           ) {
-            return;
-          }
+          return;
+        }
           dataDel.customZones = (dataDel.customZones || []).filter(function (z) {
             return z && z.id !== zoneDel;
           });
