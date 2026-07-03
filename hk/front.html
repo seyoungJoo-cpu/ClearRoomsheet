@@ -3798,6 +3798,7 @@
       border-radius: 10px;
       padding: 10px 12px 12px;
       background: #fff;
+      max-width: min(100%, 560px);
     }
 
     .facility-log-room__head {
@@ -3832,12 +3833,28 @@
     }
 
     .facility-log-room .order-chat {
-      margin-inline: 8px;
-      max-width: calc(100% - 16px);
+      margin: 6px auto 0;
+      width: 72%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .facility-log-room .order-chat__msg {
-      max-width: 78%;
+      max-width: 62%;
+      padding: 5px 7px;
+      font-size: 0.75rem;
+    }
+
+    .facility-log-room .order-chat__form input {
+      height: 30px;
+      font-size: 0.75rem;
+    }
+
+    .facility-log-room .order-chat__form .hk-photo-btn,
+    .facility-log-room .order-chat__send {
+      height: 30px;
+      padding: 0 8px;
+      font-size: 0.6875rem;
     }
 
     .facility-log-list {
