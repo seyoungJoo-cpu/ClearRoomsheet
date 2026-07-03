@@ -2430,6 +2430,8 @@
 
     .main.main--order #orderPanel,
     .main.main--facility #facilityPanel,
+    .main.main--facility-misc #facilityMiscPanel,
+    .main.main--facility-daily-found #facilityDailyFoundPanel,
     .main.main--mb-inv #mbInvPanel,
     .main.main--mb-check #mbCheckPanel,
     .main.main--inven-notify #invenNotifyPanel {
@@ -3693,6 +3695,188 @@
     .sidebar-section--zones {
       flex: 1;
       min-height: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section--facility-sub {
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-section--facility-sub .sidebar-title {
+      padding: 8px 12px 4px;
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .sidebar-section--facility-sub .sidebar-nav {
+      padding: 0 8px 8px;
+      gap: 4px;
+    }
+
+    .sidebar-section--facility-sub .sidebar-nav__btn {
+      font-size: 0.6875rem;
+      line-height: 1.25;
+      padding: 8px 8px;
+      white-space: normal;
+      text-align: left;
+    }
+
+    .facility-log-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 12px;
+    }
+
+    .facility-log-toolbar__status {
+      flex: 1 1 180px;
+      min-width: 0;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .facility-log-toolbar__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .facility-log-export-btn,
+    .facility-log-close-btn {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .facility-log-export-btn:hover {
+      background: #f8fafc;
+    }
+
+    .facility-log-close-btn {
+      border-color: #0f766e;
+      background: #ccfbf1;
+      color: #0f766e;
+    }
+
+    .facility-log-close-btn:hover {
+      background: #99f6e4;
+    }
+
+    .facility-log-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 12px;
+    }
+
+    .facility-log-tab {
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .facility-log-tab.is-active {
+      border-color: #0f766e;
+      background: #ccfbf1;
+      color: #0f766e;
+    }
+
+    .facility-log-list {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .facility-log-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    .facility-log-item__head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .facility-log-item__room {
+      font-weight: 800;
+      font-size: 0.8125rem;
+    }
+
+    .facility-log-item__time {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .facility-log-item__memo {
+      margin: 0;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .facility-log-item__by {
+      margin-top: 4px;
+      font-size: 0.625rem;
+      color: var(--text-muted);
+    }
+
+    .facility-log-item__del {
+      margin-top: 8px;
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #b91c1c;
+      font-size: 0.625rem;
+      cursor: pointer;
+    }
+
+    .facility-log-empty {
+      margin: 0;
+      padding: 16px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      list-style: none;
+    }
+
+    .main.main--facility-misc #facilityMiscPanel,
+    .main.main--facility-daily-found #facilityDailyFoundPanel {
+      flex: 1;
+      min-height: 0;
+      margin-bottom: 0;
       overflow-y: auto;
     }
 
@@ -5717,6 +5901,36 @@
           >
             시설 관리
           </button>
+        </div>
+      </nav>
+      <nav
+        class="sidebar-section sidebar-section--facility-sub"
+        id="sidebarFacilitySubSection"
+        hidden
+        aria-label="시설 업무"
+      >
+        <div class="sidebar-title">시설 업무</div>
+        <div class="sidebar-nav">
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnFacilityMisc"
+            aria-pressed="false"
+          >
+            컴플레인·지난습득물·세탁
+          </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnFacilityDailyFound"
+            aria-pressed="false"
+          >
+            당일습득물
+          </button>
+        </div>
+      </nav>
+      <nav class="sidebar-section sidebar-section--primary sidebar-section--primary-tail" aria-label="House Keeping 메뉴 하단">
+        <div class="sidebar-nav">
           <button
             type="button"
             class="sidebar-nav__btn sidebar-nav__btn--compact"
@@ -6111,6 +6325,111 @@
           <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityDeployedEmpty">입실 가능 건이 없습니다.</p>
         </section>
+      </section>
+
+      <section
+        class="order-panel facility-log-panel"
+        id="facilityMiscPanel"
+        hidden
+        aria-labelledby="facilityMiscPanelTitle"
+      >
+        <div class="panel-head-row">
+          <h2 id="facilityMiscPanelTitle">컴플레인 · 지난습득물 · 세탁</h2>
+        </div>
+        <p class="order-panel__hint">
+          컴플레인·지난습득물·세탁 내용을 기록합니다. 마감 시 HTML·엑셀 저장 후 10일간 유지됩니다.
+        </p>
+        <div class="facility-log-toolbar">
+          <div class="facility-log-toolbar__status" id="facilityMiscStatus" aria-live="polite"></div>
+          <div class="facility-log-toolbar__actions">
+            <button type="button" class="facility-log-export-btn" id="btnFacilityMiscExportHtml">
+              HTML 저장
+            </button>
+            <button type="button" class="facility-log-export-btn" id="btnFacilityMiscExportExcel">
+              엑셀 저장
+            </button>
+            <button type="button" class="facility-log-close-btn" id="btnFacilityMiscClose">마감</button>
+          </div>
+        </div>
+        <div class="facility-log-tabs" id="facilityMiscTabs" role="tablist" aria-label="시설 업무 구분">
+          <button
+            type="button"
+            class="facility-log-tab is-active"
+            data-category="complaint"
+            role="tab"
+            aria-selected="true"
+          >
+            컴플레인
+          </button>
+          <button
+            type="button"
+            class="facility-log-tab"
+            data-category="pastFound"
+            role="tab"
+            aria-selected="false"
+          >
+            지난습득물
+          </button>
+          <button
+            type="button"
+            class="facility-log-tab"
+            data-category="laundry"
+            role="tab"
+            aria-selected="false"
+          >
+            세탁
+          </button>
+        </div>
+        <form class="order-row" id="facilityMiscForm">
+          <div class="field field--room-no">
+            <label for="facilityMiscRoom">객실번호</label>
+            <input type="text" id="facilityMiscRoom" placeholder="예: 1205" autocomplete="off" />
+          </div>
+          <div class="field field--memo">
+            <label for="facilityMiscMemo">내용</label>
+            <input type="text" id="facilityMiscMemo" placeholder="내용 입력" autocomplete="off" />
+          </div>
+          <button type="submit" class="btn-order">등록</button>
+        </form>
+        <ul class="facility-log-list" id="facilityMiscList" aria-live="polite"></ul>
+      </section>
+
+      <section
+        class="order-panel facility-log-panel"
+        id="facilityDailyFoundPanel"
+        hidden
+        aria-labelledby="facilityDailyFoundPanelTitle"
+      >
+        <div class="panel-head-row">
+          <h2 id="facilityDailyFoundPanelTitle">당일습득물</h2>
+        </div>
+        <p class="order-panel__hint">
+          당일 습득물을 기록합니다. 마감 시 HTML·엑셀 저장 후 10일간 유지됩니다.
+        </p>
+        <div class="facility-log-toolbar">
+          <div class="facility-log-toolbar__status" id="facilityDailyFoundStatus" aria-live="polite"></div>
+          <div class="facility-log-toolbar__actions">
+            <button type="button" class="facility-log-export-btn" id="btnFacilityDailyFoundExportHtml">
+              HTML 저장
+            </button>
+            <button type="button" class="facility-log-export-btn" id="btnFacilityDailyFoundExportExcel">
+              엑셀 저장
+            </button>
+            <button type="button" class="facility-log-close-btn" id="btnFacilityDailyFoundClose">마감</button>
+          </div>
+        </div>
+        <form class="order-row" id="facilityDailyFoundForm">
+          <div class="field field--room-no">
+            <label for="facilityDailyFoundRoom">객실번호</label>
+            <input type="text" id="facilityDailyFoundRoom" placeholder="예: 1205" autocomplete="off" />
+          </div>
+          <div class="field field--memo">
+            <label for="facilityDailyFoundMemo">내용</label>
+            <input type="text" id="facilityDailyFoundMemo" placeholder="습득물 내용" autocomplete="off" />
+          </div>
+          <button type="submit" class="btn-order">등록</button>
+        </form>
+        <ul class="facility-log-list" id="facilityDailyFoundList" aria-live="polite"></ul>
       </section>
 
       <section class="order-panel mb-inv-panel" id="mbInvPanel" hidden aria-labelledby="mbInvPanelTitle">
@@ -6578,6 +6897,7 @@
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
   <script src="hk-inven-notify.js"></script>
+  <script src="hk-facility-logs.js"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -9923,6 +10243,22 @@
           fac.classList.toggle("is-active", sidebarMainView === "facility");
           fac.setAttribute("aria-pressed", sidebarMainView === "facility" ? "true" : "false");
         }
+        var facMisc = document.getElementById("sidebarBtnFacilityMisc");
+        if (facMisc) {
+          facMisc.classList.toggle("is-active", sidebarMainView === "facilityMisc");
+          facMisc.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "facilityMisc" ? "true" : "false"
+          );
+        }
+        var facDaily = document.getElementById("sidebarBtnFacilityDailyFound");
+        if (facDaily) {
+          facDaily.classList.toggle("is-active", sidebarMainView === "facilityDailyFound");
+          facDaily.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "facilityDailyFound" ? "true" : "false"
+          );
+        }
         if (mbInvNav) {
           mbInvNav.classList.toggle("is-active", sidebarMainView === "mbInv");
           mbInvNav.setAttribute("aria-pressed", sidebarMainView === "mbInv" ? "true" : "false");
@@ -9971,6 +10307,8 @@
         var showRequest = view === "request";
         var showOrder = view === "order";
         var showFacility = view === "facility";
+        var showFacilityMisc = view === "facilityMisc";
+        var showFacilityDailyFound = view === "facilityDailyFound";
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
         var showInvenNotify = view === "invenNotify";
@@ -9985,6 +10323,8 @@
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
         var facilityPanel = document.getElementById("facilityPanel");
+        var facilityMiscPanel = document.getElementById("facilityMiscPanel");
+        var facilityDailyFoundPanel = document.getElementById("facilityDailyFoundPanel");
         var mbInvPanel = document.getElementById("mbInvPanel");
         var mbCheckPanel = document.getElementById("mbCheckPanel");
         var invenNotifyPanel = document.getElementById("invenNotifyPanel");
@@ -10000,6 +10340,8 @@
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
+        if (facilityMiscPanel) facilityMiscPanel.hidden = !showFacilityMisc;
+        if (facilityDailyFoundPanel) facilityDailyFoundPanel.hidden = !showFacilityDailyFound;
         if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
@@ -10014,6 +10356,8 @@
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--facility", showFacility);
+          mainEl.classList.toggle("main--facility-misc", showFacilityMisc);
+          mainEl.classList.toggle("main--facility-daily-found", showFacilityDailyFound);
           mainEl.classList.toggle("main--mb-inv", showMbInv);
           mainEl.classList.toggle("main--mb-check", showMbCheck);
           mainEl.classList.toggle("main--inven-notify", showInvenNotify);
@@ -10039,6 +10383,8 @@
             !showRequest &&
             !showOrder &&
             !showFacility &&
+            !showFacilityMisc &&
+            !showFacilityDailyFound &&
             !showMbInv &&
             !showMbCheck &&
             !showInvenNotify;
@@ -10046,6 +10392,12 @@
         updateSidebarPrimaryNavActive();
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
+        }
+        if (showFacilityMisc && typeof HKFacilityLogs !== "undefined") {
+          HKFacilityLogs.onViewActivated("facilityMisc");
+        }
+        if (showFacilityDailyFound && typeof HKFacilityLogs !== "undefined") {
+          HKFacilityLogs.onViewActivated("facilityDailyFound");
         }
         if (showAi) {
           requestAnimationFrame(function () {
@@ -11899,6 +12251,18 @@
         clearFacilitySidebarAlerts();
         applySidebarMainView("facility");
         updateFacilityOrderFoDisplay();
+      }
+
+      function showSidebarFacilityMiscView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("facilityMisc");
+      }
+
+      function showSidebarFacilityDailyFoundView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("facilityDailyFound");
       }
 
       function showSidebarMbInvView() {
@@ -15161,6 +15525,9 @@
         ) {
           HKInvenNotify.render();
         }
+        if (typeof HKFacilityLogs !== "undefined") {
+          HKFacilityLogs.refreshFromRemote();
+        }
         if (currentZone) {
           renderRoomsForZone(currentZone);
           if (zoneRoomManageOpen) renderZoneRoomManagePanel(currentZone);
@@ -15173,9 +15540,17 @@
 
       function applyMaintenanceModeUi() {
         var btnMaint = document.getElementById("btnMaint");
+        var sidebarFacilitySubSection = document.getElementById("sidebarFacilitySubSection");
         if (btnMaint) {
           btnMaint.classList.toggle("is-on", maintenanceMode);
           btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
+        }
+        if (sidebarFacilitySubSection) sidebarFacilitySubSection.hidden = !maintenanceMode;
+        if (
+          !maintenanceMode &&
+          (sidebarMainView === "facilityMisc" || sidebarMainView === "facilityDailyFound")
+        ) {
+          showSidebarRequestView();
         }
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
@@ -15958,6 +16333,9 @@
       if (typeof HKInvenNotify !== "undefined") {
         HKInvenNotify.init();
       }
+      if (typeof HKFacilityLogs !== "undefined") {
+        HKFacilityLogs.init();
+      }
 
       window.addEventListener("message", function (ev) {
         var msg = ev.data;
@@ -16590,6 +16968,20 @@
               return;
             }
             showSidebarFacilityView();
+          });
+        }
+        var bFacMisc = document.getElementById("sidebarBtnFacilityMisc");
+        if (bFacMisc) {
+          bFacMisc.addEventListener("click", function () {
+            if (sidebarMainView === "facilityMisc") return;
+            showSidebarFacilityMiscView();
+          });
+        }
+        var bFacDaily = document.getElementById("sidebarBtnFacilityDailyFound");
+        if (bFacDaily) {
+          bFacDaily.addEventListener("click", function () {
+            if (sidebarMainView === "facilityDailyFound") return;
+            showSidebarFacilityDailyFoundView();
           });
         }
         if (bMbInv) {

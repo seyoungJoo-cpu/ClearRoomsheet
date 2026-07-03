@@ -171,6 +171,8 @@
       mbInvNotice: "",
       mbInvNoticeImages: [],
       invenNotify: null,
+      facilityMiscLog: null,
+      facilityDailyFoundLog: null,
       zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
       rooms: {
@@ -216,6 +218,12 @@
     d.mbInvNoticeImages = normalizeMbInvNoticeImages(data);
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
+    }
+    if (data.facilityMiscLog && typeof data.facilityMiscLog === "object") {
+      d.facilityMiscLog = data.facilityMiscLog;
+    }
+    if (data.facilityDailyFoundLog && typeof data.facilityDailyFoundLog === "object") {
+      d.facilityDailyFoundLog = data.facilityDailyFoundLog;
     }
     d.zoneMemos = normalizeZoneMemos(data);
 
@@ -358,6 +366,24 @@
       }
     } else {
       merged.invenNotify = base.invenNotify;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")) {
+      if (incoming.facilityMiscLog && typeof incoming.facilityMiscLog === "object") {
+        merged.facilityMiscLog = incoming.facilityMiscLog;
+      } else {
+        merged.facilityMiscLog = null;
+      }
+    } else {
+      merged.facilityMiscLog = base.facilityMiscLog;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDailyFoundLog")) {
+      if (incoming.facilityDailyFoundLog && typeof incoming.facilityDailyFoundLog === "object") {
+        merged.facilityDailyFoundLog = incoming.facilityDailyFoundLog;
+      } else {
+        merged.facilityDailyFoundLog = null;
+      }
+    } else {
+      merged.facilityDailyFoundLog = base.facilityDailyFoundLog;
     }
     if (incoming.zoneMemos && typeof incoming.zoneMemos === "object") {
       merged.zoneMemos = normalizeZoneMemos(incoming);
