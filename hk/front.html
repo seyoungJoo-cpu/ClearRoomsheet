@@ -3972,6 +3972,18 @@
       color: #0f766e;
     }
 
+    .facility-log__alert-tag {
+      display: inline-block;
+      margin-bottom: 4px;
+      padding: 2px 8px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #0f766e;
+      background: #ccfbf1;
+      border: 1px solid #99f6e4;
+      border-radius: 999px;
+    }
+
     .facility-log-tabs {
       margin: 0;
       padding: 16px;
@@ -6469,7 +6481,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityMiscPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
-          오더처럼 접수하고 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
+          등록하면 오른쪽 알림창에 표시됩니다. 알림에서 접수한 뒤 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityMiscStatus" aria-live="polite"></div>
@@ -6529,7 +6541,7 @@
             </div>
             <div class="hk-photo-preview" data-photo-key="facilityMiscOrderMemo" hidden></div>
           </div>
-          <button type="submit" class="btn-order">접수</button>
+          <button type="submit" class="btn-order">등록</button>
         </form>
 
         <section class="order-work-section order-work-section--accepted" aria-labelledby="facilityMiscAcceptedTitle">
@@ -6556,7 +6568,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityDailyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint">
-          오더처럼 접수하고 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
+          등록하면 오른쪽 알림창에 표시됩니다. 알림에서 접수한 뒤 완료 처리합니다. 관리자 전체 마감 후에도 10일간 보관됩니다.
         </p>
         <div class="facility-log-toolbar">
           <div class="facility-log-toolbar__status" id="facilityDailyFoundStatus" aria-live="polite"></div>
@@ -6587,7 +6599,7 @@
             </div>
             <div class="hk-photo-preview" data-photo-key="facilityDailyFoundOrderMemo" hidden></div>
           </div>
-          <button type="submit" class="btn-order">접수</button>
+          <button type="submit" class="btn-order">등록</button>
         </form>
 
         <section class="order-work-section order-work-section--accepted" aria-labelledby="facilityDailyFoundAcceptedTitle">
@@ -6901,6 +6913,24 @@
       <ul class="order-feedback__list" id="facilityFeedbackList"></ul>
       <p class="order-feedback__empty" id="facilityFeedbackEmpty">
         시설 오더가 접수되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+    <aside class="order-feedback" id="facilityMiscFeedback" aria-label="컴플레인·습득물·세탁 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>컴플레인·습득물·세탁 알림</h2>
+      </div>
+      <ul class="order-feedback__list" id="facilityMiscFeedbackList"></ul>
+      <p class="order-feedback__empty" id="facilityMiscFeedbackEmpty">
+        등록되면 이곳에 표시됩니다.
+      </p>
+    </aside>
+    <aside class="order-feedback" id="facilityDailyFoundFeedback" aria-label="당일습득물 알림" hidden>
+      <div class="order-feedback__head">
+        <h2>당일습득물 알림</h2>
+      </div>
+      <ul class="order-feedback__list" id="facilityDailyFoundFeedbackList"></ul>
+      <p class="order-feedback__empty" id="facilityDailyFoundFeedbackEmpty">
+        등록되면 이곳에 표시됩니다.
       </p>
     </aside>
     <aside class="order-feedback" id="mbInvFeedback" aria-label="MB 인벤 알림" hidden>
@@ -10600,11 +10630,15 @@
         var requestFeedback = document.getElementById("requestFeedback");
         var orderFeedback = document.getElementById("orderFeedback");
         var facilityFeedback = document.getElementById("facilityFeedback");
+        var facilityMiscFeedback = document.getElementById("facilityMiscFeedback");
+        var facilityDailyFoundFeedback = document.getElementById("facilityDailyFoundFeedback");
         var mbInvFeedback = document.getElementById("mbInvFeedback");
         var mbCheckFeedback = document.getElementById("mbCheckFeedback");
         if (requestFeedback) requestFeedback.hidden = !showRequest;
         if (orderFeedback) orderFeedback.hidden = !showOrder;
         if (facilityFeedback) facilityFeedback.hidden = !showFacility;
+        if (facilityMiscFeedback) facilityMiscFeedback.hidden = !showFacilityMisc;
+        if (facilityDailyFoundFeedback) facilityDailyFoundFeedback.hidden = !showFacilityDailyFound;
         if (mbInvFeedback) mbInvFeedback.hidden = !showMbInv;
         if (mbCheckFeedback) mbCheckFeedback.hidden = !showMbCheck;
         if (feedbackColumn) {

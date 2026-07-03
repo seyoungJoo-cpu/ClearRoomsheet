@@ -28,9 +28,11 @@
   }
 
   function getEntryPhase(entry) {
-    if (!entry) return "accepted";
+    if (!entry) return "alert";
     var p = entry.phase != null ? String(entry.phase).trim() : "";
     if (p === "completed") return "completed";
+    if (p === "accepted") return "accepted";
+    if (p === "alert") return "alert";
     return "accepted";
   }
 
@@ -67,6 +69,8 @@
       memoImage: memoImage,
       by: by,
       phase: getEntryPhase(raw),
+      acceptedAt: raw.acceptedAt != null ? String(raw.acceptedAt) : "",
+      acceptedBy: raw.acceptedBy != null ? String(raw.acceptedBy).trim() : "",
       completedAt: raw.completedAt != null ? String(raw.completedAt) : "",
       completedBy: raw.completedBy != null ? String(raw.completedBy).trim() : "",
     };
@@ -238,7 +242,7 @@
       categoryLabel || "",
       entry.memo || (entry.memoImage ? "(사진)" : ""),
       entry.by || "",
-      getEntryPhase(entry) === "completed" ? "완료" : "접수",
+      getEntryPhase(entry) === "completed" ? "완료" : getEntryPhase(entry) === "accepted" ? "접수" : "알림",
       entry.completedAt ? formatAt(entry.completedAt) : "",
       entry.completedBy || "",
     ];
@@ -263,7 +267,7 @@
       entry.room || "",
       entry.memo || (entry.memoImage ? "(사진)" : ""),
       entry.by || "",
-      getEntryPhase(entry) === "completed" ? "완료" : "접수",
+      getEntryPhase(entry) === "completed" ? "완료" : getEntryPhase(entry) === "accepted" ? "접수" : "알림",
       entry.completedAt ? formatAt(entry.completedAt) : "",
       entry.completedBy || "",
     ];
@@ -403,12 +407,15 @@
       memo: String(memo || "").trim(),
       memoImage: image || "",
       by: name,
-      phase: "accepted",
+      phase: "alert",
+      acceptedAt: "",
+      acceptedBy: "",
       completedAt: "",
       completedBy: "",
     });
     saveMiscLog(log);
-    renderMiscPanel();
+    renderMiscPanels();
+    scrollFacilityLogAlertIntoView("facilityMiscFeedbackList", log.entries[activeMiscCategory]);
   }
 
   function createDailyOrder(room, memo, image) {
@@ -422,49 +429,130 @@
       memo: String(memo || "").trim(),
       memoImage: image || "",
       by: name,
-      phase: "accepted",
+      phase: "alert",
+      acceptedAt: "",
+      acceptedBy: "",
       completedAt: "",
       completedBy: "",
     });
     saveDailyFoundLog(log);
-    renderDailyPanel();
+    renderDailyPanels();
+    scrollFacilityLogAlertIntoView("facilityDailyFoundFeedbackList", log.entries);
+  }
+
+  function acceptMiscEntry(entryId) {
+    var log = loadMiscLog();
+    var entry = null;
+    var list = null;
+    MISC_CATEGORIES.forEach(function (cat) {
+      if (entry) return;
+      var items = log.entries[cat.key] || [];
+      var found = findEntryInList(items, entryId);
+      if (found) {
+        entry = found;
+        list = items;
+        activeMiscCategory = cat.key;
+      }
+    });
+    if (!entry || getEntryPhase(entry) !== "alert") return;
+    entry.phase = "accepted";
+    entry.acceptedAt = new Date().toISOString();
+    entry.acceptedBy = getOperatorName();
+    saveMiscLog(log);
+    renderMiscPanels();
+    scrollFacilityLogAcceptedIntoView("facilityMiscAcceptedList", entryId);
+  }
+
+  function acceptDailyEntry(entryId) {
+    var log = loadDailyFoundLog();
+    var entry = findEntryInList(log.entries, entryId);
+    if (!entry || getEntryPhase(entry) !== "alert") return;
+    entry.phase = "accepted";
+    entry.acceptedAt = new Date().toISOString();
+    entry.acceptedBy = getOperatorName();
+    saveDailyFoundLog(log);
+    renderDailyPanels();
+    scrollFacilityLogAcceptedIntoView("facilityDailyFoundAcceptedList", entryId);
   }
 
   function completeMiscEntry(entryId) {
     var log = loadMiscLog();
-    var list = log.entries[activeMiscCategory] || [];
-    var entry = findEntryInList(list, entryId);
+    var entry = null;
+    MISC_CATEGORIES.forEach(function (cat) {
+      if (entry) return;
+      var found = findEntryInList(log.entries[cat.key] || [], entryId);
+      if (found) {
+        entry = found;
+        activeMiscCategory = cat.key;
+      }
+    });
     if (!entry || getEntryPhase(entry) === "completed") return;
+    if (getEntryPhase(entry) !== "accepted") return;
     entry.phase = "completed";
     entry.completedAt = new Date().toISOString();
     entry.completedBy = getOperatorName();
     saveMiscLog(log);
-    renderMiscPanel();
+    renderMiscPanels();
+    scrollFacilityLogCompletedIntoView("facilityMiscCompletedList", entryId);
   }
 
   function completeDailyEntry(entryId) {
     var log = loadDailyFoundLog();
     var entry = findEntryInList(log.entries, entryId);
     if (!entry || getEntryPhase(entry) === "completed") return;
+    if (getEntryPhase(entry) !== "accepted") return;
     entry.phase = "completed";
     entry.completedAt = new Date().toISOString();
     entry.completedBy = getOperatorName();
     saveDailyFoundLog(log);
-    renderDailyPanel();
+    renderDailyPanels();
+    scrollFacilityLogCompletedIntoView("facilityDailyFoundCompletedList", entryId);
   }
 
-  function appendOrderCard(li, entry, isCompleted) {
-    if (entry.at) {
-      var timeEl = document.createElement("div");
-      timeEl.className = "request-feedback__item-time";
-      if (uiHooks.setLineWithEmTime) {
-        uiHooks.setLineWithEmTime(timeEl, "접수 ", formatAt(entry.at));
-      } else {
-        timeEl.textContent = "접수 " + formatAt(entry.at);
-      }
-      li.appendChild(timeEl);
-    }
+  function scrollFacilityLogItemIntoView(listId, entryId) {
+    if (!entryId) return;
+    requestAnimationFrame(function () {
+      var card = document.querySelector(
+        "#" + listId + ' .order-work-item[data-entry-id="' + entryId + '"]'
+      );
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
 
+  function scrollFacilityLogAlertIntoView(listId, entries) {
+    var last = (entries || []).filter(function (e) {
+      return getEntryPhase(e) === "alert";
+    }).pop();
+    if (!last || !last.id) return;
+    requestAnimationFrame(function () {
+      var card = document.querySelector(
+        "#" + listId + ' .order-feedback__item[data-entry-id="' + last.id + '"]'
+      );
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  function scrollFacilityLogAcceptedIntoView(listId, entryId) {
+    scrollFacilityLogItemIntoView(listId, entryId);
+  }
+
+  function scrollFacilityLogCompletedIntoView(listId, entryId) {
+    scrollFacilityLogItemIntoView(listId, entryId);
+  }
+
+  function appendTimeLine(parent, label, iso) {
+    if (!iso) return;
+    var timeEl = document.createElement("div");
+    timeEl.className = "request-feedback__item-time";
+    if (uiHooks.setLineWithEmTime) {
+      uiHooks.setLineWithEmTime(timeEl, label + " ", formatAt(iso));
+    } else {
+      timeEl.textContent = label + " " + formatAt(iso);
+    }
+    parent.appendChild(timeEl);
+  }
+
+  function appendOrderBody(li, entry) {
     var row = document.createElement("div");
     row.className = "request-feedback__item-row";
     var r = document.createElement("span");
@@ -483,28 +571,67 @@
     if (uiHooks.hkAppendImageEl) {
       uiHooks.hkAppendImageEl(li, entry.memoImage);
     }
+  }
 
+  function appendAlertCard(li, entry, categoryLabel) {
+    if (categoryLabel) {
+      var tag = document.createElement("div");
+      tag.className = "facility-log__alert-tag";
+      tag.textContent = categoryLabel;
+      li.appendChild(tag);
+    }
+    appendTimeLine(li, "등록", entry.at);
+    appendOrderBody(li, entry);
     var byName = entry.by != null ? String(entry.by).trim() : "";
     if (byName) {
       var byEl = document.createElement("div");
       byEl.className = "order-feedback__item-by";
-      byEl.textContent = byName;
-      byEl.title = "접수: " + byName;
+      byEl.textContent = "등록: " + byName;
       li.appendChild(byEl);
+    }
+    var acts = document.createElement("div");
+    acts.className = "order-feedback__maint-actions";
+    var acceptBtn = document.createElement("button");
+    acceptBtn.type = "button";
+    acceptBtn.className = "order-feedback__accept-btn facility-log__accept-btn";
+    acceptBtn.setAttribute("data-entry-id", entry.id || "");
+    acceptBtn.textContent = "접수";
+    acts.appendChild(acceptBtn);
+    li.appendChild(acts);
+  }
+
+  function appendOrderCard(li, entry, isCompleted) {
+    appendTimeLine(li, "등록", entry.at);
+    if (!isCompleted) {
+      appendTimeLine(li, "접수", entry.acceptedAt);
+    }
+    appendOrderBody(li, entry);
+
+    var regBy = entry.by != null ? String(entry.by).trim() : "";
+    if (regBy) {
+      var regEl = document.createElement("div");
+      regEl.className = "order-feedback__item-by";
+      regEl.textContent = "등록: " + regBy;
+      li.appendChild(regEl);
+    }
+    var acceptBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
+    if (acceptBy && !isCompleted) {
+      var accEl = document.createElement("div");
+      accEl.className = "order-feedback__item-by";
+      accEl.textContent = "접수: " + acceptBy;
+      li.appendChild(accEl);
     }
 
     if (isCompleted) {
       li.classList.add("order-work-item--deployed");
-      if (entry.completedAt) {
-        var doneEl = document.createElement("div");
-        doneEl.className = "request-feedback__item-time";
-        if (uiHooks.setLineWithEmTime) {
-          uiHooks.setLineWithEmTime(doneEl, "완료 ", formatAt(entry.completedAt));
-        } else {
-          doneEl.textContent = "완료 " + formatAt(entry.completedAt);
-        }
-        li.appendChild(doneEl);
+      appendTimeLine(li, "접수", entry.acceptedAt || entry.at);
+      if (acceptBy) {
+        var accDoneEl = document.createElement("div");
+        accDoneEl.className = "order-feedback__item-by";
+        accDoneEl.textContent = "접수: " + acceptBy;
+        li.appendChild(accDoneEl);
       }
+      appendTimeLine(li, "완료", entry.completedAt);
       var doneBy = entry.completedBy != null ? String(entry.completedBy).trim() : "";
       if (doneBy) {
         var doneByEl = document.createElement("div");
@@ -527,20 +654,42 @@
     li.appendChild(acts);
   }
 
+  function renderAlertFeedbackList(listId, emptyId, entries, categoryLabel) {
+    var list = document.getElementById(listId);
+    var empty = emptyId ? document.getElementById(emptyId) : null;
+    if (!list) return;
+    list.innerHTML = "";
+    var alerts = (entries || [])
+      .filter(function (e) {
+        return getEntryPhase(e) === "alert";
+      })
+      .sort(function (a, b) {
+        return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+      });
+    alerts.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "order-feedback__item facility-log__alert-item";
+      li.setAttribute("data-entry-id", entry.id || "");
+      appendAlertCard(li, entry, categoryLabel);
+      list.appendChild(li);
+    });
+    if (empty) empty.hidden = alerts.length > 0;
+  }
+
   function renderOrderWorkLists(acceptedListEl, acceptedEmptyEl, completedListEl, completedEmptyEl, entries) {
     if (!acceptedListEl || !completedListEl) return;
     acceptedListEl.innerHTML = "";
     completedListEl.innerHTML = "";
 
     var accepted = (entries || []).filter(function (e) {
-      return getEntryPhase(e) !== "completed";
+      return getEntryPhase(e) === "accepted";
     });
     var completed = (entries || []).filter(function (e) {
       return getEntryPhase(e) === "completed";
     });
 
     accepted.sort(function (a, b) {
-      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+      return new Date(a.acceptedAt || a.at || 0).getTime() - new Date(b.acceptedAt || b.at || 0).getTime();
     });
     completed.sort(function (a, b) {
       return new Date(b.completedAt || b.at || 0).getTime() - new Date(a.completedAt || a.at || 0).getTime();
@@ -566,14 +715,31 @@
     if (completedEmptyEl) completedEmptyEl.hidden = completed.length > 0;
   }
 
+  function countPhases(list) {
+    var alertN = 0;
+    var acceptedN = 0;
+    var completedN = 0;
+    (list || []).forEach(function (e) {
+      var p = getEntryPhase(e);
+      if (p === "alert") alertN++;
+      else if (p === "accepted") acceptedN++;
+      else if (p === "completed") completedN++;
+    });
+    return { alert: alertN, accepted: acceptedN, completed: completedN };
+  }
+
   function miscStatusText(log) {
     var parts = MISC_CATEGORIES.map(function (c) {
-      var list = log.entries[c.key] || [];
-      var open = list.filter(function (e) {
-        return getEntryPhase(e) !== "completed";
-      }).length;
-      var done = list.length - open;
-      return c.label + " 접수" + open + "·완료" + done;
+      var counts = countPhases(log.entries[c.key] || []);
+      return (
+        c.label +
+        " 알림" +
+        counts.alert +
+        "·접수" +
+        counts.accepted +
+        "·완료" +
+        counts.completed
+      );
     });
     var base = parts.join(" · ");
     if (log.retainUntil) {
@@ -583,16 +749,59 @@
   }
 
   function dailyStatusText(log) {
-    var list = log.entries || [];
-    var open = list.filter(function (e) {
-      return getEntryPhase(e) !== "completed";
-    }).length;
-    var done = list.length - open;
-    var base = "접수 " + open + " · 완료 " + done;
+    var counts = countPhases(log.entries || []);
+    var base =
+      "알림 " + counts.alert + " · 접수 " + counts.accepted + " · 완료 " + counts.completed;
     if (log.retainUntil) {
       return base + " · 관리자 마감 후 " + formatAt(log.retainUntil) + "까지 보관";
     }
     return base;
+  }
+
+  function renderMiscAlertPanel() {
+    var log = loadMiscLog();
+    var alerts = [];
+    MISC_CATEGORIES.forEach(function (cat) {
+      (log.entries[cat.key] || []).forEach(function (entry) {
+        if (getEntryPhase(entry) === "alert") {
+          alerts.push({ entry: entry, categoryLabel: cat.label });
+        }
+      });
+    });
+    alerts.sort(function (a, b) {
+      return new Date(a.entry.at || 0).getTime() - new Date(b.entry.at || 0).getTime();
+    });
+    var list = document.getElementById("facilityMiscFeedbackList");
+    var empty = document.getElementById("facilityMiscFeedbackEmpty");
+    if (!list) return;
+    list.innerHTML = "";
+    alerts.forEach(function (row) {
+      var li = document.createElement("li");
+      li.className = "order-feedback__item facility-log__alert-item";
+      li.setAttribute("data-entry-id", row.entry.id || "");
+      appendAlertCard(li, row.entry, row.categoryLabel);
+      list.appendChild(li);
+    });
+    if (empty) empty.hidden = alerts.length > 0;
+  }
+
+  function renderDailyAlertPanel() {
+    var log = loadDailyFoundLog();
+    renderAlertFeedbackList(
+      "facilityDailyFoundFeedbackList",
+      "facilityDailyFoundFeedbackEmpty",
+      log.entries
+    );
+  }
+
+  function renderMiscPanels() {
+    renderMiscAlertPanel();
+    renderMiscPanel();
+  }
+
+  function renderDailyPanels() {
+    renderDailyAlertPanel();
+    renderDailyPanel();
   }
 
   function renderMiscPanel() {
@@ -650,9 +859,31 @@
     });
   }
 
+  function bindAlertAcceptActions(feedbackId, onAccept) {
+    var panel = document.getElementById(feedbackId);
+    if (!panel || panel.dataset.acceptBound) return;
+    panel.dataset.acceptBound = "1";
+    panel.addEventListener("click", function (e) {
+      var btn = e.target.closest(".facility-log__accept-btn");
+      if (!btn) return;
+      var entryId = btn.getAttribute("data-entry-id");
+      if (!entryId) return;
+      var run = function () {
+        onAccept(entryId);
+      };
+      if (!getOperatorName() && uiHooks.showOperatorGate) {
+        uiHooks.showOperatorGate({ mode: "initial", onSaved: run });
+        return;
+      }
+      run();
+    });
+  }
+
   function bindForms() {
     bindPanelCompleteActions("facilityMiscPanel", completeMiscEntry);
     bindPanelCompleteActions("facilityDailyFoundPanel", completeDailyEntry);
+    bindAlertAcceptActions("facilityMiscFeedback", acceptMiscEntry);
+    bindAlertAcceptActions("facilityDailyFoundFeedback", acceptDailyEntry);
 
     var miscForm = document.getElementById("facilityMiscForm");
     if (miscForm && !miscForm.dataset.bound) {
@@ -725,7 +956,7 @@
       btn.dataset.bound = "1";
       btn.addEventListener("click", function () {
         activeMiscCategory = btn.getAttribute("data-category") || "complaint";
-        renderMiscPanel();
+        renderMiscPanels();
       });
     });
 
@@ -763,13 +994,13 @@
   function onViewActivated(view) {
     activeView = view || "";
     bindForms();
-    if (view === "facilityMisc") renderMiscPanel();
-    if (view === "facilityDailyFound") renderDailyPanel();
+    if (view === "facilityMisc") renderMiscPanels();
+    if (view === "facilityDailyFound") renderDailyPanels();
   }
 
   function refreshFromRemote() {
-    if (activeView === "facilityMisc") renderMiscPanel();
-    if (activeView === "facilityDailyFound") renderDailyPanel();
+    if (activeView === "facilityMisc") renderMiscPanels();
+    if (activeView === "facilityDailyFound") renderDailyPanels();
   }
 
   function init(hooks) {
