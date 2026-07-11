@@ -3593,10 +3593,15 @@
           ) {
           return;
         }
-          dataDel.customZones = (dataDel.customZones || []).filter(function (z) {
-            return z && z.id !== zoneDel;
-          });
-          delete dataDel.rooms[zoneDel];
+          if (typeof HKStorage.removeCustomZone === "function") {
+            HKStorage.removeCustomZone(dataDel, zoneDel);
+          } else {
+            dataDel.customZones = (dataDel.customZones || []).filter(function (z) {
+              return z && z.id !== zoneDel;
+            });
+            delete dataDel.rooms[zoneDel];
+            if (dataDel.deletedRooms) delete dataDel.deletedRooms[zoneDel];
+          }
           HKStorage.save(dataDel);
           if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
             HKSync.pushStorageNow();

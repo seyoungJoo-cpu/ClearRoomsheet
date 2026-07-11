@@ -390,18 +390,12 @@ function mergeHkCustomZones(prev, incoming) {
   return [];
 }
 
-function collectHkCustomZoneIds(customZones, prevRooms, incomingRooms) {
-  var ids = {};
+function collectHkCustomZoneIds(customZones) {
+  var ids = [];
   (customZones || []).forEach(function (z) {
-    if (z && z.id) ids[z.id] = true;
+    if (z && z.id) ids.push(z.id);
   });
-  [prevRooms, incomingRooms].forEach(function (rooms) {
-    if (!rooms || typeof rooms !== "object") return;
-    Object.keys(rooms).forEach(function (k) {
-      if (HK_STANDARD_ZONES.indexOf(k) < 0) ids[k] = true;
-    });
-  });
-  return Object.keys(ids);
+  return ids;
 }
 
 function mergeHkStorage(prev, incoming) {
@@ -487,7 +481,7 @@ function mergeHkStorage(prev, incoming) {
     out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
   });
 
-  collectHkCustomZoneIds(customZones, prev.rooms, incoming.rooms).forEach(function (zone) {
+  collectHkCustomZoneIds(customZones).forEach(function (zone) {
     out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
   });
 

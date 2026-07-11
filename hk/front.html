@@ -9079,9 +9079,16 @@
         var order = HKStorage.getZoneOrder(data);
         var activeZone = getActiveZone();
         if (activeZone && order.indexOf(activeZone) < 0) {
+          var removedZone = activeZone;
           activeZone = null;
           currentZone = null;
+          delete pendingZoneAlerts[removedZone];
+          setZonePanelOpen(false);
+          closeZoneRoomManagePanel();
         }
+        Object.keys(pendingZoneAlerts).forEach(function (zoneId) {
+          if (order.indexOf(zoneId) < 0) delete pendingZoneAlerts[zoneId];
+        });
         nav.innerHTML = "";
         order.forEach(function (zoneId) {
           var btn = document.createElement("button");
@@ -9180,7 +9187,11 @@
         fields.forEach(function (f) {
           var a = String((prev && prev[f.key]) || "").trim();
           var b = String((next && next[f.key]) || "").trim();
-          if (a === b) return;
+          if (f.key === "number") {
+            if (roomsAreSame(a, b)) return;
+          } else if (a === b) {
+            return;
+          }
           var fa = f.fmt ? f.fmt(a) : a;
           var fb = f.fmt ? f.fmt(b) : b;
           lines.push(f.label + ': "' + (fa || "—") + '" → "' + (fb || "—") + '"');

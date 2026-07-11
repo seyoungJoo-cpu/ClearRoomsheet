@@ -379,16 +379,6 @@
     }
 
     var r = data.rooms;
-    if (r && typeof r === "object") {
-      Object.keys(r).forEach(function (k) {
-        if (isStandardZone(k)) return;
-        if (customById[k]) return;
-        if (!Array.isArray(r[k])) return;
-        var orphan = { id: k, label: labelFromZoneId(k) };
-        customById[k] = orphan;
-        customZones.push(orphan);
-      });
-    }
 
     d.customZones = customZones;
     d.deletedRooms = normalizeDeletedRooms(data, customZones);
@@ -472,18 +462,22 @@
     }
   }
 
+  function removeCustomZone(data, zoneId) {
+    if (!data || !zoneId || isStandardZone(zoneId)) return data;
+    data.customZones = (data.customZones || []).filter(function (z) {
+      return z && z.id !== zoneId;
+    });
+    if (data.rooms && Object.prototype.hasOwnProperty.call(data.rooms, zoneId)) {
+      delete data.rooms[zoneId];
+    }
+    if (data.deletedRooms && Object.prototype.hasOwnProperty.call(data.deletedRooms, zoneId)) {
+      delete data.deletedRooms[zoneId];
+    }
+    return data;
+  }
+
   function mergeRoomsObject(prevRooms, incomingRooms, customZones, deletedRooms) {
     var out = {};
-    var customIds = {};
-    (customZones || []).forEach(function (z) {
-      if (z && z.id) customIds[z.id] = true;
-    });
-    [prevRooms, incomingRooms].forEach(function (rooms) {
-      if (!rooms || typeof rooms !== "object") return;
-      Object.keys(rooms).forEach(function (k) {
-        if (STANDARD_ZONE_IDS.indexOf(k) < 0) customIds[k] = true;
-      });
-    });
     STANDARD_ZONE_IDS.forEach(function (zone) {
       var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
       var inc =
@@ -494,7 +488,9 @@
         deletedRooms
       );
     });
-    Object.keys(customIds).forEach(function (zone) {
+    (customZones || []).forEach(function (z) {
+      if (!z || !z.id || isStandardZone(z.id)) return;
+      var zone = z.id;
       var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
       var inc =
         incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : null;
@@ -605,6 +601,7 @@
     getZoneLabel: getZoneLabel,
     getZoneLabelsMap: getZoneLabelsMap,
     makeCustomZoneId: makeCustomZoneId,
+    removeCustomZone: removeCustomZone,
     markRoomDeleted: markRoomDeleted,
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
