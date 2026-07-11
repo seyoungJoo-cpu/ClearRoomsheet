@@ -745,18 +745,19 @@
     parent.appendChild(timeEl);
   }
 
-  function appendFacilityLogNameTimeLine(parent, nameLabel, name, timeLabel, iso) {
+  function appendFacilityLogPhaseLine(parent, label, name, iso) {
     if (!name && !iso) return;
     var line = document.createElement("div");
     line.className = "facility-log-card__meta-line";
+    if (label) line.appendChild(document.createTextNode(label + " "));
     if (name) {
-      line.appendChild(document.createTextNode(nameLabel + " " + name));
-    } else if (nameLabel) {
-      line.appendChild(document.createTextNode(nameLabel + " "));
+      var nameSpan = document.createElement("span");
+      nameSpan.className = "facility-log-card__meta-name";
+      nameSpan.textContent = name;
+      line.appendChild(nameSpan);
     }
     if (iso) {
-      if (name || nameLabel) line.appendChild(document.createTextNode(" · "));
-      if (timeLabel) line.appendChild(document.createTextNode(timeLabel + " "));
+      if (label || name) line.appendChild(document.createTextNode(" · "));
       if (uiHooks.setLineWithEmTime) {
         var timeWrap = document.createElement("span");
         uiHooks.setLineWithEmTime(timeWrap, "", formatAt(iso));
@@ -780,10 +781,10 @@
     var meta = document.createElement("div");
     meta.className = "facility-log-card__meta";
     var regBy = entry.by != null ? String(entry.by).trim() : "";
-    if (opts.showAcceptTime) {
-      appendFacilityLogNameTimeLine(meta, "등록", regBy, "접수", entry.acceptedAt);
-    } else {
-      appendFacilityLogNameTimeLine(meta, "등록", regBy, "", entry.at);
+    appendFacilityLogPhaseLine(meta, "등록", regBy, entry.at);
+    if (opts.showAcceptLines) {
+      var acceptBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
+      appendFacilityLogPhaseLine(meta, "접수", acceptBy, entry.acceptedAt);
     }
     head.appendChild(meta);
     li.appendChild(head);
@@ -801,7 +802,7 @@
     foot.appendChild(gap);
     var meta = document.createElement("div");
     meta.className = "facility-log-card__meta";
-    appendFacilityLogNameTimeLine(meta, "완료", doneBy, "", doneAt);
+    appendFacilityLogPhaseLine(meta, "완료", doneBy, doneAt);
     foot.appendChild(meta);
     li.appendChild(foot);
   }
@@ -820,7 +821,7 @@
   }
 
   function appendOrderBody(li, entry) {
-    appendFacilityLogCardHead(li, entry, { showAcceptTime: false });
+    appendFacilityLogCardHead(li, entry, { showAcceptLines: false });
     appendOrderMemoBody(li, entry);
   }
 
@@ -831,7 +832,7 @@
       tag.textContent = categoryLabel;
       li.appendChild(tag);
     }
-    appendFacilityLogCardHead(li, entry, { showAcceptTime: false });
+    appendFacilityLogCardHead(li, entry, { showAcceptLines: false });
     appendOrderMemoBody(li, entry);
     var acts = document.createElement("div");
     acts.className = "order-feedback__maint-actions";
@@ -845,7 +846,7 @@
   }
 
   function appendOrderCard(li, entry, isCompleted, logKind) {
-    appendFacilityLogCardHead(li, entry, { showAcceptTime: true });
+    appendFacilityLogCardHead(li, entry, { showAcceptLines: true });
     appendOrderMemoBody(li, entry);
 
     if (isCompleted) {
