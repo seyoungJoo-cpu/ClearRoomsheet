@@ -2807,6 +2807,59 @@
       font-size: 0.75rem;
     }
 
+    .facility-log-card__head,
+    .facility-log-card__foot {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .facility-log-card__foot {
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .facility-log-card__head .request-feedback__item-room,
+    .facility-log-card__room-gap {
+      flex: 0 0 4.25rem;
+      min-width: 4.25rem;
+    }
+
+    .facility-log-card__room-gap {
+      display: block;
+    }
+
+    .facility-log-card__meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .facility-log-card__meta-line {
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .facility-log-card__meta-line .request-feedback__item-time,
+    .facility-log-card__meta-line em {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .facility-log-card.is-chat-toggle {
+      cursor: pointer;
+    }
+
+    .facility-log-card.is-chat-toggle:hover {
+      background: #f8fafc;
+    }
+
+    .facility-log-card.is-chat-open {
+      cursor: default;
+    }
+
     .main.main--order .order-work-empty,
     .main.main--facility .order-work-empty,
     .main.main--facility-misc .order-work-empty,

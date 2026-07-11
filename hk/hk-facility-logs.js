@@ -15,6 +15,15 @@
   var activeMiscCategory = "complaint";
   var activeView = "";
   var uiHooks = {};
+  var openFacilityLogChatKey = "";
+
+  function facilityLogChatOpenKey(kind, entryId) {
+    return String(kind || "") + ":" + String(entryId || "");
+  }
+
+  function isFacilityLogChatOpen(kind, entryId) {
+    return openFacilityLogChatKey === facilityLogChatOpenKey(kind, entryId);
+  }
 
   function defaultMiscLog() {
     return {
@@ -583,7 +592,9 @@
     return "facilityLogChat:" + kind + ":" + (entryId || "");
   }
 
-  function appendFacilityLogChatUi(li, entry, kind) {
+  function appendFacilityLogChatUi(li, entry, kind, opts) {
+    opts = opts || {};
+    var readOnly = !!opts.readOnly;
     if (!entry || !entry.id) return;
     var chatWrap = document.createElement("div");
     chatWrap.className = "order-chat facility-log-chat";
@@ -632,6 +643,7 @@
     }
     chatWrap.appendChild(msgList);
 
+    if (!readOnly) {
     var chatKey = facilityLogChatKey(kind, entry.id);
     var chatForm = document.createElement("form");
     chatForm.className = "order-chat__form facility-log-chat__form hk-compose-row";
@@ -661,6 +673,7 @@
     chatWrap.appendChild(chatForm);
     if (uiHooks.hkCreatePhotoPreview) {
       chatWrap.appendChild(uiHooks.hkCreatePhotoPreview(chatKey));
+    }
     }
 
     li.appendChild(chatWrap);
@@ -732,15 +745,68 @@
     parent.appendChild(timeEl);
   }
 
-  function appendOrderBody(li, entry) {
-    var row = document.createElement("div");
-    row.className = "request-feedback__item-row";
-    var r = document.createElement("span");
-    r.className = "request-feedback__item-room";
-    r.textContent = entry.room ? formatRoom(entry.room) : "—";
-    row.appendChild(r);
-    li.appendChild(row);
+  function appendFacilityLogNameTimeLine(parent, nameLabel, name, timeLabel, iso) {
+    if (!name && !iso) return;
+    var line = document.createElement("div");
+    line.className = "facility-log-card__meta-line";
+    if (name) {
+      line.appendChild(document.createTextNode(nameLabel + " " + name));
+    } else if (nameLabel) {
+      line.appendChild(document.createTextNode(nameLabel + " "));
+    }
+    if (iso) {
+      if (name || nameLabel) line.appendChild(document.createTextNode(" · "));
+      if (timeLabel) line.appendChild(document.createTextNode(timeLabel + " "));
+      if (uiHooks.setLineWithEmTime) {
+        var timeWrap = document.createElement("span");
+        uiHooks.setLineWithEmTime(timeWrap, "", formatAt(iso));
+        line.appendChild(timeWrap);
+      } else {
+        line.appendChild(document.createTextNode(formatAt(iso)));
+      }
+    }
+    parent.appendChild(line);
+  }
 
+  function appendFacilityLogCardHead(li, entry, opts) {
+    opts = opts || {};
+    var head = document.createElement("div");
+    head.className = "facility-log-card__head";
+    var roomEl = document.createElement("span");
+    roomEl.className = "request-feedback__item-room";
+    roomEl.textContent = entry.room ? formatRoom(entry.room) : "—";
+    head.appendChild(roomEl);
+
+    var meta = document.createElement("div");
+    meta.className = "facility-log-card__meta";
+    var regBy = entry.by != null ? String(entry.by).trim() : "";
+    if (opts.showAcceptTime) {
+      appendFacilityLogNameTimeLine(meta, "등록", regBy, "접수", entry.acceptedAt);
+    } else {
+      appendFacilityLogNameTimeLine(meta, "등록", regBy, "", entry.at);
+    }
+    head.appendChild(meta);
+    li.appendChild(head);
+  }
+
+  function appendFacilityLogCardFoot(li, entry) {
+    var doneBy = entry.completedBy != null ? String(entry.completedBy).trim() : "";
+    var doneAt = entry.completedAt || "";
+    if (!doneBy && !doneAt) return;
+    var foot = document.createElement("div");
+    foot.className = "facility-log-card__foot";
+    var gap = document.createElement("span");
+    gap.className = "facility-log-card__room-gap";
+    gap.setAttribute("aria-hidden", "true");
+    foot.appendChild(gap);
+    var meta = document.createElement("div");
+    meta.className = "facility-log-card__meta";
+    appendFacilityLogNameTimeLine(meta, "완료", doneBy, "", doneAt);
+    foot.appendChild(meta);
+    li.appendChild(foot);
+  }
+
+  function appendOrderMemoBody(li, entry) {
     var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
     if (memoStr) {
       var memEl = document.createElement("div");
@@ -753,6 +819,11 @@
     }
   }
 
+  function appendOrderBody(li, entry) {
+    appendFacilityLogCardHead(li, entry, { showAcceptTime: false });
+    appendOrderMemoBody(li, entry);
+  }
+
   function appendAlertCard(li, entry, categoryLabel) {
     if (categoryLabel) {
       var tag = document.createElement("div");
@@ -760,15 +831,8 @@
       tag.textContent = categoryLabel;
       li.appendChild(tag);
     }
-    appendTimeLine(li, "등록", entry.at);
-    appendOrderBody(li, entry);
-    var byName = entry.by != null ? String(entry.by).trim() : "";
-    if (byName) {
-      var byEl = document.createElement("div");
-      byEl.className = "order-feedback__item-by";
-      byEl.textContent = "등록: " + byName;
-      li.appendChild(byEl);
-    }
+    appendFacilityLogCardHead(li, entry, { showAcceptTime: false });
+    appendOrderMemoBody(li, entry);
     var acts = document.createElement("div");
     acts.className = "order-feedback__maint-actions";
     var acceptBtn = document.createElement("button");
@@ -781,43 +845,18 @@
   }
 
   function appendOrderCard(li, entry, isCompleted, logKind) {
-    appendTimeLine(li, "등록", entry.at);
-    if (!isCompleted) {
-      appendTimeLine(li, "접수", entry.acceptedAt);
-    }
-    appendOrderBody(li, entry);
-
-    var regBy = entry.by != null ? String(entry.by).trim() : "";
-    if (regBy) {
-      var regEl = document.createElement("div");
-      regEl.className = "order-feedback__item-by";
-      regEl.textContent = "등록: " + regBy;
-      li.appendChild(regEl);
-    }
-    var acceptBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
-    if (acceptBy && !isCompleted) {
-      var accEl = document.createElement("div");
-      accEl.className = "order-feedback__item-by";
-      accEl.textContent = "접수: " + acceptBy;
-      li.appendChild(accEl);
-    }
+    appendFacilityLogCardHead(li, entry, { showAcceptTime: true });
+    appendOrderMemoBody(li, entry);
 
     if (isCompleted) {
       li.classList.add("order-work-item--deployed");
-      appendTimeLine(li, "접수", entry.acceptedAt || entry.at);
-      if (acceptBy) {
-        var accDoneEl = document.createElement("div");
-        accDoneEl.className = "order-feedback__item-by";
-        accDoneEl.textContent = "접수: " + acceptBy;
-        li.appendChild(accDoneEl);
-      }
-      appendTimeLine(li, "완료", entry.completedAt);
-      var doneBy = entry.completedBy != null ? String(entry.completedBy).trim() : "";
-      if (doneBy) {
-        var doneByEl = document.createElement("div");
-        doneByEl.className = "order-feedback__item-by";
-        doneByEl.textContent = "완료: " + doneBy;
-        li.appendChild(doneByEl);
+      appendFacilityLogCardFoot(li, entry);
+      if (logKind && isFacilityLogChatOpen(logKind, entry.id)) {
+        li.classList.add("is-chat-open");
+        appendFacilityLogChatUi(li, entry, logKind, { readOnly: true });
+      } else {
+        li.classList.add("is-chat-toggle");
+        li.setAttribute("title", "클릭하면 대화 내용 보기");
       }
       return;
     }
@@ -891,7 +930,7 @@
       var li = document.createElement("li");
       li.className = "order-work-item order-work-item--deployed facility-log-card";
       li.setAttribute("data-entry-id", entry.id || "");
-      appendOrderCard(li, entry, true, null);
+      appendOrderCard(li, entry, true, logKind);
       completedListEl.appendChild(li);
     });
 
@@ -1091,11 +1130,29 @@
     });
   }
 
+  function bindPanelCompletedChatToggle(panelId, kind, rerender) {
+    var panel = document.getElementById(panelId);
+    if (!panel || panel.dataset.completedChatBound) return;
+    panel.dataset.completedChatBound = "1";
+    panel.addEventListener("click", function (e) {
+      if (e.target.closest("button, .order-chat, a, input, textarea, label")) return;
+      var card = e.target.closest(".order-work-item--deployed.facility-log-card");
+      if (!card) return;
+      var entryId = card.getAttribute("data-entry-id");
+      if (!entryId) return;
+      var key = facilityLogChatOpenKey(kind, entryId);
+      openFacilityLogChatKey = openFacilityLogChatKey === key ? "" : key;
+      rerender();
+    });
+  }
+
   function bindForms() {
     bindPanelCompleteActions("facilityMiscPanel", completeMiscEntry);
     bindPanelCompleteActions("facilityDailyFoundPanel", completeDailyEntry);
     bindPanelChatActions("facilityMiscPanel");
     bindPanelChatActions("facilityDailyFoundPanel");
+    bindPanelCompletedChatToggle("facilityMiscPanel", "misc", renderMiscPanel);
+    bindPanelCompletedChatToggle("facilityDailyFoundPanel", "daily", renderDailyPanel);
     bindAlertAcceptActions("facilityMiscFeedback", acceptMiscEntry);
     bindAlertAcceptActions("facilityDailyFoundFeedback", acceptDailyEntry);
 
