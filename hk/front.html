@@ -2858,6 +2858,19 @@
       color: var(--text);
     }
 
+    #facilityMiscPanel .facility-log-card__room-toggle,
+    #facilityMiscFeedback .facility-log-card__room-toggle {
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+    }
+
+    #facilityMiscPanel .facility-log-card:not(.is-meta-expanded) .facility-log-card__meta,
+    #facilityMiscPanel .facility-log-card:not(.is-meta-expanded) .facility-log-card__foot,
+    #facilityMiscFeedback .facility-log-card:not(.is-meta-expanded) .facility-log-card__meta {
+      display: none;
+    }
+
     .facility-log-card.is-chat-toggle {
       cursor: pointer;
     }
@@ -6559,7 +6572,7 @@
         </div>
         <p class="front-chat-panel__hint">프론트 모드에서만 사용하는 공용 대화방입니다. 메시지는 모든 프론트 화면에 동기화됩니다.</p>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
-        <p class="front-chat__empty" id="frontChatEmpty">메시지가 없습니다. 아래에서 대화를 시작하세요.</p>
+        <p class="front-chat__empty" id="frontChatEmpty" hidden></p>
         <form class="front-chat__form" id="frontChatForm">
           <div class="hk-compose-row">
             <input
@@ -14258,14 +14271,7 @@
           if (isNaN(tb)) tb = 0;
           return ta - tb;
         });
-        if (chat.length === 0) {
-          var emptyMsg = document.createElement("li");
-          emptyMsg.className = "order-chat__msg";
-          emptyMsg.style.background = "#f8fafc";
-          emptyMsg.textContent = "메시지가 없습니다. 아래에서 대화를 시작하세요.";
-          msgList.appendChild(emptyMsg);
-        } else {
-          chat.forEach(function (msg) {
+        chat.forEach(function (msg) {
             var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var msgLi = document.createElement("li");
             msgLi.className = "order-chat__msg";
@@ -14298,7 +14304,6 @@
             }
             msgList.appendChild(msgLi);
           });
-        }
         chatWrap.appendChild(msgList);
 
         var chatKey = "orderChat:" + (entry.id || "");
@@ -16722,7 +16727,7 @@
           return ta - tb;
         });
         if (messages.length === 0) {
-          if (empty) empty.hidden = false;
+          if (empty) empty.hidden = true;
         } else {
           if (empty) empty.hidden = true;
           messages.forEach(function (msg) {

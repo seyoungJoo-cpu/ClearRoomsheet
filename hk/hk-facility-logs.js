@@ -956,14 +956,7 @@
     chat.sort(function (a, b) {
       return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
     });
-    if (chat.length === 0) {
-      var emptyMsg = document.createElement("li");
-      emptyMsg.className = "order-chat__msg";
-      emptyMsg.style.background = "#f8fafc";
-      emptyMsg.textContent = "메시지가 없습니다. 아래에서 대화를 시작하세요.";
-      msgList.appendChild(emptyMsg);
-    } else {
-      chat.forEach(function (msg) {
+    chat.forEach(function (msg) {
         var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
         var msgLi = document.createElement("li");
         msgLi.className = "order-chat__msg";
@@ -991,7 +984,6 @@
         }
         msgList.appendChild(msgLi);
       });
-    }
     chatWrap.appendChild(msgList);
 
     if (!readOnly) {
@@ -1126,6 +1118,12 @@
     head.className = "facility-log-card__head";
     var roomEl = document.createElement("span");
     roomEl.className = "request-feedback__item-room";
+    if (opts.roomMetaToggle) {
+      roomEl.classList.add("facility-log-card__room-toggle");
+      roomEl.setAttribute("role", "button");
+      roomEl.setAttribute("tabindex", "0");
+      roomEl.title = "클릭하면 등록·접수·완료 시간 보기";
+    }
     roomEl.textContent = entry.room ? formatRoom(entry.room) : "—";
     head.appendChild(roomEl);
 
@@ -1176,14 +1174,18 @@
     appendOrderMemoBody(li, entry);
   }
 
-  function appendAlertCard(li, entry, categoryLabel) {
+  function appendAlertCard(li, entry, categoryLabel, cardOpts) {
+    cardOpts = cardOpts || {};
     if (categoryLabel) {
       var tag = document.createElement("div");
       tag.className = "facility-log__alert-tag";
       tag.textContent = categoryLabel;
       li.appendChild(tag);
     }
-    appendFacilityLogCardHead(li, entry, { showAcceptLines: false });
+    appendFacilityLogCardHead(li, entry, {
+      showAcceptLines: false,
+      roomMetaToggle: !!cardOpts.roomMetaToggle,
+    });
     appendOrderMemoBody(li, entry);
     if (uiHooks.isFrontMode && uiHooks.isFrontMode()) return;
     var acts = document.createElement("div");
@@ -1198,7 +1200,10 @@
   }
 
   function appendOrderCard(li, entry, isCompleted, logKind) {
-    appendFacilityLogCardHead(li, entry, { showAcceptLines: true });
+    appendFacilityLogCardHead(li, entry, {
+      showAcceptLines: true,
+      roomMetaToggle: logKind === "misc",
+    });
     appendOrderMemoBody(li, entry);
 
     if (isCompleted) {
@@ -1353,9 +1358,9 @@
     list.innerHTML = "";
     alerts.forEach(function (row) {
       var li = document.createElement("li");
-      li.className = "order-feedback__item facility-log__alert-item";
+      li.className = "order-feedback__item facility-log__alert-item facility-log-card";
       li.setAttribute("data-entry-id", row.entry.id || "");
-      appendAlertCard(li, row.entry, row.categoryLabel);
+      appendAlertCard(li, row.entry, row.categoryLabel, { roomMetaToggle: true });
       list.appendChild(li);
     });
     if (empty) empty.hidden = alerts.length > 0;
@@ -1503,6 +1508,32 @@
     });
   }
 
+  function bindFacilityLogRoomMetaToggle(rootId) {
+    var root = document.getElementById(rootId);
+    if (!root || root.dataset.roomMetaBound) return;
+    root.dataset.roomMetaBound = "1";
+    function toggleFromTarget(target) {
+      var roomBtn = target.closest(".facility-log-card__room-toggle");
+      if (!roomBtn || !root.contains(roomBtn)) return;
+      var card = roomBtn.closest(".facility-log-card");
+      if (!card) return;
+      card.classList.toggle("is-meta-expanded");
+    }
+    root.addEventListener("click", function (e) {
+      if (!e.target.closest(".facility-log-card__room-toggle")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFromTarget(e.target);
+    });
+    root.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (!e.target.closest(".facility-log-card__room-toggle")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFromTarget(e.target);
+    });
+  }
+
   function bindForms() {
     bindPanelCompleteActions("facilityMiscPanel", completeMiscEntry);
     bindPanelCompleteActions("facilityDailyFoundPanel", completeDailyEntry);
@@ -1512,6 +1543,8 @@
     bindPanelCompletedChatToggle("facilityDailyFoundPanel", "daily", renderDailyPanel);
     bindAlertAcceptActions("facilityMiscFeedback", acceptMiscEntry);
     bindAlertAcceptActions("facilityDailyFoundFeedback", acceptDailyEntry);
+    bindFacilityLogRoomMetaToggle("facilityMiscPanel");
+    bindFacilityLogRoomMetaToggle("facilityMiscFeedback");
 
     var miscForm = document.getElementById("facilityMiscForm");
     if (miscForm && !miscForm.dataset.bound) {

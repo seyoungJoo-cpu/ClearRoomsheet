@@ -143,14 +143,7 @@
     chat.sort(function (a, b) {
       return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
     });
-    if (chat.length === 0) {
-      var emptyMsg = document.createElement("li");
-      emptyMsg.className = "order-chat__msg";
-      emptyMsg.style.background = "#f8fafc";
-      emptyMsg.textContent = "메시지가 없습니다.";
-      msgList.appendChild(emptyMsg);
-    } else {
-      chat.forEach(function (msg) {
+    chat.forEach(function (msg) {
         var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
         var msgLi = document.createElement("li");
         msgLi.className = "order-chat__msg";
@@ -180,7 +173,6 @@
         }
         msgList.appendChild(msgLi);
       });
-    }
     chatWrap.appendChild(msgList);
 
     var chatKey = "mbInvChat:" + (entry.id || "");
