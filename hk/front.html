@@ -3545,8 +3545,25 @@
 
     .room-card.is-inline-editing .room-card__memo-block,
     .room-card.is-inline-editing .room-card__time-display,
-    .room-card.is-inline-editing .room-card__actions {
+    .room-card.is-inline-editing .room-card__surface > .room-card__actions {
       display: none;
+    }
+
+    .room-card.is-inline-editing .room-card__head {
+      display: none;
+    }
+
+    .room-card__inline-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .room-card__inline-editor label {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--text-muted);
     }
 
     .zone-memo-board {
@@ -9289,7 +9306,9 @@
       }
 
       function readFrontRoomFromEditor(li) {
-        var num = (li.querySelector(".re-num") && li.querySelector(".re-num").value.trim()) || "";
+        var numRaw =
+          (li.querySelector(".re-num") && li.querySelector(".re-num").value.trim()) || "";
+        var num = canonicalRoomInput(numRaw) || numRaw;
         var memo1 = (li.querySelector(".re-memo1") && li.querySelector(".re-memo1").value) || "";
         var memo2 = (li.querySelector(".re-memo2") && li.querySelector(".re-memo2").value) || "";
         return {
@@ -16151,13 +16170,22 @@
           return i !== idx;
         });
         var dupSave = others.some(function (r) {
-          return (r.number || "") === next.number;
+          return roomsAreSame(r.number || "", next.number);
         });
         if (dupSave) {
           showHkActionToast("다른 행과 같은 객실번호입니다.");
           return;
         }
         var prevRow = dataSave.rooms[zone][idx];
+        var prevNo = prevRow && prevRow.number ? prevRow.number : "";
+        if (
+          prevNo &&
+          next.number &&
+          !roomsAreSame(prevNo, next.number) &&
+          typeof HKStorage.unmarkRoomDeleted === "function"
+        ) {
+          HKStorage.unmarkRoomDeleted(dataSave, zone, next.number);
+        }
         next.time = prevRow && prevRow.time != null ? prevRow.time : "";
         next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
         next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
@@ -16221,26 +16249,36 @@
         if (!surface) return;
         var editor = document.createElement("div");
         editor.className = "room-card__inline-editor";
+        var numLabel = document.createElement("label");
+        numLabel.textContent = "객실번호";
+        editor.appendChild(numLabel);
         var inNum = document.createElement("input");
         inNum.type = "text";
         inNum.className = "re-num";
-        inNum.placeholder = "객실번호";
+        inNum.placeholder = zone === "RC" ? "예: 1201 -> 1205" : "예: 1205";
         inNum.value = formatRoomNoDisplay(room.number || "");
+        inNum.setAttribute("autocomplete", "off");
         editor.appendChild(inNum);
+        var m1Label = document.createElement("label");
+        m1Label.textContent = "FD";
+        editor.appendChild(m1Label);
         var inM1 = document.createElement("input");
         inM1.type = "text";
         inM1.className = "re-memo1";
-        inM1.placeholder = "FD";
+        inM1.placeholder = "FD 메모";
         inM1.value = room.memo1 || "";
         editor.appendChild(inM1);
+        var m2Label = document.createElement("label");
+        m2Label.textContent = "정비";
+        editor.appendChild(m2Label);
         var inM2 = document.createElement("input");
         inM2.type = "text";
         inM2.className = "re-memo2";
-        inM2.placeholder = "정비";
+        inM2.placeholder = "정비 메모";
         inM2.value = room.memo2 || "";
         editor.appendChild(inM2);
         var editActions = document.createElement("div");
-        editActions.className = "room-card__actions";
+        editActions.className = "room-card__inline-actions";
         var btnSave = document.createElement("button");
         btnSave.type = "button";
         btnSave.className = "btn-zone-card-save";
@@ -16257,6 +16295,8 @@
         editActions.appendChild(btnCancel);
         editor.appendChild(editActions);
         surface.appendChild(editor);
+        inNum.focus();
+        inNum.select();
       }
 
       function closeZoneCardInlineEditor(li) {
