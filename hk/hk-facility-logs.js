@@ -1497,7 +1497,13 @@
     if (!panel || panel.dataset.completedChatBound) return;
     panel.dataset.completedChatBound = "1";
     panel.addEventListener("click", function (e) {
-      if (e.target.closest("button, .order-chat, a, input, textarea, label")) return;
+      if (
+        e.target.closest(
+          "button, .order-chat, a, input, textarea, label, .facility-log-card__room-toggle, .facility-log-card__meta, .facility-log-card__foot"
+        )
+      ) {
+        return;
+      }
       var card = e.target.closest(".order-work-item--deployed.facility-log-card");
       if (!card) return;
       var entryId = card.getAttribute("data-entry-id");
