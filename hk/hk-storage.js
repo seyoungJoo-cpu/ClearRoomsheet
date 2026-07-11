@@ -125,16 +125,148 @@
     return id;
   }
 
-  function parseRoomsArray(arr) {
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .map(parseRoomEntry)
-      .filter(function (room) {
-        return room.number.length > 0;
-      })
-      .sort(function (a, b) {
-        return a.number.localeCompare(b.number, undefined, { numeric: true });
+  function roomNumberKey(number) {
+    return String(number == null ? "" : number).trim();
+  }
+
+  function markRoomDeletedInMap(deletedRooms, zone, roomNumber) {
+    if (!deletedRooms || !zone) return;
+    var k = roomNumberKey(roomNumber);
+    if (!k) return;
+    if (!deletedRooms[zone]) deletedRooms[zone] = [];
+    if (deletedRooms[zone].indexOf(k) < 0) deletedRooms[zone].push(k);
+  }
+
+  function isRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
+    var k = roomNumberKey(roomNumber);
+    if (!k) return false;
+    var list = deletedRooms && deletedRooms[zone];
+    if (!Array.isArray(list)) return false;
+    return list.indexOf(k) >= 0;
+  }
+
+  function normalizeDeletedRooms(data, customZones) {
+    var out = {};
+    STANDARD_ZONE_IDS.forEach(function (z) {
+      out[z] = [];
+    });
+    (customZones || []).forEach(function (z) {
+      if (z && z.id) out[z.id] = [];
+    });
+    var src = data && data.deletedRooms;
+    if (!src || typeof src !== "object") return out;
+    Object.keys(src).forEach(function (zone) {
+      if (!Array.isArray(src[zone])) return;
+      if (!out[zone]) out[zone] = [];
+      src[zone].forEach(function (n) {
+        markRoomDeletedInMap(out, zone, n);
       });
+    });
+    return out;
+  }
+
+  function mergeDeletedRoomsMaps(a, b) {
+    var out = {};
+    var zones = {};
+    [a, b].forEach(function (src) {
+      if (!src || typeof src !== "object") return;
+      Object.keys(src).forEach(function (z) {
+        zones[z] = true;
+      });
+    });
+    Object.keys(zones).forEach(function (zone) {
+      out[zone] = [];
+      [a, b].forEach(function (src) {
+        if (!src || !Array.isArray(src[zone])) return;
+        src[zone].forEach(function (n) {
+          markRoomDeletedInMap(out, zone, n);
+        });
+      });
+    });
+    return out;
+  }
+
+  function mergeRoomEntry(prev, incoming) {
+    if (!incoming || !incoming.number) return prev;
+    if (!prev || !prev.number) return incoming;
+    var ti = incoming.tray != null ? String(incoming.tray).trim() : "";
+    var tp = prev.tray != null ? String(prev.tray).trim() : "";
+    if (ti === "deleted" || tp === "deleted") return null;
+    return {
+      number: incoming.number || prev.number,
+      status: incoming.status != null ? String(incoming.status).trim() : prev.status,
+      memo1: incoming.memo1 != null ? String(incoming.memo1) : prev.memo1,
+      memo2: incoming.memo2 != null ? String(incoming.memo2) : prev.memo2,
+      memo2Image:
+        incoming.memo2Image != null ? String(incoming.memo2Image) : prev.memo2Image,
+      time: incoming.time != null ? normalizeTimeField(incoming.time) : prev.time,
+      tray: ti || tp || "",
+    };
+  }
+
+  function mergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
+    var map = {};
+    function ingest(room) {
+      if (!room || !room.number) return;
+      var k = roomNumberKey(room.number);
+      if (!k) return;
+      var tray = room.tray != null ? String(room.tray).trim() : "";
+      if (tray === "deleted") {
+        markRoomDeletedInMap(deletedRooms, zone, k);
+        delete map[k];
+        return;
+      }
+      if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
+        delete map[k];
+        return;
+      }
+      var merged = map[k] ? mergeRoomEntry(map[k], room) : parseRoomEntry(room);
+      if (!merged) {
+        delete map[k];
+        return;
+      }
+      map[k] = merged;
+    }
+    (prevArr || []).forEach(ingest);
+    (incomingArr || []).forEach(ingest);
+    return Object.keys(map).map(function (k) {
+      return map[k];
+    });
+  }
+
+  function parseRoomsArray(arr, zone, deletedRooms) {
+    if (!Array.isArray(arr)) return [];
+    var out = [];
+    arr.forEach(function (x) {
+      var room = parseRoomEntry(x);
+      if (!room.number.length) return;
+      var tray = room.tray != null ? String(room.tray).trim() : "";
+      if (tray === "deleted") {
+        if (zone && deletedRooms) markRoomDeletedInMap(deletedRooms, zone, room.number);
+        return;
+      }
+      if (zone && deletedRooms && isRoomMarkedDeleted(deletedRooms, zone, room.number)) {
+        return;
+      }
+      out.push(room);
+    });
+    return out.sort(function (a, b) {
+      return a.number.localeCompare(b.number, undefined, { numeric: true });
+    });
+  }
+
+  function markRoomDeleted(data, zone, roomNumber) {
+    if (!data) return;
+    if (!data.deletedRooms) data.deletedRooms = {};
+    markRoomDeletedInMap(data.deletedRooms, zone, roomNumber);
+  }
+
+  function unmarkRoomDeleted(data, zone, roomNumber) {
+    if (!data || !data.deletedRooms || !data.deletedRooms[zone]) return;
+    var k = roomNumberKey(roomNumber);
+    data.deletedRooms[zone] = data.deletedRooms[zone].filter(function (n) {
+      return roomNumberKey(n) !== k;
+    });
   }
 
   function normalizeNoticeImages(data) {
@@ -176,6 +308,7 @@
       facilityDailyFoundLog: null,
       zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
+      deletedRooms: {},
       rooms: {
         VIP: [],
         RC: [],
@@ -258,16 +391,19 @@
     }
 
     d.customZones = customZones;
+    d.deletedRooms = normalizeDeletedRooms(data, customZones);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
-        d.rooms[k] = parseRoomsArray(r[k]);
+        d.rooms[k] = parseRoomsArray(r[k], k, d.deletedRooms);
       }
     });
 
     customZones.forEach(function (z) {
       d.rooms[z.id] =
-        r && Array.isArray(r[z.id]) ? parseRoomsArray(r[z.id]) : [];
+        r && Array.isArray(r[z.id])
+          ? parseRoomsArray(r[z.id], z.id, d.deletedRooms)
+          : [];
     });
 
     return d;
@@ -336,7 +472,7 @@
     }
   }
 
-  function mergeRoomsObject(prevRooms, incomingRooms, customZones) {
+  function mergeRoomsObject(prevRooms, incomingRooms, customZones, deletedRooms) {
     var out = {};
     var customIds = {};
     (customZones || []).forEach(function (z) {
@@ -349,22 +485,24 @@
       });
     });
     STANDARD_ZONE_IDS.forEach(function (zone) {
-      if (incomingRooms && Array.isArray(incomingRooms[zone])) {
-        out[zone] = incomingRooms[zone];
-      } else if (prevRooms && Array.isArray(prevRooms[zone])) {
-        out[zone] = prevRooms[zone];
-      } else {
-        out[zone] = [];
-      }
+      var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
+      var inc =
+        incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : null;
+      out[zone] = parseRoomsArray(
+        mergeRoomArraysByNumber(prev, inc || [], zone, deletedRooms),
+        zone,
+        deletedRooms
+      );
     });
     Object.keys(customIds).forEach(function (zone) {
-      if (incomingRooms && Array.isArray(incomingRooms[zone])) {
-        out[zone] = incomingRooms[zone];
-      } else if (prevRooms && Array.isArray(prevRooms[zone])) {
-        out[zone] = prevRooms[zone];
-      } else {
-        out[zone] = [];
-      }
+      var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
+      var inc =
+        incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : null;
+      out[zone] = parseRoomsArray(
+        mergeRoomArraysByNumber(prev, inc || [], zone, deletedRooms),
+        zone,
+        deletedRooms
+      );
     });
     return out;
   }
@@ -430,8 +568,18 @@
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
       merged.customZones = base.customZones;
     }
+    var mergedDeleted = mergeDeletedRoomsMaps(
+      base.deletedRooms,
+      Object.prototype.hasOwnProperty.call(incoming, "deletedRooms") ? incoming.deletedRooms : null
+    );
+    merged.deletedRooms = mergedDeleted;
     if (incoming.rooms && typeof incoming.rooms === "object") {
-      merged.rooms = mergeRoomsObject(base.rooms, incoming.rooms, merged.customZones);
+      merged.rooms = mergeRoomsObject(
+        base.rooms,
+        incoming.rooms,
+        merged.customZones,
+        mergedDeleted
+      );
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
       merged.rooms = base.rooms;
     }
@@ -457,6 +605,8 @@
     getZoneLabel: getZoneLabel,
     getZoneLabelsMap: getZoneLabelsMap,
     makeCustomZoneId: makeCustomZoneId,
+    markRoomDeleted: markRoomDeleted,
+    unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
   };
 })(typeof window !== "undefined" ? window : this);

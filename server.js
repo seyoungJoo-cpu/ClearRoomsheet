@@ -295,6 +295,93 @@ function copyHkRoomArray(rooms, zone) {
   return [];
 }
 
+function hkRoomNumberKey(number) {
+  return String(number == null ? "" : number).trim();
+}
+
+function hkMarkRoomDeletedInMap(deletedRooms, zone, roomNumber) {
+  if (!deletedRooms || !zone) return;
+  var k = hkRoomNumberKey(roomNumber);
+  if (!k) return;
+  if (!deletedRooms[zone]) deletedRooms[zone] = [];
+  if (deletedRooms[zone].indexOf(k) < 0) deletedRooms[zone].push(k);
+}
+
+function hkIsRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
+  var k = hkRoomNumberKey(roomNumber);
+  if (!k) return false;
+  var list = deletedRooms && deletedRooms[zone];
+  if (!Array.isArray(list)) return false;
+  return list.indexOf(k) >= 0;
+}
+
+function hkMergeDeletedRoomsMaps(a, b) {
+  var out = {};
+  var zones = {};
+  [a, b].forEach(function (src) {
+    if (!src || typeof src !== "object") return;
+    Object.keys(src).forEach(function (z) {
+      zones[z] = true;
+    });
+  });
+  Object.keys(zones).forEach(function (zone) {
+    out[zone] = [];
+    [a, b].forEach(function (src) {
+      if (!src || !Array.isArray(src[zone])) return;
+      src[zone].forEach(function (n) {
+        hkMarkRoomDeletedInMap(out, zone, n);
+      });
+    });
+  });
+  return out;
+}
+
+function hkMergeRoomEntry(prev, incoming) {
+  if (!incoming || !incoming.number) return prev;
+  if (!prev || !prev.number) return incoming;
+  var ti = incoming.tray != null ? String(incoming.tray).trim() : "";
+  var tp = prev.tray != null ? String(prev.tray).trim() : "";
+  if (ti === "deleted" || tp === "deleted") return null;
+  return Object.assign({}, prev, incoming, { tray: ti || tp || "" });
+}
+
+function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
+  var map = {};
+  function ingest(room) {
+    if (!room || !room.number) return;
+    var k = hkRoomNumberKey(room.number);
+    if (!k) return;
+    var tray = room.tray != null ? String(room.tray).trim() : "";
+    if (tray === "deleted") {
+      hkMarkRoomDeletedInMap(deletedRooms, zone, k);
+      delete map[k];
+      return;
+    }
+    if (hkIsRoomMarkedDeleted(deletedRooms, zone, k)) {
+      delete map[k];
+      return;
+    }
+    var merged = map[k] ? hkMergeRoomEntry(map[k], room) : room;
+    if (!merged) {
+      delete map[k];
+      return;
+    }
+    map[k] = merged;
+  }
+  (prevArr || []).forEach(ingest);
+  (incomingArr || []).forEach(ingest);
+  return Object.keys(map).map(function (k) {
+    return map[k];
+  });
+}
+
+function hkMergeZoneRooms(prevRooms, incomingRooms, zone, deletedRooms) {
+  var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
+  var inc =
+    incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : [];
+  return hkMergeRoomArraysByNumber(prev, inc, zone, deletedRooms);
+}
+
 function mergeHkCustomZones(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
     return Array.isArray(incoming.customZones) ? incoming.customZones.slice() : [];
@@ -387,24 +474,21 @@ function mergeHkStorage(prev, incoming) {
         : null
       : prev.facilityDailyFoundLog || null,
     rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [] },
+    deletedRooms: {},
   };
 
+  var mergedDeleted = hkMergeDeletedRoomsMaps(
+    prev.deletedRooms,
+    Object.prototype.hasOwnProperty.call(incoming, "deletedRooms") ? incoming.deletedRooms : null
+  );
+  out.deletedRooms = mergedDeleted;
+
   HK_STANDARD_ZONES.forEach(function (zone) {
-    var n = incoming.rooms && incoming.rooms[zone];
-    if (Array.isArray(n)) {
-      out.rooms[zone] = n.slice();
-      return;
-    }
-    out.rooms[zone] = copyHkRoomArray(prev.rooms, zone);
+    out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
   });
 
   collectHkCustomZoneIds(customZones, prev.rooms, incoming.rooms).forEach(function (zone) {
-    var n = incoming.rooms && incoming.rooms[zone];
-    if (Array.isArray(n)) {
-      out.rooms[zone] = n.slice();
-      return;
-    }
-    out.rooms[zone] = copyHkRoomArray(prev.rooms, zone);
+    out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
   });
 
   return out;

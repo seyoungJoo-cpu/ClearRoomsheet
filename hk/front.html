@@ -9487,6 +9487,9 @@
             }
             var changeEntries = [];
             toAdd.forEach(function (n) {
+              if (typeof HKStorage.unmarkRoomDeleted === "function") {
+                HKStorage.unmarkRoomDeleted(dataBulk, zone, n);
+              }
               var row = {
                 number: n,
                 status: lookupRoomStatusFromXml(n),
@@ -9536,6 +9539,9 @@
           };
           var addEntry = buildRoomChangeEntry(zone, null, newRow);
           if (!data.rooms[zone]) data.rooms[zone] = [];
+          if (typeof HKStorage.unmarkRoomDeleted === "function") {
+            HKStorage.unmarkRoomDeleted(data, zone, num);
+          }
           data.rooms[zone].push(newRow);
           HKStorage.save(data, { skipSync: true });
           publishRoomChange(addEntry).then(function () {
@@ -15988,6 +15994,9 @@
         rooms.forEach(function (r) {
           if (roomsAreSame(r.number || "", roomNumber)) {
             r.tray = tray || "";
+            if (!tray && typeof HKStorage.unmarkRoomDeleted === "function") {
+              HKStorage.unmarkRoomDeleted(data, zone, roomNumber);
+            }
             found = true;
           }
         });
@@ -16176,21 +16185,23 @@
         var dataRm = HKStorage.load();
         if (!dataRm.rooms[zone] || isNaN(idx)) return;
         var removedRow = dataRm.rooms[zone][idx];
-        dataRm.rooms[zone][idx].tray = "deleted";
+        if (!removedRow) return;
+        var roomNo = removedRow.number || "";
+        if (typeof HKStorage.markRoomDeleted === "function") {
+          HKStorage.markRoomDeleted(dataRm, zone, roomNo);
+        }
+        dataRm.rooms[zone].splice(idx, 1);
         HKStorage.save(dataRm, { skipSync: true });
         var deleteEntry = {
           id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
           at: new Date().toISOString(),
           zone: zone,
-          room: removedRow && removedRow.number ? removedRow.number : "",
+          room: roomNo,
           kind: "delete",
           changes: ["객실 삭제"],
           by: getOperatorName() || "",
         };
         publishRoomChange(deleteEntry).then(function () {
-          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-            HKSync.pushStorageNow();
-          }
           if (onDone) onDone();
           else {
             renderZoneRoomManagePanel(zone, { force: true });
