@@ -6340,11 +6340,11 @@
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
-        <nav class="topbar-quick-nav" aria-label="교대 · 정비 오더 관리">
+        <nav class="topbar-quick-nav" aria-label="교대 · 루밍">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
             교대
           </button>
-          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">정비 오더 관리</a>
+          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
         </nav>
       </div>
       <div class="topbar-head-tools">
@@ -16649,6 +16649,9 @@
           btnFront.classList.toggle("is-on", frontMode);
           btnFront.setAttribute("aria-pressed", frontMode ? "true" : "false");
         }
+        if (!frontMode) closeZoneRoomManagePanel();
+        updateZoneAddRoomBtnUi();
+        renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         applyFacilityLogSidebarUi();
         if (
@@ -16663,8 +16666,6 @@
         }
         if (!frontMode) hideFrontChatToast();
         if (!frontMode) clearFrontChatSidebarAlert();
-        if (!frontMode) closeZoneRoomManagePanel();
-        updateZoneAddRoomBtnUi();
         if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
