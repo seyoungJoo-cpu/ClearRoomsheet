@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>정비용 루밍을 만들어보자</title>
+  <title>정비 오더 관리</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
@@ -1164,7 +1164,7 @@
 <body class="locked">
   <div id="auth-gate" class="auth-gate" aria-hidden="false">
     <div class="auth-card">
-      <h2>정비 루밍 접근</h2>
+      <h2>정비 오더 관리 접근</h2>
       <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
       <form id="auth-form" autocomplete="off">
         <label for="auth-password" class="sr-only">비밀번호</label>
@@ -1177,9 +1177,9 @@
 
   <div class="wrap app-main">
     <header class="app-header">
-      <h1>정비용 루밍을 만들어보자</h1>
+      <h1>정비 오더 관리</h1>
       <nav class="app-nav" aria-label="다른 프로그램">
-        <a class="app-nav-btn" href="/hk/front.html?entry=1" id="linkToHkFront">오더확인</a>
+        <a class="app-nav-btn" href="/hk/front.html?entry=1" id="linkToHkFront">정비 오더</a>
       </nav>
     </header>
 
@@ -2062,13 +2062,7 @@
 
       function isOutDepartedResv(item) {
         var rs = normalizeResvStatus(item && item.resvStatus);
-        return (
-          rs === "Departed" ||
-          rs === "Departed, Arrival" ||
-          rs === "Departed, Arrived" ||
-          rs === "Arrived" ||
-          rs === "Arrived, Departed"
-        );
+        return rs.indexOf("Departed") >= 0;
       }
 
       function outDepartedHighlightClass(item) {

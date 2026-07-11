@@ -15,7 +15,7 @@
 
   var LABELS = {
     admin: "관리자",
-    maint: "정비 오더 관리",
+    maint: "정비 입력",
     front: "프론트",
   };
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>정비 오더 관리 · Lotte Hotel</title>
+  <title>정비 오더 · Lotte Hotel</title>
   <script src="hk-entry-guard.js"></script>
   <link rel="stylesheet" href="hk-theme.css" />
   <style>
@@ -1317,10 +1317,15 @@
 
     .sidebar-nav__btn--multiline {
       white-space: normal;
-      line-height: 1.3;
-      font-size: 0.72rem;
-      padding-top: 7px;
-      padding-bottom: 7px;
+      line-height: 1.25;
+      font-size: 0.64rem;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+
+    #sidebarBtnFacilityMisc {
+      font-size: 0.62rem;
+      line-height: 1.22;
     }
 
     .sidebar-section {
@@ -6335,11 +6340,11 @@
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
-        <nav class="topbar-quick-nav" aria-label="교대 · 루밍">
+        <nav class="topbar-quick-nav" aria-label="교대 · 정비 오더 관리">
           <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
             교대
           </button>
-          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
+          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">정비 오더 관리</a>
         </nav>
       </div>
       <div class="topbar-head-tools">
@@ -6396,7 +6401,7 @@
       <div class="topbar-actions">
         <a class="btn-admin" id="btnAdmin" href="admin.html">관리자</a>
         <button type="button" class="btn-maint" id="btnMaint" aria-pressed="false" title="켠 뒤 카드에서 시간·정비 입력">
-          정비 오더 관리
+          정비 입력
         </button>
         <button
           type="button"
@@ -9350,20 +9355,6 @@
           stack.appendChild(numInput);
         }
 
-        var memo1 = document.createElement("input");
-        memo1.type = "text";
-        memo1.className = "af-memo1";
-        memo1.placeholder = "FD";
-        memo1.autocomplete = "off";
-        stack.appendChild(memo1);
-
-        var memo2 = document.createElement("input");
-        memo2.type = "text";
-        memo2.className = "af-memo2";
-        memo2.placeholder = "정비";
-        memo2.autocomplete = "off";
-        stack.appendChild(memo2);
-
         var addBtn = document.createElement("button");
         addBtn.type = "button";
         addBtn.className = "btn-add";
@@ -9441,73 +9432,8 @@
         addMount.innerHTML = "";
         addMount.appendChild(createFrontZoneAddStack(zone, label));
 
-        var data = HKStorage.load();
-        var rooms = (data.rooms && data.rooms[zone]) || [];
         editList.innerHTML = "";
-        if (rooms.length === 0) {
-          var empty = document.createElement("li");
-          empty.className = "empty-hint";
-          empty.textContent = "등록된 객실이 없습니다.";
-          editList.appendChild(empty);
-          return;
-        }
-
-        rooms.forEach(function (room, idx) {
-          if (getRoomTray(room)) return;
-          var li = document.createElement("li");
-          li.className = "room-editor";
-          var grid = document.createElement("div");
-          grid.className = "re-grid";
-
-          var inNum = document.createElement("input");
-          inNum.type = "text";
-          inNum.className = "re-num";
-          inNum.value = formatRoomNoDisplay(room.number || "");
-          inNum.placeholder = "객실번호";
-          grid.appendChild(inNum);
-
-          var stWrap = document.createElement("div");
-          var xmlSt = lookupRoomStatusFromXml(room.number || "");
-          stWrap.appendChild(
-            buildRoomStatusGroup(xmlSt, room.number || "", { statusClass: "room-card__status" })
-          );
-          grid.appendChild(stWrap);
-
-          var inM1 = document.createElement("input");
-          inM1.type = "text";
-          inM1.className = "re-memo1 re-span2";
-          inM1.placeholder = "FD";
-          inM1.value = room.memo1 || "";
-          grid.appendChild(inM1);
-
-          var inM2 = document.createElement("input");
-          inM2.type = "text";
-          inM2.className = "re-memo2 re-span2";
-          inM2.placeholder = "정비";
-          inM2.value = room.memo2 || "";
-          grid.appendChild(inM2);
-
-          li.appendChild(grid);
-
-          var actions = document.createElement("div");
-          actions.className = "re-actions";
-          var btnSave = document.createElement("button");
-          btnSave.type = "button";
-          btnSave.className = "btn-save-row";
-          btnSave.textContent = "변경";
-          btnSave.setAttribute("data-zone", zone);
-          btnSave.setAttribute("data-index", String(idx));
-          var btnRm = document.createElement("button");
-          btnRm.type = "button";
-          btnRm.className = "btn-remove";
-          btnRm.textContent = "삭제";
-          btnRm.setAttribute("data-zone", zone);
-          btnRm.setAttribute("data-index", String(idx));
-          actions.appendChild(btnSave);
-          actions.appendChild(btnRm);
-          li.appendChild(actions);
-          editList.appendChild(li);
-        });
+        editList.hidden = true;
       }
 
       function handleZoneRoomManageClick(e) {
@@ -9555,10 +9481,8 @@
             (dataBulk.rooms[zone] || []).forEach(function (r) {
               existingNums[r.number || ""] = true;
             });
-            var memo1Bulk =
-              (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value) || "";
-            var memo2Bulk =
-              (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value) || "";
+            var memo1Bulk = "";
+            var memo2Bulk = "";
             var toAdd = [];
             var skipped = [];
             numbers.forEach(function (n) {
@@ -9616,8 +9540,8 @@
             showHkActionToast("이미 등록된 객실번호입니다.");
             return;
           }
-          var memo1 = (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value) || "";
-          var memo2 = (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value) || "";
+          var memo1 = "";
+          var memo2 = "";
           var newRow = {
             number: num,
             status: lookupRoomStatusFromXml(num),
@@ -12077,7 +12001,7 @@
 
       function queryAiRoomsByStatusCode(statusCode) {
         if (!cachedVacBoardRows.length) {
-          return { error: "루밍 XML이 없습니다. 정비용 루밍에서 XML을 업로드해 주세요." };
+          return { error: "루밍 XML이 없습니다. 정비 오더 관리에서 XML을 업로드해 주세요." };
         }
         var want = normalizeRoomStatus(statusCode);
         var schedMap = hkBoardBuildSchedTimeMap();
@@ -12811,7 +12735,7 @@
         if (!cachedVacBoardRows.length) {
           return {
             error:
-              "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드한 뒤 다시 질문해 주세요.",
+              "루밍 XML(HKVACROOM)이 없습니다. 정비 오더 관리에서 XML을 업로드한 뒤 다시 질문해 주세요.",
           };
         }
         var all = collectAiRoomsByType(typeCode);
@@ -12858,7 +12782,7 @@
 
       function queryAiRoomsByTypeAndStatus(typeCode, statusCode) {
         if (!cachedVacBoardRows.length) {
-          return { error: "루밍 XML이 없습니다. 정비용 루밍에서 XML을 업로드해 주세요." };
+          return { error: "루밍 XML이 없습니다. 정비 오더 관리에서 XML을 업로드해 주세요." };
         }
         var want = normalizeRoomStatus(statusCode);
         var filtered = collectAiRoomsByType(typeCode).filter(function (r) {
@@ -12904,7 +12828,7 @@
         if (!cachedVacBoardRows.length) {
           return {
             error:
-              "루밍 XML(HKVACROOM)이 없습니다. 정비용 루밍에서 XML을 업로드한 뒤 다시 질문해 주세요.",
+              "루밍 XML(HKVACROOM)이 없습니다. 정비 오더 관리에서 XML을 업로드한 뒤 다시 질문해 주세요.",
           };
         }
         var all = collectAiRoomsByType(typeCode);
@@ -14937,7 +14861,9 @@
 
           appendOrderItemCommon(li, entry);
 
-          if (frontMode && entry.fromMaint) {
+          var isFacilityAlertList = listId === "facilityFeedbackList";
+
+          if (frontMode && entry.fromMaint && !isFacilityAlertList) {
             var frontAcceptActs = document.createElement("div");
             frontAcceptActs.className = "order-feedback__maint-actions";
             var acceptBtn = document.createElement("button");
@@ -14949,7 +14875,7 @@
             li.appendChild(frontAcceptActs);
           }
 
-          if (maintenanceMode && (!entry.fromMaint || isFacilityOrder(entry))) {
+          if (maintenanceMode && (!entry.fromMaint || isFacilityOrder(entry)) && !(frontMode && isFacilityAlertList)) {
             var maintAcceptActs = document.createElement("div");
             maintAcceptActs.className = "order-feedback__maint-actions";
             var maintAcceptBtn = document.createElement("button");
@@ -16742,6 +16668,9 @@
         if (frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
+        if (typeof HKFacilityLogs !== "undefined") {
+          HKFacilityLogs.refreshFromRemote();
+        }
         if (typeof HKMbWorkflow !== "undefined") {
           HKMbWorkflow.renderMbInvPanels();
           HKMbWorkflow.renderMbCheckPanels();
@@ -17513,6 +17442,9 @@
           setLineWithEmTime: setLineWithEmTime,
           getOperatorName: getOperatorName,
           showOperatorGate: showOperatorGate,
+          isFrontMode: function () {
+            return frontMode;
+          },
           hkAppendImageEl: hkAppendImageEl,
           hkAppendMessageContent: hkAppendMessageContent,
           hkCreatePhotoButton: hkCreatePhotoButton,
@@ -17937,6 +17869,7 @@
           var acceptBtn = e.target.closest(".order-feedback__accept-btn");
           if (acceptBtn) {
             if (!maintenanceMode && !frontMode) return;
+            if (frontMode && feedbackEl.id === "facilityFeedback") return;
             e.preventDefault();
             e.stopPropagation();
             var orderId = acceptBtn.getAttribute("data-order-id");

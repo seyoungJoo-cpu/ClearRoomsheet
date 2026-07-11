@@ -834,6 +834,7 @@
     }
     appendFacilityLogCardHead(li, entry, { showAcceptLines: false });
     appendOrderMemoBody(li, entry);
+    if (uiHooks.isFrontMode && uiHooks.isFrontMode()) return;
     var acts = document.createElement("div");
     acts.className = "order-feedback__maint-actions";
     var acceptBtn = document.createElement("button");
@@ -1092,6 +1093,7 @@
     panel.addEventListener("click", function (e) {
       var btn = e.target.closest(".facility-log__accept-btn");
       if (!btn) return;
+      if (uiHooks.isFrontMode && uiHooks.isFrontMode()) return;
       var entryId = btn.getAttribute("data-entry-id");
       if (!entryId) return;
       var run = function () {
