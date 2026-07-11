@@ -3486,6 +3486,69 @@
       cursor: pointer;
     }
 
+    .btn-zone-card-edit,
+    .btn-zone-card-delete,
+    .btn-zone-card-save,
+    .btn-zone-card-cancel {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-zone-card-edit {
+      border: 1px solid #2563eb;
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .btn-zone-card-edit:hover {
+      background: #2563eb;
+    }
+
+    .btn-zone-card-delete {
+      border: 1px solid #dc2626;
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-zone-card-delete:hover {
+      background: #dc2626;
+    }
+
+    .btn-zone-card-save {
+      border: 1px solid #16a34a;
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .btn-zone-card-cancel {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+    }
+
+    .room-card__inline-editor {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .room-card__inline-editor input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.8125rem;
+    }
+
+    .room-card.is-inline-editing .room-card__memo-block,
+    .room-card.is-inline-editing .room-card__time-display,
+    .room-card.is-inline-editing .room-card__actions {
+      display: none;
+    }
+
     .zone-memo-board {
       margin-top: 14px;
       border: 2px solid #c4b5fd;
@@ -6554,7 +6617,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 / AJ객실 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -6592,11 +6655,22 @@
                 >
                   TYPE 필터
                 </button>
+                <button
+                  type="button"
+                  class="request-type-filters__toggle request-type-filters__toggle--view"
+                  id="btnZoneRoomBoardView"
+                  aria-pressed="false"
+                >
+                  층별보기
+                </button>
               </div>
               <div class="request-type-filters__body" id="zoneTypeFilterBody" hidden>
                 <div class="request-type-filters__list" id="zoneTypeFilterList"></div>
               </div>
             </div>
+            <section class="hk-room-board-panel" id="zoneRoomBoardPanel" hidden aria-label="특이객실 층별보기">
+              <div id="zoneRoomBoardMount" class="hk-room-board-mount"></div>
+            </section>
             <ul class="room-list-main" id="roomListFront" aria-live="polite"></ul>
             <p class="room-list-empty" id="roomListEmpty" hidden>등록된 객실이 없습니다.</p>
             <section class="zone-tray zone-tray--in" id="zoneTrayIn" hidden aria-label="입실 객실">
@@ -7394,6 +7468,7 @@
         RC: "R/C",
         CASINO: "CASINO",
         MOBILE_CI: "모바일체크인",
+        AJ: "AJ객실",
       };
       var currentZone = null;
       var maintenanceMode = false;
@@ -7465,6 +7540,7 @@
       var openDeployedOrderChatId = "";
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
+      var zoneRoomBoardOpen = false;
       var HK_BOARD_ANNEX_TAIL_MIN = 51;
       var HK_BOARD_DROP_ROOMS = { "0012": true, "0023": true };
       var HK_BOARD_MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
@@ -8296,6 +8372,7 @@
       function refreshRequestTypeFilterViews() {
         renderRequestLogPanel({ force: true });
         if (requestRoomBoardOpen) renderRequestRoomBoard();
+        if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
 
       function onSchedTypeFilterChanged() {
@@ -8416,6 +8493,14 @@
           body.hidden = !willOpen;
           btn.classList.toggle("is-on", willOpen);
           btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+      })();
+
+      (function setupZoneRoomBoardView() {
+        var btn = document.getElementById("btnZoneRoomBoardView");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+          toggleZoneRoomBoardView();
         });
       })();
 
@@ -8613,6 +8698,7 @@
         refreshMain();
         updateOrderFoDisplay();
         if (requestRoomBoardOpen) renderRequestRoomBoard();
+        if (zoneRoomBoardOpen) renderZoneRoomBoard();
         renderSchedRequestCards();
       }
 
@@ -9468,69 +9554,14 @@
           var li = t.closest(".room-editor");
           if (!li) return;
           var ix = parseInt(t.getAttribute("data-index"), 10);
-          var dataSave = HKStorage.load();
           var next = readFrontRoomFromEditor(li);
-          if (!next.number) {
-            showHkActionToast("객실번호를 입력하세요.");
-            return;
-          }
-          var others = (dataSave.rooms[zone] || []).filter(function (_, i) {
-            return i !== ix;
-          });
-          var dupSave = others.some(function (r) {
-            return (r.number || "") === next.number;
-          });
-          if (dupSave) {
-            showHkActionToast("다른 행과 같은 객실번호입니다.");
-            return;
-          }
-          var prevRow = dataSave.rooms[zone][ix];
-          next.time = prevRow && prevRow.time != null ? prevRow.time : "";
-          next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
-          next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
-          var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
-          if (!changeEntry) {
-            showHkActionToast("변경된 내용이 없습니다.");
-            return;
-          }
-          dataSave.rooms[zone][ix] = next;
-          HKStorage.save(dataSave, { skipSync: true });
-          publishRoomChange(changeEntry).then(function () {
-            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-              HKSync.pushStorageNow();
-            }
-            renderZoneRoomManagePanel(zone, { force: true });
-            renderRoomsForZone(zone, { force: true });
-            showHkActionToast("변경되었습니다.");
-          });
+          saveZoneRoomRowFromEditor(zone, ix, next);
           return;
         }
 
         if (t.classList.contains("btn-remove")) {
           var ix2 = parseInt(t.getAttribute("data-index"), 10);
-          var dataRm = HKStorage.load();
-          if (dataRm.rooms[zone] && !isNaN(ix2)) {
-            var removedRow = dataRm.rooms[zone][ix2];
-            dataRm.rooms[zone][ix2].tray = "deleted";
-            HKStorage.save(dataRm, { skipSync: true });
-            var deleteEntry = {
-              id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
-              at: new Date().toISOString(),
-              zone: zone,
-              room: removedRow && removedRow.number ? removedRow.number : "",
-              kind: "delete",
-              changes: ["객실 삭제"],
-              by: getOperatorName() || "",
-            };
-            publishRoomChange(deleteEntry).then(function () {
-              if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-                HKSync.pushStorageNow();
-              }
-              renderZoneRoomManagePanel(zone, { force: true });
-              renderRoomsForZone(zone, { force: true });
-              showHkActionToast("삭제되었습니다.");
-            });
-          }
+          deleteZoneRoomRow(zone, ix2);
         }
       }
 
@@ -10578,6 +10609,7 @@
         if (panel) panel.hidden = !requestRoomBoardOpen;
         if (sched) sched.hidden = requestRoomBoardOpen;
         if (requestRoomBoardOpen) renderRequestRoomBoard();
+        if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
 
       function toggleRequestRoomBoardView() {
@@ -10606,6 +10638,114 @@
           } else {
             emptyF.textContent = "표시할 처리·예정 요청이 없습니다.";
           }
+          mount.appendChild(emptyF);
+          return;
+        }
+        var schedMap = hkBoardBuildSchedTimeMap();
+        var buckets = hkBoardBuildBuckets(boardRows, schedMap);
+        var outer = document.createElement("div");
+        outer.className = "sheet-outer";
+        var triple = document.createElement("div");
+        triple.className = "sheet-triple-row";
+        triple.appendChild(hkBoardRenderVillaPanel(buckets));
+        triple.appendChild(
+          hkBoardRenderWingPanel(
+            "본관",
+            "본관",
+            "main",
+            HK_BOARD_MAIN_FLOOR_ORDER,
+            buckets,
+            "wing-panel-main"
+          )
+        );
+        var annexFloors = [];
+        for (var af = 1; af <= 11; af++) annexFloors.push(af);
+        triple.appendChild(
+          hkBoardRenderWingPanel(
+            "별관",
+            "별관",
+            "annex",
+            annexFloors,
+            buckets,
+            "wing-panel-annex"
+          )
+        );
+        outer.appendChild(triple);
+        mount.appendChild(outer);
+      }
+
+      function buildZoneRoomBoardRows(zone) {
+        if (!zone) return [];
+        var data = HKStorage.load();
+        var rooms = ((data.rooms && data.rooms[zone]) || []).filter(function (room) {
+          return room && !getRoomTray(room);
+        });
+        var xmlStatusByRoom = {};
+        cachedVacBoardRows.forEach(function (rec) {
+          if (!rec || !rec.room || HK_BOARD_DROP_ROOMS[rec.room]) return;
+          xmlStatusByRoom[rec.room] = rec.status || "";
+        });
+        return rooms
+          .map(function (room) {
+            var nr = normalizeRoomDigits(roomNumberForStatusLookup(room.number) || room.number);
+            if (!nr || HK_BOARD_DROP_ROOMS[nr]) return null;
+            return { room: nr, status: xmlStatusByRoom[nr] || "" };
+          })
+          .filter(function (row) {
+            return !!row;
+          });
+      }
+
+      function syncZoneRoomBoardUi() {
+        var panel = document.getElementById("zoneRoomBoardPanel");
+        var list = document.getElementById("roomListFront");
+        var empty = document.getElementById("roomListEmpty");
+        var trayIn = document.getElementById("zoneTrayIn");
+        var trayDel = document.getElementById("zoneTrayDeleted");
+        var memo = document.getElementById("zoneVipMemoBoard");
+        var btn = document.getElementById("btnZoneRoomBoardView");
+        if (btn) {
+          btn.classList.toggle("is-on", zoneRoomBoardOpen);
+          btn.setAttribute("aria-pressed", zoneRoomBoardOpen ? "true" : "false");
+        }
+        if (panel) panel.hidden = !zoneRoomBoardOpen;
+        if (list) list.hidden = zoneRoomBoardOpen;
+        if (empty) empty.hidden = zoneRoomBoardOpen || empty.hidden;
+        if (trayIn) trayIn.hidden = zoneRoomBoardOpen || trayIn.hidden;
+        if (trayDel) trayDel.hidden = zoneRoomBoardOpen || trayDel.hidden;
+        if (memo) memo.hidden = zoneRoomBoardOpen || memo.hidden;
+        if (zoneRoomBoardOpen) renderZoneRoomBoard();
+      }
+
+      function toggleZoneRoomBoardView() {
+        zoneRoomBoardOpen = !zoneRoomBoardOpen;
+        syncZoneRoomBoardUi();
+        if (!zoneRoomBoardOpen) {
+          var zone = getActiveZone();
+          if (zone) renderRoomsForZone(zone, { force: true });
+        }
+      }
+
+      function renderZoneRoomBoard() {
+        var mount = document.getElementById("zoneRoomBoardMount");
+        if (!mount || !zoneRoomBoardOpen) return;
+        var zone = getActiveZone();
+        mount.innerHTML = "";
+        if (!zone) {
+          var noZone = document.createElement("div");
+          noZone.className = "hk-room-board-empty";
+          noZone.textContent = "특이객실 구역을 선택하세요.";
+          mount.appendChild(noZone);
+          return;
+        }
+        var boardRows = buildZoneRoomBoardRows(zone).filter(function (rec) {
+          var cl = hkBoardClassifyRoom(rec.room);
+          return cl && cl.wing !== "extra";
+        });
+        if (!boardRows.length) {
+          var emptyF = document.createElement("div");
+          emptyF.className = "hk-room-board-empty";
+          emptyF.textContent = "층별보기에 표시할 등록 객실이 없습니다.";
           mount.appendChild(emptyF);
           return;
         }
@@ -14917,6 +15057,7 @@
           }
         }
         if (requestRoomBoardOpen) renderRequestRoomBoard();
+        if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
 
       function openRequestSchedEditor(entryId) {
@@ -15950,6 +16091,20 @@
           btnIn.setAttribute("data-zone", zone);
           btnIn.setAttribute("data-room", room.number || "");
           actionsIn.appendChild(btnIn);
+          var btnEdit = document.createElement("button");
+          btnEdit.type = "button";
+          btnEdit.className = "btn-zone-card-edit";
+          btnEdit.textContent = "변경";
+          btnEdit.setAttribute("data-zone", zone);
+          btnEdit.setAttribute("data-index", String(idx));
+          actionsIn.appendChild(btnEdit);
+          var btnDel = document.createElement("button");
+          btnDel.type = "button";
+          btnDel.className = "btn-zone-card-delete";
+          btnDel.textContent = "삭제";
+          btnDel.setAttribute("data-zone", zone);
+          btnDel.setAttribute("data-index", String(idx));
+          actionsIn.appendChild(btnDel);
           surface.appendChild(actionsIn);
         }
 
@@ -15976,26 +16131,205 @@
         return li;
       }
 
+      function saveZoneRoomRowFromEditor(zone, idx, next, onDone) {
+        var dataSave = HKStorage.load();
+        if (!dataSave.rooms[zone] || isNaN(idx)) return;
+        if (!next.number) {
+          showHkActionToast("객실번호를 입력하세요.");
+          return;
+        }
+        var others = (dataSave.rooms[zone] || []).filter(function (_, i) {
+          return i !== idx;
+        });
+        var dupSave = others.some(function (r) {
+          return (r.number || "") === next.number;
+        });
+        if (dupSave) {
+          showHkActionToast("다른 행과 같은 객실번호입니다.");
+          return;
+        }
+        var prevRow = dataSave.rooms[zone][idx];
+        next.time = prevRow && prevRow.time != null ? prevRow.time : "";
+        next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
+        next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
+        var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
+        if (!changeEntry) {
+          showHkActionToast("변경된 내용이 없습니다.");
+          return;
+        }
+        dataSave.rooms[zone][idx] = next;
+        HKStorage.save(dataSave, { skipSync: true });
+        publishRoomChange(changeEntry).then(function () {
+          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+            HKSync.pushStorageNow();
+          }
+          if (onDone) onDone();
+          else {
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("변경되었습니다.");
+          }
+        });
+      }
+
+      function deleteZoneRoomRow(zone, idx, onDone) {
+        var dataRm = HKStorage.load();
+        if (!dataRm.rooms[zone] || isNaN(idx)) return;
+        var removedRow = dataRm.rooms[zone][idx];
+        dataRm.rooms[zone][idx].tray = "deleted";
+        HKStorage.save(dataRm, { skipSync: true });
+        var deleteEntry = {
+          id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
+          at: new Date().toISOString(),
+          zone: zone,
+          room: removedRow && removedRow.number ? removedRow.number : "",
+          kind: "delete",
+          changes: ["객실 삭제"],
+          by: getOperatorName() || "",
+        };
+        publishRoomChange(deleteEntry).then(function () {
+          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+            HKSync.pushStorageNow();
+          }
+          if (onDone) onDone();
+          else {
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("삭제되었습니다.");
+          }
+        });
+      }
+
+      function openZoneCardInlineEditor(li, zone, idx) {
+        if (!li || li.classList.contains("is-inline-editing")) return;
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][idx];
+        if (!room) return;
+        li.classList.add("is-inline-editing");
+        var surface = li.querySelector(".room-card__surface");
+        if (!surface) return;
+        var editor = document.createElement("div");
+        editor.className = "room-card__inline-editor";
+        var inNum = document.createElement("input");
+        inNum.type = "text";
+        inNum.className = "re-num";
+        inNum.placeholder = "객실번호";
+        inNum.value = formatRoomNoDisplay(room.number || "");
+        editor.appendChild(inNum);
+        var inM1 = document.createElement("input");
+        inM1.type = "text";
+        inM1.className = "re-memo1";
+        inM1.placeholder = "FD";
+        inM1.value = room.memo1 || "";
+        editor.appendChild(inM1);
+        var inM2 = document.createElement("input");
+        inM2.type = "text";
+        inM2.className = "re-memo2";
+        inM2.placeholder = "정비";
+        inM2.value = room.memo2 || "";
+        editor.appendChild(inM2);
+        var editActions = document.createElement("div");
+        editActions.className = "room-card__actions";
+        var btnSave = document.createElement("button");
+        btnSave.type = "button";
+        btnSave.className = "btn-zone-card-save";
+        btnSave.textContent = "저장";
+        btnSave.setAttribute("data-zone", zone);
+        btnSave.setAttribute("data-index", String(idx));
+        var btnCancel = document.createElement("button");
+        btnCancel.type = "button";
+        btnCancel.className = "btn-zone-card-cancel";
+        btnCancel.textContent = "취소";
+        btnCancel.setAttribute("data-zone", zone);
+        btnCancel.setAttribute("data-index", String(idx));
+        editActions.appendChild(btnSave);
+        editActions.appendChild(btnCancel);
+        editor.appendChild(editActions);
+        surface.appendChild(editor);
+      }
+
+      function closeZoneCardInlineEditor(li) {
+        if (!li) return;
+        li.classList.remove("is-inline-editing");
+        var editor = li.querySelector(".room-card__inline-editor");
+        if (editor) editor.remove();
+      }
+
       function handleZoneTrayActionClick(e) {
         var t = e.target;
         if (!t || !t.classList) return;
-        if (!t.classList.contains("btn-zone-checkin") && !t.classList.contains("btn-zone-restore")) {
-          return;
-        }
+        var actionClasses = [
+          "btn-zone-checkin",
+          "btn-zone-restore",
+          "btn-zone-card-edit",
+          "btn-zone-card-delete",
+          "btn-zone-card-save",
+          "btn-zone-card-cancel",
+        ];
+        var matched = actionClasses.some(function (cls) {
+          return t.classList.contains(cls);
+        });
+        if (!matched) return;
         if (!frontMode) return;
         e.preventDefault();
         e.stopPropagation();
         var zone = t.getAttribute("data-zone") || getActiveZone();
         var roomNo = t.getAttribute("data-room") || "";
-        if (!zone || !roomNo) return;
+        var ix = parseInt(t.getAttribute("data-index"), 10);
+        if (!zone) return;
         if (t.classList.contains("btn-zone-checkin")) {
+          if (!roomNo) return;
           setRoomTrayForZone(zone, roomNo, "in");
           showHkActionToast("입실 칸으로 이동했습니다.");
-        } else {
+          renderRoomsForZone(zone, { force: true });
+          return;
+        }
+        if (t.classList.contains("btn-zone-restore")) {
+          if (!roomNo) return;
           setRoomTrayForZone(zone, roomNo, "");
           showHkActionToast("객실 목록으로 복원했습니다.");
+          renderRoomsForZone(zone, { force: true });
+          return;
         }
-        renderRoomsForZone(zone, { force: true });
+        if (t.classList.contains("btn-zone-card-edit")) {
+          if (!getOperatorName()) {
+            alert("이름을 입력하세요.");
+            return;
+          }
+          var cardEdit = t.closest(".room-card");
+          if (!cardEdit || isNaN(ix)) return;
+          openZoneCardInlineEditor(cardEdit, zone, ix);
+          return;
+        }
+        if (t.classList.contains("btn-zone-card-cancel")) {
+          var cardCancel = t.closest(".room-card");
+          closeZoneCardInlineEditor(cardCancel);
+          return;
+        }
+        if (t.classList.contains("btn-zone-card-save")) {
+          if (!getOperatorName()) {
+            alert("이름을 입력하세요.");
+            return;
+          }
+          var cardSave = t.closest(".room-card");
+          if (!cardSave || isNaN(ix)) return;
+          var next = readFrontRoomFromEditor(cardSave);
+          saveZoneRoomRowFromEditor(zone, ix, next, function () {
+            closeZoneCardInlineEditor(cardSave);
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("변경되었습니다.");
+          });
+          return;
+        }
+        if (t.classList.contains("btn-zone-card-delete")) {
+          if (!getOperatorName()) {
+            alert("이름을 입력하세요.");
+            return;
+          }
+          if (isNaN(ix)) return;
+          deleteZoneRoomRow(zone, ix);
+        }
       }
 
       function renderZoneTrays(zone, rooms) {
@@ -16187,6 +16521,7 @@
         }
         renderZoneTrays(zone, rooms);
         renderZoneVipMemoBoard(zone);
+        syncZoneRoomBoardUi();
       }
 
       function refreshMain(opts) {
@@ -16223,7 +16558,7 @@
       }
 
       function applyFacilityLogSidebarUi() {
-        var show = frontMode || maintenanceMode;
+        var show = true;
         var misc = document.getElementById("sidebarBtnFacilityMisc");
         var daily = document.getElementById("sidebarBtnFacilityDailyFound");
         var rule = document.getElementById("sidebarFacilityLogRule");
@@ -16799,6 +17134,14 @@
 
       function handleZoneRoomListPointerDown(e, allowMaintenanceActions) {
         if (e.target.closest(".btn-zone-checkin") || e.target.closest(".btn-zone-restore")) return;
+        if (
+          e.target.closest(".btn-zone-card-edit") ||
+          e.target.closest(".btn-zone-card-delete") ||
+          e.target.closest(".btn-zone-card-save") ||
+          e.target.closest(".btn-zone-card-cancel")
+        ) {
+          return;
+        }
         if (e.target.closest(".room-time-editor") || e.target.closest(".room-memo2-editor")) return;
         if (e.target.closest(".room-memo1-editor")) return;
         if (e.target.closest("#zoneRoomManagePanel")) return;

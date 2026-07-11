@@ -2062,7 +2062,13 @@
 
       function isOutDepartedResv(item) {
         var rs = normalizeResvStatus(item && item.resvStatus);
-        return rs === "Departed" || rs === "Departed, Arrival";
+        return (
+          rs === "Departed" ||
+          rs === "Departed, Arrival" ||
+          rs === "Departed, Arrived" ||
+          rs === "Arrived" ||
+          rs === "Arrived, Departed"
+        );
       }
 
       function outDepartedHighlightClass(item) {

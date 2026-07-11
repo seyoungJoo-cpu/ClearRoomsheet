@@ -6,12 +6,13 @@
  */
 (function (global) {
   var STORAGE_KEY = "lotte-hk-v1";
-  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI"];
+  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ"];
   var STANDARD_ZONE_LABELS = {
     VIP: "VIP",
     RC: "R/C",
     CASINO: "CASINO",
     MOBILE_CI: "모바일체크인",
+    AJ: "AJ객실",
   };
 
   function defaultRoom() {
@@ -180,6 +181,7 @@
         RC: [],
         CASINO: [],
         MOBILE_CI: [],
+        AJ: [],
       },
     };
   }
@@ -334,6 +336,39 @@
     }
   }
 
+  function mergeRoomsObject(prevRooms, incomingRooms, customZones) {
+    var out = {};
+    var customIds = {};
+    (customZones || []).forEach(function (z) {
+      if (z && z.id) customIds[z.id] = true;
+    });
+    [prevRooms, incomingRooms].forEach(function (rooms) {
+      if (!rooms || typeof rooms !== "object") return;
+      Object.keys(rooms).forEach(function (k) {
+        if (STANDARD_ZONE_IDS.indexOf(k) < 0) customIds[k] = true;
+      });
+    });
+    STANDARD_ZONE_IDS.forEach(function (zone) {
+      if (incomingRooms && Array.isArray(incomingRooms[zone])) {
+        out[zone] = incomingRooms[zone];
+      } else if (prevRooms && Array.isArray(prevRooms[zone])) {
+        out[zone] = prevRooms[zone];
+      } else {
+        out[zone] = [];
+      }
+    });
+    Object.keys(customIds).forEach(function (zone) {
+      if (incomingRooms && Array.isArray(incomingRooms[zone])) {
+        out[zone] = incomingRooms[zone];
+      } else if (prevRooms && Array.isArray(prevRooms[zone])) {
+        out[zone] = prevRooms[zone];
+      } else {
+        out[zone] = [];
+      }
+    });
+    return out;
+  }
+
   function mergeRemoteStorage(prev, incoming) {
     var base = normalize(prev || defaultData());
     if (!incoming || typeof incoming !== "object") return base;
@@ -390,11 +425,15 @@
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "zoneMemos")) {
       merged.zoneMemos = base.zoneMemos;
     }
-    if (incoming.rooms && typeof incoming.rooms === "object") {
-      merged.rooms = incoming.rooms;
-    }
     if (Array.isArray(incoming.customZones)) {
       merged.customZones = incoming.customZones.slice();
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
+      merged.customZones = base.customZones;
+    }
+    if (incoming.rooms && typeof incoming.rooms === "object") {
+      merged.rooms = mergeRoomsObject(base.rooms, incoming.rooms, merged.customZones);
+    } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
+      merged.rooms = base.rooms;
     }
     return normalize(merged);
   }

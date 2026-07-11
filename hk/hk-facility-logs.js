@@ -1220,8 +1220,6 @@
   function init(hooks) {
     uiHooks = hooks || {};
     bindForms();
-    saveMiscLog(loadMiscLog());
-    saveDailyFoundLog(loadDailyFoundLog());
   }
 
   global.HKFacilityLogs = {

@@ -288,7 +288,7 @@ app.post("/api/push/unsubscribe", checkSyncAuth, function (req, res) {
   res.json({ ok: true });
 });
 
-var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO", "MOBILE_CI"];
+var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ"];
 
 function copyHkRoomArray(rooms, zone) {
   if (rooms && Array.isArray(rooms[zone])) return rooms[zone].slice();
@@ -372,7 +372,21 @@ function mergeHkStorage(prev, incoming) {
         ? incoming.zoneMemos
         : prev.zoneMemos || { VIP: { text: "", images: [] } },
     customZones: customZones,
-    rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [] },
+    facilityMiscLog: Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")
+      ? incoming.facilityMiscLog && typeof incoming.facilityMiscLog === "object"
+        ? incoming.facilityMiscLog
+        : null
+      : prev.facilityMiscLog || null,
+    facilityDailyFoundLog: Object.prototype.hasOwnProperty.call(
+      incoming,
+      "facilityDailyFoundLog"
+    )
+      ? incoming.facilityDailyFoundLog &&
+        typeof incoming.facilityDailyFoundLog === "object"
+        ? incoming.facilityDailyFoundLog
+        : null
+      : prev.facilityDailyFoundLog || null,
+    rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [] },
   };
 
   HK_STANDARD_ZONES.forEach(function (zone) {

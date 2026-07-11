@@ -2871,6 +2871,7 @@
           if (!entry) return false;
           var p = entry.phase != null ? String(entry.phase).trim() : "";
           if (p === "cancelled") return false;
+          if (p === "deployed") return false;
           if (entry.issueOpen === true || p === "issue") return true;
           if (p === "accepted") return false;
           return true;
