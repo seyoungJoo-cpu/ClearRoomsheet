@@ -4245,6 +4245,14 @@
       gap: 6px;
     }
 
+    .facility-log-classify-hint {
+      margin: 0 0 8px;
+      padding: 0 2px;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
     .facility-log-export-btn {
       height: 30px;
       padding: 0 10px;
@@ -6969,7 +6977,7 @@
               <input
                 type="text"
                 id="facilityMiscMemo"
-                placeholder="메모 (선택)"
+                placeholder="메모 — 내용에 따라 자동 분류"
                 autocomplete="off"
               />
               <button type="button" class="hk-photo-btn" id="btnPhotoFacilityMiscOrderMemo" title="사진 첨부">사진</button>
@@ -6978,6 +6986,9 @@
           </div>
           <button type="submit" class="btn-order">등록</button>
         </form>
+        <p class="facility-log-classify-hint" id="facilityMiscClassifyHint" aria-live="polite">
+          메모 내용에 따라 컴플레인·지난습득물·세탁으로 자동 분류됩니다.
+        </p>
 
         <section class="order-work-section order-work-section--accepted" aria-labelledby="facilityMiscAcceptedTitle">
           <h3 class="order-work-section__title" id="facilityMiscAcceptedTitle">접수</h3>

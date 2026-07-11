@@ -12,6 +12,354 @@
     { key: "laundry", label: "세탁" },
   ];
 
+  /** 메모 문장 → 컴플레인·지난습득물·세탁 자동 분류 (오타 허용) */
+  var MISC_CLASSIFY_KEYWORDS = {
+    complaint: [
+      "컴플레인",
+      "컴플래인",
+      "컴플레잉",
+      "컴프레인",
+      "켐플레인",
+      "컴플린",
+      "complaint",
+      "complain",
+      "클레임",
+      "claim",
+      "불만",
+      "불편",
+      "불쾌",
+      "불친절",
+      "무례",
+      "항의",
+      "항의함",
+      "항의하",
+      "화나",
+      "화남",
+      "화나심",
+      "화나셨",
+      "화나셔",
+      "화나서",
+      "화내",
+      "화가",
+      "분노",
+      "짜증",
+      "열받",
+      "성나",
+      "언짢",
+      "언짢아",
+      "언짢으",
+      "언짢게",
+      "언짢하",
+      "기분나쁨",
+      "기분나쁘",
+      "시끄",
+      "소음",
+      "떠들",
+      "악취",
+      "냄새",
+      "곰팡",
+      "벌레",
+      "해충",
+      "더럽",
+      "지저분",
+      "불결",
+      "청결불량",
+      "위생",
+      "서비스불만",
+      "응대",
+      "대응",
+      "늦",
+      "지연",
+      "안됨",
+      "안되",
+      "미흡",
+      "환불",
+      "보상",
+      "사과",
+      "미안",
+      "실망",
+      "당황",
+      "불안",
+      "개선요청",
+      "개선요구",
+      "불만족",
+      "만족하지",
+      "화가나",
+      "짜증나",
+    ],
+    pastFound: [
+      "지난습득물",
+      "지난습득",
+      "과거습득",
+      "예전습득",
+      "분실",
+      "분실물",
+      "분실함",
+      "분실신고",
+      "분실되",
+      "분실한",
+      "잃어버",
+      "잃어버림",
+      "잃어버린",
+      "잃어버리",
+      "잃어 버",
+      "유실",
+      "유실물",
+      "놔두고",
+      "놔두고오",
+      "놔두고감",
+      "놔두고가",
+      "놔둠",
+      "놓고오",
+      "놓고오심",
+      "놓고오셨",
+      "놓고가",
+      "놓고감",
+      "놓고가심",
+      "두고오",
+      "두고오심",
+      "두고오셨",
+      "두고감",
+      "두고갔",
+      "두고가",
+      "leftbehind",
+      "left behind",
+      "forgotten",
+      "lostitem",
+      "lost item",
+      "lost and found",
+      "찾아달",
+      "찾아주",
+      "찾으시",
+      "찾고계",
+      "못찾",
+      "가져가지",
+      "못가져",
+      "안가져",
+      "남겨두",
+      "남겨놓",
+      "잊고",
+      "잊어버",
+      "까먹",
+      "놓고왔",
+      "두고왔",
+    ],
+    laundry: [
+      "세탁",
+      "세탁물",
+      "세탁해",
+      "세탁해주",
+      "세탁부",
+      "세탁맡",
+      "세척",
+      "laundry",
+      "launder",
+      "laundromat",
+      "라운더리",
+      "런드리",
+      "런드러리",
+      "란드리",
+      "란더리",
+      "픽업",
+      "pickup",
+      "pick up",
+      "pick-up",
+      "수거",
+      "가져가주",
+      "다림질",
+      "개어",
+      "개어주",
+      "접어",
+      "접어주",
+      "다려",
+      "다려주",
+      "건조",
+      "드라이",
+      "드라이클리닝",
+      "dryclean",
+      "dry clean",
+      "클리닝",
+      "침구",
+      "베개",
+      "이불",
+      "시트",
+      "타월",
+      "수건",
+      "가운",
+      "배스가운",
+      "bathrobe",
+      "양복",
+      "정장",
+      "의류",
+      "셔츠",
+      "블라우스",
+      "바지",
+      "치마",
+      "드레스",
+      "코트",
+      "재킷",
+      "jacket",
+      "얼룩",
+      "stain",
+      "오염",
+      "행거",
+      "옷걸이",
+      "garment",
+      "wash",
+      "washing",
+      "housekeeping",
+    ],
+  };
+
+  function normalizeMiscClassifyText(text) {
+    return String(text || "")
+      .toLowerCase()
+      .replace(/[\s\-_./,，、·]+/g, "")
+      .replace(/[^\w\u3131-\u318e\uac00-\ud7a3]/g, "");
+  }
+
+  function levenshteinDistance(a, b) {
+    if (a === b) return 0;
+    if (!a) return b.length;
+    if (!b) return a.length;
+    var prev = [];
+    var i;
+    var j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      var cur = [i];
+      for (j = 1; j <= b.length; j++) {
+        var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  function maxTypoDistance(len) {
+    if (len <= 2) return 0;
+    if (len <= 4) return 1;
+    if (len <= 7) return 2;
+    return 2;
+  }
+
+  function textContainsKeywordFuzzy(text, keyword) {
+    var nkw = normalizeMiscClassifyText(keyword);
+    if (!nkw) return false;
+    if (text.indexOf(nkw) >= 0) return true;
+    if (nkw.length < 3) return false;
+    var maxDist = maxTypoDistance(nkw.length);
+    var win;
+    for (win = Math.max(2, nkw.length - 1); win <= nkw.length + 1; win++) {
+      if (win > text.length) continue;
+      var i;
+      for (i = 0; i <= text.length - win; i++) {
+        if (levenshteinDistance(text.substr(i, win), nkw) <= maxDist) return true;
+      }
+    }
+    return false;
+  }
+
+  function scoreMiscCategory(text, categoryKey) {
+    var keywords = MISC_CLASSIFY_KEYWORDS[categoryKey] || [];
+    var score = 0;
+    var matched = [];
+    keywords.forEach(function (kw) {
+      if (textContainsKeywordFuzzy(text, kw)) {
+        var nkw = normalizeMiscClassifyText(kw);
+        var pts = nkw.length + (nkw.length >= 5 ? 3 : nkw.length >= 3 ? 1 : 0);
+        score += pts;
+        matched.push(kw);
+      }
+    });
+    return { score: score, matched: matched };
+  }
+
+  function classifyMiscCategory(memo, fallbackKey) {
+    var text = normalizeMiscClassifyText(memo);
+    var fallback = fallbackKey || activeMiscCategory || "complaint";
+    if (!text) {
+      return { key: fallback, label: miscCategoryLabel(fallback), score: 0, matched: [] };
+    }
+    var bestKey = fallback;
+    var bestScore = 0;
+    var bestMatched = [];
+    MISC_CATEGORIES.forEach(function (cat) {
+      var result = scoreMiscCategory(text, cat.key);
+      if (result.score > bestScore) {
+        bestScore = result.score;
+        bestKey = cat.key;
+        bestMatched = result.matched;
+      }
+    });
+    if (bestScore <= 0) {
+      return { key: fallback, label: miscCategoryLabel(fallback), score: 0, matched: [] };
+    }
+    return {
+      key: bestKey,
+      label: miscCategoryLabel(bestKey),
+      score: bestScore,
+      matched: bestMatched,
+    };
+  }
+
+  function miscCategoryLabel(key) {
+    for (var i = 0; i < MISC_CATEGORIES.length; i++) {
+      if (MISC_CATEGORIES[i].key === key) return MISC_CATEGORIES[i].label;
+    }
+    return key;
+  }
+
+  function setActiveMiscCategory(key, opts) {
+    opts = opts || {};
+    if (!key) return;
+    activeMiscCategory = key;
+    if (opts.skipRender) return;
+    document.querySelectorAll("#facilityMiscTabs .facility-log-tab").forEach(function (btn) {
+      var tabKey = btn.getAttribute("data-category");
+      btn.classList.toggle("is-active", tabKey === key);
+      btn.setAttribute("aria-selected", tabKey === key ? "true" : "false");
+    });
+    updateMiscClassifyHint(opts.hintMemo || "");
+  }
+
+  function updateMiscClassifyHint(memo) {
+    var hint = document.getElementById("facilityMiscClassifyHint");
+    if (!hint) return;
+    var classified = classifyMiscCategory(memo, activeMiscCategory);
+    if (!String(memo || "").trim()) {
+      hint.textContent = "메모 내용에 따라 컴플레인·지난습득물·세탁으로 자동 분류됩니다.";
+      hint.hidden = false;
+      return;
+    }
+    if (classified.score > 0) {
+      hint.textContent =
+        "자동 분류: " + classified.label + (classified.matched.length ? "" : "");
+      hint.hidden = false;
+    } else {
+      hint.textContent = "선택한 탭(" + miscCategoryLabel(activeMiscCategory) + ")으로 등록됩니다.";
+      hint.hidden = false;
+    }
+  }
+
+  var miscClassifyInputTimer = null;
+
+  function scheduleMiscClassifyFromInput(memo) {
+    if (miscClassifyInputTimer) clearTimeout(miscClassifyInputTimer);
+    miscClassifyInputTimer = setTimeout(function () {
+      miscClassifyInputTimer = null;
+      var classified = classifyMiscCategory(memo, activeMiscCategory);
+      if (classified.score > 0) {
+        var changed = classified.key !== activeMiscCategory;
+        setActiveMiscCategory(classified.key, { hintMemo: memo, skipRender: true });
+        if (changed) renderMiscPanel();
+      } else {
+        updateMiscClassifyHint(memo);
+      }
+    }, 120);
+  }
+
   var activeMiscCategory = "complaint";
   var activeView = "";
   var uiHooks = {};
@@ -423,12 +771,15 @@
     return null;
   }
 
-  function createMiscOrder(room, memo, image) {
+  function createMiscOrder(room, memo, image, categoryKey) {
+    var classified = classifyMiscCategory(memo, categoryKey || activeMiscCategory);
+    var targetCategory = classified.score > 0 ? classified.key : categoryKey || activeMiscCategory;
+    activeMiscCategory = targetCategory;
     var log = loadMiscLog();
-    if (!log.entries[activeMiscCategory]) log.entries[activeMiscCategory] = [];
+    if (!log.entries[targetCategory]) log.entries[targetCategory] = [];
     var name = getOperatorName();
     var now = new Date().toISOString();
-    log.entries[activeMiscCategory].push({
+    log.entries[targetCategory].push({
       id: newEntryId(),
       at: now,
       room: String(room || "").trim(),
@@ -444,7 +795,7 @@
     });
     saveMiscLog(log);
     renderMiscPanels();
-    scrollFacilityLogAlertIntoView("facilityMiscFeedbackList", log.entries[activeMiscCategory]);
+    scrollFacilityLogAlertIntoView("facilityMiscFeedbackList", log.entries[targetCategory]);
   }
 
   function createDailyOrder(room, memo, image) {
@@ -1040,6 +1391,9 @@
       btn.classList.toggle("is-active", key === activeMiscCategory);
       btn.setAttribute("aria-selected", key === activeMiscCategory ? "true" : "false");
     });
+    updateMiscClassifyHint(
+      (document.getElementById("facilityMiscMemo") || {}).value || ""
+    );
     renderOrderWorkLists(
       document.getElementById("facilityMiscAcceptedList"),
       document.getElementById("facilityMiscAcceptedEmpty"),
@@ -1178,11 +1532,18 @@
           return;
         }
         var send = function () {
-          createMiscOrder(room, memo, image);
+          var classified = classifyMiscCategory(memo, activeMiscCategory);
+          createMiscOrder(
+            room,
+            memo,
+            image,
+            classified.score > 0 ? classified.key : activeMiscCategory
+          );
           if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto("facilityMiscOrderMemo");
           if (roomEl) roomEl.value = "";
           if (memoEl) memoEl.value = "";
           if (memoEl) memoEl.focus();
+          updateMiscClassifyHint("");
         };
         if (!getOperatorName() && uiHooks.showOperatorGate) {
           uiHooks.showOperatorGate({ mode: "initial", onSaved: send });
@@ -1225,11 +1586,21 @@
       });
     }
 
+    var miscMemoEl = document.getElementById("facilityMiscMemo");
+    if (miscMemoEl && !miscMemoEl.dataset.classifyBound) {
+      miscMemoEl.dataset.classifyBound = "1";
+      miscMemoEl.addEventListener("input", function () {
+        scheduleMiscClassifyFromInput(miscMemoEl.value);
+      });
+    }
+
     document.querySelectorAll("#facilityMiscTabs .facility-log-tab").forEach(function (btn) {
       if (btn.dataset.bound) return;
       btn.dataset.bound = "1";
       btn.addEventListener("click", function () {
-        activeMiscCategory = btn.getAttribute("data-category") || "complaint";
+        setActiveMiscCategory(btn.getAttribute("data-category") || "complaint", {
+          hintMemo: (document.getElementById("facilityMiscMemo") || {}).value || "",
+        });
         renderMiscPanels();
       });
     });
@@ -1293,6 +1664,7 @@
     exportCloseDayDailyRows: exportCloseDayDailyRows,
     countMiscEntries: countMiscEntries,
     countDailyEntries: countDailyEntries,
+    classifyMiscCategory: classifyMiscCategory,
     MISC_CATEGORIES: MISC_CATEGORIES,
   };
 })(typeof window !== "undefined" ? window : this);
