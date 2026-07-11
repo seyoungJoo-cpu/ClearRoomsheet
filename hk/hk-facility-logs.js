@@ -1025,6 +1025,11 @@
     });
   }
 
+  function canFacilityLogChat(entry) {
+    var phase = getEntryPhase(entry);
+    return phase === "accepted" || phase === "completed";
+  }
+
   function appendFacilityLogChat(kind, entryId, text, image) {
     if (!entryId) return;
     var msgText = String(text || "").trim();
@@ -1039,7 +1044,7 @@
       };
       if (kind === "misc") {
         var miscHit = findMiscEntry(entryId);
-        if (!miscHit || getEntryPhase(miscHit.entry) !== "accepted") return;
+        if (!miscHit || !canFacilityLogChat(miscHit.entry)) return;
         if (!Array.isArray(miscHit.entry.chat)) miscHit.entry.chat = [];
         miscHit.entry.chat.push(chatMsg);
         activeMiscCategory = miscHit.category;
@@ -1047,7 +1052,7 @@
         renderMiscPanels();
       } else {
         var dailyHit = findDailyEntry(entryId);
-        if (!dailyHit || getEntryPhase(dailyHit.entry) !== "accepted") return;
+        if (!dailyHit || !canFacilityLogChat(dailyHit.entry)) return;
         if (!Array.isArray(dailyHit.entry.chat)) dailyHit.entry.chat = [];
         dailyHit.entry.chat.push(chatMsg);
         saveDailyFoundLog(dailyHit.log);
@@ -1202,7 +1207,7 @@
   function appendOrderCard(li, entry, isCompleted, logKind) {
     appendFacilityLogCardHead(li, entry, {
       showAcceptLines: true,
-      roomMetaToggle: logKind === "misc",
+      roomMetaToggle: true,
     });
     appendOrderMemoBody(li, entry);
 
@@ -1211,7 +1216,7 @@
       appendFacilityLogCardFoot(li, entry);
       if (logKind && isFacilityLogChatOpen(logKind, entry.id)) {
         li.classList.add("is-chat-open");
-        appendFacilityLogChatUi(li, entry, logKind, { readOnly: true });
+        appendFacilityLogChatUi(li, entry, logKind);
       } else {
         li.classList.add("is-chat-toggle");
         li.setAttribute("title", "클릭하면 대화 내용 보기");
@@ -1235,7 +1240,8 @@
     li.appendChild(acts);
   }
 
-  function renderAlertFeedbackList(listId, emptyId, entries, categoryLabel) {
+  function renderAlertFeedbackList(listId, emptyId, entries, categoryLabel, listOpts) {
+    listOpts = listOpts || {};
     var list = document.getElementById(listId);
     var empty = emptyId ? document.getElementById(emptyId) : null;
     if (!list) return;
@@ -1250,8 +1256,9 @@
     alerts.forEach(function (entry) {
       var li = document.createElement("li");
       li.className = "order-feedback__item facility-log__alert-item";
+      if (listOpts.roomMetaToggle) li.classList.add("facility-log-card");
       li.setAttribute("data-entry-id", entry.id || "");
-      appendAlertCard(li, entry, categoryLabel);
+      appendAlertCard(li, entry, categoryLabel, { roomMetaToggle: !!listOpts.roomMetaToggle });
       list.appendChild(li);
     });
     if (empty) empty.hidden = alerts.length > 0;
@@ -1371,7 +1378,9 @@
     renderAlertFeedbackList(
       "facilityDailyFoundFeedbackList",
       "facilityDailyFoundFeedbackEmpty",
-      log.entries
+      log.entries,
+      "",
+      { roomMetaToggle: true }
     );
   }
 
@@ -1551,6 +1560,8 @@
     bindAlertAcceptActions("facilityDailyFoundFeedback", acceptDailyEntry);
     bindFacilityLogRoomMetaToggle("facilityMiscPanel");
     bindFacilityLogRoomMetaToggle("facilityMiscFeedback");
+    bindFacilityLogRoomMetaToggle("facilityDailyFoundPanel");
+    bindFacilityLogRoomMetaToggle("facilityDailyFoundFeedback");
 
     var miscForm = document.getElementById("facilityMiscForm");
     if (miscForm && !miscForm.dataset.bound) {
