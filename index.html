@@ -551,6 +551,39 @@
       background: #fee2e2;
       color: #991b1b;
     }
+    .summary-chip.oo .tag {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+    .summary-chip.os .tag {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+    .summary-chip.indi-a .tag {
+      background: #d9f5d9;
+      color: #14532d;
+    }
+    .summary-chip.indi-s .tag {
+      background: #bae6fd;
+      color: #0c4a6e;
+    }
+    .summary-chip.indi-o .tag {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .summary-chip.indi-n .tag {
+      background: #fef9c3;
+      color: #713f12;
+    }
+    .indi-legend {
+      margin: 0 0 0.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .indi-legend strong {
+      color: var(--text);
+    }
     .summary-chip.total {
       margin-left: 0.35rem;
       padding-left: 0.75rem;
@@ -718,6 +751,12 @@
     .pair-row.st-cl {
       background: #bae6fd;
     }
+    .pair-row.st-oo {
+      background: #ffedd5;
+    }
+    .pair-row.st-os {
+      background: #f3e8ff;
+    }
     .pair-row.st-neutral {
       background: #fff;
     }
@@ -757,6 +796,12 @@
     }
     .villa-list-row.st-cl {
       background: #bae6fd;
+    }
+    .villa-list-row.st-oo {
+      background: #ffedd5;
+    }
+    .villa-list-row.st-os {
+      background: #f3e8ff;
     }
     .villa-list-row.st-neutral {
       background: #fff;
@@ -1196,6 +1241,8 @@
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
+          <button type="button" class="sidebar-btn" data-view="indi" title="INDI — 예약구분 A·S·O·N">INDI</button>
+          <button type="button" class="sidebar-btn" data-view="stay" title="STAY — Stayover만">STAY</button>
         </aside>
         <div class="board-main">
           <div id="view499" class="view-panel">
@@ -1274,6 +1321,29 @@
             </div>
             <div id="fAsnBlockFilters" class="asn-block-filters" hidden></div>
             <div id="fAsnBoardMount"></div>
+          </div>
+          <div id="viewIndi" class="view-panel" hidden>
+            <p class="indi-legend">
+              <strong>A</strong> — Arrival (입실예정) &nbsp;|&nbsp;
+              <strong>S</strong> — Stayover · 재실 (투숙 중) &nbsp;|&nbsp;
+              <strong>O</strong> — Due Out · Departed (체크아웃/퇴실) &nbsp;|&nbsp;
+              <strong>N</strong> — Not Reserved (공실)
+            </p>
+            <div class="summary-toolbar">
+              <div id="indiCategorySummaryBar" class="status-summary-bar"></div>
+            </div>
+            <div class="summary-toolbar">
+              <div id="indiStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <div id="indiBoardMount"></div>
+          </div>
+          <div id="viewStay" class="view-panel" hidden>
+            <div class="summary-toolbar">
+              <div id="stayStatusSummaryBar" class="status-summary-bar"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+            </div>
+            <div id="stayBoardMount"></div>
           </div>
         </div>
       </div>
@@ -2090,6 +2160,116 @@
         return normalizeResvStatus(rec && rec.resvStatus) === "Stayover";
       }
 
+      /** INDI 탭 — RESV_STATUS → A·S·O·N */
+      var INDI_CATEGORY_CODES = ["A", "S", "O", "N"];
+      var indiCategoryFilters = { A: true, S: true, O: true, N: true };
+      var INDI_CATEGORY_CHIPS = [
+        { code: "A", cls: "indi-a", title: "Arrival (입실예정)" },
+        { code: "S", cls: "indi-s", title: "Stayover · 재실 (투숙 중)" },
+        { code: "O", cls: "indi-o", title: "Due Out · Departed (체크아웃/퇴실)" },
+        { code: "N", cls: "indi-n", title: "Not Reserved (공실)" },
+      ];
+
+      function indiCategoryForRec(rec) {
+        var rs = normalizeResvStatus(rec && rec.resvStatus);
+        if (!rs) return "N";
+        if (rs === "Stayover") return "S";
+        if (rs === "Not Reserved") return "N";
+        if (rs === "Due Out" || rs === "Departed" || rs === "Arrived, Departed") return "O";
+        if (rs.indexOf("Departed") >= 0 && rs.indexOf("Arrival") < 0) return "O";
+        if (rs === "Arrival" || rs === "Arrived") return "A";
+        if (rs.indexOf("Arrival") >= 0) return "A";
+        return "N";
+      }
+
+      function allIndiCategoryFiltersOn() {
+        return INDI_CATEGORY_CODES.every(function (c) {
+          return indiCategoryFilters[c];
+        });
+      }
+
+      function setAllIndiCategoryFilters(on) {
+        INDI_CATEGORY_CODES.forEach(function (c) {
+          indiCategoryFilters[c] = !!on;
+        });
+      }
+
+      function matchesIndiCategoryFilter(rec) {
+        var cat = indiCategoryForRec(rec);
+        if (allIndiCategoryFiltersOn()) return true;
+        var anyOn = INDI_CATEGORY_CODES.some(function (c) {
+          return indiCategoryFilters[c];
+        });
+        if (!anyOn) return false;
+        return !!indiCategoryFilters[cat];
+      }
+
+      function summarizeIndiCategories(rows) {
+        var c = { A: 0, S: 0, O: 0, N: 0 };
+        (rows || []).forEach(function (r) {
+          var cat = indiCategoryForRec(r);
+          if (Object.prototype.hasOwnProperty.call(c, cat)) c[cat]++;
+        });
+        return { counts: c, total: rows.length };
+      }
+
+      function renderIndiCategorySummaryBar(el, counts, total) {
+        if (!el) return;
+        el.innerHTML = "";
+        var title = document.createElement("span");
+        title.className = "summary-title";
+        title.textContent = "INDI";
+        el.appendChild(title);
+        INDI_CATEGORY_CHIPS.forEach(function (item) {
+          var chip = document.createElement("label");
+          chip.className = "summary-chip filter-chip " + item.cls;
+          chip.title = item.title;
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "chk-indi-filter";
+          cb.setAttribute("data-indi-code", item.code);
+          cb.checked = !!indiCategoryFilters[item.code];
+          chip.appendChild(cb);
+          var tag = document.createElement("span");
+          tag.className = "tag";
+          tag.textContent = item.code;
+          var num = document.createElement("span");
+          num.className = "num";
+          num.textContent = String((counts && counts[item.code]) || 0);
+          chip.appendChild(tag);
+          chip.appendChild(num);
+          el.appendChild(chip);
+        });
+        var totChip = document.createElement("label");
+        totChip.className = "summary-chip filter-chip total";
+        var totCb = document.createElement("input");
+        totCb.type = "checkbox";
+        totCb.className = "chk-indi-filter";
+        totCb.setAttribute("data-indi-code", "ALL");
+        totCb.checked = allIndiCategoryFiltersOn();
+        totCb.title = "전체 INDI 표시";
+        totChip.appendChild(totCb);
+        var ttag = document.createElement("span");
+        ttag.className = "tag";
+        ttag.textContent = "합계";
+        var tnum = document.createElement("span");
+        tnum.className = "num";
+        tnum.textContent = String(total || 0);
+        totChip.appendChild(ttag);
+        totChip.appendChild(tnum);
+        el.appendChild(totChip);
+      }
+
+      function syncIndiCategoryFilterCheckboxes() {
+        var bar = document.getElementById("indiCategorySummaryBar");
+        if (!bar) return;
+        bar.querySelectorAll(".chk-indi-filter").forEach(function (cb) {
+          var code = cb.getAttribute("data-indi-code");
+          if (code === "ALL") cb.checked = allIndiCategoryFiltersOn();
+          else if (code) cb.checked = !!indiCategoryFilters[code];
+        });
+      }
+
       function isVacResvMatch(rec) {
         if (isStayoverResv(rec)) return false;
         if (!!VAC_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)]) return true;
@@ -2443,7 +2623,12 @@
       }
 
       function statusFilterCodesForMode(mode) {
-        if (mode === "vac" || mode === "ovac") {
+        if (
+          mode === "vac" ||
+          mode === "ovac" ||
+          mode === "indi" ||
+          mode === "stay"
+        ) {
           return STATUS_FILTER_CODES.concat(VAC_STATUS_EXTRA_CODES);
         }
         return STATUS_FILTER_CODES.slice();
@@ -2452,6 +2637,8 @@
       function summaryBarModeFromId(barId) {
         if (barId === "vacStatusSummaryBar" || barId === "oVacStatusSummaryBar") return "vac";
         if (barId === "asnStatusSummaryBar" || barId === "oAsnStatusSummaryBar") return "asn";
+        if (barId === "indiStatusSummaryBar") return "indi";
+        if (barId === "stayStatusSummaryBar") return "stay";
         return "499";
       }
 
@@ -2462,7 +2649,7 @@
           { code: "PU", cls: "pu" },
           { code: "DI", cls: "di" },
         ];
-        if (mode === "vac" || mode === "ovac") {
+        if (mode === "vac" || mode === "ovac" || mode === "indi" || mode === "stay") {
           chips.push({ code: "OO", cls: "oo" }, { code: "OS", cls: "os" });
         }
         return chips;
@@ -2487,6 +2674,8 @@
           { id: "oVacStatusSummaryBar", mode: "ovac" },
           { id: "asnStatusSummaryBar", mode: "asn" },
           { id: "oAsnStatusSummaryBar", mode: "oasn" },
+          { id: "indiStatusSummaryBar", mode: "indi" },
+          { id: "stayStatusSummaryBar", mode: "stay" },
         ].forEach(function (item) {
           var bar = document.getElementById(item.id);
           if (!bar) return;
@@ -2502,7 +2691,13 @@
         mode = mode || "499";
         var u = normalizeRoomStatus(rec.status);
         var codes = statusFilterCodesForMode(mode);
-        if (mode !== "vac" && mode !== "ovac" && (u === "OO" || u === "OS")) {
+        if (
+          mode !== "vac" &&
+          mode !== "ovac" &&
+          mode !== "indi" &&
+          mode !== "stay" &&
+          (u === "OO" || u === "OS")
+        ) {
           return STATUS_FILTER_CODES.every(function (c) {
             return statusRoomFilters[c];
           });
@@ -2963,6 +3158,8 @@
         if (u === "DI") return "st-di";
         if (u === "PU") return "st-pu";
         if (u === "CL") return "st-cl";
+        if (u === "OO") return "st-oo";
+        if (u === "OS") return "st-os";
         return "st-neutral";
       }
 
@@ -3224,6 +3421,16 @@
           mountId = "fAsnBoardMount";
           filterFn = null;
           emptyFiltered = "표시할 객실이 없습니다.";
+        } else if (mode === "indi") {
+          summaryElId = "indiStatusSummaryBar";
+          mountId = "indiBoardMount";
+          filterFn = null;
+          emptyFiltered = "표시할 객실이 없습니다. HKVACROOM XML을 업로드하세요.";
+        } else if (mode === "stay") {
+          summaryElId = "stayStatusSummaryBar";
+          mountId = "stayBoardMount";
+          filterFn = isStayoverResv;
+          emptyFiltered = "Stayover(재실) 객실이 없습니다.";
         }
 
         var summaryEl = document.getElementById(summaryElId);
@@ -3266,6 +3473,34 @@
           if (summaryEl) {
             renderFoSummaryBar(summaryEl, summFo.counts, displayRows.length);
           }
+        } else if (mode === "indi") {
+          var indiSource = get499BoardRows(workRows);
+          var indiCatSumm = summarizeIndiCategories(indiSource);
+          var indiCatBar = document.getElementById("indiCategorySummaryBar");
+          if (indiCatBar) {
+            renderIndiCategorySummaryBar(
+              indiCatBar,
+              indiCatSumm.counts,
+              indiSource.length
+            );
+          }
+          var filterCodesIndi = statusFilterCodesForMode(mode);
+          var indiAfterCat = workRows.filter(matchesIndiCategoryFilter);
+          var summIndi = summarizeStatus(get499BoardRows(indiAfterCat), filterCodesIndi);
+          displayRows = indiAfterCat.filter(function (rec) {
+            return matchesStatusRoomFilter(rec, mode);
+          });
+          board499 = get499BoardRows(displayRows);
+          var outCountIndi = countOutRooms(board499);
+          var showOutStatsIndi =
+            outDepartedHighlight && board499.length > 0;
+          if (summaryEl) {
+            renderStatusSummaryBar(summaryEl, summIndi.counts, board499.length, {
+              mode: mode,
+              showOutStats: showOutStatsIndi,
+              outCount: outCountIndi,
+            });
+          }
         } else {
           var filterCodes = statusFilterCodesForMode(mode);
           var summarySource = get499BoardRows(workRows);
@@ -3277,7 +3512,11 @@
           var outCount = countOutRooms(board499);
           var showOutStats =
             outDepartedHighlight &&
-            (mode === "vac" || mode === "ovac" || mode === "asn" || mode === "oasn");
+            (mode === "vac" ||
+              mode === "ovac" ||
+              mode === "asn" ||
+              mode === "oasn" ||
+              mode === "stay");
           renderStatusSummaryBar(summaryEl, summ.counts, board499.length, {
             mode: mode,
             showOutStats: showOutStats,
@@ -3325,7 +3564,7 @@
           emptySt.textContent =
             mode === "fasn"
               ? "선택한 FO(청소·빈방) 조건에 맞는 객실이 없습니다."
-              : mode === "vac" || mode === "ovac"
+              : mode === "vac" || mode === "ovac" || mode === "indi" || mode === "stay"
               ? "선택한 ROOM_STATUS(IP·CL·PU·DI·OO·OS) 조건에 맞는 객실이 없습니다."
               : "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
           mount.appendChild(emptySt);
@@ -3420,6 +3659,8 @@
         renderBoard(cachedRows, "asn");
         renderBoard(cachedRows, "ovac");
         renderBoard(cachedRows, "oasn");
+        renderBoard(cachedRows, "indi");
+        renderBoard(cachedRows, "stay");
         renderFAsnBoard();
       }
 
@@ -3740,6 +3981,8 @@
         document.getElementById("viewOVac").hidden = viewId !== "ovac";
         document.getElementById("viewOAsn").hidden = viewId !== "oasn";
         document.getElementById("viewFAsn").hidden = viewId !== "fasn";
+        document.getElementById("viewIndi").hidden = viewId !== "indi";
+        document.getElementById("viewStay").hidden = viewId !== "stay";
       }
 
       document.querySelectorAll(".sidebar-btn").forEach(function (btn) {
@@ -3807,6 +4050,28 @@
         });
       }
       wireStatusFilterChecks();
+
+      var indiFilterWired = false;
+      function wireIndiCategoryFilterChecks() {
+        if (indiFilterWired) return;
+        indiFilterWired = true;
+        document.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("chk-indi-filter")) return;
+          var code = t.getAttribute("data-indi-code");
+          if (!code) return;
+          if (code === "ALL") {
+            setAllIndiCategoryFilters(!!t.checked);
+          } else if (Object.prototype.hasOwnProperty.call(indiCategoryFilters, code)) {
+            indiCategoryFilters[code] = !!t.checked;
+          } else {
+            return;
+          }
+          syncIndiCategoryFilterCheckboxes();
+          refreshBoards();
+        });
+      }
+      wireIndiCategoryFilterChecks();
 
       var foFilterWired = false;
       function wireFoFilterChecks() {
