@@ -1090,6 +1090,94 @@
       line-height: 1.5;
     }
 
+    .feedback-column--request-wing-split {
+      width: min(520px, 44vw);
+    }
+
+    .request-feedback__body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .request-feedback__split {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .request-feedback--wing-split .request-feedback__split {
+      display: flex;
+    }
+
+    .request-feedback--wing-split #requestFeedbackList,
+    .request-feedback--wing-split #requestFeedbackEmpty {
+      display: none !important;
+    }
+
+    .request-feedback__wing {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .request-feedback__wing:last-child {
+      border-right: none;
+    }
+
+    .request-feedback__wing-title {
+      margin: 0;
+      padding: 8px 10px;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      text-align: center;
+      color: var(--text-muted);
+      background: #eef2ff;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .request-feedback__list--wing {
+      padding: 8px 6px;
+    }
+
+    .request-feedback--wing-split .request-feedback__item {
+      padding: 8px 6px 22px;
+      font-size: 0.8125rem;
+    }
+
+    .request-feedback--wing-split .request-feedback__item-room {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .request-feedback--wing-split .request-feedback__item-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .request-feedback__wing-empty {
+      margin: 0;
+      padding: 10px 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.45;
+      flex-shrink: 0;
+    }
+
+    .request-feedback__wing-empty[hidden] {
+      display: none;
+    }
+
     .hk-time-em {
       font-size: 1.15em;
       font-weight: 700;
@@ -7354,10 +7442,24 @@
         <button type="button" class="panel-alert-ack-btn" id="btnAckRequestFeedback" hidden>확인</button>
       </div>
       <p class="request-feedback__hint" id="requestFeedbackHint" hidden></p>
-      <ul class="request-feedback__list" id="requestFeedbackList"></ul>
-      <p class="request-feedback__empty" id="requestFeedbackEmpty">
-        요청이 접수되면 이곳에 표시됩니다.
-      </p>
+      <div class="request-feedback__body" id="requestFeedbackBody">
+        <ul class="request-feedback__list" id="requestFeedbackList"></ul>
+        <div class="request-feedback__split" id="requestFeedbackSplit" hidden>
+          <section class="request-feedback__wing" aria-label="본관 요청 알림">
+            <h3 class="request-feedback__wing-title">본관</h3>
+            <ul class="request-feedback__list request-feedback__list--wing" id="requestFeedbackListMain"></ul>
+            <p class="request-feedback__wing-empty" id="requestFeedbackEmptyMain" hidden>본관 요청 없음</p>
+          </section>
+          <section class="request-feedback__wing" aria-label="별관 요청 알림">
+            <h3 class="request-feedback__wing-title">별관</h3>
+            <ul class="request-feedback__list request-feedback__list--wing" id="requestFeedbackListAnnex"></ul>
+            <p class="request-feedback__wing-empty" id="requestFeedbackEmptyAnnex" hidden>별관 요청 없음</p>
+          </section>
+        </div>
+        <p class="request-feedback__empty" id="requestFeedbackEmpty">
+          요청이 접수되면 이곳에 표시됩니다.
+        </p>
+      </div>
     </aside>
     <aside class="order-feedback" id="orderFeedback" aria-label="오더 알림" hidden>
       <div class="order-feedback__head">
@@ -8798,6 +8900,7 @@
         if (isHkUserEditing()) {
           updateRoomStatusDisplay();
           updateOrderFoDisplay();
+          updateRequestAlertLiveStatuses();
           return;
         }
         renderAllTypeFilterCheckboxes();
@@ -13124,16 +13227,240 @@
         }
       }
 
+      function liveRequestEntryStatus(entry) {
+        if (!entry) return "";
+        return lookupRoomStatusFromXml(entry.room) || (entry.status || "").trim();
+      }
+
+      function requestAlertWingBucket(room) {
+        var cl = hkBoardClassifyRoom(roomNumberForStatusLookup(room) || room);
+        if (cl && cl.wing === "annex") return "annex";
+        return "main";
+      }
+
+      function syncRequestFeedbackLayoutUi() {
+        var rf = document.getElementById("requestFeedback");
+        var fc = document.getElementById("feedbackColumn");
+        var splitOn = maintenanceMode;
+        if (rf) rf.classList.toggle("request-feedback--wing-split", splitOn);
+        if (fc) fc.classList.toggle("feedback-column--request-wing-split", splitOn);
+        var splitEl = document.getElementById("requestFeedbackSplit");
+        if (splitEl) splitEl.hidden = !splitOn;
+      }
+
+      function updateRequestAlertLiveStatuses() {
+        document.querySelectorAll(".request-feedback__item[data-req-id]").forEach(function (li) {
+          var id = li.getAttribute("data-req-id");
+          var entry = findRequestEntry(id);
+          if (!entry) return;
+          var st = liveRequestEntryStatus(entry);
+          var stKey = hkStatusSuffix(st);
+          li.classList.remove(
+            "hk-st--ip",
+            "hk-st--cl",
+            "hk-st--pu",
+            "hk-st--di",
+            "hk-st--oo",
+            "hk-st--os",
+            "hk-st--none"
+          );
+          if (stKey !== "none") li.classList.add("hk-st--" + stKey);
+          var stEl = li.querySelector(".request-feedback__item-st");
+          if (stEl) {
+            stEl.innerHTML = "";
+            stEl.appendChild(
+              buildRoomStatusGroup(st, entry.room, {
+                statusClass: "request-feedback__item-st hk-st-badge",
+              })
+            );
+          }
+        });
+        document.querySelectorAll(".sched-req-card[data-req-id]").forEach(function (li) {
+          var id = li.getAttribute("data-req-id");
+          var entry = findRequestEntry(id);
+          if (!entry) return;
+          var st = liveRequestEntryStatus(entry);
+          var head = li.querySelector(".room-card__head");
+          if (!head) return;
+          var oldSt = head.querySelector(".room-card__status, .hk-status-group");
+          var nextSt = buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" });
+          if (oldSt) oldSt.replaceWith(nextSt);
+          else head.appendChild(nextSt);
+        });
+      }
+
+      function buildRequestFeedbackItemLi(entry) {
+        var li = document.createElement("li");
+        li.className = "request-feedback__item";
+        li.setAttribute("data-req-id", entry.id);
+        if (entry.urgent) li.classList.add("is-urgent");
+        var liveSt = liveRequestEntryStatus(entry);
+        var stKey = hkStatusSuffix(liveSt);
+        if (stKey !== "none") li.classList.add("hk-st--" + stKey);
+
+        var t = document.createElement("div");
+        t.className = "request-feedback__item-time";
+        setLineWithEmTime(t, "접수 ", formatReqAt(entry.at));
+
+        var row = document.createElement("div");
+        row.className = "request-feedback__item-row";
+        var r = document.createElement("span");
+        r.className = "request-feedback__item-room";
+        r.textContent =
+          "객실 " + (entry.room ? formatRoomNoDisplay(String(entry.room)) : "—");
+        if (entry.urgent) {
+          var ub = document.createElement("span");
+          ub.className = "request-feedback__item-urgent-badge";
+          ub.textContent = "긴급";
+          ub.setAttribute("aria-label", "긴급");
+          r.appendChild(ub);
+        }
+        var s = document.createElement("span");
+        s.className = "request-feedback__item-st";
+        s.appendChild(
+          buildRoomStatusGroup(liveSt, entry.room, {
+            statusClass: "request-feedback__item-st hk-st-badge",
+          })
+        );
+        row.appendChild(r);
+        row.appendChild(s);
+        li.appendChild(t);
+        li.appendChild(row);
+
+        var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+        var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
+        if (memoStr || memoImg) {
+          hkAppendMemoBlock(li, "FD", memoStr, memoImg, "request-feedback__item-memo");
+        }
+
+        var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
+        var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
+        if (memo2Str || memo2Img) {
+          var m2Box = document.createElement("div");
+          m2Box.className = "request-feedback__item-memo2";
+          var m2Body = document.createElement("div");
+          m2Body.className = "request-feedback__item-memo2-body";
+          if (memo2Str) {
+            var m2Line = document.createElement("div");
+            m2Line.textContent = "정비 : " + memo2Str;
+            m2Body.appendChild(m2Line);
+          }
+          hkAppendImageEl(m2Body, memo2Img);
+          m2Box.appendChild(m2Body);
+          li.appendChild(m2Box);
+        }
+
+        if (maintenanceMode) {
+          if (!appendFacilityPendingSchedEl(li, entry)) {
+            var schedEl = document.createElement("div");
+            schedEl.className = "request-feedback__sched is-empty";
+            schedEl.textContent = "처리·예정 —";
+            li.appendChild(schedEl);
+          }
+          var facActive = hasActiveFacilityOrderForRequest(entry.id);
+          var maintActs = document.createElement("div");
+          maintActs.className = "request-feedback__maint-actions";
+          if (facActive) {
+            var facSchedBtn = document.createElement("button");
+            facSchedBtn.type = "button";
+            facSchedBtn.className = "request-feedback__facility-sched-btn";
+            facSchedBtn.setAttribute("data-req-id", entry.id);
+            facSchedBtn.textContent = "정비 시간";
+            facSchedBtn.setAttribute("aria-label", "정비 시간 입력");
+            maintActs.appendChild(facSchedBtn);
+          } else {
+            var schedBtn = document.createElement("button");
+            schedBtn.type = "button";
+            schedBtn.className = "request-feedback__sched-btn";
+            schedBtn.setAttribute("data-req-id", entry.id);
+            schedBtn.textContent = "시간 입력";
+            maintActs.appendChild(schedBtn);
+          }
+          var memo2BtnP = document.createElement("button");
+          memo2BtnP.type = "button";
+          memo2BtnP.className = "request-feedback__memo2-btn";
+          memo2BtnP.setAttribute("data-req-id", entry.id);
+          memo2BtnP.textContent = memo2Str ? "메모2 수정" : "메모2 입력";
+          memo2BtnP.setAttribute("aria-label", memo2Str ? "메모2 수정" : "메모2 입력");
+          maintActs.appendChild(memo2BtnP);
+          var facilityBtn = document.createElement("button");
+          facilityBtn.type = "button";
+          facilityBtn.setAttribute("data-req-id", entry.id);
+          var facStatus = getFacilityRequestStatus(entry.id);
+          if (facStatus === "ok") {
+            facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
+            facilityBtn.textContent = "시설OK";
+            facilityBtn.setAttribute("aria-label", "시설 확인 완료");
+            facilityBtn.disabled = true;
+          } else if (facStatus === "pending") {
+            facilityBtn.className = "request-feedback__facility-btn is-done";
+            facilityBtn.textContent = "시설 오더됨";
+            facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
+            facilityBtn.disabled = true;
+          } else {
+            facilityBtn.className = "request-feedback__facility-btn";
+            facilityBtn.textContent = "시설 확인";
+            facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
+          }
+          maintActs.appendChild(facilityBtn);
+          li.appendChild(maintActs);
+        } else if (frontMode) {
+          appendFacilityPendingSchedEl(li, entry);
+        }
+
+        if (frontMode) {
+          var frontActs = document.createElement("div");
+          frontActs.className = "request-feedback__front-actions";
+          var memoBtnF = document.createElement("button");
+          memoBtnF.type = "button";
+          memoBtnF.className = "request-feedback__memo-btn";
+          memoBtnF.setAttribute("data-req-id", entry.id);
+          memoBtnF.textContent = memoStr ? "메모 수정" : "메모 입력";
+          memoBtnF.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+          frontActs.appendChild(memoBtnF);
+          var cancelReqBtn = document.createElement("button");
+          cancelReqBtn.type = "button";
+          cancelReqBtn.className = "request-feedback__cancel-btn";
+          cancelReqBtn.setAttribute("data-req-id", entry.id);
+          cancelReqBtn.textContent = "요청 취소";
+          cancelReqBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
+          frontActs.appendChild(cancelReqBtn);
+          if (getFacilityRequestStatus(entry.id) !== "none") {
+            appendFacilityRequestStatusBtn(frontActs, entry.id);
+          }
+          li.appendChild(frontActs);
+        }
+
+        var byName = entry.by != null ? String(entry.by).trim() : "";
+        if (byName) {
+          var byEl = document.createElement("div");
+          byEl.className = "request-feedback__item-by";
+          byEl.textContent = byName;
+          byEl.title = "요청: " + byName;
+          li.appendChild(byEl);
+        }
+
+        return li;
+      }
+
       function renderRequestLogPanel(opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
+        syncRequestFeedbackLayoutUi();
         var list = document.getElementById("requestFeedbackList");
+        var listMain = document.getElementById("requestFeedbackListMain");
+        var listAnnex = document.getElementById("requestFeedbackListAnnex");
         var empty = document.getElementById("requestFeedbackEmpty");
+        var emptyMain = document.getElementById("requestFeedbackEmptyMain");
+        var emptyAnnex = document.getElementById("requestFeedbackEmptyAnnex");
         if (!list) {
           renderSchedRequestCards();
           return;
         }
         list.innerHTML = "";
+        if (listMain) listMain.innerHTML = "";
+        if (listAnnex) listAnnex.innerHTML = "";
+        var wingSplit = maintenanceMode && listMain && listAnnex;
         var allPending = requestLogEntries.filter(isRequestPendingAlert);
         var pending = allPending.filter(function (entry) {
           return (
@@ -13148,163 +13475,44 @@
           if (isNaN(tb)) tb = 0;
           return ta - tb;
         });
+        var mainCount = 0;
+        var annexCount = 0;
         pending.forEach(function (entry) {
-          var li = document.createElement("li");
-          li.className = "request-feedback__item";
-          li.setAttribute("data-req-id", entry.id);
-          if (entry.urgent) li.classList.add("is-urgent");
-          var stKey = hkStatusSuffix(entry.status);
-          if (stKey !== "none") li.classList.add("hk-st--" + stKey);
-
-          var t = document.createElement("div");
-          t.className = "request-feedback__item-time";
-          setLineWithEmTime(t, "접수 ", formatReqAt(entry.at));
-
-          var row = document.createElement("div");
-          row.className = "request-feedback__item-row";
-          var r = document.createElement("span");
-          r.className = "request-feedback__item-room";
-          r.textContent =
-            "객실 " + (entry.room ? formatRoomNoDisplay(String(entry.room)) : "—");
-          if (entry.urgent) {
-            var ub = document.createElement("span");
-            ub.className = "request-feedback__item-urgent-badge";
-            ub.textContent = "긴급";
-            ub.setAttribute("aria-label", "긴급");
-            r.appendChild(ub);
-          }
-          var s = document.createElement("span");
-          s.className = "request-feedback__item-st";
-          s.appendChild(
-            buildRoomStatusGroup(entry.status, entry.room, {
-              statusClass: "request-feedback__item-st hk-st-badge",
-            })
-          );
-          row.appendChild(r);
-          row.appendChild(s);
-          li.appendChild(t);
-          li.appendChild(row);
-
-          var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
-          var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
-          if (memoStr || memoImg) {
-            hkAppendMemoBlock(li, "FD", memoStr, memoImg, "request-feedback__item-memo");
-          }
-
-          var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
-          var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
-          if (memo2Str || memo2Img) {
-            var m2Box = document.createElement("div");
-            m2Box.className = "request-feedback__item-memo2";
-            var m2Body = document.createElement("div");
-            m2Body.className = "request-feedback__item-memo2-body";
-            if (memo2Str) {
-              var m2Line = document.createElement("div");
-              m2Line.textContent = "정비 : " + memo2Str;
-              m2Body.appendChild(m2Line);
-            }
-            hkAppendImageEl(m2Body, memo2Img);
-            m2Box.appendChild(m2Body);
-            li.appendChild(m2Box);
-          }
-
-          if (maintenanceMode) {
-            if (!appendFacilityPendingSchedEl(li, entry)) {
-              var schedEl = document.createElement("div");
-              schedEl.className = "request-feedback__sched is-empty";
-              schedEl.textContent = "처리·예정 —";
-              li.appendChild(schedEl);
-            }
-            var facActive = hasActiveFacilityOrderForRequest(entry.id);
-            var maintActs = document.createElement("div");
-            maintActs.className = "request-feedback__maint-actions";
-            if (facActive) {
-              var facSchedBtn = document.createElement("button");
-              facSchedBtn.type = "button";
-              facSchedBtn.className = "request-feedback__facility-sched-btn";
-              facSchedBtn.setAttribute("data-req-id", entry.id);
-              facSchedBtn.textContent = "정비 시간";
-              facSchedBtn.setAttribute("aria-label", "정비 시간 입력");
-              maintActs.appendChild(facSchedBtn);
+          var li = buildRequestFeedbackItemLi(entry);
+          if (wingSplit) {
+            if (requestAlertWingBucket(entry.room) === "annex") {
+              listAnnex.appendChild(li);
+              annexCount++;
             } else {
-              var schedBtn = document.createElement("button");
-              schedBtn.type = "button";
-              schedBtn.className = "request-feedback__sched-btn";
-              schedBtn.setAttribute("data-req-id", entry.id);
-              schedBtn.textContent = "시간 입력";
-              maintActs.appendChild(schedBtn);
+              listMain.appendChild(li);
+              mainCount++;
             }
-            var memo2BtnP = document.createElement("button");
-            memo2BtnP.type = "button";
-            memo2BtnP.className = "request-feedback__memo2-btn";
-            memo2BtnP.setAttribute("data-req-id", entry.id);
-            memo2BtnP.textContent = memo2Str ? "메모2 수정" : "메모2 입력";
-            memo2BtnP.setAttribute("aria-label", memo2Str ? "메모2 수정" : "메모2 입력");
-            maintActs.appendChild(memo2BtnP);
-            var facilityBtn = document.createElement("button");
-            facilityBtn.type = "button";
-            facilityBtn.setAttribute("data-req-id", entry.id);
-            var facStatus = getFacilityRequestStatus(entry.id);
-            if (facStatus === "ok") {
-              facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
-              facilityBtn.textContent = "시설OK";
-              facilityBtn.setAttribute("aria-label", "시설 확인 완료");
-              facilityBtn.disabled = true;
-            } else if (facStatus === "pending") {
-              facilityBtn.className = "request-feedback__facility-btn is-done";
-              facilityBtn.textContent = "시설 오더됨";
-              facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
-              facilityBtn.disabled = true;
-            } else {
-              facilityBtn.className = "request-feedback__facility-btn";
-              facilityBtn.textContent = "시설 확인";
-              facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
-            }
-            maintActs.appendChild(facilityBtn);
-            li.appendChild(maintActs);
-          } else if (frontMode) {
-            appendFacilityPendingSchedEl(li, entry);
+          } else {
+            list.appendChild(li);
           }
-
-          if (frontMode) {
-            var frontActs = document.createElement("div");
-            frontActs.className = "request-feedback__front-actions";
-            var memoBtnF = document.createElement("button");
-            memoBtnF.type = "button";
-            memoBtnF.className = "request-feedback__memo-btn";
-            memoBtnF.setAttribute("data-req-id", entry.id);
-            memoBtnF.textContent = memoStr ? "메모 수정" : "메모 입력";
-            memoBtnF.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
-            frontActs.appendChild(memoBtnF);
-            var cancelReqBtn = document.createElement("button");
-            cancelReqBtn.type = "button";
-            cancelReqBtn.className = "request-feedback__cancel-btn";
-            cancelReqBtn.setAttribute("data-req-id", entry.id);
-            cancelReqBtn.textContent = "요청 취소";
-            cancelReqBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
-            frontActs.appendChild(cancelReqBtn);
-            if (getFacilityRequestStatus(entry.id) !== "none") {
-              appendFacilityRequestStatusBtn(frontActs, entry.id);
-            }
-            li.appendChild(frontActs);
-          }
-
-          var byName = entry.by != null ? String(entry.by).trim() : "";
-          if (byName) {
-            var byEl = document.createElement("div");
-            byEl.className = "request-feedback__item-by";
-            byEl.textContent = byName;
-            byEl.title = "요청: " + byName;
-            li.appendChild(byEl);
-          }
-
-          list.appendChild(li);
         });
-        if (empty) {
+        var filterRestricted = allPending.length > 0 && isSchedTypeFilterRestricted();
+        var filterMsg = filterRestricted
+          ? "선택한 TYPE에 해당하는 요청 알림이 없습니다."
+          : "요청이 접수되면 이곳에 표시됩니다.";
+        var wingEmptyMsg = filterRestricted
+          ? "선택한 TYPE에 해당하는 요청이 없습니다."
+          : "요청 없음";
+        if (wingSplit) {
+          if (empty) empty.hidden = true;
+          if (emptyMain) {
+            emptyMain.textContent = mainCount > 0 ? "" : wingEmptyMsg;
+            emptyMain.hidden = mainCount > 0;
+          }
+          if (emptyAnnex) {
+            emptyAnnex.textContent = annexCount > 0 ? "" : wingEmptyMsg;
+            emptyAnnex.hidden = annexCount > 0;
+          }
+        } else if (empty) {
           if (pending.length > 0) {
             empty.hidden = true;
           } else if (allPending.length > 0 && isSchedTypeFilterRestricted()) {
-            empty.textContent = "선택한 TYPE에 해당하는 요청 알림이 없습니다.";
+            empty.textContent = filterMsg;
             empty.hidden = false;
           } else {
             empty.textContent = "요청이 접수되면 이곳에 표시됩니다.";
@@ -14979,7 +15187,7 @@
           no.className = "room-card__no";
           no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
           noBox.appendChild(no);
-          var st = lookupRoomStatusFromXml(entry.room) || (entry.status || "").trim();
+          var st = liveRequestEntryStatus(entry);
           head.appendChild(noBox);
           appendRoomTypeToCardHead(head, entry.room);
           head.appendChild(
@@ -16649,6 +16857,7 @@
           btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
         }
         applyFacilityLogSidebarUi();
+        syncRequestFeedbackLayoutUi();
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
             HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
