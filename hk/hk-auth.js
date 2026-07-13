@@ -9,7 +9,7 @@
     admin: "1000",
     maint: "74371",
     front: "743210",
-    inquiry: "1104",
+    inquiry: "11046239",
   };
 
   var SESSION_PREFIX = "lotte-hk-auth-";
