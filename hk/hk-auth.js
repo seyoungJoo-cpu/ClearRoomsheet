@@ -9,6 +9,7 @@
     admin: "1000",
     maint: "74371",
     front: "743210",
+    inquiry: "1104",
   };
 
   var SESSION_PREFIX = "lotte-hk-auth-";
@@ -17,6 +18,7 @@
     admin: "관리자",
     maint: "정비 입력",
     front: "프론트",
+    inquiry: "관리자 문의",
   };
 
   function isAuthed(role) {

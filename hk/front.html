@@ -61,6 +61,7 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 2px;
       padding-top: 6px;
       padding-right: 4px;
@@ -94,16 +95,30 @@
 
     .topbar-quick-nav {
       display: flex;
-      flex-direction: row;
-      gap: 4px;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
       margin-top: 2px;
+      width: 100%;
+    }
+
+    .topbar-quick-nav__row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .topbar-quick-nav__row--secondary {
+      justify-content: center;
     }
 
     .topbar-quick-nav .sidebar-nav__btn,
     .topbar-quick-nav a.sidebar-nav__link {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
-      padding: 3px 8px;
+      padding: 3px 10px;
       font-size: 0.68rem;
       font-weight: 600;
       text-align: center;
@@ -111,6 +126,15 @@
       border: 1px solid #dfe3e8;
       color: #64748b;
       border-radius: 6px;
+    }
+
+    .topbar-quick-nav__row--primary .sidebar-nav__btn,
+    .topbar-quick-nav__row--primary a.sidebar-nav__link {
+      min-width: 52px;
+    }
+
+    .topbar-quick-nav__row--secondary .admin-inquiry-btn {
+      min-width: 88px;
     }
 
     .topbar-quick-nav .sidebar-nav__btn:hover,
@@ -282,7 +306,6 @@
     }
 
     .admin-inquiry-card__status {
-      margin-left: auto;
       padding: 2px 8px;
       border-radius: 999px;
       font-size: 0.6875rem;
@@ -297,6 +320,22 @@
     .admin-inquiry-card__status.is-answered {
       background: #dcfce7;
       color: #166534;
+    }
+
+    .admin-inquiry-card__delete {
+      margin-left: auto;
+      padding: 2px 8px;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #b91c1c;
+      font-size: 0.625rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .admin-inquiry-card__delete:hover {
+      background: #fef2f2;
     }
 
     .admin-inquiry-card__body {
@@ -3912,6 +3951,33 @@
       margin: 0;
     }
 
+    .zone-cancelled-rooms {
+      margin-top: 10px;
+      padding-top: 6px;
+      border-top: 1px dashed #e2e8f0;
+    }
+
+    .zone-cancelled-rooms__label {
+      font-size: 0.5625rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+      margin-bottom: 3px;
+    }
+
+    .zone-cancelled-rooms__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px 8px;
+      font-size: 0.5625rem;
+      line-height: 1.2;
+      color: #94a3b8;
+    }
+
+    .zone-cancelled-rooms__item {
+      white-space: nowrap;
+    }
+
     .room-card__actions {
       display: flex;
       gap: 6px;
@@ -6745,20 +6811,24 @@
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
-        <nav class="topbar-quick-nav" aria-label="교대 · 루밍">
-          <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
-            교대
-          </button>
-          <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
-          <button
-            type="button"
-            class="sidebar-nav__btn admin-inquiry-btn"
-            id="btnAdminInquiry"
-            title="관리자에게 문의·건의"
-          >
-            관리자 문의
-            <span class="admin-inquiry-btn__badge" id="adminInquiryBadge" hidden></span>
-          </button>
+        <nav class="topbar-quick-nav" aria-label="교대 · 루밍 · 관리자 문의">
+          <div class="topbar-quick-nav__row topbar-quick-nav__row--primary">
+            <button type="button" class="sidebar-nav__btn" id="sidebarBtnShiftChange" title="근무자 이름 변경">
+              교대
+            </button>
+            <a class="sidebar-nav__link" href="/" id="linkRoomingFromFront">루밍</a>
+          </div>
+          <div class="topbar-quick-nav__row topbar-quick-nav__row--secondary">
+            <button
+              type="button"
+              class="sidebar-nav__btn admin-inquiry-btn"
+              id="btnAdminInquiry"
+              title="관리자에게 문의·건의"
+            >
+              관리자 문의
+              <span class="admin-inquiry-btn__badge" id="adminInquiryBadge" hidden></span>
+            </button>
+          </div>
         </nav>
       </div>
       <div class="topbar-head-tools">
@@ -7184,9 +7254,9 @@
               <h3 class="zone-tray__title">입실</h3>
               <ul class="room-list-main zone-tray__list" id="zoneTrayInList"></ul>
             </section>
-            <section class="zone-tray zone-tray--deleted" id="zoneTrayDeleted" hidden aria-label="삭제 객실">
-              <h3 class="zone-tray__title">삭제</h3>
-              <ul class="room-list-main zone-tray__list" id="zoneTrayDeletedList"></ul>
+            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="취소객실">
+              <div class="zone-cancelled-rooms__label">취소객실</div>
+              <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
             </section>
             <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
               <div class="zone-memo-board__label">VIP 메모장</div>
@@ -7874,7 +7944,7 @@
         <button type="button" class="admin-inquiry-modal__close" id="adminInquiryClose">닫기</button>
       </div>
       <p class="admin-inquiry-modal__hint">
-        문의·건의사항을 남기면 관리자가 답변합니다. Ctrl+Enter로 빠르게 등록할 수 있습니다.
+        누구나 문의·건의를 등록할 수 있습니다. 답변·삭제는 비밀번호 1104가 필요합니다. Ctrl+Enter로 빠르게 등록할 수 있습니다.
       </p>
       <div class="admin-inquiry-modal__list-wrap">
         <ul class="admin-inquiry-modal__list" id="adminInquiryList"></ul>
@@ -9718,6 +9788,9 @@
         syncFrontChatFromServer();
         renderFrontChatPanel({ force: true });
         initFrontChatTracking();
+        if (typeof HKAdminInquiry !== "undefined") {
+          HKAdminInquiry.refresh();
+        }
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
         }
@@ -10932,6 +11005,36 @@
         return out;
       }
 
+      function hkBoardBuildZoneTimeMap(zone) {
+        var out = {};
+        if (!zone) return out;
+        var data = HKStorage.load();
+        var rooms = ((data.rooms && data.rooms[zone]) || []).filter(function (room) {
+          return room && !getRoomTray(room);
+        });
+        rooms.forEach(function (room) {
+          var tm = room.time != null ? String(room.time).trim() : "";
+          if (!tm) return;
+          var nr = normalizeRoomDigits(roomNumberForStatusLookup(room.number) || room.number);
+          if (!nr || HK_BOARD_DROP_ROOMS[nr]) return;
+          out[nr] = tm;
+        });
+        return out;
+      }
+
+      function hkBoardMergeSchedMaps() {
+        var out = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var map = arguments[i];
+          if (!map) continue;
+          Object.keys(map).forEach(function (k) {
+            var v = map[k];
+            if (v != null && String(v).trim()) out[k] = String(v).trim();
+          });
+        }
+        return out;
+      }
+
       function hkBoardBuildBuckets(flat, schedMap) {
         schedMap = schedMap || {};
         var buckets = {};
@@ -10981,7 +11084,7 @@
         var em = document.createElement("span");
         em.className = "hk-time-em";
         em.textContent = sched;
-        em.title = "정비완료 예상 " + sched;
+        em.title = "시간 " + sched;
         cell.appendChild(em);
       }
 
@@ -11210,7 +11313,7 @@
         var list = document.getElementById("roomListFront");
         var empty = document.getElementById("roomListEmpty");
         var trayIn = document.getElementById("zoneTrayIn");
-        var trayDel = document.getElementById("zoneTrayDeleted");
+        var cancelled = document.getElementById("zoneCancelledRooms");
         var memo = document.getElementById("zoneVipMemoBoard");
         var btn = document.getElementById("btnZoneRoomBoardView");
         if (btn) {
@@ -11221,7 +11324,7 @@
         if (list) list.hidden = zoneRoomBoardOpen;
         if (empty) empty.hidden = zoneRoomBoardOpen || empty.hidden;
         if (trayIn) trayIn.hidden = zoneRoomBoardOpen || trayIn.hidden;
-        if (trayDel) trayDel.hidden = zoneRoomBoardOpen || trayDel.hidden;
+        if (cancelled) cancelled.hidden = zoneRoomBoardOpen || cancelled.hidden;
         if (memo) memo.hidden = zoneRoomBoardOpen || memo.hidden;
         if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
@@ -11258,7 +11361,10 @@
           mount.appendChild(emptyF);
           return;
         }
-        var schedMap = hkBoardBuildSchedTimeMap();
+        var schedMap = hkBoardMergeSchedMaps(
+          hkBoardBuildSchedTimeMap(),
+          hkBoardBuildZoneTimeMap(zone)
+        );
         var buckets = hkBoardBuildBuckets(boardRows, schedMap);
         var outer = document.createElement("div");
         outer.className = "sheet-outer";
@@ -17011,16 +17117,54 @@
         }
       }
 
+      function renderZoneCancelledRooms(zone) {
+        var section = document.getElementById("zoneCancelledRooms");
+        var listEl = document.getElementById("zoneCancelledRoomsList");
+        if (!section || !listEl) return;
+        listEl.innerHTML = "";
+        if (!zone) {
+          section.hidden = true;
+          return;
+        }
+        var data = HKStorage.load();
+        var seen = {};
+        var items = [];
+        function addRoom(no) {
+          var key = String(no == null ? "" : no).trim();
+          if (!key || seen[key]) return;
+          seen[key] = true;
+          items.push(key);
+        }
+        var deletedList =
+          data.deletedRooms && Array.isArray(data.deletedRooms[zone])
+            ? data.deletedRooms[zone]
+            : [];
+        deletedList.forEach(addRoom);
+        ((data.rooms && data.rooms[zone]) || []).forEach(function (room) {
+          if (room && getRoomTray(room) === "deleted") addRoom(room.number);
+        });
+        items.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+        if (!items.length) {
+          section.hidden = true;
+          return;
+        }
+        section.hidden = false;
+        items.forEach(function (no) {
+          var span = document.createElement("span");
+          span.className = "zone-cancelled-rooms__item";
+          span.textContent = formatRoomNoDisplay(no);
+          listEl.appendChild(span);
+        });
+      }
+
       function renderZoneTrays(zone, rooms) {
         var trayIn = document.getElementById("zoneTrayIn");
         var trayInList = document.getElementById("zoneTrayInList");
-        var trayDel = document.getElementById("zoneTrayDeleted");
-        var trayDelList = document.getElementById("zoneTrayDeletedList");
-        if (!trayIn || !trayInList || !trayDel || !trayDelList) return;
+        if (!trayIn || !trayInList) return;
         trayInList.innerHTML = "";
-        trayDelList.innerHTML = "";
         var inCount = 0;
-        var delCount = 0;
         rooms.forEach(function (room, idx) {
           var tray = getRoomTray(room);
           if (tray === "in") {
@@ -17028,15 +17172,10 @@
               buildZoneRoomCardLi(zone, room, idx, { trayMode: true, showRestore: true })
             );
             inCount += 1;
-          } else if (tray === "deleted") {
-            trayDelList.appendChild(
-              buildZoneRoomCardLi(zone, room, idx, { trayMode: true, showRestore: true })
-            );
-            delCount += 1;
           }
         });
         trayIn.hidden = inCount === 0;
-        trayDel.hidden = delCount === 0;
+        renderZoneCancelledRooms(zone);
       }
 
       function saveZoneVipMemo(patch) {

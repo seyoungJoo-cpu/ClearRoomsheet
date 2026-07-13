@@ -969,6 +969,24 @@
       markDirty("hkAdminInquiries");
       schedulePush({ hkAdminInquiries: true });
     },
+    deleteAdminInquiry: function (id) {
+      if (!id) return false;
+      var next = [];
+      var removed = false;
+      cache.adminInquiries.forEach(function (entry) {
+        if (entry && entry.id === id) {
+          removed = true;
+          return;
+        }
+        next.push(entry);
+      });
+      if (!removed) return false;
+      cache.adminInquiries = next;
+      writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+      markDirty("hkAdminInquiries");
+      schedulePush({ hkAdminInquiries: true });
+      return true;
+    },
     pushSnapshot: function (payload) {
       if (!payload || typeof payload !== "object") return Promise.resolve(false);
       if (!payload.hkCloseDayAt) {
@@ -1019,6 +1037,11 @@
       clearAllDirty();
       return postPayload(payload).then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
+        if (Array.isArray(payload.hkAdminInquiries)) {
+          emitChange(["hkAdminInquiries"], {
+            hkAdminInquiries: cache.adminInquiries.slice(),
+          });
+        }
         return data;
       });
     },

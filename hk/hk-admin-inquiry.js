@@ -17,10 +17,6 @@
 
   var modalOpen = false;
 
-  function isAdmin() {
-    return typeof global.HKAuth !== "undefined" && global.HKAuth.isAuthed("admin");
-  }
-
   function getInquiries() {
     if (typeof global.HKSync === "undefined" || !global.HKSync.getAdminInquiries) {
       return [];
@@ -38,7 +34,7 @@
     var badge = document.getElementById("adminInquiryBadge");
     if (!badge) return;
     var openCount = countOpenInquiries();
-    if (isAdmin() && openCount > 0) {
+    if (openCount > 0) {
       badge.textContent = openCount > 99 ? "99+" : String(openCount);
       badge.hidden = false;
     } else {
@@ -111,7 +107,7 @@
   function submitReply(inquiryId, replyText) {
     var text = String(replyText || "").trim();
     if (!text || !inquiryId) return;
-    deps.requireRoleAuth("admin", function () {
+    deps.requireRoleAuth("inquiry", function () {
       if (typeof global.HKSync === "undefined" || !global.HKSync.updateAdminInquiry) return;
       global.HKSync.updateAdminInquiry(inquiryId, {
         status: "answered",
@@ -119,6 +115,16 @@
         replyAt: new Date().toISOString(),
         replyBy: deps.getOperatorName() || "관리자",
       });
+      renderList();
+      updateBadge();
+    });
+  }
+
+  function deleteInquiry(inquiryId) {
+    if (!inquiryId) return;
+    deps.requireRoleAuth("inquiry", function () {
+      if (typeof global.HKSync === "undefined" || !global.HKSync.deleteAdminInquiry) return;
+      if (!global.HKSync.deleteAdminInquiry(inquiryId)) return;
       renderList();
       updateBadge();
     });
@@ -166,6 +172,17 @@
       head.appendChild(byEl);
       head.appendChild(timeEl);
       head.appendChild(badge);
+
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "admin-inquiry-card__delete";
+      delBtn.textContent = "삭제";
+      delBtn.title = "비밀번호 확인 후 삭제";
+      delBtn.addEventListener("click", function () {
+        if (!confirm("이 문의를 삭제할까요?")) return;
+        deleteInquiry(entry.id);
+      });
+      head.appendChild(delBtn);
       li.appendChild(head);
 
       var body = document.createElement("div");
@@ -188,13 +205,13 @@
         replyBox.appendChild(replyMeta);
         replyBox.appendChild(replyText);
         li.appendChild(replyBox);
-      } else if (isAdmin()) {
+      } else {
         var replyForm = document.createElement("div");
         replyForm.className = "admin-inquiry-card__reply-form";
         var replyTa = document.createElement("textarea");
         replyTa.className = "admin-inquiry-card__reply-input";
         replyTa.rows = 2;
-        replyTa.placeholder = "답변 입력";
+        replyTa.placeholder = "답변 입력 (비밀번호 1104)";
         replyTa.setAttribute("aria-label", "관리자 답변");
         var replyBtn = document.createElement("button");
         replyBtn.type = "button";

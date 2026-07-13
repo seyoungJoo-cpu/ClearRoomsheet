@@ -2893,6 +2893,9 @@
 
       function runCloseDayExport() {
         var snapshot = collectCloseDaySnapshot();
+        if (typeof HKSync !== "undefined" && HKSync.hydrateFromLocal) {
+          HKSync.hydrateFromLocal();
+        }
         var preservedFrontChat =
           typeof HKSync !== "undefined" && HKSync.getFrontChat
             ? HKSync.getFrontChat().slice()
@@ -2901,6 +2904,17 @@
           typeof HKSync !== "undefined" && HKSync.getAdminInquiries
             ? HKSync.getAdminInquiries().slice()
             : [];
+        if (!preservedAdminInquiries.length) {
+          try {
+            var rawInq = localStorage.getItem("lotte-hk-admin-inquiries-v1");
+            if (rawInq) {
+              var parsedInq = JSON.parse(rawInq);
+              if (Array.isArray(parsedInq) && parsedInq.length) {
+                preservedAdminInquiries = parsedInq;
+              }
+            }
+          } catch (e) {}
+        }
         var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
         var preservedFacility =
           typeof HKFacilityLogs !== "undefined"
@@ -2933,6 +2947,9 @@
         }
 
         HKStorage.save(resetStorage, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.setAdminInquiries) {
+          HKSync.setAdminInquiries(preservedAdminInquiries);
+        }
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
         }
