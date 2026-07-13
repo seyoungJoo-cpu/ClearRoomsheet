@@ -5916,14 +5916,17 @@
       background: #fff;
     }
 
-    .hk-room-board-panel .pair-row .cell.sched-time {
-      font-size: 0.62rem;
-      line-height: 1.2;
+    .hk-room-board-panel .pair-row .cell.sched-time,
+    .hk-room-board-panel .villa-list-row .cell.sched-time {
+      font-size: 0.5rem;
+      line-height: 1.15;
       word-break: break-word;
     }
 
-    .hk-room-board-panel .pair-row .cell.sched-time .hk-time-em {
-      font-weight: 800;
+    .hk-room-board-panel .pair-row .cell.sched-time .hk-time-em,
+    .hk-room-board-panel .villa-list-row .cell.sched-time .hk-time-em {
+      font-size: 1em;
+      font-weight: 700;
     }
 
     .hk-room-board-panel .villa-list-body {
@@ -16767,7 +16770,7 @@
         }
 
         ta.addEventListener("keydown", function (ev) {
-          if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+          if (ev.key === "Enter" && !ev.shiftKey) {
             ev.preventDefault();
             commit();
           }
@@ -16846,7 +16849,7 @@
         }
 
         ta.addEventListener("keydown", function (ev) {
-          if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) {
+          if (ev.key === "Enter" && !ev.shiftKey) {
             ev.preventDefault();
             commit();
           }
