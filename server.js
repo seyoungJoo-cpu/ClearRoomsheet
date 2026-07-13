@@ -1,5 +1,7 @@
 "use strict";
 
+const { startAutoOrderScheduler } = require("./server-auto-orders");
+
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -726,4 +728,11 @@ app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, "0.0.0.0", function () {
   console.log("makeroom listening on port " + PORT);
+  startAutoOrderScheduler({
+    sharedState: sharedState,
+    saveSharedStateToDisk: saveSharedStateToDisk,
+    getOrderPhase: getOrderPhase,
+    findNewOrderAlerts: findNewOrderAlerts,
+    sendOrderPushNotifications: sendOrderPushNotifications,
+  });
 });

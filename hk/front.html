@@ -14042,6 +14042,13 @@
         return "alert";
       }
 
+      function isAutoRobotOrder(entry) {
+        if (!entry) return false;
+        if (entry.autoRobot || entry.acceptAny) return true;
+        var by = entry.by != null ? String(entry.by).trim() : "";
+        return by === "도우미 로봇";
+      }
+
       function findOrderEntry(orderId) {
         if (!orderId) return null;
         for (var i = 0; i < orderLogEntries.length; i++) {
@@ -15094,6 +15101,24 @@
       function acceptOrderEntry(orderId) {
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "alert") return;
+        if (isAutoRobotOrder(entry)) {
+          if (!frontMode && !maintenanceMode) return;
+          if (!getOperatorName()) {
+            showOperatorGate({
+              mode: "initial",
+              onSaved: function () {
+                acceptOrderEntry(orderId);
+              },
+            });
+            return;
+          }
+          entry.phase = "accepted";
+          entry.acceptedAt = new Date().toISOString();
+          entry.acceptedBy = getOperatorName();
+          saveOrderLog();
+          renderOrderPanels();
+          return;
+        }
         if (frontMode) {
           if (!entry.fromMaint) return;
         } else if (maintenanceMode) {
@@ -15609,7 +15634,17 @@
 
           var isFacilityAlertList = listId === "facilityFeedbackList";
 
-          if (frontMode && entry.fromMaint && !isFacilityAlertList) {
+          if (isAutoRobotOrder(entry) && (frontMode || maintenanceMode)) {
+            var robotAcceptActs = document.createElement("div");
+            robotAcceptActs.className = "order-feedback__maint-actions";
+            var robotAcceptBtn = document.createElement("button");
+            robotAcceptBtn.type = "button";
+            robotAcceptBtn.className = "order-feedback__accept-btn";
+            robotAcceptBtn.setAttribute("data-order-id", entry.id || "");
+            robotAcceptBtn.textContent = "접수";
+            robotAcceptActs.appendChild(robotAcceptBtn);
+            li.appendChild(robotAcceptActs);
+          } else if (frontMode && entry.fromMaint && !isFacilityAlertList) {
             var frontAcceptActs = document.createElement("div");
             frontAcceptActs.className = "order-feedback__maint-actions";
             var acceptBtn = document.createElement("button");
@@ -15646,7 +15681,7 @@
             li.appendChild(maintAcceptActs);
           }
 
-          if (frontMode && !entry.fromMaint) {
+          if (frontMode && !entry.fromMaint && !isAutoRobotOrder(entry)) {
             var frontActs = document.createElement("div");
             frontActs.className = "order-feedback__front-actions";
             var cancelOrderBtn = document.createElement("button");

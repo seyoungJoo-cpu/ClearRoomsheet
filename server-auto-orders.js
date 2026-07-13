@@ -1,0 +1,172 @@
+"use strict";
+
+const ROBOT_NAME = "도우미 로봇";
+const MSG_RPA_CHECK = "프론트 근무자분들 정비 RPA 확인해주세요";
+const MSG_RPA_RUN = "프론트 근무자분들 정비 RPA 실행해주세요";
+const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
+const STALE_XML_MINUTES = 20;
+const QUIET_START_MIN = 1 * 60 + 30;
+const QUIET_END_MIN = 6 * 60 + 30;
+
+function getKstParts(date) {
+  const d = date || new Date();
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = {};
+  fmt.formatToParts(d).forEach(function (p) {
+    parts[p.type] = p.value;
+  });
+  const hour = parseInt(parts.hour, 10);
+  const minute = parseInt(parts.minute, 10);
+  return {
+    dateKey: parts.year + "-" + parts.month + "-" + parts.day,
+    hour: hour,
+    minute: minute,
+    minutesOfDay: hour * 60 + minute,
+  };
+}
+
+function isRpaCheckQuietWindow(kst) {
+  return kst.minutesOfDay >= QUIET_START_MIN && kst.minutesOfDay < QUIET_END_MIN;
+}
+
+function minutesSinceIso(iso) {
+  if (!iso) return Infinity;
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return Infinity;
+  return (Date.now() - t) / 60000;
+}
+
+function getRoomingUploadIso(payload) {
+  if (!payload) return null;
+  if (payload.roomingUploadedAt) return String(payload.roomingUploadedAt);
+  if (payload.updatedAt && Array.isArray(payload.vacRows) && payload.vacRows.length) {
+    return String(payload.updatedAt);
+  }
+  return null;
+}
+
+function createRobotOrder(kind, memo) {
+  return {
+    id: "ord-auto-" + Date.now() + "-" + Math.floor(Math.random() * 1e9),
+    room: "",
+    memo: memo,
+    memoImage: "",
+    foStatus: "",
+    phase: "alert",
+    urgent: false,
+    fromMaint: false,
+    autoRobot: true,
+    acceptAny: true,
+    autoOrderKind: kind,
+    category: "",
+    sourceReqId: "",
+    at: new Date().toISOString(),
+    by: ROBOT_NAME,
+  };
+}
+
+function startAutoOrderScheduler(ctx) {
+  const sharedState = ctx.sharedState;
+  const saveSharedStateToDisk = ctx.saveSharedStateToDisk;
+  const getOrderPhase = ctx.getOrderPhase;
+  const findNewOrderAlerts = ctx.findNewOrderAlerts;
+  const sendOrderPushNotifications = ctx.sendOrderPushNotifications;
+
+  function getOrderLog() {
+    return sharedState.payload && Array.isArray(sharedState.payload.hkOrderLog)
+      ? sharedState.payload.hkOrderLog
+      : [];
+  }
+
+  function getAutoOrderState() {
+    if (!sharedState.payload) sharedState.payload = {};
+    if (!sharedState.payload.hkAutoOrderState) {
+      sharedState.payload.hkAutoOrderState = {};
+    }
+    return sharedState.payload.hkAutoOrderState;
+  }
+
+  function hasOpenAutoOrder(kind) {
+    return getOrderLog().some(function (entry) {
+      if (!entry || entry.autoOrderKind !== kind) return false;
+      return getOrderPhase(entry) === "alert";
+    });
+  }
+
+  function appendAutoOrder(kind, memo) {
+    if (!sharedState.payload) sharedState.payload = {};
+    if (hasOpenAutoOrder(kind)) return false;
+
+    const prevLog = getOrderLog().slice();
+    const entry = createRobotOrder(kind, memo);
+    const nextLog = [entry].concat(prevLog);
+    sharedState.payload.hkOrderLog = nextLog;
+    sharedState.version += 1;
+    sharedState.updatedAt = new Date().toISOString();
+    saveSharedStateToDisk();
+
+    const newAlerts = findNewOrderAlerts(prevLog, nextLog);
+    if (newAlerts.length) {
+      sendOrderPushNotifications(newAlerts).catch(function (err) {
+        console.warn(
+          "Auto order push failed:",
+          err && err.message ? err.message : err
+        );
+      });
+    }
+    console.log("Auto order: " + kind + " — " + memo);
+    return true;
+  }
+
+  function tick() {
+    try {
+      const kst = getKstParts(new Date());
+      const st = getAutoOrderState();
+
+      if (kst.hour === 1 && kst.minute === 30 && st.closeSaveDate !== kst.dateKey) {
+        if (appendAutoOrder("close_save", MSG_CLOSE_SAVE)) {
+          st.closeSaveDate = kst.dateKey;
+        }
+      }
+
+      if (kst.hour === 6 && kst.minute === 30 && st.rpaRunDate !== kst.dateKey) {
+        if (appendAutoOrder("rpa_run", MSG_RPA_RUN)) {
+          st.rpaRunDate = kst.dateKey;
+        }
+      }
+
+      if (!isRpaCheckQuietWindow(kst)) {
+        const payload = sharedState.payload || {};
+        const hasRoomingData =
+          (Array.isArray(payload.vacRows) && payload.vacRows.length > 0) ||
+          !!payload.roomingUploadedAt;
+        if (hasRoomingData) {
+          const uploadIso = getRoomingUploadIso(payload);
+          const staleMin = minutesSinceIso(uploadIso);
+          if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
+            appendAutoOrder("rpa_check", MSG_RPA_CHECK);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Auto order scheduler tick failed:", e && e.message ? e.message : e);
+    }
+  }
+
+  setInterval(tick, 60 * 1000);
+  setTimeout(tick, 8000);
+  console.log("Auto order scheduler started (KST)");
+}
+
+module.exports = {
+  startAutoOrderScheduler: startAutoOrderScheduler,
+  ROBOT_NAME: ROBOT_NAME,
+};
