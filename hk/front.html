@@ -2152,6 +2152,19 @@
       line-height: 1.35;
     }
 
+    .zone-room-manage-panel .add-stack textarea.af-memo2 {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8125rem;
+      box-sizing: border-box;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
     .zone-room-manage-panel .rc-num-pair {
       display: flex;
       flex-direction: column;
@@ -3957,29 +3970,58 @@
 
     .zone-cancelled-rooms {
       margin-top: 10px;
-      padding-top: 6px;
+      padding-top: 8px;
       border-top: 1px dashed #e2e8f0;
     }
 
-    .zone-cancelled-rooms__label {
-      font-size: 0.5625rem;
+    .zone-updates {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .zone-updates__line {
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: #64748b;
+      padding: 4px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .zone-updates__line:last-child {
+      border-bottom: none;
+    }
+
+    .zone-updates__line strong {
+      color: #334155;
       font-weight: 700;
-      color: #94a3b8;
+    }
+
+    .zone-cancelled-rooms__label {
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: #64748b;
       letter-spacing: 0.02em;
-      margin-bottom: 3px;
+      margin-bottom: 6px;
+      margin-top: 4px;
     }
 
     .zone-cancelled-rooms__list {
       display: flex;
       flex-wrap: wrap;
-      gap: 3px 8px;
-      font-size: 0.5625rem;
-      line-height: 1.2;
-      color: #94a3b8;
+      gap: 8px 12px;
+      font-size: 0.875rem;
+      line-height: 1.35;
+      color: #64748b;
     }
 
     .zone-cancelled-rooms__item {
       white-space: nowrap;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
     }
 
     .room-card__actions {
@@ -7258,6 +7300,9 @@
               <h3 class="zone-tray__title">입실</h3>
               <ul class="room-list-main zone-tray__list" id="zoneTrayInList"></ul>
             </section>
+            <section class="zone-updates" id="zoneUpdatesSection" hidden aria-label="구역 변경 내역">
+              <div class="zone-updates__list" id="zoneUpdatesList"></div>
+            </section>
             <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="취소객실">
               <div class="zone-cancelled-rooms__label">취소객실</div>
               <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
@@ -9926,6 +9971,20 @@
           stack.appendChild(numInput);
         }
 
+        var memo1Input = document.createElement("input");
+        memo1Input.type = "text";
+        memo1Input.className = "af-memo1";
+        memo1Input.placeholder = "FD 메모 (선택)";
+        memo1Input.autocomplete = "off";
+        stack.appendChild(memo1Input);
+
+        var memo2Input = document.createElement("textarea");
+        memo2Input.className = "af-memo2";
+        memo2Input.rows = 2;
+        memo2Input.placeholder = "정비 메모 (선택)";
+        memo2Input.autocomplete = "off";
+        stack.appendChild(memo2Input);
+
         var addBtn = document.createElement("button");
         addBtn.type = "button";
         addBtn.className = "btn-add";
@@ -10052,8 +10111,12 @@
             (dataBulk.rooms[zone] || []).forEach(function (r) {
               existingNums[r.number || ""] = true;
             });
-            var memo1Bulk = "";
-            var memo2Bulk = "";
+            var memo1Bulk =
+              (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value.trim()) ||
+              "";
+            var memo2Bulk =
+              (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value.trim()) ||
+              "";
             var toAdd = [];
             var skipped = [];
             numbers.forEach(function (n) {
@@ -10111,8 +10174,12 @@
             showHkActionToast("이미 등록된 객실번호입니다.");
             return;
           }
-          var memo1 = "";
-          var memo2 = "";
+          var memo1 =
+            (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value.trim()) ||
+            "";
+          var memo2 =
+            (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value.trim()) ||
+            "";
           var newRow = {
             number: num,
             status: lookupRoomStatusFromXml(num),
@@ -10177,13 +10244,28 @@
         if (!zone) return;
         var data = HKStorage.load();
         var seen = {};
+        var prefix = String(zone) + ":";
+        function dismissNum(num) {
+          var n = String(num == null ? "" : num).trim();
+          if (!n || seen[n]) return;
+          seen[n] = true;
+          dismissRoomFlash(zone, n);
+        }
         (data.rooms[zone] || []).forEach(function (r) {
-          if (!r || !r.number) return;
-          var num = String(r.number);
-          if (seen[num]) return;
-          seen[num] = true;
-          dismissRoomFlash(zone, num);
+          if (r && r.number) dismissNum(r.number);
         });
+        var deletedList =
+          data.deletedRooms && Array.isArray(data.deletedRooms[zone])
+            ? data.deletedRooms[zone]
+            : [];
+        deletedList.forEach(dismissNum);
+        Object.keys(pendingRoomAlerts).forEach(function (key) {
+          if (key.indexOf(prefix) !== 0) return;
+          var roomPart = key.slice(prefix.length);
+          if (roomPart) dismissNum(roomPart);
+        });
+        delete pendingZoneAlerts[zone];
+        applyZoneAlertUi();
       }
 
       function handleZoneTabClick(tab) {
@@ -10191,6 +10273,7 @@
         var z = tab.getAttribute("data-zone");
         if (tab.classList.contains("is-change-alert")) {
           dismissAllRoomAlertsInZone(z);
+          if (getActiveZone() === z) renderRoomsForZone(z, { force: true });
         }
         var wasActive = tab.classList.contains("active");
         var block = document.getElementById("zoneBlock");
@@ -10288,9 +10371,18 @@
       function refreshZoneAlertFromRooms(zone) {
         if (!zone) return;
         var data = HKStorage.load();
-        var hasPending = (data.rooms[zone] || []).some(function (r) {
-          return isRoomChangePending(zone, r.number);
+        var hasPending = false;
+        function checkRoom(num) {
+          if (isRoomChangePending(zone, num)) hasPending = true;
+        }
+        (data.rooms[zone] || []).forEach(function (r) {
+          if (r && r.number) checkRoom(r.number);
         });
+        var deletedList =
+          data.deletedRooms && Array.isArray(data.deletedRooms[zone])
+            ? data.deletedRooms[zone]
+            : [];
+        deletedList.forEach(checkRoom);
         if (hasPending) pendingZoneAlerts[zone] = true;
         else delete pendingZoneAlerts[zone];
       }
@@ -11321,6 +11413,7 @@
         var empty = document.getElementById("roomListEmpty");
         var trayIn = document.getElementById("zoneTrayIn");
         var cancelled = document.getElementById("zoneCancelledRooms");
+        var updates = document.getElementById("zoneUpdatesSection");
         var memo = document.getElementById("zoneVipMemoBoard");
         var btn = document.getElementById("btnZoneRoomBoardView");
         if (btn) {
@@ -11332,6 +11425,7 @@
         if (empty) empty.hidden = zoneRoomBoardOpen || empty.hidden;
         if (trayIn) trayIn.hidden = zoneRoomBoardOpen || trayIn.hidden;
         if (cancelled) cancelled.hidden = zoneRoomBoardOpen || cancelled.hidden;
+        if (updates) updates.hidden = zoneRoomBoardOpen || updates.hidden;
         if (memo) memo.hidden = zoneRoomBoardOpen || memo.hidden;
         if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
@@ -17159,6 +17253,72 @@
         }
       }
 
+      function formatZoneChangeFeedLine(entry) {
+        if (!entry) return "";
+        var room = formatRoomNoDisplay(entry.room || "");
+        var kind = formatRoomChangeKindLabel(entry.kind);
+        var parts = ['<strong>' + room + "</strong>", kind];
+        var changes = Array.isArray(entry.changes) ? entry.changes : [];
+        if (changes.length) {
+          var hint = String(changes[0]);
+          if (changes.length > 1) hint += " …";
+          parts.push(hint);
+        }
+        var time = formatReqAt(entry.at);
+        if (time) parts.push(time);
+        var by = entry.by != null ? String(entry.by).trim() : "";
+        if (by && by !== "관리자") parts.push(by);
+        return parts.join(" · ");
+      }
+
+      function renderZoneChangeFeed(zone) {
+        var section = document.getElementById("zoneUpdatesSection");
+        var listEl = document.getElementById("zoneUpdatesList");
+        if (!section || !listEl) return;
+        listEl.innerHTML = "";
+        if (!zone) {
+          section.hidden = true;
+          return;
+        }
+        var entries = getRoomChangeLogEntries()
+          .filter(function (entry) {
+            return entry && entry.zone === zone && !isInitialRoomAddEntry(entry);
+          })
+          .sort(function (a, b) {
+            var ta = new Date(a.at || 0).getTime();
+            var tb = new Date(b.at || 0).getTime();
+            if (isNaN(ta)) ta = 0;
+            if (isNaN(tb)) tb = 0;
+            return tb - ta;
+          })
+          .slice(0, 20);
+        if (!entries.length) {
+          section.hidden = true;
+          return;
+        }
+        section.hidden = false;
+        entries.forEach(function (entry) {
+          var line = document.createElement("div");
+          line.className = "zone-updates__line";
+          var room = formatRoomNoDisplay(entry.room || "");
+          var kind = formatRoomChangeKindLabel(entry.kind);
+          var text = room + " · " + kind;
+          var changes = Array.isArray(entry.changes) ? entry.changes : [];
+          if (changes.length) {
+            text += " · " + String(changes[0]) + (changes.length > 1 ? " …" : "");
+          }
+          var time = formatReqAt(entry.at);
+          if (time) text += " · " + time;
+          var by = entry.by != null ? String(entry.by).trim() : "";
+          if (by && by !== "관리자") text += " · " + by;
+          var strong = document.createElement("strong");
+          strong.textContent = room;
+          line.appendChild(strong);
+          line.appendChild(document.createTextNode(text.slice(room.length)));
+          listEl.appendChild(line);
+        });
+      }
+
       function renderZoneCancelledRooms(zone) {
         var section = document.getElementById("zoneCancelledRooms");
         var listEl = document.getElementById("zoneCancelledRoomsList");
@@ -17217,6 +17377,7 @@
           }
         });
         trayIn.hidden = inCount === 0;
+        renderZoneChangeFeed(zone);
         renderZoneCancelledRooms(zone);
       }
 
