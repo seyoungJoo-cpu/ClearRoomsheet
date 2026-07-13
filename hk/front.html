@@ -6845,6 +6845,15 @@
           >
             채팅
           </button>
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnFront"
+            aria-pressed="false"
+            hidden
+          >
+            프론트 채팅
+          </button>
         </div>
       </nav>
       <nav class="sidebar-section sidebar-section--primary" aria-label="House Keeping 메뉴">
@@ -6948,14 +6957,6 @@
       <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
         <div class="sidebar-title">프론트</div>
         <div class="sidebar-nav">
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnFront"
-            aria-pressed="false"
-          >
-            프론트
-          </button>
           <button
             type="button"
             class="sidebar-nav__btn sidebar-nav__btn--multiline"
@@ -9380,6 +9381,8 @@
         }
         if (changed.indexOf("hkCloseDayAt") >= 0) {
           handleCloseDayFromSync(payload);
+          syncFrontChatFromServer();
+          renderFrontChatPanel({ force: true });
           refreshMain({ detectNoticeChange: true });
           if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.render) {
             HKInvenNotify.render(true);
@@ -9712,6 +9715,9 @@
 
       function handleCloseDayFromSync(payload) {
         if (!payload || !payload.hkCloseDayAt) return;
+        syncFrontChatFromServer();
+        renderFrontChatPanel({ force: true });
+        initFrontChatTracking();
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
         }
@@ -11422,8 +11428,14 @@
 
       function syncTeamChatSidebarUi() {
         var section = document.getElementById("sidebarChatSection");
-        if (section) section.hidden = !canUseTeamChat();
+        var frontChatNav = document.getElementById("sidebarBtnFront");
+        var showSection = canUseTeamChat();
+        if (section) section.hidden = !showSection;
+        if (frontChatNav) frontChatNav.hidden = !frontMode;
         if (!canUseTeamChat() && sidebarMainView === "chat") {
+          showSidebarRequestView();
+        }
+        if (!frontMode && sidebarMainView === "front") {
           showSidebarRequestView();
         }
       }
@@ -14301,8 +14313,12 @@
 
       function applyFrontChatSidebarAlertUi() {
         var chatNav = document.getElementById("sidebarBtnChat");
+        var frontChatNav = document.getElementById("sidebarBtnFront");
         if (chatNav) {
           chatNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
+        }
+        if (frontChatNav) {
+          frontChatNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
         }
         syncPanelAckButtons();
       }

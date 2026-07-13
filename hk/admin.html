@@ -2893,7 +2893,10 @@
 
       function runCloseDayExport() {
         var snapshot = collectCloseDaySnapshot();
-        var preservedFrontChat = (snapshot.frontChat || []).slice();
+        var preservedFrontChat =
+          typeof HKSync !== "undefined" && HKSync.getFrontChat
+            ? HKSync.getFrontChat().slice()
+            : (snapshot.frontChat || []).slice();
         var preservedAdminInquiries =
           typeof HKSync !== "undefined" && HKSync.getAdminInquiries
             ? HKSync.getAdminInquiries().slice()
@@ -2924,7 +2927,7 @@
               HKInvenNotify.resetOnCloseDay();
             }
             refresh();
-            toast("마감 완료 · HTML·엑셀 저장됨 (프론트 채팅·오더 알림·문제발생·시설업무 10일 유지)");
+            toast("마감 완료 · HTML·엑셀 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
           });
           return;
         }
@@ -2940,7 +2943,7 @@
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 프론트 채팅, 변경 이력, 취소/사용, 루밍 XML, 컴플레인·습득·세탁·당일습득물)\n2) 공지·객실·요청·MB 등 초기화\n3) 프론트 채팅·오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 채팅, 변경 이력, 취소/사용, 루밍 XML, 컴플레인·습득·세탁·당일습득물)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
