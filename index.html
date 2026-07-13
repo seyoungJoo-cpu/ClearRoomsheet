@@ -1412,7 +1412,6 @@
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
               <button type="button" class="btn-excel-dl" data-export-view="stay">엑셀</button>
             </div>
-            <div id="stayBlockFilters" class="asn-block-filters" hidden></div>
             <div id="stayBoardMount"></div>
           </div>
         </div>
@@ -2407,10 +2406,6 @@
       var indiBlockShowFit = false;
       /** @type {Record<string,boolean>} */
       var indiBlockSelectedCodes = {};
-      var stayBlockShowAll = true;
-      var stayBlockShowFit = false;
-      /** @type {Record<string,boolean>} */
-      var stayBlockSelectedCodes = {};
 
       function isAsnResvMatch(rec) {
         return !!ASN_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
@@ -2479,15 +2474,6 @@
           indiBlockShowAll,
           indiBlockShowFit,
           indiBlockSelectedCodes
-        );
-      }
-
-      function applyStayBlockFilter(rows) {
-        return applyBlockFilter(
-          rows,
-          stayBlockShowAll,
-          stayBlockShowFit,
-          stayBlockSelectedCodes
         );
       }
 
@@ -2691,16 +2677,6 @@
           indiBlockShowAll,
           indiBlockShowFit,
           indiBlockSelectedCodes
-        );
-      }
-
-      function renderStayBlockFilterBar(rows) {
-        renderBlockFilterBar(
-          "stayBlockFilters",
-          rows,
-          stayBlockShowAll,
-          stayBlockShowFit,
-          stayBlockSelectedCodes
         );
       }
 
@@ -3592,8 +3568,6 @@
           workRows = applyFasnBlockFilter(modeFiltered);
         } else if (mode === "indi") {
           workRows = applyIndiBlockFilter(modeFiltered);
-        } else if (mode === "stay") {
-          workRows = applyStayBlockFilter(modeFiltered);
         } else {
           workRows = modeFiltered;
         }
@@ -3794,9 +3768,6 @@
         } else if (mode === "indi") {
           renderIndiBlockFilterBar(modeFiltered);
           workRows = applyIndiBlockFilter(modeFiltered);
-        } else if (mode === "stay") {
-          renderStayBlockFilterBar(modeFiltered);
-          workRows = applyStayBlockFilter(modeFiltered);
         } else {
           workRows = modeFiltered;
         }
@@ -3889,8 +3860,7 @@
             mode === "vac" ||
             mode === "ovac" ||
             mode === "fasn" ||
-            mode === "indi" ||
-            mode === "stay"
+            mode === "indi"
               ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
               : emptyFiltered;
           mount.appendChild(emptyB);
@@ -4696,50 +4666,6 @@
         });
       }
       wireIndiBlockFilterUI();
-
-      function wireStayBlockFilterUI() {
-        var vs = document.getElementById("viewStay");
-        if (!vs || vs.dataset.stayBlockFilterWired) return;
-        vs.dataset.stayBlockFilterWired = "1";
-        vs.addEventListener(
-          "blur",
-          function (e) {
-            var t = e.target;
-            if (!t.classList || !t.classList.contains("block-alias-input")) return;
-            persistAliasFromInput(t);
-          },
-          true
-        );
-        vs.addEventListener("change", function (e) {
-          var t = e.target;
-          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
-          var kind = t.getAttribute("data-asn-kind");
-          if (kind === "all") {
-            stayBlockShowAll = !!t.checked;
-            if (stayBlockShowAll) {
-              stayBlockShowFit = false;
-              stayBlockSelectedCodes = {};
-            }
-          } else if (kind === "fit") {
-            stayBlockShowFit = !!t.checked;
-            if (stayBlockShowFit) stayBlockShowAll = false;
-          } else if (kind === "block") {
-            var enc = t.getAttribute("data-block-code") || "";
-            var code = decodeURIComponent(enc);
-            stayBlockSelectedCodes[code] = !!t.checked;
-            if (stayBlockSelectedCodes[code]) stayBlockShowAll = false;
-          }
-          var anyBlock = Object.keys(stayBlockSelectedCodes).some(function (k) {
-            return stayBlockSelectedCodes[k];
-          });
-          if (!stayBlockShowAll && !stayBlockShowFit && !anyBlock) {
-            stayBlockShowAll = true;
-            stayBlockSelectedCodes = {};
-          }
-          refreshBoards();
-        });
-      }
-      wireStayBlockFilterUI();
 
       wireExcelDownloadButtons();
 
