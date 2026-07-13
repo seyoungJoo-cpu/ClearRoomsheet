@@ -492,6 +492,52 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
+function mergeAdminInquiries(prev, incoming) {
+  if (!Array.isArray(incoming)) {
+    return Array.isArray(prev) ? prev.slice() : [];
+  }
+  var map = {};
+  (Array.isArray(prev) ? prev : []).forEach(function (entry) {
+    if (entry && entry.id) map[entry.id] = entry;
+  });
+  incoming.forEach(function (entry) {
+    if (!entry || !entry.id) return;
+    var prevEntry = map[entry.id];
+    if (!prevEntry) {
+      map[entry.id] = entry;
+      return;
+    }
+    var merged = Object.assign({}, prevEntry, entry);
+    var prevReplyAt = prevEntry.replyAt != null ? String(prevEntry.replyAt) : "";
+    var incReplyAt = entry.replyAt != null ? String(entry.replyAt) : "";
+    if (prevReplyAt && incReplyAt && incReplyAt < prevReplyAt) {
+      merged.reply = prevEntry.reply;
+      merged.replyAt = prevEntry.replyAt;
+      merged.replyBy = prevEntry.replyBy;
+      merged.status = prevEntry.status;
+    }
+    var prevAt = prevEntry.at != null ? String(prevEntry.at) : "";
+    var incAt = entry.at != null ? String(entry.at) : "";
+    if (prevAt && incAt && incAt < prevAt) {
+      merged.at = prevEntry.at;
+      merged.by = prevEntry.by;
+      merged.text = prevEntry.text;
+    }
+    map[entry.id] = merged;
+  });
+  return Object.keys(map)
+    .map(function (k) {
+      return map[k];
+    })
+    .sort(function (a, b) {
+      var ta = new Date(a.at || 0).getTime();
+      var tb = new Date(b.at || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      return tb - ta;
+    });
+}
+
 function pickNonEmptyStr(incoming, fallback) {
   const s = incoming != null ? String(incoming).trim() : "";
   if (s) return s;
@@ -614,6 +660,12 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
     out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkAdminInquiries")) {
+    out.hkAdminInquiries = mergeAdminInquiries(
+      prev.hkAdminInquiries,
+      incoming.hkAdminInquiries
+    );
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkCancelLog")) {
     out.hkCancelLog = replaceLogArray(incoming.hkCancelLog);

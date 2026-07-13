@@ -11,6 +11,7 @@
   var MB_INV_LOG_KEY = "lotte-hk-mb-inv-log-v1";
   var MB_CHECK_LOG_KEY = "lotte-hk-mb-check-log-v1";
   var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
+  var ADMIN_INQUIRY_KEY = "lotte-hk-admin-inquiries-v1";
   var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
   var CLOSE_DAY_KEY = "lotte-hk-close-day-at-v1";
   var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
@@ -54,6 +55,7 @@
     hkMbInvLog: false,
     hkMbCheckLog: false,
     hkFrontChat: false,
+    hkAdminInquiries: false,
   };
 
   function markDirty(field) {
@@ -103,6 +105,7 @@
     mbInvLog: [],
     mbCheckLog: [],
     frontChat: [],
+    adminInquiries: [],
   };
 
   /** @type {object | null} */
@@ -381,6 +384,7 @@
     cache.mbInvLog = readJsonArray(MB_INV_LOG_KEY);
     cache.mbCheckLog = readJsonArray(MB_CHECK_LOG_KEY);
     cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
+    cache.adminInquiries = readJsonArray(ADMIN_INQUIRY_KEY);
     loadRoomingXmlFromLocal();
   }
 
@@ -544,6 +548,9 @@
     if (pendingPush.hkFrontChat && dirty.hkFrontChat) {
       body.hkFrontChat = cache.frontChat;
     }
+    if (pendingPush.hkAdminInquiries && dirty.hkAdminInquiries) {
+      body.hkAdminInquiries = cache.adminInquiries;
+    }
     return body;
   }
 
@@ -692,6 +699,12 @@
       changed.push("hkFrontChat");
       clearDirty("hkFrontChat");
     }
+    if (Array.isArray(payload.hkAdminInquiries)) {
+      cache.adminInquiries = payload.hkAdminInquiries.slice();
+      writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+      changed.push("hkAdminInquiries");
+      clearDirty("hkAdminInquiries");
+    }
     if (Object.prototype.hasOwnProperty.call(payload, "hkLastRoomChange")) {
       changed.push("hkLastRoomChange");
     }
@@ -714,6 +727,7 @@
       "hkMbInvLog",
       "hkMbCheckLog",
       "hkFrontChat",
+      "hkAdminInquiries",
       "hkCancelLog",
       "hkUseLog",
     ];
@@ -730,6 +744,7 @@
           hkMbInvLog: cache.mbInvLog.slice(),
           hkMbCheckLog: cache.mbCheckLog.slice(),
           hkFrontChat: cache.frontChat.slice(),
+          hkAdminInquiries: cache.adminInquiries.slice(),
           hkCancelLog: cache.cancelLog.slice(),
           hkUseLog: cache.useLog.slice(),
         },
@@ -919,6 +934,41 @@
       markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
     },
+    getAdminInquiries: function () {
+      return cache.adminInquiries;
+    },
+    appendAdminInquiry: function (entry) {
+      if (!entry || typeof entry !== "object") return;
+      cache.adminInquiries.unshift(entry);
+      if (cache.adminInquiries.length > 200) {
+        cache.adminInquiries.length = 200;
+      }
+      writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+      markDirty("hkAdminInquiries");
+      schedulePush({ hkAdminInquiries: true });
+    },
+    updateAdminInquiry: function (id, patch) {
+      if (!id || !patch || typeof patch !== "object") return false;
+      var found = false;
+      for (var i = 0; i < cache.adminInquiries.length; i++) {
+        if (cache.adminInquiries[i] && cache.adminInquiries[i].id === id) {
+          cache.adminInquiries[i] = Object.assign({}, cache.adminInquiries[i], patch);
+          found = true;
+          break;
+        }
+      }
+      if (!found) return false;
+      writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+      markDirty("hkAdminInquiries");
+      schedulePush({ hkAdminInquiries: true });
+      return true;
+    },
+    setAdminInquiries: function (entries) {
+      cache.adminInquiries = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+      markDirty("hkAdminInquiries");
+      schedulePush({ hkAdminInquiries: true });
+    },
     pushSnapshot: function (payload) {
       if (!payload || typeof payload !== "object") return Promise.resolve(false);
       if (!payload.hkCloseDayAt) {
@@ -960,6 +1010,10 @@
       if (Array.isArray(payload.hkFrontChat)) {
         cache.frontChat = payload.hkFrontChat.slice();
         writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      }
+      if (Array.isArray(payload.hkAdminInquiries)) {
+        cache.adminInquiries = payload.hkAdminInquiries.slice();
+        writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
       }
       applyCloseDayMarker(payload);
       clearAllDirty();

@@ -2894,6 +2894,10 @@
       function runCloseDayExport() {
         var snapshot = collectCloseDaySnapshot();
         var preservedFrontChat = (snapshot.frontChat || []).slice();
+        var preservedAdminInquiries =
+          typeof HKSync !== "undefined" && HKSync.getAdminInquiries
+            ? HKSync.getAdminInquiries().slice()
+            : [];
         var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
         var preservedFacility =
           typeof HKFacilityLogs !== "undefined"
@@ -2910,6 +2914,7 @@
             hkMbInvLog: [],
             hkMbCheckLog: [],
             hkFrontChat: preservedFrontChat,
+            hkAdminInquiries: preservedAdminInquiries,
             hkCancelLog: [],
             hkUseLog: [],
             hkChangeLog: [],
