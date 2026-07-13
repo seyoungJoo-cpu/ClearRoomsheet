@@ -217,6 +217,23 @@
     button.btn-make:hover { filter: brightness(1.08); }
     button.btn-make:active { transform: translateY(1px); }
 
+    button.btn-excel-dl {
+      font: inherit;
+      flex-shrink: 0;
+      padding: 0.32rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid #86efac;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.btn-excel-dl:hover {
+      background: #d1fae5;
+    }
+
     .board-layout {
       display: flex;
       flex-direction: row;
@@ -563,13 +580,29 @@
       background: #d9f5d9;
       color: #14532d;
     }
+    .summary-chip.indi-in .tag {
+      background: #bfdbfe;
+      color: #1e3a8a;
+    }
+    .summary-chip.indi-out .tag {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    .summary-chip.indi-out-in .tag {
+      background: #fde68a;
+      color: #92400e;
+    }
+    .summary-chip.indi-out-a .tag {
+      background: #fbcfe8;
+      color: #9d174d;
+    }
+    .summary-chip.indi-out-sched .tag {
+      background: #fed7aa;
+      color: #9a3412;
+    }
     .summary-chip.indi-s .tag {
       background: #bae6fd;
       color: #0c4a6e;
-    }
-    .summary-chip.indi-o .tag {
-      background: #fee2e2;
-      color: #991b1b;
     }
     .summary-chip.indi-n .tag {
       background: #fef9c3;
@@ -736,6 +769,21 @@
       border-right: 1px solid #e5e7eb;
       font-weight: 600;
     }
+    .pair-row .cell.room-num {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      line-height: 1.1;
+    }
+    .room-num__indi {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #4b5563;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
     .pair-row .cell:last-child {
       border-right: none;
     }
@@ -781,6 +829,14 @@
       padding: 4px 6px;
       text-align: center;
       border-right: 1px solid #e5e7eb;
+    }
+    .villa-list-row .cell.room-num {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      line-height: 1.1;
     }
     .villa-list-row .cell:last-child {
       border-right: none;
@@ -1241,7 +1297,7 @@
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
-          <button type="button" class="sidebar-btn" data-view="indi" title="INDI — 예약구분 A·S·O·N">INDI</button>
+          <button type="button" class="sidebar-btn" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
           <button type="button" class="sidebar-btn" data-view="stay" title="STAY — Stayover만">STAY</button>
         </aside>
         <div class="board-main">
@@ -1249,6 +1305,7 @@
             <div class="summary-toolbar">
               <div id="statusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="499">엑셀</button>
             </div>
             <div id="boardMount"></div>
           </div>
@@ -1259,6 +1316,7 @@
               <label class="out-toggle" title="VAC 목록 중 FO IN(투숙·OCC) 객실 연한 파란색 강조">
                 <input type="checkbox" class="chk-vac-fo-in" /> IN
               </label>
+              <button type="button" class="btn-excel-dl" data-export-view="vac">엑셀</button>
             </div>
             <div id="vacBlockFilters" class="asn-block-filters" hidden></div>
             <div id="vacBoardMount"></div>
@@ -1267,6 +1325,7 @@
             <div class="summary-toolbar">
               <div id="asnStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="asn">엑셀</button>
             </div>
             <div id="asnBlockFilters" class="asn-block-filters" hidden></div>
             <div id="asnBoardMount"></div>
@@ -1275,6 +1334,7 @@
             <div class="summary-toolbar">
               <div id="oVacStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="ovac">엑셀</button>
             </div>
             <p class="fasn-upload-note" style="margin-top:0">FO IN(투숙·OCC) 객실은 표시하지 않습니다.</p>
             <div id="oVacBlockFilters" class="asn-block-filters" hidden></div>
@@ -1284,6 +1344,7 @@
             <div class="summary-toolbar">
               <div id="oAsnStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="oasn">엑셀</button>
             </div>
             <p class="fasn-upload-note" style="margin-top:0">FO IN(투숙·OCC) 객실은 표시하지 않습니다.</p>
             <div id="oAsnBlockFilters" class="asn-block-filters" hidden></div>
@@ -1318,16 +1379,21 @@
             </p>
             <div class="summary-toolbar">
               <div id="fAsnFoSummaryBar" class="status-summary-bar"></div>
+              <button type="button" class="btn-excel-dl" data-export-view="fasn">엑셀</button>
             </div>
             <div id="fAsnBlockFilters" class="asn-block-filters" hidden></div>
             <div id="fAsnBoardMount"></div>
           </div>
           <div id="viewIndi" class="view-panel" hidden>
             <p class="indi-legend">
-              <strong>A</strong> — Arrival (입실예정) &nbsp;|&nbsp;
-              <strong>S</strong> — Stayover · 재실 (투숙 중) &nbsp;|&nbsp;
-              <strong>O</strong> — Due Out · Departed (체크아웃/퇴실) &nbsp;|&nbsp;
-              <strong>N</strong> — Not Reserved (공실)
+              <strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp;
+              <strong>IN</strong> Arrived &nbsp;|&nbsp;
+              <strong>A</strong> Arrival &nbsp;|&nbsp;
+              <strong>OUT</strong> Departed &nbsp;|&nbsp;
+              <strong>(Out,A)</strong> Departed, Arrival &nbsp;|&nbsp;
+              <strong>OUT예정</strong> Due Out &nbsp;|&nbsp;
+              <strong>N</strong> Not Reserved &nbsp;|&nbsp;
+              <strong>S</strong> Stayover
             </p>
             <div class="summary-toolbar">
               <div id="indiCategorySummaryBar" class="status-summary-bar"></div>
@@ -1335,14 +1401,18 @@
             <div class="summary-toolbar">
               <div id="indiStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="indi">엑셀</button>
             </div>
+            <div id="indiBlockFilters" class="asn-block-filters" hidden></div>
             <div id="indiBoardMount"></div>
           </div>
           <div id="viewStay" class="view-panel" hidden>
             <div class="summary-toolbar">
               <div id="stayStatusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="stay">엑셀</button>
             </div>
+            <div id="stayBlockFilters" class="asn-block-filters" hidden></div>
             <div id="stayBoardMount"></div>
           </div>
         </div>
@@ -2160,25 +2230,57 @@
         return normalizeResvStatus(rec && rec.resvStatus) === "Stayover";
       }
 
-      /** INDI 탭 — RESV_STATUS → A·S·O·N */
-      var INDI_CATEGORY_CODES = ["A", "S", "O", "N"];
-      var indiCategoryFilters = { A: true, S: true, O: true, N: true };
+      /** INDI 탭 — RESV_STATUS 세분 구분 */
       var INDI_CATEGORY_CHIPS = [
-        { code: "A", cls: "indi-a", title: "Arrival (입실예정)" },
-        { code: "S", cls: "indi-s", title: "Stayover · 재실 (투숙 중)" },
-        { code: "O", cls: "indi-o", title: "Due Out · Departed (체크아웃/퇴실)" },
-        { code: "N", cls: "indi-n", title: "Not Reserved (공실)" },
+        { code: "OUT_IN", label: "(Out,IN)", cls: "indi-out-in", title: "Arrived, Departed" },
+        { code: "IN", label: "IN", cls: "indi-in", title: "Arrived" },
+        { code: "A", label: "A", cls: "indi-a", title: "Arrival" },
+        { code: "OUT", label: "OUT", cls: "indi-out", title: "Departed" },
+        {
+          code: "OUT_A",
+          label: "(Out,A)",
+          cls: "indi-out-a",
+          title: "Departed, Arrival · Due Out, Arrival",
+        },
+        { code: "OUT_SCHED", label: "OUT예정", cls: "indi-out-sched", title: "Due Out" },
+        { code: "N", label: "N", cls: "indi-n", title: "Not Reserved" },
+        { code: "S", label: "S", cls: "indi-s", title: "Stayover" },
       ];
+      var INDI_CATEGORY_CODES = INDI_CATEGORY_CHIPS.map(function (item) {
+        return item.code;
+      });
+      var indiCategoryFilters = {};
+      INDI_CATEGORY_CODES.forEach(function (code) {
+        indiCategoryFilters[code] = true;
+      });
+
+      function indiCategoryChipByCode(code) {
+        for (var i = 0; i < INDI_CATEGORY_CHIPS.length; i++) {
+          if (INDI_CATEGORY_CHIPS[i].code === code) return INDI_CATEGORY_CHIPS[i];
+        }
+        return null;
+      }
+
+      function indiCategoryLabelForCode(code) {
+        var chip = indiCategoryChipByCode(code);
+        return chip ? chip.label : code || "";
+      }
+
+      function indiCategoryLabelForRec(rec) {
+        return indiCategoryLabelForCode(indiCategoryForRec(rec));
+      }
 
       function indiCategoryForRec(rec) {
         var rs = normalizeResvStatus(rec && rec.resvStatus);
         if (!rs) return "N";
         if (rs === "Stayover") return "S";
         if (rs === "Not Reserved") return "N";
-        if (rs === "Due Out" || rs === "Departed" || rs === "Arrived, Departed") return "O";
-        if (rs.indexOf("Departed") >= 0 && rs.indexOf("Arrival") < 0) return "O";
-        if (rs === "Arrival" || rs === "Arrived") return "A";
-        if (rs.indexOf("Arrival") >= 0) return "A";
+        if (rs === "Arrived, Departed") return "OUT_IN";
+        if (rs === "Arrived") return "IN";
+        if (rs === "Arrival") return "A";
+        if (rs === "Departed") return "OUT";
+        if (rs === "Departed, Arrival" || rs === "Due Out, Arrival") return "OUT_A";
+        if (rs === "Due Out") return "OUT_SCHED";
         return "N";
       }
 
@@ -2205,7 +2307,10 @@
       }
 
       function summarizeIndiCategories(rows) {
-        var c = { A: 0, S: 0, O: 0, N: 0 };
+        var c = {};
+        INDI_CATEGORY_CODES.forEach(function (code) {
+          c[code] = 0;
+        });
         (rows || []).forEach(function (r) {
           var cat = indiCategoryForRec(r);
           if (Object.prototype.hasOwnProperty.call(c, cat)) c[cat]++;
@@ -2232,7 +2337,7 @@
           chip.appendChild(cb);
           var tag = document.createElement("span");
           tag.className = "tag";
-          tag.textContent = item.code;
+          tag.textContent = item.label || item.code;
           var num = document.createElement("span");
           num.className = "num";
           num.textContent = String((counts && counts[item.code]) || 0);
@@ -2298,6 +2403,14 @@
       var fasnBlockShowFit = false;
       /** @type {Record<string,boolean>} */
       var fasnBlockSelectedCodes = {};
+      var indiBlockShowAll = true;
+      var indiBlockShowFit = false;
+      /** @type {Record<string,boolean>} */
+      var indiBlockSelectedCodes = {};
+      var stayBlockShowAll = true;
+      var stayBlockShowFit = false;
+      /** @type {Record<string,boolean>} */
+      var stayBlockSelectedCodes = {};
 
       function isAsnResvMatch(rec) {
         return !!ASN_RESV_WHITELIST[normalizeResvStatus(rec.resvStatus)];
@@ -2357,6 +2470,24 @@
           fasnBlockShowAll,
           fasnBlockShowFit,
           fasnBlockSelectedCodes
+        );
+      }
+
+      function applyIndiBlockFilter(rows) {
+        return applyBlockFilter(
+          rows,
+          indiBlockShowAll,
+          indiBlockShowFit,
+          indiBlockSelectedCodes
+        );
+      }
+
+      function applyStayBlockFilter(rows) {
+        return applyBlockFilter(
+          rows,
+          stayBlockShowAll,
+          stayBlockShowFit,
+          stayBlockSelectedCodes
         );
       }
 
@@ -2550,6 +2681,26 @@
           fasnBlockShowFit,
           fasnBlockSelectedCodes,
           fasnAllStatusBlockMap
+        );
+      }
+
+      function renderIndiBlockFilterBar(rows) {
+        renderBlockFilterBar(
+          "indiBlockFilters",
+          rows,
+          indiBlockShowAll,
+          indiBlockShowFit,
+          indiBlockSelectedCodes
+        );
+      }
+
+      function renderStayBlockFilterBar(rows) {
+        renderBlockFilterBar(
+          "stayBlockFilters",
+          rows,
+          stayBlockShowAll,
+          stayBlockShowFit,
+          stayBlockSelectedCodes
         );
       }
 
@@ -3275,6 +3426,20 @@
         el.appendChild(totChip);
       }
 
+      function fillRoomNumCell(cell, it, rf, boardMode) {
+        cell.innerHTML = "";
+        cell.className = "cell room-num";
+        var mainLine = document.createElement("div");
+        mainLine.textContent = rf(normalizeRoomDigits(it.room));
+        cell.appendChild(mainLine);
+        if (boardMode === "indi" && it) {
+          var indiEl = document.createElement("div");
+          indiEl.className = "room-num__indi";
+          indiEl.textContent = indiCategoryLabelForRec(it);
+          cell.appendChild(indiEl);
+        }
+      }
+
       function renderFloorColumn(headLabel, items, roomFormatter, boardMode) {
         boardMode = boardMode || "499";
         var rf =
@@ -3302,8 +3467,7 @@
               vacFoInHighlightClass(it, boardMode) +
               extendedStayStrikeClass(it.room, boardMode);
             var c1 = document.createElement("div");
-            c1.className = "cell room-num";
-            c1.textContent = rf(normalizeRoomDigits(it.room));
+            fillRoomNumCell(c1, it, rf, boardMode);
             var c2 = document.createElement("div");
             fillStatusCell(c2, it.status || "", it.blockCode, boardMode);
             row.appendChild(c1);
@@ -3337,8 +3501,14 @@
             vacFoInHighlightClass(it, boardMode) +
             extendedStayStrikeClass(it ? it.room : "", boardMode);
           var c1 = document.createElement("div");
-          c1.className = "cell room-num";
-          c1.textContent = String(v).padStart(3, "0");
+          if (it) {
+            fillRoomNumCell(c1, it, function () {
+              return String(v).padStart(3, "0");
+            }, boardMode);
+          } else {
+            c1.className = "cell room-num";
+            c1.textContent = String(v).padStart(3, "0");
+          }
           var c2 = document.createElement("div");
           fillStatusCell(c2, st || "—", it ? it.blockCode : "", boardMode);
           row.appendChild(c1);
@@ -3378,6 +3548,167 @@
         });
         panel.appendChild(colsWrap);
         return panel;
+      }
+
+      function collectBoardDisplayRows(mode) {
+        mode = mode || "499";
+        var rows;
+        if (mode === "fasn") {
+          if (!hasLocalFasnData()) return [];
+          rows = buildFasnBoardRows();
+        } else {
+          rows = cachedRows;
+        }
+
+        var filterFn = null;
+        if (mode === "vac") {
+          filterFn = isVacResvMatch;
+        } else if (mode === "ovac") {
+          filterFn = function (rec) {
+            return isVacResvMatch(rec) && isNotFoInRoom(rec);
+          };
+        } else if (mode === "asn") {
+          filterFn = isAsnResvMatch;
+        } else if (mode === "oasn") {
+          filterFn = function (rec) {
+            return isAsnResvMatch(rec) && isNotFoInRoom(rec);
+          };
+        } else if (mode === "stay") {
+          filterFn = isStayoverResv;
+        }
+
+        var filtered = rows.filter(function (rec) {
+          return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
+        });
+        var deduped = dedupeByRoomLastWins(filtered);
+        var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
+
+        var workRows;
+        if (mode === "asn" || mode === "oasn") {
+          workRows = applyAsnBlockFilter(modeFiltered);
+        } else if (mode === "vac" || mode === "ovac") {
+          workRows = applyVacBlockFilter(modeFiltered);
+        } else if (mode === "fasn") {
+          workRows = applyFasnBlockFilter(modeFiltered);
+        } else if (mode === "indi") {
+          workRows = applyIndiBlockFilter(modeFiltered);
+        } else if (mode === "stay") {
+          workRows = applyStayBlockFilter(modeFiltered);
+        } else {
+          workRows = modeFiltered;
+        }
+
+        if (mode === "fasn") {
+          return workRows.filter(matchesFoFilter);
+        }
+        if (mode === "indi") {
+          var indiAfterCat = workRows.filter(matchesIndiCategoryFilter);
+          return indiAfterCat.filter(function (rec) {
+            return matchesStatusRoomFilter(rec, mode);
+          });
+        }
+        return workRows.filter(function (rec) {
+          return matchesStatusRoomFilter(rec, mode);
+        });
+      }
+
+      function boardExportViewLabel(mode) {
+        var labels = {
+          "499": "499",
+          vac: "VAC",
+          asn: "ASN",
+          ovac: "O.VAC",
+          oasn: "O.ASN",
+          fasn: "F.ASN",
+          indi: "INDI",
+          stay: "STAY",
+        };
+        return labels[mode] || mode;
+      }
+
+      function downloadBoardExcel(mode) {
+        if (typeof XLSX === "undefined") {
+          alert("엑셀 라이브러리를 불러오지 못했습니다.");
+          return;
+        }
+        var rows = collectBoardDisplayRows(mode);
+        if (!rows.length) {
+          alert("다운로드할 객실 데이터가 없습니다.");
+          return;
+        }
+        rows = rows.slice().sort(function (a, b) {
+          return normalizeRoomDigits(a.room).localeCompare(
+            normalizeRoomDigits(b.room),
+            undefined,
+            { numeric: true }
+          );
+        });
+
+        var header;
+        var body;
+        if (mode === "fasn") {
+          header = ["객실", "FO", "BLOCK_CODE"];
+          body = rows.map(function (r) {
+            return [
+              formatRoomDisplay(normalizeRoomDigits(r.room)),
+              r.status || "",
+              r.blockCode || "",
+            ];
+          });
+        } else if (mode === "indi") {
+          header = ["객실", "INDI", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE"];
+          body = rows.map(function (r) {
+            return [
+              formatRoomDisplay(normalizeRoomDigits(r.room)),
+              indiCategoryLabelForRec(r),
+              r.status || "",
+              r.resvStatus || "",
+              r.blockCode || "",
+            ];
+          });
+        } else {
+          header = ["객실", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE"];
+          body = rows.map(function (r) {
+            return [
+              formatRoomDisplay(normalizeRoomDigits(r.room)),
+              r.status || "",
+              r.resvStatus || "",
+              r.blockCode || "",
+            ];
+          });
+        }
+
+        var ws = XLSX.utils.aoa_to_sheet([header].concat(body));
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(
+          wb,
+          ws,
+          boardExportViewLabel(mode).slice(0, 31)
+        );
+        var now = new Date();
+        var pad2 = function (n) {
+          return String(n).padStart(2, "0");
+        };
+        var fname =
+          "루밍-" +
+          boardExportViewLabel(mode) +
+          "-" +
+          now.getFullYear() +
+          pad2(now.getMonth() + 1) +
+          pad2(now.getDate()) +
+          ".xlsx";
+        XLSX.writeFile(wb, fname);
+      }
+
+      function wireExcelDownloadButtons() {
+        document.querySelectorAll(".btn-excel-dl").forEach(function (btn) {
+          if (btn.dataset.excelWired) return;
+          btn.dataset.excelWired = "1";
+          btn.addEventListener("click", function () {
+            var view = btn.getAttribute("data-export-view") || "499";
+            downloadBoardExcel(view);
+          });
+        });
       }
 
       function renderBoard(rows, mode) {
@@ -3460,6 +3791,12 @@
         } else if (mode === "fasn") {
           renderFasnBlockFilterBar(modeFiltered);
           workRows = applyFasnBlockFilter(modeFiltered);
+        } else if (mode === "indi") {
+          renderIndiBlockFilterBar(modeFiltered);
+          workRows = applyIndiBlockFilter(modeFiltered);
+        } else if (mode === "stay") {
+          renderStayBlockFilterBar(modeFiltered);
+          workRows = applyStayBlockFilter(modeFiltered);
         } else {
           workRows = modeFiltered;
         }
@@ -3551,7 +3888,9 @@
             mode === "oasn" ||
             mode === "vac" ||
             mode === "ovac" ||
-            mode === "fasn"
+            mode === "fasn" ||
+            mode === "indi" ||
+            mode === "stay"
               ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
               : emptyFiltered;
           mount.appendChild(emptyB);
@@ -3637,8 +3976,7 @@
             row.style.minWidth = "72px";
             row.style.margin = "2px";
             var c1 = document.createElement("div");
-            c1.className = "cell room-num";
-            c1.textContent = formatRoomDisplay(normalizeRoomDigits(s.room));
+            fillRoomNumCell(c1, s, formatRoomDisplay, mode);
             var c2 = document.createElement("div");
             fillStatusCell(c2, s.status || "", s.blockCode, mode);
             row.appendChild(c1);
@@ -4314,6 +4652,96 @@
         });
       }
       wireFasnBlockFilterUI();
+
+      function wireIndiBlockFilterUI() {
+        var vi = document.getElementById("viewIndi");
+        if (!vi || vi.dataset.indiBlockFilterWired) return;
+        vi.dataset.indiBlockFilterWired = "1";
+        vi.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        vi.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            indiBlockShowAll = !!t.checked;
+            if (indiBlockShowAll) {
+              indiBlockShowFit = false;
+              indiBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            indiBlockShowFit = !!t.checked;
+            if (indiBlockShowFit) indiBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            indiBlockSelectedCodes[code] = !!t.checked;
+            if (indiBlockSelectedCodes[code]) indiBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(indiBlockSelectedCodes).some(function (k) {
+            return indiBlockSelectedCodes[k];
+          });
+          if (!indiBlockShowAll && !indiBlockShowFit && !anyBlock) {
+            indiBlockShowAll = true;
+            indiBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireIndiBlockFilterUI();
+
+      function wireStayBlockFilterUI() {
+        var vs = document.getElementById("viewStay");
+        if (!vs || vs.dataset.stayBlockFilterWired) return;
+        vs.dataset.stayBlockFilterWired = "1";
+        vs.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t.classList || !t.classList.contains("block-alias-input")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        vs.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            stayBlockShowAll = !!t.checked;
+            if (stayBlockShowAll) {
+              stayBlockShowFit = false;
+              stayBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            stayBlockShowFit = !!t.checked;
+            if (stayBlockShowFit) stayBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            stayBlockSelectedCodes[code] = !!t.checked;
+            if (stayBlockSelectedCodes[code]) stayBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(stayBlockSelectedCodes).some(function (k) {
+            return stayBlockSelectedCodes[k];
+          });
+          if (!stayBlockShowAll && !stayBlockShowFit && !anyBlock) {
+            stayBlockShowAll = true;
+            stayBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+      }
+      wireStayBlockFilterUI();
+
+      wireExcelDownloadButtons();
 
       function loadDefaultXmlFiles() {
         return fetch(DEFAULT_VACROOM_XML)
