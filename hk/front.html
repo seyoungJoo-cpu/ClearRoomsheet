@@ -4814,6 +4814,7 @@
     }
 
     .main.main--front #frontChatPanel,
+    .main.main--chat #frontChatPanel,
     .main.main--front-embed #frontEmbedHubPanel {
       flex: 1;
       min-height: 0;
@@ -6535,6 +6536,18 @@
       <div class="sidebar-brand">
         <h1 class="sidebar-brand__title">House Keeping</h1>
       </div>
+      <nav class="sidebar-section sidebar-section--chat" id="sidebarChatSection" hidden aria-label="채팅">
+        <div class="sidebar-nav">
+          <button
+            type="button"
+            class="sidebar-nav__btn"
+            id="sidebarBtnChat"
+            aria-pressed="false"
+          >
+            채팅
+          </button>
+        </div>
+      </nav>
       <nav class="sidebar-section sidebar-section--primary" aria-label="House Keeping 메뉴">
         <div class="sidebar-nav">
           <button
@@ -6660,10 +6673,10 @@
     <main class="main">
       <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
         <div class="panel-head-row">
-          <h2 id="frontChatPanelTitle">프론트 채팅</h2>
+          <h2 id="frontChatPanelTitle">채팅</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckFrontChatPanel" hidden>확인</button>
         </div>
-        <p class="front-chat-panel__hint">프론트 모드에서만 사용하는 공용 대화방입니다. 메시지는 모든 프론트 화면에 동기화됩니다.</p>
+        <p class="front-chat-panel__hint">정비 입력·프론트 모드에서 사용하는 공용 대화방입니다. 메시지는 모든 화면에 동기화됩니다.</p>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
         <p class="front-chat__empty" id="frontChatEmpty" hidden></p>
         <form class="front-chat__form" id="frontChatForm">
@@ -6673,7 +6686,7 @@
               id="frontChatInput"
               placeholder="메시지 입력"
               autocomplete="off"
-              aria-label="프론트 채팅 메시지"
+              aria-label="채팅 메시지"
             />
             <button type="button" class="hk-photo-btn" id="btnPhotoFrontChat" title="사진 첨부">사진</button>
             <button type="submit" class="front-chat__send">전송</button>
@@ -9005,7 +9018,7 @@
         if (changed.indexOf("hkFrontChat") >= 0) {
           syncFrontChatFromServer();
           detectNewFrontChatMessages();
-          renderFrontChatPanel(sidebarMainView === "front");
+          renderFrontChatPanel(sidebarMainView === "front" || sidebarMainView === "chat");
         }
         if (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) {
           applyXmlRoomStatusPayload(payload);
@@ -11063,7 +11076,20 @@
         });
       }
 
+      function canUseTeamChat() {
+        return maintenanceMode || frontMode;
+      }
+
+      function syncTeamChatSidebarUi() {
+        var section = document.getElementById("sidebarChatSection");
+        if (section) section.hidden = !canUseTeamChat();
+        if (!canUseTeamChat() && sidebarMainView === "chat") {
+          showSidebarRequestView();
+        }
+      }
+
       function updateSidebarPrimaryNavActive() {
+        var chatNav = document.getElementById("sidebarBtnChat");
         var req = document.getElementById("sidebarBtnRequest");
         var ord = document.getElementById("sidebarBtnOrder");
         var mbInvNav = document.getElementById("sidebarBtnMbInv");
@@ -11072,6 +11098,10 @@
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var aiNav = document.getElementById("sidebarBtnAi");
+        if (chatNav) {
+          chatNav.classList.toggle("is-active", sidebarMainView === "chat");
+          chatNav.setAttribute("aria-pressed", sidebarMainView === "chat" ? "true" : "false");
+        }
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
@@ -11149,6 +11179,7 @@
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
         var showInvenNotify = view === "invenNotify";
+        var showChat = view === "chat";
         var showFront = view === "front";
         var showFrontEmbed = view === "frontEmbed";
         var showAi = view === "ai";
@@ -11178,11 +11209,14 @@
         if (mbInvPanel) mbInvPanel.hidden = !showMbInv;
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
-        if (frontChatPanel) frontChatPanel.hidden = !showFront || !frontMode;
+        if (frontChatPanel) {
+          frontChatPanel.hidden =
+            !canUseTeamChat() || (!showChat && !showFront);
+        }
         if (frontEmbedHubPanel) frontEmbedHubPanel.hidden = !showFrontEmbed || !frontMode;
         syncFrontEmbedTabUi();
         if (aiModePanel) aiModePanel.hidden = !showAi;
-        if (!showFront) hkClearPhoto("frontChat");
+        if (!showChat && !showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (mainEl) {
           mainEl.classList.toggle("main--request", showRequest);
@@ -11193,6 +11227,7 @@
           mainEl.classList.toggle("main--mb-inv", showMbInv);
           mainEl.classList.toggle("main--mb-check", showMbCheck);
           mainEl.classList.toggle("main--inven-notify", showInvenNotify);
+          mainEl.classList.toggle("main--chat", showChat);
           mainEl.classList.toggle("main--front", showFront);
           mainEl.classList.toggle("main--front-embed", showFrontEmbed);
           mainEl.classList.toggle("main--ai", showAi);
@@ -11239,11 +11274,15 @@
             if (inp) inp.focus();
           });
         }
-        if (showFront) {
+        if (showFront || showChat) {
           hideFrontChatToast();
           clearFrontChatSidebarAlert();
           requestAnimationFrame(function () {
             renderFrontChatPanel(true);
+            if (showChat) {
+              var inp = document.getElementById("frontChatInput");
+              if (inp) inp.focus();
+            }
           });
         }
       }
@@ -13149,6 +13188,15 @@
         applySidebarMainView("frontEmbed");
       }
 
+      function showSidebarChatView() {
+        if (!canUseTeamChat()) return;
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        hideFrontChatToast();
+        clearFrontChatSidebarAlert();
+        applySidebarMainView("chat");
+      }
+
       function showSidebarFrontView() {
         if (!frontMode) return;
         collapseZoneBlock();
@@ -13912,15 +13960,15 @@
       }
 
       function applyFrontChatSidebarAlertUi() {
-        var frontNav = document.getElementById("sidebarBtnFront");
-        if (frontNav) {
-          frontNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
+        var chatNav = document.getElementById("sidebarBtnChat");
+        if (chatNav) {
+          chatNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
         }
         syncPanelAckButtons();
       }
 
       function registerFrontChatAlert() {
-        if (!frontMode || isViewingFrontChat()) return;
+        if (!canUseTeamChat() || isViewingTeamChat()) return;
         pendingFrontChatAlert = true;
         applyFrontChatSidebarAlertUi();
       }
@@ -16857,6 +16905,7 @@
           btnMaint.setAttribute("aria-pressed", maintenanceMode ? "true" : "false");
         }
         applyFacilityLogSidebarUi();
+        syncTeamChatSidebarUi();
         syncRequestFeedbackLayoutUi();
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
@@ -16884,6 +16933,7 @@
         renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         applyFacilityLogSidebarUi();
+        syncTeamChatSidebarUi();
         if (
           !frontMode &&
           (sidebarMainView === "front" || sidebarMainView === "frontEmbed")
@@ -16894,9 +16944,11 @@
         } else if (sidebarMainView === "frontEmbed") {
           applySidebarMainView("frontEmbed");
         }
-        if (!frontMode) hideFrontChatToast();
-        if (!frontMode) clearFrontChatSidebarAlert();
-        if (frontMode) requestFrontChatNotificationPermission();
+        if (!canUseTeamChat()) {
+          hideFrontChatToast();
+          if (sidebarMainView === "chat") showSidebarRequestView();
+        }
+        if (canUseTeamChat()) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
         if (typeof HKFacilityLogs !== "undefined") {
@@ -17081,10 +17133,15 @@
         mergeAlertAckFromStorage();
       }
 
-      function isViewingFrontChat() {
-        if (!frontMode || sidebarMainView !== "front") return false;
+      function isViewingTeamChat() {
+        if (!canUseTeamChat()) return false;
+        if (sidebarMainView !== "chat" && sidebarMainView !== "front") return false;
         var panel = document.getElementById("frontChatPanel");
         return !!(panel && !panel.hidden);
+      }
+
+      function isViewingFrontChat() {
+        return isViewingTeamChat();
       }
 
       function getFrontChatNotifyPreview(msg) {
@@ -17112,7 +17169,7 @@
         if (Notification.permission !== "granted") return;
         var preview = getFrontChatNotifyPreview(msg);
         try {
-          var n = new Notification("프론트 채팅 · " + preview.by, {
+          var n = new Notification("채팅 · " + preview.by, {
             body: preview.text,
             tag: "hk-front-chat",
             renotify: true,
@@ -17121,7 +17178,7 @@
             window.focus();
             n.close();
             hideFrontChatToast();
-            if (frontMode) showSidebarFrontView();
+            if (canUseTeamChat()) showSidebarChatView();
           };
           setTimeout(function () {
             n.close();
@@ -17130,7 +17187,7 @@
       }
 
       function notifyFrontChatMessage(msg) {
-        if (!frontMode || isViewingFrontChat()) return;
+        if (!canUseTeamChat() || isViewingTeamChat()) return;
         if (document.hidden) {
           showFrontChatDesktopNotification(msg);
         } else {
@@ -17150,7 +17207,7 @@
       }
 
       function showFrontChatToast(msg) {
-        if (!frontMode || isViewingFrontChat()) return;
+        if (!canUseTeamChat() || isViewingTeamChat()) return;
         var preview = getFrontChatNotifyPreview(msg);
         var toast = document.getElementById("frontChatToast");
         var byEl = document.getElementById("frontChatToastBy");
@@ -17167,9 +17224,9 @@
       }
 
       function detectNewFrontChatMessages() {
-        if (!frontMode) return;
+        if (!canUseTeamChat()) return;
         var selfNorm = (getOperatorName() || "").trim().toLowerCase();
-        var notify = !isViewingFrontChat();
+        var notify = !isViewingTeamChat();
         var newest = null;
         frontChatMessages.forEach(function (msg, idx) {
           var mid = getFrontChatMessageId(msg, idx);
@@ -17191,7 +17248,7 @@
       }
 
       function submitFrontChatMessage(text, image) {
-        if (!frontMode) return;
+        if (!canUseTeamChat()) return;
         var msgText = String(text || "").trim();
         var msgImage = image != null ? String(image).trim() : "";
         if (!msgText && !msgImage) return;
@@ -17611,6 +17668,7 @@
       applyFrontChatSidebarAlertUi();
       applyFacilityLogSidebarAlertUi();
       applyInvenNotifySidebarAlertUi();
+      syncTeamChatSidebarUi();
       syncPanelAckButtons();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
@@ -18222,7 +18280,7 @@
       if (frontChatToastEl) {
         frontChatToastEl.addEventListener("click", function () {
           hideFrontChatToast();
-          if (frontMode) showSidebarFrontView();
+          if (canUseTeamChat()) showSidebarChatView();
         });
       }
 
@@ -18279,6 +18337,7 @@
       }
 
       (function setupSidebarNav() {
+        var bChat = document.getElementById("sidebarBtnChat");
         var bReq = document.getElementById("sidebarBtnRequest");
         var bOrd = document.getElementById("sidebarBtnOrder");
         var bMbInv = document.getElementById("sidebarBtnMbInv");
@@ -18287,6 +18346,16 @@
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
         var bAi = document.getElementById("sidebarBtnAi");
+        if (bChat) {
+          bChat.addEventListener("click", function () {
+            if (!canUseTeamChat()) return;
+            if (sidebarMainView === "chat") {
+              if (pendingFrontChatAlert) clearFrontChatSidebarAlert();
+              return;
+            }
+            showSidebarChatView();
+          });
+        }
         if (bReq) {
           bReq.addEventListener("click", function () {
             if (sidebarMainView === "request") {
