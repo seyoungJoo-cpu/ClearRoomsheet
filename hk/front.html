@@ -183,6 +183,10 @@
       display: none !important;
     }
 
+    .hk-confirm.hk-confirm--role-password {
+      z-index: 10120;
+    }
+
     .admin-inquiry-modal__backdrop {
       position: absolute;
       inset: 0;
@@ -7943,9 +7947,6 @@
         <h2 id="adminInquiryModalTitle">관리자 문의</h2>
         <button type="button" class="admin-inquiry-modal__close" id="adminInquiryClose">닫기</button>
       </div>
-      <p class="admin-inquiry-modal__hint">
-        누구나 문의·건의를 등록할 수 있습니다. 답변·삭제는 비밀번호 1104가 필요합니다. Ctrl+Enter로 빠르게 등록할 수 있습니다.
-      </p>
       <div class="admin-inquiry-modal__list-wrap">
         <ul class="admin-inquiry-modal__list" id="adminInquiryList"></ul>
         <p class="admin-inquiry-modal__empty" id="adminInquiryEmpty">등록된 문의가 없습니다.</p>
@@ -8303,7 +8304,9 @@
           }
           return;
         }
-        HKAuth.setAuthed(pendingRoleAuth);
+        if (pendingRoleAuth !== "inquiry") {
+          HKAuth.setAuthed(pendingRoleAuth);
+        }
         var cb = pendingRoleSuccess;
         closeRolePasswordModal();
         if (cb) cb();
@@ -8345,7 +8348,11 @@
       }
 
       function requireRoleAuth(role, onAuthed) {
-        if (typeof HKAuth !== "undefined" && HKAuth.isAuthed(role)) {
+        if (
+          role !== "inquiry" &&
+          typeof HKAuth !== "undefined" &&
+          HKAuth.isAuthed(role)
+        ) {
           onAuthed();
           return;
         }

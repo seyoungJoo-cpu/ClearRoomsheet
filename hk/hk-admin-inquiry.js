@@ -211,7 +211,7 @@
         var replyTa = document.createElement("textarea");
         replyTa.className = "admin-inquiry-card__reply-input";
         replyTa.rows = 2;
-        replyTa.placeholder = "답변 입력 (비밀번호 1104)";
+        replyTa.placeholder = "답변 입력";
         replyTa.setAttribute("aria-label", "관리자 답변");
         var replyBtn = document.createElement("button");
         replyBtn.type = "button";
