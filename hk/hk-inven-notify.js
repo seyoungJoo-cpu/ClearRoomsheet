@@ -1313,7 +1313,7 @@
           JSON.stringify({ dirty: true, state: localDraft })
         );
       } catch (e) {}
-      return;
+      return false;
     }
     if (!draftDirty) {
       state = cloneState(loadInvenNotify());
@@ -1323,9 +1323,11 @@
     state.table.updatedAt =
       meta && meta.updatedAt ? String(meta.updatedAt) : new Date().toISOString();
     markDraftDirty();
+    ensureUi();
     renderTable();
     updateEmpty();
     updateToolbar();
+    return true;
   }
 
   function exportCloseDayRows(invenNotify) {

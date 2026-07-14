@@ -647,10 +647,14 @@
     isApplyingRemote = true;
 
     if (payload.hkStorage && global.HKStorage) {
+      var isCloseDayReplace = payload.hkCloseDayReset === true;
       var isNewCloseDay =
         !!payload.hkCloseDayAt &&
         String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
-      if (isNewCloseDay && typeof global.HKStorage.replaceRemote === "function") {
+      if (
+        (isCloseDayReplace || isNewCloseDay) &&
+        typeof global.HKStorage.replaceRemote === "function"
+      ) {
         global.HKStorage.replaceRemote(payload.hkStorage);
       } else {
         global.HKStorage.applyRemote(payload.hkStorage);
@@ -1000,6 +1004,9 @@
         payload = Object.assign({}, payload, {
           hkCloseDayAt: new Date().toISOString(),
         });
+      }
+      if (payload.hkCloseDayReset !== true) {
+        payload = Object.assign({}, payload, { hkCloseDayReset: true });
       }
       if (payload.hkStorage && global.HKStorage) {
         if (typeof global.HKStorage.replaceRemote === "function") {

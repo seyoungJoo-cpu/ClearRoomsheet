@@ -646,9 +646,9 @@ function mergeSyncPayload(prev, incoming) {
     delete out.roomingClearedAt;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkStorage")) {
-    // 마감(hkCloseDayAt) 시에는 병합하지 않고 저장소 전체를 교체한다.
-    // (특이객실 rooms·deletedRooms 등이 빈 배열로 리셋되어야 함)
-    if (incoming.hkCloseDayAt) {
+    // 마감은 hkCloseDayReset 플래그가 있을 때만 저장소 전체를 교체한다.
+    // (hkCloseDayAt만으로 교체하면 일반 동기화와 충돌할 수 있음)
+    if (incoming.hkCloseDayReset === true) {
       out.hkStorage = incoming.hkStorage && typeof incoming.hkStorage === "object"
         ? incoming.hkStorage
         : {};
@@ -729,9 +729,18 @@ app.get("/health", function (req, res) {
   res.status(200).send("ok");
 });
 
-app.use("/inven", express.static(path.join(__dirname, "inven")));
-app.use("/DD", express.static(path.join(__dirname, "DD")));
-app.use("/chichi", express.static(path.join(__dirname, "chichi")));
+app.use(
+  "/inven",
+  express.static(path.join(__dirname, "inven"), { index: ["index.html", "index.HTML"] })
+);
+app.use(
+  "/DD",
+  express.static(path.join(__dirname, "DD"), { index: ["index.html", "index.HTML"] })
+);
+app.use(
+  "/chichi",
+  express.static(path.join(__dirname, "chichi"), { index: ["index.html", "index.HTML"] })
+);
 app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, "0.0.0.0", function () {

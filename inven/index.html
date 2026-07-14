@@ -353,29 +353,75 @@
 
     let dataframeRows = [];
 
+    function getKstDateParts() {
+      try {
+        const parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Seoul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).formatToParts(new Date());
+        const map = {};
+        parts.forEach(function (p) {
+          if (p.type !== "literal") map[p.type] = p.value;
+        });
+        return {
+          d: Number(map.day),
+          mo: Number(map.month),
+          y: Number(map.year) % 100,
+          yyyy: Number(map.year),
+        };
+      } catch (e) {
+        const n = new Date();
+        return {
+          d: n.getDate(),
+          mo: n.getMonth() + 1,
+          y: n.getFullYear() % 100,
+          yyyy: n.getFullYear(),
+        };
+      }
+    }
+
     function todayTruncArrivalString() {
-      const n = new Date();
-      const dd = String(n.getDate()).padStart(2, "0");
-      const mm = String(n.getMonth() + 1).padStart(2, "0");
-      const yy = String(n.getFullYear() % 100).padStart(2, "0");
-      return `${dd}-${mm}-${yy}`;
+      const k = getKstDateParts();
+      return (
+        String(k.d).padStart(2, "0") +
+        "-" +
+        String(k.mo).padStart(2, "0") +
+        "-" +
+        String(k.y).padStart(2, "0")
+      );
     }
 
     function parseTruncArrival(s) {
-      const m = /^(\d{1,2})-(\d{1,2})-(\d{2})$/.exec((s || "").trim());
-      if (!m) return null;
-      return { d: Number(m[1]), mo: Number(m[2]), y: Number(m[3]) };
+      const raw = String(s || "").trim();
+      if (!raw) return null;
+      // DD-MM-YY / DD-MM-YYYY / DD/MM/YY ...
+      let m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/.exec(raw);
+      if (m) {
+        return {
+          d: Number(m[1]),
+          mo: Number(m[2]),
+          y: Number(m[3]) % 100,
+        };
+      }
+      // YYYY-MM-DD
+      m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(raw);
+      if (m) {
+        return {
+          d: Number(m[3]),
+          mo: Number(m[2]),
+          y: Number(m[1]) % 100,
+        };
+      }
+      return null;
     }
 
     function isTruncArrivalToday(truncRaw) {
       const parsed = parseTruncArrival(truncRaw);
       if (!parsed) return false;
-      const n = new Date();
-      return (
-        parsed.d === n.getDate() &&
-        parsed.mo === n.getMonth() + 1 &&
-        parsed.y === n.getFullYear() % 100
-      );
+      const k = getKstDateParts();
+      return parsed.d === k.d && parsed.mo === k.mo && parsed.y === k.y;
     }
     let selectedInvFile = null;
     let selectedGitFile = null;
@@ -480,10 +526,28 @@
 
     function buildDataFrame(invXmlDoc, traceMap) {
       const rows = [];
+      let totalReports = 0;
+      let skippedBadDate = 0;
+      let skippedNotToday = 0;
+      let sampleDates = [];
       const reports = invXmlDoc.getElementsByTagName("G_REPORT_ID");
       for (const row of reports) {
+        totalReports += 1;
         const truncArrival = text(row, "TRUNC_ARRIVAL");
-        if (!isTruncArrivalToday(truncArrival)) continue;
+        if (!parseTruncArrival(truncArrival)) {
+          skippedBadDate += 1;
+          if (truncArrival && sampleDates.length < 5 && sampleDates.indexOf(truncArrival) < 0) {
+            sampleDates.push(truncArrival);
+          }
+          continue;
+        }
+        if (!isTruncArrivalToday(truncArrival)) {
+          skippedNotToday += 1;
+          if (truncArrival && sampleDates.length < 5 && sampleDates.indexOf(truncArrival) < 0) {
+            sampleDates.push(truncArrival);
+          }
+          continue;
+        }
         const room = text(row, "ROOM");
         if (!room) continue;
         const roomTail = Number.parseInt(room.slice(-2), 10);
@@ -502,6 +566,12 @@
           trace: (traceMap.get(room) || []).join(" | ")
         });
       }
+      rows._parseStats = {
+        totalReports,
+        skippedBadDate,
+        skippedNotToday,
+        sampleDates,
+      };
       return rows;
     }
 
@@ -629,7 +699,12 @@
         {
           type: "HK_INVEN_TABLE",
           rows,
-          meta: { updatedAt: new Date().toISOString(), source: "inven" },
+          meta: {
+            updatedAt: new Date().toISOString(),
+            source: "inven",
+            rowCount: rows.length,
+            openNotify: true,
+          },
         },
         "*"
       );
@@ -649,9 +724,27 @@
         const gitXmlText = await readFileAsText(gitFile);
         const invDoc = parseXml(invXmlText);
         const gitDoc = parseXml(gitXmlText);
+        if (invDoc.querySelector("parsererror")) {
+          throw new Error("Inventory XML 파싱에 실패했습니다.");
+        }
+        if (gitDoc.querySelector("parsererror")) {
+          throw new Error("Gitraces XML 파싱에 실패했습니다.");
+        }
         const traceMap = buildTraceMap(gitDoc);
         dataframeRows = buildDataFrame(invDoc, traceMap);
         renderRows();
+        const stats = dataframeRows._parseStats || {};
+        if (!dataframeRows.length) {
+          const todayStr = todayTruncArrivalString();
+          let tip =
+            `오늘(${todayStr}) TRUNC_ARRIVAL 행이 없습니다. Inventory 건수: ${stats.totalReports || 0}`;
+          if (stats.skippedBadDate) tip += `, 날짜형식 미인식: ${stats.skippedBadDate}`;
+          if (stats.skippedNotToday) tip += `, 다른 날짜: ${stats.skippedNotToday}`;
+          if (stats.sampleDates && stats.sampleDates.length) {
+            tip += ` (예: ${stats.sampleDates.join(", ")})`;
+          }
+          meta.textContent = tip;
+        }
       } catch (err) {
         meta.textContent = `오류: ${err && err.message ? err.message : err}`;
       }

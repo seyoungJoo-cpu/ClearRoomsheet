@@ -2925,6 +2925,7 @@
         var resetStorage = getResetStorageData(preservedFacility);
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
           HKSync.pushSnapshot({
+            hkCloseDayReset: true,
             hkStorage: resetStorage,
             hkRequestLog: [],
             hkOrderLog: preservedOrderLog,

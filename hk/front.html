@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -7190,7 +7190,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.HTML?embed=hkFront"
+          src="/DD/index.html?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -7200,7 +7200,7 @@
           class="front-embed-panel__frame"
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
-          src="/inven/index.HTML?embed=hkFront"
+          src="/inven/index.html?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -7210,7 +7210,7 @@
           class="front-embed-panel__frame"
           id="chichiEmbedFrame"
           title="고객취향확인"
-          src="/chichi/index.HTML?embed=hkFront"
+          src="/chichi/index.html?embed=hkFront"
           loading="eager"
         ></iframe>
       </section>
@@ -18603,8 +18603,23 @@
         var msg = ev.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
+          if (!frontMode) {
+            showHkActionToast("프론트 모드를 켠 뒤 인벤 「만들기」를 다시 실행하세요.");
+            return;
+          }
           HKInvenNotify.importInvenTable(msg.rows, msg.meta || {});
+          var rowCount = Array.isArray(msg.rows) ? msg.rows.length : 0;
+          if (msg.meta && msg.meta.openNotify) {
+            showSidebarInvenNotifyView();
+          }
           HKInvenNotify.render(true);
+          if (rowCount > 0) {
+            showHkActionToast(
+              "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
+            );
+          } else {
+            showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
+          }
         }
       });
 
