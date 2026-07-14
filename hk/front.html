@@ -1247,6 +1247,27 @@
       background: var(--hover-bg);
     }
 
+    .request-feedback__ip-btn {
+      margin-top: 6px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid #b45309;
+      border-radius: 6px;
+      background: #fffbeb;
+      color: #b45309;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .request-feedback__ip-btn:hover {
+      background: #fef3c7;
+    }
+
+    .sched-req-card__actions .request-feedback__ip-btn {
+      margin-top: 0;
+    }
+
     .request-feedback__sched-editor {
       margin-top: 8px;
       display: flex;
@@ -6598,6 +6619,7 @@
       }
 
       .request-feedback__sched-btn,
+      .request-feedback__ip-btn,
       .request-feedback__memo-btn,
       .request-feedback__cancel-btn,
       .request-feedback__memo2-btn,
@@ -11013,6 +11035,31 @@
         entry.sched = nextSched;
       }
 
+      /** 처리·예정(정비예상시간) 입력: 시각 또는 IP */
+      function parseRequestSchedInput(input) {
+        var s = String(input == null ? "" : input).trim();
+        if (!s) return { ok: true, value: "" };
+        if (/^ip$/i.test(s)) return { ok: true, value: "IP" };
+        if (typeof HKStorage !== "undefined" && HKStorage.parseTime24) {
+          return HKStorage.parseTime24(s);
+        }
+        return { ok: false, value: "" };
+      }
+
+      function applyRequestIpSched(entryId) {
+        if (!maintenanceMode || !entryId) return;
+        var entry = findRequestEntry(entryId);
+        if (!entry) return;
+        if (hasActiveFacilityOrderForRequest(entryId)) {
+          entry.facilitySched = "IP";
+        } else {
+          applyRequestSchedChange(entry, "IP");
+        }
+        markRequestEntrySavedLocally(entry);
+        saveRequestLog();
+        renderRequestLogPanel();
+      }
+
       function appendSchedTimeDisplay(containerEl, entry) {
         if (!containerEl || !entry) return;
         var sched = String(entry.sched || "").trim();
@@ -14017,6 +14064,14 @@
             schedBtn.textContent = "시간 입력";
             maintActs.appendChild(schedBtn);
           }
+          var ipBtn = document.createElement("button");
+          ipBtn.type = "button";
+          ipBtn.className = "request-feedback__ip-btn";
+          ipBtn.setAttribute("data-req-id", entry.id);
+          ipBtn.textContent = "IP";
+          ipBtn.setAttribute("aria-label", "정비예상시간에 IP 입력");
+          ipBtn.title = "정비예상시간에 IP 입력";
+          maintActs.appendChild(ipBtn);
           var memo2BtnP = document.createElement("button");
           memo2BtnP.type = "button";
           memo2BtnP.className = "request-feedback__memo2-btn";
@@ -15924,6 +15979,14 @@
               editBtn.setAttribute("data-req-id", entry.id);
               editBtn.textContent = "시간 수정";
               actions.appendChild(editBtn);
+              var ipCardBtn = document.createElement("button");
+              ipCardBtn.type = "button";
+              ipCardBtn.className = "request-feedback__ip-btn sched-card__ip-btn";
+              ipCardBtn.setAttribute("data-req-id", entry.id);
+              ipCardBtn.textContent = "IP";
+              ipCardBtn.setAttribute("aria-label", "정비예상시간에 IP 입력");
+              ipCardBtn.title = "정비예상시간에 IP 입력";
+              actions.appendChild(ipCardBtn);
               var m2CardBtn = document.createElement("button");
               m2CardBtn.type = "button";
               m2CardBtn.className = "request-feedback__memo2-btn sched-card__memo2-btn";
@@ -16055,7 +16118,7 @@
         var inp = document.createElement("input");
         inp.type = "text";
         inp.classList.add("hk-time-em");
-        inp.placeholder = "1430 또는 14:30";
+        inp.placeholder = "1430 / 14:30 / IP";
         inp.value = entry.sched || "";
         inp.setAttribute("aria-label", "처리·예정 시간");
         var ok = document.createElement("button");
@@ -16079,9 +16142,9 @@
 
         ok.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          var p = HKStorage.parseTime24(inp.value);
+          var p = parseRequestSchedInput(inp.value);
           if (!p.ok) {
-            alert("시간 형식을 확인하세요. (예: 14:30, 1430)\n비우면 삭제됩니다.");
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)\n비우면 삭제됩니다.");
             return;
           }
           applyRequestSchedChange(entry, p.value);
@@ -16094,6 +16157,21 @@
           ev.stopPropagation();
           done();
         });
+
+        var ipQuick = document.createElement("button");
+        ipQuick.type = "button";
+        ipQuick.className = "request-feedback__ip-btn";
+        ipQuick.style.marginTop = "0";
+        ipQuick.textContent = "IP";
+        ipQuick.title = "IP로 적용";
+        ipQuick.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          applyRequestSchedChange(entry, "IP");
+          markRequestEntrySavedLocally(entry);
+          saveRequestLog();
+          done();
+        });
+        row.insertBefore(ipQuick, ok);
 
         inp.addEventListener("keydown", function (ev) {
           if (ev.key === "Enter") {
@@ -16156,7 +16234,7 @@
         var inp = document.createElement("input");
         inp.type = "text";
         inp.classList.add("hk-time-em");
-        inp.placeholder = "1430 또는 14:30";
+        inp.placeholder = "1430 / 14:30 / IP";
         inp.value = entry.facilitySched || "";
         inp.setAttribute("aria-label", "정비 시간");
         var ok = document.createElement("button");
@@ -16181,9 +16259,9 @@
 
         ok.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          var p = HKStorage.parseTime24(inp.value);
+          var p = parseRequestSchedInput(inp.value);
           if (!p.ok) {
-            alert("시간 형식을 확인하세요. (예: 14:30, 1430)\n비우면 삭제됩니다.");
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)\n비우면 삭제됩니다.");
             return;
           }
           if (p.value) entry.facilitySched = p.value;
@@ -16197,6 +16275,21 @@
           ev.stopPropagation();
           done();
         });
+
+        var ipQuickFac = document.createElement("button");
+        ipQuickFac.type = "button";
+        ipQuickFac.className = "request-feedback__ip-btn";
+        ipQuickFac.style.marginTop = "0";
+        ipQuickFac.textContent = "IP";
+        ipQuickFac.title = "IP로 적용";
+        ipQuickFac.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          entry.facilitySched = "IP";
+          markRequestEntrySavedLocally(entry);
+          saveRequestLog();
+          done();
+        });
+        row.insertBefore(ipQuickFac, ok);
 
         inp.addEventListener("keydown", function (ev) {
           if (ev.key === "Enter") {
@@ -18089,6 +18182,15 @@
             if (ridFs) openFacilityRequestSchedEditor(ridFs);
             return;
           }
+          var ipB = e.target.closest(".request-feedback__ip-btn");
+          if (ipB && !ipB.classList.contains("sched-card__ip-btn")) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridIp = ipB.getAttribute("data-req-id");
+            if (ridIp) applyRequestIpSched(ridIp);
+            return;
+          }
           var b = e.target.closest(".request-feedback__sched-btn");
           if (!b || !maintenanceMode) return;
           e.preventDefault();
@@ -18105,7 +18207,7 @@
           if (
             ackCard &&
             !e.target.closest(
-              ".sched-card__use-btn, .sched-card__memo-btn, .sched-card__memo2-btn, .sched-card__edit-btn, .request-feedback__sched-editor-wrap, .request-feedback__memo-editor-wrap, .request-feedback__memo2-editor-wrap"
+              ".sched-card__use-btn, .sched-card__memo-btn, .sched-card__memo2-btn, .sched-card__edit-btn, .sched-card__ip-btn, .request-feedback__sched-editor-wrap, .request-feedback__memo-editor-wrap, .request-feedback__memo2-editor-wrap"
             )
           ) {
             var ackId = ackCard.getAttribute("data-req-id");
@@ -18146,6 +18248,15 @@
             e.stopPropagation();
             var ridM2s = m2s.getAttribute("data-req-id");
             if (ridM2s) openRequestMemo2Editor(ridM2s);
+            return;
+          }
+          var ipSched = e.target.closest(".sched-card__ip-btn");
+          if (ipSched) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridIpS = ipSched.getAttribute("data-req-id");
+            if (ridIpS) applyRequestIpSched(ridIpS);
             return;
           }
           var b = e.target.closest(".sched-card__edit-btn");
