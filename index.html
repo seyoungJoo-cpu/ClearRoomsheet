@@ -983,7 +983,8 @@
     }
 
     /* ── 모바일·태블릿 반응형 ── */
-    @media (max-width: 900px) {
+    /* 모바일·태블릿만 — PC 창 축소 시에는 데스크톱 레이아웃 유지 */
+    @media (max-width: 900px) and (hover: none) {
       html {
         -webkit-text-size-adjust: 100%;
       }
@@ -1201,7 +1202,7 @@
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 480px) and (hover: none) {
       h1 {
         font-size: 1.05rem;
       }

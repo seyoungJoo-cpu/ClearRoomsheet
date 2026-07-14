@@ -6318,8 +6318,8 @@
       border-color: var(--accent);
     }
 
-    /* ── 모바일·태블릿 반응형 ── */
-    @media (max-width: 900px) {
+    /* ── 모바일·태블릿만 (PC는 창을 줄여도 데스크톱 레이아웃 유지) ── */
+    @media (max-width: 900px) and (hover: none) {
       :root {
         --header-min-h: auto;
       }
@@ -6662,7 +6662,7 @@
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 480px) and (hover: none) {
       html {
         font-size: 15px;
       }
