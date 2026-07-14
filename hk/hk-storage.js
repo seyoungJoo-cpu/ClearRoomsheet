@@ -587,11 +587,18 @@
     global.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   }
 
+  /** 마감 시 병합 없이 저장소 전체를 교체 (특이객실·메모 등 완전 리셋) */
+  function replaceRemote(data) {
+    var next = normalize(data || defaultData());
+    global.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  }
+
   global.HKStorage = {
     key: STORAGE_KEY,
     load: load,
     save: save,
     applyRemote: applyRemote,
+    replaceRemote: replaceRemote,
     defaultData: defaultData,
     defaultRoom: defaultRoom,
     parseTime24: parseTime24,

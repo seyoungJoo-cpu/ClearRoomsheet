@@ -1132,6 +1132,14 @@
     roomEl.textContent = entry.room ? formatRoom(entry.room) : "—";
     head.appendChild(roomEl);
 
+    if (entry.at) {
+      var regDate = document.createElement("span");
+      regDate.className = "facility-log-card__reg-date";
+      regDate.textContent = formatAt(entry.at);
+      regDate.title = "등록 " + formatAt(entry.at);
+      head.appendChild(regDate);
+    }
+
     var meta = document.createElement("div");
     meta.className = "facility-log-card__meta";
     var regBy = entry.by != null ? String(entry.by).trim() : "";

@@ -647,7 +647,14 @@
     isApplyingRemote = true;
 
     if (payload.hkStorage && global.HKStorage) {
-      global.HKStorage.applyRemote(payload.hkStorage);
+      var isNewCloseDay =
+        !!payload.hkCloseDayAt &&
+        String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
+      if (isNewCloseDay && typeof global.HKStorage.replaceRemote === "function") {
+        global.HKStorage.replaceRemote(payload.hkStorage);
+      } else {
+        global.HKStorage.applyRemote(payload.hkStorage);
+      }
       changed.push("hkStorage");
       clearDirty("hkStorage");
     }
@@ -995,7 +1002,11 @@
         });
       }
       if (payload.hkStorage && global.HKStorage) {
-        global.HKStorage.applyRemote(payload.hkStorage);
+        if (typeof global.HKStorage.replaceRemote === "function") {
+          global.HKStorage.replaceRemote(payload.hkStorage);
+        } else {
+          global.HKStorage.applyRemote(payload.hkStorage);
+        }
       }
       if (Array.isArray(payload.hkRequestLog)) {
         cache.requestLog = payload.hkRequestLog.slice();

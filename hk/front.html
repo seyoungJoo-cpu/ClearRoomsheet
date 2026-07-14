@@ -3274,6 +3274,19 @@
       min-width: 0;
     }
 
+    .facility-log-card__reg-date {
+      flex: 0 0 auto;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: var(--text-muted);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .facility-log-card.is-meta-expanded .facility-log-card__reg-date {
+      display: none;
+    }
+
     .facility-log-card__meta-line {
       font-size: 0.75rem;
       line-height: 1.45;
@@ -10676,6 +10689,24 @@
         var d = new Date(iso);
         if (isNaN(d.getTime())) return "";
         return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+      }
+
+      /** 10일 보관 시설업무(컴플레인 등)용 — 등록 날짜 포함 */
+      function formatFacilityLogAt(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        return (
+          d.getFullYear() +
+          "-" +
+          pad2(d.getMonth() + 1) +
+          "-" +
+          pad2(d.getDate()) +
+          " " +
+          pad2(d.getHours()) +
+          ":" +
+          pad2(d.getMinutes())
+        );
       }
 
       var hkPhotoPending = {};
@@ -18427,7 +18458,7 @@
       }
       if (typeof HKFacilityLogs !== "undefined") {
         HKFacilityLogs.init({
-          formatAt: formatReqAt,
+          formatAt: formatFacilityLogAt,
           formatRoomNoDisplay: formatRoomNoDisplay,
           setLineWithEmTime: setLineWithEmTime,
           getOperatorName: getOperatorName,

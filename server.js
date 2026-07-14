@@ -646,7 +646,15 @@ function mergeSyncPayload(prev, incoming) {
     delete out.roomingClearedAt;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkStorage")) {
-    out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
+    // 마감(hkCloseDayAt) 시에는 병합하지 않고 저장소 전체를 교체한다.
+    // (특이객실 rooms·deletedRooms 등이 빈 배열로 리셋되어야 함)
+    if (incoming.hkCloseDayAt) {
+      out.hkStorage = incoming.hkStorage && typeof incoming.hkStorage === "object"
+        ? incoming.hkStorage
+        : {};
+    } else {
+      out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
+    }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
     out.hkRequestLog = replaceLogArray(incoming.hkRequestLog);
