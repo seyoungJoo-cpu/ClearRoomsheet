@@ -114,6 +114,22 @@
       justify-content: center;
     }
 
+    .topbar-xml-upload-time {
+      font-size: 0.5625rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1.25;
+      text-align: center;
+      max-width: 9.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-xml-upload-time[hidden] {
+      display: none;
+    }
+
     .topbar-quick-nav .sidebar-nav__btn,
     .topbar-quick-nav a.sidebar-nav__link {
       flex: 0 1 auto;
@@ -7075,6 +7091,12 @@
               <span class="admin-inquiry-btn__badge" id="adminInquiryBadge" hidden></span>
             </button>
           </div>
+          <div
+            class="topbar-xml-upload-time"
+            id="topbarXmlUploadTime"
+            hidden
+            title="루밍 XML 업로드 시각"
+          ></div>
         </nav>
       </div>
       <div class="topbar-head-tools">
@@ -8329,7 +8351,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
-  <script src="hk-sync.js?v=chat-split-2"></script>
+  <script src="hk-sync.js?v=xml-upload-time-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js"></script>
   <script src="hk-push.js"></script>
@@ -9600,6 +9622,7 @@
           payload && payload.vacRows ? payload.vacRows : [],
           payload && payload.roomResvMap ? payload.roomResvMap : null
         );
+        updateTopbarXmlUploadTime(payload);
         if (isHkUserEditing()) {
           updateRoomStatusDisplay();
           updateOrderFoDisplay();
@@ -9615,6 +9638,57 @@
         if (requestRoomBoardOpen) renderRequestRoomBoard();
         if (zoneRoomBoardOpen) renderZoneRoomBoard();
         renderSchedRequestCards();
+      }
+
+      function formatXmlUploadTimeLabel(isoOrText) {
+        var raw = String(isoOrText == null ? "" : isoOrText).trim();
+        if (!raw) return "";
+        var d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+          try {
+            return d.toLocaleString("ko-KR", {
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+          } catch (e) {
+            return raw;
+          }
+        }
+        return raw;
+      }
+
+      function resolveRoomingUploadedAt(payload) {
+        var p = payload || null;
+        if (!p && typeof HKSync !== "undefined") {
+          if (typeof HKSync.getXmlPayload === "function") p = HKSync.getXmlPayload();
+          if ((!p || !p.roomingUploadedAt) && typeof HKSync.getLastServerPayload === "function") {
+            p = HKSync.getLastServerPayload() || p;
+          }
+        }
+        if (!p) return "";
+        if (p.roomingUploadedAt) return String(p.roomingUploadedAt).trim();
+        var summary = p.uploadSummary != null ? String(p.uploadSummary) : "";
+        var m = summary.match(/^업로드\s+([^\n]+)/);
+        return m ? String(m[1]).trim() : "";
+      }
+
+      function updateTopbarXmlUploadTime(payload) {
+        var el = document.getElementById("topbarXmlUploadTime");
+        if (!el) return;
+        var raw = resolveRoomingUploadedAt(payload);
+        var label = formatXmlUploadTimeLabel(raw);
+        if (!label) {
+          el.hidden = true;
+          el.textContent = "";
+          el.removeAttribute("title");
+          return;
+        }
+        el.hidden = false;
+        el.textContent = "XML " + label;
+        el.title = "루밍 XML 업로드 " + label;
       }
 
       function syncRequestLogFromServer() {
@@ -9759,6 +9833,11 @@
         }
         if (changed.indexOf("vacRows") >= 0 || changed.indexOf("roomResvMap") >= 0) {
           applyXmlRoomStatusPayload(payload);
+        } else if (
+          changed.indexOf("roomingUploadedAt") >= 0 ||
+          changed.indexOf("uploadSummary") >= 0
+        ) {
+          updateTopbarXmlUploadTime(payload);
         }
         if (changed.indexOf("hkStorage") >= 0) {
           refreshMain({ detectNoticeChange: true });

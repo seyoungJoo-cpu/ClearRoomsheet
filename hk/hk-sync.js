@@ -22,6 +22,7 @@
     "extendedStayRooms",
     "blockDisplayAliases",
     "uploadSummary",
+    "roomingUploadedAt",
     "roomingClearedAt",
   ];
   var ROOMING_FASN_KEYS = [
@@ -237,6 +238,7 @@
       blockMap: {},
       extendedStayRooms: {},
       uploadSummary: "",
+      roomingUploadedAt: "",
       fasnVacRows: [],
       fasnAllStatusRooms: [],
       fasnBlockMap: {},
@@ -1210,6 +1212,7 @@
             "blockMap",
             "extendedStayRooms",
             "uploadSummary",
+            "roomingUploadedAt",
             "fasnVacRows",
             "fasnAllStatusRooms",
             "fasnBlockMap",
