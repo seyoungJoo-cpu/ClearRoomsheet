@@ -9762,13 +9762,13 @@
           if (title) title.textContent = "프론트 채팅방";
           if (hint) {
             hint.textContent =
-              "프론트 전용 대화방입니다. 정비 입력에서는 보이지 않으며, 프론트 모드끼리만 동기화됩니다.";
+              "프론트 전용 대화방입니다. 정비 입력에서는 보이지 않으며, 프론트 모드끼리만 동기화됩니다. 관리자 마감 후에도 계속 보관됩니다.";
           }
         } else {
           if (title) title.textContent = "채팅방";
           if (hint) {
             hint.textContent =
-              "정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화됩니다.";
+              "정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.";
           }
         }
       }
@@ -11035,6 +11035,30 @@
         var d = new Date(iso);
         if (isNaN(d.getTime())) return "";
         return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+      }
+
+      function formatChatMsgDate(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        return pad2(d.getMonth() + 1) + "." + pad2(d.getDate());
+      }
+
+      function appendChatMsgTimeEl(parent, iso, className) {
+        if (!parent || !iso) return;
+        var clock = formatReqAt(iso);
+        if (!clock) return;
+        var timeEl = document.createElement("div");
+        timeEl.className = className || "front-chat__msg-time";
+        var dateLabel = formatChatMsgDate(iso);
+        if (dateLabel) {
+          var dateSpan = document.createElement("span");
+          dateSpan.className = "front-chat__msg-date";
+          dateSpan.textContent = dateLabel;
+          timeEl.appendChild(dateSpan);
+        }
+        timeEl.appendChild(document.createTextNode(clock));
+        parent.appendChild(timeEl);
       }
 
       /** 10일 보관 시설업무(컴플레인 등)용 — 등록 날짜 포함 */
@@ -18638,10 +18662,7 @@
             }
 
             if (msg.at) {
-              var timeEl = document.createElement("div");
-              timeEl.className = "front-chat__msg-time";
-              timeEl.textContent = formatReqAt(msg.at);
-              li.appendChild(timeEl);
+              appendChatMsgTimeEl(li, msg.at, "front-chat__msg-time");
             }
 
             if (!msg.deleted && msg.id && isOwnChatAuthor(msg.by)) {
