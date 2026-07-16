@@ -15716,22 +15716,22 @@
         wanBtn.setAttribute("data-order-id", entry.id || "");
         wanBtn.textContent = isFacilityOrder(entry) ? "입실 가능" : "투입 완료";
         acts.appendChild(wanBtn);
-        var prefill =
-          isFacilityOrder(entry) && entry.sourceReqId ? getFacilityOrderDueTime(entry) : "";
-        if (isFacilityOrder(entry) && entry.sourceReqId && prefill) {
-          var clearBtn = document.createElement("button");
-          clearBtn.type = "button";
-          clearBtn.className = "order-work__facility-time-btn order-work__facility-time-btn--clear";
-          clearBtn.setAttribute("data-order-id", entry.id || "");
-          clearBtn.setAttribute("data-facility-time-action", "clear");
-          clearBtn.textContent = "불가";
-          clearBtn.title = "시설시간 취소";
-          clearBtn.setAttribute("aria-label", "시설시간 불가(취소)");
-          acts.appendChild(clearBtn);
-        }
         li.appendChild(acts);
         if (isFacilityOrder(entry) && entry.sourceReqId) {
+          var prefill = getFacilityOrderDueTime(entry);
           var editing = !!(entry.id && facilityTimeEditIds[entry.id]);
+          function appendFacilityClearBtn(parent) {
+            var clearBtn = document.createElement("button");
+            clearBtn.type = "button";
+            clearBtn.className =
+              "order-work__facility-time-btn order-work__facility-time-btn--clear";
+            clearBtn.setAttribute("data-order-id", entry.id || "");
+            clearBtn.setAttribute("data-facility-time-action", "clear");
+            clearBtn.textContent = "불가";
+            clearBtn.title = "시설시간 취소";
+            clearBtn.setAttribute("aria-label", "시설시간 불가(취소)");
+            parent.appendChild(clearBtn);
+          }
           if (prefill && !editing) {
             var timeDisp = document.createElement("div");
             timeDisp.className = "order-work__facility-time-display";
@@ -15750,6 +15750,7 @@
             editBtn.setAttribute("data-facility-time-action", "edit");
             editBtn.textContent = "수정";
             editWrap.appendChild(editBtn);
+            appendFacilityClearBtn(editWrap);
             li.appendChild(editWrap);
           } else {
             var timeWrap = document.createElement("div");
@@ -15769,6 +15770,7 @@
             timeBtn.textContent = "시설시간 적용";
             timeWrap.appendChild(timeInp);
             timeWrap.appendChild(timeBtn);
+            appendFacilityClearBtn(timeWrap);
             li.appendChild(timeWrap);
           }
         }
