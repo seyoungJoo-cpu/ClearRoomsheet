@@ -1699,6 +1699,15 @@
       opacity: 0.9;
     }
 
+    .request-feedback__facility-unavailable {
+      font-weight: 700;
+      color: #b91c1c;
+    }
+
+    .request-feedback__sched.is-facility-unavailable {
+      color: #b91c1c;
+    }
+
     .request-feedback__facility-sched-btn {
       color: #0f766e;
       border-color: #5eead4;
@@ -11245,19 +11254,36 @@
         setLineWithEmTime(containerEl, label + " · ", sched);
       }
 
+      function isFacilityUnavailable(entry) {
+        return !!(entry && entry.facilityUnavailable);
+      }
+
       function appendFacilityPendingSchedEl(parent, entry, opts) {
         if (!parent || !entry) return false;
         opts = opts || {};
         var facActive = hasActiveFacilityOrderForRequest(entry.id);
         if (!facActive) return false;
+        var unavailable = isFacilityUnavailable(entry);
         var doneTime =
           (entry.facilityOkTime != null ? String(entry.facilityOkTime).trim() : "") ||
           (entry.facilitySched != null ? String(entry.facilitySched).trim() : "");
         var doneLabel = opts.doneLabel != null ? String(opts.doneLabel) : "시설 완료";
         var schedEl = document.createElement(opts.tagName || "div");
-        schedEl.className =
-          opts.className || "request-feedback__sched is-facility-pending";
-        if (doneTime) {
+        if (unavailable) {
+          schedEl.className = opts.className
+            ? opts.className + " is-facility-unavailable"
+            : "request-feedback__sched is-facility-unavailable";
+        } else {
+          schedEl.className =
+            opts.className || "request-feedback__sched is-facility-pending";
+        }
+        if (unavailable) {
+          schedEl.appendChild(document.createTextNode(doneLabel + " : "));
+          var facDeniedEm = document.createElement("span");
+          facDeniedEm.className = "request-feedback__facility-unavailable";
+          facDeniedEm.textContent = "불가";
+          schedEl.appendChild(facDeniedEm);
+        } else if (doneTime) {
           schedEl.appendChild(document.createTextNode(doneLabel + " : "));
           var facTimeEm = document.createElement("span");
           facTimeEm.className = "hk-time-em";
@@ -15802,6 +15828,7 @@
         entry.facilityDueTime = p.value;
         srcReq.facilityOkTime = p.value;
         delete srcReq.facilitySched;
+        delete srcReq.facilityUnavailable;
         markRequestEntrySavedLocally(srcReq);
         if (entry.id) delete facilityTimeEditIds[entry.id];
         saveRequestLog();
@@ -15833,6 +15860,7 @@
         delete entry.facilityDueTime;
         delete srcReq.facilityOkTime;
         delete srcReq.facilitySched;
+        srcReq.facilityUnavailable = true;
         if (entry.id) delete facilityTimeEditIds[entry.id];
         markRequestEntrySavedLocally(srcReq);
         saveRequestLog();
