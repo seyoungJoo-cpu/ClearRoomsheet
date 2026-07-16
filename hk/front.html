@@ -15602,10 +15602,12 @@
               srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "";
             var okTime =
               srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "";
-            var useTime = okTime || facSched;
+            var dueOnOrder =
+              entry.facilityDueTime != null ? String(entry.facilityDueTime).trim() : "";
+            var useTime = dueOnOrder || okTime || facSched;
             if (useTime) {
               srcReq.facilityOkTime = useTime;
-              if (!okTime) applyRequestSchedChange(srcReq, useTime);
+              entry.facilityDueTime = useTime;
               delete srcReq.facilitySched;
             }
             markRequestEntrySavedLocally(srcReq);
