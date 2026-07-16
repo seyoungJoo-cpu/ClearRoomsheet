@@ -15635,6 +15635,7 @@
               srcReq.facilityOkTime = useTime;
               entry.facilityDueTime = useTime;
               delete srcReq.facilitySched;
+              delete srcReq.facilityUnavailable;
             }
             markRequestEntrySavedLocally(srcReq);
             saveRequestLog();
