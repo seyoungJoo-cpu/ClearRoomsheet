@@ -1891,6 +1891,11 @@
       animation: sidebar-zone-alert 0.75s ease-in-out infinite;
     }
 
+    .sidebar .sidebar-section__toggle.is-change-alert {
+      animation: sidebar-zones-toggle-alert 0.75s ease-in-out infinite;
+      border-radius: 6px;
+    }
+
     @keyframes sidebar-zone-alert {
       0%,
       100% {
@@ -1902,6 +1907,20 @@
       50% {
         background: #fef9c3;
         border-color: #facc15;
+        color: #854d0e;
+        box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
+      }
+    }
+
+    @keyframes sidebar-zones-toggle-alert {
+      0%,
+      100% {
+        background: transparent;
+        color: var(--accent);
+        box-shadow: none;
+      }
+      50% {
+        background: #fef9c3;
         color: #854d0e;
         box-shadow: 0 0 0 3px #facc15, 0 0 16px rgba(250, 204, 21, 0.55);
       }
@@ -5135,7 +5154,7 @@
     }
 
     .sidebar-section--bottom {
-      margin-top: auto;
+      margin-top: 0;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -6690,10 +6709,12 @@
         border-right: none;
         border-bottom: 2px solid var(--border);
         min-height: 0;
+        order: 3;
       }
 
       .sidebar-section--bottom {
         margin-top: 8px;
+        border-top: 1px solid var(--border);
       }
 
       .sidebar-nav {
@@ -6711,10 +6732,6 @@
         padding: 10px 8px;
       }
 
-      .layout-main-area {
-        order: 2;
-      }
-
       .feedback-column {
         order: 1;
         width: 100%;
@@ -6722,6 +6739,10 @@
         border-left: none;
         border-bottom: 2px solid var(--border);
         box-shadow: none;
+      }
+
+      .layout-main-area {
+        order: 2;
       }
 
       .request-feedback,
@@ -10131,7 +10152,6 @@
         getRoomChangeLogEntries().forEach(function (entry) {
           if (!entry || !entry.zone || entry.zone !== zone) return;
           if (normalizeRoomKey(entry.room) !== roomNorm) return;
-          if (isInitialRoomAddEntry(entry)) return;
           var entryAt = new Date(entry.at || 0).getTime();
           if (isNaN(entryAt)) entryAt = 0;
           if (!latest || entryAt >= latestAt) {
@@ -10253,6 +10273,7 @@
         toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
         var hint = toggle.querySelector(".sidebar-section__toggle-hint");
         if (hint) hint.textContent = collapsed ? "펼치기" : "접기";
+        applyZoneAlertUi();
       }
 
       function setSidebarZonesCollapsed(collapsed) {
@@ -10824,7 +10845,6 @@
       function registerChangeAlert(entry, opts) {
         opts = opts || {};
         if (!entry || !entry.id || !entry.zone || !entry.room) return;
-        if (isInitialRoomAddEntry(entry)) return;
         var latest = getLatestRoomChangeEntry(entry.zone, entry.room);
         if (!latest || latest.id !== entry.id) return;
         if (isRoomChangeDismissed(entry.zone, entry.room)) return;
@@ -10844,7 +10864,6 @@
         var latestByRoom = {};
         getRoomChangeLogEntries().forEach(function (entry) {
           if (!entry || !entry.zone || !entry.room) return;
-          if (isInitialRoomAddEntry(entry)) return;
           var key = roomAlertKey(entry.zone, entry.room);
           var entryAt = new Date(entry.at || 0).getTime();
           if (isNaN(entryAt)) entryAt = 0;
@@ -10881,6 +10900,15 @@
           var z = btn.getAttribute("data-zone");
           btn.classList.toggle("is-change-alert", !!pendingZoneAlerts[z]);
         });
+        var section = document.querySelector(".sidebar-section--zones");
+        var toggle = document.getElementById("sidebarZonesToggle");
+        var collapsed = !!(section && section.classList.contains("is-collapsed"));
+        if (toggle) {
+          toggle.classList.toggle(
+            "is-change-alert",
+            collapsed && hasAnyZoneAlert()
+          );
+        }
         syncPanelAckButtons();
       }
 
