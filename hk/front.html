@@ -19565,7 +19565,6 @@
           createFacilityOrderFromRequest(reqEntry, memoInp ? memoInp.value : "");
           pendingFacilityConfirmReqId = null;
           renderRequestLogPanel({ force: true });
-          showSidebarFacilityView();
           return;
         }
         dlg.hidden = false;
@@ -20210,7 +20209,6 @@
             var orderId = createFacilityOrderFromRequest(reqEntry, memo);
             if (orderId) {
               renderRequestLogPanel({ force: true });
-              showSidebarFacilityView();
             }
           });
         }
