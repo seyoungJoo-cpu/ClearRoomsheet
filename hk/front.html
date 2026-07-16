@@ -3632,6 +3632,52 @@
       background: #d1fae5;
     }
 
+    .order-work__facility-time-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .order-work__facility-time-input {
+      flex: 1 1 7rem;
+      min-width: 0;
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid #99f6e4;
+      border-radius: 4px;
+      font: inherit;
+      font-size: 0.75rem;
+      box-sizing: border-box;
+      background: #f0fdfa;
+    }
+
+    .order-work__facility-time-input:focus {
+      outline: 2px solid #0f766e;
+      outline-offset: 0;
+      border-color: #0f766e;
+    }
+
+    .order-work__facility-time-btn {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid #0f766e;
+      background: #ccfbf1;
+      color: #0f766e;
+      line-height: 1.15;
+    }
+
+    .order-work__facility-time-btn:hover {
+      background: #99f6e4;
+    }
+
     .order-feedback__maint-actions,
     .order-work__actions {
       display: flex;
@@ -8144,15 +8190,6 @@
         placeholder="예: 에어컨 점검, 샤워기 교체"
         rows="3"
       ></textarea>
-      <label class="hk-confirm__label" for="hkFacilityConfirmTimeInput">정비 시간</label>
-      <input
-        type="text"
-        class="hk-confirm__input hk-time-em"
-        id="hkFacilityConfirmTimeInput"
-        placeholder="1430 / 14:30 / IP"
-        autocomplete="off"
-        aria-label="시설 확인 정비 시간"
-      />
       <div class="hk-confirm__actions">
         <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkFacilityConfirmOk">
           시설 오더 등록
@@ -11168,21 +11205,25 @@
         if (!parent || !entry) return false;
         opts = opts || {};
         var facActive = hasActiveFacilityOrderForRequest(entry.id);
-        var facSchedStr =
-          entry.facilitySched != null ? String(entry.facilitySched).trim() : "";
-        if (!facActive || !facSchedStr) return false;
+        if (!facActive) return false;
+        var doneTime =
+          (entry.facilityOkTime != null ? String(entry.facilityOkTime).trim() : "") ||
+          (entry.facilitySched != null ? String(entry.facilitySched).trim() : "");
         var schedEl = document.createElement(opts.tagName || "div");
         schedEl.className =
           opts.className || "request-feedback__sched is-facility-pending";
-        schedEl.appendChild(document.createTextNode("정비 시간 · "));
-        var facTimeEm = document.createElement("span");
-        facTimeEm.className = "hk-time-em";
-        facTimeEm.textContent = facSchedStr;
-        schedEl.appendChild(facTimeEm);
-        var facPendingHint = document.createElement("span");
-        facPendingHint.className = "request-feedback__facility-pending-hint";
-        facPendingHint.textContent = "시설 확인중";
-        schedEl.appendChild(facPendingHint);
+        if (doneTime) {
+          schedEl.appendChild(document.createTextNode("시설 시간 완료 · "));
+          var facTimeEm = document.createElement("span");
+          facTimeEm.className = "hk-time-em";
+          facTimeEm.textContent = doneTime;
+          schedEl.appendChild(facTimeEm);
+        } else {
+          var facPendingHint = document.createElement("span");
+          facPendingHint.className = "request-feedback__facility-pending-hint";
+          facPendingHint.textContent = "시설 확인중";
+          schedEl.appendChild(facPendingHint);
+        }
         parent.appendChild(schedEl);
         return true;
       }
@@ -14179,7 +14220,6 @@
             facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
           }
           maintActs.appendChild(facilityBtn);
-          if (facStatus === "pending") appendFacilityTimeBtn(maintActs, entry.id);
           li.appendChild(maintActs);
         } else if (frontMode) {
           appendFacilityPendingSchedEl(li, entry);
@@ -15511,9 +15551,12 @@
           if (srcReq) {
             var facSched =
               srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "";
-            if (facSched) {
-              srcReq.facilityOkTime = facSched;
-              applyRequestSchedChange(srcReq, facSched);
+            var okTime =
+              srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "";
+            var useTime = okTime || facSched;
+            if (useTime) {
+              srcReq.facilityOkTime = useTime;
+              if (!okTime) applyRequestSchedChange(srcReq, useTime);
               delete srcReq.facilitySched;
             }
             markRequestEntrySavedLocally(srcReq);
@@ -15552,6 +15595,62 @@
         wanBtn.textContent = isFacilityOrder(entry) ? "입실 가능" : "투입 완료";
         acts.appendChild(wanBtn);
         li.appendChild(acts);
+        if (isFacilityOrder(entry) && entry.sourceReqId) {
+          var srcReq = findRequestEntry(entry.sourceReqId);
+          var prefill = "";
+          if (srcReq) {
+            prefill =
+              (srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "") ||
+              (srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "");
+          }
+          var timeWrap = document.createElement("div");
+          timeWrap.className = "order-work__facility-time-wrap";
+          var timeInp = document.createElement("input");
+          timeInp.type = "text";
+          timeInp.className = "order-work__facility-time-input hk-time-em";
+          timeInp.placeholder = "1430 / 14:30 / IP";
+          timeInp.value = prefill;
+          timeInp.setAttribute("data-order-id", entry.id || "");
+          timeInp.setAttribute("aria-label", "시설시간");
+          var timeBtn = document.createElement("button");
+          timeBtn.type = "button";
+          timeBtn.className = "order-work__facility-time-btn";
+          timeBtn.setAttribute("data-order-id", entry.id || "");
+          timeBtn.textContent = "시설시간 적용";
+          timeWrap.appendChild(timeInp);
+          timeWrap.appendChild(timeBtn);
+          li.appendChild(timeWrap);
+        }
+      }
+
+      function applyFacilityAcceptedTime(orderId, rawTime) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
+        if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+        if (!maintenanceMode) return;
+        var p = parseRequestSchedInput(rawTime);
+        if (!p.ok || !p.value) {
+          alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)");
+          return;
+        }
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              applyFacilityAcceptedTime(orderId, rawTime);
+            },
+          });
+          return;
+        }
+        var srcReq = findRequestEntry(entry.sourceReqId);
+        if (!srcReq) return;
+        srcReq.facilityOkTime = p.value;
+        delete srcReq.facilitySched;
+        applyRequestSchedChange(srcReq, p.value);
+        markRequestEntrySavedLocally(srcReq);
+        saveRequestLog();
+        renderRequestLogPanel({ force: true });
+        renderOrderPanels({ force: true });
       }
 
       function toggleDeployedOrderChat(orderId) {
@@ -15657,21 +15756,6 @@
         return t ? "시설 " + t + " OK" : "시설OK";
       }
 
-      function appendFacilityTimeBtn(parent, reqId) {
-        if (!parent || !reqId || !maintenanceMode) return;
-        if (!hasActiveFacilityOrderForRequest(reqId)) return;
-        var req = findRequestEntry(reqId);
-        var t = req && req.facilitySched != null ? String(req.facilitySched).trim() : "";
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "request-feedback__facility-sched-btn";
-        btn.setAttribute("data-req-id", reqId);
-        btn.textContent = t ? "시설시간 " + t : "시설시간";
-        btn.setAttribute("aria-label", "시설시간 입력");
-        btn.title = "시설시간 입력";
-        parent.appendChild(btn);
-      }
-
       function appendFacilityRequestStatusBtn(parent, reqId, opts) {
         if (!parent || !reqId) return;
         opts = opts || {};
@@ -15690,7 +15774,6 @@
           btn.setAttribute("aria-label", opts.pendingAria || "시설 요청됨");
         }
         parent.appendChild(btn);
-        if (status === "pending") appendFacilityTimeBtn(parent, reqId);
       }
 
       function renderOrderWorkPanels(opts) {
@@ -19004,7 +19087,6 @@
         pendingFacilityConfirmReqId = reqEntry.id;
         var hintEl = document.getElementById("hkFacilityConfirmRoomHint");
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
-        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
         if (hintEl) {
           hintEl.textContent = reqEntry.room
             ? "객실 " + formatRoomNoDisplay(String(reqEntry.room))
@@ -19017,15 +19099,6 @@
             if (m2) prefill = m2;
           }
           memoInp.value = prefill;
-        }
-        if (timeInp) {
-          var timePrefill =
-            reqEntry.facilitySched != null
-              ? String(reqEntry.facilitySched).trim()
-              : reqEntry.facilityOkTime != null
-                ? String(reqEntry.facilityOkTime).trim()
-                : "";
-          timeInp.value = timePrefill;
         }
         var dlg = document.getElementById("hkFacilityConfirmDialog");
         if (!dlg) {
@@ -19048,8 +19121,6 @@
         pendingFacilityConfirmReqId = null;
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
         if (memoInp) memoInp.value = "";
-        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
-        if (timeInp) timeInp.value = "";
       }
 
       function processOrderFormSubmit() {
@@ -19325,6 +19396,19 @@
             if (wanId) completeOrderDeployment(wanId);
             return;
           }
+          var facTimeBtn = e.target.closest(".order-work__facility-time-btn");
+          if (facTimeBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var facTimeOrderId = facTimeBtn.getAttribute("data-order-id");
+            if (!facTimeOrderId) return;
+            var facTimeInp = panelEl.querySelector(
+              '.order-work__facility-time-input[data-order-id="' + facTimeOrderId + '"]'
+            );
+            applyFacilityAcceptedTime(facTimeOrderId, facTimeInp ? facTimeInp.value : "");
+            return;
+          }
           var issueBtn = e.target.closest(".order-work__issue-btn");
           if (issueBtn) {
             if (!maintenanceMode) return;
@@ -19351,6 +19435,16 @@
           }
         });
         panelEl.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            var facTimeInp = e.target.closest(".order-work__facility-time-input");
+            if (facTimeInp) {
+              if (!maintenanceMode) return;
+              e.preventDefault();
+              var facTimeOrderId = facTimeInp.getAttribute("data-order-id");
+              if (facTimeOrderId) applyFacilityAcceptedTime(facTimeOrderId, facTimeInp.value);
+              return;
+            }
+          }
           if (e.key !== "Enter" && e.key !== " ") return;
           var deployedCard = e.target.closest(
             ".order-work-section--deployed .order-work-item.is-chat-toggle"
@@ -19626,28 +19720,12 @@
         var cancel = document.getElementById("hkFacilityConfirmCancel");
         var backdrop = document.getElementById("hkFacilityConfirmBackdrop");
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
-        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
         if (ok) {
           ok.addEventListener("click", function (ev) {
             ev.preventDefault();
             var reqId = pendingFacilityConfirmReqId;
             var reqEntry = reqId ? findRequestEntry(reqId) : null;
             var memo = memoInp ? String(memoInp.value || "").trim() : "";
-            var timeRaw = timeInp ? String(timeInp.value || "").trim() : "";
-            if (timeRaw) {
-              var parsedTime = parseRequestSchedInput(timeRaw);
-              if (!parsedTime.ok) {
-                alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)");
-                if (timeInp) timeInp.focus();
-                return;
-              }
-              if (reqEntry) {
-                if (parsedTime.value) reqEntry.facilitySched = parsedTime.value;
-                else delete reqEntry.facilitySched;
-                markRequestEntrySavedLocally(reqEntry);
-                saveRequestLog();
-              }
-            }
             closeFacilityConfirmModal();
             if (!reqEntry) return;
             var orderId = createFacilityOrderFromRequest(reqEntry, memo);
