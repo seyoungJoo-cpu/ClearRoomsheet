@@ -724,20 +724,8 @@
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       changed.push("hkTeamChat");
       clearDirty("hkTeamChat");
-    } else if (
-      !Object.prototype.hasOwnProperty.call(payload, "hkTeamChat") &&
-      Array.isArray(payload.hkFrontChat) &&
-      !cache.teamChat.length &&
-      payload.hkFrontChat.length
-    ) {
-      // 레거시 공용 채팅 → 팀 채팅으로 이전 (로컬 1회)
-      cache.teamChat = payload.hkFrontChat.slice();
-      cache.frontChat = [];
-      writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
-      writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
-      changed.push("hkTeamChat");
-      changed.push("hkFrontChat");
     }
+    // 레거시 front→team 복사는 하지 않음 (두 채팅 완전 분리)
     if (Array.isArray(payload.hkAdminInquiries)) {
       cache.adminInquiries = payload.hkAdminInquiries.slice();
       writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
@@ -951,10 +939,11 @@
       schedulePush({ hkMbCheckLog: true });
     },
     getFrontChat: function () {
-      return cache.frontChat;
+      return cache.frontChat.slice();
     },
     appendFrontChatMessage: function (entry) {
       if (!entry || typeof entry !== "object") return;
+      entry.channel = "front";
       cache.frontChat.push(entry);
       if (cache.frontChat.length > 300) {
         cache.frontChat = cache.frontChat.slice(-300);
@@ -962,9 +951,15 @@
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
+      emitChange(["hkFrontChat"], { hkFrontChat: cache.frontChat.slice() });
     },
     setFrontChat: function (entries) {
-      cache.frontChat = Array.isArray(entries) ? entries.slice() : [];
+      cache.frontChat = Array.isArray(entries)
+        ? entries.map(function (m) {
+            if (m && typeof m === "object") m.channel = "front";
+            return m;
+          }).slice()
+        : [];
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
@@ -976,10 +971,11 @@
       schedulePush({ hkFrontChat: true });
     },
     getTeamChat: function () {
-      return cache.teamChat;
+      return cache.teamChat.slice();
     },
     appendTeamChatMessage: function (entry) {
       if (!entry || typeof entry !== "object") return;
+      entry.channel = "team";
       cache.teamChat.push(entry);
       if (cache.teamChat.length > 300) {
         cache.teamChat = cache.teamChat.slice(-300);
@@ -987,9 +983,15 @@
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       markDirty("hkTeamChat");
       schedulePush({ hkTeamChat: true });
+      emitChange(["hkTeamChat"], { hkTeamChat: cache.teamChat.slice() });
     },
     setTeamChat: function (entries) {
-      cache.teamChat = Array.isArray(entries) ? entries.slice() : [];
+      cache.teamChat = Array.isArray(entries)
+        ? entries.map(function (m) {
+            if (m && typeof m === "object") m.channel = "team";
+            return m;
+          }).slice()
+        : [];
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       markDirty("hkTeamChat");
       schedulePush({ hkTeamChat: true });

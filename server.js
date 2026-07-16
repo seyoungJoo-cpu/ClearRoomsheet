@@ -243,17 +243,109 @@ function saveSharedStateToDisk() {
 
 loadSharedStateFromDisk();
 
-(function migrateLegacySharedChatToTeamChat() {
+function chatMsgFingerprint(m) {
+  if (!m || typeof m !== "object") return "";
+  return [
+    String(m.by || ""),
+    String(m.text || ""),
+    String(m.at || ""),
+    m.image ? "1" : "0",
+    m.deleted ? "1" : "0",
+  ].join("\x1f");
+}
+
+(function migrateAndSeparateChatChannels() {
   var p = sharedState.payload;
   if (!p || typeof p !== "object") return;
-  if (Array.isArray(p.hkTeamChat)) return;
-  if (Array.isArray(p.hkFrontChat) && p.hkFrontChat.length) {
-    p.hkTeamChat = p.hkFrontChat.slice();
+  var changed = false;
+
+  // 레거시: hkTeamChat 키가 없으면 기존 공용(hkFrontChat) → 팀 채팅으로 이전
+  if (!Array.isArray(p.hkTeamChat)) {
+    if (Array.isArray(p.hkFrontChat) && p.hkFrontChat.length) {
+      p.hkTeamChat = p.hkFrontChat.slice();
+      p.hkFrontChat = [];
+      changed = true;
+      console.log(
+        "Sync: migrated legacy front chat → team chat (" + p.hkTeamChat.length + ")"
+      );
+    } else {
+      p.hkTeamChat = [];
+      changed = true;
+    }
+  }
+  if (!Array.isArray(p.hkFrontChat)) {
     p.hkFrontChat = [];
+    changed = true;
+  }
+
+  // 잘못 섞인 메시지 분리: id prefix / 동일 내용 중복 제거
+  var teamIds = {};
+  var teamFp = {};
+  p.hkTeamChat.forEach(function (m) {
+    if (!m) return;
+    if (m.id != null && String(m.id)) teamIds[String(m.id)] = true;
+    var fp = chatMsgFingerprint(m);
+    if (fp) teamFp[fp] = true;
+  });
+
+  var toTeam = [];
+  var frontKeep = [];
+  p.hkFrontChat.forEach(function (m) {
+    if (!m) return;
+    var id = m.id != null ? String(m.id) : "";
+    if (id.indexOf("tchat-") === 0) {
+      toTeam.push(m);
+      return;
+    }
+    if (id && teamIds[id]) return;
+    var fp = chatMsgFingerprint(m);
+    if (fp && teamFp[fp]) return;
+    frontKeep.push(m);
+  });
+  if (toTeam.length || frontKeep.length !== p.hkFrontChat.length) {
+    p.hkFrontChat = frontKeep;
+    changed = true;
+  }
+
+  var toFront = [];
+  var teamKeep = [];
+  p.hkTeamChat.forEach(function (m) {
+    if (!m) return;
+    var id = m.id != null ? String(m.id) : "";
+    if (id.indexOf("fchat-") === 0) {
+      toFront.push(m);
+      return;
+    }
+    teamKeep.push(m);
+  });
+  if (toFront.length || toTeam.length) {
+    p.hkTeamChat = teamKeep.concat(toTeam);
+    p.hkFrontChat = p.hkFrontChat.concat(toFront);
+    changed = true;
+  }
+
+  p.hkTeamChat.forEach(function (m) {
+    if (m && m.channel !== "team") {
+      m.channel = "team";
+      changed = true;
+    }
+  });
+  p.hkFrontChat.forEach(function (m) {
+    if (m && m.channel !== "front") {
+      m.channel = "front";
+      changed = true;
+    }
+  });
+
+  if (changed) {
     saveSharedStateToDisk();
-    console.log("Sync: migrated legacy front chat → team chat (" + p.hkTeamChat.length + ")");
-  } else {
-    p.hkTeamChat = [];
+    console.log(
+      "Sync: chat channels separated (team=" +
+        p.hkTeamChat.length +
+        ", front=" +
+        p.hkFrontChat.length +
+        ")"
+    );
   }
 })();
 
@@ -687,15 +779,10 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkTeamChat")) {
     out.hkTeamChat = replaceLogArray(incoming.hkTeamChat);
-  } else if (!Array.isArray(out.hkTeamChat)) {
-    // 레거시 공용 채팅 → 팀 채팅(정비+프론트)으로 이전
-    if (Array.isArray(out.hkFrontChat) && out.hkFrontChat.length) {
-      out.hkTeamChat = out.hkFrontChat.slice();
-      out.hkFrontChat = [];
-    } else {
-      out.hkTeamChat = [];
-    }
   }
+  // 두 채팅은 절대 서로 복사하지 않음 — 키만 없으면 빈 배열로 유지
+  if (!Array.isArray(out.hkTeamChat)) out.hkTeamChat = [];
+  if (!Array.isArray(out.hkFrontChat)) out.hkFrontChat = [];
   if (Object.prototype.hasOwnProperty.call(incoming, "hkAdminInquiries")) {
     out.hkAdminInquiries = mergeAdminInquiries(
       prev.hkAdminInquiries,

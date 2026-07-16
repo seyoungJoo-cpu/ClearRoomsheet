@@ -8161,8 +8161,8 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js"></script>
-  <script src="hk-sync.js"></script>
-  <script src="hk-alert-ack.js"></script>
+  <script src="hk-sync.js?v=chat-split-2"></script>
+  <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
@@ -17915,6 +17915,17 @@
         list.innerHTML = "";
         var kind = getActiveChatKind();
         var messages = kind ? getChatMessagesForKind(kind).slice() : [];
+        messages = messages.filter(function (msg) {
+          if (!msg) return false;
+          var id = msg.id != null ? String(msg.id) : "";
+          var ch = msg.channel != null ? String(msg.channel) : "";
+          if (kind === "team") {
+            if (ch === "front" || id.indexOf("fchat-") === 0) return false;
+            return true;
+          }
+          if (ch === "team" || id.indexOf("tchat-") === 0) return false;
+          return true;
+        });
         messages.sort(function (a, b) {
           var ta = new Date(a.at || 0).getTime();
           var tb = new Date(b.at || 0).getTime();
@@ -18245,15 +18256,15 @@
           return;
         }
         if (typeof HKSync === "undefined" || !HKSync.appendTeamChatMessage) return;
-        var newId = "tchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        knownTeamChatIds[newId] = true;
         HKSync.appendTeamChatMessage({
           id: newId,
+          channel: "team",
           at: new Date().toISOString(),
           by: getOperatorName(),
           text: msgText,
           image: msgImage || "",
         });
-        knownTeamChatIds[newId] = true;
         hkClearPhoto("frontChat");
         syncTeamChatFromServer();
         renderFrontChatPanel({ scrollToBottom: true, force: true });
@@ -18275,14 +18286,15 @@
         }
         if (typeof HKSync === "undefined" || !HKSync.appendFrontChatMessage) return;
         var newId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        knownFrontChatIds[newId] = true;
         HKSync.appendFrontChatMessage({
           id: newId,
+          channel: "front",
           at: new Date().toISOString(),
           by: getOperatorName(),
           text: msgText,
           image: msgImage || "",
         });
-        knownFrontChatIds[newId] = true;
         hkClearPhoto("frontChat");
         syncFrontChatFromServer();
         renderFrontChatPanel({ scrollToBottom: true, force: true });
