@@ -1059,6 +1059,12 @@
       border-color: #6ee7b7;
     }
 
+    .request-feedback__facility-btn.is-done.is-denied {
+      color: #b91c1c;
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
     .request-feedback__memo2-editor-wrap {
       margin-top: 8px;
       padding: 10px;
@@ -3079,6 +3085,10 @@
       color: #047857;
     }
 
+    .order-work-section--unavailable .order-work-section__title {
+      color: #b91c1c;
+    }
+
     .order-work-list {
       list-style: none;
       margin: 0;
@@ -3537,9 +3547,41 @@
       border: 2px solid #10b981;
     }
 
+    .order-work-section--unavailable .order-work-item {
+      border: 2px solid #fca5a5;
+    }
+
     .order-work-item--cancelled {
       opacity: 0.52;
       background: #f8fafc;
+    }
+
+    .order-work-item--unavailable {
+      opacity: 0.58;
+      background: #fef2f2;
+      position: relative;
+    }
+
+    .order-work-item--unavailable .order-work-item__x {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.25rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(185, 28, 28, 0.35);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .order-work__facility-denied-label {
+      margin-top: 6px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #b91c1c;
+      text-align: center;
     }
 
     .order-work-item--cancelled .order-work-item__x {
@@ -6231,6 +6273,33 @@
       box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
     }
 
+    .sched-req-card--facility-unavailable {
+      opacity: 0.72;
+      border-color: #fca5a5;
+      background: #fff5f5;
+    }
+
+    .sched-req-card--facility-unavailable .sched-req-card__x {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(185, 28, 28, 0.28);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .sched-req-card__denied-status {
+      background: #fee2e2 !important;
+      color: #b91c1c !important;
+      border: 1px solid #fca5a5 !important;
+      font-weight: 700;
+    }
+
     .sched-req-card {
       position: relative;
       padding-bottom: 22px;
@@ -7579,6 +7648,12 @@
           <h3 class="order-work-section__title" id="facilityDeployedTitle">입실 가능</h3>
           <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityDeployedEmpty">입실 가능 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--unavailable" id="facilityUnavailableSection" aria-labelledby="facilityUnavailableTitle">
+          <h3 class="order-work-section__title" id="facilityUnavailableTitle">입실불가</h3>
+          <ul class="order-work-list" id="facilityUnavailableList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="facilityUnavailableEmpty">입실불가 건이 없습니다.</p>
         </section>
       </section>
 
@@ -11255,7 +11330,13 @@
       }
 
       function isFacilityUnavailable(entry) {
-        return !!(entry && entry.facilityUnavailable);
+        if (!entry) return false;
+        if (entry.facilityUnavailable) return true;
+        if (entry.id) {
+          var facOrder = findFacilityOrderForRequest(entry.id);
+          if (facOrder && isFacilityOrderUnavailable(facOrder)) return true;
+        }
+        return false;
       }
 
       function appendFacilityPendingSchedEl(parent, entry, opts) {
@@ -11281,7 +11362,7 @@
           schedEl.appendChild(document.createTextNode(doneLabel + " : "));
           var facDeniedEm = document.createElement("span");
           facDeniedEm.className = "request-feedback__facility-unavailable";
-          facDeniedEm.textContent = "불가";
+          facDeniedEm.textContent = "입실 불가";
           schedEl.appendChild(facDeniedEm);
         } else if (doneTime) {
           schedEl.appendChild(document.createTextNode(doneLabel + " : "));
@@ -14285,6 +14366,11 @@
             facilityBtn.textContent = "시설 오더됨";
             facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
             facilityBtn.disabled = true;
+          } else if (facStatus === "unavailable") {
+            facilityBtn.className = "request-feedback__facility-btn is-done is-denied";
+            facilityBtn.textContent = "입실 불가";
+            facilityBtn.setAttribute("aria-label", "입실 불가");
+            facilityBtn.disabled = true;
           } else {
             facilityBtn.className = "request-feedback__facility-btn";
             facilityBtn.textContent = "시설 확인";
@@ -14413,8 +14499,20 @@
       function getOrderPhase(entry) {
         if (!entry) return "alert";
         var p = entry.phase != null ? String(entry.phase).trim() : "";
-        if (p === "accepted" || p === "issue" || p === "cancelled" || p === "deployed") return p;
+        if (
+          p === "accepted" ||
+          p === "issue" ||
+          p === "cancelled" ||
+          p === "deployed" ||
+          p === "unavailable"
+        )
+          return p;
         return "alert";
+      }
+
+      function isFacilityOrderUnavailable(entry) {
+        if (!entry || !isFacilityOrder(entry)) return false;
+        return getOrderPhase(entry) === "unavailable";
       }
 
       function isAutoRobotOrder(entry) {
@@ -15312,9 +15410,23 @@
         });
       }
 
+      function syncFacilityUnavailableOrders() {
+        orderLogEntries.forEach(function (entry) {
+          if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
+          var req = findRequestEntry(entry.sourceReqId);
+          if (!req) return;
+          if (req.facilityUnavailable && getOrderPhase(entry) === "accepted") {
+            entry.phase = "unavailable";
+            if (!entry.unavailableAt) entry.unavailableAt = new Date().toISOString();
+          }
+          if (getOrderPhase(entry) === "unavailable") req.facilityUnavailable = true;
+        });
+      }
+
       function renderOrderPanels(opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
+        syncFacilityUnavailableOrders();
         renderOrderLogPanel(opts);
         renderFacilityOrderLogPanel(opts);
         renderOrderWorkPanels(opts);
@@ -15606,6 +15718,10 @@
         var auto = !!opts.auto;
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return false;
+        if (isFacilityOrder(entry) && entry.sourceReqId) {
+          var blockedReq = findRequestEntry(entry.sourceReqId);
+          if (blockedReq && isFacilityUnavailable(blockedReq)) return false;
+        }
         if (!auto && !maintenanceMode) return false;
         if (!auto && !getOperatorName()) {
           showOperatorGate({
@@ -15699,6 +15815,7 @@
         orderLogEntries.forEach(function (entry) {
           if (!entry || !isFacilityOrder(entry)) return;
           if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+          if (isFacilityOrderUnavailable(entry)) return;
           var due = getFacilityOrderDueTime(entry);
           if (!due || !isFacilityTimeReached(due)) return;
           if (
@@ -15830,6 +15947,11 @@
         srcReq.facilityOkTime = p.value;
         delete srcReq.facilitySched;
         delete srcReq.facilityUnavailable;
+        if (getOrderPhase(entry) === "unavailable") {
+          entry.phase = "accepted";
+          delete entry.unavailableAt;
+          delete entry.unavailableBy;
+        }
         markRequestEntrySavedLocally(srcReq);
         if (entry.id) delete facilityTimeEditIds[entry.id];
         saveRequestLog();
@@ -15862,6 +15984,9 @@
         delete srcReq.facilityOkTime;
         delete srcReq.facilitySched;
         srcReq.facilityUnavailable = true;
+        entry.phase = "unavailable";
+        entry.unavailableAt = new Date().toISOString();
+        entry.unavailableBy = getOperatorName();
         if (entry.id) delete facilityTimeEditIds[entry.id];
         markRequestEntrySavedLocally(srcReq);
         saveRequestLog();
@@ -15957,6 +16082,7 @@
         var phase = getOrderPhase(o);
         if (phase === "deployed") return "ok";
         if (phase === "cancelled") return "none";
+        if (phase === "unavailable") return "unavailable";
         return "pending";
       }
 
@@ -15986,6 +16112,10 @@
           btn.classList.add("is-ok");
           btn.textContent = formatFacilityOkButtonText(reqId);
           btn.setAttribute("aria-label", "시설 확인 완료");
+        } else if (status === "unavailable") {
+          btn.classList.add("is-denied");
+          btn.textContent = "입실 불가";
+          btn.setAttribute("aria-label", "입실 불가");
         } else {
           btn.textContent = opts.pendingLabel || "시설요청됨";
           btn.setAttribute("aria-label", opts.pendingAria || "시설 요청됨");
@@ -16010,19 +16140,35 @@
         var cancelledEmpty = document.getElementById(prefix + "CancelledEmpty");
         var deployedList = document.getElementById(prefix + "DeployedList");
         var deployedEmpty = document.getElementById(prefix + "DeployedEmpty");
+        var unavailableList = isFacilityPanel
+          ? document.getElementById("facilityUnavailableList")
+          : null;
+        var unavailableEmpty = isFacilityPanel
+          ? document.getElementById("facilityUnavailableEmpty")
+          : null;
         if (!issueList || !acceptedList || !cancelledList || !deployedList) return;
 
         issueList.innerHTML = "";
         acceptedList.innerHTML = "";
         cancelledList.innerHTML = "";
         deployedList.innerHTML = "";
+        if (unavailableList) unavailableList.innerHTML = "";
 
         var issueEntries = orderLogEntries.filter(function (e) {
           return entryFilter(e) && isOrderIssueOpen(e);
         });
         var acceptedEntries = orderLogEntries.filter(function (e) {
-          return entryFilter(e) && getOrderPhase(e) === "accepted" && !isOrderIssueOpen(e);
+          return (
+            entryFilter(e) &&
+            getOrderPhase(e) === "accepted" &&
+            !isOrderIssueOpen(e)
+          );
         });
+        var unavailableEntries = isFacilityPanel
+          ? orderLogEntries.filter(function (e) {
+              return entryFilter(e) && getOrderPhase(e) === "unavailable";
+            })
+          : [];
         var cancelledEntries = orderLogEntries.filter(function (e) {
           return entryFilter(e) && getOrderPhase(e) === "cancelled";
         });
@@ -16036,6 +16182,9 @@
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
           acceptedEntries = acceptedEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterRaw);
+          });
+          unavailableEntries = unavailableEntries.filter(function (e) {
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
           cancelledEntries = cancelledEntries.filter(function (e) {
@@ -16100,6 +16249,43 @@
           }
           appendOrderAcceptedMaintActions(li, entry);
           acceptedList.appendChild(li);
+        });
+
+        unavailableEntries.sort(function (a, b) {
+          var ta = new Date(a.unavailableAt || a.acceptedAt || a.at || 0).getTime();
+          var tb = new Date(b.unavailableAt || b.acceptedAt || b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+        unavailableEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "order-work-item order-work-item--unavailable";
+          li.setAttribute("data-order-id", entry.id || "");
+          appendOrderItemCommon(li, entry, {
+            extraLabel: "불가 ",
+            extraAt: entry.unavailableAt || entry.acceptedAt || entry.at,
+          });
+          var deniedBy =
+            entry.unavailableBy != null ? String(entry.unavailableBy).trim() : "";
+          if (deniedBy) {
+            var deniedMeta = document.createElement("div");
+            deniedMeta.className = "order-feedback__item-memo";
+            deniedMeta.style.marginTop = "4px";
+            deniedMeta.style.paddingTop = "4px";
+            deniedMeta.textContent = "불가 : " + deniedBy;
+            li.appendChild(deniedMeta);
+          }
+          var deniedLabel = document.createElement("div");
+          deniedLabel.className = "order-work__facility-denied-label";
+          deniedLabel.textContent = "입실 불가";
+          li.appendChild(deniedLabel);
+          var xMark = document.createElement("div");
+          xMark.className = "order-work-item__x";
+          xMark.setAttribute("aria-hidden", "true");
+          xMark.textContent = "✕";
+          li.appendChild(xMark);
+          unavailableList.appendChild(li);
         });
 
         cancelledEntries.sort(function (a, b) {
@@ -16214,6 +16400,15 @@
             deployedEmpty.textContent = isFacilityPanel
               ? "입실 가능 건이 없습니다."
               : "투입완료 건이 없습니다.";
+          }
+        }
+        if (unavailableEmpty) {
+          unavailableEmpty.hidden = unavailableEntries.length > 0;
+          if (!unavailableEntries.length && filterRaw) {
+            unavailableEmpty.textContent =
+              "입력한 객실번호에 해당하는 입실불가 건이 없습니다.";
+          } else {
+            unavailableEmpty.textContent = "입실불가 건이 없습니다.";
           }
         }
         setIssueSectionVisible(
@@ -16342,10 +16537,12 @@
         var filterRaw = getRequestRoomFilterRaw();
         scheduled.forEach(function (entry) {
           var sched = String(entry.sched).trim();
+          var facDenied = isFacilityUnavailable(entry);
           var li = document.createElement("li");
           li.className = "room-card sched-req-card";
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("sched-req-card--urgent");
+          if (facDenied) li.classList.add("sched-req-card--facility-unavailable");
           if (pendingRequestModifyIds[entry.id]) {
             li.classList.add("is-change-alert");
             li.title = "수정된 내용이 있습니다 · 클릭하면 강조 해제";
@@ -16359,12 +16556,22 @@
           no.className = "room-card__no";
           no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
           noBox.appendChild(no);
-          var st = liveRequestEntryStatus(entry);
+          var st = facDenied ? "입실 불가" : liveRequestEntryStatus(entry);
           head.appendChild(noBox);
           appendRoomTypeToCardHead(head, entry.room);
-          head.appendChild(
-            buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
-          );
+          if (facDenied) {
+            var deniedGroup = document.createElement("span");
+            deniedGroup.className = "hk-status-group";
+            var deniedSt = document.createElement("span");
+            deniedSt.className = "room-card__status sched-req-card__denied-status";
+            deniedSt.textContent = "입실 불가";
+            deniedGroup.appendChild(deniedSt);
+            head.appendChild(deniedGroup);
+          } else {
+            head.appendChild(
+              buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
+            );
+          }
           li.appendChild(head);
 
           var sl = document.createElement("p");
@@ -16468,6 +16675,14 @@
             byElSched.textContent = byNameSched;
             byElSched.title = "요청: " + byNameSched;
             li.appendChild(byElSched);
+          }
+
+          if (facDenied) {
+            var schedX = document.createElement("div");
+            schedX.className = "sched-req-card__x";
+            schedX.setAttribute("aria-hidden", "true");
+            schedX.textContent = "✕";
+            li.appendChild(schedX);
           }
 
           ul.appendChild(li);
