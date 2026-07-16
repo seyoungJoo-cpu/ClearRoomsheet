@@ -11291,11 +11291,7 @@
         if (!maintenanceMode || !entryId) return;
         var entry = findRequestEntry(entryId);
         if (!entry) return;
-        if (hasActiveFacilityOrderForRequest(entryId)) {
-          entry.facilitySched = "IP";
-        } else {
-          applyRequestSchedChange(entry, "IP");
-        }
+        applyRequestSchedChange(entry, "IP");
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
         renderRequestLogPanel();
