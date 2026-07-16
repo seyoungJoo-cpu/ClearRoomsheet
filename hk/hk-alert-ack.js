@@ -18,6 +18,7 @@
       mbCheckAcceptedIds: {},
       mbCheckGstIds: {},
       frontChatIds: {},
+      teamChatIds: {},
       zoneRoomDismiss: {},
       facilityMiscSig: "",
       facilityDailySig: "",
@@ -66,6 +67,7 @@
     if (!s.mbCheckAcceptedIds) s.mbCheckAcceptedIds = {};
     if (!s.mbCheckGstIds) s.mbCheckGstIds = {};
     if (!s.frontChatIds) s.frontChatIds = {};
+    if (!s.teamChatIds) s.teamChatIds = {};
     if (!s.zoneRoomDismiss) s.zoneRoomDismiss = {};
     if (s.facilityMiscSig == null) s.facilityMiscSig = "";
     if (s.facilityDailySig == null) s.facilityDailySig = "";
@@ -174,6 +176,12 @@
     hasFrontChatId: function (id) {
       return hasMapKey("frontChatIds", id);
     },
+    markTeamChatId: function (id) {
+      markMapKey("teamChatIds", id);
+    },
+    hasTeamChatId: function (id) {
+      return hasMapKey("teamChatIds", id);
+    },
     markZoneRoomDismiss: function (roomKey, changeId) {
       markMapVal("zoneRoomDismiss", roomKey, changeId);
     },
@@ -222,6 +230,7 @@
       if (!target.knownMbCheckAcceptedIds) target.knownMbCheckAcceptedIds = {};
       if (!target.knownMbCheckGstIds) target.knownMbCheckGstIds = {};
       if (!target.knownFrontChatIds) target.knownFrontChatIds = {};
+      if (!target.knownTeamChatIds) target.knownTeamChatIds = {};
       Object.keys(s.requestKeys).forEach(function (k) {
         target.knownRequestAlertKeys[k] = true;
       });
@@ -248,6 +257,9 @@
       });
       Object.keys(s.frontChatIds).forEach(function (k) {
         target.knownFrontChatIds[k] = true;
+      });
+      Object.keys(s.teamChatIds || {}).forEach(function (k) {
+        target.knownTeamChatIds[k] = true;
       });
       return target;
     },

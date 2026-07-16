@@ -6997,7 +6997,7 @@
             id="sidebarBtnChat"
             aria-pressed="false"
           >
-            채팅
+            채팅방
           </button>
           <button
             type="button"
@@ -7006,7 +7006,7 @@
             aria-pressed="false"
             hidden
           >
-            프론트 채팅
+            프론트 채팅방
           </button>
         </div>
       </nav>
@@ -7127,10 +7127,10 @@
     <main class="main">
       <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
         <div class="panel-head-row">
-          <h2 id="frontChatPanelTitle">채팅</h2>
+          <h2 id="frontChatPanelTitle">채팅방</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckFrontChatPanel" hidden>확인</button>
         </div>
-        <p class="front-chat-panel__hint">정비 입력·프론트 모드에서 사용하는 공용 대화방입니다. 메시지는 모든 화면에 동기화됩니다.</p>
+        <p class="front-chat-panel__hint" id="frontChatPanelHint">정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화됩니다.</p>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
         <p class="front-chat__empty" id="frontChatEmpty" hidden></p>
         <form class="front-chat__form" id="frontChatForm">
@@ -7999,9 +7999,9 @@
     hidden
     role="status"
     aria-live="polite"
-    title="클릭하면 프론트 채팅으로 이동"
+    title="클릭하면 채팅으로 이동"
   >
-    <div class="front-chat-toast__label">프론트 채팅</div>
+    <div class="front-chat-toast__label" id="frontChatToastLabel">채팅방</div>
     <div class="front-chat-toast__by" id="frontChatToastBy"></div>
     <div class="front-chat-toast__text" id="frontChatToastText"></div>
   </div>
@@ -8195,9 +8195,13 @@
       var aiOrdersScope = "all";
       var requestLogEntries = [];
       var orderLogEntries = [];
+      var teamChatMessages = [];
       var frontChatMessages = [];
+      var knownTeamChatIds = {};
       var knownFrontChatIds = {};
       var frontChatToastHideTimer = null;
+      var frontChatToastRoom = null;
+      var pendingTeamChatAlert = false;
       var pendingFrontChatAlert = false;
       var lastKnownNotice = null;
       var lastKnownNoticeImage = null;
@@ -8506,44 +8510,65 @@
         return !!(selfNorm && byNorm && selfNorm === byNorm);
       }
 
-      function findFrontChatMessageById(id) {
+      function getActiveChatKind() {
+        if (sidebarMainView === "chat") return "team";
+        if (sidebarMainView === "front") return "front";
+        return null;
+      }
+
+      function getChatMessagesForKind(kind) {
+        return kind === "team" ? teamChatMessages : frontChatMessages;
+      }
+
+      function findChatMessageById(kind, id) {
         if (!id) return null;
-        for (var i = 0; i < frontChatMessages.length; i++) {
-          if (frontChatMessages[i] && frontChatMessages[i].id === id) {
-            return frontChatMessages[i];
-          }
+        var list = getChatMessagesForKind(kind);
+        for (var i = 0; i < list.length; i++) {
+          if (list[i] && list[i].id === id) return list[i];
         }
         return null;
       }
 
-      function saveFrontChatMessages() {
-        if (typeof HKSync === "undefined" || !HKSync.setFrontChat) return;
-        HKSync.setFrontChat(frontChatMessages);
+      function saveChatMessages(kind) {
+        if (typeof HKSync === "undefined") return;
+        if (kind === "team") {
+          if (HKSync.setTeamChat) HKSync.setTeamChat(teamChatMessages);
+        } else if (kind === "front") {
+          if (HKSync.setFrontChat) HKSync.setFrontChat(frontChatMessages);
+        }
       }
 
-      function deleteFrontChatMessage(id) {
-        var msg = findFrontChatMessageById(id);
+      function deleteChatMessage(kind, id) {
+        var msg = findChatMessageById(kind, id);
         if (!msg || msg.deleted || !isOwnChatAuthor(msg.by)) return;
         msg.deleted = true;
         msg.deletedAt = new Date().toISOString();
         msg.text = "";
         msg.image = "";
-        saveFrontChatMessages();
-        syncFrontChatFromServer();
+        saveChatMessages(kind);
+        syncAllChatFromServer();
         renderFrontChatPanel();
       }
 
-      function saveFrontChatMessageEdit(id, newText) {
-        var msg = findFrontChatMessageById(id);
+      function saveChatMessageEdit(kind, id, newText) {
+        var msg = findChatMessageById(kind, id);
         var text = String(newText || "").trim();
         if (!msg || msg.deleted || !isOwnChatAuthor(msg.by) || !text) return;
         msg.text = text;
         msg.image = "";
         msg.edited = true;
         msg.editedAt = new Date().toISOString();
-        saveFrontChatMessages();
-        syncFrontChatFromServer();
+        saveChatMessages(kind);
+        syncAllChatFromServer();
         renderFrontChatPanel();
+      }
+
+      function deleteFrontChatMessage(id) {
+        deleteChatMessage(getActiveChatKind() || "front", id);
+      }
+
+      function saveFrontChatMessageEdit(id, newText) {
+        saveChatMessageEdit(getActiveChatKind() || "front", id, newText);
       }
 
       function applyChatBubbleColors(li, byName, byEl, textClass) {
@@ -9463,8 +9488,38 @@
         }
       }
 
-      function loadFrontChat() {
+      function syncTeamChatFromServer() {
+        if (typeof HKSync !== "undefined" && HKSync.getTeamChat) {
+          teamChatMessages = HKSync.getTeamChat();
+        }
+      }
+
+      function syncAllChatFromServer() {
+        syncTeamChatFromServer();
         syncFrontChatFromServer();
+      }
+
+      function loadFrontChat() {
+        syncAllChatFromServer();
+      }
+
+      function updateChatPanelChrome() {
+        var title = document.getElementById("frontChatPanelTitle");
+        var hint = document.getElementById("frontChatPanelHint");
+        var kind = getActiveChatKind();
+        if (kind === "front") {
+          if (title) title.textContent = "프론트 채팅방";
+          if (hint) {
+            hint.textContent =
+              "프론트 전용 대화방입니다. 정비 입력에서는 보이지 않으며, 프론트 모드끼리만 동기화됩니다.";
+          }
+        } else {
+          if (title) title.textContent = "채팅방";
+          if (hint) {
+            hint.textContent =
+              "정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화됩니다.";
+          }
+        }
       }
 
       function saveRequestLog() {
@@ -9514,7 +9569,16 @@
         if (changed.indexOf("hkFrontChat") >= 0) {
           syncFrontChatFromServer();
           detectNewFrontChatMessages();
-          renderFrontChatPanel(sidebarMainView === "front" || sidebarMainView === "chat");
+          if (sidebarMainView === "front") {
+            renderFrontChatPanel(true);
+          }
+        }
+        if (changed.indexOf("hkTeamChat") >= 0) {
+          syncTeamChatFromServer();
+          detectNewTeamChatMessages();
+          if (sidebarMainView === "chat") {
+            renderFrontChatPanel(true);
+          }
         }
         if (changed.indexOf("hkAdminInquiries") >= 0) {
           if (typeof HKAdminInquiry !== "undefined") {
@@ -9625,6 +9689,7 @@
           knownMbCheckAcceptedIds: knownMbCheckAcceptedIds,
           knownMbCheckGstIds: knownMbCheckGstIds,
           knownFrontChatIds: knownFrontChatIds,
+          knownTeamChatIds: knownTeamChatIds,
         });
       }
 
@@ -9875,7 +9940,7 @@
 
       function handleCloseDayFromSync(payload) {
         if (!payload || !payload.hkCloseDayAt) return;
-        syncFrontChatFromServer();
+        syncAllChatFromServer();
         renderFrontChatPanel({ force: true });
         initFrontChatTracking();
         if (typeof HKAdminInquiry !== "undefined") {
@@ -10994,8 +11059,12 @@
         hkBindPhotoButton(document.getElementById("btnPhotoInvMemo"), "invMemo");
         hkBindPhotoPaste(document.getElementById("frontChatInput"), "frontChat", {
           autoSend: function (text, image) {
-            if (!frontMode) return;
-            submitFrontChatMessage(text, image);
+            var kind = getActiveChatKind();
+            if (kind === "team" && canUseTeamChat()) {
+              submitTeamChatMessage(text, image);
+            } else if (kind === "front" && frontMode) {
+              submitFrontChatMessage(text, image);
+            }
           },
         });
         hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
@@ -11850,8 +11919,9 @@
         if (mbCheckPanel) mbCheckPanel.hidden = !showMbCheck;
         if (invenNotifyPanel) invenNotifyPanel.hidden = !showInvenNotify;
         if (frontChatPanel) {
-          frontChatPanel.hidden =
-            !canUseTeamChat() || (!showChat && !showFront);
+          var canShowTeam = canUseTeamChat() && showChat;
+          var canShowFront = frontMode && showFront;
+          frontChatPanel.hidden = !(canShowTeam || canShowFront);
         }
         if (frontEmbedHubPanel) frontEmbedHubPanel.hidden = !showFrontEmbed || !frontMode;
         syncFrontEmbedTabUi();
@@ -11914,15 +11984,23 @@
             if (inp) inp.focus();
           });
         }
-        if (showFront || showChat) {
+        if (showChat) {
           hideFrontChatToast();
-          clearFrontChatSidebarAlert();
+          clearTeamChatSidebarAlert();
+          updateChatPanelChrome();
           requestAnimationFrame(function () {
             renderFrontChatPanel(true);
-            if (showChat) {
-              var inp = document.getElementById("frontChatInput");
-              if (inp) inp.focus();
-            }
+            var inp = document.getElementById("frontChatInput");
+            if (inp) inp.focus();
+          });
+        } else if (showFront) {
+          hideFrontChatToast();
+          clearFrontChatSidebarAlert();
+          updateChatPanelChrome();
+          requestAnimationFrame(function () {
+            renderFrontChatPanel(true);
+            var inpFront = document.getElementById("frontChatInput");
+            if (inpFront) inpFront.focus();
           });
         }
       }
@@ -13823,7 +13901,6 @@
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
-        clearFrontChatSidebarAlert();
         if (tab) applyFrontEmbedTab(tab);
         applySidebarMainView("frontEmbed");
       }
@@ -13833,7 +13910,6 @@
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
-        clearFrontChatSidebarAlert();
         applySidebarMainView("chat");
       }
 
@@ -13841,6 +13917,7 @@
         if (!frontMode) return;
         collapseZoneBlock();
         clearZoneTabSelection();
+        hideFrontChatToast();
         applySidebarMainView("front");
       }
 
@@ -14539,7 +14616,12 @@
           );
         }
         el = document.getElementById("btnAckFrontChatPanel");
-        if (el) el.hidden = !pendingFrontChatAlert;
+        if (el) {
+          var ackChat =
+            (sidebarMainView === "chat" && pendingTeamChatAlert) ||
+            (sidebarMainView === "front" && pendingFrontChatAlert);
+          el.hidden = !ackChat;
+        }
         el = document.getElementById("btnAckZoneAlerts");
         if (el) el.hidden = !hasAnyZoneAlert();
       }
@@ -14560,7 +14642,7 @@
           ["btnAckMbInvFeedback", clearMbInvSidebarAlerts],
           ["btnAckMbCheckPanel", clearMbCheckSidebarAlerts],
           ["btnAckMbCheckFeedback", clearMbCheckSidebarAlerts],
-          ["btnAckFrontChatPanel", clearFrontChatSidebarAlert],
+          ["btnAckFrontChatPanel", clearActiveChatSidebarAlert],
           ["btnAckZoneAlerts", clearAllChangeAlerts],
         ].forEach(function (pair) {
           var btn = document.getElementById(pair[0]);
@@ -14618,7 +14700,7 @@
         var chatNav = document.getElementById("sidebarBtnChat");
         var frontChatNav = document.getElementById("sidebarBtnFront");
         if (chatNav) {
-          chatNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
+          chatNav.classList.toggle("is-front-chat-alert", pendingTeamChatAlert);
         }
         if (frontChatNav) {
           frontChatNav.classList.toggle("is-front-chat-alert", pendingFrontChatAlert);
@@ -14626,9 +14708,25 @@
         syncPanelAckButtons();
       }
 
-      function registerFrontChatAlert() {
+      function registerTeamChatAlert() {
         if (!canUseTeamChat() || isViewingTeamChat()) return;
+        pendingTeamChatAlert = true;
+        applyFrontChatSidebarAlertUi();
+      }
+
+      function registerFrontChatAlert() {
+        if (!frontMode || isViewingFrontChat()) return;
         pendingFrontChatAlert = true;
+        applyFrontChatSidebarAlertUi();
+      }
+
+      function clearTeamChatSidebarAlert() {
+        teamChatMessages.forEach(function (msg, idx) {
+          var mid = getFrontChatMessageId(msg, idx);
+          if (typeof HKAlertAck !== "undefined") HKAlertAck.markTeamChatId(mid);
+          knownTeamChatIds[mid] = true;
+        });
+        pendingTeamChatAlert = false;
         applyFrontChatSidebarAlertUi();
       }
 
@@ -14640,6 +14738,11 @@
         });
         pendingFrontChatAlert = false;
         applyFrontChatSidebarAlertUi();
+      }
+
+      function clearActiveChatSidebarAlert() {
+        if (sidebarMainView === "chat") clearTeamChatSidebarAlert();
+        else if (sidebarMainView === "front") clearFrontChatSidebarAlert();
       }
 
       function applyOrderSidebarAlertUi() {
@@ -17773,7 +17876,7 @@
           hideFrontChatToast();
           if (sidebarMainView === "chat") showSidebarRequestView();
         }
-        if (canUseTeamChat()) requestFrontChatNotificationPermission();
+        if (canUseTeamChat() || frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
         if (typeof HKFacilityLogs !== "undefined") {
@@ -17805,11 +17908,13 @@
           scrollToBottom = !!opts.scrollToBottom;
         }
         if (!opts.force && isHkUserEditing()) return;
+        updateChatPanelChrome();
         var list = document.getElementById("frontChatMessages");
         var empty = document.getElementById("frontChatEmpty");
         if (!list) return;
         list.innerHTML = "";
-        var messages = frontChatMessages.slice();
+        var kind = getActiveChatKind();
+        var messages = kind ? getChatMessagesForKind(kind).slice() : [];
         messages.sort(function (a, b) {
           var ta = new Date(a.at || 0).getTime();
           var tb = new Date(b.at || 0).getTime();
@@ -17951,7 +18056,11 @@
       }
 
       function initFrontChatTracking() {
+        knownTeamChatIds = {};
         knownFrontChatIds = {};
+        teamChatMessages.forEach(function (msg, idx) {
+          knownTeamChatIds[getFrontChatMessageId(msg, idx)] = true;
+        });
         frontChatMessages.forEach(function (msg, idx) {
           knownFrontChatIds[getFrontChatMessageId(msg, idx)] = true;
         });
@@ -17959,14 +18068,15 @@
       }
 
       function isViewingTeamChat() {
-        if (!canUseTeamChat()) return false;
-        if (sidebarMainView !== "chat" && sidebarMainView !== "front") return false;
+        if (!canUseTeamChat() || sidebarMainView !== "chat") return false;
         var panel = document.getElementById("frontChatPanel");
         return !!(panel && !panel.hidden);
       }
 
       function isViewingFrontChat() {
-        return isViewingTeamChat();
+        if (!frontMode || sidebarMainView !== "front") return false;
+        var panel = document.getElementById("frontChatPanel");
+        return !!(panel && !panel.hidden);
       }
 
       function getFrontChatNotifyPreview(msg) {
@@ -17989,21 +18099,27 @@
         } catch (e) {}
       }
 
-      function showFrontChatDesktopNotification(msg) {
+      function showFrontChatDesktopNotification(msg, kind) {
         if (typeof Notification === "undefined") return;
         if (Notification.permission !== "granted") return;
         var preview = getFrontChatNotifyPreview(msg);
+        var isTeam = kind === "team";
+        var titlePrefix = isTeam ? "채팅방" : "프론트 채팅방";
         try {
-          var n = new Notification("채팅 · " + preview.by, {
+          var n = new Notification(titlePrefix + " · " + preview.by, {
             body: preview.text,
-            tag: "hk-front-chat",
+            tag: isTeam ? "hk-team-chat" : "hk-front-chat",
             renotify: true,
           });
           n.onclick = function () {
             window.focus();
             n.close();
             hideFrontChatToast();
-            if (canUseTeamChat()) showSidebarChatView();
+            if (isTeam) {
+              if (canUseTeamChat()) showSidebarChatView();
+            } else if (frontMode) {
+              showSidebarFrontView();
+            }
           };
           setTimeout(function () {
             n.close();
@@ -18011,12 +18127,16 @@
         } catch (e) {}
       }
 
-      function notifyFrontChatMessage(msg) {
-        if (!canUseTeamChat() || isViewingTeamChat()) return;
-        if (document.hidden) {
-          showFrontChatDesktopNotification(msg);
+      function notifyChatMessage(msg, kind) {
+        if (kind === "team") {
+          if (!canUseTeamChat() || isViewingTeamChat()) return;
         } else {
-          showFrontChatToast(msg);
+          if (!frontMode || isViewingFrontChat()) return;
+        }
+        if (document.hidden) {
+          showFrontChatDesktopNotification(msg, kind);
+        } else {
+          showFrontChatToast(msg, kind);
         }
       }
 
@@ -18025,19 +18145,33 @@
         if (!toast) return;
         toast.classList.remove("is-visible");
         toast.hidden = true;
+        frontChatToastRoom = null;
         if (frontChatToastHideTimer) {
           clearTimeout(frontChatToastHideTimer);
           frontChatToastHideTimer = null;
         }
       }
 
-      function showFrontChatToast(msg) {
-        if (!canUseTeamChat() || isViewingTeamChat()) return;
+      function showFrontChatToast(msg, kind) {
+        if (kind === "team") {
+          if (!canUseTeamChat() || isViewingTeamChat()) return;
+        } else {
+          if (!frontMode || isViewingFrontChat()) return;
+        }
         var preview = getFrontChatNotifyPreview(msg);
         var toast = document.getElementById("frontChatToast");
+        var labelEl = document.getElementById("frontChatToastLabel");
         var byEl = document.getElementById("frontChatToastBy");
         var textEl = document.getElementById("frontChatToastText");
         if (!toast || !textEl) return;
+        frontChatToastRoom = kind === "team" ? "team" : "front";
+        if (labelEl) {
+          labelEl.textContent = frontChatToastRoom === "team" ? "채팅방" : "프론트 채팅방";
+        }
+        toast.title =
+          frontChatToastRoom === "team"
+            ? "클릭하면 채팅방으로 이동"
+            : "클릭하면 프론트 채팅방으로 이동";
         if (byEl) byEl.textContent = preview.by;
         textEl.textContent = preview.text;
         toast.hidden = false;
@@ -18048,10 +18182,34 @@
         frontChatToastHideTimer = setTimeout(hideFrontChatToast, 3000);
       }
 
-      function detectNewFrontChatMessages() {
+      function detectNewTeamChatMessages() {
         if (!canUseTeamChat()) return;
         var selfNorm = (getOperatorName() || "").trim().toLowerCase();
         var notify = !isViewingTeamChat();
+        var newest = null;
+        teamChatMessages.forEach(function (msg, idx) {
+          var mid = getFrontChatMessageId(msg, idx);
+          if (knownTeamChatIds[mid]) return;
+          if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasTeamChatId(mid)) {
+            knownTeamChatIds[mid] = true;
+            return;
+          }
+          knownTeamChatIds[mid] = true;
+          if (!notify) return;
+          var byNorm = msg.by != null ? String(msg.by).trim().toLowerCase() : "";
+          if (selfNorm && byNorm === selfNorm) return;
+          newest = msg;
+        });
+        if (newest) {
+          registerTeamChatAlert();
+          notifyChatMessage(newest, "team");
+        }
+      }
+
+      function detectNewFrontChatMessages() {
+        if (!frontMode) return;
+        var selfNorm = (getOperatorName() || "").trim().toLowerCase();
+        var notify = !isViewingFrontChat();
         var newest = null;
         frontChatMessages.forEach(function (msg, idx) {
           var mid = getFrontChatMessageId(msg, idx);
@@ -18068,12 +18226,41 @@
         });
         if (newest) {
           registerFrontChatAlert();
-          notifyFrontChatMessage(newest);
+          notifyChatMessage(newest, "front");
         }
       }
 
-      function submitFrontChatMessage(text, image) {
+      function submitTeamChatMessage(text, image) {
         if (!canUseTeamChat()) return;
+        var msgText = String(text || "").trim();
+        var msgImage = image != null ? String(image).trim() : "";
+        if (!msgText && !msgImage) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              submitTeamChatMessage(msgText, msgImage);
+            },
+          });
+          return;
+        }
+        if (typeof HKSync === "undefined" || !HKSync.appendTeamChatMessage) return;
+        var newId = "tchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+        HKSync.appendTeamChatMessage({
+          id: newId,
+          at: new Date().toISOString(),
+          by: getOperatorName(),
+          text: msgText,
+          image: msgImage || "",
+        });
+        knownTeamChatIds[newId] = true;
+        hkClearPhoto("frontChat");
+        syncTeamChatFromServer();
+        renderFrontChatPanel({ scrollToBottom: true, force: true });
+      }
+
+      function submitFrontChatMessage(text, image) {
+        if (!frontMode) return;
         var msgText = String(text || "").trim();
         var msgImage = image != null ? String(image).trim() : "";
         if (!msgText && !msgImage) return;
@@ -18476,7 +18663,7 @@
         }
         renderRequestLogPanel();
         renderOrderPanels();
-        renderFrontChatPanel(sidebarMainView === "front");
+        renderFrontChatPanel(sidebarMainView === "front" || sidebarMainView === "chat");
         applyOrderSidebarAlertUi();
         applyRequestSidebarAlertUi();
         applyFrontChatSidebarAlertUi();
@@ -18486,6 +18673,8 @@
         rebuildChangeAlertsFromLog({ skipRender: true });
         rebuildRequestModifyAlerts();
         applyZoneAlertUi();
+        detectNewTeamChatMessages();
+        detectNewFrontChatMessages();
       }
 
       loadSchedTypeFiltersFromStorage();
@@ -19133,11 +19322,19 @@
       if (frontChatForm) {
         frontChatForm.addEventListener("submit", function (e) {
           e.preventDefault();
-          if (!frontMode) return;
+          var kind = getActiveChatKind();
+          if (kind === "team") {
+            if (!canUseTeamChat()) return;
+          } else if (kind === "front") {
+            if (!frontMode) return;
+          } else {
+            return;
+          }
           var inp = document.getElementById("frontChatInput");
           var text = inp ? inp.value : "";
           var image = hkGetPhoto("frontChat");
-          submitFrontChatMessage(text, image);
+          if (kind === "team") submitTeamChatMessage(text, image);
+          else submitFrontChatMessage(text, image);
           if (inp) inp.value = "";
         });
       }
@@ -19145,8 +19342,13 @@
       var frontChatToastEl = document.getElementById("frontChatToast");
       if (frontChatToastEl) {
         frontChatToastEl.addEventListener("click", function () {
+          var room = frontChatToastRoom;
           hideFrontChatToast();
-          if (canUseTeamChat()) showSidebarChatView();
+          if (room === "front") {
+            if (frontMode) showSidebarFrontView();
+          } else if (canUseTeamChat()) {
+            showSidebarChatView();
+          }
         });
       }
 
@@ -19216,7 +19418,7 @@
           bChat.addEventListener("click", function () {
             if (!canUseTeamChat()) return;
             if (sidebarMainView === "chat") {
-              if (pendingFrontChatAlert) clearFrontChatSidebarAlert();
+              if (pendingTeamChatAlert) clearTeamChatSidebarAlert();
               return;
             }
             showSidebarChatView();
@@ -19301,7 +19503,10 @@
         if (bFront) {
           bFront.addEventListener("click", function () {
             if (!frontMode) return;
-            if (sidebarMainView === "front") return;
+            if (sidebarMainView === "front") {
+              if (pendingFrontChatAlert) clearFrontChatSidebarAlert();
+              return;
+            }
             showSidebarFrontView();
           });
         }

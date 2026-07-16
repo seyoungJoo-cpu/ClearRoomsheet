@@ -243,6 +243,20 @@ function saveSharedStateToDisk() {
 
 loadSharedStateFromDisk();
 
+(function migrateLegacySharedChatToTeamChat() {
+  var p = sharedState.payload;
+  if (!p || typeof p !== "object") return;
+  if (Array.isArray(p.hkTeamChat)) return;
+  if (Array.isArray(p.hkFrontChat) && p.hkFrontChat.length) {
+    p.hkTeamChat = p.hkFrontChat.slice();
+    p.hkFrontChat = [];
+    saveSharedStateToDisk();
+    console.log("Sync: migrated legacy front chat → team chat (" + p.hkTeamChat.length + ")");
+  } else {
+    p.hkTeamChat = [];
+  }
+})();
+
 function checkSyncAuth(req, res, next) {
   const password = req.get("x-sync-password");
   if (password !== SYNC_PASSWORD) {
@@ -670,6 +684,17 @@ function mergeSyncPayload(prev, incoming) {
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
     out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkTeamChat")) {
+    out.hkTeamChat = replaceLogArray(incoming.hkTeamChat);
+  } else if (!Array.isArray(out.hkTeamChat)) {
+    // 레거시 공용 채팅 → 팀 채팅(정비+프론트)으로 이전
+    if (Array.isArray(out.hkFrontChat) && out.hkFrontChat.length) {
+      out.hkTeamChat = out.hkFrontChat.slice();
+      out.hkFrontChat = [];
+    } else {
+      out.hkTeamChat = [];
+    }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkAdminInquiries")) {
     out.hkAdminInquiries = mergeAdminInquiries(

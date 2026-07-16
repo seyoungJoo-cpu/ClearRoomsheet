@@ -11,6 +11,7 @@
   var MB_INV_LOG_KEY = "lotte-hk-mb-inv-log-v1";
   var MB_CHECK_LOG_KEY = "lotte-hk-mb-check-log-v1";
   var FRONT_CHAT_KEY = "lotte-hk-front-chat-v1";
+  var TEAM_CHAT_KEY = "lotte-hk-team-chat-v1";
   var ADMIN_INQUIRY_KEY = "lotte-hk-admin-inquiries-v1";
   var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
   var CLOSE_DAY_KEY = "lotte-hk-close-day-at-v1";
@@ -55,6 +56,7 @@
     hkMbInvLog: false,
     hkMbCheckLog: false,
     hkFrontChat: false,
+    hkTeamChat: false,
     hkAdminInquiries: false,
   };
 
@@ -105,6 +107,7 @@
     mbInvLog: [],
     mbCheckLog: [],
     frontChat: [],
+    teamChat: [],
     adminInquiries: [],
   };
 
@@ -371,6 +374,7 @@
     MB_INV_LOG_KEY,
     MB_CHECK_LOG_KEY,
     FRONT_CHAT_KEY,
+    TEAM_CHAT_KEY,
     SYNC_VERSION_KEY,
     CLOSE_DAY_KEY,
   ];
@@ -384,6 +388,7 @@
     cache.mbInvLog = readJsonArray(MB_INV_LOG_KEY);
     cache.mbCheckLog = readJsonArray(MB_CHECK_LOG_KEY);
     cache.frontChat = readJsonArray(FRONT_CHAT_KEY);
+    cache.teamChat = readJsonArray(TEAM_CHAT_KEY);
     cache.adminInquiries = readJsonArray(ADMIN_INQUIRY_KEY);
     loadRoomingXmlFromLocal();
   }
@@ -420,6 +425,7 @@
     cache.mbInvLog = [];
     cache.mbCheckLog = [];
     cache.frontChat = [];
+    cache.teamChat = [];
     clearAllDirty();
     pendingPush = {};
     pendingLastRoomChange = null;
@@ -547,6 +553,9 @@
     }
     if (pendingPush.hkFrontChat && dirty.hkFrontChat) {
       body.hkFrontChat = cache.frontChat;
+    }
+    if (pendingPush.hkTeamChat && dirty.hkTeamChat) {
+      body.hkTeamChat = cache.teamChat;
     }
     if (pendingPush.hkAdminInquiries && dirty.hkAdminInquiries) {
       body.hkAdminInquiries = cache.adminInquiries;
@@ -710,6 +719,25 @@
       changed.push("hkFrontChat");
       clearDirty("hkFrontChat");
     }
+    if (Array.isArray(payload.hkTeamChat)) {
+      cache.teamChat = payload.hkTeamChat.slice();
+      writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
+      changed.push("hkTeamChat");
+      clearDirty("hkTeamChat");
+    } else if (
+      !Object.prototype.hasOwnProperty.call(payload, "hkTeamChat") &&
+      Array.isArray(payload.hkFrontChat) &&
+      !cache.teamChat.length &&
+      payload.hkFrontChat.length
+    ) {
+      // 레거시 공용 채팅 → 팀 채팅으로 이전 (로컬 1회)
+      cache.teamChat = payload.hkFrontChat.slice();
+      cache.frontChat = [];
+      writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
+      writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      changed.push("hkTeamChat");
+      changed.push("hkFrontChat");
+    }
     if (Array.isArray(payload.hkAdminInquiries)) {
       cache.adminInquiries = payload.hkAdminInquiries.slice();
       writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
@@ -738,6 +766,7 @@
       "hkMbInvLog",
       "hkMbCheckLog",
       "hkFrontChat",
+      "hkTeamChat",
       "hkAdminInquiries",
       "hkCancelLog",
       "hkUseLog",
@@ -755,6 +784,7 @@
           hkMbInvLog: cache.mbInvLog.slice(),
           hkMbCheckLog: cache.mbCheckLog.slice(),
           hkFrontChat: cache.frontChat.slice(),
+          hkTeamChat: cache.teamChat.slice(),
           hkAdminInquiries: cache.adminInquiries.slice(),
           hkCancelLog: cache.cancelLog.slice(),
           hkUseLog: cache.useLog.slice(),
@@ -945,6 +975,31 @@
       markDirty("hkFrontChat");
       schedulePush({ hkFrontChat: true });
     },
+    getTeamChat: function () {
+      return cache.teamChat;
+    },
+    appendTeamChatMessage: function (entry) {
+      if (!entry || typeof entry !== "object") return;
+      cache.teamChat.push(entry);
+      if (cache.teamChat.length > 300) {
+        cache.teamChat = cache.teamChat.slice(-300);
+      }
+      writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
+      markDirty("hkTeamChat");
+      schedulePush({ hkTeamChat: true });
+    },
+    setTeamChat: function (entries) {
+      cache.teamChat = Array.isArray(entries) ? entries.slice() : [];
+      writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
+      markDirty("hkTeamChat");
+      schedulePush({ hkTeamChat: true });
+    },
+    clearTeamChat: function () {
+      cache.teamChat = [];
+      writeJsonArray(TEAM_CHAT_KEY, []);
+      markDirty("hkTeamChat");
+      schedulePush({ hkTeamChat: true });
+    },
     getAdminInquiries: function () {
       return cache.adminInquiries;
     },
@@ -1046,6 +1101,10 @@
       if (Array.isArray(payload.hkFrontChat)) {
         cache.frontChat = payload.hkFrontChat.slice();
         writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+      }
+      if (Array.isArray(payload.hkTeamChat)) {
+        cache.teamChat = payload.hkTeamChat.slice();
+        writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       }
       if (Array.isArray(payload.hkAdminInquiries)) {
         cache.adminInquiries = payload.hkAdminInquiries.slice();

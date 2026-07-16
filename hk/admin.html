@@ -947,7 +947,7 @@
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보 표·요청·오더·MB &amp; 인벤·MB CHECK·프론트 채팅·객실 변경 이력·취소/사용 리스트·루밍 XML 등
+        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보 표·요청·오더·MB &amp; 인벤·MB CHECK·채팅방·프론트 채팅방·객실 변경 이력·취소/사용 리스트·루밍 XML 등
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
         <strong>채팅·관리자 문의</strong>·<strong>오더 알림·문제발생</strong>은 함께 저장하고 화면에 유지합니다.
@@ -1495,6 +1495,9 @@
           var n = String(name || "").trim();
           if (n) names[n] = true;
         }
+        (snapshot.teamChat || []).forEach(function (entry) {
+          addName(entry.by);
+        });
         (snapshot.frontChat || []).forEach(function (entry) {
           addName(entry.by);
         });
@@ -1692,7 +1695,8 @@
           ["오더", String((snapshot.orderLog || []).length) + "건"],
           ["MB & 인벤 변경", String((snapshot.mbInvLog || []).length) + "건"],
           ["MB CHECK", String((snapshot.mbCheckLog || []).length) + "건"],
-          ["프론트 채팅", String((snapshot.frontChat || []).length) + "건"],
+          ["채팅방", String((snapshot.teamChat || []).length) + "건"],
+          ["프론트 채팅방", String((snapshot.frontChat || []).length) + "건"],
           ["객실 변경 이력", String((snapshot.changeLog || []).length) + "건"],
           ["취소리스트", String((snapshot.cancelLog || []).length) + "건"],
           ["사용리스트", String((snapshot.useLog || []).length) + "건"],
@@ -1711,6 +1715,7 @@
           orderLog: sync ? sync.getOrderLog() : [],
           mbInvLog: sync ? sync.getMbInvLog() : [],
           mbCheckLog: sync ? sync.getMbCheckLog() : [],
+          teamChat: sync && sync.getTeamChat ? sync.getTeamChat() : [],
           frontChat: sync ? sync.getFrontChat() : [],
           changeLog: sync ? sync.getChangeLog() : [],
           cancelLog: sync ? sync.getCancelLog() : [],
@@ -2106,7 +2111,34 @@
             }),
           },
           {
-            title: "프론트 채팅",
+            title: "채팅방",
+            headers: [
+              "ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+              "수정",
+              "수정시각",
+            ],
+            rows: (snapshot.teamChat || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                entry.by || "",
+                formatFrontChatRowText(entry),
+                excelImageCell(entry.deleted ? "" : entry.image),
+                formatYn(entry.deleted),
+                formatAt(entry.deletedAt),
+                formatYn(entry.edited),
+                formatAt(entry.editedAt),
+              ];
+            }),
+          },
+          {
+            title: "프론트 채팅방",
             headers: [
               "ID",
               "시각",
@@ -2362,6 +2394,10 @@
         });
         html.push("</div>");
         return html.join("");
+      }
+
+      function renderReportTeamChatSection(snapshot) {
+        return renderReportChatList(snapshot.teamChat || []);
       }
 
       function renderReportFrontChatSection(snapshot) {
@@ -2721,7 +2757,8 @@
           invParts.push("</tbody></table></div>");
           return invParts.join("");
         }
-        if (section.title === "프론트 채팅") return renderReportFrontChatSection(snapshot);
+        if (section.title === "채팅방") return renderReportTeamChatSection(snapshot);
+        if (section.title === "프론트 채팅방") return renderReportFrontChatSection(snapshot);
         if (section.title === "오더") return renderReportOrderCards(snapshot);
         if (section.title === "오더 채팅 (상세)") return renderReportOrderChatGroups(snapshot);
         if (section.title === "MB & 인벤 변경") return renderReportMbInvCards(snapshot);
@@ -2896,6 +2933,10 @@
         if (typeof HKSync !== "undefined" && HKSync.hydrateFromLocal) {
           HKSync.hydrateFromLocal();
         }
+        var preservedTeamChat =
+          typeof HKSync !== "undefined" && HKSync.getTeamChat
+            ? HKSync.getTeamChat().slice()
+            : (snapshot.teamChat || []).slice();
         var preservedFrontChat =
           typeof HKSync !== "undefined" && HKSync.getFrontChat
             ? HKSync.getFrontChat().slice()
@@ -2931,6 +2972,7 @@
             hkOrderLog: preservedOrderLog,
             hkMbInvLog: [],
             hkMbCheckLog: [],
+            hkTeamChat: preservedTeamChat,
             hkFrontChat: preservedFrontChat,
             hkAdminInquiries: preservedAdminInquiries,
             hkCancelLog: [],
