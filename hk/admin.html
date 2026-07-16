@@ -948,12 +948,12 @@
       <h2>마감</h2>
       <p class="close-day-note">
         공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보(게시·임시저장)·요청·오더·MB &amp; 인벤 변경·MB CHECK·채팅방·프론트 채팅방·관리자 문의·객실 변경 이력·취소/사용 리스트·루밍·FASN XML·컴플레인·습득·세탁·당일습득물(사진·채팅)·DD·인벤·치치 임베드 등
-        전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
+        전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 정비오더 화면 스냅샷 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림·문제발생</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
-      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 저장 + 초기화)</button>
+      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 화면스냅샷 저장 + 초기화)</button>
     </section>
   </div>
 
@@ -3268,11 +3268,520 @@
         downloadBlobFile(filename, blob);
       }
 
+      function formatCloseDayHm(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+      }
+
+      function getCloseDayOrderPhase(entry) {
+        if (!entry) return "alert";
+        var p = entry.phase != null ? String(entry.phase).trim() : "";
+        if (
+          p === "accepted" ||
+          p === "issue" ||
+          p === "cancelled" ||
+          p === "deployed" ||
+          p === "unavailable"
+        ) {
+          return p;
+        }
+        return "alert";
+      }
+
+      function isCloseDayFacilityOrder(entry) {
+        return !!(entry && String(entry.category || "").trim() === "facility");
+      }
+
+      function isCloseDayRegularOrder(entry) {
+        return !!(entry && !isCloseDayFacilityOrder(entry));
+      }
+
+      function isCloseDayFacilityUnavailable(entry, requestLog) {
+        if (!entry || !isCloseDayFacilityOrder(entry) || isOrderIssueOpen(entry)) return false;
+        var phase = getCloseDayOrderPhase(entry);
+        if (phase === "unavailable") return true;
+        if (phase === "accepted" && entry.sourceReqId) {
+          var reqs = requestLog || [];
+          for (var i = 0; i < reqs.length; i++) {
+            if (reqs[i] && reqs[i].id === entry.sourceReqId && reqs[i].facilityUnavailable) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function renderCloseDayOrderCardHtml(entry, opts) {
+        opts = opts || {};
+        var classes = ["screen-card"];
+        if (opts.kind === "alert") classes.push("screen-card--alert");
+        if (opts.kind === "issue") classes.push("screen-card--issue");
+        if (opts.kind === "accepted") classes.push("screen-card--accepted");
+        if (opts.kind === "cancelled") classes.push("screen-card--cancelled");
+        if (opts.kind === "deployed") classes.push("screen-card--deployed");
+        if (opts.kind === "unavailable") classes.push("screen-card--unavailable");
+        if (entry.urgent) classes.push("is-urgent");
+        if (entry.fromMaint) classes.push("is-from-maint");
+        if (isCloseDayFacilityOrder(entry)) classes.push("is-facility");
+
+        var html = ['<article class="' + classes.join(" ") + '">'];
+        if (entry.at) {
+          html.push(
+            '<div class="screen-card__time">오더 <strong>' +
+              escHtml(formatCloseDayHm(entry.at)) +
+              "</strong></div>"
+          );
+        }
+        if (entry.acceptedAt) {
+          html.push(
+            '<div class="screen-card__time">접수 <strong>' +
+              escHtml(formatCloseDayHm(entry.acceptedAt)) +
+              "</strong></div>"
+          );
+        }
+        if (opts.extraLabel && opts.extraAt) {
+          html.push(
+            '<div class="screen-card__time">' +
+              escHtml(opts.extraLabel) +
+              " <strong>" +
+              escHtml(formatCloseDayHm(opts.extraAt)) +
+              "</strong></div>"
+          );
+        }
+        html.push('<div class="screen-card__row">');
+        html.push(
+          '<span class="screen-card__room">' +
+            escHtml(formatRoomNoDisplay(entry.room || "")) +
+            (entry.urgent ? '<span class="screen-card__urgent">긴급</span>' : "") +
+            "</span>"
+        );
+        var fo = lookupRoomStatusFromXml(entry.room || "") || entry.foStatus || "";
+        if (fo) {
+          html.push('<span class="screen-card__fo">' + escHtml(fo) + "</span>");
+        }
+        html.push("</div>");
+        var memo = entry.memo != null ? String(entry.memo).trim() : "";
+        if (memo) {
+          html.push(
+            '<div class="screen-card__memo">' +
+              escHtml(memo).replace(/\n/g, "<br>") +
+              "</div>"
+          );
+        }
+        if (entry.memoImage) {
+          html.push(renderReportImageTag(entry.memoImage, "screen-card__img"));
+        }
+        var by = entry.by != null ? String(entry.by).trim() : "";
+        if (by) {
+          html.push('<div class="screen-card__by">' + escHtml(by) + "</div>");
+        }
+        if (opts.metaLine) {
+          html.push(
+            '<div class="screen-card__meta">' + escHtml(opts.metaLine) + "</div>"
+          );
+        }
+        if (opts.showX) {
+          html.push('<div class="screen-card__x" aria-hidden="true">✕</div>');
+        }
+        if (opts.deniedLabel) {
+          html.push(
+            '<div class="screen-card__denied">' + escHtml(opts.deniedLabel) + "</div>"
+          );
+        }
+        if (Array.isArray(entry.chat) && entry.chat.length) {
+          html.push('<div class="screen-card__chat-label">채팅</div>');
+          html.push('<div class="screen-card__chat">');
+          entry.chat.forEach(function (msg) {
+            html.push(
+              '<div class="screen-chat-line"><span class="screen-chat-line__by">' +
+                escHtml(msg.by || "—") +
+                "</span> " +
+                escHtml(formatChatMessageText(msg)) +
+                (msg.at
+                  ? ' <span class="screen-chat-line__at">' +
+                    escHtml(formatCloseDayHm(msg.at)) +
+                    "</span>"
+                  : "") +
+                "</div>"
+            );
+            if (msg.image && !msg.deleted) {
+              html.push(renderReportImageTag(msg.image, "screen-card__img"));
+            }
+          });
+          html.push("</div>");
+        }
+        html.push("</article>");
+        return html.join("");
+      }
+
+      function sortCloseDayOrdersBy(entries, field) {
+        return (entries || []).slice().sort(function (a, b) {
+          var ta = new Date((a && a[field]) || (a && a.at) || 0).getTime();
+          var tb = new Date((b && b[field]) || (b && b.at) || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        });
+      }
+
+      function partitionCloseDayOrders(orderLog, entryFilter, requestLog) {
+        var list = (orderLog || []).filter(entryFilter);
+        return {
+          alert: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return getCloseDayOrderPhase(e) === "alert";
+            }),
+            "at"
+          ),
+          issue: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return isOrderIssueOpen(e);
+            }),
+            "issueAt"
+          ),
+          accepted: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return (
+                getCloseDayOrderPhase(e) === "accepted" &&
+                !isOrderIssueOpen(e) &&
+                !isCloseDayFacilityUnavailable(e, requestLog)
+              );
+            }),
+            "acceptedAt"
+          ),
+          unavailable: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return isCloseDayFacilityUnavailable(e, requestLog);
+            }),
+            "unavailableAt"
+          ),
+          cancelled: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return getCloseDayOrderPhase(e) === "cancelled";
+            }),
+            "cancelledAt"
+          ),
+          deployed: sortCloseDayOrdersBy(
+            list.filter(function (e) {
+              return getCloseDayOrderPhase(e) === "deployed";
+            }),
+            "deployedAt"
+          ),
+        };
+      }
+
+      function renderCloseDayOrderBucket(title, entries, kind, opts) {
+        opts = opts || {};
+        var html = [
+          '<section class="screen-bucket screen-bucket--' + escHtml(kind) + '">',
+          "<h3>" +
+            escHtml(title) +
+            ' <span class="screen-bucket__count">' +
+            String((entries || []).length) +
+            "</span></h3>",
+        ];
+        if (!entries || !entries.length) {
+          html.push('<p class="screen-empty">(내역 없음)</p>');
+        } else {
+          html.push('<div class="screen-bucket__list">');
+          entries.forEach(function (entry) {
+            var cardOpts = { kind: kind };
+            if (kind === "issue") {
+              cardOpts.extraLabel = "문제";
+              cardOpts.extraAt = entry.issueAt || entry.at;
+            } else if (kind === "cancelled") {
+              cardOpts.extraLabel = "취소";
+              cardOpts.extraAt = entry.cancelledAt || entry.at;
+              cardOpts.showX = true;
+              if (entry.cancelledBy) cardOpts.metaLine = "취소 : " + entry.cancelledBy;
+            } else if (kind === "unavailable") {
+              cardOpts.extraLabel = "불가";
+              cardOpts.extraAt = entry.unavailableAt || entry.acceptedAt || entry.at;
+              cardOpts.showX = true;
+              cardOpts.deniedLabel = "입실 불가";
+              if (entry.unavailableBy) cardOpts.metaLine = "불가 : " + entry.unavailableBy;
+            } else if (kind === "accepted" && entry.acceptedBy) {
+              cardOpts.metaLine = "접수자 : " + entry.acceptedBy;
+            } else if (kind === "deployed") {
+              cardOpts.extraLabel = opts.deployedLabel || "투입";
+              cardOpts.extraAt = entry.deployedAt || entry.at;
+            }
+            html.push(renderCloseDayOrderCardHtml(entry, cardOpts));
+          });
+          html.push("</div>");
+        }
+        html.push("</section>");
+        return html.join("");
+      }
+
+      function renderCloseDayOrderScreen(title, alertTitle, parts, opts) {
+        opts = opts || {};
+        var html = [
+          '<section class="screen-view">',
+          '<header class="screen-view__head"><h2>' + escHtml(title) + "</h2></header>",
+          '<div class="screen-view__body">',
+          '<div class="screen-main">',
+          '<div class="screen-panel">',
+          "<h2>" + escHtml(title) + "</h2>",
+          renderCloseDayOrderBucket("문제 발생", parts.issue, "issue"),
+          renderCloseDayOrderBucket("접수완료", parts.accepted, "accepted"),
+        ];
+        if (opts.includeUnavailable) {
+          html.push(
+            renderCloseDayOrderBucket("입실불가", parts.unavailable, "unavailable")
+          );
+        }
+        html.push(renderCloseDayOrderBucket("취소", parts.cancelled, "cancelled"));
+        html.push(
+          renderCloseDayOrderBucket(
+            opts.deployedTitle || "투입완료",
+            parts.deployed,
+            "deployed",
+            { deployedLabel: opts.deployedLabel || "투입" }
+          )
+        );
+        html.push(
+          "</div></div>",
+          '<aside class="screen-side">',
+          '<div class="screen-panel screen-panel--alert">',
+          "<h2>" + escHtml(alertTitle) + "</h2>",
+          renderCloseDayOrderBucket("대기(알림)", parts.alert, "alert"),
+          "</div></aside>",
+          "</div></section>"
+        );
+        return html.join("");
+      }
+
+      function renderCloseDayRequestScreen(snapshot) {
+        var pending = [];
+        var scheduled = [];
+        (snapshot.requestLog || []).forEach(function (entry) {
+          if (!entry) return;
+          if (entry.sched && String(entry.sched).trim()) scheduled.push(entry);
+          else pending.push(entry);
+        });
+        pending.sort(function (a, b) {
+          return new Date(a.at || 0) - new Date(b.at || 0);
+        });
+        scheduled.sort(function (a, b) {
+          return String(a.sched || "").localeCompare(String(b.sched || ""), undefined, {
+            numeric: true,
+          });
+        });
+
+        function reqCard(entry, kind) {
+          var html = [
+            '<article class="screen-card screen-card--' +
+              escHtml(kind) +
+              (entry.urgent ? " is-urgent" : "") +
+              '">',
+          ];
+          if (entry.at) {
+            html.push(
+              '<div class="screen-card__time">요청 <strong>' +
+                escHtml(formatCloseDayHm(entry.at)) +
+                "</strong></div>"
+            );
+          }
+          if (entry.sched) {
+            html.push(
+              '<div class="screen-card__time">예정 <strong>' +
+                escHtml(String(entry.sched)) +
+                "</strong></div>"
+            );
+          }
+          html.push('<div class="screen-card__row">');
+          html.push(
+            '<span class="screen-card__room">' +
+              escHtml(formatRoomNoDisplay(entry.room || "")) +
+              (entry.urgent ? '<span class="screen-card__urgent">긴급</span>' : "") +
+              "</span>"
+          );
+          if (entry.status) {
+            html.push(
+              '<span class="screen-card__fo">' + escHtml(entry.status) + "</span>"
+            );
+          }
+          html.push("</div>");
+          if (entry.memo) {
+            html.push(
+              '<div class="screen-card__memo">FD · ' +
+                escHtml(String(entry.memo)).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          if (entry.memoImage) html.push(renderReportImageTag(entry.memoImage, "screen-card__img"));
+          if (entry.memo2) {
+            html.push(
+              '<div class="screen-card__memo">정비 · ' +
+                escHtml(String(entry.memo2)).replace(/\n/g, "<br>") +
+                "</div>"
+            );
+          }
+          if (entry.memo2Image) {
+            html.push(renderReportImageTag(entry.memo2Image, "screen-card__img"));
+          }
+          if (entry.by) {
+            html.push('<div class="screen-card__by">' + escHtml(entry.by) + "</div>");
+          }
+          html.push("</article>");
+          return html.join("");
+        }
+
+        var html = [
+          '<section class="screen-view">',
+          '<header class="screen-view__head"><h2>정비 관리</h2></header>',
+          '<div class="screen-view__body">',
+          '<div class="screen-main"><div class="screen-panel">',
+          "<h2>처리·예정 요청</h2>",
+        ];
+        if (!scheduled.length) html.push('<p class="screen-empty">(내역 없음)</p>');
+        else {
+          html.push('<div class="screen-bucket__list">');
+          scheduled.forEach(function (e) {
+            html.push(reqCard(e, "accepted"));
+          });
+          html.push("</div>");
+        }
+        html.push(
+          "</div></div>",
+          '<aside class="screen-side"><div class="screen-panel screen-panel--alert">',
+          "<h2>정비 관리 알림</h2>"
+        );
+        if (!pending.length) html.push('<p class="screen-empty">(내역 없음)</p>');
+        else {
+          html.push('<div class="screen-bucket__list">');
+          pending.forEach(function (e) {
+            html.push(reqCard(e, "alert"));
+          });
+          html.push("</div>");
+        }
+        html.push("</div></aside></div></section>");
+        return html.join("");
+      }
+
+      function buildCloseDayScreenHtml(snapshot) {
+        var orderParts = partitionCloseDayOrders(
+          snapshot.orderLog,
+          isCloseDayRegularOrder,
+          snapshot.requestLog
+        );
+        var facilityParts = partitionCloseDayOrders(
+          snapshot.orderLog,
+          isCloseDayFacilityOrder,
+          snapshot.requestLog
+        );
+        var css = [
+          ":root{--accent:#1565c0;--bg:#eef2f6;--panel:#fff;--text:#0f172a;--muted:#64748b;--border:#cbd5e1;--alert-bg:#fffbeb;--alert-bd:#fde68a;}",
+          "*{box-sizing:border-box;}",
+          "html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;}",
+          ".screen-top{background:#0f172a;color:#fff;padding:16px 20px;}",
+          ".screen-top h1{margin:0 0 4px;font-size:1.2rem;}",
+          ".screen-top p{margin:0;opacity:.9;font-size:.8125rem;}",
+          ".screen-nav{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:5;}",
+          ".screen-nav a{display:inline-block;padding:8px 12px;border-radius:8px;background:#e2e8f0;color:#0f172a;text-decoration:none;font-weight:700;font-size:.8125rem;}",
+          ".screen-view{padding:16px;border-bottom:8px solid #dbe3ec;}",
+          ".screen-view__head{margin:0 0 12px;}",
+          ".screen-view__head h2{margin:0;font-size:1.05rem;color:var(--accent);}",
+          ".screen-view__body{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);gap:12px;align-items:start;}",
+          ".screen-panel{background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}",
+          ".screen-panel>h2{margin:0 0 10px;font-size:1rem;}",
+          ".screen-panel--alert{background:var(--alert-bg);border-color:var(--alert-bd);}",
+          ".screen-panel--alert>h2{color:#854d0e;}",
+          ".screen-bucket{margin-top:12px;}",
+          ".screen-bucket h3{margin:0 0 8px;font-size:.875rem;font-weight:800;}",
+          ".screen-bucket__count{display:inline-block;min-width:1.4em;padding:0 6px;border-radius:999px;background:#e2e8f0;font-size:.75rem;}",
+          ".screen-bucket--issue h3{color:#b91c1c;}",
+          ".screen-bucket--accepted h3{color:#047857;}",
+          ".screen-bucket--cancelled h3{color:#64748b;}",
+          ".screen-bucket--deployed h3{color:#1d4ed8;}",
+          ".screen-bucket--unavailable h3{color:#b91c1c;}",
+          ".screen-bucket--alert h3{color:#854d0e;}",
+          ".screen-bucket__list{display:flex;flex-direction:column;gap:8px;}",
+          ".screen-empty{margin:0;color:var(--muted);font-size:.8125rem;text-align:center;padding:10px;}",
+          ".screen-card{position:relative;border:2px solid var(--border);border-radius:10px;padding:10px;background:#fff;}",
+          ".screen-card--alert{border-color:#fde68a;background:#fffbeb;}",
+          ".screen-card--issue{border-color:#fca5a5;background:#fef2f2;}",
+          ".screen-card--accepted{border-color:#6ee7b7;}",
+          ".screen-card--cancelled{border-color:#cbd5e1;background:#f8fafc;}",
+          ".screen-card--deployed{border-color:#93c5fd;background:#eff6ff;}",
+          ".screen-card--unavailable{border-color:#fca5a5;background:#fff1f2;}",
+          ".screen-card.is-urgent{box-shadow:0 0 0 2px rgba(220,38,38,.25);}",
+          ".screen-card.is-from-maint{border-style:dashed;}",
+          ".screen-card__time{font-size:.75rem;color:var(--muted);}",
+          ".screen-card__time strong{color:#b45309;font-size:.875rem;}",
+          ".screen-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;}",
+          ".screen-card__room{font-weight:800;font-size:1rem;}",
+          ".screen-card__urgent{margin-left:6px;padding:1px 6px;border-radius:999px;background:#dc2626;color:#fff;font-size:.625rem;font-weight:800;}",
+          ".screen-card__fo{font-size:.75rem;font-weight:700;color:var(--muted);}",
+          ".screen-card__memo{margin-top:6px;font-size:.8125rem;white-space:pre-wrap;}",
+          ".screen-card__by,.screen-card__meta{margin-top:4px;font-size:.75rem;color:var(--muted);}",
+          ".screen-card__denied{margin-top:6px;color:#b91c1c;font-weight:800;}",
+          ".screen-card__x{position:absolute;right:10px;top:10px;color:#dc2626;font-size:1.25rem;font-weight:900;}",
+          ".screen-card__img{max-width:180px;max-height:140px;margin-top:6px;border-radius:8px;border:1px solid var(--border);object-fit:contain;display:block;}",
+          ".screen-card__chat-label{margin-top:8px;font-size:.6875rem;font-weight:700;color:var(--muted);}",
+          ".screen-chat-line{font-size:.75rem;margin-top:2px;}",
+          ".screen-chat-line__by{font-weight:700;}",
+          ".screen-chat-line__at{color:var(--muted);font-size:.625rem;}",
+          "@media (max-width:900px){.screen-view__body{grid-template-columns:1fr;}}",
+          "@media print{.screen-nav{position:static;} .screen-view{break-inside:avoid;}}",
+        ].join("");
+
+        var html = [
+          "<!DOCTYPE html>",
+          '<html lang="ko">',
+          "<head>",
+          '<meta charset="UTF-8">',
+          '<meta name="viewport" content="width=device-width, initial-scale=1">',
+          "<title>마감 화면 스냅샷 · " + escHtml(formatAt(snapshot.exportedAt)) + "</title>",
+          "<style>" + css + "</style>",
+          "</head><body>",
+          '<header class="screen-top">',
+          "<h1>정비오더 화면 스냅샷</h1>",
+          "<p>마감 시점의 오더·시설·정비 화면을 그대로 저장한 읽기 전용 파일입니다 · " +
+            escHtml(formatAt(snapshot.exportedAt)) +
+            "</p>",
+          "</header>",
+          '<nav class="screen-nav">',
+          '<a href="#screen-order">오더 관리</a>',
+          '<a href="#screen-facility">시설 관리</a>',
+          '<a href="#screen-request">정비 관리</a>',
+          "</nav>",
+          '<div id="screen-order">',
+          renderCloseDayOrderScreen("오더 관리", "오더 알림", orderParts),
+          "</div>",
+          '<div id="screen-facility">',
+          renderCloseDayOrderScreen("시설 관리", "시설 관리 알림", facilityParts, {
+            includeUnavailable: true,
+            deployedTitle: "입실 가능",
+            deployedLabel: "가능",
+          }),
+          "</div>",
+          '<div id="screen-request">',
+          renderCloseDayRequestScreen(snapshot),
+          "</div>",
+          "</body></html>",
+        ];
+        return html.join("");
+      }
+
+      function downloadCloseDayScreenHtml(snapshot) {
+        var blob = new Blob([buildCloseDayScreenHtml(snapshot)], {
+          type: "text/html;charset=utf-8;",
+        });
+        downloadBlobFile(getCloseDayFilenameBase(snapshot) + "_화면.html", blob);
+      }
+
       function downloadCloseDayFiles(snapshot) {
         downloadCloseDayHtml(snapshot);
         setTimeout(function () {
           downloadCloseDayExcel(snapshot);
         }, 350);
+        setTimeout(function () {
+          downloadCloseDayScreenHtml(snapshot);
+        }, 700);
       }
 
       function preserveOrderAlertEntries(orderLog) {
@@ -3356,7 +3865,7 @@
               HKInvenNotify.resetOnCloseDay();
             }
             refresh();
-            toast("마감 완료 · HTML·엑셀 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+            toast("마감 완료 · HTML·엑셀·화면스냅샷 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
           });
           return;
         }
@@ -3369,13 +3878,13 @@
           HKInvenNotify.resetOnCloseDay();
         }
         refresh();
-        toast("마감 완료 · HTML·엑셀 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+        toast("마감 완료 · HTML·엑셀·화면스냅샷 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보·임시저장, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤 변경, MB CHECK, 채팅·프론트채팅, 관리자 문의, 변경 이력, 취소/사용, 루밍·FASN XML, 컴플레인·습득·세탁·당일습득물(사진·채팅), DD·인벤·치치 임베드)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 정비오더 화면 스냅샷 HTML로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보·임시저장, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤 변경, MB CHECK, 채팅·프론트채팅, 관리자 문의, 변경 이력, 취소/사용, 루밍·FASN XML, 컴플레인·습득·세탁·당일습득물(사진·채팅), DD·인벤·치치 임베드, 오더/시설/정비 화면 스냅샷)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
