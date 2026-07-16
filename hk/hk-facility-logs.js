@@ -1132,6 +1132,14 @@
     roomEl.textContent = entry.room ? formatRoom(entry.room) : "—";
     head.appendChild(roomEl);
 
+    if (entry.at) {
+      var regDate = document.createElement("span");
+      regDate.className = "facility-log-card__reg-date";
+      regDate.textContent = formatAt(entry.at);
+      regDate.title = "등록 " + formatAt(entry.at);
+      head.appendChild(regDate);
+    }
+
     var meta = document.createElement("div");
     meta.className = "facility-log-card__meta";
     var regBy = entry.by != null ? String(entry.by).trim() : "";
@@ -1142,14 +1150,6 @@
     }
     head.appendChild(meta);
     li.appendChild(head);
-
-    if (entry.at) {
-      var regDate = document.createElement("div");
-      regDate.className = "facility-log-card__reg-date";
-      regDate.textContent = "등록 " + formatAt(entry.at);
-      regDate.title = "등록일 · 이 날짜부터 10일간 보관";
-      li.appendChild(regDate);
-    }
   }
 
   function appendFacilityLogCardFoot(li, entry) {

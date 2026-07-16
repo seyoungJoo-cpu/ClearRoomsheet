@@ -3339,14 +3339,16 @@
     }
 
     .facility-log-card__reg-date {
-      display: block;
-      margin: 0 0 6px;
-      font-size: 0.6875rem;
+      flex: 0 0 auto;
+      font-size: 0.75rem;
       line-height: 1.35;
-      font-weight: 700;
-      color: #475569;
+      color: var(--text-muted);
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
+    }
+
+    .facility-log-card.is-meta-expanded .facility-log-card__reg-date {
+      display: none;
     }
 
     .facility-log-card__meta-line {
@@ -8355,7 +8357,7 @@
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js"></script>
   <script src="hk-inven-notify.js"></script>
-  <script src="hk-facility-logs.js?v=reg-date-1"></script>
+  <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script>
     (function () {
