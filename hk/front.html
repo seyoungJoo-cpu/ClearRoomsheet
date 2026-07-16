@@ -3079,6 +3079,14 @@
       gap: 8px;
     }
 
+    .order-work-section--accepted .order-work-list {
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    }
+
+    #facilityAcceptedList {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
     .order-work-list--issue {
       display: flex;
       flex-direction: column;
@@ -3612,6 +3620,12 @@
       flex: 0 0 auto;
       margin-top: 0;
       margin-left: auto;
+    }
+
+    .order-work__actions--toggle .order-work__facility-time-btn--clear {
+      flex: 0 0 auto;
+      margin-top: 0;
+      margin-left: 0;
     }
 
     .order-work__wan-btn {
@@ -8326,6 +8340,7 @@
       var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
       var openDeployedOrderChatId = "";
+      var facilityTimeEditIds = {};
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
       var zoneRoomBoardOpen = false;
@@ -15636,7 +15651,11 @@
       }
 
       function getFacilityOrderDueTime(entry) {
-        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return "";
+        if (!entry || !isFacilityOrder(entry)) return "";
+        var onOrder =
+          entry.facilityDueTime != null ? String(entry.facilityDueTime).trim() : "";
+        if (onOrder) return onOrder;
+        if (!entry.sourceReqId) return "";
         var srcReq = findRequestEntry(entry.sourceReqId);
         if (!srcReq) return "";
         return (
@@ -15697,32 +15716,61 @@
         wanBtn.setAttribute("data-order-id", entry.id || "");
         wanBtn.textContent = isFacilityOrder(entry) ? "입실 가능" : "투입 완료";
         acts.appendChild(wanBtn);
+        var prefill =
+          isFacilityOrder(entry) && entry.sourceReqId ? getFacilityOrderDueTime(entry) : "";
+        if (isFacilityOrder(entry) && entry.sourceReqId && prefill) {
+          var clearBtn = document.createElement("button");
+          clearBtn.type = "button";
+          clearBtn.className = "order-work__facility-time-btn order-work__facility-time-btn--clear";
+          clearBtn.setAttribute("data-order-id", entry.id || "");
+          clearBtn.setAttribute("data-facility-time-action", "clear");
+          clearBtn.textContent = "불가";
+          clearBtn.title = "시설시간 취소";
+          clearBtn.setAttribute("aria-label", "시설시간 불가(취소)");
+          acts.appendChild(clearBtn);
+        }
         li.appendChild(acts);
         if (isFacilityOrder(entry) && entry.sourceReqId) {
-          var srcReq = findRequestEntry(entry.sourceReqId);
-          var prefill = "";
-          if (srcReq) {
-            prefill =
-              (srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "") ||
-              (srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "");
+          var editing = !!(entry.id && facilityTimeEditIds[entry.id]);
+          if (prefill && !editing) {
+            var timeDisp = document.createElement("div");
+            timeDisp.className = "order-work__facility-time-display";
+            timeDisp.appendChild(document.createTextNode("시설시간"));
+            var timeEm = document.createElement("span");
+            timeEm.className = "hk-time-em";
+            timeEm.textContent = prefill;
+            timeDisp.appendChild(timeEm);
+            li.appendChild(timeDisp);
+            var editWrap = document.createElement("div");
+            editWrap.className = "order-work__facility-time-wrap";
+            var editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "order-work__facility-time-btn";
+            editBtn.setAttribute("data-order-id", entry.id || "");
+            editBtn.setAttribute("data-facility-time-action", "edit");
+            editBtn.textContent = "수정";
+            editWrap.appendChild(editBtn);
+            li.appendChild(editWrap);
+          } else {
+            var timeWrap = document.createElement("div");
+            timeWrap.className = "order-work__facility-time-wrap";
+            var timeInp = document.createElement("input");
+            timeInp.type = "text";
+            timeInp.className = "order-work__facility-time-input hk-time-em";
+            timeInp.placeholder = "1430 / 14:30 / IP";
+            timeInp.value = prefill;
+            timeInp.setAttribute("data-order-id", entry.id || "");
+            timeInp.setAttribute("aria-label", "시설시간");
+            var timeBtn = document.createElement("button");
+            timeBtn.type = "button";
+            timeBtn.className = "order-work__facility-time-btn";
+            timeBtn.setAttribute("data-order-id", entry.id || "");
+            timeBtn.setAttribute("data-facility-time-action", "apply");
+            timeBtn.textContent = "시설시간 적용";
+            timeWrap.appendChild(timeInp);
+            timeWrap.appendChild(timeBtn);
+            li.appendChild(timeWrap);
           }
-          var timeWrap = document.createElement("div");
-          timeWrap.className = "order-work__facility-time-wrap";
-          var timeInp = document.createElement("input");
-          timeInp.type = "text";
-          timeInp.className = "order-work__facility-time-input hk-time-em";
-          timeInp.placeholder = "1430 / 14:30 / IP";
-          timeInp.value = prefill;
-          timeInp.setAttribute("data-order-id", entry.id || "");
-          timeInp.setAttribute("aria-label", "시설시간");
-          var timeBtn = document.createElement("button");
-          timeBtn.type = "button";
-          timeBtn.className = "order-work__facility-time-btn";
-          timeBtn.setAttribute("data-order-id", entry.id || "");
-          timeBtn.textContent = "시설시간 적용";
-          timeWrap.appendChild(timeInp);
-          timeWrap.appendChild(timeBtn);
-          li.appendChild(timeWrap);
         }
       }
 
@@ -15747,15 +15795,58 @@
         }
         var srcReq = findRequestEntry(entry.sourceReqId);
         if (!srcReq) return;
+        entry.facilityDueTime = p.value;
         srcReq.facilityOkTime = p.value;
         delete srcReq.facilitySched;
         applyRequestSchedChange(srcReq, p.value);
         markRequestEntrySavedLocally(srcReq);
+        if (entry.id) delete facilityTimeEditIds[entry.id];
         saveRequestLog();
+        saveOrderLog();
         if (isFacilityTimeReached(p.value)) {
           completeOrderDeployment(orderId, { auto: true });
           return;
         }
+        renderRequestLogPanel({ force: true });
+        renderOrderPanels({ force: true });
+      }
+
+      function clearFacilityAcceptedTime(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
+        if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+        if (!maintenanceMode) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              clearFacilityAcceptedTime(orderId);
+            },
+          });
+          return;
+        }
+        var srcReq = findRequestEntry(entry.sourceReqId);
+        if (!srcReq) return;
+        var cleared =
+          (entry.facilityDueTime != null ? String(entry.facilityDueTime).trim() : "") ||
+          (srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "") ||
+          (srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "");
+        delete entry.facilityDueTime;
+        delete srcReq.facilityOkTime;
+        delete srcReq.facilitySched;
+        if (entry.id) delete facilityTimeEditIds[entry.id];
+        if (cleared && String(srcReq.sched || "").trim() === cleared) {
+          if (srcReq.schedPrev != null && String(srcReq.schedPrev).trim()) {
+            srcReq.sched = String(srcReq.schedPrev).trim();
+            delete srcReq.schedPrev;
+          } else {
+            srcReq.sched = "";
+            delete srcReq.schedPrev;
+          }
+        }
+        markRequestEntrySavedLocally(srcReq);
+        saveRequestLog();
+        saveOrderLog();
         renderRequestLogPanel({ force: true });
         renderOrderPanels({ force: true });
       }
@@ -19514,6 +19605,25 @@
             e.stopPropagation();
             var facTimeOrderId = facTimeBtn.getAttribute("data-order-id");
             if (!facTimeOrderId) return;
+            var facTimeAction = facTimeBtn.getAttribute("data-facility-time-action") || "apply";
+            if (facTimeAction === "clear") {
+              clearFacilityAcceptedTime(facTimeOrderId);
+              return;
+            }
+            if (facTimeAction === "edit") {
+              facilityTimeEditIds[facTimeOrderId] = true;
+              renderOrderPanels({ force: true });
+              requestAnimationFrame(function () {
+                var inp = panelEl.querySelector(
+                  '.order-work__facility-time-input[data-order-id="' + facTimeOrderId + '"]'
+                );
+                if (inp) {
+                  inp.focus();
+                  inp.select();
+                }
+              });
+              return;
+            }
             var facTimeInp = panelEl.querySelector(
               '.order-work__facility-time-input[data-order-id="' + facTimeOrderId + '"]'
             );
