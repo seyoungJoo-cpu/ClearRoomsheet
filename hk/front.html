@@ -11268,12 +11268,14 @@
         if (!nextSched) {
           entry.sched = "";
           delete entry.schedPrev;
+          entry.updatedAt = new Date().toISOString();
           return;
         }
         if (oldSched && oldSched !== nextSched) {
           entry.schedPrev = oldSched;
         }
         entry.sched = nextSched;
+        entry.updatedAt = new Date().toISOString();
       }
 
       /** 처리·예정(정비예상시간) 입력: 시각 또는 IP */
