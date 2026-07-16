@@ -947,10 +947,10 @@
     <section class="card close-day-card">
       <h2>마감</h2>
       <p class="close-day-note">
-        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보 표·요청·오더·MB &amp; 인벤·MB CHECK·채팅방·프론트 채팅방·객실 변경 이력·취소/사용 리스트·루밍 XML 등
+        공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보(게시·임시저장)·요청·오더·MB &amp; 인벤 변경·MB CHECK·채팅방·프론트 채팅방·관리자 문의·객실 변경 이력·취소/사용 리스트·루밍·FASN XML·컴플레인·습득·세탁·당일습득물(사진·채팅)·DD·인벤·치치 임베드 등
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
-        <strong>채팅·관리자 문의</strong>·<strong>오더 알림·문제발생</strong>은 함께 저장하고 화면에 유지합니다.
+        <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림·문제발생</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
       <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 저장 + 초기화)</button>
@@ -1567,7 +1567,58 @@
           blockMap: (server && server.blockMap) || {},
           roomResvMap: (server && server.roomResvMap) || (xml && xml.roomResvMap) || {},
           extendedStayRooms: (server && server.extendedStayRooms) || {},
+          fasnUploadSummary: (server && server.fasnUploadSummary) || "",
+          fasnVacRows: (server && server.fasnVacRows) || [],
+          fasnAllStatusRooms: (server && server.fasnAllStatusRooms) || [],
+          fasnBlockMap: (server && server.fasnBlockMap) || {},
         };
+      }
+
+      function collectFrontEmbedSnapshot() {
+        var keys = [
+          { key: "hk-dd-embed-state-v1", label: "DD" },
+          { key: "hk-inven-embed-state-v1", label: "인벤" },
+          { key: "hk-chichi-embed-state-v1", label: "치치" },
+        ];
+        return keys.map(function (item) {
+          var raw = "";
+          try {
+            raw = localStorage.getItem(item.key) || "";
+          } catch (e) {
+            raw = "";
+          }
+          return {
+            key: item.key,
+            label: item.label,
+            raw: raw,
+            hasContent: !!(raw && String(raw).trim()),
+          };
+        });
+      }
+
+      function collectAdminInquiriesSnapshot(sync) {
+        var list =
+          sync && sync.getAdminInquiries ? sync.getAdminInquiries().slice() : [];
+        if (!list.length) {
+          try {
+            var raw = localStorage.getItem("lotte-hk-admin-inquiries-v1");
+            if (raw) {
+              var parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) list = parsed.slice();
+            }
+          } catch (e) {}
+        }
+        return list;
+      }
+
+      function collectInvenNotifyDraftSnapshot() {
+        try {
+          var raw = sessionStorage.getItem("hk-inven-notify-draft-v5");
+          if (!raw || !String(raw).trim()) return null;
+          return JSON.parse(raw);
+        } catch (e) {
+          return null;
+        }
       }
 
       function hasInvenNotifyData(raw) {
@@ -1609,11 +1660,28 @@
 
       function countTrayRooms(data) {
         var counts = { in: 0, deleted: 0 };
+        var deletedSeen = {};
         HKStorage.getZoneOrder(data).forEach(function (zoneId) {
           (data.rooms[zoneId] || []).forEach(function (room) {
             var t = room.tray != null ? String(room.tray).trim() : "";
             if (t === "in") counts.in += 1;
-            else if (t === "deleted") counts.deleted += 1;
+            else if (t === "deleted") {
+              var k = zoneId + "|" + String(room.number || "").trim();
+              if (!deletedSeen[k]) {
+                deletedSeen[k] = true;
+                counts.deleted += 1;
+              }
+            }
+          });
+          var deletedList =
+            data.deletedRooms && Array.isArray(data.deletedRooms[zoneId])
+              ? data.deletedRooms[zoneId]
+              : [];
+          deletedList.forEach(function (num) {
+            var k = zoneId + "|" + String(num || "").trim();
+            if (!num || deletedSeen[k]) return;
+            deletedSeen[k] = true;
+            counts.deleted += 1;
           });
         });
         return counts;
@@ -1621,21 +1689,39 @@
 
       function collectTrayRoomRows(data, trayValue) {
         var rows = [];
+        var seen = {};
+        function pushRow(zoneId, room) {
+          var num = room && room.number != null ? String(room.number).trim() : "";
+          if (!num) return;
+          var key = zoneId + "|" + num;
+          if (seen[key]) return;
+          seen[key] = true;
+          rows.push([
+            HKStorage.getZoneLabel(zoneId, data),
+            formatRoomNoDisplay(num),
+            lookupRoomStatusFromXml(num) || "",
+            (room && room.status) || "",
+            (room && room.memo1) || "",
+            (room && room.memo2) || "",
+            excelImageCell(room && room.memo2Image),
+            (room && room.time) || "",
+          ]);
+        }
         HKStorage.getZoneOrder(data).forEach(function (zoneId) {
           (data.rooms[zoneId] || []).forEach(function (room) {
             var t = room.tray != null ? String(room.tray).trim() : "";
             if (t !== trayValue) return;
-            rows.push([
-              HKStorage.getZoneLabel(zoneId, data),
-              formatRoomNoDisplay(room.number || ""),
-              lookupRoomStatusFromXml(room.number || "") || "",
-              room.status || "",
-              room.memo1 || "",
-              room.memo2 || "",
-              excelImageCell(room.memo2Image),
-              room.time || "",
-            ]);
+            pushRow(zoneId, room);
           });
+          if (trayValue === "deleted") {
+            var deletedList =
+              data.deletedRooms && Array.isArray(data.deletedRooms[zoneId])
+                ? data.deletedRooms[zoneId]
+                : [];
+            deletedList.forEach(function (num) {
+              pushRow(zoneId, { number: num });
+            });
+          }
         });
         rows.sort(function (a, b) {
           return (
@@ -1643,6 +1729,97 @@
             String(a[1]).localeCompare(String(b[1]), undefined, { numeric: true })
           );
         });
+        return rows;
+      }
+
+      function buildFacilityMiscCloseRows(raw) {
+        if (typeof HKFacilityLogs === "undefined" || !HKFacilityLogs.listMiscEntriesForExport) {
+          return typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayMiscRows
+            ? HKFacilityLogs.exportCloseDayMiscRows(raw)
+            : [];
+        }
+        return HKFacilityLogs.listMiscEntriesForExport(raw).map(function (item) {
+          var entry = item.entry || {};
+          var phase =
+            typeof HKFacilityLogs.formatEntryPhaseLabel === "function"
+              ? HKFacilityLogs.formatEntryPhaseLabel(entry)
+              : "";
+          return [
+            formatAt(entry.at),
+            formatRoomNoDisplay(entry.room || ""),
+            item.categoryLabel || "",
+            entry.memo || "",
+            excelImageCell(entry.memoImage),
+            entry.by || "",
+            phase,
+            formatAt(entry.acceptedAt),
+            entry.acceptedBy || "",
+            formatAt(entry.completedAt),
+            entry.completedBy || "",
+            formatChatTranscript(entry.chat),
+          ];
+        });
+      }
+
+      function buildFacilityDailyCloseRows(raw) {
+        if (typeof HKFacilityLogs === "undefined" || !HKFacilityLogs.listDailyEntriesForExport) {
+          return typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayDailyRows
+            ? HKFacilityLogs.exportCloseDayDailyRows(raw)
+            : [];
+        }
+        return HKFacilityLogs.listDailyEntriesForExport(raw).map(function (entry) {
+          entry = entry || {};
+          var phase =
+            typeof HKFacilityLogs.formatEntryPhaseLabel === "function"
+              ? HKFacilityLogs.formatEntryPhaseLabel(entry)
+              : "";
+          return [
+            formatAt(entry.at),
+            formatRoomNoDisplay(entry.room || ""),
+            entry.memo || "",
+            excelImageCell(entry.memoImage),
+            entry.by || "",
+            phase,
+            formatAt(entry.acceptedAt),
+            entry.acceptedBy || "",
+            formatAt(entry.completedAt),
+            entry.completedBy || "",
+            formatChatTranscript(entry.chat),
+          ];
+        });
+      }
+
+      function collectFacilityChatRows(raw, kind) {
+        var rows = [];
+        function pushFromEntry(entry, categoryLabel) {
+          if (!entry) return;
+          (entry.chat || []).forEach(function (msg) {
+            rows.push([
+              entry.id || "",
+              formatRoomNoDisplay(entry.room || ""),
+              categoryLabel || "",
+              msg.id || "",
+              formatAt(msg.at),
+              msg.by || "",
+              formatChatMessageText(msg),
+              excelImageCell(msg.deleted ? "" : msg.image),
+              formatYn(msg.deleted),
+              formatAt(msg.deletedAt),
+            ]);
+          });
+        }
+        if (kind === "misc") {
+          if (typeof HKFacilityLogs === "undefined" || !HKFacilityLogs.listMiscEntriesForExport) {
+            return rows;
+          }
+          HKFacilityLogs.listMiscEntriesForExport(raw).forEach(function (item) {
+            pushFromEntry(item.entry, item.categoryLabel);
+          });
+        } else if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.listDailyEntriesForExport) {
+          HKFacilityLogs.listDailyEntriesForExport(raw).forEach(function (entry) {
+            pushFromEntry(entry, "당일습득물");
+          });
+        }
         return rows;
       }
 
@@ -1697,10 +1874,34 @@
           ["MB CHECK", String((snapshot.mbCheckLog || []).length) + "건"],
           ["채팅방", String((snapshot.teamChat || []).length) + "건"],
           ["프론트 채팅방", String((snapshot.frontChat || []).length) + "건"],
+          ["관리자 문의", String((snapshot.adminInquiries || []).length) + "건"],
           ["객실 변경 이력", String((snapshot.changeLog || []).length) + "건"],
           ["취소리스트", String((snapshot.cancelLog || []).length) + "건"],
           ["사용리스트", String((snapshot.useLog || []).length) + "건"],
           ["루밍 업로드", (snapshot.rooming && snapshot.rooming.uploadSummary) || "—"],
+          [
+            "FASN 업로드",
+            (snapshot.rooming && snapshot.rooming.fasnUploadSummary) || "—",
+          ],
+          [
+            "프론트 임베드(DD·인벤·치치)",
+            (snapshot.frontEmbeds || []).filter(function (x) {
+              return x && x.hasContent;
+            }).length
+              ? (snapshot.frontEmbeds || [])
+                  .filter(function (x) {
+                    return x && x.hasContent;
+                  })
+                  .map(function (x) {
+                    return x.label;
+                  })
+                  .join(", ")
+              : "없음",
+          ],
+          [
+            "인벤 통보 임시저장",
+            snapshot.invenNotifyDraft ? "있음" : "없음",
+          ],
         ];
       }
 
@@ -1717,9 +1918,12 @@
           mbCheckLog: sync ? sync.getMbCheckLog() : [],
           teamChat: sync && sync.getTeamChat ? sync.getTeamChat() : [],
           frontChat: sync ? sync.getFrontChat() : [],
+          adminInquiries: collectAdminInquiriesSnapshot(sync),
           changeLog: sync ? sync.getChangeLog() : [],
           cancelLog: sync ? sync.getCancelLog() : [],
           useLog: sync ? sync.getUseLog() : [],
+          frontEmbeds: collectFrontEmbedSnapshot(),
+          invenNotifyDraft: collectInvenNotifyDraftSnapshot(),
         };
       }
 
@@ -1904,12 +2108,55 @@
           }),
         });
 
+        sections.push({
+          title: "FASN 업로드 요약",
+          headers: ["요약"],
+          rows: [[(snapshot.rooming && snapshot.rooming.fasnUploadSummary) || ""]],
+        });
+        var fasnBlockMap = (snapshot.rooming && snapshot.rooming.fasnBlockMap) || {};
+        sections.push({
+          title: "FASN BLOCK",
+          headers: ["객실번호", "BLOCK_CODE"],
+          rows: Object.keys(fasnBlockMap)
+            .sort()
+            .map(function (room) {
+              return [formatRoomNoDisplay(room), fasnBlockMap[room] || ""];
+            }),
+        });
+        var fasnAllStatusRooms =
+          (snapshot.rooming && snapshot.rooming.fasnAllStatusRooms) || [];
+        sections.push({
+          title: "FASN All Status 객실",
+          headers: ["객실번호"],
+          rows: fasnAllStatusRooms
+            .slice()
+            .sort()
+            .map(function (room) {
+              return [formatRoomNoDisplay(room)];
+            }),
+        });
+        var fasnVacRows = (snapshot.rooming && snapshot.rooming.fasnVacRows) || [];
+        sections.push({
+          title: "FASN XML",
+          headers: ["객실", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE", "FO_STATUS", "TYPE"],
+          rows: fasnVacRows.map(function (row) {
+            return [
+              formatRoomNoDisplay(row.room || ""),
+              row.status || "",
+              row.resvStatus || "",
+              row.blockCode || "",
+              row.foStatus || "",
+              row.roomType || "",
+            ];
+          }),
+        });
+
         sections.push(
           {
             title: "요청 알림",
             headers: [
               "ID",
-              "접수시각",
+              "등록시각",
               "객실",
               "상태",
               "처리·예정",
@@ -1919,6 +2166,17 @@
               "정비",
               "정비사진",
               "요청자",
+              "접수시각",
+              "접수자",
+              "프론트접수",
+              "문제발생시각",
+              "문제발생자",
+              "재접수시각",
+              "재접수자",
+              "배치시각",
+              "입실불가시각",
+              "취소시각",
+              "취소자",
             ],
             rows: (snapshot.requestLog || []).map(function (entry) {
               return [
@@ -1933,6 +2191,17 @@
                 entry.memo2 || "",
                 excelImageCell(entry.memo2Image),
                 entry.by || "",
+                formatAt(entry.acceptedAt),
+                entry.acceptedBy || "",
+                formatYn(entry.acceptedByFront),
+                formatAt(entry.issueAt),
+                entry.issueBy || "",
+                formatAt(entry.reacceptedAt),
+                entry.reacceptedBy || "",
+                formatAt(entry.deployedAt),
+                formatAt(entry.unavailableAt),
+                formatAt(entry.cancelledAt),
+                entry.cancelledBy || "",
               ];
             }),
           },
@@ -1942,6 +2211,8 @@
               "ID",
               "오더시각",
               "객실",
+              "구분",
+              "연결요청ID",
               "단계",
               "문제발생중",
               "긴급",
@@ -1957,6 +2228,8 @@
               "문제발생자",
               "재접수시각",
               "재접수자",
+              "배치시각",
+              "입실불가시각",
               "취소시각",
               "취소자",
               "채팅",
@@ -1966,6 +2239,8 @@
                 entry.id || "",
                 formatAt(entry.at),
                 formatRoomNoDisplay(entry.room || ""),
+                entry.category || "",
+                entry.sourceReqId || "",
                 formatOrderEntryPhaseLabel(entry),
                 formatYn(isOrderIssueOpen(entry)),
                 formatYn(entry.urgent),
@@ -1981,6 +2256,8 @@
                 entry.issueBy || "",
                 formatAt(entry.reacceptedAt),
                 entry.reacceptedBy || "",
+                formatAt(entry.deployedAt),
+                formatAt(entry.unavailableAt),
                 formatAt(entry.cancelledAt),
                 entry.cancelledBy || "",
                 formatChatTranscript(entry.chat),
@@ -2217,19 +2494,114 @@
           },
           {
             title: "컴플레인·지난습득물·세탁",
-            headers: ["접수시각", "객실", "구분", "내용", "접수자", "상태", "완료시각", "완료자"],
-            rows:
-              typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayMiscRows
-                ? HKFacilityLogs.exportCloseDayMiscRows(snapshot.data.facilityMiscLog)
-                : [],
+            headers: [
+              "접수시각",
+              "객실",
+              "구분",
+              "내용",
+              "사진",
+              "접수자",
+              "상태",
+              "접수완료시각",
+              "접수완료자",
+              "완료시각",
+              "완료자",
+              "채팅",
+            ],
+            rows: buildFacilityMiscCloseRows(snapshot.data.facilityMiscLog),
+          },
+          {
+            title: "컴플레인·습득·세탁 채팅 (상세)",
+            headers: [
+              "ID",
+              "객실",
+              "구분",
+              "메시지ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+            ],
+            rows: collectFacilityChatRows(snapshot.data.facilityMiscLog, "misc"),
           },
           {
             title: "당일습득물",
-            headers: ["접수시각", "객실", "내용", "접수자", "상태", "완료시각", "완료자"],
-            rows:
-              typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.exportCloseDayDailyRows
-                ? HKFacilityLogs.exportCloseDayDailyRows(snapshot.data.facilityDailyFoundLog)
-                : [],
+            headers: [
+              "접수시각",
+              "객실",
+              "내용",
+              "사진",
+              "접수자",
+              "상태",
+              "접수완료시각",
+              "접수완료자",
+              "완료시각",
+              "완료자",
+              "채팅",
+            ],
+            rows: buildFacilityDailyCloseRows(snapshot.data.facilityDailyFoundLog),
+          },
+          {
+            title: "당일습득물 채팅 (상세)",
+            headers: [
+              "ID",
+              "객실",
+              "구분",
+              "메시지ID",
+              "시각",
+              "작성자",
+              "내용",
+              "사진",
+              "삭제",
+              "삭제시각",
+            ],
+            rows: collectFacilityChatRows(snapshot.data.facilityDailyFoundLog, "daily"),
+          },
+          {
+            title: "관리자 문의",
+            headers: [
+              "ID",
+              "문의시각",
+              "작성자",
+              "내용",
+              "상태",
+              "답변",
+              "답변시각",
+              "답변자",
+            ],
+            rows: (snapshot.adminInquiries || []).map(function (entry) {
+              return [
+                entry.id || "",
+                formatAt(entry.at),
+                entry.by || "",
+                entry.text || "",
+                String(entry.status || "open") === "answered" ? "답변완료" : "답변대기",
+                entry.reply || "",
+                formatAt(entry.replyAt),
+                entry.replyBy || "",
+              ];
+            }),
+          },
+          {
+            title: "프론트 임베드(DD·인벤·치치)",
+            headers: ["구분", "저장키", "내용유무", "JSON"],
+            rows: (snapshot.frontEmbeds || []).map(function (item) {
+              return [
+                item.label || "",
+                item.key || "",
+                item.hasContent ? "있음" : "없음",
+                item.raw || "",
+              ];
+            }),
+          },
+          {
+            title: "인벤 통보 임시저장",
+            headers: ["JSON"],
+            rows: snapshot.invenNotifyDraft
+              ? [[JSON.stringify(snapshot.invenNotifyDraft)]]
+              : [],
           }
         );
 
@@ -3003,7 +3375,7 @@
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보 표, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤, MB CHECK, 채팅, 변경 이력, 취소/사용, 루밍 XML, 컴플레인·습득·세탁·당일습득물)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 파일로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보·임시저장, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤 변경, MB CHECK, 채팅·프론트채팅, 관리자 문의, 변경 이력, 취소/사용, 루밍·FASN XML, 컴플레인·습득·세탁·당일습득물(사진·채팅), DD·인벤·치치 임베드)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;

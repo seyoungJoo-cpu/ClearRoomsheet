@@ -611,6 +611,36 @@
     );
   }
 
+  function formatEntryPhaseLabel(entry) {
+    var phase = getEntryPhase(entry);
+    if (phase === "completed") return "완료";
+    if (phase === "accepted") return "접수";
+    return "알림";
+  }
+
+  function listMiscEntriesForExport(raw) {
+    var log = normalizeMiscLog(raw);
+    var out = [];
+    MISC_CATEGORIES.forEach(function (cat) {
+      (log.entries[cat.key] || []).forEach(function (entry) {
+        out.push({ entry: entry, categoryLabel: cat.label });
+      });
+    });
+    out.sort(function (a, b) {
+      return (
+        new Date((a.entry && a.entry.at) || 0).getTime() -
+        new Date((b.entry && b.entry.at) || 0).getTime()
+      );
+    });
+    return out;
+  }
+
+  function listDailyEntriesForExport(raw) {
+    return (normalizeDailyFoundLog(raw).entries || []).slice().sort(function (a, b) {
+      return new Date((a && a.at) || 0).getTime() - new Date((b && b.at) || 0).getTime();
+    });
+  }
+
   function orderToExportRow(entry, categoryLabel) {
     return [
       formatAt(entry.at),
@@ -618,7 +648,9 @@
       categoryLabel || "",
       entry.memo || (entry.memoImage ? "(사진)" : ""),
       entry.by || "",
-      getEntryPhase(entry) === "completed" ? "완료" : getEntryPhase(entry) === "accepted" ? "접수" : "알림",
+      formatEntryPhaseLabel(entry),
+      entry.acceptedAt ? formatAt(entry.acceptedAt) : "",
+      entry.acceptedBy || "",
       entry.completedAt ? formatAt(entry.completedAt) : "",
       entry.completedBy || "",
     ];
@@ -643,7 +675,9 @@
       entry.room || "",
       entry.memo || (entry.memoImage ? "(사진)" : ""),
       entry.by || "",
-      getEntryPhase(entry) === "completed" ? "완료" : getEntryPhase(entry) === "accepted" ? "접수" : "알림",
+      formatEntryPhaseLabel(entry),
+      entry.acceptedAt ? formatAt(entry.acceptedAt) : "",
+      entry.acceptedBy || "",
       entry.completedAt ? formatAt(entry.completedAt) : "",
       entry.completedBy || "",
     ];
@@ -1720,6 +1754,9 @@
     getDailySignature: getDailySignature,
     exportCloseDayMiscRows: exportCloseDayMiscRows,
     exportCloseDayDailyRows: exportCloseDayDailyRows,
+    listMiscEntriesForExport: listMiscEntriesForExport,
+    listDailyEntriesForExport: listDailyEntriesForExport,
+    formatEntryPhaseLabel: formatEntryPhaseLabel,
     countMiscEntries: countMiscEntries,
     countDailyEntries: countDailyEntries,
     classifyMiscCategory: classifyMiscCategory,
