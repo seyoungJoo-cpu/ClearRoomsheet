@@ -8144,6 +8144,15 @@
         placeholder="예: 에어컨 점검, 샤워기 교체"
         rows="3"
       ></textarea>
+      <label class="hk-confirm__label" for="hkFacilityConfirmTimeInput">정비 시간</label>
+      <input
+        type="text"
+        class="hk-confirm__input hk-time-em"
+        id="hkFacilityConfirmTimeInput"
+        placeholder="1430 / 14:30 / IP"
+        autocomplete="off"
+        aria-label="시설 확인 정비 시간"
+      />
       <div class="hk-confirm__actions">
         <button type="button" class="hk-confirm__btn hk-confirm__btn--yes" id="hkFacilityConfirmOk">
           시설 오더 등록
@@ -12829,10 +12838,12 @@
           t2.textContent = "처리·예정 " + entry.sched;
           li.appendChild(t2);
         }
-        if (entry.facilitySched) {
+        if (entry.facilitySched || entry.facilityOkTime) {
           var tFac = document.createElement("p");
           tFac.className = "ai-mode-entry-card__line";
-          tFac.textContent = "시설 시간 " + entry.facilitySched;
+          tFac.textContent =
+            "시설 시간 " +
+            String(entry.facilityOkTime || entry.facilitySched || "").trim();
           li.appendChild(tFac);
         }
         if (entry.memo) {
@@ -14162,7 +14173,7 @@
           var facStatus = getFacilityRequestStatus(entry.id);
           if (facStatus === "ok") {
             facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
-            facilityBtn.textContent = "시설OK";
+            facilityBtn.textContent = formatFacilityOkButtonText(entry.id);
             facilityBtn.setAttribute("aria-label", "시설 확인 완료");
             facilityBtn.disabled = true;
           } else if (facStatus === "pending") {
@@ -15508,6 +15519,7 @@
             var facSched =
               srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "";
             if (facSched) {
+              srcReq.facilityOkTime = facSched;
               applyRequestSchedChange(srcReq, facSched);
               delete srcReq.facilitySched;
             }
@@ -15639,6 +15651,19 @@
         return "pending";
       }
 
+      function getFacilityOkTimeLabel(reqId) {
+        var req = findRequestEntry(reqId);
+        if (!req) return "";
+        var t = req.facilityOkTime != null ? String(req.facilityOkTime).trim() : "";
+        if (!t) t = req.facilitySched != null ? String(req.facilitySched).trim() : "";
+        return t;
+      }
+
+      function formatFacilityOkButtonText(reqId) {
+        var t = getFacilityOkTimeLabel(reqId);
+        return t ? "시설 " + t + " OK" : "시설OK";
+      }
+
       function appendFacilityRequestStatusBtn(parent, reqId, opts) {
         if (!parent || !reqId) return;
         opts = opts || {};
@@ -15650,7 +15675,7 @@
         btn.disabled = true;
         if (status === "ok") {
           btn.classList.add("is-ok");
-          btn.textContent = "시설OK";
+          btn.textContent = formatFacilityOkButtonText(reqId);
           btn.setAttribute("aria-label", "시설 확인 완료");
         } else {
           btn.textContent = opts.pendingLabel || "시설요청됨";
@@ -18959,6 +18984,7 @@
         pendingFacilityConfirmReqId = reqEntry.id;
         var hintEl = document.getElementById("hkFacilityConfirmRoomHint");
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
+        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
         if (hintEl) {
           hintEl.textContent = reqEntry.room
             ? "객실 " + formatRoomNoDisplay(String(reqEntry.room))
@@ -18971,6 +18997,15 @@
             if (m2) prefill = m2;
           }
           memoInp.value = prefill;
+        }
+        if (timeInp) {
+          var timePrefill =
+            reqEntry.facilitySched != null
+              ? String(reqEntry.facilitySched).trim()
+              : reqEntry.facilityOkTime != null
+                ? String(reqEntry.facilityOkTime).trim()
+                : "";
+          timeInp.value = timePrefill;
         }
         var dlg = document.getElementById("hkFacilityConfirmDialog");
         if (!dlg) {
@@ -18993,6 +19028,8 @@
         pendingFacilityConfirmReqId = null;
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
         if (memoInp) memoInp.value = "";
+        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
+        if (timeInp) timeInp.value = "";
       }
 
       function processOrderFormSubmit() {
@@ -19569,12 +19606,28 @@
         var cancel = document.getElementById("hkFacilityConfirmCancel");
         var backdrop = document.getElementById("hkFacilityConfirmBackdrop");
         var memoInp = document.getElementById("hkFacilityConfirmMemoInput");
+        var timeInp = document.getElementById("hkFacilityConfirmTimeInput");
         if (ok) {
           ok.addEventListener("click", function (ev) {
             ev.preventDefault();
             var reqId = pendingFacilityConfirmReqId;
             var reqEntry = reqId ? findRequestEntry(reqId) : null;
             var memo = memoInp ? String(memoInp.value || "").trim() : "";
+            var timeRaw = timeInp ? String(timeInp.value || "").trim() : "";
+            if (timeRaw) {
+              var parsedTime = parseRequestSchedInput(timeRaw);
+              if (!parsedTime.ok) {
+                alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)");
+                if (timeInp) timeInp.focus();
+                return;
+              }
+              if (reqEntry) {
+                if (parsedTime.value) reqEntry.facilitySched = parsedTime.value;
+                else delete reqEntry.facilitySched;
+                markRequestEntrySavedLocally(reqEntry);
+                saveRequestLog();
+              }
+            }
             closeFacilityConfirmModal();
             if (!reqEntry) return;
             var orderId = createFacilityOrderFromRequest(reqEntry, memo);
