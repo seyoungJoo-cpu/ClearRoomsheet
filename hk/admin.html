@@ -948,12 +948,12 @@
       <h2>마감</h2>
       <p class="close-day-note">
         공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보(게시·임시저장)·요청·오더·MB &amp; 인벤 변경·MB CHECK·채팅방·프론트 채팅방·관리자 문의·객실 변경 이력·취소/사용 리스트·루밍·FASN XML·컴플레인·습득·세탁·당일습득물(사진·채팅)·DD·인벤·치치 임베드 등
-        전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 정비오더 화면 스냅샷 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
-        HTML은 읽기 전용 스냅샷으로 보기 좋게 저장됩니다.
+        전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 읽기 모드 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
+        읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림·문제발생</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
-      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 화면스냅샷 저장 + 초기화)</button>
+      <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 읽기모드 저장 + 초기화)</button>
     </section>
   </div>
 
@@ -3662,71 +3662,92 @@
         return html.join("");
       }
 
-      function buildCloseDayScreenHtml(snapshot) {
-        var orderParts = partitionCloseDayOrders(
-          snapshot.orderLog,
-          isCloseDayRegularOrder,
-          snapshot.requestLog
-        );
-        var facilityParts = partitionCloseDayOrders(
-          snapshot.orderLog,
-          isCloseDayFacilityOrder,
-          snapshot.requestLog
-        );
+      function buildCloseDayScreenHtml(snapshot, runtimeJs) {
+        var zoneLabels = {};
+        HKStorage.getZoneOrder(snapshot.data || {}).forEach(function (zoneId) {
+          zoneLabels[zoneId] = HKStorage.getZoneLabel(zoneId, snapshot.data);
+        });
+        var archiveJson = JSON.stringify(snapshot)
+          .replace(/</g, "\\u003c")
+          .replace(/\u2028/g, "\\u2028")
+          .replace(/\u2029/g, "\\u2029");
+        var labelsJson = JSON.stringify(zoneLabels)
+          .replace(/</g, "\\u003c")
+          .replace(/\u2028/g, "\\u2028")
+          .replace(/\u2029/g, "\\u2029");
         var css = [
-          ":root{--accent:#1565c0;--bg:#eef2f6;--panel:#fff;--text:#0f172a;--muted:#64748b;--border:#cbd5e1;--alert-bg:#fffbeb;--alert-bd:#fde68a;}",
+          ":root{--accent:#1565c0;--bg:#e8edf3;--panel:#fff;--text:#0f172a;--muted:#64748b;--border:#cbd5e1;--sidebar:#0f172a;--alert-bg:#fffbeb;--alert-bd:#fde68a;}",
           "*{box-sizing:border-box;}",
-          "html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;}",
-          ".screen-top{background:#0f172a;color:#fff;padding:16px 20px;}",
-          ".screen-top h1{margin:0 0 4px;font-size:1.2rem;}",
-          ".screen-top p{margin:0;opacity:.9;font-size:.8125rem;}",
-          ".screen-nav{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:5;}",
-          ".screen-nav a{display:inline-block;padding:8px 12px;border-radius:8px;background:#e2e8f0;color:#0f172a;text-decoration:none;font-weight:700;font-size:.8125rem;}",
-          ".screen-view{padding:16px;border-bottom:8px solid #dbe3ec;}",
-          ".screen-view__head{margin:0 0 12px;}",
-          ".screen-view__head h2{margin:0;font-size:1.05rem;color:var(--accent);}",
-          ".screen-view__body{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);gap:12px;align-items:start;}",
-          ".screen-panel{background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}",
-          ".screen-panel>h2{margin:0 0 10px;font-size:1rem;}",
-          ".screen-panel--alert{background:var(--alert-bg);border-color:var(--alert-bd);}",
-          ".screen-panel--alert>h2{color:#854d0e;}",
-          ".screen-bucket{margin-top:12px;}",
-          ".screen-bucket h3{margin:0 0 8px;font-size:.875rem;font-weight:800;}",
-          ".screen-bucket__count{display:inline-block;min-width:1.4em;padding:0 6px;border-radius:999px;background:#e2e8f0;font-size:.75rem;}",
-          ".screen-bucket--issue h3{color:#b91c1c;}",
-          ".screen-bucket--accepted h3{color:#047857;}",
-          ".screen-bucket--cancelled h3{color:#64748b;}",
-          ".screen-bucket--deployed h3{color:#1d4ed8;}",
-          ".screen-bucket--unavailable h3{color:#b91c1c;}",
-          ".screen-bucket--alert h3{color:#854d0e;}",
-          ".screen-bucket__list{display:flex;flex-direction:column;gap:8px;}",
-          ".screen-empty{margin:0;color:var(--muted);font-size:.8125rem;text-align:center;padding:10px;}",
-          ".screen-card{position:relative;border:2px solid var(--border);border-radius:10px;padding:10px;background:#fff;}",
-          ".screen-card--alert{border-color:#fde68a;background:#fffbeb;}",
-          ".screen-card--issue{border-color:#fca5a5;background:#fef2f2;}",
-          ".screen-card--accepted{border-color:#6ee7b7;}",
-          ".screen-card--cancelled{border-color:#cbd5e1;background:#f8fafc;}",
-          ".screen-card--deployed{border-color:#93c5fd;background:#eff6ff;}",
-          ".screen-card--unavailable{border-color:#fca5a5;background:#fff1f2;}",
-          ".screen-card.is-urgent{box-shadow:0 0 0 2px rgba(220,38,38,.25);}",
-          ".screen-card.is-from-maint{border-style:dashed;}",
-          ".screen-card__time{font-size:.75rem;color:var(--muted);}",
-          ".screen-card__time strong{color:#b45309;font-size:.875rem;}",
-          ".screen-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;}",
-          ".screen-card__room{font-weight:800;font-size:1rem;}",
-          ".screen-card__urgent{margin-left:6px;padding:1px 6px;border-radius:999px;background:#dc2626;color:#fff;font-size:.625rem;font-weight:800;}",
-          ".screen-card__fo{font-size:.75rem;font-weight:700;color:var(--muted);}",
-          ".screen-card__memo{margin-top:6px;font-size:.8125rem;white-space:pre-wrap;}",
-          ".screen-card__by,.screen-card__meta{margin-top:4px;font-size:.75rem;color:var(--muted);}",
-          ".screen-card__denied{margin-top:6px;color:#b91c1c;font-weight:800;}",
-          ".screen-card__x{position:absolute;right:10px;top:10px;color:#dc2626;font-size:1.25rem;font-weight:900;}",
-          ".screen-card__img{max-width:180px;max-height:140px;margin-top:6px;border-radius:8px;border:1px solid var(--border);object-fit:contain;display:block;}",
-          ".screen-card__chat-label{margin-top:8px;font-size:.6875rem;font-weight:700;color:var(--muted);}",
-          ".screen-chat-line{font-size:.75rem;margin-top:2px;}",
-          ".screen-chat-line__by{font-weight:700;}",
-          ".screen-chat-line__at{color:var(--muted);font-size:.625rem;}",
-          "@media (max-width:900px){.screen-view__body{grid-template-columns:1fr;}}",
-          "@media print{.screen-nav{position:static;} .screen-view{break-inside:avoid;}}",
+          "html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;}",
+          ".archive-top{background:#0f172a;color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;}",
+          ".archive-top h1{margin:0;font-size:1.1rem;}",
+          ".archive-top p{margin:0;opacity:.9;font-size:.8125rem;}",
+          ".archive-badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#fbbf24;color:#78350f;font-size:.6875rem;font-weight:800;}",
+          ".archive-layout{display:flex;min-height:calc(100vh - 58px);align-items:stretch;}",
+          ".sidebar{width:176px;flex-shrink:0;background:var(--sidebar);color:#e2e8f0;padding:10px 8px;overflow:auto;}",
+          ".sidebar-brand{font-weight:800;color:#93c5fd;padding:6px 8px 10px;font-size:.875rem;}",
+          ".sidebar-btn{display:block;width:100%;text-align:left;margin:0 0 4px;padding:8px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#e2e8f0;font:inherit;font-weight:700;font-size:.8125rem;cursor:pointer;}",
+          ".sidebar-btn:hover{background:rgba(255,255,255,.08);}",
+          ".sidebar-btn.is-active{background:#1565c0;border-color:#1d4ed8;color:#fff;}",
+          ".sidebar-sec{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);}",
+          ".sidebar-sec-label{padding:4px 8px 6px;font-size:.6875rem;color:#94a3b8;font-weight:700;}",
+          ".archive-content{flex:1;min-width:0;display:flex;min-height:0;}",
+          "#archiveMain{flex:1.4;min-width:0;padding:12px;overflow:auto;}",
+          "#archiveFeedback{flex:.9;min-width:260px;max-width:420px;padding:12px 12px 12px 0;overflow:auto;}",
+          "#archiveFeedback[hidden]{display:none!important;}",
+          ".panel{background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}",
+          ".panel--alert{background:var(--alert-bg);border-color:var(--alert-bd);}",
+          ".panel--full{max-width:1100px;}",
+          ".panel>h2{margin:0 0 10px;font-size:1rem;}",
+          ".panel--alert>h2{color:#854d0e;}",
+          ".bucket{margin-top:12px;}",
+          ".bucket h3{margin:0 0 8px;font-size:.875rem;font-weight:800;}",
+          ".count{display:inline-block;min-width:1.3em;padding:0 6px;border-radius:999px;background:#e2e8f0;font-size:.75rem;}",
+          ".bucket--issue h3{color:#b91c1c;}",
+          ".bucket--accepted h3{color:#047857;}",
+          ".bucket--cancelled h3,.bucket--unavailable h3{color:#b91c1c;}",
+          ".bucket--deployed h3{color:#1d4ed8;}",
+          ".bucket--alert h3{color:#854d0e;}",
+          ".bucket-list{display:flex;flex-direction:column;gap:8px;}",
+          ".empty{margin:0;color:var(--muted);text-align:center;padding:10px;font-size:.8125rem;}",
+          ".muted{color:var(--muted);font-size:.8125rem;}",
+          ".card{position:relative;border:2px solid var(--border);border-radius:10px;padding:10px;background:#fff;}",
+          ".card--alert{border-color:#fde68a;background:#fffbeb;}",
+          ".card--issue{border-color:#fca5a5;background:#fef2f2;}",
+          ".card--accepted{border-color:#6ee7b7;}",
+          ".card--cancelled,.card--unavailable{border-color:#fca5a5;background:#fff1f2;}",
+          ".card--deployed,.card--posted,.card--gst{border-color:#93c5fd;background:#eff6ff;}",
+          ".card.is-urgent{box-shadow:0 0 0 2px rgba(220,38,38,.25);}",
+          ".card-time{font-size:.75rem;color:var(--muted);}",
+          ".card-time b{color:#b45309;font-size:.875rem;}",
+          ".card-row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:4px;}",
+          ".card-room{font-weight:800;font-size:1rem;}",
+          ".card-fo{font-size:.75rem;font-weight:700;color:var(--muted);}",
+          ".card-memo{margin-top:6px;font-size:.8125rem;white-space:pre-wrap;}",
+          ".card-by,.card-meta{margin-top:4px;font-size:.75rem;color:var(--muted);}",
+          ".card-denied{margin-top:6px;color:#b91c1c;font-weight:800;}",
+          ".card-x{position:absolute;right:10px;top:8px;color:#dc2626;font-size:1.2rem;font-weight:900;}",
+          ".badge-urgent{margin-left:6px;padding:1px 6px;border-radius:999px;background:#dc2626;color:#fff;font-size:.625rem;}",
+          ".pill{margin-left:6px;padding:1px 6px;border-radius:999px;background:#0f766e;color:#fff;font-size:.625rem;}",
+          ".card-img{max-width:180px;max-height:140px;margin-top:6px;border-radius:8px;border:1px solid var(--border);object-fit:contain;display:block;}",
+          ".card-chat-label{margin-top:8px;font-size:.6875rem;font-weight:700;color:var(--muted);}",
+          ".chat-line{font-size:.75rem;margin-top:2px;}",
+          ".chat-log{display:flex;flex-direction:column;gap:8px;}",
+          ".chat-msg{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#f8fafc;}",
+          ".chat-msg-meta{font-size:.6875rem;color:var(--muted);margin-bottom:4px;}",
+          ".chat-msg-body{white-space:pre-wrap;font-size:.8125rem;}",
+          ".room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}",
+          ".room-card{border:2px solid var(--border);border-radius:10px;padding:8px;background:#fff;}",
+          ".notice-box{white-space:pre-wrap;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}",
+          ".json-block{overflow:auto;background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;font-size:.75rem;}",
+          ".ai-chat{min-height:220px;max-height:55vh;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#f8fafc;margin:10px 0;}",
+          ".ai-msg{margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:.875rem;}",
+          ".ai-msg--user{background:#dbeafe;margin-left:18%;}",
+          ".ai-msg--bot{background:#fff;border:1px solid var(--border);margin-right:18%;}",
+          ".ai-form{display:flex;gap:8px;}",
+          ".ai-form input{flex:1;min-height:42px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font:inherit;}",
+          ".ai-form button{min-height:42px;padding:0 16px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;}",
+          "@media(max-width:900px){.archive-layout{flex-direction:column;}.sidebar{width:100%;}.archive-content{flex-direction:column;}#archiveFeedback{max-width:none;padding:0 12px 12px;}}",
         ].join("");
 
         var html = [
@@ -3735,43 +3756,74 @@
           "<head>",
           '<meta charset="UTF-8">',
           '<meta name="viewport" content="width=device-width, initial-scale=1">',
-          "<title>마감 화면 스냅샷 · " + escHtml(formatAt(snapshot.exportedAt)) + "</title>",
+          "<title>마감 읽기 모드 · " + escHtml(formatAt(snapshot.exportedAt)) + "</title>",
           "<style>" + css + "</style>",
           "</head><body>",
-          '<header class="screen-top">',
-          "<h1>정비오더 화면 스냅샷</h1>",
-          "<p>마감 시점의 오더·시설·정비 화면을 그대로 저장한 읽기 전용 파일입니다 · " +
+          '<header class="archive-top">',
+          "<div><h1>House Keeping 마감 읽기 모드</h1>",
+          "<p>사이드바로 화면을 이동하며 확인할 수 있습니다. AI 채팅은 마감 데이터 조회만 가능합니다.</p></div>",
+          '<div><span class="archive-badge">READ ONLY</span><p style="margin-top:6px">' +
             escHtml(formatAt(snapshot.exportedAt)) +
-            "</p>",
+            "</p></div>",
           "</header>",
-          '<nav class="screen-nav">',
-          '<a href="#screen-order">오더 관리</a>',
-          '<a href="#screen-facility">시설 관리</a>',
-          '<a href="#screen-request">정비 관리</a>',
-          "</nav>",
-          '<div id="screen-order">',
-          renderCloseDayOrderScreen("오더 관리", "오더 알림", orderParts),
+          '<div class="archive-layout">',
+          '<aside class="sidebar" aria-label="메뉴">',
+          '<div class="sidebar-brand">House Keeping</div>',
+          '<button type="button" class="sidebar-btn is-active" data-view="order">오더 관리</button>',
+          '<button type="button" class="sidebar-btn" data-view="request">정비 관리</button>',
+          '<button type="button" class="sidebar-btn" data-view="facility">시설 관리</button>',
+          '<button type="button" class="sidebar-btn" data-view="mbInv">MB &amp; 인벤 변경</button>',
+          '<button type="button" class="sidebar-btn" data-view="mbCheck">MB CHECK</button>',
+          '<div class="sidebar-sec"><div class="sidebar-sec-label">부가</div>',
+          '<button type="button" class="sidebar-btn" data-view="chat">채팅방</button>',
+          '<button type="button" class="sidebar-btn" data-view="frontChat">프론트 채팅방</button>',
+          '<button type="button" class="sidebar-btn" data-view="facilityMisc">컴플레인·습득·세탁</button>',
+          '<button type="button" class="sidebar-btn" data-view="facilityDaily">당일습득물</button>',
+          '<button type="button" class="sidebar-btn" data-view="invenNotify">인벤 통보</button>',
+          '<button type="button" class="sidebar-btn" data-view="zones">특이객실</button>',
+          '<button type="button" class="sidebar-btn" data-view="notice">공지·메모</button>',
+          '<button type="button" class="sidebar-btn" data-view="adminInquiry">관리자 문의</button>',
           "</div>",
-          '<div id="screen-facility">',
-          renderCloseDayOrderScreen("시설 관리", "시설 관리 알림", facilityParts, {
-            includeUnavailable: true,
-            deployedTitle: "입실 가능",
-            deployedLabel: "가능",
-          }),
+          '<div class="sidebar-sec"><div class="sidebar-sec-label">AI</div>',
+          '<button type="button" class="sidebar-btn" data-view="ai">AI 모드</button>',
           "</div>",
-          '<div id="screen-request">',
-          renderCloseDayRequestScreen(snapshot),
-          "</div>",
+          "</aside>",
+          '<div class="archive-content">',
+          '<div id="archiveMain"></div>',
+          '<aside id="archiveFeedback"></aside>',
+          "</div></div>",
+          "<script>window.__HK_ARCHIVE__=" +
+            archiveJson +
+            ";window.HK_ARCHIVE_ZONE_LABELS=" +
+            labelsJson +
+            ";</script>",
+          "<script>" + String(runtimeJs || "") + "</script>",
           "</body></html>",
         ];
         return html.join("");
       }
 
+      function loadCloseDayArchiveRuntime() {
+        return fetch("close-day-archive-app.js?v=" + Date.now(), { cache: "no-store" }).then(
+          function (res) {
+            if (!res.ok) throw new Error("archive runtime " + res.status);
+            return res.text();
+          }
+        );
+      }
+
       function downloadCloseDayScreenHtml(snapshot) {
-        var blob = new Blob([buildCloseDayScreenHtml(snapshot)], {
-          type: "text/html;charset=utf-8;",
-        });
-        downloadBlobFile(getCloseDayFilenameBase(snapshot) + "_화면.html", blob);
+        return loadCloseDayArchiveRuntime()
+          .then(function (runtimeJs) {
+            var blob = new Blob([buildCloseDayScreenHtml(snapshot, runtimeJs)], {
+              type: "text/html;charset=utf-8;",
+            });
+            downloadBlobFile(getCloseDayFilenameBase(snapshot) + "_읽기모드.html", blob);
+          })
+          .catch(function (err) {
+            console.error(err);
+            toast("읽기 모드 파일 생성 실패 · 보고서/엑셀은 저장됨");
+          });
       }
 
       function downloadCloseDayFiles(snapshot) {
@@ -3865,7 +3917,7 @@
               HKInvenNotify.resetOnCloseDay();
             }
             refresh();
-            toast("마감 완료 · HTML·엑셀·화면스냅샷 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
           });
           return;
         }
@@ -3878,13 +3930,13 @@
           HKInvenNotify.resetOnCloseDay();
         }
         refresh();
-        toast("마감 완료 · HTML·엑셀·화면스냅샷 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 정비오더 화면 스냅샷 HTML로 저장\n   (공지·사진, VIP 메모장, MB & 인벤 메모장·사진, 인벤 통보·임시저장, 특이객실·입실/삭제 트레이, 요청, 오더, MB & 인벤 변경, MB CHECK, 채팅·프론트채팅, 관리자 문의, 변경 이력, 취소/사용, 루밍·FASN XML, 컴플레인·습득·세탁·당일습득물(사진·채팅), DD·인벤·치치 임베드, 오더/시설/정비 화면 스냅샷)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
