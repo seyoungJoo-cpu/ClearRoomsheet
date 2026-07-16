@@ -11642,7 +11642,12 @@
           );
         });
         list.sort(function (a, b) {
-          return (a.sched || "").localeCompare(b.sched || "", undefined, { numeric: true });
+          var ta = new Date((a && (a.updatedAt || a.at)) || 0).getTime();
+          var tb = new Date((b && (b.updatedAt || b.at)) || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          if (tb !== ta) return tb - ta;
+          return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
         });
         return list;
       }
@@ -14682,6 +14687,7 @@
 
       function markRequestEntrySavedLocally(entry) {
         if (!entry || !entry.id) return;
+        entry.updatedAt = new Date().toISOString();
         var sig = requestContentSignature(entry);
         knownRequestSnapshots[entry.id] = sig;
         ackRequestModifySignature(entry.id, sig);
