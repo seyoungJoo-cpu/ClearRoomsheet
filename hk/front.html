@@ -18256,6 +18256,7 @@
           return;
         }
         if (typeof HKSync === "undefined" || !HKSync.appendTeamChatMessage) return;
+        var newId = "tchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         knownTeamChatIds[newId] = true;
         HKSync.appendTeamChatMessage({
           id: newId,
