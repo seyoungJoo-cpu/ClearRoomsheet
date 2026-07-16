@@ -5129,10 +5129,22 @@
     }
 
     .sidebar-section--ai {
-      margin-top: auto;
       border-top: 1px solid var(--border);
       border-bottom: none;
       flex-shrink: 0;
+    }
+
+    .sidebar-section--bottom {
+      margin-top: auto;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-section--bottom > .sidebar-section {
+      border-top: none;
     }
 
     .sidebar-section--ai .sidebar-nav {
@@ -6680,6 +6692,10 @@
         min-height: 0;
       }
 
+      .sidebar-section--bottom {
+        margin-top: 8px;
+      }
+
       .sidebar-nav {
         flex-direction: row;
         flex-wrap: wrap;
@@ -7007,6 +7023,57 @@
       color: var(--text);
     }
 
+    .operator-gate__mode-pick {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .operator-gate__mode-pick.is-visible {
+      display: flex;
+    }
+
+    .operator-gate__mode-btn {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font: inherit;
+      min-height: 48px;
+      background: #f8fafc;
+      color: var(--text);
+    }
+
+    .operator-gate__mode-btn:hover {
+      border-color: var(--accent);
+      background: #eff6ff;
+    }
+
+    .operator-gate__mode-btn--maint {
+      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      border-color: var(--accent-dim);
+      color: #fff;
+    }
+
+    .operator-gate__mode-btn--front {
+      background: linear-gradient(180deg, #14b8a6 0%, #0f766e 100%);
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .operator-gate.is-mode-pick #operator-gate-form,
+    .operator-gate.is-mode-pick #operatorGateCancel {
+      display: none !important;
+    }
+
+    .operator-gate.is-mode-pick .operator-gate__mode-pick {
+      display: flex;
+    }
+
     .operator-gate__cancel[hidden] {
       display: none !important;
     }
@@ -7061,6 +7128,14 @@
         />
         <button type="submit">확인</button>
       </form>
+      <div class="operator-gate__mode-pick" id="operatorGateModePick" hidden>
+        <button type="button" class="operator-gate__mode-btn operator-gate__mode-btn--maint" id="operatorGatePickMaint">
+          정비 입력
+        </button>
+        <button type="button" class="operator-gate__mode-btn operator-gate__mode-btn--front" id="operatorGatePickFront">
+          프론트
+        </button>
+      </div>
       <button type="button" class="operator-gate__cancel" id="operatorGateCancel" hidden>취소</button>
     </div>
   </div>
@@ -7076,7 +7151,7 @@
   </div>
 
   <div class="hk-app-main">
-  <header class="topbar" id="topbar">
+  <header class="topbar is-collapsed" id="topbar">
     <div class="topbar-mobile-bar">
       <div class="brand-block">
         <span class="brand">Lotte Hotel</span>
@@ -7135,10 +7210,10 @@
           type="button"
           class="topbar-collapse-btn"
           id="btnTopbarCollapse"
-          aria-expanded="true"
+          aria-expanded="false"
           aria-controls="topbarCollapsible"
         >
-          접기
+          펼치기
         </button>
       </div>
     </div>
@@ -7181,44 +7256,23 @@
       <div class="sidebar-brand">
         <h1 class="sidebar-brand__title">House Keeping</h1>
       </div>
-      <nav class="sidebar-section sidebar-section--chat" id="sidebarChatSection" hidden aria-label="채팅">
-        <div class="sidebar-nav">
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnChat"
-            aria-pressed="false"
-          >
-            채팅방
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnFront"
-            aria-pressed="false"
-            hidden
-          >
-            프론트 채팅방
-          </button>
-        </div>
-      </nav>
       <nav class="sidebar-section sidebar-section--primary" aria-label="House Keeping 메뉴">
         <div class="sidebar-nav">
           <button
             type="button"
             class="sidebar-nav__btn"
-            id="sidebarBtnRequest"
+            id="sidebarBtnOrder"
             aria-pressed="true"
           >
-            정비 관리
+            오더 관리
           </button>
           <button
             type="button"
             class="sidebar-nav__btn"
-            id="sidebarBtnOrder"
+            id="sidebarBtnRequest"
             aria-pressed="false"
           >
-            오더 관리
+            정비 관리
           </button>
           <button
             type="button"
@@ -7228,91 +7282,118 @@
           >
             시설 관리
           </button>
-          <hr class="sidebar-nav__rule" id="sidebarFacilityLogRule" hidden />
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--multiline"
-            id="sidebarBtnFacilityMisc"
-            aria-pressed="false"
-            hidden
-          >
-            컴플레인·지난습득물·세탁
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnFacilityDailyFound"
-            aria-pressed="false"
-            hidden
-          >
-            당일습득물
-          </button>
-          <hr class="sidebar-nav__rule" id="sidebarFacilityLogBottomRule" hidden />
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--compact"
-            id="sidebarBtnMbInv"
-            aria-pressed="false"
-          >
-            MB &amp; 인벤
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnMbCheck"
-            aria-pressed="false"
-          >
-            MB CHECK
-          </button>
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--compact"
-            id="sidebarBtnInvenNotify"
-            aria-pressed="false"
-          >
-            인벤 통보
-          </button>
         </div>
       </nav>
-      <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
-        <button
-          type="button"
-          class="sidebar-section__toggle"
-          id="sidebarZonesToggle"
-          aria-expanded="false"
-          aria-controls="sidebarZoneNav"
-        >
-          <span class="sidebar-section__toggle-label">특이객실</span>
-          <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
-        </button>
-        <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
-        </div>
-      </nav>
-      <nav class="sidebar-section sidebar-section--ai" aria-label="AI 모드">
-        <div class="sidebar-nav">
+      <div class="sidebar-section--bottom">
+        <nav class="sidebar-section sidebar-section--chat" id="sidebarChatSection" hidden aria-label="채팅">
+          <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnChat"
+              aria-pressed="false"
+            >
+              채팅방
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnFront"
+              aria-pressed="false"
+              hidden
+            >
+              프론트 채팅방
+            </button>
+          </div>
+        </nav>
+        <nav class="sidebar-section sidebar-section--secondary" aria-label="부가 메뉴">
+          <div class="sidebar-nav">
+            <hr class="sidebar-nav__rule" id="sidebarFacilityLogRule" hidden />
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--multiline"
+              id="sidebarBtnFacilityMisc"
+              aria-pressed="false"
+              hidden
+            >
+              컴플레인·지난습득물·세탁
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnFacilityDailyFound"
+              aria-pressed="false"
+              hidden
+            >
+              당일습득물
+            </button>
+            <hr class="sidebar-nav__rule" id="sidebarFacilityLogBottomRule" hidden />
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnMbInv"
+              aria-pressed="false"
+            >
+              MB &amp; 인벤
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnMbCheck"
+              aria-pressed="false"
+            >
+              MB CHECK
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnInvenNotify"
+              aria-pressed="false"
+            >
+              인벤 통보
+            </button>
+          </div>
+        </nav>
+        <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
           <button
             type="button"
-            class="sidebar-nav__btn"
-            id="sidebarBtnAi"
-            aria-pressed="false"
+            class="sidebar-section__toggle"
+            id="sidebarZonesToggle"
+            aria-expanded="false"
+            aria-controls="sidebarZoneNav"
           >
-            AI 모드
+            <span class="sidebar-section__toggle-label">특이객실</span>
+            <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
           </button>
-        </div>
-      </nav>
-      <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
-        <div class="sidebar-title">프론트</div>
-        <div class="sidebar-nav">
-          <button
-            type="button"
-            class="sidebar-nav__btn sidebar-nav__btn--multiline"
-            id="sidebarBtnFrontEmbed"
-            aria-pressed="false"
-          >
-            DD·인벤·취향
-          </button>
-        </div>
-      </nav>
+          <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
+          </div>
+        </nav>
+        <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
+          <div class="sidebar-title">프론트</div>
+          <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--multiline"
+              id="sidebarBtnFrontEmbed"
+              aria-pressed="false"
+            >
+              DD·인벤·취향
+            </button>
+          </div>
+        </nav>
+        <nav class="sidebar-section sidebar-section--ai" aria-label="AI 모드">
+          <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnAi"
+              aria-pressed="false"
+            >
+              AI 모드
+            </button>
+          </div>
+        </nav>
+      </div>
     </aside>
 
     <div class="layout-main-area">
@@ -8388,7 +8469,7 @@
       var memoStack = [];
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
-      var sidebarMainView = "request";
+      var sidebarMainView = "order";
       var frontEmbedTab = "dd";
       var aiOrdersScope = "all";
       var requestLogEntries = [];
@@ -8436,6 +8517,7 @@
       var knownMbCheckGstIds = {};
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
+      var OPERATOR_MODE_PICK_KEY = "lotte-hk-pending-mode-pick-v1";
       var operatorNameModalMode = "initial";
       var pendingOperatorNameCallback = null;
       var pendingFacilityConfirmReqId = null;
@@ -8659,6 +8741,21 @@
         } catch (e) {}
       }
 
+      function isModePickPending() {
+        try {
+          return sessionStorage.getItem(OPERATOR_MODE_PICK_KEY) === "1";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function setModePickPending(on) {
+        try {
+          if (on) sessionStorage.setItem(OPERATOR_MODE_PICK_KEY, "1");
+          else sessionStorage.removeItem(OPERATOR_MODE_PICK_KEY);
+        } catch (e) {}
+      }
+
       function getOperatorName() {
         try {
           return String(sessionStorage.getItem(OPERATOR_NAME_KEY) || "").trim();
@@ -8798,9 +8895,11 @@
         if (gate) {
           gate.classList.add("hidden");
           gate.setAttribute("aria-hidden", "true");
-          gate.classList.remove("is-shift-overlay");
+          gate.classList.remove("is-shift-overlay", "is-mode-pick");
         }
         document.body.classList.remove("operator-locked");
+        var modePick = document.getElementById("operatorGateModePick");
+        if (modePick) modePick.hidden = true;
         refreshPushAlarmButtonUi();
         if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
           HKPush.refreshOrderPushSubscription().then(refreshPushAlarmButtonUi);
@@ -8897,6 +8996,7 @@
         var hint = document.getElementById("operatorGateHint");
         var inp = document.getElementById("hkOperatorNameInput");
         var cancelBtn = document.getElementById("operatorGateCancel");
+        var modePick = document.getElementById("operatorGateModePick");
         if (title) {
           title.textContent = isShift ? "교대 · 이름 변경" : "정비오더 · 이름 입력";
         }
@@ -8911,8 +9011,9 @@
         if (cancelBtn) {
           cancelBtn.hidden = !isShift;
         }
+        if (modePick) modePick.hidden = true;
         if (gate) {
-          gate.classList.remove("hidden");
+          gate.classList.remove("hidden", "is-mode-pick");
           gate.setAttribute("aria-hidden", "false");
           gate.classList.toggle("is-shift-overlay", isShift);
         }
@@ -8922,6 +9023,31 @@
           document.body.classList.add("operator-locked");
         }
         if (inp) setTimeout(function () { inp.focus(); }, 0);
+      }
+
+      function showModePickGate() {
+        operatorNameModalMode = "modePick";
+        pendingOperatorNameCallback = null;
+        var gate = document.getElementById("operator-gate");
+        var title = document.getElementById("operatorGateTitle");
+        var hint = document.getElementById("operatorGateHint");
+        var cancelBtn = document.getElementById("operatorGateCancel");
+        var modePick = document.getElementById("operatorGateModePick");
+        if (title) title.textContent = "모드 선택";
+        if (hint) {
+          hint.textContent =
+            (getOperatorName() ? getOperatorName() + "님, " : "") +
+            "정비 입력 또는 프론트로 시작하세요.";
+        }
+        if (cancelBtn) cancelBtn.hidden = true;
+        if (modePick) modePick.hidden = false;
+        if (gate) {
+          gate.classList.remove("hidden");
+          gate.classList.add("is-mode-pick");
+          gate.classList.remove("is-shift-overlay");
+          gate.setAttribute("aria-hidden", "false");
+        }
+        document.body.classList.add("operator-locked");
       }
 
       function clearHkSessionUiCaches() {
@@ -8941,8 +9067,12 @@
 
       function ensureOperatorNameOnLoad() {
         if (isOperatorSessionUnlocked()) {
-          hideOperatorGate();
           updateOperatorNameDisplay();
+          if (isModePickPending()) {
+            showModePickGate();
+          } else {
+            hideOperatorGate();
+          }
           return;
         }
         showOperatorGate({ mode: "initial" });
@@ -8959,6 +9089,7 @@
           resetHkLocalSyncCaches();
           setOperatorName(name);
           setOperatorSessionUnlocked();
+          setModePickPending(true);
           location.reload();
           return;
         }
@@ -8969,6 +9100,23 @@
           var cb = pendingOperatorNameCallback;
           pendingOperatorNameCallback = null;
           cb(name);
+        }
+      }
+
+      function finishModePick(kind) {
+        setModePickPending(false);
+        hideOperatorGate();
+        showSidebarOrderView();
+        if (kind === "maint") {
+          requireRoleAuth("maint", function () {
+            maintenanceMode = true;
+            applyMaintenanceModeUi();
+          });
+        } else if (kind === "front") {
+          requireRoleAuth("front", function () {
+            frontMode = true;
+            applyFrontModeUi();
+          });
         }
       }
 
@@ -8997,6 +9145,8 @@
         var cancelBtn = document.getElementById("operatorGateCancel");
         var inp = document.getElementById("hkOperatorNameInput");
         var shiftBtn = document.getElementById("sidebarBtnShiftChange");
+        var pickMaint = document.getElementById("operatorGatePickMaint");
+        var pickFront = document.getElementById("operatorGatePickFront");
 
         if (form) {
           form.addEventListener("submit", function (e) {
@@ -9008,6 +9158,16 @@
           cancelBtn.addEventListener("click", function () {
             hideOperatorGate();
             pendingOperatorNameCallback = null;
+          });
+        }
+        if (pickMaint) {
+          pickMaint.addEventListener("click", function () {
+            finishModePick("maint");
+          });
+        }
+        if (pickFront) {
+          pickFront.addEventListener("click", function () {
+            finishModePick("front");
           });
         }
         if (inp) {
@@ -19558,7 +19718,7 @@
       })();
 
       refreshMain();
-      showSidebarRequestView();
+      showSidebarOrderView();
       renderOrderPanels();
       applyFrontModeUi();
       renderFrontChatPanel();
