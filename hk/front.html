@@ -11334,7 +11334,18 @@
         if (entry.facilityUnavailable) return true;
         if (entry.id) {
           var facOrder = findFacilityOrderForRequest(entry.id);
-          if (facOrder && isFacilityOrderUnavailable(facOrder)) return true;
+          if (facOrder && getOrderPhase(facOrder) === "unavailable") return true;
+        }
+        return false;
+      }
+
+      function isFacilityOrderUnavailableBucket(entry) {
+        if (!entry || !isFacilityOrder(entry) || isOrderIssueOpen(entry)) return false;
+        var phase = getOrderPhase(entry);
+        if (phase === "unavailable") return true;
+        if (phase === "accepted" && entry.sourceReqId) {
+          var req = findRequestEntry(entry.sourceReqId);
+          if (req && req.facilityUnavailable) return true;
         }
         return false;
       }
@@ -11357,16 +11368,12 @@
                 .replace(/\s+/g, " ")
                 .trim()
             : "request-feedback__sched";
-          schedEl.className = baseClass + " is-facility-unavailable";
+          schedEl.className = (baseClass + " is-facility-unavailable").trim();
+          schedEl.appendChild(document.createTextNode(doneLabel + " : "));
           var facDeniedEm = document.createElement("span");
           facDeniedEm.className = "request-feedback__facility-unavailable";
           facDeniedEm.textContent = "입실 불가";
-          if (opts.deniedLabelOnly) {
-            schedEl.appendChild(facDeniedEm);
-          } else {
-            schedEl.appendChild(document.createTextNode(doneLabel + " : "));
-            schedEl.appendChild(facDeniedEm);
-          }
+          schedEl.appendChild(facDeniedEm);
         } else {
           schedEl.className =
             opts.className || "request-feedback__sched is-facility-pending";
@@ -13038,7 +13045,12 @@
           t2.textContent = "처리·예정 " + entry.sched;
           li.appendChild(t2);
         }
-        if (entry.facilitySched || entry.facilityOkTime) {
+        if (entry.facilityUnavailable) {
+          var tFacDenied = document.createElement("p");
+          tFacDenied.className = "ai-mode-entry-card__line";
+          tFacDenied.textContent = "시설 입실 불가";
+          li.appendChild(tFacDenied);
+        } else if (entry.facilitySched || entry.facilityOkTime) {
           var tFac = document.createElement("p");
           tFac.className = "ai-mode-entry-card__line";
           tFac.textContent =
@@ -14517,11 +14529,6 @@
         return "alert";
       }
 
-      function isFacilityOrderUnavailable(entry) {
-        if (!entry || !isFacilityOrder(entry)) return false;
-        return getOrderPhase(entry) === "unavailable";
-      }
-
       function isAutoRobotOrder(entry) {
         if (!entry) return false;
         if (entry.autoRobot || entry.acceptAny) return true;
@@ -15417,23 +15424,9 @@
         });
       }
 
-      function syncFacilityUnavailableOrders() {
-        orderLogEntries.forEach(function (entry) {
-          if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
-          var req = findRequestEntry(entry.sourceReqId);
-          if (!req) return;
-          if (req.facilityUnavailable && getOrderPhase(entry) === "accepted") {
-            entry.phase = "unavailable";
-            if (!entry.unavailableAt) entry.unavailableAt = new Date().toISOString();
-          }
-          if (getOrderPhase(entry) === "unavailable") req.facilityUnavailable = true;
-        });
-      }
-
       function renderOrderPanels(opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
-        syncFacilityUnavailableOrders();
         renderOrderLogPanel(opts);
         renderFacilityOrderLogPanel(opts);
         renderOrderWorkPanels(opts);
@@ -15725,10 +15718,7 @@
         var auto = !!opts.auto;
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return false;
-        if (isFacilityOrder(entry) && entry.sourceReqId) {
-          var blockedReq = findRequestEntry(entry.sourceReqId);
-          if (blockedReq && isFacilityUnavailable(blockedReq)) return false;
-        }
+        if (isFacilityOrderUnavailableBucket(entry)) return false;
         if (!auto && !maintenanceMode) return false;
         if (!auto && !getOperatorName()) {
           showOperatorGate({
@@ -15822,7 +15812,7 @@
         orderLogEntries.forEach(function (entry) {
           if (!entry || !isFacilityOrder(entry)) return;
           if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
-          if (isFacilityOrderUnavailable(entry)) return;
+          if (isFacilityOrderUnavailableBucket(entry)) return;
           var due = getFacilityOrderDueTime(entry);
           if (!due || !isFacilityTimeReached(due)) return;
           if (
@@ -15932,7 +15922,8 @@
       function applyFacilityAcceptedTime(orderId, rawTime) {
         var entry = findOrderEntry(orderId);
         if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
-        if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+        var phase = getOrderPhase(entry);
+        if ((phase !== "accepted" && phase !== "unavailable") || isOrderIssueOpen(entry)) return;
         if (!maintenanceMode) return;
         var p = parseRequestSchedInput(rawTime);
         if (!p.ok || !p.value) {
@@ -15954,11 +15945,9 @@
         srcReq.facilityOkTime = p.value;
         delete srcReq.facilitySched;
         delete srcReq.facilityUnavailable;
-        if (getOrderPhase(entry) === "unavailable") {
-          entry.phase = "accepted";
-          delete entry.unavailableAt;
-          delete entry.unavailableBy;
-        }
+        entry.phase = "accepted";
+        delete entry.unavailableAt;
+        delete entry.unavailableBy;
         markRequestEntrySavedLocally(srcReq);
         if (entry.id) delete facilityTimeEditIds[entry.id];
         saveRequestLog();
@@ -15975,6 +15964,7 @@
         var entry = findOrderEntry(orderId);
         if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
         if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+        if (isFacilityOrderUnavailableBucket(entry)) return;
         if (!maintenanceMode) return;
         if (!getOperatorName()) {
           showOperatorGate({
@@ -16000,6 +15990,27 @@
         saveOrderLog();
         renderRequestLogPanel({ force: true });
         renderOrderPanels({ force: true });
+      }
+
+      function appendFacilityUnavailableActions(li, entry) {
+        if (!maintenanceMode || !entry || !isFacilityOrder(entry)) return;
+        var timeWrap = document.createElement("div");
+        timeWrap.className = "order-work__facility-time-wrap";
+        var timeInp = document.createElement("input");
+        timeInp.type = "text";
+        timeInp.className = "order-work__facility-time-input hk-time-em";
+        timeInp.placeholder = "1430 / 14:30 / IP";
+        timeInp.setAttribute("data-order-id", entry.id || "");
+        timeInp.setAttribute("aria-label", "시설시간");
+        var timeBtn = document.createElement("button");
+        timeBtn.type = "button";
+        timeBtn.className = "order-work__facility-time-btn";
+        timeBtn.setAttribute("data-order-id", entry.id || "");
+        timeBtn.setAttribute("data-facility-time-action", "apply");
+        timeBtn.textContent = "시설시간 적용";
+        timeWrap.appendChild(timeInp);
+        timeWrap.appendChild(timeBtn);
+        li.appendChild(timeWrap);
       }
 
       function toggleDeployedOrderChat(orderId) {
@@ -16080,11 +16091,7 @@
         var o = findFacilityOrderForRequest(reqId);
         if (!o) return false;
         var phase = getOrderPhase(o);
-        return (
-          phase !== "cancelled" &&
-          phase !== "deployed" &&
-          (phase === "unavailable" || phase === "accepted" || phase === "alert" || phase === "issue")
-        );
+        return phase !== "cancelled" && phase !== "deployed" && phase !== "unavailable";
       }
 
       function getFacilityRequestStatus(reqId) {
@@ -16094,6 +16101,8 @@
         if (phase === "deployed") return "ok";
         if (phase === "cancelled") return "none";
         if (phase === "unavailable") return "unavailable";
+        var req = findRequestEntry(reqId);
+        if (req && req.facilityUnavailable) return "unavailable";
         return "pending";
       }
 
@@ -16172,12 +16181,13 @@
           return (
             entryFilter(e) &&
             getOrderPhase(e) === "accepted" &&
-            !isOrderIssueOpen(e)
+            !isOrderIssueOpen(e) &&
+            !isFacilityOrderUnavailableBucket(e)
           );
         });
         var unavailableEntries = isFacilityPanel
           ? orderLogEntries.filter(function (e) {
-              return entryFilter(e) && getOrderPhase(e) === "unavailable";
+              return entryFilter(e) && isFacilityOrderUnavailableBucket(e);
             })
           : [];
         var cancelledEntries = orderLogEntries.filter(function (e) {
@@ -16296,7 +16306,8 @@
           xMark.setAttribute("aria-hidden", "true");
           xMark.textContent = "✕";
           li.appendChild(xMark);
-          unavailableList.appendChild(li);
+          appendFacilityUnavailableActions(li, entry);
+          if (unavailableList) unavailableList.appendChild(li);
         });
 
         cancelledEntries.sort(function (a, b) {
@@ -16590,20 +16601,13 @@
           appendSchedTimeDisplay(sl, entry, { label: "정비" });
           li.appendChild(sl);
           if (frontMode || maintenanceMode) {
-            if (facDenied) {
-              appendFacilityPendingSchedEl(li, entry, {
-                tagName: "p",
-                className: "room-card__time-display request-feedback__sched",
-                doneLabel: "시설",
-                deniedLabelOnly: false,
-              });
-            } else {
-              appendFacilityPendingSchedEl(li, entry, {
-                tagName: "p",
-                className: "room-card__time-display request-feedback__sched is-facility-pending",
-                doneLabel: "시설",
-              });
-            }
+            appendFacilityPendingSchedEl(li, entry, {
+              tagName: "p",
+              className:
+                "room-card__time-display request-feedback__sched" +
+                (facDenied ? "" : " is-facility-pending"),
+              doneLabel: "시설",
+            });
           }
 
           var acc = document.createElement("p");
