@@ -1267,7 +1267,7 @@
   <div id="auth-gate" class="auth-gate" aria-hidden="false">
     <div class="auth-card">
       <h2>정비 오더 관리 접근</h2>
-      <p>이 페이지를 사용하려면 비밀번호를 입력하세요.</p>
+      <p>이 페이지를 사용하려면 비밀번호를 입력하세요. (하루 1회)</p>
       <form id="auth-form" autocomplete="off">
         <label for="auth-password" class="sr-only">비밀번호</label>
         <input id="auth-password" type="password" placeholder="비밀번호" required autofocus>
@@ -1462,14 +1462,54 @@
       var authPassword = document.getElementById("auth-password");
       var authError = document.getElementById("auth-error");
 
+      /** KST 기준 YYYY-MM-DD — 하루 1회 비밀번호 */
+      function kstDateKey() {
+        try {
+          return new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(new Date());
+        } catch (e) {
+          var n = new Date();
+          var y = n.getFullYear();
+          var m = n.getMonth() + 1;
+          var d = n.getDate();
+          return (
+            y +
+            "-" +
+            (m < 10 ? "0" : "") +
+            m +
+            "-" +
+            (d < 10 ? "0" : "") +
+            d
+          );
+        }
+      }
+
+      function isUnlockedToday() {
+        try {
+          return localStorage.getItem(AUTH_STORAGE_KEY) === kstDateKey();
+        } catch (e) {
+          return sessionStorage.getItem(AUTH_STORAGE_KEY) === "1";
+        }
+      }
+
       function unlockApp() {
         document.body.classList.remove("locked");
         authGate.classList.add("hidden");
         authGate.setAttribute("aria-hidden", "true");
+        var day = kstDateKey();
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, day);
+        } catch (e) {}
         sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
         sessionStorage.setItem("clear_html_sync_pwd", ACCESS_PASSWORD);
         if (typeof window.__startRoomSync === "function") window.__startRoomSync();
       }
+
+      window.__isRoomingUnlockedToday = isUnlockedToday;
 
       authForm.addEventListener("submit", function (event) {
         event.preventDefault();
@@ -1483,7 +1523,7 @@
         authPassword.focus();
       });
 
-      if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") {
+      if (isUnlockedToday()) {
         unlockApp();
       }
     })();
@@ -4745,7 +4785,11 @@
           }
           if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
-        if (sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1" && typeof window.__startRoomSync === "function") {
+        var unlockedToday =
+          typeof window.__isRoomingUnlockedToday === "function"
+            ? window.__isRoomingUnlockedToday()
+            : sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1";
+        if (unlockedToday && typeof window.__startRoomSync === "function") {
           window.__startRoomSync();
         }
       });
