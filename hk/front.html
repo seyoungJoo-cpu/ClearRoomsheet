@@ -14136,15 +14136,7 @@
           var facActive = hasActiveFacilityOrderForRequest(entry.id);
           var maintActs = document.createElement("div");
           maintActs.className = "request-feedback__maint-actions";
-          if (facActive) {
-            var facSchedBtn = document.createElement("button");
-            facSchedBtn.type = "button";
-            facSchedBtn.className = "request-feedback__facility-sched-btn";
-            facSchedBtn.setAttribute("data-req-id", entry.id);
-            facSchedBtn.textContent = "정비 시간";
-            facSchedBtn.setAttribute("aria-label", "정비 시간 입력");
-            maintActs.appendChild(facSchedBtn);
-          } else {
+          if (!facActive) {
             var schedBtn = document.createElement("button");
             schedBtn.type = "button";
             schedBtn.className = "request-feedback__sched-btn";
@@ -14187,6 +14179,7 @@
             facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
           }
           maintActs.appendChild(facilityBtn);
+          if (facStatus === "pending") appendFacilityTimeBtn(maintActs, entry.id);
           li.appendChild(maintActs);
         } else if (frontMode) {
           appendFacilityPendingSchedEl(li, entry);
@@ -15664,6 +15657,21 @@
         return t ? "시설 " + t + " OK" : "시설OK";
       }
 
+      function appendFacilityTimeBtn(parent, reqId) {
+        if (!parent || !reqId || !maintenanceMode) return;
+        if (!hasActiveFacilityOrderForRequest(reqId)) return;
+        var req = findRequestEntry(reqId);
+        var t = req && req.facilitySched != null ? String(req.facilitySched).trim() : "";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "request-feedback__facility-sched-btn";
+        btn.setAttribute("data-req-id", reqId);
+        btn.textContent = t ? "시설시간 " + t : "시설시간";
+        btn.setAttribute("aria-label", "시설시간 입력");
+        btn.title = "시설시간 입력";
+        parent.appendChild(btn);
+      }
+
       function appendFacilityRequestStatusBtn(parent, reqId, opts) {
         if (!parent || !reqId) return;
         opts = opts || {};
@@ -15682,6 +15690,7 @@
           btn.setAttribute("aria-label", opts.pendingAria || "시설 요청됨");
         }
         parent.appendChild(btn);
+        if (status === "pending") appendFacilityTimeBtn(parent, reqId);
       }
 
       function renderOrderWorkPanels(opts) {
@@ -16318,7 +16327,9 @@
 
       function openFacilityRequestSchedEditor(entryId) {
         if (!maintenanceMode || !hasActiveFacilityOrderForRequest(entryId)) return;
-        var li = document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]');
+        var li =
+          document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
+          document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
         if (!li) return;
         var old = li.querySelector(".request-feedback__facility-sched-editor-wrap");
         if (old) {
@@ -16364,7 +16375,7 @@
         inp.classList.add("hk-time-em");
         inp.placeholder = "1430 / 14:30 / IP";
         inp.value = entry.facilitySched || "";
-        inp.setAttribute("aria-label", "정비 시간");
+        inp.setAttribute("aria-label", "시설시간");
         var ok = document.createElement("button");
         ok.type = "button";
         ok.className = "request-feedback__sched-save";
@@ -18482,6 +18493,15 @@
             e.stopPropagation();
             var ridIpS = ipSched.getAttribute("data-req-id");
             if (ridIpS) applyRequestIpSched(ridIpS);
+            return;
+          }
+          var facSchedCard = e.target.closest(".request-feedback__facility-sched-btn");
+          if (facSchedCard) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridFsC = facSchedCard.getAttribute("data-req-id");
+            if (ridFsC) openFacilityRequestSchedEditor(ridFsC);
             return;
           }
           var b = e.target.closest(".sched-card__edit-btn");
