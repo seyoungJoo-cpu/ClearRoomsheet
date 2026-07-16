@@ -9591,12 +9591,15 @@
           syncRequestLogFromServer();
           detectNewRequestItems();
           renderRequestLogPanel();
+          checkAndAutoDeployFacilityOrders();
         }
         if (changed.indexOf("hkOrderLog") >= 0) {
           syncOrderLogFromServer();
           detectNewOrderIssues();
           detectNewOrderAlerts();
-          renderOrderPanels();
+          if (!checkAndAutoDeployFacilityOrders()) {
+            renderOrderPanels();
+          }
         }
         if (changed.indexOf("hkMbInvLog") >= 0) {
           if (typeof HKMbWorkflow !== "undefined") {
@@ -11213,7 +11216,7 @@
         schedEl.className =
           opts.className || "request-feedback__sched is-facility-pending";
         if (doneTime) {
-          schedEl.appendChild(document.createTextNode("시설 시간 완료 · "));
+          schedEl.appendChild(document.createTextNode("시설 완료 : "));
           var facTimeEm = document.createElement("span");
           facTimeEm.className = "hk-time-em";
           facTimeEm.textContent = doneTime;
@@ -15530,22 +15533,26 @@
         return entry && entry.issueBtnVisible !== false;
       }
 
-      function completeOrderDeployment(orderId) {
+      function completeOrderDeployment(orderId, opts) {
+        opts = opts || {};
+        var auto = !!opts.auto;
         var entry = findOrderEntry(orderId);
-        if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
-        if (!maintenanceMode) return;
-        if (!getOperatorName()) {
+        if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return false;
+        if (!auto && !maintenanceMode) return false;
+        if (!auto && !getOperatorName()) {
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
               completeOrderDeployment(orderId);
             },
           });
-          return;
+          return false;
         }
         entry.phase = "deployed";
         entry.deployedAt = new Date().toISOString();
-        entry.deployedBy = getOperatorName();
+        entry.deployedBy = auto
+          ? getOperatorName() || "자동"
+          : getOperatorName();
         if (isFacilityOrder(entry) && entry.sourceReqId) {
           var srcReq = findRequestEntry(entry.sourceReqId);
           if (srcReq) {
@@ -15564,16 +15571,85 @@
           }
         }
         saveOrderLog();
-        renderOrderPanels();
-        if (isFacilityOrder(entry) && entry.sourceReqId) {
-          renderRequestLogPanel({ force: true });
+        if (!opts.skipRender) {
+          renderOrderPanels();
+          if (isFacilityOrder(entry) && entry.sourceReqId) {
+            renderRequestLogPanel({ force: true });
+          }
         }
-        requestAnimationFrame(function () {
-          var card = document.querySelector(
-            '.order-work-section--deployed .order-work-item[data-order-id="' + orderId + '"]'
-          );
-          if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (!auto && !opts.skipScroll) {
+          requestAnimationFrame(function () {
+            var card = document.querySelector(
+              '.order-work-section--deployed .order-work-item[data-order-id="' + orderId + '"]'
+            );
+            if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          });
+        }
+        return true;
+      }
+
+      function facilityTimeToMinutes(timeStr) {
+        var s = String(timeStr == null ? "" : timeStr).trim();
+        if (!s) return null;
+        if (/^ip$/i.test(s)) return -1;
+        var parsed = parseRequestSchedInput(s);
+        if (!parsed.ok || !parsed.value) return null;
+        if (/^ip$/i.test(parsed.value)) return -1;
+        var m = String(parsed.value).match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      }
+
+      function isFacilityTimeReached(timeStr) {
+        var mins = facilityTimeToMinutes(timeStr);
+        if (mins == null) return false;
+        if (mins < 0) return true;
+        var now = new Date();
+        return now.getHours() * 60 + now.getMinutes() >= mins;
+      }
+
+      function getFacilityOrderDueTime(entry) {
+        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return "";
+        var srcReq = findRequestEntry(entry.sourceReqId);
+        if (!srcReq) return "";
+        return (
+          (srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "") ||
+          (srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "")
+        );
+      }
+
+      function checkAndAutoDeployFacilityOrders() {
+        var deployed = false;
+        var needRequestRender = false;
+        orderLogEntries.forEach(function (entry) {
+          if (!entry || !isFacilityOrder(entry)) return;
+          if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
+          var due = getFacilityOrderDueTime(entry);
+          if (!due || !isFacilityTimeReached(due)) return;
+          if (
+            completeOrderDeployment(entry.id, {
+              auto: true,
+              skipRender: true,
+              skipScroll: true,
+            })
+          ) {
+            deployed = true;
+            if (entry.sourceReqId) needRequestRender = true;
+          }
         });
+        if (!deployed) return false;
+        renderOrderPanels({ force: true });
+        if (needRequestRender) renderRequestLogPanel({ force: true });
+        return true;
+      }
+
+      var facilityAutoDeployTimer = null;
+      function startFacilityAutoDeployWatcher() {
+        if (facilityAutoDeployTimer) return;
+        checkAndAutoDeployFacilityOrders();
+        facilityAutoDeployTimer = setInterval(function () {
+          checkAndAutoDeployFacilityOrders();
+        }, 15000);
       }
 
       function appendOrderAcceptedMaintActions(li, entry) {
@@ -15649,6 +15725,10 @@
         applyRequestSchedChange(srcReq, p.value);
         markRequestEntrySavedLocally(srcReq);
         saveRequestLog();
+        if (isFacilityTimeReached(p.value)) {
+          completeOrderDeployment(orderId, { auto: true });
+          return;
+        }
         renderRequestLogPanel({ force: true });
         renderOrderPanels({ force: true });
       }
@@ -18853,7 +18933,10 @@
           initMbWorkflowAlertTracking();
           initFacilityLogAlertTracking();
           initInvenNotifyAlertTracking();
+          startFacilityAutoDeployWatcher();
         });
+      } else {
+        startFacilityAutoDeployWatcher();
       }
       renderSidebarZoneTabs();
       rebuildChangeAlertsFromLog({ skipRender: !getActiveZone() });
