@@ -11178,21 +11178,23 @@
         renderRequestLogPanel();
       }
 
-      function appendSchedTimeDisplay(containerEl, entry) {
+      function appendSchedTimeDisplay(containerEl, entry, opts) {
         if (!containerEl || !entry) return;
+        opts = opts || {};
+        var label = opts.label != null ? String(opts.label) : "처리·예정";
         var sched = String(entry.sched || "").trim();
         var prev = String(entry.schedPrev || "").trim();
         containerEl.textContent = "";
         containerEl.classList.remove("is-sched-changed");
         if (prev && prev !== sched) {
           containerEl.classList.add("is-sched-changed");
-          containerEl.appendChild(document.createTextNode("처리·예정 ·"));
+          containerEl.appendChild(document.createTextNode(label + " ·"));
           var stack = document.createElement("span");
           stack.className = "sched-time-stack";
           var prevEm = document.createElement("span");
           prevEm.className = "hk-time-em hk-time-em--prev";
           prevEm.textContent = prev;
-          prevEm.title = "이전 처리·예정 시간";
+          prevEm.title = "이전 " + label + " 시간";
           var curEm = document.createElement("span");
           curEm.className = "hk-time-em";
           curEm.textContent = sched || "—";
@@ -11201,7 +11203,7 @@
           containerEl.appendChild(stack);
           return;
         }
-        setLineWithEmTime(containerEl, "처리·예정 · ", sched);
+        setLineWithEmTime(containerEl, label + " · ", sched);
       }
 
       function appendFacilityPendingSchedEl(parent, entry, opts) {
@@ -11212,11 +11214,12 @@
         var doneTime =
           (entry.facilityOkTime != null ? String(entry.facilityOkTime).trim() : "") ||
           (entry.facilitySched != null ? String(entry.facilitySched).trim() : "");
+        var doneLabel = opts.doneLabel != null ? String(opts.doneLabel) : "시설 완료";
         var schedEl = document.createElement(opts.tagName || "div");
         schedEl.className =
           opts.className || "request-feedback__sched is-facility-pending";
         if (doneTime) {
-          schedEl.appendChild(document.createTextNode("시설 완료 : "));
+          schedEl.appendChild(document.createTextNode(doneLabel + " : "));
           var facTimeEm = document.createElement("span");
           facTimeEm.className = "hk-time-em";
           facTimeEm.textContent = doneTime;
@@ -16232,12 +16235,13 @@
 
           var sl = document.createElement("p");
           sl.className = "room-card__time-display";
-          appendSchedTimeDisplay(sl, entry);
+          appendSchedTimeDisplay(sl, entry, { label: "정비" });
           li.appendChild(sl);
           if (frontMode || maintenanceMode) {
             appendFacilityPendingSchedEl(li, entry, {
               tagName: "p",
               className: "room-card__time-display request-feedback__sched is-facility-pending",
+              doneLabel: "시설",
             });
           }
 
