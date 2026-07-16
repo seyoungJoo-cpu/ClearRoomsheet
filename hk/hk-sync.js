@@ -1192,6 +1192,7 @@
         blockMap: {},
         extendedStayRooms: {},
         uploadSummary: "",
+        roomingUploadedAt: "",
         fasnVacRows: [],
         fasnAllStatusRooms: [],
         fasnBlockMap: {},
