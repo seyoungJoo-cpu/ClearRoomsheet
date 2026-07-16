@@ -15802,7 +15802,6 @@
         entry.facilityDueTime = p.value;
         srcReq.facilityOkTime = p.value;
         delete srcReq.facilitySched;
-        applyRequestSchedChange(srcReq, p.value);
         markRequestEntrySavedLocally(srcReq);
         if (entry.id) delete facilityTimeEditIds[entry.id];
         saveRequestLog();
@@ -15831,23 +15830,10 @@
         }
         var srcReq = findRequestEntry(entry.sourceReqId);
         if (!srcReq) return;
-        var cleared =
-          (entry.facilityDueTime != null ? String(entry.facilityDueTime).trim() : "") ||
-          (srcReq.facilityOkTime != null ? String(srcReq.facilityOkTime).trim() : "") ||
-          (srcReq.facilitySched != null ? String(srcReq.facilitySched).trim() : "");
         delete entry.facilityDueTime;
         delete srcReq.facilityOkTime;
         delete srcReq.facilitySched;
         if (entry.id) delete facilityTimeEditIds[entry.id];
-        if (cleared && String(srcReq.sched || "").trim() === cleared) {
-          if (srcReq.schedPrev != null && String(srcReq.schedPrev).trim()) {
-            srcReq.sched = String(srcReq.schedPrev).trim();
-            delete srcReq.schedPrev;
-          } else {
-            srcReq.sched = "";
-            delete srcReq.schedPrev;
-          }
-        }
         markRequestEntrySavedLocally(srcReq);
         saveRequestLog();
         saveOrderLog();
