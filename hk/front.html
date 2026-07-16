@@ -14335,23 +14335,25 @@
         }
 
         if (maintenanceMode) {
-          if (!appendFacilityPendingSchedEl(li, entry)) {
-            var schedEl = document.createElement("div");
-            schedEl.className = "request-feedback__sched is-empty";
+          var schedEl = document.createElement("div");
+          var hasMaintSched = !!(entry.sched && String(entry.sched).trim());
+          schedEl.className =
+            "request-feedback__sched" + (hasMaintSched ? "" : " is-empty");
+          if (hasMaintSched) {
+            appendSchedTimeDisplay(schedEl, entry, { label: "정비" });
+          } else {
             schedEl.textContent = "처리·예정 —";
-            li.appendChild(schedEl);
           }
-          var facActive = hasActiveFacilityOrderForRequest(entry.id);
+          li.appendChild(schedEl);
+          appendFacilityPendingSchedEl(li, entry);
           var maintActs = document.createElement("div");
           maintActs.className = "request-feedback__maint-actions";
-          if (!facActive) {
-            var schedBtn = document.createElement("button");
-            schedBtn.type = "button";
-            schedBtn.className = "request-feedback__sched-btn";
-            schedBtn.setAttribute("data-req-id", entry.id);
-            schedBtn.textContent = "시간 입력";
-            maintActs.appendChild(schedBtn);
-          }
+          var schedBtn = document.createElement("button");
+          schedBtn.type = "button";
+          schedBtn.className = "request-feedback__sched-btn";
+          schedBtn.setAttribute("data-req-id", entry.id);
+          schedBtn.textContent = hasMaintSched ? "시간 수정" : "시간 입력";
+          maintActs.appendChild(schedBtn);
           var ipBtn = document.createElement("button");
           ipBtn.type = "button";
           ipBtn.className = "request-feedback__ip-btn";
@@ -14394,6 +14396,12 @@
           maintActs.appendChild(facilityBtn);
           li.appendChild(maintActs);
         } else if (frontMode) {
+          if (entry.sched && String(entry.sched).trim()) {
+            var frontSchedEl = document.createElement("div");
+            frontSchedEl.className = "request-feedback__sched";
+            appendSchedTimeDisplay(frontSchedEl, entry, { label: "정비" });
+            li.appendChild(frontSchedEl);
+          }
           appendFacilityPendingSchedEl(li, entry);
         }
 
@@ -16727,10 +16735,6 @@
 
       function openRequestSchedEditor(entryId) {
         if (!maintenanceMode) return;
-        if (hasActiveFacilityOrderForRequest(entryId)) {
-          openFacilityRequestSchedEditor(entryId);
-          return;
-        }
         var li =
           document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
           document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
