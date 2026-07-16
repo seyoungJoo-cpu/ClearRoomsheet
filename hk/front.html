@@ -11342,39 +11342,46 @@
       function appendFacilityPendingSchedEl(parent, entry, opts) {
         if (!parent || !entry) return false;
         opts = opts || {};
-        var facActive = hasActiveFacilityOrderForRequest(entry.id);
-        if (!facActive) return false;
         var unavailable = isFacilityUnavailable(entry);
+        var facActive = hasActiveFacilityOrderForRequest(entry.id);
+        if (!facActive && !unavailable) return false;
         var doneTime =
           (entry.facilityOkTime != null ? String(entry.facilityOkTime).trim() : "") ||
           (entry.facilitySched != null ? String(entry.facilitySched).trim() : "");
         var doneLabel = opts.doneLabel != null ? String(opts.doneLabel) : "시설 완료";
         var schedEl = document.createElement(opts.tagName || "div");
         if (unavailable) {
-          schedEl.className = opts.className
-            ? opts.className + " is-facility-unavailable"
-            : "request-feedback__sched is-facility-unavailable";
-        } else {
-          schedEl.className =
-            opts.className || "request-feedback__sched is-facility-pending";
-        }
-        if (unavailable) {
-          schedEl.appendChild(document.createTextNode(doneLabel + " : "));
+          var baseClass = opts.className
+            ? String(opts.className)
+                .replace(/\bis-facility-pending\b/g, "")
+                .replace(/\s+/g, " ")
+                .trim()
+            : "request-feedback__sched";
+          schedEl.className = baseClass + " is-facility-unavailable";
           var facDeniedEm = document.createElement("span");
           facDeniedEm.className = "request-feedback__facility-unavailable";
           facDeniedEm.textContent = "입실 불가";
-          schedEl.appendChild(facDeniedEm);
-        } else if (doneTime) {
-          schedEl.appendChild(document.createTextNode(doneLabel + " : "));
-          var facTimeEm = document.createElement("span");
-          facTimeEm.className = "hk-time-em";
-          facTimeEm.textContent = doneTime;
-          schedEl.appendChild(facTimeEm);
+          if (opts.deniedLabelOnly) {
+            schedEl.appendChild(facDeniedEm);
+          } else {
+            schedEl.appendChild(document.createTextNode(doneLabel + " : "));
+            schedEl.appendChild(facDeniedEm);
+          }
         } else {
-          var facPendingHint = document.createElement("span");
-          facPendingHint.className = "request-feedback__facility-pending-hint";
-          facPendingHint.textContent = "시설 확인중";
-          schedEl.appendChild(facPendingHint);
+          schedEl.className =
+            opts.className || "request-feedback__sched is-facility-pending";
+          if (doneTime) {
+            schedEl.appendChild(document.createTextNode(doneLabel + " : "));
+            var facTimeEm = document.createElement("span");
+            facTimeEm.className = "hk-time-em";
+            facTimeEm.textContent = doneTime;
+            schedEl.appendChild(facTimeEm);
+          } else {
+            var facPendingHint = document.createElement("span");
+            facPendingHint.className = "request-feedback__facility-pending-hint";
+            facPendingHint.textContent = "시설 확인중";
+            schedEl.appendChild(facPendingHint);
+          }
         }
         parent.appendChild(schedEl);
         return true;
@@ -16073,7 +16080,11 @@
         var o = findFacilityOrderForRequest(reqId);
         if (!o) return false;
         var phase = getOrderPhase(o);
-        return phase !== "cancelled" && phase !== "deployed";
+        return (
+          phase !== "cancelled" &&
+          phase !== "deployed" &&
+          (phase === "unavailable" || phase === "accepted" || phase === "alert" || phase === "issue")
+        );
       }
 
       function getFacilityRequestStatus(reqId) {
@@ -16579,11 +16590,20 @@
           appendSchedTimeDisplay(sl, entry, { label: "정비" });
           li.appendChild(sl);
           if (frontMode || maintenanceMode) {
-            appendFacilityPendingSchedEl(li, entry, {
-              tagName: "p",
-              className: "room-card__time-display request-feedback__sched is-facility-pending",
-              doneLabel: "시설",
-            });
+            if (facDenied) {
+              appendFacilityPendingSchedEl(li, entry, {
+                tagName: "p",
+                className: "room-card__time-display request-feedback__sched",
+                doneLabel: "시설",
+                deniedLabelOnly: false,
+              });
+            } else {
+              appendFacilityPendingSchedEl(li, entry, {
+                tagName: "p",
+                className: "room-card__time-display request-feedback__sched is-facility-pending",
+                doneLabel: "시설",
+              });
+            }
           }
 
           var acc = document.createElement("p");
