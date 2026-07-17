@@ -323,7 +323,7 @@
         esc(roomNo(entry.roomFrom)) +
         " → " +
         esc(roomNo(entry.roomTo)) +
-        "</span><span class="card-fo">' +
+        '</span><span class="card-fo">' +
         esc(phaseOf(entry)) +
         "</span></div>"
     );
@@ -455,7 +455,7 @@
             esc(m.by || "—") +
             "</b> · " +
             esc(fullAt(m.at)) +
-            "</div><div class="chat-msg-body">' +
+            '</div><div class="chat-msg-body">' +
             esc(m.deleted ? "삭제하였습니다." : m.text || "") +
             "</div>" +
             imgTag(m.deleted ? "" : m.image) +
@@ -538,7 +538,7 @@
         html.push(
           '<article class="card"><div class="card-time">' +
             esc(fullAt(e.at)) +
-            "</div><div class="card-row"><span class="card-room">' +
+            '</div><div class="card-row"><span class="card-room">' +
             esc(roomNo(e.room)) +
             "</span>" +
             (e.__cat ? '<span class="card-fo">' + esc(e.__cat) + "</span>" : "") +

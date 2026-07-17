@@ -18395,7 +18395,11 @@
         }
         var entries = getRoomChangeLogEntries()
           .filter(function (entry) {
-            return entry && entry.zone === zone && !isInitialRoomAddEntry(entry);
+            if (!entry || entry.zone !== zone || isInitialRoomAddEntry(entry)) return false;
+            var changes = Array.isArray(entry.changes) ? entry.changes : [];
+            return changes.some(function (line) {
+              return String(line).indexOf("객실번호") >= 0;
+            });
           })
           .sort(function (a, b) {
             var ta = new Date(a.at || 0).getTime();

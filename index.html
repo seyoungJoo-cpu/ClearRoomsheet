@@ -1292,17 +1292,17 @@
       </div>
       <div class="board-layout">
         <aside class="sidebar" aria-label="화면 전환">
-          <button type="button" class="sidebar-btn active" data-view="499" title="공실표 보드">499</button>
+          <button type="button" class="sidebar-btn" data-view="499" title="공실표 보드">499</button>
           <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 또는 FO 투숙(OCC), Stayover 제외">VAC</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
           <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
           <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
-          <button type="button" class="sidebar-btn" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
+          <button type="button" class="sidebar-btn active" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
           <button type="button" class="sidebar-btn" data-view="stay" title="STAY — Stayover만">STAY</button>
         </aside>
         <div class="board-main">
-          <div id="view499" class="view-panel">
+          <div id="view499" class="view-panel" hidden>
             <div class="summary-toolbar">
               <div id="statusSummaryBar" class="status-summary-bar"></div>
               <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
@@ -1385,7 +1385,7 @@
             <div id="fAsnBlockFilters" class="asn-block-filters" hidden></div>
             <div id="fAsnBoardMount"></div>
           </div>
-          <div id="viewIndi" class="view-panel" hidden>
+          <div id="viewIndi" class="view-panel">
             <p class="indi-legend">
               <strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp;
               <strong>IN</strong> Arrived &nbsp;|&nbsp;
@@ -4768,6 +4768,7 @@
 
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
+        switchBoardView("indi");
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {

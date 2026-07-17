@@ -3792,12 +3792,18 @@
           '<div id="archiveMain"></div>',
           '<aside id="archiveFeedback"></aside>',
           "</div></div>",
-          "<script>window.__HK_ARCHIVE__=" +
+          "<scr" +
+            "ipt>window.__HK_ARCHIVE__=" +
             archiveJson +
             ";window.HK_ARCHIVE_ZONE_LABELS=" +
             labelsJson +
-            ";</script>",
-          "<script>" + String(runtimeJs || "") + "</script>",
+            ";</scr" +
+            "ipt>",
+          "<scr" +
+            "ipt>" +
+            String(runtimeJs || "").replace(/<\/script/gi, "<\\/script") +
+            "</scr" +
+            "ipt>",
           "</body></html>",
         ];
         return html.join("");
@@ -3862,7 +3868,14 @@
       }
 
       function runCloseDayExport() {
-        var snapshot = collectCloseDaySnapshot();
+        var snapshot;
+        try {
+          snapshot = collectCloseDaySnapshot();
+        } catch (err) {
+          console.error(err);
+          toast("마감 데이터 수집 실패: " + (err && err.message ? err.message : err));
+          return;
+        }
         if (typeof HKSync !== "undefined" && HKSync.hydrateFromLocal) {
           HKSync.hydrateFromLocal();
         }
@@ -3894,7 +3907,22 @@
           typeof HKFacilityLogs !== "undefined"
             ? HKFacilityLogs.prepareForAdminCloseDay(snapshot.data)
             : null;
-        downloadCloseDayFiles(snapshot);
+        try {
+          downloadCloseDayHtml(snapshot);
+        } catch (errHtml) {
+          console.error(errHtml);
+          toast("HTML 보고서 저장 실패");
+          return;
+        }
+        try {
+          downloadCloseDayExcel(snapshot);
+        } catch (errXls) {
+          console.error(errXls);
+          toast("엑셀 저장 실패");
+        }
+        setTimeout(function () {
+          downloadCloseDayScreenHtml(snapshot);
+        }, 400);
 
         var resetStorage = getResetStorageData(preservedFacility);
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
@@ -3978,10 +4006,23 @@
       }
 
       function isDuplicateZoneLabel(data, label, exceptZoneId) {
+        var want = String(label || "").trim().toLowerCase();
+        if (!want) return false;
+        var standardLabels = {
+          vip: true,
+          "r/c": true,
+          rc: true,
+          casino: true,
+          "모바일체크인": true,
+          "mobile_ci": true,
+          aj객실: true,
+          aj: true,
+        };
+        if (standardLabels[want]) return true;
         return (data.customZones || []).some(function (z) {
           if (!z) return false;
           if (exceptZoneId && z.id === exceptZoneId) return false;
-          return String(z.label || "").trim().toLowerCase() === label.toLowerCase();
+          return String(z.label || "").trim().toLowerCase() === want;
         });
       }
 
