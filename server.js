@@ -556,6 +556,40 @@ function mergeHkStorage(prev, incoming) {
     invenNotify: Object.prototype.hasOwnProperty.call(incoming, "invenNotify")
       ? incoming.invenNotify
       : prev.invenNotify || null,
+    frontEmbedStates: (function () {
+      var prevStates =
+        prev.frontEmbedStates && typeof prev.frontEmbedStates === "object"
+          ? prev.frontEmbedStates
+          : {};
+      var incStates =
+        Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates") &&
+        incoming.frontEmbedStates &&
+        typeof incoming.frontEmbedStates === "object"
+          ? incoming.frontEmbedStates
+          : null;
+      if (!incStates) return prevStates;
+      var keys = ["dd", "inven", "chichi"];
+      var out = {
+        dd: prevStates.dd || null,
+        inven: prevStates.inven || null,
+        chichi: prevStates.chichi || null,
+      };
+      keys.forEach(function (key) {
+        var a = prevStates[key];
+        var b = incStates[key];
+        if (!b) return;
+        if (!a) {
+          out[key] = b;
+          return;
+        }
+        var ta = new Date(a.updatedAt || 0).getTime();
+        var tb = new Date(b.updatedAt || 0).getTime();
+        if (isNaN(ta)) ta = 0;
+        if (isNaN(tb)) tb = 0;
+        if (tb >= ta) out[key] = b;
+      });
+      return out;
+    })(),
     zoneMemos:
       incoming.zoneMemos && typeof incoming.zoneMemos === "object"
         ? incoming.zoneMemos

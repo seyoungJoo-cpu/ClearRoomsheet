@@ -1437,36 +1437,56 @@ const CHICHI_STATE_KEY = "hk-chichi-embed-state-v1";
 function saveChichiEmbedState() {
   try {
     if (!STATE.records.length) return;
-    localStorage.setItem(
-      CHICHI_STATE_KEY,
-      JSON.stringify({
-        records: STATE.records,
-        currentCat: STATE.currentCat,
-        sort: STATE.sort,
-        hiddenIds: Array.from(STATE.hiddenIds),
-      })
-    );
+    const payload = {
+      records: STATE.records,
+      currentCat: STATE.currentCat,
+      sort: STATE.sort,
+      hiddenIds: Array.from(STATE.hiddenIds),
+      updatedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(payload));
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        { type: "HK_EMBED_STATE_SAVE", key: "chichi", state: payload },
+        "*"
+      );
+    }
   } catch (err) {}
+}
+
+function applyChichiEmbedState(saved) {
+  if (!saved || typeof saved !== "object") return;
+  if (!Array.isArray(saved.records) || !saved.records.length) return;
+  STATE.records = saved.records;
+  STATE.currentCat = saved.currentCat || "all";
+  STATE.sort = saved.sort || STATE.sort;
+  STATE.hiddenIds = new Set(Array.isArray(saved.hiddenIds) ? saved.hiddenIds : []);
+  for (const x of tabsEl.querySelectorAll(".tab")) {
+    x.classList.toggle("active", x.dataset.cat === STATE.currentCat);
+  }
+  updateCounters();
+  resultArea.classList.remove("hidden");
+  render();
 }
 
 function restoreChichiEmbedState() {
   try {
     const raw = localStorage.getItem(CHICHI_STATE_KEY);
     if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (!Array.isArray(saved.records) || !saved.records.length) return;
-    STATE.records = saved.records;
-    STATE.currentCat = saved.currentCat || "all";
-    STATE.sort = saved.sort || STATE.sort;
-    STATE.hiddenIds = new Set(Array.isArray(saved.hiddenIds) ? saved.hiddenIds : []);
-    for (const x of tabsEl.querySelectorAll(".tab")) {
-      x.classList.toggle("active", x.dataset.cat === STATE.currentCat);
-    }
-    updateCounters();
-    resultArea.classList.remove("hidden");
-    render();
+    applyChichiEmbedState(JSON.parse(raw));
   } catch (err) {}
 }
+
+window.addEventListener("message", function (ev) {
+  const msg = ev.data;
+  if (!msg || msg.type !== "HK_EMBED_STATE_APPLY" || msg.key !== "chichi") return;
+  if (msg.state) {
+    try {
+      localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(msg.state));
+    } catch (err) {}
+    applyChichiEmbedState(msg.state);
+  }
+});
 
 function updateRestoreBar() {
   const bar = document.getElementById('restoreBar');

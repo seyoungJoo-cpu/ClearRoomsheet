@@ -295,6 +295,38 @@
     return images;
   }
 
+  function normalizeFrontEmbedStates(raw) {
+    var out = { dd: null, inven: null, chichi: null };
+    if (!raw || typeof raw !== "object") return out;
+    ["dd", "inven", "chichi"].forEach(function (key) {
+      var entry = raw[key];
+      if (!entry || typeof entry !== "object") return;
+      out[key] = entry;
+    });
+    return out;
+  }
+
+  function mergeFrontEmbedStates(baseStates, incomingStates) {
+    var base = normalizeFrontEmbedStates(baseStates);
+    var incoming = normalizeFrontEmbedStates(incomingStates);
+    var out = { dd: base.dd, inven: base.inven, chichi: base.chichi };
+    ["dd", "inven", "chichi"].forEach(function (key) {
+      var a = base[key];
+      var b = incoming[key];
+      if (!b) return;
+      if (!a) {
+        out[key] = b;
+        return;
+      }
+      var ta = new Date(a.updatedAt || 0).getTime();
+      var tb = new Date(b.updatedAt || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb >= ta) out[key] = b;
+    });
+    return out;
+  }
+
   function defaultData() {
     return {
       notice:
@@ -304,6 +336,7 @@
       mbInvNotice: "",
       mbInvNoticeImages: [],
       invenNotify: null,
+      frontEmbedStates: { dd: null, inven: null, chichi: null },
       facilityMiscLog: null,
       facilityDailyFoundLog: null,
       zoneMemos: { VIP: defaultZoneMemo() },
@@ -354,6 +387,7 @@
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
     }
+    d.frontEmbedStates = normalizeFrontEmbedStates(data.frontEmbedStates);
     if (data.facilityMiscLog && typeof data.facilityMiscLog === "object") {
       d.facilityMiscLog = data.facilityMiscLog;
     }
@@ -536,6 +570,14 @@
     } else {
       merged.invenNotify = base.invenNotify;
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates")) {
+      merged.frontEmbedStates = mergeFrontEmbedStates(
+        base.frontEmbedStates,
+        incoming.frontEmbedStates
+      );
+    } else {
+      merged.frontEmbedStates = normalizeFrontEmbedStates(base.frontEmbedStates);
+    }
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")) {
       if (incoming.facilityMiscLog && typeof incoming.facilityMiscLog === "object") {
         merged.facilityMiscLog = incoming.facilityMiscLog;
@@ -612,5 +654,7 @@
     markRoomDeleted: markRoomDeleted,
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
+    normalizeFrontEmbedStates: normalizeFrontEmbedStates,
+    mergeFrontEmbedStates: mergeFrontEmbedStates,
   };
 })(typeof window !== "undefined" ? window : this);

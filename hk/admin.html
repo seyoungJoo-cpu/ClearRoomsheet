@@ -1576,14 +1576,27 @@
 
       function collectFrontEmbedSnapshot() {
         var keys = [
-          { key: "hk-dd-embed-state-v1", label: "DD" },
-          { key: "hk-inven-embed-state-v1", label: "인벤" },
-          { key: "hk-chichi-embed-state-v1", label: "치치" },
+          { key: "hk-dd-embed-state-v1", label: "DD", embedKey: "dd" },
+          { key: "hk-inven-embed-state-v1", label: "인벤", embedKey: "inven" },
+          { key: "hk-chichi-embed-state-v1", label: "치치", embedKey: "chichi" },
         ];
+        var synced = {};
+        try {
+          var store = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
+          if (store && store.frontEmbedStates && typeof store.frontEmbedStates === "object") {
+            synced = store.frontEmbedStates;
+          }
+        } catch (e) {
+          synced = {};
+        }
         return keys.map(function (item) {
           var raw = "";
           try {
-            raw = localStorage.getItem(item.key) || "";
+            if (synced[item.embedKey] && typeof synced[item.embedKey] === "object") {
+              raw = JSON.stringify(synced[item.embedKey]);
+            } else {
+              raw = localStorage.getItem(item.key) || "";
+            }
           } catch (e) {
             raw = "";
           }

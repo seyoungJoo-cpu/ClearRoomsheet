@@ -10033,6 +10033,7 @@
           detectFacilityMiscChange();
           detectFacilityDailyChange();
           detectInvenNotifyChange();
+          applyFrontEmbedStatesFromStorage();
           if (
             sidebarMainView === "invenNotify" &&
             typeof HKInvenNotify !== "undefined"
@@ -10356,20 +10357,145 @@
         return out;
       }
 
-      var FRONT_EMBED_STATE_KEYS = [
-        "hk-dd-embed-state-v1",
-        "hk-inven-embed-state-v1",
-        "hk-chichi-embed-state-v1",
-      ];
+      var FRONT_EMBED_STATE_KEYS = {
+        dd: "hk-dd-embed-state-v1",
+        inven: "hk-inven-embed-state-v1",
+        chichi: "hk-chichi-embed-state-v1",
+      };
 
-      function resetFrontEmbedPanelsOnCloseDay() {
-        FRONT_EMBED_STATE_KEYS.forEach(function (key) {
+      var FRONT_EMBED_FRAME_IDS = {
+        dd: "ddEmbedFrame",
+        inven: "invenEmbedFrame",
+        chichi: "chichiEmbedFrame",
+      };
+
+      var lastAppliedFrontEmbedSig = "";
+
+      function frontEmbedStateSig(states) {
+        try {
+          return JSON.stringify(states || {});
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function writeFrontEmbedLocalStorage(key, state) {
+        var lsKey = FRONT_EMBED_STATE_KEYS[key];
+        if (!lsKey) return;
+        try {
+          if (state && typeof state === "object") {
+            localStorage.setItem(lsKey, JSON.stringify(state));
+          } else {
+            localStorage.removeItem(lsKey);
+          }
+        } catch (e) {}
+      }
+
+      function postFrontEmbedStateToFrame(key, state) {
+        var frameId = FRONT_EMBED_FRAME_IDS[key];
+        var frame = frameId ? document.getElementById(frameId) : null;
+        if (!frame || !frame.contentWindow) return;
+        try {
+          frame.contentWindow.postMessage(
+            {
+              type: "HK_EMBED_STATE_APPLY",
+              key: key,
+              state: state || null,
+            },
+            "*"
+          );
+        } catch (e) {}
+      }
+
+      function applyFrontEmbedStatesFromStorage(opts) {
+        opts = opts || {};
+        var data = HKStorage.load();
+        var states =
+          data.frontEmbedStates && typeof data.frontEmbedStates === "object"
+            ? data.frontEmbedStates
+            : {};
+        var sig = frontEmbedStateSig(states);
+        if (!opts.force && sig === lastAppliedFrontEmbedSig) return;
+        lastAppliedFrontEmbedSig = sig;
+        ["dd", "inven", "chichi"].forEach(function (key) {
+          var state = states[key] || null;
+          writeFrontEmbedLocalStorage(key, state);
+          if (opts.notifyFrames !== false) postFrontEmbedStateToFrame(key, state);
+        });
+      }
+
+      /** 서버에 아직 없는 경우, 이 PC localStorage 내용을 한 번 올려 동기화 시드 */
+      function seedFrontEmbedStatesFromLocalIfNeeded() {
+        var data = HKStorage.load();
+        if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
+          data.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        }
+        var changed = false;
+        ["dd", "inven", "chichi"].forEach(function (key) {
+          if (data.frontEmbedStates[key]) return;
+          var lsKey = FRONT_EMBED_STATE_KEYS[key];
+          if (!lsKey) return;
           try {
-            localStorage.removeItem(key);
+            var raw = localStorage.getItem(lsKey);
+            if (!raw) return;
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return;
+            if (!parsed.updatedAt) parsed.updatedAt = new Date().toISOString();
+            data.frontEmbedStates[key] = parsed;
+            changed = true;
           } catch (e) {}
         });
-        ["ddEmbedFrame", "invenEmbedFrame", "chichiEmbedFrame"].forEach(function (id) {
-          var frame = document.getElementById(id);
+        if (!changed) return;
+        lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
+        HKStorage.save(data);
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+      }
+
+      function saveFrontEmbedStateFromChild(key, state) {
+        if (!FRONT_EMBED_STATE_KEYS[key]) return;
+        if (!state || typeof state !== "object") return;
+        var data = HKStorage.load();
+        if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
+          data.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        }
+        var next = Object.assign({}, state);
+        if (!next.updatedAt) next.updatedAt = new Date().toISOString();
+        data.frontEmbedStates[key] = next;
+        writeFrontEmbedLocalStorage(key, next);
+        lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
+        HKStorage.save(data);
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+      }
+
+      Object.keys(FRONT_EMBED_FRAME_IDS).forEach(function (key) {
+        var frame = document.getElementById(FRONT_EMBED_FRAME_IDS[key]);
+        if (!frame) return;
+        frame.addEventListener("load", function () {
+          var data = HKStorage.load();
+          var states =
+            data.frontEmbedStates && typeof data.frontEmbedStates === "object"
+              ? data.frontEmbedStates
+              : {};
+          var state = states[key] || null;
+          if (!state) return;
+          writeFrontEmbedLocalStorage(key, state);
+          postFrontEmbedStateToFrame(key, state);
+        });
+      });
+
+      function resetFrontEmbedPanelsOnCloseDay() {
+        Object.keys(FRONT_EMBED_STATE_KEYS).forEach(function (key) {
+          try {
+            localStorage.removeItem(FRONT_EMBED_STATE_KEYS[key]);
+          } catch (e) {}
+        });
+        lastAppliedFrontEmbedSig = "";
+        Object.keys(FRONT_EMBED_FRAME_IDS).forEach(function (key) {
+          var frame = document.getElementById(FRONT_EMBED_FRAME_IDS[key]);
           if (!frame) return;
           var src = frame.getAttribute("src") || frame.src || "";
           if (!src) return;
@@ -14414,6 +14540,15 @@
         if (ddEmbedPanel) ddEmbedPanel.hidden = !showHub || frontEmbedTab !== "dd";
         if (invenEmbedPanel) invenEmbedPanel.hidden = !showHub || frontEmbedTab !== "inven";
         if (chichiEmbedPanel) chichiEmbedPanel.hidden = !showHub || frontEmbedTab !== "chichi";
+        if (showHub && frontEmbedTab) {
+          var data = HKStorage.load();
+          var states =
+            data.frontEmbedStates && typeof data.frontEmbedStates === "object"
+              ? data.frontEmbedStates
+              : {};
+          var state = states[frontEmbedTab] || null;
+          if (state) postFrontEmbedStateToFrame(frontEmbedTab, state);
+        }
       }
 
       function applyFrontEmbedTab(tab) {
@@ -19576,6 +19711,8 @@
         applyMbSidebarAlertUi();
         applyFacilityLogSidebarAlertUi();
         applyInvenNotifySidebarAlertUi();
+        seedFrontEmbedStatesFromLocalIfNeeded();
+        applyFrontEmbedStatesFromStorage({ force: true });
         rebuildChangeAlertsFromLog({ skipRender: true });
         rebuildRequestModifyAlerts();
         applyZoneAlertUi();
@@ -19700,6 +19837,10 @@
       window.addEventListener("message", function (ev) {
         var msg = ev.data;
         if (!msg || typeof msg !== "object") return;
+        if (msg.type === "HK_EMBED_STATE_SAVE" && msg.key) {
+          saveFrontEmbedStateFromChild(msg.key, msg.state);
+          return;
+        }
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
           if (!frontMode) {
             showHkActionToast("프론트 모드를 켠 뒤 인벤 「만들기」를 다시 실행하세요.");
@@ -19750,6 +19891,8 @@
       })();
 
       refreshMain();
+      seedFrontEmbedStatesFromLocalIfNeeded();
+      applyFrontEmbedStatesFromStorage({ force: true });
       showSidebarOrderView();
       renderOrderPanels();
       applyFrontModeUi();

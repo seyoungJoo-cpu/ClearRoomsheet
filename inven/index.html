@@ -646,35 +646,57 @@
     }
 
     function saveEmbedState() {
+      const payload = {
+        dataframeRows,
+        sortState,
+        invFileName: selectedInvFile ? selectedInvFile.name : "",
+        gitFileName: selectedGitFile ? selectedGitFile.name : "",
+        updatedAt: new Date().toISOString(),
+      };
       try {
-        localStorage.setItem(
-          STATE_STORAGE_KEY,
-          JSON.stringify({
-            dataframeRows,
-            sortState,
-            invFileName: selectedInvFile ? selectedInvFile.name : "",
-            gitFileName: selectedGitFile ? selectedGitFile.name : "",
-          })
-        );
+        localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(payload));
       } catch (err) {}
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage(
+            { type: "HK_EMBED_STATE_SAVE", key: "inven", state: payload },
+            "*"
+          );
+        } catch (err) {}
+      }
+    }
+
+    function applyEmbedState(saved) {
+      if (!saved || typeof saved !== "object") return;
+      if (Array.isArray(saved.dataframeRows) && saved.dataframeRows.length) {
+        dataframeRows = saved.dataframeRows;
+        if (saved.sortState) {
+          sortState.main = saved.sortState.main || sortState.main;
+          sortState.annex = saved.sortState.annex || sortState.annex;
+        }
+        updateSortHeaderMarks();
+        renderRows();
+      }
     }
 
     function restoreEmbedState() {
       try {
         const raw = localStorage.getItem(STATE_STORAGE_KEY);
         if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (Array.isArray(saved.dataframeRows) && saved.dataframeRows.length) {
-          dataframeRows = saved.dataframeRows;
-          if (saved.sortState) {
-            sortState.main = saved.sortState.main || sortState.main;
-            sortState.annex = saved.sortState.annex || sortState.annex;
-          }
-          updateSortHeaderMarks();
-          renderRows();
-        }
+        applyEmbedState(JSON.parse(raw));
       } catch (err) {}
     }
+
+    window.addEventListener("message", function (ev) {
+      const msg = ev.data;
+      if (!msg || msg.type !== "HK_EMBED_STATE_APPLY" || msg.key !== "inven") return;
+      if (msg.state) {
+        try {
+          localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(msg.state));
+        } catch (err) {}
+        applyEmbedState(msg.state);
+      }
+    });
 
     function notifyParentTable(mainRows, annexRows, rowCount) {
       if (window.parent === window) return;
