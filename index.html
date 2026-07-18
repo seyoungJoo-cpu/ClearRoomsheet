@@ -200,6 +200,33 @@
       gap: 0.75rem;
       margin-bottom: 0.75rem;
     }
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .arr-summary {
+      display: none;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #e8eef7;
+      background: rgba(61, 156, 245, 0.18);
+      border: 1px solid rgba(61, 156, 245, 0.45);
+      border-radius: 8px;
+      padding: 0.38rem 0.7rem;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .arr-summary.is-visible {
+      display: inline-flex;
+    }
+    .arr-summary__label {
+      color: #93c5fd;
+      margin-right: 0.35rem;
+    }
     .toolbar h2 {
       margin: 0;
       font-size: 0.95rem;
@@ -1320,7 +1347,18 @@
     <section class="card board-card">
       <div class="toolbar">
         <h2>룸 상태판</h2>
-        <button type="button" id="btnMake" class="btn-make">만들기</button>
+        <div class="toolbar-actions">
+          <div
+            id="indiArrSummary"
+            class="arr-summary"
+            title="ARR 유닛 총수 − CHECKED IN(ARRIVED) · RESV_STATUS 기준"
+            hidden
+          >
+            <span class="arr-summary__label">ARR</span>
+            <span id="indiArrSummaryText">0 - 0(0)</span>
+          </div>
+          <button type="button" id="btnMake" class="btn-make">만들기</button>
+        </div>
       </div>
       <div class="board-layout">
         <aside class="sidebar" aria-label="화면 전환">
@@ -2388,6 +2426,48 @@
           if (Object.prototype.hasOwnProperty.call(c, cat)) c[cat]++;
         });
         return { counts: c, total: rows.length };
+      }
+
+      /** ARR 유닛 총수 − CHECKED IN(ARRIVED) · RESV_STATUS */
+      function computeArrSummaryFromRows(rows) {
+        var unit = 0;
+        var checkedIn = 0;
+        var arrived = 0;
+        (rows || []).forEach(function (r) {
+          var rs = normalizeResvStatus(r && r.resvStatus);
+          if (
+            rs === "Arrival" ||
+            rs === "Arrived" ||
+            rs === "Arrived, Departed" ||
+            rs === "Departed, Arrival" ||
+            rs === "Due Out, Arrival"
+          ) {
+            unit++;
+          }
+          if (rs === "Arrived" || rs === "Arrived, Departed") {
+            checkedIn++;
+          }
+          if (rs === "Arrived") {
+            arrived++;
+          }
+        });
+        return { unit: unit, checkedIn: checkedIn, arrived: arrived };
+      }
+
+      function updateIndiArrSummary(rows) {
+        var el = document.getElementById("indiArrSummary");
+        var textEl = document.getElementById("indiArrSummaryText");
+        if (!el || !textEl) return;
+        var summ = computeArrSummaryFromRows(rows || cachedRows);
+        textEl.textContent =
+          summ.unit + " - " + summ.checkedIn + "(" + summ.arrived + ")";
+        var show = !!(
+          document.querySelector('.sidebar-btn.active[data-view="indi"]') ||
+          (document.getElementById("viewIndi") &&
+            !document.getElementById("viewIndi").hidden)
+        );
+        el.hidden = !show;
+        el.classList.toggle("is-visible", show);
       }
 
       function renderIndiCategorySummaryBar(el, counts, total) {
@@ -4043,6 +4123,7 @@
         renderBoard(cachedRows, "indi");
         renderBoard(cachedRows, "stay");
         renderFAsnBoard();
+        updateIndiArrSummary(cachedRows);
       }
 
       function shouldLoadDefaultXmlFiles() {
