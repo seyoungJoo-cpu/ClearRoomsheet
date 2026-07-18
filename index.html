@@ -421,16 +421,9 @@
       padding: 2px 2px;
     }
     .asn-block-chip {
-      font-size: 0.48rem;
-      font-weight: 500;
-      color: #0066ff;
-      -webkit-text-stroke: 0.35px #000000;
-      paint-order: stroke fill;
-      text-shadow:
-        -0.6px -0.6px 0 #000,
-        0.6px -0.6px 0 #000,
-        -0.6px 0.6px 0 #000,
-        0.6px 0.6px 0 #000;
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: #6d28d9;
       line-height: 1.12;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -671,6 +664,13 @@
     .villa-list-row.out-departed-highlight {
       background: #ede9fe !important;
       box-shadow: inset 0 0 0 1px #c4b5fd;
+      color: #000000 !important;
+    }
+    .pair-row.out-departed-highlight .room-num__indi,
+    .villa-list-row.out-departed-highlight .room-num__indi,
+    .pair-row.out-departed-highlight .asn-block-chip,
+    .villa-list-row.out-departed-highlight .asn-block-chip {
+      color: #000000 !important;
     }
 
     .pair-row.vac-fo-in-highlight,
@@ -1419,14 +1419,14 @@
           </div>
           <div id="viewIndi" class="view-panel">
             <p class="indi-legend">
-              <strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp;
+              <strong>S</strong> Stayover &nbsp;|&nbsp;
+              <strong>N</strong> Not Reserved &nbsp;|&nbsp;
               <strong>IN</strong> Arrived &nbsp;|&nbsp;
               <strong>A</strong> Arrival &nbsp;|&nbsp;
-              <strong>OUT</strong> Departed &nbsp;|&nbsp;
-              <strong>(Out,A)</strong> Departed, Arrival &nbsp;|&nbsp;
               <strong>OUT예정</strong> Due Out &nbsp;|&nbsp;
-              <strong>N</strong> Not Reserved &nbsp;|&nbsp;
-              <strong>S</strong> Stayover
+              <strong>(Out,A)</strong> Departed, Arrival &nbsp;|&nbsp;
+              <strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp;
+              <strong>OUT</strong> Departed
             </p>
             <div class="summary-toolbar">
               <div id="indiCategorySummaryBar" class="status-summary-bar"></div>
@@ -2304,19 +2304,19 @@
 
       /** INDI 탭 — RESV_STATUS 세분 구분 */
       var INDI_CATEGORY_CHIPS = [
-        { code: "OUT_IN", label: "(Out,IN)", cls: "indi-out-in", title: "Arrived, Departed" },
+        { code: "S", label: "S", cls: "indi-s", title: "Stayover" },
+        { code: "N", label: "N", cls: "indi-n", title: "Not Reserved" },
         { code: "IN", label: "IN", cls: "indi-in", title: "Arrived" },
         { code: "A", label: "A", cls: "indi-a", title: "Arrival" },
-        { code: "OUT", label: "OUT", cls: "indi-out", title: "Departed" },
+        { code: "OUT_SCHED", label: "OUT예정", cls: "indi-out-sched", title: "Due Out" },
         {
           code: "OUT_A",
           label: "(Out,A)",
           cls: "indi-out-a",
           title: "Departed, Arrival · Due Out, Arrival",
         },
-        { code: "OUT_SCHED", label: "OUT예정", cls: "indi-out-sched", title: "Due Out" },
-        { code: "N", label: "N", cls: "indi-n", title: "Not Reserved" },
-        { code: "S", label: "S", cls: "indi-s", title: "Stayover" },
+        { code: "OUT_IN", label: "(Out,IN)", cls: "indi-out-in", title: "Arrived, Departed" },
+        { code: "OUT", label: "OUT", cls: "indi-out", title: "Departed" },
       ];
       var INDI_CATEGORY_CODES = INDI_CATEGORY_CHIPS.map(function (item) {
         return item.code;
