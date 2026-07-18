@@ -423,7 +423,7 @@
     .asn-block-chip {
       font-size: 0.58rem;
       font-weight: 800;
-      color: #6d28d9;
+      color: inherit;
       line-height: 1.12;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -557,11 +557,11 @@
     }
     .summary-chip.ip .tag {
       background: #00ff00;
-      color: #111827;
+      color: #000000;
     }
     .summary-chip.cl .tag {
       background: #00ffff;
-      color: #111827;
+      color: #000000;
     }
     .summary-chip.di .tag {
       background: #ff0000;
@@ -570,12 +570,12 @@
     }
     .summary-chip.pu .tag {
       background: #ffff00;
-      color: #111827;
+      color: #000000;
     }
     .summary-chip.oo .tag,
     .summary-chip.os .tag {
       background: #9ca3af;
-      color: #111827;
+      color: #000000;
     }
     .summary-chip.indi-a .tag {
       background: #d9f5d9;
@@ -761,14 +761,15 @@
       border: 1px solid #bfc5ce;
       font-size: 0.68rem;
       line-height: 1.15;
-      color: #111827;
+      color: #000000;
       background: #fff;
     }
     .pair-row .cell {
       padding: 2px 3px;
       text-align: center;
       border-right: 1px solid #e5e7eb;
-      font-weight: 600;
+      font-weight: 700;
+      color: inherit;
     }
     .pair-row .cell.room-num {
       display: flex;
@@ -791,11 +792,11 @@
     }
     .pair-row.st-ip {
       background: #00ff00;
-      color: #111827;
+      color: #000000;
     }
     .pair-row.st-cl {
       background: #00ffff;
-      color: #111827;
+      color: #000000;
     }
     .pair-row.st-di {
       background: #ff0000;
@@ -810,15 +811,16 @@
     }
     .pair-row.st-pu {
       background: #ffff00;
-      color: #111827;
+      color: #000000;
     }
     .pair-row.st-oo,
     .pair-row.st-os {
       background: #9ca3af;
-      color: #111827;
+      color: #000000;
     }
     .pair-row.st-neutral {
       background: #fff;
+      color: #000000;
     }
     .villa-list-body {
       padding: 6px;
@@ -833,14 +835,15 @@
       border: 1px solid #bfc5ce;
       font-size: 0.72rem;
       line-height: 1.2;
-      color: #111827;
+      color: #000000;
       background: #fff;
-      font-weight: 600;
+      font-weight: 700;
     }
     .villa-list-row .cell {
       padding: 4px 6px;
       text-align: center;
       border-right: 1px solid #e5e7eb;
+      color: inherit;
     }
     .villa-list-row .cell.room-num {
       display: flex;
@@ -855,11 +858,11 @@
     }
     .villa-list-row.st-ip {
       background: #00ff00;
-      color: #111827;
+      color: #000000;
     }
     .villa-list-row.st-cl {
       background: #00ffff;
-      color: #111827;
+      color: #000000;
     }
     .villa-list-row.st-di {
       background: #ff0000;
@@ -872,15 +875,16 @@
     }
     .villa-list-row.st-pu {
       background: #ffff00;
-      color: #111827;
+      color: #000000;
     }
     .villa-list-row.st-oo,
     .villa-list-row.st-os {
       background: #9ca3af;
-      color: #111827;
+      color: #000000;
     }
     .villa-list-row.st-neutral {
       background: #fff;
+      color: #000000;
     }
     .floor-empty {
       flex: 1;
@@ -1319,7 +1323,7 @@
           <button type="button" class="sidebar-btn" data-view="oasn" title="ASN-D — ASN 조건 · FO IN(투숙) 제외">ASN-D</button>
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
           <button type="button" class="sidebar-btn active" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
-          <button type="button" class="sidebar-btn" data-view="stay" title="STAY — Stayover만">STAY</button>
+          <button type="button" class="sidebar-btn" data-view="stay" title="P.STAY — Stayover만">P.STAY</button>
         </aside>
         <div class="board-main">
           <div id="view499" class="view-panel" hidden>
@@ -3656,7 +3660,7 @@
           oasn: "ASN-D",
           fasn: "F.ASN",
           indi: "INDI",
-          stay: "STAY",
+          stay: "P.STAY",
         };
         return labels[mode] || mode;
       }
