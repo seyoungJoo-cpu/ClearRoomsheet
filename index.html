@@ -1351,7 +1351,7 @@
           <div
             id="indiArrSummary"
             class="arr-summary"
-            title="ARR 유닛 총수 − CHECKED IN(RESERVED) · COMPUTED_RESV_STATUS/엑셀 RESV_STATUS 기준"
+            title="ARR 유닛 총수 − CHECKED IN(RESERVED) · 정비3(HK_ALLSTATUS) RESV_STATUS 기준"
             hidden
           >
             <span class="arr-summary__label">ARR</span>
@@ -1993,6 +1993,7 @@
           (cachedVacRows && cachedVacRows.length > 0) ||
           (cachedAllStatusRooms && cachedAllStatusRooms.length > 0) ||
           (cachedRoomResvMap && Object.keys(cachedRoomResvMap).length > 0) ||
+          (cachedExcelResvMap && Object.keys(cachedExcelResvMap).length > 0) ||
           (cachedAllStatusBlockMap && Object.keys(cachedAllStatusBlockMap).length > 0)
         );
       }
@@ -2031,6 +2032,7 @@
           p.vacRows = cachedVacRows;
           p.allStatusRooms = cachedAllStatusRooms;
           p.roomResvMap = cachedRoomResvMap;
+          p.excelResvMap = cachedExcelResvMap;
           p.uploadSummary = (document.getElementById("uploadSummary") || {}).textContent || "";
           if (lastRoomingUploadedAt) p.roomingUploadedAt = lastRoomingUploadedAt;
         }
@@ -2097,6 +2099,12 @@
                   room: row.room,
                   status: row.status || old.status || "",
                   resvStatus: row.resvStatus || old.resvStatus || "",
+                  computedResvStatuses:
+                    (row.computedResvStatuses && row.computedResvStatuses.length
+                      ? row.computedResvStatuses
+                      : null) ||
+                    old.computedResvStatuses ||
+                    [],
                   blockCode: row.blockCode || old.blockCode || "",
                   foStatus: row.foStatus || old.foStatus || "",
                   roomType: row.roomType || old.roomType || "",
@@ -2110,6 +2118,9 @@
         }
         if (Object.prototype.hasOwnProperty.call(data, "roomResvMap") && typeof data.roomResvMap === "object") {
           cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap || {}));
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "excelResvMap") && typeof data.excelResvMap === "object") {
+          cachedExcelResvMap = JSON.parse(JSON.stringify(data.excelResvMap || {}));
         }
         rebuildCombinedRoomResvMap();
         if (Object.prototype.hasOwnProperty.call(data, "allStatusRooms") && Array.isArray(data.allStatusRooms)) {
@@ -2419,7 +2430,7 @@
         { code: "OUT_SCHED", label: "OUT예정", cls: "indi-out-sched", title: "Due Out" },
         {
           code: "OUT_A",
-          label: "(Out,A)",
+          label: "(O예정,A)",
           cls: "indi-out-a",
           title: "Departed, Arrival · Due Out, Arrival",
         },
@@ -3272,6 +3283,33 @@
        * HK_ALLSTATUS 의 G_ROOM 에서 객실번호 → BLOCK_CODE (문서 순서상 나중 행이 덮어씀).
        * @returns {Record<string,string>|null} 루트가 HK_ALLSTATUS 가 아니면 null
        */
+      function parseAllStatusArrResvMap(doc) {
+        var root = doc.documentElement && doc.documentElement.tagName;
+        if (root !== "HK_ALLSTATUS") return null;
+        var map = {};
+        var nodes = doc.getElementsByTagName("G_ROOM");
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var rmRaw = "";
+          var resv = "";
+          var computed = "";
+          for (var j = 0; j < el.children.length; j++) {
+            var c = el.children[j];
+            if (c.tagName === "ROOM") rmRaw = textOf(c);
+            else if (c.tagName === "RESV_STATUS") resv = textOf(c);
+            else if (c.tagName === "COMPUTED_RESV_STATUS" && !computed) {
+              computed = textOf(c);
+            }
+          }
+          if (!isNumericGuestRoom(rmRaw)) continue;
+          var nr = normalizeRoomDigits(rmRaw);
+          if (!nr) continue;
+          var label = normalizeArrResvKey(resv) || normalizeArrResvKey(computed);
+          if (label) map[nr] = label;
+        }
+        return map;
+      }
+
       function parseAllStatusBlockMap(doc) {
         var root = doc.documentElement && doc.documentElement.tagName;
         if (root !== "HK_ALLSTATUS") return null;
@@ -4278,6 +4316,7 @@
 
         var blockPatch = {};
         var roomListPatch = [];
+        var arrResvPatch = {};
 
         Promise.all(
           arr.map(function (file) {
@@ -4300,8 +4339,22 @@
                     });
                     var rl = parseAllStatusRoomList(doc);
                     if (rl && rl.length) roomListPatch = roomListPatch.concat(rl);
+                    var arm = parseAllStatusArrResvMap(doc);
+                    var arrN = 0;
+                    if (arm) {
+                      Object.keys(arm).forEach(function (k) {
+                        arrResvPatch[k] = arm[k];
+                        arrN++;
+                      });
+                    }
                     summaries.push(
-                      file.name + " · BLOCK " + Object.keys(bm).length + "실"
+                      file.name +
+                        " · BLOCK " +
+                        Object.keys(bm).length +
+                        "실" +
+                        (arrN
+                          ? " · ARR RESV " + arrN + "실"
+                          : "")
                     );
                   } else {
                     throw new Error("HKVACROOM 또는 HK_ALLSTATUS 가 아닙니다.");
@@ -4327,6 +4380,7 @@
             rows: merged,
             blockMapPatch: blockPatch,
             allStatusRooms: roomListPatch,
+            arrResvPatch: arrResvPatch,
           });
         });
       }
@@ -4349,6 +4403,9 @@
         }
         if (payload.allStatusRooms && payload.allStatusRooms.length) {
           mergeAllStatusRoomList(payload.allStatusRooms);
+        }
+        if (payload.arrResvPatch && Object.keys(payload.arrResvPatch).length) {
+          mergeExcelResvPatch(payload.arrResvPatch);
         }
         sharedRoomingClearedAt = "";
         rebuildCombinedRoomResvMap();
@@ -4949,6 +5006,10 @@
                 if (bm) cachedAllStatusBlockMap = bm;
                 var arl = parseAllStatusRoomList(asDoc);
                 if (arl && arl.length) cachedAllStatusRooms = arl;
+                var arm = parseAllStatusArrResvMap(asDoc);
+                if (arm && Object.keys(arm).length) {
+                  cachedExcelResvMap = Object.assign({}, arm);
+                }
               }
             }
             rebuildCombinedRoomResvMap();
@@ -4964,6 +5025,8 @@
               Object.keys(cachedAllStatusBlockMap).length +
               "실 · ALLSTATUS ROOM " +
               cachedAllStatusRooms.length +
+              "실 · ARR " +
+              Object.keys(cachedExcelResvMap).length +
               "실 · 「만들기」로 다시 그리기"
             );
             refreshBoards();
