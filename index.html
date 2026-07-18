@@ -2428,30 +2428,24 @@
         return { counts: c, total: rows.length };
       }
 
-      /** ARR 유닛 총수 − CHECKED IN(ARRIVED) · RESV_STATUS */
+      /** ARR 유닛 총수 − CHECKED IN(RESERVED) · RESV_STATUS */
       function computeArrSummaryFromRows(rows) {
         var unit = 0;
         var checkedIn = 0;
-        var arrived = 0;
+        var reserved = 0;
         (rows || []).forEach(function (r) {
-          var rs = normalizeResvStatus(r && r.resvStatus);
-          if (
-            rs === "Arrival" ||
-            rs === "Arrived" ||
-            rs === "Arrived, Departed" ||
-            rs === "Departed, Arrival" ||
-            rs === "Due Out, Arrival"
-          ) {
+          var rs = normalizeResvStatus(r && r.resvStatus).toUpperCase();
+          if (rs === "CHECKED IN" || rs === "RESERVED") {
             unit++;
           }
-          if (rs === "Arrived" || rs === "Arrived, Departed") {
+          if (rs === "CHECKED IN") {
             checkedIn++;
           }
-          if (rs === "Arrived") {
-            arrived++;
+          if (rs === "RESERVED") {
+            reserved++;
           }
         });
-        return { unit: unit, checkedIn: checkedIn, arrived: arrived };
+        return { unit: unit, checkedIn: checkedIn, reserved: reserved };
       }
 
       function updateIndiArrSummary(rows) {
@@ -2460,7 +2454,7 @@
         if (!el || !textEl) return;
         var summ = computeArrSummaryFromRows(rows || cachedRows);
         textEl.textContent =
-          summ.unit + " - " + summ.checkedIn + "(" + summ.arrived + ")";
+          summ.unit + " - " + summ.checkedIn + "(" + summ.reserved + ")";
         var show = !!(
           document.querySelector('.sidebar-btn.active[data-view="indi"]') ||
           (document.getElementById("viewIndi") &&
@@ -4445,6 +4439,7 @@
         document.getElementById("viewFAsn").hidden = viewId !== "fasn";
         document.getElementById("viewIndi").hidden = viewId !== "indi";
         document.getElementById("viewStay").hidden = viewId !== "stay";
+        updateIndiArrSummary(cachedRows);
       }
 
       document.querySelectorAll(".sidebar-btn").forEach(function (btn) {
