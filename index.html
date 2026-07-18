@@ -423,7 +423,14 @@
     .asn-block-chip {
       font-size: 0.58rem;
       font-weight: 800;
-      color: inherit;
+      color: #0066ff;
+      -webkit-text-stroke: 0.45px #000000;
+      paint-order: stroke fill;
+      text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
       line-height: 1.12;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -761,7 +768,7 @@
       border: 1px solid #bfc5ce;
       font-size: 0.68rem;
       line-height: 1.15;
-      color: #0066ff;
+      color: #111827;
       background: #fff;
     }
     .pair-row .cell {
@@ -782,54 +789,45 @@
     .room-num__indi {
       font-size: 0.52rem;
       font-weight: 800;
-      color: inherit;
-      opacity: 0.95;
+      color: #4b5563;
       letter-spacing: -0.02em;
       line-height: 1.05;
     }
     .pair-row .cell:last-child {
       border-right: none;
     }
-    .pair-row.st-ip,
-    .pair-row.st-cl,
-    .pair-row.st-di,
-    .pair-row.st-pu,
-    .pair-row.st-oo,
-    .pair-row.st-os,
-    .pair-row.st-neutral {
-      color: #0066ff;
-      -webkit-text-stroke: 0.45px #000000;
-      paint-order: stroke fill;
-      text-shadow:
-        -1px -1px 0 #000,
-        1px -1px 0 #000,
-        -1px 1px 0 #000,
-        1px 1px 0 #000;
-    }
     .pair-row.st-ip {
       background: #00ff00;
+      color: #111827;
     }
     .pair-row.st-cl {
       background: #00ffff;
+      color: #111827;
     }
     .pair-row.st-di {
       background: #ff0000;
+      color: #ffffff;
     }
     .pair-row.st-di .cell {
       font-weight: 400;
     }
     .pair-row.st-di .room-num__indi {
       font-weight: 500;
+      color: #ffffff;
+      opacity: 0.95;
     }
     .pair-row.st-pu {
       background: #ffff00;
+      color: #111827;
     }
     .pair-row.st-oo,
     .pair-row.st-os {
       background: #9ca3af;
+      color: #111827;
     }
     .pair-row.st-neutral {
       background: #fff;
+      color: #111827;
     }
     .villa-list-body {
       padding: 6px;
@@ -844,7 +842,7 @@
       border: 1px solid #bfc5ce;
       font-size: 0.72rem;
       line-height: 1.2;
-      color: #0066ff;
+      color: #111827;
       background: #fff;
       font-weight: 700;
     }
@@ -865,44 +863,36 @@
     .villa-list-row .cell:last-child {
       border-right: none;
     }
-    .villa-list-row.st-ip,
-    .villa-list-row.st-cl,
-    .villa-list-row.st-di,
-    .villa-list-row.st-pu,
-    .villa-list-row.st-oo,
-    .villa-list-row.st-os,
-    .villa-list-row.st-neutral {
-      color: #0066ff;
-      -webkit-text-stroke: 0.45px #000000;
-      paint-order: stroke fill;
-      text-shadow:
-        -1px -1px 0 #000,
-        1px -1px 0 #000,
-        -1px 1px 0 #000,
-        1px 1px 0 #000;
-    }
     .villa-list-row.st-ip {
       background: #00ff00;
+      color: #111827;
     }
     .villa-list-row.st-cl {
       background: #00ffff;
+      color: #111827;
     }
     .villa-list-row.st-di {
       background: #ff0000;
+      color: #ffffff;
       font-weight: 400;
     }
     .villa-list-row.st-di .room-num__indi {
       font-weight: 500;
+      color: #ffffff;
+      opacity: 0.95;
     }
     .villa-list-row.st-pu {
       background: #ffff00;
+      color: #111827;
     }
     .villa-list-row.st-oo,
     .villa-list-row.st-os {
       background: #9ca3af;
+      color: #111827;
     }
     .villa-list-row.st-neutral {
       background: #fff;
+      color: #111827;
     }
     .floor-empty {
       flex: 1;
