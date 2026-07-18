@@ -1351,7 +1351,7 @@
           <div
             id="indiArrSummary"
             class="arr-summary"
-            title="ARR 유닛 총수 − CHECKED IN(ARRIVED) · RESV_STATUS 기준"
+            title="ARR 유닛 총수 − CHECKED IN(RESERVED) · COMPUTED_RESV_STATUS/엑셀 RESV_STATUS 기준"
             hidden
           >
             <span class="arr-summary__label">ARR</span>
@@ -1623,6 +1623,9 @@
       /** @type {Record<string,string>} 객실 → FO 표시(IN/O) */
       var cachedRoomResvMap = {};
 
+      /** @type {Record<string,string>} 객실 → 엑셀 RESV_STATUS (CHECKED IN / RESERVED) */
+      var cachedExcelResvMap = {};
+
       var ANNEX_TAIL_MIN = 51;
       var DROP_ROOMS = { "0012": true, "0023": true };
       var MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
@@ -1783,15 +1786,17 @@
       function findSheetHeaderKeys(rows) {
         var roomIdx = -1;
         var foIdx = -1;
+        var resvIdx = -1;
         var startRow = 0;
         if (!rows || !rows.length) {
-          return { roomIdx: roomIdx, foIdx: foIdx, startRow: startRow };
+          return { roomIdx: roomIdx, foIdx: foIdx, resvIdx: resvIdx, startRow: startRow };
         }
         for (var ri = 0; ri < Math.min(8, rows.length); ri++) {
           var row = rows[ri];
           if (!row || !row.length) continue;
           roomIdx = -1;
           foIdx = -1;
+          resvIdx = -1;
           for (var i = 0; i < row.length; i++) {
             var h = normalizeResvStatusKey(row[i]).replace(/_/g, " ");
             if (
@@ -1809,33 +1814,76 @@
             if (foIdx < 0 && (h === "FO STATUS" || h === "FO_STATUS")) {
               foIdx = i;
             }
+            if (
+              resvIdx < 0 &&
+              (h === "RESV STATUS" ||
+                h === "RESV_STATUS" ||
+                h === "COMPUTED RESV STATUS" ||
+                h === "COMPUTED_RESV_STATUS")
+            ) {
+              resvIdx = i;
+            }
           }
-          if (roomIdx >= 0 && foIdx >= 0) {
+          if (roomIdx >= 0 && (foIdx >= 0 || resvIdx >= 0)) {
             startRow = ri + 1;
-            return { roomIdx: roomIdx, foIdx: foIdx, startRow: startRow };
+            return {
+              roomIdx: roomIdx,
+              foIdx: foIdx,
+              resvIdx: resvIdx,
+              startRow: startRow,
+            };
           }
         }
-        return { roomIdx: 0, foIdx: 1, startRow: 0 };
+        return { roomIdx: 0, foIdx: 1, resvIdx: -1, startRow: 0 };
       }
 
-      function parseExcelFoArray(rows) {
-        var patch = {};
-        if (!rows || !rows.length) return patch;
+      function normalizeArrResvKey(raw) {
+        var k = normalizeResvStatusKey(String(raw || "").replace(/_/g, " "));
+        if (k === "CHECKED IN" || k === "CHECKEDIN") return "CHECKED IN";
+        if (k === "RESERVED") return "RESERVED";
+        // XML COMPUTED_RESV_STATUS
+        if (k === "DUE IN" || k === "DUEIN") return "RESERVED";
+        return "";
+      }
+
+      function parseExcelFoAndResvArray(rows) {
+        var foPatch = {};
+        var resvPatch = {};
+        if (!rows || !rows.length) return { foPatch: foPatch, resvPatch: resvPatch };
         var header = findSheetHeaderKeys(rows);
         var start = header.startRow != null ? header.startRow : 0;
         if (header.roomIdx < 0) header.roomIdx = 0;
-        if (header.foIdx < 0) header.foIdx = 1;
         for (var r = start; r < rows.length; r++) {
           var row = rows[r];
           if (!row || !row.length) continue;
           var roomRaw = row[header.roomIdx];
-          var foRaw = row[header.foIdx];
-          if (roomRaw == null || foRaw == null) continue;
+          if (roomRaw == null) continue;
           var nr = normalizeRoomDigits(roomRaw);
           if (!nr) continue;
-          patch[nr] = String(foRaw).trim();
+          if (header.foIdx >= 0 && row[header.foIdx] != null) {
+            var foRaw = String(row[header.foIdx]).trim();
+            if (foRaw) foPatch[nr] = foRaw;
+          }
+          if (header.resvIdx >= 0 && row[header.resvIdx] != null) {
+            var resvRaw = String(row[header.resvIdx]).trim();
+            if (normalizeArrResvKey(resvRaw)) resvPatch[nr] = resvRaw;
+          }
         }
-        return patch;
+        return { foPatch: foPatch, resvPatch: resvPatch };
+      }
+
+      function mergeExcelResvPatch(rawPatch) {
+        if (!rawPatch || typeof rawPatch !== "object") return 0;
+        var n = 0;
+        Object.keys(rawPatch).forEach(function (roomKey) {
+          var nr = normalizeRoomDigits(roomKey);
+          var raw = rawPatch[roomKey];
+          var label = normalizeArrResvKey(raw);
+          if (!nr || !label) return;
+          cachedExcelResvMap[nr] = label;
+          n++;
+        });
+        return n;
       }
 
       function readExcelFoFile(file) {
@@ -1851,13 +1899,24 @@
               var wb = XLSX.read(data, { type: "array" });
               var sheet = wb.Sheets[wb.SheetNames[0]];
               var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-              var patch = parseExcelFoArray(rows);
-              var count = Object.keys(patch).length;
-              if (!count) {
-                resolve({ error: file.name + ": ROOM·FO_STATUS 열을 찾지 못했습니다." });
+              var parsed = parseExcelFoAndResvArray(rows);
+              var foCount = Object.keys(parsed.foPatch).length;
+              var resvCount = Object.keys(parsed.resvPatch).length;
+              if (!foCount && !resvCount) {
+                resolve({
+                  error:
+                    file.name +
+                    ": ROOM·FO_STATUS 또는 RESV_STATUS(CHECKED IN/RESERVED) 열을 찾지 못했습니다.",
+                });
                 return;
               }
-              resolve({ patch: patch, count: count, name: file.name });
+              resolve({
+                patch: parsed.foPatch,
+                resvPatch: parsed.resvPatch,
+                count: foCount,
+                resvCount: resvCount,
+                name: file.name,
+              });
             } catch (e) {
               resolve({ error: file.name + ": " + (e.message || String(e)) });
             }
@@ -1883,13 +1942,24 @@
                   return c.replace(/^"|"$/g, "").trim();
                 });
               });
-              var patch = parseExcelFoArray(rows);
-              var count = Object.keys(patch).length;
-              if (!count) {
-                resolve({ error: file.name + ": ROOM·FO_STATUS 열을 찾지 못했습니다." });
+              var parsed = parseExcelFoAndResvArray(rows);
+              var foCount = Object.keys(parsed.foPatch).length;
+              var resvCount = Object.keys(parsed.resvPatch).length;
+              if (!foCount && !resvCount) {
+                resolve({
+                  error:
+                    file.name +
+                    ": ROOM·FO_STATUS 또는 RESV_STATUS(CHECKED IN/RESERVED) 열을 찾지 못했습니다.",
+                });
                 return;
               }
-              resolve({ patch: patch, count: count, name: file.name });
+              resolve({
+                patch: parsed.foPatch,
+                resvPatch: parsed.resvPatch,
+                count: foCount,
+                resvCount: resvCount,
+                name: file.name,
+              });
             } catch (e) {
               resolve({ error: file.name + ": " + (e.message || String(e)) });
             }
@@ -2428,22 +2498,44 @@
         return { counts: c, total: rows.length };
       }
 
-      /** ARR 유닛 총수 − CHECKED IN(RESERVED) · RESV_STATUS */
+      /** ARR 유닛 총수 − CHECKED IN(RESERVED)
+       *  우선: 엑셀 RESV_STATUS(CHECKED IN/RESERVED)
+       *  없으면: XML COMPUTED_RESV_STATUS(Checked In / Due In→RESERVED)
+       */
       function computeArrSummaryFromRows(rows) {
         var unit = 0;
         var checkedIn = 0;
         var reserved = 0;
+        var excelKeys = Object.keys(cachedExcelResvMap || {});
+        if (excelKeys.length) {
+          excelKeys.forEach(function (room) {
+            var label = normalizeArrResvKey(cachedExcelResvMap[room]);
+            if (label === "CHECKED IN") {
+              unit++;
+              checkedIn++;
+            } else if (label === "RESERVED") {
+              unit++;
+              reserved++;
+            }
+          });
+          return { unit: unit, checkedIn: checkedIn, reserved: reserved };
+        }
         (rows || []).forEach(function (r) {
-          var rs = normalizeResvStatus(r && r.resvStatus).toUpperCase();
-          if (rs === "CHECKED IN" || rs === "RESERVED") {
-            unit++;
-          }
-          if (rs === "CHECKED IN") {
-            checkedIn++;
-          }
-          if (rs === "RESERVED") {
-            reserved++;
-          }
+          var list =
+            r && Array.isArray(r.computedResvStatuses) && r.computedResvStatuses.length
+              ? r.computedResvStatuses
+              : [];
+          if (!list.length && r && r.resvStatus) list = [r.resvStatus];
+          list.forEach(function (raw) {
+            var label = normalizeArrResvKey(raw);
+            if (label === "CHECKED IN") {
+              unit++;
+              checkedIn++;
+            } else if (label === "RESERVED") {
+              unit++;
+              reserved++;
+            }
+          });
         });
         return { unit: unit, checkedIn: checkedIn, reserved: reserved };
       }
@@ -3157,10 +3249,17 @@
           if (!isNumericGuestRoom(rmRaw)) continue;
           var nr = normalizeRoomDigits(rmRaw);
           if (!nr) continue;
+          var computedResvStatuses = [];
+          var computedNodes = el.getElementsByTagName("COMPUTED_RESV_STATUS");
+          for (var ci = 0; ci < computedNodes.length; ci++) {
+            var cv = textOf(computedNodes[ci]);
+            if (cv) computedResvStatuses.push(cv);
+          }
           out.push({
             room: nr,
             status: st,
             resvStatus: resv,
+            computedResvStatuses: computedResvStatuses,
             blockCode: blk,
             foStatus: fo,
             roomType: rtype,
@@ -4294,8 +4393,16 @@
                 errors.push(res.error);
                 return;
               }
-              var merged = mergeFoPatch(res.patch);
-              summaries.push(res.name + " · FO " + merged + "실 반영");
+              var merged = mergeFoPatch(res.patch || {});
+              var resvMerged = mergeExcelResvPatch(res.resvPatch || {});
+              var parts = [];
+              if (merged) parts.push("FO " + merged + "실");
+              if (resvMerged) parts.push("RESV " + resvMerged + "실");
+              summaries.push(
+                res.name +
+                  " · " +
+                  (parts.length ? parts.join(" · ") : "반영 0실")
+              );
             });
             if (xmlPayload) {
               applyPayload(Object.assign({}, xmlPayload, { summaries: summaries, errors: errors }));
