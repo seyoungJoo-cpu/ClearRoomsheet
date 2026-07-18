@@ -20,25 +20,25 @@
   --surface-inset: #f3f5f8;
   --hover-bg: #e3f0ff;
 
-  /* 루밍 보드와 동일 정비상태 색 (IP녹·CL청록·DI적·PU노·OO/OS회) */
+  /* 배경은 루밍과 동일 원색, 글씨/테두리는 기존 뱃지 가독성 색 */
   --st-ip-bg: #00ff00;
-  --st-ip-fg: #0066ff;
-  --st-ip-bd: #000000;
+  --st-ip-fg: #14532d;
+  --st-ip-bd: #4ade80;
   --st-cl-bg: #00ffff;
-  --st-cl-fg: #0066ff;
-  --st-cl-bd: #000000;
+  --st-cl-fg: #0c4a6e;
+  --st-cl-bd: #38bdf8;
   --st-pu-bg: #ffff00;
-  --st-pu-fg: #0066ff;
-  --st-pu-bd: #000000;
+  --st-pu-fg: #713f12;
+  --st-pu-bd: #facc15;
   --st-di-bg: #ff0000;
-  --st-di-fg: #0066ff;
-  --st-di-bd: #000000;
+  --st-di-fg: #ffffff;
+  --st-di-bd: #f87171;
   --st-oo-bg: #9ca3af;
-  --st-oo-fg: #0066ff;
-  --st-oo-bd: #000000;
+  --st-oo-fg: #111827;
+  --st-oo-bd: #6b7280;
   --st-os-bg: #9ca3af;
-  --st-os-fg: #0066ff;
-  --st-os-bd: #000000;
+  --st-os-fg: #111827;
+  --st-os-bd: #6b7280;
 }
 
 body {
@@ -118,21 +118,6 @@ textarea:focus {
   border-color: var(--st-os-bd);
 }
 
-.hk-st--ip,
-.hk-st--cl,
-.hk-st--pu,
-.hk-st--di,
-.hk-st--oo,
-.hk-st--os {
-  -webkit-text-stroke: 0.4px #000000;
-  paint-order: stroke fill;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
-}
-
 .hk-st--none {
   background: #e5e7eb;
   color: #6b7280;
@@ -181,9 +166,9 @@ textarea:focus {
   background: transparent;
 }
 
-.request-feedback__item.hk-st--ip { background: #ccffcc; border-color: var(--st-ip-bd); }
-.request-feedback__item.hk-st--cl { background: #ccffff; border-color: var(--st-cl-bd); }
-.request-feedback__item.hk-st--pu { background: #ffffcc; border-color: var(--st-pu-bd); }
-.request-feedback__item.hk-st--di { background: #ffcccc; border-color: var(--st-di-bd); }
-.request-feedback__item.hk-st--oo { background: #e5e7eb; border-color: var(--st-oo-bd); }
-.request-feedback__item.hk-st--os { background: #e5e7eb; border-color: var(--st-os-bd); }
+.request-feedback__item.hk-st--ip { background: #f0fdf4; border-color: var(--st-ip-bd); }
+.request-feedback__item.hk-st--cl { background: #f0f9ff; border-color: var(--st-cl-bd); }
+.request-feedback__item.hk-st--pu { background: #fefce8; border-color: var(--st-pu-bd); }
+.request-feedback__item.hk-st--di { background: #fef2f2; border-color: var(--st-di-bd); }
+.request-feedback__item.hk-st--oo { background: #f3f4f6; border-color: var(--st-oo-bd); }
+.request-feedback__item.hk-st--os { background: #f3f4f6; border-color: var(--st-os-bd); }
