@@ -757,6 +757,16 @@ function mergeSyncPayload(prev, incoming) {
         ? Object.assign({}, incoming.excelResvMap)
         : {};
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "arrResvTotals") && applyMainRooming) {
+    out.arrResvTotals =
+      incoming.arrResvTotals && typeof incoming.arrResvTotals === "object"
+        ? {
+            unit: Number(incoming.arrResvTotals.unit) || 0,
+            checkedIn: Number(incoming.arrResvTotals.checkedIn) || 0,
+            reserved: Number(incoming.arrResvTotals.reserved) || 0,
+          }
+        : { unit: 0, checkedIn: 0, reserved: 0 };
+  }
   if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms") && applyMainRooming) {
     out.allStatusRooms = incoming.allStatusRooms;
   }

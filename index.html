@@ -1351,7 +1351,7 @@
           <div
             id="indiArrSummary"
             class="arr-summary"
-            title="ARR 유닛 총수 − CHECKED IN(RESERVED) · 정비3(HK_ALLSTATUS) RESV_STATUS 기준"
+            title="ARR 유닛 − CHECKED IN(RESERVED) · 정비3 RESV_STATUS (객실번호·INDI 무관)"
             hidden
           >
             <span class="arr-summary__label">ARR</span>
@@ -1623,8 +1623,11 @@
       /** @type {Record<string,string>} 객실 → FO 표시(IN/O) */
       var cachedRoomResvMap = {};
 
-      /** @type {Record<string,string>} 객실 → 엑셀 RESV_STATUS (CHECKED IN / RESERVED) */
+      /** @type {Record<string,string>} 객실 → 엑셀/ALLSTATUS RESV (있으면) */
       var cachedExcelResvMap = {};
+
+      /** ARR 집계 — 객실번호·INDI와 무관 (CHECKED IN / RESERVED 행 수) */
+      var cachedArrResvTotals = { unit: 0, checkedIn: 0, reserved: 0 };
 
       var ANNEX_TAIL_MIN = 51;
       var DROP_ROOMS = { "0012": true, "0023": true };
@@ -1837,6 +1840,35 @@
         return { roomIdx: 0, foIdx: 1, resvIdx: -1, startRow: 0 };
       }
 
+      function emptyArrResvTotals() {
+        return { unit: 0, checkedIn: 0, reserved: 0 };
+      }
+
+      function bumpArrResvTotal(totals, label) {
+        if (!totals || !label) return;
+        if (label === "CHECKED IN") {
+          totals.unit++;
+          totals.checkedIn++;
+        } else if (label === "RESERVED") {
+          totals.unit++;
+          totals.reserved++;
+        }
+      }
+
+      function applyArrResvData(data) {
+        if (!data || typeof data !== "object") return;
+        if (data.totals && typeof data.totals === "object") {
+          cachedArrResvTotals = {
+            unit: Number(data.totals.unit) || 0,
+            checkedIn: Number(data.totals.checkedIn) || 0,
+            reserved: Number(data.totals.reserved) || 0,
+          };
+        }
+        if (data.map && typeof data.map === "object") {
+          cachedExcelResvMap = Object.assign({}, data.map);
+        }
+      }
+
       function normalizeArrResvKey(raw) {
         var k = normalizeResvStatusKey(String(raw || "").replace(/_/g, " "));
         if (k === "CHECKED IN" || k === "CHECKEDIN") return "CHECKED IN";
@@ -1849,30 +1881,42 @@
       function parseExcelFoAndResvArray(rows) {
         var foPatch = {};
         var resvPatch = {};
-        if (!rows || !rows.length) return { foPatch: foPatch, resvPatch: resvPatch };
+        var totals = emptyArrResvTotals();
+        if (!rows || !rows.length) {
+          return { foPatch: foPatch, resvPatch: resvPatch, totals: totals };
+        }
         var header = findSheetHeaderKeys(rows);
         var start = header.startRow != null ? header.startRow : 0;
         if (header.roomIdx < 0) header.roomIdx = 0;
         for (var r = start; r < rows.length; r++) {
           var row = rows[r];
           if (!row || !row.length) continue;
-          var roomRaw = row[header.roomIdx];
-          if (roomRaw == null) continue;
+          var roomRaw = header.roomIdx >= 0 ? row[header.roomIdx] : "";
           var nr = normalizeRoomDigits(roomRaw);
-          if (!nr) continue;
           if (header.foIdx >= 0 && row[header.foIdx] != null) {
             var foRaw = String(row[header.foIdx]).trim();
-            if (foRaw) foPatch[nr] = foRaw;
+            if (foRaw && nr) foPatch[nr] = foRaw;
           }
           if (header.resvIdx >= 0 && row[header.resvIdx] != null) {
             var resvRaw = String(row[header.resvIdx]).trim();
-            if (normalizeArrResvKey(resvRaw)) resvPatch[nr] = resvRaw;
+            var label = normalizeArrResvKey(resvRaw);
+            if (label) {
+              bumpArrResvTotal(totals, label);
+              if (nr) resvPatch[nr] = label;
+            }
           }
         }
-        return { foPatch: foPatch, resvPatch: resvPatch };
+        return { foPatch: foPatch, resvPatch: resvPatch, totals: totals };
       }
 
-      function mergeExcelResvPatch(rawPatch) {
+      function mergeExcelResvPatch(rawPatch, totals) {
+        if (totals && typeof totals === "object" && (totals.unit || totals.checkedIn || totals.reserved)) {
+          cachedArrResvTotals = {
+            unit: Number(totals.unit) || 0,
+            checkedIn: Number(totals.checkedIn) || 0,
+            reserved: Number(totals.reserved) || 0,
+          };
+        }
         if (!rawPatch || typeof rawPatch !== "object") return 0;
         var n = 0;
         Object.keys(rawPatch).forEach(function (roomKey) {
@@ -1913,6 +1957,7 @@
               resolve({
                 patch: parsed.foPatch,
                 resvPatch: parsed.resvPatch,
+                arrTotals: parsed.totals,
                 count: foCount,
                 resvCount: resvCount,
                 name: file.name,
@@ -1956,6 +2001,7 @@
               resolve({
                 patch: parsed.foPatch,
                 resvPatch: parsed.resvPatch,
+                arrTotals: parsed.totals,
                 count: foCount,
                 resvCount: resvCount,
                 name: file.name,
@@ -1981,6 +2027,7 @@
         if (Array.isArray(payload.vacRows) && payload.vacRows.length) return true;
         if (payload.roomResvMap && Object.keys(payload.roomResvMap).length) return true;
         if (payload.excelResvMap && Object.keys(payload.excelResvMap).length) return true;
+        if (payload.arrResvTotals && payload.arrResvTotals.unit > 0) return true;
         if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
         if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
         if (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length) return true;
@@ -1995,6 +2042,7 @@
           (cachedAllStatusRooms && cachedAllStatusRooms.length > 0) ||
           (cachedRoomResvMap && Object.keys(cachedRoomResvMap).length > 0) ||
           (cachedExcelResvMap && Object.keys(cachedExcelResvMap).length > 0) ||
+          (cachedArrResvTotals && cachedArrResvTotals.unit > 0) ||
           (cachedAllStatusBlockMap && Object.keys(cachedAllStatusBlockMap).length > 0)
         );
       }
@@ -2040,6 +2088,7 @@
           p.allStatusRooms = cachedAllStatusRooms;
           p.roomResvMap = cachedRoomResvMap;
           p.excelResvMap = cachedExcelResvMap;
+          p.arrResvTotals = cachedArrResvTotals;
           p.uploadSummary = (document.getElementById("uploadSummary") || {}).textContent || "";
           if (lastRoomingUploadedAt) p.roomingUploadedAt = lastRoomingUploadedAt;
         }
@@ -2128,6 +2177,13 @@
         }
         if (Object.prototype.hasOwnProperty.call(data, "excelResvMap") && typeof data.excelResvMap === "object") {
           cachedExcelResvMap = JSON.parse(JSON.stringify(data.excelResvMap || {}));
+        }
+        if (Object.prototype.hasOwnProperty.call(data, "arrResvTotals") && data.arrResvTotals) {
+          cachedArrResvTotals = {
+            unit: Number(data.arrResvTotals.unit) || 0,
+            checkedIn: Number(data.arrResvTotals.checkedIn) || 0,
+            reserved: Number(data.arrResvTotals.reserved) || 0,
+          };
         }
         rebuildCombinedRoomResvMap();
         if (Object.prototype.hasOwnProperty.call(data, "allStatusRooms") && Array.isArray(data.allStatusRooms)) {
@@ -2516,11 +2572,15 @@
         return { counts: c, total: rows.length };
       }
 
-      /** ARR 유닛 총수 − CHECKED IN(RESERVED)
-       *  우선: 엑셀 RESV_STATUS(CHECKED IN/RESERVED)
-       *  없으면: XML COMPUTED_RESV_STATUS(Checked In / Due In→RESERVED)
-       */
+      /** ARR 유닛 총수 − CHECKED IN(RESERVED) — 객실번호·INDI와 무관 */
       function computeArrSummaryFromRows(rows) {
+        if (cachedArrResvTotals && cachedArrResvTotals.unit > 0) {
+          return {
+            unit: cachedArrResvTotals.unit,
+            checkedIn: cachedArrResvTotals.checkedIn,
+            reserved: cachedArrResvTotals.reserved,
+          };
+        }
         var unit = 0;
         var checkedIn = 0;
         var reserved = 0;
@@ -2566,16 +2626,12 @@
         textEl.textContent =
           summ.unit + " - " + summ.checkedIn + "(" + summ.reserved + ")";
         var hasArrData =
-          summ.unit > 0 || Object.keys(cachedExcelResvMap || {}).length > 0;
-        var onIndi = !!(
-          document.querySelector('.sidebar-btn.active[data-view="indi"]') ||
-          (document.getElementById("viewIndi") &&
-            !document.getElementById("viewIndi").hidden)
-        );
-        // 정비3(ALLSTATUS) 업로드 직후 · INDI 화면에서 표시
-        var show = hasArrData || onIndi;
-        el.hidden = !show;
-        el.classList.toggle("is-visible", show);
+          summ.unit > 0 ||
+          (cachedArrResvTotals && cachedArrResvTotals.unit > 0) ||
+          Object.keys(cachedExcelResvMap || {}).length > 0;
+        // INDI와 독립 — 데이터 있으면 만들기 옆에 항상 표시
+        el.hidden = !hasArrData;
+        el.classList.toggle("is-visible", hasArrData);
       }
 
       function renderIndiCategorySummaryBar(el, counts, total) {
@@ -3291,13 +3347,14 @@
       }
 
       /**
-       * HK_ALLSTATUS 의 G_ROOM 에서 객실번호 → BLOCK_CODE (문서 순서상 나중 행이 덮어씀).
-       * @returns {Record<string,string>|null} 루트가 HK_ALLSTATUS 가 아니면 null
+       * HK_ALLSTATUS RESV_STATUS(CHECKED IN/RESERVED) 집계.
+       * 객실번호 없어도 행 단위로 카운트 (INDI·객실맵과 독립).
        */
-      function parseAllStatusArrResvMap(doc) {
+      function parseAllStatusArrResvData(doc) {
         var root = doc.documentElement && doc.documentElement.tagName;
         if (root !== "HK_ALLSTATUS") return null;
         var map = {};
+        var totals = emptyArrResvTotals();
         var nodes = doc.getElementsByTagName("G_ROOM");
         for (var i = 0; i < nodes.length; i++) {
           var el = nodes[i];
@@ -3312,12 +3369,18 @@
               computed = textOf(c);
             }
           }
-          var nr = normalizeRoomDigits(rmRaw);
-          if (!nr) continue;
           var label = normalizeArrResvKey(resv) || normalizeArrResvKey(computed);
-          if (label) map[nr] = label;
+          if (!label) continue;
+          bumpArrResvTotal(totals, label);
+          var nr = normalizeRoomDigits(rmRaw);
+          if (nr) map[nr] = label;
         }
-        return map;
+        return { map: map, totals: totals };
+      }
+
+      function parseAllStatusArrResvMap(doc) {
+        var data = parseAllStatusArrResvData(doc);
+        return data ? data.map : null;
       }
 
       function parseAllStatusBlockMap(doc) {
@@ -4327,6 +4390,7 @@
         var blockPatch = {};
         var roomListPatch = [];
         var arrResvPatch = {};
+        var arrResvTotals = emptyArrResvTotals();
 
         Promise.all(
           arr.map(function (file) {
@@ -4349,21 +4413,30 @@
                     });
                     var rl = parseAllStatusRoomList(doc);
                     if (rl && rl.length) roomListPatch = roomListPatch.concat(rl);
-                    var arm = parseAllStatusArrResvMap(doc);
-                    var arrN = 0;
-                    if (arm) {
-                      Object.keys(arm).forEach(function (k) {
-                        arrResvPatch[k] = arm[k];
-                        arrN++;
+                    var ard = parseAllStatusArrResvData(doc);
+                    if (ard) {
+                      Object.keys(ard.map || {}).forEach(function (k) {
+                        arrResvPatch[k] = ard.map[k];
                       });
+                      if (ard.totals) {
+                        arrResvTotals.unit += ard.totals.unit || 0;
+                        arrResvTotals.checkedIn += ard.totals.checkedIn || 0;
+                        arrResvTotals.reserved += ard.totals.reserved || 0;
+                      }
                     }
                     summaries.push(
                       file.name +
                         " · BLOCK " +
                         Object.keys(bm).length +
                         "실" +
-                        (arrN
-                          ? " · ARR RESV " + arrN + "실"
+                        (arrResvTotals.unit
+                          ? " · ARR " +
+                            arrResvTotals.unit +
+                            " - " +
+                            arrResvTotals.checkedIn +
+                            "(" +
+                            arrResvTotals.reserved +
+                            ")"
                           : "")
                     );
                   } else {
@@ -4391,6 +4464,7 @@
             blockMapPatch: blockPatch,
             allStatusRooms: roomListPatch,
             arrResvPatch: arrResvPatch,
+            arrResvTotals: arrResvTotals,
           });
         });
       }
@@ -4415,11 +4489,19 @@
           mergeAllStatusRoomList(payload.allStatusRooms);
         }
         if (payload.arrResvPatch && typeof payload.arrResvPatch === "object") {
-          // 정비3(HK_ALLSTATUS) 업로드 시 ARR 맵 교체 후 즉시 표시
-          if (Object.keys(payload.arrResvPatch).length) {
+          if (
+            (payload.arrResvTotals && payload.arrResvTotals.unit > 0) ||
+            Object.keys(payload.arrResvPatch).length
+          ) {
             cachedExcelResvMap = {};
-            mergeExcelResvPatch(payload.arrResvPatch);
+            mergeExcelResvPatch(payload.arrResvPatch, payload.arrResvTotals);
           }
+        } else if (payload.arrResvTotals && payload.arrResvTotals.unit > 0) {
+          cachedArrResvTotals = {
+            unit: Number(payload.arrResvTotals.unit) || 0,
+            checkedIn: Number(payload.arrResvTotals.checkedIn) || 0,
+            reserved: Number(payload.arrResvTotals.reserved) || 0,
+          };
         }
         sharedRoomingClearedAt = "";
         rebuildCombinedRoomResvMap();
@@ -4466,7 +4548,10 @@
                 return;
               }
               var merged = mergeFoPatch(res.patch || {});
-              var resvMerged = mergeExcelResvPatch(res.resvPatch || {});
+              var resvMerged = mergeExcelResvPatch(
+                res.resvPatch || {},
+                res.arrTotals || null
+              );
               var parts = [];
               if (merged) parts.push("FO " + merged + "실");
               if (resvMerged) parts.push("RESV " + resvMerged + "실");
@@ -5022,9 +5107,9 @@
                 if (bm) cachedAllStatusBlockMap = bm;
                 var arl = parseAllStatusRoomList(asDoc);
                 if (arl && arl.length) cachedAllStatusRooms = arl;
-                var arm = parseAllStatusArrResvMap(asDoc);
-                if (arm && Object.keys(arm).length) {
-                  cachedExcelResvMap = Object.assign({}, arm);
+                var arm = parseAllStatusArrResvData(asDoc);
+                if (arm) {
+                  applyArrResvData(arm);
                 }
               }
             }
@@ -5042,8 +5127,13 @@
               "실 · ALLSTATUS ROOM " +
               cachedAllStatusRooms.length +
               "실 · ARR " +
-              Object.keys(cachedExcelResvMap).length +
-              "실 · 「만들기」로 다시 그리기"
+              cachedArrResvTotals.unit +
+              " - " +
+              cachedArrResvTotals.checkedIn +
+              "(" +
+              cachedArrResvTotals.reserved +
+              ")" +
+              " · 「만들기」로 다시 그리기"
             );
             refreshBoards();
             saveRoomingStateToLocal();
