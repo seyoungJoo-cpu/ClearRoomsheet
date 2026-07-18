@@ -723,6 +723,12 @@ function mergeVacRowsPreservingFields(incoming, existing) {
         blockCode: pickNonEmptyStr(r.blockCode, old.blockCode),
         foStatus: pickNonEmptyStr(r.foStatus, old.foStatus),
         roomType: pickNonEmptyStr(r.roomType, old.roomType),
+        computedResvStatuses:
+          Array.isArray(r.computedResvStatuses) && r.computedResvStatuses.length
+            ? r.computedResvStatuses
+            : Array.isArray(old.computedResvStatuses)
+              ? old.computedResvStatuses
+              : [],
       };
     });
 }
@@ -743,6 +749,12 @@ function mergeSyncPayload(prev, incoming) {
     out.roomResvMap =
       incoming.roomResvMap && typeof incoming.roomResvMap === "object"
         ? Object.assign({}, incoming.roomResvMap)
+        : {};
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "excelResvMap") && applyMainRooming) {
+    out.excelResvMap =
+      incoming.excelResvMap && typeof incoming.excelResvMap === "object"
+        ? Object.assign({}, incoming.excelResvMap)
         : {};
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "allStatusRooms") && applyMainRooming) {

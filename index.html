@@ -1980,6 +1980,7 @@
         if (!payload || typeof payload !== "object") return false;
         if (Array.isArray(payload.vacRows) && payload.vacRows.length) return true;
         if (payload.roomResvMap && Object.keys(payload.roomResvMap).length) return true;
+        if (payload.excelResvMap && Object.keys(payload.excelResvMap).length) return true;
         if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
         if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
         if (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length) return true;
@@ -2003,7 +2004,13 @@
         try {
           localStorage.setItem(
             ROOMING_XML_LS_KEY,
-            JSON.stringify(buildSharedStatePayload({ includeExtendedStay: true }))
+            JSON.stringify(
+              buildSharedStatePayload({
+                includeExtendedStay: true,
+                roomingUpload: hasLocalRoomingData(),
+                fasnUpload: hasLocalFasnData(),
+              })
+            )
           );
         } catch (e) {}
       }
@@ -2558,11 +2565,15 @@
         var summ = computeArrSummaryFromRows(rows || cachedRows);
         textEl.textContent =
           summ.unit + " - " + summ.checkedIn + "(" + summ.reserved + ")";
-        var show = !!(
+        var hasArrData =
+          summ.unit > 0 || Object.keys(cachedExcelResvMap || {}).length > 0;
+        var onIndi = !!(
           document.querySelector('.sidebar-btn.active[data-view="indi"]') ||
           (document.getElementById("viewIndi") &&
             !document.getElementById("viewIndi").hidden)
         );
+        // 정비3(ALLSTATUS) 업로드 직후 · INDI 화면에서 표시
+        var show = hasArrData || onIndi;
         el.hidden = !show;
         el.classList.toggle("is-visible", show);
       }
@@ -3301,7 +3312,6 @@
               computed = textOf(c);
             }
           }
-          if (!isNumericGuestRoom(rmRaw)) continue;
           var nr = normalizeRoomDigits(rmRaw);
           if (!nr) continue;
           var label = normalizeArrResvKey(resv) || normalizeArrResvKey(computed);
@@ -4404,12 +4414,17 @@
         if (payload.allStatusRooms && payload.allStatusRooms.length) {
           mergeAllStatusRoomList(payload.allStatusRooms);
         }
-        if (payload.arrResvPatch && Object.keys(payload.arrResvPatch).length) {
-          mergeExcelResvPatch(payload.arrResvPatch);
+        if (payload.arrResvPatch && typeof payload.arrResvPatch === "object") {
+          // 정비3(HK_ALLSTATUS) 업로드 시 ARR 맵 교체 후 즉시 표시
+          if (Object.keys(payload.arrResvPatch).length) {
+            cachedExcelResvMap = {};
+            mergeExcelResvPatch(payload.arrResvPatch);
+          }
         }
         sharedRoomingClearedAt = "";
         rebuildCombinedRoomResvMap();
         rebuildCachedRowsFromVacAndMap();
+        updateIndiArrSummary(cachedRows);
         refreshBoards();
         lastRoomingUploadedAt = new Date().toISOString();
         pushSharedState({
@@ -4466,6 +4481,7 @@
             } else {
               rebuildCombinedRoomResvMap();
               rebuildCachedRowsFromVacAndMap();
+              updateIndiArrSummary(cachedRows);
               refreshBoards();
               saveRoomingStateToLocal();
               applyPayload({ summaries: summaries, errors: errors, rows: [], blockMapPatch: {}, allStatusRooms: [] });
