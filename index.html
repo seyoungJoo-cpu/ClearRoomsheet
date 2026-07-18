@@ -556,28 +556,25 @@
       font-variant-numeric: tabular-nums;
     }
     .summary-chip.ip .tag {
-      background: #d9f5d9;
+      background: #b8f0b0;
       color: #14532d;
     }
     .summary-chip.cl .tag {
-      background: #bae6fd;
+      background: #7dd3fc;
       color: #0c4a6e;
     }
+    .summary-chip.di .tag {
+      background: #f87171;
+      color: #ffffff;
+    }
     .summary-chip.pu .tag {
-      background: #fef9c3;
+      background: #fde047;
       color: #713f12;
     }
-    .summary-chip.di .tag {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-    .summary-chip.oo .tag {
-      background: #ffedd5;
-      color: #9a3412;
-    }
+    .summary-chip.oo .tag,
     .summary-chip.os .tag {
-      background: #f3e8ff;
-      color: #6b21a8;
+      background: #d1d5db;
+      color: #374151;
     }
     .summary-chip.indi-a .tag {
       background: #d9f5d9;
@@ -783,7 +780,8 @@
     .room-num__indi {
       font-size: 0.52rem;
       font-weight: 800;
-      color: #4b5563;
+      color: inherit;
+      opacity: 0.85;
       letter-spacing: -0.02em;
       line-height: 1.05;
     }
@@ -791,22 +789,25 @@
       border-right: none;
     }
     .pair-row.st-ip {
-      background: #d9f5d9;
-    }
-    .pair-row.st-di {
-      background: #fee2e2;
-    }
-    .pair-row.st-pu {
-      background: #fef9c3;
+      background: #b8f0b0;
+      color: #14532d;
     }
     .pair-row.st-cl {
-      background: #bae6fd;
+      background: #7dd3fc;
+      color: #0c4a6e;
     }
-    .pair-row.st-oo {
-      background: #ffedd5;
+    .pair-row.st-di {
+      background: #f87171;
+      color: #ffffff;
     }
+    .pair-row.st-pu {
+      background: #fde047;
+      color: #713f12;
+    }
+    .pair-row.st-oo,
     .pair-row.st-os {
-      background: #f3e8ff;
+      background: #d1d5db;
+      color: #374151;
     }
     .pair-row.st-neutral {
       background: #fff;
@@ -845,22 +846,25 @@
       border-right: none;
     }
     .villa-list-row.st-ip {
-      background: #d9f5d9;
-    }
-    .villa-list-row.st-di {
-      background: #fee2e2;
-    }
-    .villa-list-row.st-pu {
-      background: #fef9c3;
+      background: #b8f0b0;
+      color: #14532d;
     }
     .villa-list-row.st-cl {
-      background: #bae6fd;
+      background: #7dd3fc;
+      color: #0c4a6e;
     }
-    .villa-list-row.st-oo {
-      background: #ffedd5;
+    .villa-list-row.st-di {
+      background: #f87171;
+      color: #ffffff;
     }
+    .villa-list-row.st-pu {
+      background: #fde047;
+      color: #713f12;
+    }
+    .villa-list-row.st-oo,
     .villa-list-row.st-os {
-      background: #f3e8ff;
+      background: #d1d5db;
+      color: #374151;
     }
     .villa-list-row.st-neutral {
       background: #fff;
@@ -1297,9 +1301,9 @@
         <aside class="sidebar" aria-label="화면 전환">
           <button type="button" class="sidebar-btn" data-view="499" title="공실표 보드">499</button>
           <button type="button" class="sidebar-btn" data-view="vac" title="VAC — RESV_STATUS 또는 FO 투숙(OCC), Stayover 제외">VAC</button>
+          <button type="button" class="sidebar-btn" data-view="ovac" title="VAC-O — VAC 조건 · FO IN(투숙) 제외">VAC-O</button>
           <button type="button" class="sidebar-btn" data-view="asn" title="ASN — 도착 + BLOCK_CODE 필터">ASN</button>
-          <button type="button" class="sidebar-btn" data-view="ovac" title="O.VAC — VAC 조건 · FO IN(투숙) 제외">O.VAC</button>
-          <button type="button" class="sidebar-btn" data-view="oasn" title="O.ASN — ASN 조건 · FO IN(투숙) 제외">O.ASN</button>
+          <button type="button" class="sidebar-btn" data-view="oasn" title="ASN-D — ASN 조건 · FO IN(투숙) 제외">ASN-D</button>
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
           <button type="button" class="sidebar-btn active" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
           <button type="button" class="sidebar-btn" data-view="stay" title="STAY — Stayover만">STAY</button>
@@ -2235,7 +2239,7 @@
         OO: true,
         OS: true,
       };
-      var STATUS_FILTER_CODES = ["IP", "CL", "PU", "DI"];
+      var STATUS_FILTER_CODES = ["IP", "CL", "DI", "PU"];
       var VAC_STATUS_EXTRA_CODES = ["OO", "OS"];
 
       /** F.ASN FO_STATUS 필터 (OCC=청소, VAC=빈방) */
@@ -2817,8 +2821,8 @@
         var chips = [
           { code: "IP", cls: "ip" },
           { code: "CL", cls: "cl" },
-          { code: "PU", cls: "pu" },
           { code: "DI", cls: "di" },
+          { code: "PU", cls: "pu" },
         ];
         if (mode === "vac" || mode === "ovac" || mode === "indi" || mode === "stay") {
           chips.push({ code: "OO", cls: "oo" }, { code: "OS", cls: "os" });
@@ -3635,8 +3639,8 @@
           "499": "499",
           vac: "VAC",
           asn: "ASN",
-          ovac: "O.VAC",
-          oasn: "O.ASN",
+          ovac: "VAC-O",
+          oasn: "ASN-D",
           fasn: "F.ASN",
           indi: "INDI",
           stay: "STAY",
@@ -3750,7 +3754,7 @@
             return isVacResvMatch(rec) && isNotFoInRoom(rec);
           };
           emptyFiltered =
-            "O.VAC 조건(VAC RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
+            "VAC-O 조건(VAC RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
         } else if (mode === "asn") {
           summaryElId = "asnStatusSummaryBar";
           mountId = "asnBoardMount";
@@ -3764,7 +3768,7 @@
             return isAsnResvMatch(rec) && isNotFoInRoom(rec);
           };
           emptyFiltered =
-            "O.ASN 조건(ASN RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
+            "ASN-D 조건(ASN RESV + FO IN 제외)에 해당하는 객실이 없습니다.";
         } else if (mode === "fasn") {
           summaryElId = "fAsnFoSummaryBar";
           mountId = "fAsnBoardMount";
