@@ -8585,6 +8585,8 @@
       var knownOrderIssueIds = {};
       var pendingOrderAlert = false;
       var knownOrderAlertIds = {};
+      var orderAlertAudioCtx = null;
+      var orderAlertSoundLastAt = 0;
       var pendingFacilityOrderAlert = false;
       var pendingFacilityOrderIssueAlert = false;
       var pendingFacilityMiscAlert = false;
@@ -15643,6 +15645,54 @@
         applyInvenNotifySidebarAlertUi();
       }
 
+      function ensureOrderAlertAudio() {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        if (!orderAlertAudioCtx) {
+          try {
+            orderAlertAudioCtx = new AC();
+          } catch (e) {
+            return null;
+          }
+        }
+        if (orderAlertAudioCtx.state === "suspended") {
+          orderAlertAudioCtx.resume().catch(function () {});
+        }
+        return orderAlertAudioCtx;
+      }
+
+      function unlockOrderAlertAudio() {
+        ensureOrderAlertAudio();
+      }
+
+      function playOrderAlertTone(ctx, freq, startAt, dur, gainVal) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, startAt);
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(gainVal, startAt + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startAt);
+        osc.stop(startAt + dur + 0.02);
+      }
+
+      /** 오더 관리 신규 알림음 (브라우저 정책상 화면 클릭·키입력 이후부터 재생) */
+      function playOrderAlertSound() {
+        try {
+          var ctx = ensureOrderAlertAudio();
+          if (!ctx) return;
+          var now = Date.now();
+          if (now - orderAlertSoundLastAt < 900) return;
+          orderAlertSoundLastAt = now;
+          var t = ctx.currentTime + 0.01;
+          playOrderAlertTone(ctx, 880, t, 0.12, 0.2);
+          playOrderAlertTone(ctx, 1318.5, t + 0.15, 0.16, 0.18);
+        } catch (e) {}
+      }
+
       function registerOrderIssueAlert(entryId) {
         if (!entryId) return;
         if (typeof HKAlertAck !== "undefined" && HKAlertAck.hasOrderIssueId(entryId)) {
@@ -15677,8 +15727,11 @@
           if (sidebarMainView !== "facility") {
             pendingFacilityOrderAlert = true;
           }
-        } else if (sidebarMainView !== "order") {
-          pendingOrderAlert = true;
+        } else {
+          if (sidebarMainView !== "order") {
+            pendingOrderAlert = true;
+          }
+          playOrderAlertSound();
         }
         applyOrderSidebarAlertUi();
       }
@@ -19921,6 +19974,9 @@
       initMbWorkflowAlertTracking();
       initFacilityLogAlertTracking();
       initInvenNotifyAlertTracking();
+      ["pointerdown", "keydown", "touchstart"].forEach(function (evtName) {
+        document.addEventListener(evtName, unlockOrderAlertAudio, { passive: true });
+      });
       setupPanelAckButtons();
       applyOrderSidebarAlertUi();
       applyRequestSidebarAlertUi();
