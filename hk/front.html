@@ -2880,6 +2880,19 @@
       word-break: break-word;
     }
 
+    .room-card__memo1-text:not(.is-empty),
+    .room-card__memo2-text:not(.is-empty) {
+      font-weight: 800;
+    }
+
+    .room-card__memo1-text:not(.is-empty) {
+      color: #1d4ed8;
+    }
+
+    .room-card__memo2-text:not(.is-empty) {
+      color: #c2410c;
+    }
+
     .room-card__memo.is-empty {
       color: var(--text-muted);
     }
@@ -4216,19 +4229,26 @@
 
     .zone-cancelled-rooms__list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px 12px;
-      font-size: 0.875rem;
-      line-height: 1.35;
-      color: #64748b;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+      color: #475569;
     }
 
     .zone-cancelled-rooms__item {
-      white-space: nowrap;
-      padding: 4px 8px;
+      display: block;
+      padding: 5px 8px;
       border-radius: 4px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .zone-cancelled-rooms__item strong {
+      color: #334155;
+      font-weight: 800;
     }
 
     .room-card__actions {
@@ -6366,6 +6386,53 @@
       padding-bottom: 22px;
     }
 
+    .sched-ip-section-label {
+      list-style: none;
+      margin: 0.35rem 0 0.2rem;
+      padding: 0 2px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #15803d;
+    }
+
+    .sched-ip-compact-wrap {
+      list-style: none;
+      margin: 0 0 0.55rem;
+      padding: 0;
+    }
+
+    .sched-ip-compact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .sched-req-card--ip-compact {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-width: 2.1rem;
+      margin: 0;
+      padding: 2px 6px;
+      min-height: 0;
+      border-radius: 5px;
+      border: 1px solid #86efac;
+      background: #dcfce7;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    .sched-req-card--ip-compact .sched-req-card__ip-room {
+      font-size: 0.7rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #14532d;
+      line-height: 1.15;
+    }
+
     .sched-req-card.is-change-alert {
       animation: room-change-alert 0.75s ease-in-out infinite;
       cursor: pointer;
@@ -7641,8 +7708,8 @@
             <section class="zone-updates" id="zoneUpdatesSection" hidden aria-label="구역 변경 내역">
               <div class="zone-updates__list" id="zoneUpdatesList"></div>
             </section>
-            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="취소객실">
-              <div class="zone-cancelled-rooms__label">취소객실</div>
+            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="취소·변경 객실">
+              <div class="zone-cancelled-rooms__label">취소·변경</div>
               <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
             </section>
             <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
@@ -14680,6 +14747,31 @@
       }
 
       function updateRequestAlertLiveStatuses() {
+        var needBoardMove = false;
+        document.querySelectorAll(".request-feedback__item[data-req-id]").forEach(function (li) {
+          var id = li.getAttribute("data-req-id");
+          var entry = findRequestEntry(id);
+          if (!entry) return;
+          if (isRequestLiveIp(entry)) needBoardMove = true;
+        });
+        document.querySelectorAll(".sched-req-card--ip-compact[data-req-id]").forEach(function (li) {
+          var id = li.getAttribute("data-req-id");
+          var entry = findRequestEntry(id);
+          if (!entry) return;
+          if (!isRequestLiveIp(entry)) needBoardMove = true;
+        });
+        document
+          .querySelectorAll(".sched-req-card[data-req-id]:not(.sched-req-card--ip-compact)")
+          .forEach(function (li) {
+            var id = li.getAttribute("data-req-id");
+            var entry = findRequestEntry(id);
+            if (!entry) return;
+            if (isRequestLiveIp(entry)) needBoardMove = true;
+          });
+        if (needBoardMove) {
+          renderRequestLogPanel();
+          return;
+        }
         document.querySelectorAll(".request-feedback__item[data-req-id]").forEach(function (li) {
           var id = li.getAttribute("data-req-id");
           var entry = findRequestEntry(id);
@@ -15105,9 +15197,15 @@
         mergeAlertAckFromStorage();
       }
 
+      function isRequestLiveIp(entry) {
+        return liveRequestEntryStatus(entry) === "IP";
+      }
+
       function isRequestPendingAlert(entry) {
         if (!entry) return false;
         if (entry.sched && String(entry.sched).trim()) return false;
+        // 루밍 ROOM_STATUS=IP 이면 요청알림에서 빼고 처리·예정(IP)으로
+        if (isRequestLiveIp(entry)) return false;
         return true;
       }
 
@@ -15116,7 +15214,9 @@
       }
 
       function isScheduledRequestEntry(entry) {
-        return !!(entry && entry.sched && String(entry.sched).trim());
+        if (!entry) return false;
+        if (entry.sched && String(entry.sched).trim()) return true;
+        return isRequestLiveIp(entry);
       }
 
       function hasPendingRequestModifyCards() {
@@ -16080,8 +16180,8 @@
           entry.phase = "accepted";
           entry.acceptedAt = new Date().toISOString();
           entry.acceptedBy = getOperatorName();
-          saveOrderLog();
-          renderOrderPanels();
+          // 도우미 로봇 오더는 접수와 동시에 투입완료로 이동
+          completeOrderDeployment(orderId, { auto: true });
           return;
         }
         if (frontMode) {
@@ -17009,8 +17109,45 @@
         var allScheduled = getFilteredScheduledRequestEntries();
         var scheduled = allScheduled;
         var filterRaw = getRequestRoomFilterRaw();
+        var ipEntries = [];
+        var otherEntries = [];
         scheduled.forEach(function (entry) {
-          var sched = String(entry.sched).trim();
+          if (isRequestLiveIp(entry)) ipEntries.push(entry);
+          else otherEntries.push(entry);
+        });
+        ipEntries.sort(function (a, b) {
+          return String(a.room || "").localeCompare(String(b.room || ""), undefined, {
+            numeric: true,
+          });
+        });
+        if (ipEntries.length) {
+          var ipLabel = document.createElement("li");
+          ipLabel.className = "sched-ip-section-label";
+          ipLabel.textContent = "IP";
+          ul.appendChild(ipLabel);
+          var ipWrap = document.createElement("li");
+          ipWrap.className = "sched-ip-compact-wrap";
+          var ipRow = document.createElement("div");
+          ipRow.className = "sched-ip-compact-row";
+          ipEntries.forEach(function (entry) {
+            var ipLi = document.createElement("div");
+            ipLi.className = "room-card sched-req-card sched-req-card--ip-compact";
+            ipLi.setAttribute("data-req-id", entry.id);
+            ipLi.title =
+              (entry.room ? formatRoomNoDisplay(String(entry.room)) : "") +
+              " · IP" +
+              (entry.memo ? " · " + String(entry.memo).trim() : "");
+            var ipNo = document.createElement("span");
+            ipNo.className = "sched-req-card__ip-room";
+            ipNo.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+            ipLi.appendChild(ipNo);
+            ipRow.appendChild(ipLi);
+          });
+          ipWrap.appendChild(ipRow);
+          ul.appendChild(ipWrap);
+        }
+        otherEntries.forEach(function (entry) {
+          var sched = String(entry.sched || "").trim();
           var facDenied = isFacilityUnavailable(entry);
           var li = document.createElement("li");
           li.className = "room-card sched-req-card";
@@ -18525,56 +18662,64 @@
         return parts.join(" · ");
       }
 
-      function renderZoneChangeFeed(zone) {
-        var section = document.getElementById("zoneUpdatesSection");
-        var listEl = document.getElementById("zoneUpdatesList");
-        if (!section || !listEl) return;
-        listEl.innerHTML = "";
-        if (!zone) {
-          section.hidden = true;
-          return;
-        }
-        var entries = getRoomChangeLogEntries()
-          .filter(function (entry) {
-            if (!entry || entry.zone !== zone || isInitialRoomAddEntry(entry)) return false;
-            var changes = Array.isArray(entry.changes) ? entry.changes : [];
-            return changes.some(function (line) {
-              return String(line).indexOf("객실번호") >= 0;
-            });
-          })
-          .sort(function (a, b) {
-            var ta = new Date(a.at || 0).getTime();
-            var tb = new Date(b.at || 0).getTime();
-            if (isNaN(ta)) ta = 0;
-            if (isNaN(tb)) tb = 0;
-            return tb - ta;
-          })
-          .slice(0, 20);
-        if (!entries.length) {
-          section.hidden = true;
-          return;
-        }
-        section.hidden = false;
-        entries.forEach(function (entry) {
-          var line = document.createElement("div");
-          line.className = "zone-updates__line";
-          var room = formatRoomNoDisplay(entry.room || "");
-          var kind = formatRoomChangeKindLabel(entry.kind);
-          var text = room + " · " + kind;
+      function isZoneRoomNumberChangeEntry(entry) {
+        if (!entry || isInitialRoomAddEntry(entry)) return false;
+        var changes = Array.isArray(entry.changes) ? entry.changes : [];
+        return changes.some(function (line) {
+          return String(line).indexOf("객실번호") >= 0;
+        });
+      }
+
+      function findZoneRoomDeleteEntry(zone, roomNo) {
+        var latest = null;
+        var latestAt = -1;
+        getRoomChangeEntriesForHistory(zone, roomNo).forEach(function (entry) {
+          if (!entry || entry.kind !== "delete") return;
+          var entryAt = new Date(entry.at || 0).getTime();
+          if (isNaN(entryAt)) entryAt = 0;
+          if (!latest || entryAt >= latestAt) {
+            latest = entry;
+            latestAt = entryAt;
+          }
+        });
+        return latest;
+      }
+
+      function appendZoneCancelChangeItem(listEl, entry, roomFallback) {
+        var roomRaw = (entry && entry.room) || roomFallback || "";
+        var room = formatRoomNoDisplay(roomRaw);
+        var kindLabel =
+          entry && entry.kind === "delete"
+            ? "취소"
+            : entry
+              ? "변경"
+              : "취소";
+        var text = " · " + kindLabel;
+        if (entry) {
           var changes = Array.isArray(entry.changes) ? entry.changes : [];
-          if (changes.length) {
+          if (entry.kind !== "delete" && changes.length) {
             text += " · " + String(changes[0]) + (changes.length > 1 ? " …" : "");
           }
           var time = formatReqAt(entry.at);
           if (time) text += " · " + time;
           var by = entry.by != null ? String(entry.by).trim() : "";
-          if (by && by !== "관리자") text += " · " + by;
-          var strong = document.createElement("strong");
-          strong.textContent = room;
-          line.appendChild(strong);
-          line.appendChild(document.createTextNode(text.slice(room.length)));
-          listEl.appendChild(line);
-        });
+          if (by) text += " · " + by;
+        }
+        var span = document.createElement("div");
+        span.className = "zone-cancelled-rooms__item";
+        var strong = document.createElement("strong");
+        strong.textContent = room || "—";
+        span.appendChild(strong);
+        span.appendChild(document.createTextNode(text));
+        listEl.appendChild(span);
+      }
+
+      function renderZoneChangeFeed(zone) {
+        // 취소·변경 목록으로 통합 표시
+        var section = document.getElementById("zoneUpdatesSection");
+        var listEl = document.getElementById("zoneUpdatesList");
+        if (listEl) listEl.innerHTML = "";
+        if (section) section.hidden = true;
       }
 
       function renderZoneCancelledRooms(zone) {
@@ -18587,35 +18732,69 @@
           return;
         }
         var data = HKStorage.load();
-        var seen = {};
-        var items = [];
-        function addRoom(no) {
+        var seenRooms = {};
+        var cancelledRooms = [];
+        function addCancelledRoom(no) {
           var key = String(no == null ? "" : no).trim();
-          if (!key || seen[key]) return;
-          seen[key] = true;
-          items.push(key);
+          if (!key || seenRooms[key]) return;
+          seenRooms[key] = true;
+          cancelledRooms.push(key);
         }
         var deletedList =
           data.deletedRooms && Array.isArray(data.deletedRooms[zone])
             ? data.deletedRooms[zone]
             : [];
-        deletedList.forEach(addRoom);
+        deletedList.forEach(addCancelledRoom);
         ((data.rooms && data.rooms[zone]) || []).forEach(function (room) {
-          if (room && getRoomTray(room) === "deleted") addRoom(room.number);
+          if (room && getRoomTray(room) === "deleted") addCancelledRoom(room.number);
         });
-        items.sort(function (a, b) {
-          return a.localeCompare(b, undefined, { numeric: true });
+
+        var seenEntryIds = {};
+        var rows = [];
+        function pushRow(entry, roomFallback) {
+          if (entry && entry.id) {
+            if (seenEntryIds[entry.id]) return;
+            seenEntryIds[entry.id] = true;
+          }
+          var at = entry && entry.at ? new Date(entry.at).getTime() : 0;
+          if (isNaN(at)) at = 0;
+          rows.push({ entry: entry || null, room: roomFallback || (entry && entry.room) || "", at: at });
+        }
+
+        getRoomChangeLogEntries().forEach(function (entry) {
+          if (!entry || entry.zone !== zone) return;
+          if (entry.kind === "delete" || isZoneRoomNumberChangeEntry(entry)) {
+            pushRow(entry, entry.room);
+          }
         });
-        if (!items.length) {
+
+        cancelledRooms.forEach(function (no) {
+          var del = findZoneRoomDeleteEntry(zone, no);
+          if (del) {
+            pushRow(del, no);
+            return;
+          }
+          var already = rows.some(function (row) {
+            return roomsAreSame(row.room, no);
+          });
+          if (!already) pushRow(null, no);
+        });
+
+        rows.sort(function (a, b) {
+          if (b.at !== a.at) return b.at - a.at;
+          return String(a.room || "").localeCompare(String(b.room || ""), undefined, {
+            numeric: true,
+          });
+        });
+        if (rows.length > 40) rows = rows.slice(0, 40);
+
+        if (!rows.length) {
           section.hidden = true;
           return;
         }
         section.hidden = false;
-        items.forEach(function (no) {
-          var span = document.createElement("span");
-          span.className = "zone-cancelled-rooms__item";
-          span.textContent = formatRoomNoDisplay(no);
-          listEl.appendChild(span);
+        rows.forEach(function (row) {
+          appendZoneCancelChangeItem(listEl, row.entry, row.room);
         });
       }
 
@@ -19935,8 +20114,7 @@
         if (!want) return false;
         for (var i = 0; i < requestLogEntries.length; i++) {
           var e = requestLogEntries[i];
-          var pending = !(e.sched && String(e.sched).trim());
-          if (!pending) continue;
+          if (!isRequestPendingAlert(e)) continue;
           if (roomsAreSame(e.room, roomInput)) return true;
         }
         return false;
