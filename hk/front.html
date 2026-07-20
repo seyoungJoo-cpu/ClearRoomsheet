@@ -15204,8 +15204,7 @@
       function isRequestPendingAlert(entry) {
         if (!entry) return false;
         if (entry.sched && String(entry.sched).trim()) return false;
-        // 루밍 ROOM_STATUS=IP 이면 요청알림에서 빼고 처리·예정(IP)으로
-        if (isRequestLiveIp(entry)) return false;
+        // IP여도 요청알림에는 유지 (처리·예정 IP 칩과 동시 표시)
         return true;
       }
 
