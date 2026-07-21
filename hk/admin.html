@@ -4469,7 +4469,17 @@
         var input = document.getElementById("mbInvNoticeInput");
         data.mbInvNotice = input ? input.value : "";
         data.mbInvNoticeImages = adminMbInvNoticeImages.slice();
-        HKStorage.save(data);
+        if (typeof HKStorage.stampMbInvNotice === "function") {
+          HKStorage.stampMbInvNotice(data);
+        } else {
+          data.mbInvNoticeUpdatedAt = new Date().toISOString();
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        } else if (typeof HKSync !== "undefined" && HKSync.schedulePushStorage) {
+          HKSync.schedulePushStorage();
+        }
         toast("MB & 인벤 메모장이 저장되었습니다.");
       });
 

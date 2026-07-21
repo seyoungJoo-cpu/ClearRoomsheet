@@ -8705,6 +8705,8 @@
             ".request-feedback__memo2-editor-wrap",
             ".order-feedback__memo-editor-wrap",
             ".front-chat__msg-edit",
+            "#mbInvNoticeBody .mb-inv-notice-board__text[contenteditable='true']",
+            "#zoneVipMemoBody .zone-memo-board__text[contenteditable='true']",
           ].join(", ")
         );
       }
@@ -17931,7 +17933,17 @@
         var data = HKStorage.load();
         if (patch.text != null) data.mbInvNotice = String(patch.text);
         if (patch.images) data.mbInvNoticeImages = patch.images.slice();
-        HKStorage.save(data);
+        if (typeof HKStorage.stampMbInvNotice === "function") {
+          HKStorage.stampMbInvNotice(data);
+        } else {
+          data.mbInvNoticeUpdatedAt = new Date().toISOString();
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        } else if (typeof HKSync !== "undefined" && HKSync.schedulePushStorage) {
+          HKSync.schedulePushStorage();
+        }
       }
 
       function appendMbInvNoticeImage(url) {
@@ -17973,7 +17985,11 @@
           textEl.setAttribute("contenteditable", "true");
           textEl.setAttribute("spellcheck", "false");
           textEl.addEventListener("blur", function () {
-            saveMbInvNoticePatch({ text: textEl.textContent || "" });
+            var nextText =
+              textEl.innerText != null ? String(textEl.innerText) : String(textEl.textContent || "");
+            // contenteditable trailing newline 정리
+            nextText = nextText.replace(/\n$/, "");
+            saveMbInvNoticePatch({ text: nextText });
           });
           bindMemoBoardImagePaste(textEl, appendMbInvNoticeImage);
         }
@@ -18030,6 +18046,10 @@
       }
 
       function applyMbInvNotice() {
+        var editing = document.querySelector(
+          "#mbInvNoticeBody .mb-inv-notice-board__text[contenteditable='true']"
+        );
+        if (editing && document.activeElement === editing) return;
         renderMbInvNoticeBoard();
       }
 

@@ -295,6 +295,57 @@
     return images;
   }
 
+  function normalizeMbInvNoticeUpdatedAt(data) {
+    if (!data || data.mbInvNoticeUpdatedAt == null) return "";
+    return String(data.mbInvNoticeUpdatedAt).trim();
+  }
+
+  /** 미니바(MB&인벤) 메모장은 최신 updatedAt 쪽을 채택 */
+  function pickMbInvNoticeFields(base, incoming) {
+    var baseObj = base && typeof base === "object" ? base : {};
+    var incObj = incoming && typeof incoming === "object" ? incoming : {};
+    var baseAt = normalizeMbInvNoticeUpdatedAt(baseObj);
+    var incAt = normalizeMbInvNoticeUpdatedAt(incObj);
+    var incHasText = Object.prototype.hasOwnProperty.call(incObj, "mbInvNotice");
+    var incHasImages = Object.prototype.hasOwnProperty.call(incObj, "mbInvNoticeImages");
+    var incHasAt = Object.prototype.hasOwnProperty.call(incObj, "mbInvNoticeUpdatedAt");
+    var preferIncoming = true;
+    if (baseAt && incAt && incAt < baseAt) {
+      preferIncoming = false;
+    } else if (baseAt && !incAt && (incHasText || incHasImages)) {
+      // 타임스탬프 없는 옛 클라이언트가 최신 메모를 덮어쓰지 않도록
+      preferIncoming = false;
+    } else if (!incHasText && !incHasImages && !incHasAt) {
+      preferIncoming = false;
+    }
+    if (!preferIncoming) {
+      return {
+        mbInvNotice: baseObj.mbInvNotice != null ? String(baseObj.mbInvNotice) : "",
+        mbInvNoticeImages: normalizeMbInvNoticeImages(baseObj),
+        mbInvNoticeUpdatedAt: baseAt,
+      };
+    }
+    return {
+      mbInvNotice: incHasText
+        ? typeof incObj.mbInvNotice === "string"
+          ? incObj.mbInvNotice
+          : ""
+        : baseObj.mbInvNotice != null
+          ? String(baseObj.mbInvNotice)
+          : "",
+      mbInvNoticeImages: incHasImages
+        ? normalizeMbInvNoticeImages(incObj)
+        : normalizeMbInvNoticeImages(baseObj),
+      mbInvNoticeUpdatedAt: incAt || baseAt || "",
+    };
+  }
+
+  function stampMbInvNotice(data) {
+    if (!data || typeof data !== "object") return data;
+    data.mbInvNoticeUpdatedAt = new Date().toISOString();
+    return data;
+  }
+
   function normalizeFrontEmbedStates(raw) {
     var out = { dd: null, inven: null, chichi: null };
     if (!raw || typeof raw !== "object") return out;
@@ -335,6 +386,7 @@
       noticeImages: [],
       mbInvNotice: "",
       mbInvNoticeImages: [],
+      mbInvNoticeUpdatedAt: "",
       invenNotify: null,
       frontEmbedStates: { dd: null, inven: null, chichi: null },
       facilityMiscLog: null,
@@ -384,6 +436,7 @@
     d.noticeImage = d.noticeImages[0] || "";
     if (typeof data.mbInvNotice === "string") d.mbInvNotice = data.mbInvNotice;
     d.mbInvNoticeImages = normalizeMbInvNoticeImages(data);
+    d.mbInvNoticeUpdatedAt = normalizeMbInvNoticeUpdatedAt(data);
     if (data.invenNotify && typeof data.invenNotify === "object") {
       d.invenNotify = data.invenNotify;
     }
@@ -551,16 +604,10 @@
       });
     }
     merged.noticeImage = merged.noticeImages[0] || "";
-    if (typeof incoming.mbInvNotice === "string") {
-      merged.mbInvNotice = incoming.mbInvNotice;
-    } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNotice")) {
-      merged.mbInvNotice = base.mbInvNotice;
-    }
-    if (Array.isArray(incoming.mbInvNoticeImages)) {
-      merged.mbInvNoticeImages = normalizeMbInvNoticeImages(incoming);
-    } else if (!Object.prototype.hasOwnProperty.call(incoming, "mbInvNoticeImages")) {
-      merged.mbInvNoticeImages = base.mbInvNoticeImages;
-    }
+    var mbInvPicked = pickMbInvNoticeFields(base, incoming);
+    merged.mbInvNotice = mbInvPicked.mbInvNotice;
+    merged.mbInvNoticeImages = mbInvPicked.mbInvNoticeImages;
+    merged.mbInvNoticeUpdatedAt = mbInvPicked.mbInvNoticeUpdatedAt;
     if (Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
       if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
         merged.invenNotify = incoming.invenNotify;
@@ -654,6 +701,9 @@
     markRoomDeleted: markRoomDeleted,
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
+    normalizeMbInvNoticeImages: normalizeMbInvNoticeImages,
+    pickMbInvNoticeFields: pickMbInvNoticeFields,
+    stampMbInvNotice: stampMbInvNotice,
     normalizeFrontEmbedStates: normalizeFrontEmbedStates,
     mergeFrontEmbedStates: mergeFrontEmbedStates,
   };

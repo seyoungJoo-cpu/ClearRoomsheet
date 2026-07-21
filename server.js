@@ -506,6 +506,54 @@ function collectHkCustomZoneIds(customZones) {
   return ids;
 }
 
+function pickMbInvNoticeFieldsForServer(prev, incoming) {
+  var baseObj = prev && typeof prev === "object" ? prev : {};
+  var incObj = incoming && typeof incoming === "object" ? incoming : {};
+  var baseAt =
+    baseObj.mbInvNoticeUpdatedAt != null ? String(baseObj.mbInvNoticeUpdatedAt).trim() : "";
+  var incAt =
+    incObj.mbInvNoticeUpdatedAt != null ? String(incObj.mbInvNoticeUpdatedAt).trim() : "";
+  var incHasText = Object.prototype.hasOwnProperty.call(incObj, "mbInvNotice");
+  var incHasImages = Object.prototype.hasOwnProperty.call(incObj, "mbInvNoticeImages");
+  var incHasAt = Object.prototype.hasOwnProperty.call(incObj, "mbInvNoticeUpdatedAt");
+  var preferIncoming = true;
+  if (baseAt && incAt && incAt < baseAt) {
+    preferIncoming = false;
+  } else if (baseAt && !incAt && (incHasText || incHasImages)) {
+    preferIncoming = false;
+  } else if (!incHasText && !incHasImages && !incHasAt) {
+    preferIncoming = false;
+  }
+  function normalizeImages(src) {
+    var images = [];
+    if (src && Array.isArray(src.mbInvNoticeImages)) {
+      src.mbInvNoticeImages.forEach(function (img) {
+        var s = img != null ? String(img).trim() : "";
+        if (s) images.push(s);
+      });
+    }
+    return images;
+  }
+  if (!preferIncoming) {
+    return {
+      mbInvNotice: baseObj.mbInvNotice != null ? String(baseObj.mbInvNotice) : "",
+      mbInvNoticeImages: normalizeImages(baseObj),
+      mbInvNoticeUpdatedAt: baseAt,
+    };
+  }
+  return {
+    mbInvNotice: incHasText
+      ? typeof incObj.mbInvNotice === "string"
+        ? incObj.mbInvNotice
+        : ""
+      : baseObj.mbInvNotice != null
+        ? String(baseObj.mbInvNotice)
+        : "",
+    mbInvNoticeImages: incHasImages ? normalizeImages(incObj) : normalizeImages(baseObj),
+    mbInvNoticeUpdatedAt: incAt || baseAt || "",
+  };
+}
+
 function mergeHkStorage(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
@@ -533,26 +581,17 @@ function mergeHkStorage(prev, incoming) {
     if (noticeImgSrc) noticeImages.push(noticeImgSrc);
   }
 
+  var mbInvPicked = pickMbInvNoticeFieldsForServer(prev, incoming);
+
   var out = {
     notice: Object.prototype.hasOwnProperty.call(incoming, "notice")
       ? incoming.notice
       : prev.notice,
     noticeImage: noticeImages[0] || "",
     noticeImages: noticeImages,
-    mbInvNotice: Object.prototype.hasOwnProperty.call(incoming, "mbInvNotice")
-      ? typeof incoming.mbInvNotice === "string"
-        ? incoming.mbInvNotice
-        : ""
-      : prev.mbInvNotice != null
-        ? String(prev.mbInvNotice)
-        : "",
-    mbInvNoticeImages: Object.prototype.hasOwnProperty.call(incoming, "mbInvNoticeImages")
-      ? Array.isArray(incoming.mbInvNoticeImages)
-        ? incoming.mbInvNoticeImages.slice()
-        : []
-      : Array.isArray(prev.mbInvNoticeImages)
-        ? prev.mbInvNoticeImages.slice()
-        : [],
+    mbInvNotice: mbInvPicked.mbInvNotice,
+    mbInvNoticeImages: mbInvPicked.mbInvNoticeImages,
+    mbInvNoticeUpdatedAt: mbInvPicked.mbInvNoticeUpdatedAt,
     invenNotify: Object.prototype.hasOwnProperty.call(incoming, "invenNotify")
       ? incoming.invenNotify
       : prev.invenNotify || null,
