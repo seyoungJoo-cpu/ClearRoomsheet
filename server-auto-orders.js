@@ -4,7 +4,7 @@ const ROBOT_NAME = "도우미 로봇";
 const MSG_RPA_CHECK = "프론트 근무자분들 정비 RPA 확인해주세요";
 const MSG_RPA_RUN = "프론트 근무자분들 정비 RPA 실행해주세요";
 const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
-const STALE_XML_MINUTES = 20;
+const STALE_XML_MINUTES = 15;
 const QUIET_START_MIN = 1 * 60 + 30;
 const QUIET_END_MIN = 6 * 60 + 30;
 
