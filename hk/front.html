@@ -8692,7 +8692,20 @@
 
       function hasOpenHkEditors() {
         return !!document.querySelector(
-          ".room-time-editor, .room-memo1-editor, .room-memo2-editor, .request-feedback__sched-editor, .request-feedback__facility-sched-editor-wrap, .order-feedback__memo-editor-wrap, .front-chat__msg-edit"
+          [
+            ".room-time-editor",
+            ".room-memo1-editor",
+            ".room-memo2-editor",
+            ".room-card__inline-editor",
+            ".room-card.is-inline-editing",
+            ".request-feedback__sched-editor",
+            ".request-feedback__sched-editor-wrap",
+            ".request-feedback__facility-sched-editor-wrap",
+            ".request-feedback__memo-editor-wrap",
+            ".request-feedback__memo2-editor-wrap",
+            ".order-feedback__memo-editor-wrap",
+            ".front-chat__msg-edit",
+          ].join(", ")
         );
       }
 
@@ -14807,8 +14820,14 @@
             if (isRequestLiveIp(entry)) needBoardMove = true;
           });
         if (needBoardMove) {
-          renderRequestLogPanel();
-          return;
+          if (isHkUserEditing()) {
+            pendingDeferredSyncApply = function () {
+              renderRequestLogPanel({ force: true });
+            };
+          } else {
+            renderRequestLogPanel();
+            return;
+          }
         }
         document.querySelectorAll(".request-feedback__item[data-req-id]").forEach(function (li) {
           var id = li.getAttribute("data-req-id");
@@ -20404,14 +20423,8 @@
           }
         }
         updateRoomStatusDisplay();
-        var st = lookupRoomStatusFromXml(room);
-        if (!st) {
-          showRequestHint(
-            "루밍 XML에서 해당 객실 상태(IP·CL·PU·DI·OO·OS)를 찾을 수 없습니다. 루밍 페이지에서 XML을 업로드했는지 확인하세요."
-          );
-          if (roomEl) roomEl.focus();
-          return;
-        }
+        var st = lookupRoomStatusFromXml(room) || "";
+        // 루밍 XML에 아직 없는 객실도 요청 가능 — 상태는 나중에 XML 반영 시 표시
         var memoCombined = collectMemoForSubmit();
         var memoImage = hkGetPhoto("requestMemo");
         memoStack.length = 0;
