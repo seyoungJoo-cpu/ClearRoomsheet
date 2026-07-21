@@ -75,6 +75,69 @@
     });
   }
 
+  function adminInquiryHasReply(entry) {
+    if (!entry) return false;
+    if (entry.replyAt != null && String(entry.replyAt).trim()) return true;
+    if (entry.reply != null && String(entry.reply).trim()) return true;
+    return String(entry.status || "") === "answered";
+  }
+
+  /** 서버와 동일: 답변 없는 옛 목록이 답변을 덮어쓰지 않도록 병합 */
+  function mergeAdminInquiriesLocal(prev, incoming) {
+    if (!Array.isArray(incoming)) {
+      return Array.isArray(prev) ? prev.slice() : [];
+    }
+    var map = {};
+    (Array.isArray(prev) ? prev : []).forEach(function (entry) {
+      if (entry && entry.id) map[entry.id] = entry;
+    });
+    incoming.forEach(function (entry) {
+      if (!entry || !entry.id) return;
+      var prevEntry = map[entry.id];
+      if (!prevEntry) {
+        map[entry.id] = entry;
+        return;
+      }
+      var merged = Object.assign({}, prevEntry, entry);
+      var prevHasReply = adminInquiryHasReply(prevEntry);
+      var incHasReply = adminInquiryHasReply(entry);
+      if (prevHasReply && !incHasReply) {
+        merged.reply = prevEntry.reply;
+        merged.replyAt = prevEntry.replyAt;
+        merged.replyBy = prevEntry.replyBy;
+        merged.status = prevEntry.status || "answered";
+      } else if (prevHasReply && incHasReply) {
+        var prevReplyAt = prevEntry.replyAt != null ? String(prevEntry.replyAt) : "";
+        var incReplyAt = entry.replyAt != null ? String(entry.replyAt) : "";
+        if (prevReplyAt && incReplyAt && incReplyAt < prevReplyAt) {
+          merged.reply = prevEntry.reply;
+          merged.replyAt = prevEntry.replyAt;
+          merged.replyBy = prevEntry.replyBy;
+          merged.status = prevEntry.status;
+        }
+      }
+      var prevAt = prevEntry.at != null ? String(prevEntry.at) : "";
+      var incAt = entry.at != null ? String(entry.at) : "";
+      if (prevAt && incAt && incAt < prevAt) {
+        merged.at = prevEntry.at;
+        merged.by = prevEntry.by;
+        merged.text = prevEntry.text;
+      }
+      map[entry.id] = merged;
+    });
+    return Object.keys(map)
+      .map(function (k) {
+        return map[k];
+      })
+      .sort(function (a, b) {
+        var ta = new Date(a.at || 0).getTime();
+        var tb = new Date(b.at || 0).getTime();
+        if (isNaN(ta)) ta = 0;
+        if (isNaN(tb)) tb = 0;
+        return tb - ta;
+      });
+  }
+
   function loadSyncVersionFromLocal() {
     try {
       var raw = global.localStorage.getItem(SYNC_VERSION_KEY);
@@ -729,10 +792,18 @@
     }
     // 레거시 front→team 복사는 하지 않음 (두 채팅 완전 분리)
     if (Array.isArray(payload.hkAdminInquiries)) {
-      cache.adminInquiries = payload.hkAdminInquiries.slice();
+      if (dirty.hkAdminInquiries) {
+        // 로컬에 미전송 문의/답변이 있으면 서버와 병합 (답변 유실 방지)
+        cache.adminInquiries = mergeAdminInquiriesLocal(
+          cache.adminInquiries,
+          payload.hkAdminInquiries
+        );
+      } else {
+        cache.adminInquiries = payload.hkAdminInquiries.slice();
+        clearDirty("hkAdminInquiries");
+      }
       writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
       changed.push("hkAdminInquiries");
-      clearDirty("hkAdminInquiries");
     }
     if (Object.prototype.hasOwnProperty.call(payload, "hkLastRoomChange")) {
       changed.push("hkLastRoomChange");
@@ -1031,6 +1102,12 @@
       writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
       markDirty("hkAdminInquiries");
       schedulePush({ hkAdminInquiries: true });
+      // 답변은 바로 올려서 다른 PC에서 덮어쓰이지 않게 함
+      if (pushTimer) {
+        clearTimeout(pushTimer);
+        pushTimer = null;
+      }
+      queueScheduledFlush();
       return true;
     },
     setAdminInquiries: function (entries) {

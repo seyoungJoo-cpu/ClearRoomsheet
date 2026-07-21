@@ -6386,20 +6386,47 @@
       padding-bottom: 22px;
     }
 
-    .sched-ip-section-label {
-      list-style: none;
-      margin: 0.35rem 0 0.2rem;
-      padding: 0 2px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      color: #15803d;
+    .sched-ip-panel {
+      margin-top: 12px;
+      padding: 12px 14px 14px;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      background: #f0fdf4;
+      flex-shrink: 0;
+      max-height: 28vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    .sched-ip-compact-wrap {
+    .sched-ip-panel[hidden] {
+      display: none !important;
+    }
+
+    .sched-ip-panel__title {
+      margin: 0 0 8px;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: #15803d;
+      flex-shrink: 0;
+    }
+
+    .sched-ip-panel__list {
       list-style: none;
-      margin: 0 0 0.55rem;
+      margin: 0;
       padding: 0;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .sched-ip-panel__empty {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: #64748b;
+    }
+
+    .sched-ip-panel__empty[hidden] {
+      display: none;
     }
 
     .sched-ip-compact-row {
@@ -8273,6 +8300,11 @@
           요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.
         </p>
         <ul class="sched-cards-list" id="schedRequestCardList"></ul>
+      </section>
+      <section class="sched-ip-panel" id="schedIpPanel" aria-labelledby="schedIpTitle" hidden>
+        <h2 class="sched-ip-panel__title" id="schedIpTitle">IP</h2>
+        <div class="sched-ip-panel__list" id="schedIpCardList"></div>
+        <p class="sched-ip-panel__empty" id="schedIpEmpty">IP 객실이 없습니다.</p>
       </section>
       </div>
     </main>
@@ -12179,6 +12211,7 @@
       function syncRequestRoomBoardUi() {
         var panel = document.getElementById("requestRoomBoardPanel");
         var sched = document.getElementById("schedCardsPanel");
+        var ipPanel = document.getElementById("schedIpPanel");
         var btn = document.getElementById("btnRequestRoomBoardView");
         if (btn) {
           btn.classList.toggle("is-on", requestRoomBoardOpen);
@@ -12186,7 +12219,12 @@
         }
         if (panel) panel.hidden = !requestRoomBoardOpen;
         if (sched) sched.hidden = requestRoomBoardOpen;
-        if (requestRoomBoardOpen) renderRequestRoomBoard();
+        if (requestRoomBoardOpen) {
+          if (ipPanel) ipPanel.hidden = true;
+          renderRequestRoomBoard();
+        } else {
+          renderSchedRequestCards();
+        }
         if (zoneRoomBoardOpen) renderZoneRoomBoard();
       }
 
@@ -17103,14 +17141,17 @@
       function renderSchedRequestCards() {
         var ul = document.getElementById("schedRequestCardList");
         var hint = document.getElementById("schedCardsHint");
+        var ipPanel = document.getElementById("schedIpPanel");
+        var ipList = document.getElementById("schedIpCardList");
+        var ipEmpty = document.getElementById("schedIpEmpty");
         if (!ul) return;
         ul.innerHTML = "";
+        if (ipList) ipList.innerHTML = "";
         var allScheduled = getFilteredScheduledRequestEntries();
-        var scheduled = allScheduled;
         var filterRaw = getRequestRoomFilterRaw();
         var ipEntries = [];
         var otherEntries = [];
-        scheduled.forEach(function (entry) {
+        allScheduled.forEach(function (entry) {
           if (isRequestLiveIp(entry)) ipEntries.push(entry);
           else otherEntries.push(entry);
         });
@@ -17119,31 +17160,31 @@
             numeric: true,
           });
         });
-        if (ipEntries.length) {
-          var ipLabel = document.createElement("li");
-          ipLabel.className = "sched-ip-section-label";
-          ipLabel.textContent = "IP";
-          ul.appendChild(ipLabel);
-          var ipWrap = document.createElement("li");
-          ipWrap.className = "sched-ip-compact-wrap";
-          var ipRow = document.createElement("div");
-          ipRow.className = "sched-ip-compact-row";
-          ipEntries.forEach(function (entry) {
-            var ipLi = document.createElement("div");
-            ipLi.className = "room-card sched-req-card sched-req-card--ip-compact";
-            ipLi.setAttribute("data-req-id", entry.id);
-            ipLi.title =
-              (entry.room ? formatRoomNoDisplay(String(entry.room)) : "") +
-              " · IP" +
-              (entry.memo ? " · " + String(entry.memo).trim() : "");
-            var ipNo = document.createElement("span");
-            ipNo.className = "sched-req-card__ip-room";
-            ipNo.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
-            ipLi.appendChild(ipNo);
-            ipRow.appendChild(ipLi);
-          });
-          ipWrap.appendChild(ipRow);
-          ul.appendChild(ipWrap);
+        if (ipPanel && ipList) {
+          if (ipEntries.length) {
+            ipPanel.hidden = false;
+            if (ipEmpty) ipEmpty.hidden = true;
+            var ipRow = document.createElement("div");
+            ipRow.className = "sched-ip-compact-row";
+            ipEntries.forEach(function (entry) {
+              var ipLi = document.createElement("div");
+              ipLi.className = "room-card sched-req-card sched-req-card--ip-compact";
+              ipLi.setAttribute("data-req-id", entry.id);
+              ipLi.title =
+                (entry.room ? formatRoomNoDisplay(String(entry.room)) : "") +
+                " · IP" +
+                (entry.memo ? " · " + String(entry.memo).trim() : "");
+              var ipNo = document.createElement("span");
+              ipNo.className = "sched-req-card__ip-room";
+              ipNo.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+              ipLi.appendChild(ipNo);
+              ipRow.appendChild(ipLi);
+            });
+            ipList.appendChild(ipRow);
+          } else {
+            ipPanel.hidden = true;
+            if (ipEmpty) ipEmpty.hidden = false;
+          }
         }
         otherEntries.forEach(function (entry) {
           var sched = String(entry.sched || "").trim();
@@ -17300,17 +17341,17 @@
           ul.appendChild(li);
         });
         if (hint) {
-          if (allScheduled.length === 0) {
-            hint.textContent = SCHED_PANEL_HINT_EMPTY;
-            hint.hidden = false;
-          } else if (scheduled.length === 0 && filterRaw) {
+          if (otherEntries.length > 0) {
+            hint.hidden = true;
+          } else if (filterRaw) {
             hint.textContent = SCHED_PANEL_HINT_NO_MATCH;
             hint.hidden = false;
-          } else if (scheduled.length === 0 && isSchedTypeFilterRestricted()) {
+          } else if (isSchedTypeFilterRestricted()) {
             hint.textContent = SCHED_PANEL_HINT_NO_TYPE;
             hint.hidden = false;
           } else {
-            hint.hidden = true;
+            hint.textContent = SCHED_PANEL_HINT_EMPTY;
+            hint.hidden = false;
           }
         }
         if (requestRoomBoardOpen) renderRequestRoomBoard();

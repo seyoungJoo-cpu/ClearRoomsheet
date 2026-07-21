@@ -634,6 +634,13 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
+function adminInquiryHasReply(entry) {
+  if (!entry) return false;
+  if (entry.replyAt != null && String(entry.replyAt).trim()) return true;
+  if (entry.reply != null && String(entry.reply).trim()) return true;
+  return String(entry.status || "") === "answered";
+}
+
 function mergeAdminInquiries(prev, incoming) {
   if (!Array.isArray(incoming)) {
     return Array.isArray(prev) ? prev.slice() : [];
@@ -650,13 +657,23 @@ function mergeAdminInquiries(prev, incoming) {
       return;
     }
     var merged = Object.assign({}, prevEntry, entry);
-    var prevReplyAt = prevEntry.replyAt != null ? String(prevEntry.replyAt) : "";
-    var incReplyAt = entry.replyAt != null ? String(entry.replyAt) : "";
-    if (prevReplyAt && incReplyAt && incReplyAt < prevReplyAt) {
+    var prevHasReply = adminInquiryHasReply(prevEntry);
+    var incHasReply = adminInquiryHasReply(entry);
+    // 답변 없는 옛 클라이언트가 전체 목록을 밀어올려 답변을 지우는 것 방지
+    if (prevHasReply && !incHasReply) {
       merged.reply = prevEntry.reply;
       merged.replyAt = prevEntry.replyAt;
       merged.replyBy = prevEntry.replyBy;
-      merged.status = prevEntry.status;
+      merged.status = prevEntry.status || "answered";
+    } else if (prevHasReply && incHasReply) {
+      var prevReplyAt = prevEntry.replyAt != null ? String(prevEntry.replyAt) : "";
+      var incReplyAt = entry.replyAt != null ? String(entry.replyAt) : "";
+      if (prevReplyAt && incReplyAt && incReplyAt < prevReplyAt) {
+        merged.reply = prevEntry.reply;
+        merged.replyAt = prevEntry.replyAt;
+        merged.replyBy = prevEntry.replyBy;
+        merged.status = prevEntry.status;
+      }
     }
     var prevAt = prevEntry.at != null ? String(prevEntry.at) : "";
     var incAt = entry.at != null ? String(entry.at) : "";
