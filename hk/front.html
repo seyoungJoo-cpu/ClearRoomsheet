@@ -412,7 +412,7 @@
       padding: 6px 12px;
       border: none;
       border-radius: 8px;
-      background: #2563eb;
+      background: var(--accent);
       color: #fff;
       font-size: 0.8125rem;
       font-weight: 700;
@@ -420,7 +420,7 @@
     }
 
     .admin-inquiry-card__reply-btn:hover {
-      background: #1d4ed8;
+      background: var(--accent-dim);
     }
 
     .admin-inquiry-modal__compose {
@@ -495,6 +495,12 @@
       color: var(--text-muted);
     }
 
+    .chat-color-picker__label--theme {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
     .chat-color-picker__swatches {
       display: flex;
       flex-wrap: wrap;
@@ -508,6 +514,13 @@
       border-radius: 8px;
       border: 2px solid transparent;
       cursor: pointer;
+    }
+
+    .chat-color-picker__swatch--theme {
+      border-radius: 999px;
+      border-width: 2px;
+      border-style: solid;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
     }
 
     .chat-color-picker__swatch.is-selected {
@@ -556,7 +569,7 @@
 
     .btn-maint.is-on,
     .btn-front.is-on {
-      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent-dim) 100%);
       color: #fff;
       border-color: var(--accent-dim);
     }
@@ -2356,7 +2369,7 @@
     .zone-room-manage-panel .btn-add {
       height: 36px;
       padding: 0 12px;
-      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent-dim) 100%);
       color: #fff;
       border: none;
       border-radius: 6px;
@@ -4144,7 +4157,7 @@
     }
 
     .mb-inv-panel__col--mb {
-      border-top: 3px solid #2563eb;
+      border-top: 3px solid var(--accent);
     }
 
     .mb-inv-panel__col--inv {
@@ -4407,13 +4420,13 @@
     }
 
     .btn-zone-card-edit {
-      border: 1px solid #2563eb;
-      background: #3b82f6;
+      border: 1px solid var(--accent);
+      background: var(--accent-ring);
       color: #fff;
     }
 
     .btn-zone-card-edit:hover {
-      background: #2563eb;
+      background: var(--accent);
     }
 
     .btn-zone-card-delete {
@@ -4561,18 +4574,18 @@
 
     .inven-notify-table__section {
       text-align: center;
-      color: #2563eb;
+      color: var(--accent);
       font-weight: 800;
     }
 
     .inven-notify-table__cell[contenteditable="true"]:focus {
-      outline: 2px solid #2563eb;
-      background: #eff6ff;
+      outline: 2px solid var(--accent);
+      background: var(--accent-soft);
     }
 
     .inven-notify-table__cell.is-selected {
-      background: #dbeafe !important;
-      box-shadow: inset 0 0 0 2px #2563eb;
+      background: var(--accent-soft-2) !important;
+      box-shadow: inset 0 0 0 2px var(--accent);
     }
 
     .inven-notify-table__th {
@@ -4591,7 +4604,7 @@
     .inven-notify-table__th.is-sorted .inven-notify-table__th-label::after {
       margin-left: 4px;
       font-size: 0.625rem;
-      color: #2563eb;
+      color: var(--accent);
     }
 
     .inven-notify-table__th.is-sorted[data-sort="asc"] .inven-notify-table__th-label::after {
@@ -4628,9 +4641,9 @@
     }
 
     .inven-notify-table tbody tr.is-drop-target {
-      outline: 2px dashed #2563eb;
+      outline: 2px dashed var(--accent);
       outline-offset: -2px;
-      background: #eff6ff;
+      background: var(--accent-soft);
     }
 
     .inven-notify-col-resize {
@@ -4707,13 +4720,13 @@
     .inven-notify-btn-save {
       flex-shrink: 0;
       font-weight: 700;
-      background: #2563eb;
-      border-color: #1d4ed8;
+      background: var(--accent);
+      border-color: var(--accent-dim);
       color: #fff;
     }
 
     .inven-notify-btn-save:hover:not(:disabled) {
-      background: #1d4ed8;
+      background: var(--accent-dim);
     }
 
     .inven-notify-btn-save:disabled {
@@ -7490,7 +7503,7 @@
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent-dim) 100%);
       color: #fff;
       min-height: 44px;
     }
@@ -7548,7 +7561,7 @@
     }
 
     .operator-gate__mode-btn--maint {
-      background: linear-gradient(180deg, #3d9cf5 0%, var(--accent-dim) 100%);
+      background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent-dim) 100%);
       border-color: var(--accent-dim);
       color: #fff;
     }
@@ -7599,11 +7612,13 @@
     id="chatColorPicker"
     class="chat-color-picker"
     role="dialog"
-    aria-label="채팅 색상 선택"
+    aria-label="채팅 색상 · 테마 선택"
     hidden
   >
     <p class="chat-color-picker__label">채팅 말풍선 색상</p>
     <div class="chat-color-picker__swatches" id="chatColorPickerSwatches"></div>
+    <p class="chat-color-picker__label chat-color-picker__label--theme">테마</p>
+    <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
   </div>
 
   <div id="operator-gate" class="operator-gate" aria-hidden="false">
@@ -9390,6 +9405,9 @@
           el.textContent = name;
           el.hidden = false;
           if (typeof HKChatColors !== "undefined") {
+            if (HKChatColors.applyThemeForUser) {
+              HKChatColors.applyThemeForUser(name);
+            }
             HKChatColors.bindOperatorColorPicker(el, getOperatorName, function () {
               renderFrontChatPanel();
               renderOrderPanels();
@@ -9403,6 +9421,9 @@
         } else {
           el.textContent = "";
           el.hidden = true;
+          if (typeof HKChatColors !== "undefined" && HKChatColors.applyTheme) {
+            HKChatColors.applyTheme(HKChatColors.DEFAULT_THEME_ID || "blue");
+          }
         }
       }
 

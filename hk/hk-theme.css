@@ -1,7 +1,9 @@
 /**
  * 정비관리(HK) — 가시성 우선 라이트 테마
+ * 기본: 파랑. html[data-hk-theme="…"] 로 전환.
  */
-:root {
+:root,
+html[data-hk-theme="blue"] {
   --bg: #dde3ec;
   --panel: #ffffff;
   --bg-page: #dde3ec;
@@ -13,12 +15,17 @@
   --accent: #1565c0;
   --accent-dim: #0d47a1;
   --accent-light: #1976d2;
+  --accent-bright: #3d9cf5;
   --ok: #15803d;
   --danger: #b91c1c;
   --danger-bg: #fee2e2;
   --surface-raised: #ffffff;
   --surface-inset: #f3f5f8;
   --hover-bg: #e3f0ff;
+  --accent-soft: #eff6ff;
+  --accent-soft-2: #dbeafe;
+  --accent-ring: #3b82f6;
+  --accent-deep: #1e40af;
 
   /* 배경은 루밍과 동일 원색, 글씨/테두리는 기존 뱃지 가독성 색 */
   --st-ip-bg: #00ff00;
@@ -39,6 +46,156 @@
   --st-os-bg: #9ca3af;
   --st-os-fg: #111827;
   --st-os-bd: #6b7280;
+}
+
+html[data-hk-theme="teal"] {
+  --bg: #dce8e8;
+  --bg-page: #dce8e8;
+  --border: #a8c0c0;
+  --accent: #0f766e;
+  --accent-dim: #115e59;
+  --accent-light: #0d9488;
+  --accent-bright: #2dd4bf;
+  --hover-bg: #ccfbf1;
+  --accent-soft: #f0fdfa;
+  --accent-soft-2: #ccfbf1;
+  --accent-ring: #14b8a6;
+  --accent-deep: #134e4a;
+}
+
+html[data-hk-theme="green"] {
+  --bg: #dde8df;
+  --bg-page: #dde8df;
+  --border: #a8bfb0;
+  --accent: #15803d;
+  --accent-dim: #166534;
+  --accent-light: #16a34a;
+  --accent-bright: #4ade80;
+  --hover-bg: #dcfce7;
+  --accent-soft: #f0fdf4;
+  --accent-soft-2: #dcfce7;
+  --accent-ring: #22c55e;
+  --accent-deep: #14532d;
+}
+
+html[data-hk-theme="indigo"] {
+  --bg: #e0e2ec;
+  --bg-page: #e0e2ec;
+  --border: #b4b8cc;
+  --accent: #4338ca;
+  --accent-dim: #3730a3;
+  --accent-light: #4f46e5;
+  --accent-bright: #818cf8;
+  --hover-bg: #e0e7ff;
+  --accent-soft: #eef2ff;
+  --accent-soft-2: #e0e7ff;
+  --accent-ring: #6366f1;
+  --accent-deep: #312e81;
+}
+
+html[data-hk-theme="violet"] {
+  --bg: #e4e0ec;
+  --bg-page: #e4e0ec;
+  --border: #c0b4cc;
+  --accent: #7c3aed;
+  --accent-dim: #6d28d9;
+  --accent-light: #8b5cf6;
+  --accent-bright: #a78bfa;
+  --hover-bg: #ede9fe;
+  --accent-soft: #f5f3ff;
+  --accent-soft-2: #ede9fe;
+  --accent-ring: #8b5cf6;
+  --accent-deep: #4c1d95;
+}
+
+html[data-hk-theme="rose"] {
+  --bg: #ece0e4;
+  --bg-page: #ece0e4;
+  --border: #ccb4bc;
+  --accent: #e11d48;
+  --accent-dim: #be123c;
+  --accent-light: #f43f5e;
+  --accent-bright: #fb7185;
+  --hover-bg: #ffe4e6;
+  --accent-soft: #fff1f2;
+  --accent-soft-2: #ffe4e6;
+  --accent-ring: #f43f5e;
+  --accent-deep: #9f1239;
+}
+
+html[data-hk-theme="orange"] {
+  --bg: #ece4dc;
+  --bg-page: #ece4dc;
+  --border: #ccb8a8;
+  --accent: #ea580c;
+  --accent-dim: #c2410c;
+  --accent-light: #f97316;
+  --accent-bright: #fb923c;
+  --hover-bg: #ffedd5;
+  --accent-soft: #fff7ed;
+  --accent-soft-2: #ffedd5;
+  --accent-ring: #f97316;
+  --accent-deep: #9a3412;
+}
+
+html[data-hk-theme="amber"] {
+  --bg: #ece8dc;
+  --bg-page: #ece8dc;
+  --border: #ccc0a8;
+  --accent: #d97706;
+  --accent-dim: #b45309;
+  --accent-light: #f59e0b;
+  --accent-bright: #fbbf24;
+  --hover-bg: #fef3c7;
+  --accent-soft: #fffbeb;
+  --accent-soft-2: #fef3c7;
+  --accent-ring: #f59e0b;
+  --accent-deep: #92400e;
+}
+
+html[data-hk-theme="cyan"] {
+  --bg: #dce6ec;
+  --bg-page: #dce6ec;
+  --border: #a8bcc8;
+  --accent: #0891b2;
+  --accent-dim: #0e7490;
+  --accent-light: #06b6d4;
+  --accent-bright: #22d3ee;
+  --hover-bg: #cffafe;
+  --accent-soft: #ecfeff;
+  --accent-soft-2: #cffafe;
+  --accent-ring: #06b6d4;
+  --accent-deep: #155e75;
+}
+
+html[data-hk-theme="slate"] {
+  --bg: #e2e5e9;
+  --bg-page: #e2e5e9;
+  --border: #b0b8c4;
+  --accent: #475569;
+  --accent-dim: #334155;
+  --accent-light: #64748b;
+  --accent-bright: #94a3b8;
+  --hover-bg: #e2e8f0;
+  --accent-soft: #f8fafc;
+  --accent-soft-2: #e2e8f0;
+  --accent-ring: #64748b;
+  --accent-deep: #1e293b;
+}
+
+html[data-hk-theme="pink"] {
+  --bg: #ece0e8;
+  --bg-page: #ece0e8;
+  --border: #ccb4c4;
+  --accent: #db2777;
+  --accent-dim: #be185d;
+  --accent-light: #ec4899;
+  --accent-bright: #f472b6;
+  --hover-bg: #fce7f3;
+  --accent-soft: #fdf2f8;
+  --accent-soft-2: #fce7f3;
+  --accent-ring: #ec4899;
+  --accent-deep: #9d174d;
 }
 
 body {

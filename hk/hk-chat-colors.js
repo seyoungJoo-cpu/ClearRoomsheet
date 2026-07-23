@@ -1,8 +1,11 @@
 /**
  * 채팅 말풍선 — 사용자별 파스텔 색상
+ * + UI 테마 (이름 클릭 피커에서 선택, 기본 파랑)
  */
 (function (global) {
   var LS_KEY = "lotte-hk-chat-user-colors-v1";
+  var THEME_LS_KEY = "lotte-hk-ui-theme-by-user-v1";
+  var DEFAULT_THEME_ID = "blue";
 
   var PASTELS = [
     { id: "mint", bg: "#d1fae5", border: "#6ee7b7", text: "#064e3b", by: "#047857" },
@@ -37,6 +40,20 @@
     { id: "teal", bg: "#99f6e4", border: "#2dd4bf", text: "#134e4a", by: "#0d9488" },
   ];
 
+  var THEMES = [
+    { id: "blue", label: "파랑", swatch: "#1565c0" },
+    { id: "teal", label: "청록", swatch: "#0f766e" },
+    { id: "green", label: "초록", swatch: "#15803d" },
+    { id: "cyan", label: "시안", swatch: "#0891b2" },
+    { id: "indigo", label: "인디고", swatch: "#4338ca" },
+    { id: "violet", label: "보라", swatch: "#7c3aed" },
+    { id: "pink", label: "핑크", swatch: "#db2777" },
+    { id: "rose", label: "로즈", swatch: "#e11d48" },
+    { id: "orange", label: "주황", swatch: "#ea580c" },
+    { id: "amber", label: "앰버", swatch: "#d97706" },
+    { id: "slate", label: "슬레이트", swatch: "#475569" },
+  ];
+
   function loadMap() {
     try {
       var raw = global.localStorage.getItem(LS_KEY);
@@ -54,6 +71,23 @@
     } catch (e) {}
   }
 
+  function loadThemeMap() {
+    try {
+      var raw = global.localStorage.getItem(THEME_LS_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveThemeMap(map) {
+    try {
+      global.localStorage.setItem(THEME_LS_KEY, JSON.stringify(map || {}));
+    } catch (e) {}
+  }
+
   function normName(name) {
     return String(name || "")
       .trim()
@@ -65,6 +99,17 @@
       if (PASTELS[i].id === id) return PASTELS[i];
     }
     return PASTELS[0];
+  }
+
+  function getThemeById(id) {
+    for (var i = 0; i < THEMES.length; i++) {
+      if (THEMES[i].id === id) return THEMES[i];
+    }
+    return THEMES[0];
+  }
+
+  function isValidThemeId(id) {
+    return !!getThemeById(id) && getThemeById(id).id === id;
   }
 
   function hashName(name) {
@@ -101,6 +146,34 @@
     saveMap(map);
   }
 
+  function getThemeIdForUser(name) {
+    var key = normName(name);
+    if (!key) return DEFAULT_THEME_ID;
+    var map = loadThemeMap();
+    var id = map[key];
+    return isValidThemeId(id) ? id : DEFAULT_THEME_ID;
+  }
+
+  function setThemeIdForUser(name, themeId) {
+    var key = normName(name);
+    if (!key || !isValidThemeId(themeId)) return;
+    var map = loadThemeMap();
+    map[key] = themeId;
+    saveThemeMap(map);
+  }
+
+  function applyTheme(themeId) {
+    var id = isValidThemeId(themeId) ? themeId : DEFAULT_THEME_ID;
+    var root = global.document && global.document.documentElement;
+    if (!root) return id;
+    root.setAttribute("data-hk-theme", id);
+    return id;
+  }
+
+  function applyThemeForUser(name) {
+    return applyTheme(getThemeIdForUser(name));
+  }
+
   function applyBubbleColors(li, byName, byEl, textClass) {
     if (!li) return;
     var palette = getPaletteById(getColorIdForUser(byName));
@@ -124,6 +197,7 @@
   function openColorPicker(anchorEl, userName, onChanged) {
     var picker = global.document.getElementById("chatColorPicker");
     var swatches = global.document.getElementById("chatColorPickerSwatches");
+    var themeSwatches = global.document.getElementById("chatThemePickerSwatches");
     if (!picker || !swatches || !anchorEl) return;
     var name = String(userName || "").trim();
     if (!name) return;
@@ -142,10 +216,32 @@
       btn.addEventListener("click", function () {
         setColorIdForUser(name, p.id);
         closeColorPicker();
-        if (typeof onChanged === "function") onChanged(p.id);
+        if (typeof onChanged === "function") onChanged({ type: "bubble", id: p.id });
       });
       swatches.appendChild(btn);
     });
+
+    if (themeSwatches) {
+      themeSwatches.innerHTML = "";
+      var currentThemeId = getThemeIdForUser(name);
+      THEMES.forEach(function (t) {
+        var btn = global.document.createElement("button");
+        btn.type = "button";
+        btn.className = "chat-color-picker__swatch chat-color-picker__swatch--theme";
+        btn.title = t.label;
+        btn.setAttribute("aria-label", "테마 " + t.label);
+        btn.style.background = t.swatch;
+        btn.style.borderColor = t.swatch;
+        if (t.id === currentThemeId) btn.classList.add("is-selected");
+        btn.addEventListener("click", function () {
+          setThemeIdForUser(name, t.id);
+          applyTheme(t.id);
+          closeColorPicker();
+          if (typeof onChanged === "function") onChanged({ type: "theme", id: t.id });
+        });
+        themeSwatches.appendChild(btn);
+      });
+    }
 
     var rect = anchorEl.getBoundingClientRect();
     picker.style.top = rect.bottom + 6 + "px";
@@ -158,7 +254,7 @@
     if (!anchorEl || anchorEl.__chatColorBound) return;
     anchorEl.__chatColorBound = true;
     anchorEl.classList.add("brand-operator--color-picker");
-    anchorEl.setAttribute("title", "채팅 말풍선 색상 선택");
+    anchorEl.setAttribute("title", "채팅 색상 · 테마 선택");
     anchorEl.addEventListener("click", function () {
       var name = typeof getUserName === "function" ? getUserName() : "";
       if (!String(name || "").trim()) return;
@@ -177,11 +273,23 @@
     });
   }
 
+  // 기본 테마 적용 (이름 없을 때도 파랑)
+  if (global.document && global.document.documentElement) {
+    applyTheme(DEFAULT_THEME_ID);
+  }
+
   global.HKChatColors = {
     PASTELS: PASTELS,
+    THEMES: THEMES,
+    DEFAULT_THEME_ID: DEFAULT_THEME_ID,
     getColorIdForUser: getColorIdForUser,
     setColorIdForUser: setColorIdForUser,
     getPaletteById: getPaletteById,
+    getThemeIdForUser: getThemeIdForUser,
+    setThemeIdForUser: setThemeIdForUser,
+    getThemeById: getThemeById,
+    applyTheme: applyTheme,
+    applyThemeForUser: applyThemeForUser,
     applyBubbleColors: applyBubbleColors,
     openColorPicker: openColorPicker,
     closeColorPicker: closeColorPicker,
