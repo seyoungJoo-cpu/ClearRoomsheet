@@ -4150,7 +4150,10 @@
     }
 
     #mbInvFeedback .order-feedback__head h2 {
-      color: var(--accent) !important;
+      color: transparent !important;
+      background-image: linear-gradient(90deg, var(--accent) 0%, var(--inv-accent) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
     }
 
     .mb-inv-panel__columns {
@@ -13229,6 +13232,14 @@
         if (isOrderEntryId(id)) return findOrderEntry(id);
         if (isMbInvEntryId(id)) return HKMbWorkflow.findMbInvEntry(id);
         if (isMbCheckEntryId(id)) return HKMbWorkflow.findMbCheckEntry(id);
+        if (
+          typeof HKFacilityLogs !== "undefined" &&
+          HKFacilityLogs.isFacilityLogEntryId &&
+          HKFacilityLogs.isFacilityLogEntryId(id) &&
+          HKFacilityLogs.findFacilityLogEntry
+        ) {
+          return HKFacilityLogs.findFacilityLogEntry(id);
+        }
         return findRequestEntry(id);
       }
 
@@ -13261,6 +13272,13 @@
               HKMbWorkflow.cancelMbInvEntry(entryId, getOperatorName() || "");
             } else if (isMbCheckEntryId(entryId)) {
               HKMbWorkflow.cancelMbCheckEntry(entryId, getOperatorName() || "");
+            } else if (
+              typeof HKFacilityLogs !== "undefined" &&
+              HKFacilityLogs.isFacilityLogEntryId &&
+              HKFacilityLogs.isFacilityLogEntryId(entryId)
+            ) {
+              HKFacilityLogs.cancelFacilityLogEntry(entryId, getOperatorName() || "");
+              showHkActionToast("취소되었습니다.");
             } else {
               removeRequestEntry(entryId);
               renderRequestLogPanel({ force: true });
@@ -15995,7 +16013,7 @@
       }
 
       function openFacilityOrderMemoEditor(orderId) {
-        if (!maintenanceMode) return;
+        if (!maintenanceMode && !frontMode) return;
         var entry = findOrderEntry(orderId);
         if (!entry || !isFacilityOrder(entry) || getOrderPhase(entry) !== "alert") return;
         var li = document.querySelector(
@@ -17992,7 +18010,29 @@
             li.appendChild(maintAcceptActs);
           }
 
-          if (frontMode && !entry.fromMaint && !isAutoRobotOrder(entry)) {
+          if (frontMode && isFacilityOrder(entry) && isFacilityAlertList) {
+            var facFrontActs = document.createElement("div");
+            facFrontActs.className = "order-feedback__front-actions";
+            var memoStrFacFront = entry.memo != null ? String(entry.memo).trim() : "";
+            var facilityMemoBtnFront = document.createElement("button");
+            facilityMemoBtnFront.type = "button";
+            facilityMemoBtnFront.className = "request-feedback__memo-btn order-feedback__memo-btn";
+            facilityMemoBtnFront.setAttribute("data-order-id", entry.id || "");
+            facilityMemoBtnFront.textContent = memoStrFacFront ? "메모 수정" : "메모 입력";
+            facilityMemoBtnFront.setAttribute(
+              "aria-label",
+              memoStrFacFront ? "시설 오더 메모 수정" : "시설 오더 메모 입력"
+            );
+            facFrontActs.appendChild(facilityMemoBtnFront);
+            var cancelFacBtn = document.createElement("button");
+            cancelFacBtn.type = "button";
+            cancelFacBtn.className = "request-feedback__cancel-btn";
+            cancelFacBtn.setAttribute("data-order-id", entry.id || "");
+            cancelFacBtn.textContent = "취소";
+            cancelFacBtn.setAttribute("aria-label", "이 시설 오더를 취소");
+            facFrontActs.appendChild(cancelFacBtn);
+            li.appendChild(facFrontActs);
+          } else if (frontMode && !entry.fromMaint && !isAutoRobotOrder(entry)) {
             var frontActs = document.createElement("div");
             frontActs.className = "order-feedback__front-actions";
             var cancelOrderBtn = document.createElement("button");
@@ -19238,7 +19278,7 @@
         var m2 = (room.memo2 || "").trim();
         var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
         var tm = (room.time || "").trim();
-        var editableMemo = (maintenanceMode || frontMode) && !cardOpts.trayMode;
+        var editableMemo = maintenanceMode || frontMode;
 
         var li = document.createElement("li");
         var roomPending = isRoomChangePending(zone, room.number);
@@ -20965,10 +21005,13 @@
           hkBindPhotoPaste: hkBindPhotoPaste,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
+          hkSetPhotoPreview: hkSetPhotoPreview,
           applyChatBubbleColors: applyChatBubbleColors,
           applyChatBubbleAlign: applyChatBubbleAlign,
           onMiscLogChanged: detectFacilityMiscChange,
           onDailyLogChanged: detectFacilityDailyChange,
+          openCancelConfirmModal: openCancelConfirmModal,
+          appendCancelNameLog: appendCancelNameLog,
         });
       }
       if (typeof HKAdminInquiry !== "undefined") {
@@ -21412,7 +21455,7 @@
           }
           var orderMemoBtn = e.target.closest(".order-feedback__memo-btn");
           if (orderMemoBtn) {
-            if (!maintenanceMode) return;
+            if (!maintenanceMode && !frontMode) return;
             e.preventDefault();
             e.stopPropagation();
             var memoOrderId = orderMemoBtn.getAttribute("data-order-id");
@@ -22001,6 +22044,13 @@
                 HKMbWorkflow.cancelMbInvEntry(id, nameVal);
               } else if (isMbCheckEntryId(id)) {
                 HKMbWorkflow.cancelMbCheckEntry(id, nameVal);
+              } else if (
+                typeof HKFacilityLogs !== "undefined" &&
+                HKFacilityLogs.isFacilityLogEntryId &&
+                HKFacilityLogs.isFacilityLogEntryId(id)
+              ) {
+                HKFacilityLogs.cancelFacilityLogEntry(id, nameVal);
+                showHkActionToast("취소되었습니다.");
               } else {
                 appendCancelNameLog(roomSnap, nameVal, id);
                 removeRequestEntry(id);

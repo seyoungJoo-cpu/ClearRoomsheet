@@ -388,6 +388,7 @@
     if (!entry) return "alert";
     var p = entry.phase != null ? String(entry.phase).trim() : "";
     if (p === "completed") return "completed";
+    if (p === "cancelled") return "cancelled";
     if (p === "accepted") return "accepted";
     if (p === "alert") return "alert";
     return "accepted";
@@ -449,6 +450,8 @@
       acceptedBy: raw.acceptedBy != null ? String(raw.acceptedBy).trim() : "",
       completedAt: raw.completedAt != null ? String(raw.completedAt) : "",
       completedBy: raw.completedBy != null ? String(raw.completedBy).trim() : "",
+      cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : "",
+      cancelledBy: raw.cancelledBy != null ? String(raw.cancelledBy).trim() : "",
     };
   }
 
@@ -614,6 +617,7 @@
   function formatEntryPhaseLabel(entry) {
     var phase = getEntryPhase(entry);
     if (phase === "completed") return "완료";
+    if (phase === "cancelled") return "취소";
     if (phase === "accepted") return "접수";
     return "알림";
   }
@@ -888,6 +892,171 @@
     saveDailyFoundLog(log);
     renderDailyPanels();
     scrollFacilityLogAcceptedIntoView("facilityDailyFoundAcceptedList", entryId);
+  }
+
+  function findFacilityLogHit(entryId) {
+    var miscHit = findMiscEntry(entryId);
+    if (miscHit) {
+      return {
+        kind: "misc",
+        log: miscHit.log,
+        entry: miscHit.entry,
+        category: miscHit.category,
+      };
+    }
+    var dailyHit = findDailyEntry(entryId);
+    if (dailyHit) {
+      return { kind: "daily", log: dailyHit.log, entry: dailyHit.entry };
+    }
+    return null;
+  }
+
+  function findFacilityLogEntry(entryId) {
+    var hit = findFacilityLogHit(entryId);
+    return hit ? hit.entry : null;
+  }
+
+  function cancelFacilityLogEntry(entryId, handlerName) {
+    var hit = findFacilityLogHit(entryId);
+    if (!hit || !hit.entry) return;
+    if (getEntryPhase(hit.entry) === "cancelled") return;
+    hit.entry.phase = "cancelled";
+    hit.entry.cancelledAt = new Date().toISOString();
+    hit.entry.cancelledBy = handlerName != null ? String(handlerName).trim() : "";
+    if (uiHooks.appendCancelNameLog) {
+      uiHooks.appendCancelNameLog(
+        hit.entry.room || "",
+        hit.entry.cancelledBy,
+        entryId,
+        {
+          kind: hit.kind === "daily" ? "facilityDaily" : "facilityMisc",
+          memo: hit.entry.memo || "",
+        }
+      );
+    }
+    if (hit.kind === "daily") {
+      saveDailyFoundLog(hit.log);
+      renderDailyPanels();
+    } else {
+      if (hit.category) activeMiscCategory = hit.category;
+      saveMiscLog(hit.log);
+      renderMiscPanels();
+    }
+  }
+
+  function updateFacilityLogMemo(entryId, memo, memoImage) {
+    var hit = findFacilityLogHit(entryId);
+    if (!hit || !hit.entry) return;
+    if (getEntryPhase(hit.entry) !== "alert") return;
+    hit.entry.memo = memo != null ? String(memo).trim() : "";
+    hit.entry.memoImage = memoImage != null ? String(memoImage).trim() : "";
+    if (!hit.entry.memo && !hit.entry.memoImage) return;
+    if (hit.kind === "daily") {
+      saveDailyFoundLog(hit.log);
+      renderDailyPanels();
+    } else {
+      if (hit.category) activeMiscCategory = hit.category;
+      saveMiscLog(hit.log);
+      renderMiscPanels();
+    }
+  }
+
+  function openFacilityLogMemoEditor(entryId) {
+    if (!(uiHooks.isFrontMode && uiHooks.isFrontMode())) return;
+    var entry = findFacilityLogEntry(entryId);
+    if (!entry || getEntryPhase(entry) !== "alert") return;
+    var li = document.querySelector(
+      '.facility-log__alert-item[data-entry-id="' + entryId + '"]'
+    );
+    if (!li) return;
+    var oldWrap = li.querySelector(".facility-log__memo-editor-wrap");
+    if (oldWrap) {
+      oldWrap.remove();
+      li.querySelectorAll(".facility-log__memo-btn, .facility-log__cancel-btn").forEach(
+        function (b) {
+          b.style.visibility = "";
+        }
+      );
+      return;
+    }
+    document.querySelectorAll(".facility-log__memo-editor-wrap").forEach(function (n) {
+      n.remove();
+    });
+    var memoEditKey = "facilityLogMemoEdit:" + entryId;
+    if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto(memoEditKey);
+    if (entry.memoImage && uiHooks.hkSetPhotoPreview) {
+      uiHooks.hkSetPhotoPreview(memoEditKey, entry.memoImage);
+    }
+    li.querySelectorAll(".facility-log__memo-btn, .facility-log__cancel-btn").forEach(
+      function (b) {
+        b.style.visibility = "hidden";
+      }
+    );
+    var wrap = document.createElement("div");
+    wrap.className =
+      "request-feedback__memo-editor-wrap order-feedback__memo-editor-wrap facility-log__memo-editor-wrap";
+    var ed = document.createElement("div");
+    ed.className = "request-feedback__memo-editor";
+    var ta = document.createElement("textarea");
+    ta.setAttribute("aria-label", "시설 업무 메모");
+    ta.placeholder = "메모를 입력하세요.";
+    ta.value = entry.memo != null ? String(entry.memo) : "";
+    var act = document.createElement("div");
+    act.className = "request-feedback__memo-editor-actions";
+    var ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "request-feedback__memo-save";
+    ok.textContent = "적용";
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "닫기";
+    act.appendChild(ok);
+    act.appendChild(cancel);
+    if (uiHooks.hkCreatePhotoButton) act.appendChild(uiHooks.hkCreatePhotoButton(memoEditKey));
+    ed.appendChild(ta);
+    ed.appendChild(act);
+    wrap.appendChild(ed);
+    if (uiHooks.hkCreatePhotoPreview) wrap.appendChild(uiHooks.hkCreatePhotoPreview(memoEditKey));
+    li.appendChild(wrap);
+    if (uiHooks.hkBindPhotoPaste) uiHooks.hkBindPhotoPaste(ta, memoEditKey);
+
+    function done(rerender) {
+      if (uiHooks.hkClearPhoto) uiHooks.hkClearPhoto(memoEditKey);
+      li.querySelectorAll(".facility-log__memo-btn, .facility-log__cancel-btn").forEach(
+        function (b) {
+          b.style.visibility = "";
+        }
+      );
+      wrap.remove();
+      if (rerender) {
+        if (activeView === "facilityMisc") renderMiscPanels();
+        if (activeView === "facilityDailyFound") renderDailyPanels();
+      }
+    }
+
+    ok.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var img =
+        uiHooks.hkGetPhoto && uiHooks.hkGetPhoto(memoEditKey)
+          ? uiHooks.hkGetPhoto(memoEditKey)
+          : "";
+      updateFacilityLogMemo(entryId, ta.value, img);
+      done(false);
+    });
+    cancel.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      done(true);
+    });
+    ta.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        cancel.click();
+      }
+    });
+    wrap.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+    });
+    ta.focus();
   }
 
   function completeMiscEntry(entryId) {
@@ -1234,7 +1403,27 @@
       roomMetaToggle: !!cardOpts.roomMetaToggle,
     });
     appendOrderMemoBody(li, entry);
-    if (uiHooks.isFrontMode && uiHooks.isFrontMode()) return;
+    if (uiHooks.isFrontMode && uiHooks.isFrontMode()) {
+      var frontActs = document.createElement("div");
+      frontActs.className = "order-feedback__front-actions";
+      var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+      var memoBtn = document.createElement("button");
+      memoBtn.type = "button";
+      memoBtn.className = "request-feedback__memo-btn facility-log__memo-btn";
+      memoBtn.setAttribute("data-entry-id", entry.id || "");
+      memoBtn.textContent = memoStr ? "메모 수정" : "메모 입력";
+      memoBtn.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+      frontActs.appendChild(memoBtn);
+      var cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "request-feedback__cancel-btn facility-log__cancel-btn";
+      cancelBtn.setAttribute("data-entry-id", entry.id || "");
+      cancelBtn.textContent = "취소";
+      cancelBtn.setAttribute("aria-label", "이 등록을 취소");
+      frontActs.appendChild(cancelBtn);
+      li.appendChild(frontActs);
+      return;
+    }
     var acts = document.createElement("div");
     acts.className = "order-feedback__maint-actions";
     var acceptBtn = document.createElement("button");
@@ -1501,6 +1690,26 @@
     if (!panel || panel.dataset.acceptBound) return;
     panel.dataset.acceptBound = "1";
     panel.addEventListener("click", function (e) {
+      var cancelBtn = e.target.closest(".facility-log__cancel-btn");
+      if (cancelBtn) {
+        if (!(uiHooks.isFrontMode && uiHooks.isFrontMode())) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var cancelId = cancelBtn.getAttribute("data-entry-id");
+        if (cancelId && uiHooks.openCancelConfirmModal) {
+          uiHooks.openCancelConfirmModal(cancelId);
+        }
+        return;
+      }
+      var memoBtn = e.target.closest(".facility-log__memo-btn");
+      if (memoBtn) {
+        if (!(uiHooks.isFrontMode && uiHooks.isFrontMode())) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var memoId = memoBtn.getAttribute("data-entry-id");
+        if (memoId) openFacilityLogMemoEditor(memoId);
+        return;
+      }
       var btn = e.target.closest(".facility-log__accept-btn");
       if (!btn) return;
       if (uiHooks.isFrontMode && uiHooks.isFrontMode()) return;
@@ -1761,5 +1970,10 @@
     countDailyEntries: countDailyEntries,
     classifyMiscCategory: classifyMiscCategory,
     MISC_CATEGORIES: MISC_CATEGORIES,
+    findFacilityLogEntry: findFacilityLogEntry,
+    cancelFacilityLogEntry: cancelFacilityLogEntry,
+    isFacilityLogEntryId: function (id) {
+      return !!(id && String(id).indexOf("fl-") === 0);
+    },
   };
 })(typeof window !== "undefined" ? window : this);
