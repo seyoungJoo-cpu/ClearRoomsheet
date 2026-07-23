@@ -501,6 +501,7 @@
       customZones: [],
       deletedRooms: {},
       requestDeskChat: [],
+      orderDeskChat: [],
       rooms: {
         VIP: [],
         RC: [],
@@ -578,6 +579,7 @@
     d.customZones = customZones;
     d.deletedRooms = normalizeDeletedRooms(data, customZones);
     d.requestDeskChat = normalizeRequestDeskChat(data.requestDeskChat);
+    d.orderDeskChat = normalizeRequestDeskChat(data.orderDeskChat);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -785,6 +787,14 @@
       );
     } else {
       merged.requestDeskChat = base.requestDeskChat || [];
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat")) {
+      merged.orderDeskChat = mergeRequestDeskChat(
+        base.orderDeskChat,
+        incoming.orderDeskChat
+      );
+    } else {
+      merged.orderDeskChat = base.orderDeskChat || [];
     }
     return normalize(merged);
   }

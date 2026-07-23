@@ -3136,7 +3136,7 @@
       color: #047857;
     }
 
-    .order-work-section--deployed .order-work-section__title-btn {
+    .order-work-section__title-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -3147,17 +3147,22 @@
       font: inherit;
       font-size: 0.875rem;
       font-weight: 800;
-      color: #047857;
+      color: inherit;
       cursor: pointer;
+      text-align: left;
     }
 
-    .order-work-section--deployed .order-work-section__chevron {
+    .order-work-section--deployed .order-work-section__title-btn {
+      color: #047857;
+    }
+
+    .order-work-section__chevron {
       font-size: 0.75rem;
       opacity: 0.85;
     }
 
-    .order-work-section--deployed.is-collapsed .order-work-list,
-    .order-work-section--deployed.is-collapsed .order-work-empty {
+    .order-work-section.is-collapsed:not(.is-search-open) .order-work-list,
+    .order-work-section.is-collapsed:not(.is-search-open) .order-work-empty {
       display: none !important;
     }
 
@@ -6642,6 +6647,139 @@
       border-color: var(--accent);
     }
 
+    .room-no-with-wing {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .room-wing-prefix {
+      flex-shrink: 0;
+      min-width: 2.5em;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .room-wing-prefix[hidden] {
+      display: none !important;
+    }
+
+    .room-no-with-wing input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .order-panel__body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
+    }
+
+    .order-panel__body .order-row {
+      flex: 1 1 280px;
+      min-width: 0;
+    }
+
+    .order-desk-chat {
+      flex: 0 1 240px;
+      min-width: 200px;
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-raised, #f7f8fa);
+      max-height: 210px;
+      overflow: hidden;
+    }
+
+    .order-desk-chat__head {
+      flex-shrink: 0;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .order-desk-chat__messages {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 90px;
+    }
+
+    .order-desk-chat__empty {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--muted, #888);
+    }
+
+    .order-desk-chat__msg {
+      font-size: 0.75rem;
+      line-height: 1.35;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border);
+    }
+
+    .order-desk-chat__msg-meta {
+      font-size: 0.6875rem;
+      color: var(--muted, #888);
+      margin-bottom: 2px;
+    }
+
+    .order-desk-chat__msg-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .order-desk-chat__form {
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      padding: 6px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .order-desk-chat__form input {
+      flex: 1;
+      min-width: 0;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.75rem;
+    }
+
+    .order-desk-chat__form button {
+      height: 30px;
+      padding: 0 10px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .order-desk-chat__form button:hover {
+      border-color: var(--accent);
+    }
+
     .request-form-memo-full {
       flex: 1 0 100%;
     }
@@ -7881,16 +8019,20 @@
           <h2 id="orderPanelTitle">오더 관리</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
         </div>
+        <div class="order-panel__body">
         <form class="order-row" id="orderForm">
           <div class="field field--room-no">
             <label for="orderRoomNo">객실번호</label>
-            <input
-              type="text"
-              id="orderRoomNo"
-              name="orderRoomNo"
-              placeholder="예: 1205"
-              autocomplete="off"
-            />
+            <div class="room-no-with-wing">
+              <span class="room-wing-prefix" id="orderRoomWingPrefix" hidden aria-live="polite"></span>
+              <input
+                type="text"
+                id="orderRoomNo"
+                name="orderRoomNo"
+                placeholder="예: 1205"
+                autocomplete="off"
+              />
+            </div>
           </div>
           <div class="field">
             <label for="orderFoDisplay">IN</label>
@@ -7918,28 +8060,50 @@
           </div>
           <button type="submit" class="btn-order">오더</button>
         </form>
+        <aside class="order-desk-chat" id="orderDeskChat" aria-label="오더 관리 채팅">
+          <div class="order-desk-chat__head">채팅</div>
+          <div class="order-desk-chat__messages" id="orderDeskChatMessages" aria-live="polite"></div>
+          <form class="order-desk-chat__form" id="orderDeskChatForm">
+            <input
+              type="text"
+              id="orderDeskChatInput"
+              placeholder="메시지 입력"
+              autocomplete="off"
+              maxlength="500"
+              aria-label="오더 관리 채팅 입력"
+            />
+            <button type="submit">전송</button>
+          </form>
+        </aside>
+        </div>
 
         <section class="order-work-section order-work-section--issue" id="orderIssueSection" hidden aria-labelledby="orderIssueTitle">
-          <h3 class="order-work-section__title" id="orderIssueTitle">문제 발생</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderIssueTitle" aria-expanded="true" aria-controls="orderIssueList" data-order-section-toggle="orderIssueSection">
+            문제 발생 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list order-work-list--issue" id="orderIssueList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderIssueEmpty">문제 발생 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--accepted" id="orderAcceptedSection" aria-labelledby="orderAcceptedTitle">
-          <h3 class="order-work-section__title" id="orderAcceptedTitle">접수완료</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderAcceptedTitle" aria-expanded="true" aria-controls="orderAcceptedList" data-order-section-toggle="orderAcceptedSection">
+            접수완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list" id="orderAcceptedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderAcceptedEmpty">접수완료 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--cancelled" id="orderCancelledSection" aria-labelledby="orderCancelledTitle">
-          <h3 class="order-work-section__title" id="orderCancelledTitle">취소</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderCancelledTitle" aria-expanded="true" aria-controls="orderCancelledList" data-order-section-toggle="orderCancelledSection">
+            취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--deployed" id="orderDeployedSection" aria-labelledby="orderDeployedTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderDeployedTitle" aria-expanded="true" aria-controls="orderDeployedList">
-            투입완료 <span class="order-work-section__chevron" id="orderDeployedChevron" aria-hidden="true">▼</span>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderDeployedTitle" aria-expanded="true" aria-controls="orderDeployedList" data-order-section-toggle="orderDeployedSection">
+            투입완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
           </button>
           <ul class="order-work-list order-work-list--deployed" id="orderDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
@@ -7954,13 +8118,16 @@
         <form class="order-row" id="facilityOrderForm">
           <div class="field field--room-no">
             <label for="facilityOrderRoomNo">객실번호</label>
-            <input
-              type="text"
-              id="facilityOrderRoomNo"
-              name="facilityOrderRoomNo"
-              placeholder="예: 1205"
-              autocomplete="off"
-            />
+            <div class="room-no-with-wing">
+              <span class="room-wing-prefix" id="facilityOrderRoomWingPrefix" hidden aria-live="polite"></span>
+              <input
+                type="text"
+                id="facilityOrderRoomNo"
+                name="facilityOrderRoomNo"
+                placeholder="예: 1205"
+                autocomplete="off"
+              />
+            </div>
           </div>
           <div class="field">
             <label for="facilityOrderFoDisplay">IN</label>
@@ -7990,31 +8157,41 @@
         </form>
 
         <section class="order-work-section order-work-section--issue" id="facilityIssueSection" hidden aria-labelledby="facilityIssueTitle">
-          <h3 class="order-work-section__title" id="facilityIssueTitle">문제 발생</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityIssueTitle" aria-expanded="true" aria-controls="facilityIssueList" data-order-section-toggle="facilityIssueSection">
+            문제 발생 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list order-work-list--issue" id="facilityIssueList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityIssueEmpty">문제 발생 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--accepted" id="facilityAcceptedSection" aria-labelledby="facilityAcceptedTitle">
-          <h3 class="order-work-section__title" id="facilityAcceptedTitle">접수완료</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityAcceptedTitle" aria-expanded="true" aria-controls="facilityAcceptedList" data-order-section-toggle="facilityAcceptedSection">
+            접수완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list" id="facilityAcceptedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityAcceptedEmpty">접수완료 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--cancelled" id="facilityCancelledSection" aria-labelledby="facilityCancelledTitle">
-          <h3 class="order-work-section__title" id="facilityCancelledTitle">취소</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityCancelledTitle" aria-expanded="true" aria-controls="facilityCancelledList" data-order-section-toggle="facilityCancelledSection">
+            취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list" id="facilityCancelledList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityCancelledEmpty">취소된 오더가 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--deployed" id="facilityDeployedSection" aria-labelledby="facilityDeployedTitle">
-          <h3 class="order-work-section__title" id="facilityDeployedTitle">입실 가능</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityDeployedTitle" aria-expanded="true" aria-controls="facilityDeployedList" data-order-section-toggle="facilityDeployedSection">
+            입실 가능 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityDeployedEmpty">입실 가능 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--unavailable" id="facilityUnavailableSection" aria-labelledby="facilityUnavailableTitle">
-          <h3 class="order-work-section__title" id="facilityUnavailableTitle">입실불가</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityUnavailableTitle" aria-expanded="true" aria-controls="facilityUnavailableList" data-order-section-toggle="facilityUnavailableSection">
+            입실불가 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list" id="facilityUnavailableList" aria-live="polite"></ul>
           <p class="order-work-empty" id="facilityUnavailableEmpty">입실불가 건이 없습니다.</p>
         </section>
@@ -8343,13 +8520,16 @@
         <form class="request-row" id="requestForm">
           <div class="field">
             <label for="roomNo">객실번호</label>
-            <input
-              type="text"
-              id="roomNo"
-              name="roomNo"
-              placeholder="예: 1205"
-              autocomplete="off"
-            />
+            <div class="room-no-with-wing">
+              <span class="room-wing-prefix" id="requestRoomWingPrefix" hidden aria-live="polite"></span>
+              <input
+                type="text"
+                id="roomNo"
+                name="roomNo"
+                placeholder="예: 1205"
+                autocomplete="off"
+              />
+            </div>
           </div>
           <div class="field field--room-status">
             <label for="roomStatusAuto">상태</label>
@@ -8843,6 +9023,7 @@
         // 항상 DOM에 있는 입력창은 포커스일 때만 편집 중으로 본다
         if (ae) {
           if (ae.id === "requestDeskChatInput") return true;
+          if (ae.id === "orderDeskChatInput") return true;
           if (ae.id === "adminInquiryNewText") return true;
           if (ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
             return true;
@@ -10004,6 +10185,7 @@
         var display = document.getElementById("orderFoDisplay");
         if (!display) return;
         var room = roomEl ? roomEl.value.trim() : "";
+        updateRoomWingPrefix("orderRoomWingPrefix", room);
         var fo = lookupRoomResvDisplay(room);
         display.textContent = "";
         display.className = "order-fo-display";
@@ -10020,6 +10202,7 @@
         var display = document.getElementById("facilityOrderFoDisplay");
         if (!display) return;
         var room = roomEl ? roomEl.value.trim() : "";
+        updateRoomWingPrefix("facilityOrderRoomWingPrefix", room);
         var fo = lookupRoomResvDisplay(room);
         display.textContent = "";
         display.className = "order-fo-display";
@@ -10029,6 +10212,37 @@
         }
         display.className = "order-fo-display hk-resv--in";
         display.textContent = "IN";
+      }
+
+      function isRoomInRoomingXml(roomInput) {
+        var nr = roomNumberForStatusLookup(roomInput);
+        if (!nr) return false;
+        return Object.prototype.hasOwnProperty.call(XML_ROOM_STATUS_MAP, nr);
+      }
+
+      function roomWingLabelForInput(roomInput) {
+        var raw = String(roomInput || "").trim();
+        if (!raw) return "";
+        if (!isRoomInRoomingXml(raw)) return "";
+        var nr = roomNumberForStatusLookup(raw);
+        var cl = hkBoardClassifyRoom(nr || raw);
+        if (!cl) return "";
+        if (cl.wing === "annex" || cl.annex) return "별관";
+        if (cl.wing === "main" || cl.wing === "villa") return "본관";
+        return "";
+      }
+
+      function updateRoomWingPrefix(prefixId, roomInput) {
+        var el = document.getElementById(prefixId);
+        if (!el) return;
+        var label = roomWingLabelForInput(roomInput);
+        if (label) {
+          el.hidden = false;
+          el.textContent = label;
+        } else {
+          el.hidden = true;
+          el.textContent = "";
+        }
       }
 
       function rebuildRoomStatusMap(vacRows) {
@@ -10332,6 +10546,95 @@
         });
       }
 
+      function getOrderDeskChatMessages() {
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
+        return data && Array.isArray(data.orderDeskChat) ? data.orderDeskChat : [];
+      }
+
+      function renderOrderDeskChat(opts) {
+        opts = opts || {};
+        var mount = document.getElementById("orderDeskChatMessages");
+        if (!mount) return;
+        if (!opts.force && isHkUserEditing()) {
+          var ae = document.activeElement;
+          if (ae && ae.id === "orderDeskChatInput") return;
+        }
+        var msgs = getOrderDeskChatMessages();
+        mount.innerHTML = "";
+        if (!msgs.length) {
+          var empty = document.createElement("p");
+          empty.className = "order-desk-chat__empty";
+          empty.textContent = "메시지가 없습니다.";
+          mount.appendChild(empty);
+          return;
+        }
+        msgs.forEach(function (m) {
+          if (!m) return;
+          var row = document.createElement("div");
+          row.className = "order-desk-chat__msg";
+          row.setAttribute("data-msg-id", m.id || "");
+          var meta = document.createElement("div");
+          meta.className = "order-desk-chat__msg-meta";
+          var by = m.by != null ? String(m.by).trim() : "";
+          var atLabel = m.at ? formatReqAt(m.at) : "";
+          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          var text = document.createElement("div");
+          text.className = "order-desk-chat__msg-text";
+          text.textContent = m.text != null ? String(m.text) : "";
+          row.appendChild(meta);
+          row.appendChild(text);
+          mount.appendChild(row);
+        });
+        mount.scrollTop = mount.scrollHeight;
+      }
+
+      function appendOrderDeskChatMessage(text) {
+        var msg = String(text || "").trim();
+        if (!msg) return false;
+        var name = getOperatorName();
+        if (!name) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              appendOrderDeskChatMessage(msg);
+            },
+          });
+          return false;
+        }
+        var data = HKStorage.load();
+        if (!Array.isArray(data.orderDeskChat)) data.orderDeskChat = [];
+        data.orderDeskChat.push({
+          id: "odc-" + Date.now() + "-" + Math.floor(Math.random() * 1e9),
+          at: new Date().toISOString(),
+          by: name,
+          text: msg,
+        });
+        if (data.orderDeskChat.length > 120) {
+          data.orderDeskChat = data.orderDeskChat.slice(-120);
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        renderOrderDeskChat({ force: true });
+        return true;
+      }
+
+      function bindOrderDeskChatUi() {
+        var form = document.getElementById("orderDeskChatForm");
+        if (!form || form.__hkOrderDeskChatBound) return;
+        form.__hkOrderDeskChatBound = true;
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var inp = document.getElementById("orderDeskChatInput");
+          var val = inp ? String(inp.value || "") : "";
+          if (appendOrderDeskChatMessage(val) && inp) {
+            inp.value = "";
+            inp.focus();
+          }
+        });
+      }
+
       function saveOrderLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setOrderLog(orderLogEntries);
@@ -10407,6 +10710,7 @@
           detectInvenNotifyChange();
           applyFrontEmbedStatesFromStorage();
           renderRequestDeskChat({ force: true });
+          renderOrderDeskChat({ force: true });
           if (
             sidebarMainView === "invenNotify" &&
             typeof HKInvenNotify !== "undefined"
@@ -11612,6 +11916,7 @@
         var hidden = document.getElementById("status");
         if (!display || !hidden) return;
         var room = roomEl ? roomEl.value.trim() : "";
+        updateRoomWingPrefix("requestRoomWingPrefix", room);
         var st = lookupRoomStatusFromXml(room);
         hidden.value = st;
         if (!String(room).replace(/\s/g, "")) {
@@ -12932,6 +13237,14 @@
             } catch (eBlur) {}
           }
         }
+        if (!showOrder) {
+          var orderDeskInp = document.getElementById("orderDeskChatInput");
+          if (orderDeskInp && document.activeElement === orderDeskInp) {
+            try {
+              orderDeskInp.blur();
+            } catch (eBlur2) {}
+          }
+        }
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
@@ -13008,6 +13321,7 @@
             !showInvenNotify;
         }
         updateSidebarPrimaryNavActive();
+        syncRequestFeedbackLayoutUi();
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
         }
@@ -13051,6 +13365,7 @@
         if (showOrder || showFacility) {
           requestAnimationFrame(function () {
             renderOrderPanels({ force: true });
+            if (showOrder) renderOrderDeskChat({ force: true });
           });
         }
         if (showMbInv && typeof HKMbWorkflow !== "undefined") {
@@ -14909,6 +15224,7 @@
         clearOrderSidebarAlerts();
         applySidebarMainView("order");
         renderOrderPanels({ force: true });
+        renderOrderDeskChat({ force: true });
       }
 
       function showSidebarFacilityView() {
@@ -15112,7 +15428,8 @@
       function syncRequestFeedbackLayoutUi() {
         var rf = document.getElementById("requestFeedback");
         var fc = document.getElementById("feedbackColumn");
-        var splitOn = maintenanceMode;
+        // 본관/별관 분할 폭은 정비관리(요청) 화면에서만 — 오더 알림은 프론트와 동일 폭 유지
+        var splitOn = maintenanceMode && sidebarMainView === "request";
         if (rf) rf.classList.toggle("request-feedback--wing-split", splitOn);
         if (fc) fc.classList.toggle("feedback-column--request-wing-split", splitOn);
         var splitEl = document.getElementById("requestFeedbackSplit");
@@ -17363,6 +17680,13 @@
             unavailableEmpty.textContent = "입실불가 건이 없습니다.";
           }
         }
+        applyOrderSectionSearchOpen(prefix, {
+          Issue: issueEntries.length,
+          Accepted: acceptedEntries.length,
+          Cancelled: cancelledEntries.length,
+          Deployed: deployedEntries.length,
+          Unavailable: unavailableEntries.length,
+        }, !!filterRaw);
         setIssueSectionVisible(
           document.getElementById(prefix + "IssueSection"),
           issueEntries.length > 0 ||
@@ -17371,6 +17695,15 @@
                 return entryFilter(e) && isOrderIssueOpen(e);
               }))
         );
+      }
+
+      function applyOrderSectionSearchOpen(prefix, counts, searching) {
+        ["Issue", "Accepted", "Cancelled", "Deployed", "Unavailable"].forEach(function (name) {
+          var section = document.getElementById(prefix + name + "Section");
+          if (!section) return;
+          var hit = searching && (counts[name] || 0) > 0;
+          section.classList.toggle("is-search-open", !!hit);
+        });
       }
 
       function renderOrderAlertFeedbackPanel(listId, emptyId, entryFilter, opts) {
@@ -19420,6 +19753,7 @@
         applyZoneAlertUi();
         renderRequestLogPanel();
         renderRequestDeskChat();
+        renderOrderDeskChat();
       }
 
       function applyFacilityLogSidebarUi() {
@@ -20330,6 +20664,8 @@
       loadFrontChat();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
+      bindOrderDeskChatUi();
+      renderOrderDeskChat({ force: true });
       initFrontChatTracking();
       initOrderIssueTracking();
       initRequestAlertTracking();
@@ -20991,27 +21327,52 @@
       bindOrderPanelUi(document.getElementById("orderPanel"));
       bindOrderPanelUi(document.getElementById("facilityPanel"));
 
-      (function setupOrderDeployedCollapse() {
-        var titleBtn = document.getElementById("orderDeployedTitle");
-        var section = document.getElementById("orderDeployedSection");
-        var chevron = document.getElementById("orderDeployedChevron");
-        if (!titleBtn || !section) return;
-        var key = "lotte-hk-order-deployed-collapsed";
-        function applyCollapsed(collapsed) {
+      (function setupOrderSectionsCollapse() {
+        var ids = [
+          "orderIssueSection",
+          "orderAcceptedSection",
+          "orderCancelledSection",
+          "orderDeployedSection",
+          "facilityIssueSection",
+          "facilityAcceptedSection",
+          "facilityCancelledSection",
+          "facilityDeployedSection",
+          "facilityUnavailableSection",
+        ];
+        function storageKey(id) {
+          return "lotte-hk-order-section-collapsed:" + id;
+        }
+        function applyCollapsed(section, titleBtn, collapsed) {
+          if (!section) return;
           section.classList.toggle("is-collapsed", !!collapsed);
-          titleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-          if (chevron) chevron.textContent = collapsed ? "▶" : "▼";
+          if (titleBtn) {
+            titleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+            var chevron = titleBtn.querySelector(".order-work-section__chevron");
+            if (chevron) chevron.textContent = collapsed ? "▶" : "▼";
+          }
           try {
-            sessionStorage.setItem(key, collapsed ? "1" : "0");
+            sessionStorage.setItem(storageKey(section.id), collapsed ? "1" : "0");
           } catch (e) {}
         }
-        try {
-          applyCollapsed(sessionStorage.getItem(key) === "1");
-        } catch (e) {
-          applyCollapsed(false);
-        }
-        titleBtn.addEventListener("click", function () {
-          applyCollapsed(!section.classList.contains("is-collapsed"));
+        ids.forEach(function (id) {
+          var section = document.getElementById(id);
+          if (!section) return;
+          var titleBtn =
+            section.querySelector("[data-order-section-toggle]") ||
+            section.querySelector(".order-work-section__title-btn");
+          if (!titleBtn) return;
+          var saved = false;
+          try {
+            saved = sessionStorage.getItem(storageKey(id)) === "1";
+          } catch (e2) {}
+          // 기본값: 펼침
+          applyCollapsed(section, titleBtn, saved);
+          if (!titleBtn.__hkSectionCollapseBound) {
+            titleBtn.__hkSectionCollapseBound = true;
+            titleBtn.addEventListener("click", function () {
+              applyCollapsed(section, titleBtn, !section.classList.contains("is-collapsed"));
+            });
+          }
         });
       })();
 
