@@ -19278,7 +19278,7 @@
         var m2 = (room.memo2 || "").trim();
         var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
         var tm = (room.time || "").trim();
-        var editableMemo = maintenanceMode || frontMode;
+        var editableMemo = (maintenanceMode || frontMode) && !cardOpts.trayMode;
 
         var li = document.createElement("li");
         var roomPending = isRoomChangePending(zone, room.number);
@@ -20971,6 +20971,7 @@
           hkAppendImageEl: hkAppendImageEl,
           hkGetPhoto: hkGetPhoto,
           hkClearPhoto: hkClearPhoto,
+          hkSetPhotoPreview: hkSetPhotoPreview,
           applyChatBubbleColors: applyChatBubbleColors,
           applyChatBubbleAlign: applyChatBubbleAlign,
           isOwnChatAuthor: isOwnChatAuthor,

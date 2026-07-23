@@ -273,6 +273,113 @@
     );
   }
 
+  function updateMbInvMemo(id, memo, memoImage) {
+    var entry = findMbInvEntry(id);
+    if (!entry || getPhase(entry) !== "alert") return;
+    entry.memo = memo != null ? String(memo).trim() : "";
+    entry.memoImage = memoImage != null ? String(memoImage).trim() : "";
+    saveMbInvLog();
+    renderMbInvPanels();
+  }
+
+  function openMbInvMemoEditor(entryId) {
+    if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+    var entry = findMbInvEntry(entryId);
+    if (!entry || getPhase(entry) !== "alert") return;
+    var li = document.querySelector(
+      '#mbInvFeedbackList .order-feedback__item[data-mb-inv-id="' + entryId + '"]'
+    );
+    if (!li) return;
+    var oldWrap = li.querySelector(".mb-inv__memo-editor-wrap");
+    if (oldWrap) {
+      oldWrap.remove();
+      li.querySelectorAll(".mb-inv__memo-btn, .mb-inv__cancel-btn, .mb-inv__accept-btn").forEach(
+        function (b) {
+          b.style.visibility = "";
+        }
+      );
+      return;
+    }
+    document.querySelectorAll(".mb-inv__memo-editor-wrap").forEach(function (n) {
+      n.remove();
+    });
+    var memoEditKey = "mbInvMemoEdit:" + entryId;
+    if (ctx.hkClearPhoto) ctx.hkClearPhoto(memoEditKey);
+    if (entry.memoImage && ctx.hkSetPhotoPreview) {
+      ctx.hkSetPhotoPreview(memoEditKey, entry.memoImage);
+    }
+    li.querySelectorAll(".mb-inv__memo-btn, .mb-inv__cancel-btn, .mb-inv__accept-btn").forEach(
+      function (b) {
+        b.style.visibility = "hidden";
+      }
+    );
+    var wrap = document.createElement("div");
+    wrap.className =
+      "request-feedback__memo-editor-wrap order-feedback__memo-editor-wrap mb-inv__memo-editor-wrap";
+    var ed = document.createElement("div");
+    ed.className = "request-feedback__memo-editor";
+    var ta = document.createElement("textarea");
+    ta.setAttribute("aria-label", "MB & 인벤 메모");
+    ta.placeholder = "메모를 입력하세요.";
+    ta.value = entry.memo != null ? String(entry.memo) : "";
+    var act = document.createElement("div");
+    act.className = "request-feedback__memo-editor-actions";
+    var ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "request-feedback__memo-save";
+    ok.textContent = "적용";
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "닫기";
+    act.appendChild(ok);
+    act.appendChild(cancel);
+    if (ctx.hkCreatePhotoButton) act.appendChild(ctx.hkCreatePhotoButton(memoEditKey));
+    ed.appendChild(ta);
+    ed.appendChild(act);
+    wrap.appendChild(ed);
+    if (ctx.hkCreatePhotoPreview) wrap.appendChild(ctx.hkCreatePhotoPreview(memoEditKey));
+    li.appendChild(wrap);
+    if (ctx.hkBindPhotoPaste) ctx.hkBindPhotoPaste(ta, memoEditKey);
+
+    function done() {
+      if (ctx.hkClearPhoto) ctx.hkClearPhoto(memoEditKey);
+      li.querySelectorAll(".mb-inv__memo-btn, .mb-inv__cancel-btn, .mb-inv__accept-btn").forEach(
+        function (b) {
+          b.style.visibility = "";
+        }
+      );
+      wrap.remove();
+      renderMbInvPanels();
+    }
+
+    ok.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var img = ctx.hkGetPhoto ? ctx.hkGetPhoto(memoEditKey) || "" : "";
+      updateMbInvMemo(entryId, ta.value, img);
+      if (ctx.hkClearPhoto) ctx.hkClearPhoto(memoEditKey);
+      li.querySelectorAll(".mb-inv__memo-btn, .mb-inv__cancel-btn, .mb-inv__accept-btn").forEach(
+        function (b) {
+          b.style.visibility = "";
+        }
+      );
+      wrap.remove();
+    });
+    cancel.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      done();
+    });
+    ta.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        cancel.click();
+      }
+    });
+    wrap.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+    });
+    ta.focus();
+  }
+
   function renderMbInvLogPanel() {
     var list = document.getElementById("mbInvFeedbackList");
     var empty = document.getElementById("mbInvFeedbackEmpty");
@@ -293,6 +400,7 @@
       tag.textContent = isInv ? "인벤 변경" : "MB 변경";
       li.appendChild(tag);
       appendMbInvItemCommon(li, entry, "접수 ", entry.at);
+      var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
       if (ctx.getMaintenanceMode()) {
         var maintActs = document.createElement("div");
         maintActs.className = "order-feedback__maint-actions";
@@ -302,11 +410,28 @@
         acceptBtn.setAttribute("data-mb-inv-id", entry.id || "");
         acceptBtn.textContent = "접수";
         maintActs.appendChild(acceptBtn);
+        var memoBtnMaint = document.createElement("button");
+        memoBtnMaint.type = "button";
+        memoBtnMaint.className = "request-feedback__memo-btn mb-inv__memo-btn";
+        memoBtnMaint.setAttribute("data-mb-inv-id", entry.id || "");
+        memoBtnMaint.textContent = memoStr ? "메모 수정" : "메모 입력";
+        memoBtnMaint.setAttribute(
+          "aria-label",
+          memoStr ? "메모 수정" : "메모 입력"
+        );
+        maintActs.appendChild(memoBtnMaint);
         li.appendChild(maintActs);
       }
       if (ctx.getFrontMode()) {
         var frontActs = document.createElement("div");
         frontActs.className = "order-feedback__front-actions";
+        var memoBtn = document.createElement("button");
+        memoBtn.type = "button";
+        memoBtn.className = "request-feedback__memo-btn mb-inv__memo-btn";
+        memoBtn.setAttribute("data-mb-inv-id", entry.id || "");
+        memoBtn.textContent = memoStr ? "메모 수정" : "메모 입력";
+        memoBtn.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+        frontActs.appendChild(memoBtn);
         var cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.className = "request-feedback__cancel-btn mb-inv__cancel-btn";
@@ -892,6 +1017,15 @@
           if (!ctx.getMaintenanceMode()) return;
           var aid = acceptBtn.getAttribute("data-mb-inv-id");
           if (aid) acceptMbInvEntry(aid);
+          return;
+        }
+        var memoBtn = e.target.closest(".mb-inv__memo-btn");
+        if (memoBtn) {
+          if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var mid = memoBtn.getAttribute("data-mb-inv-id");
+          if (mid) openMbInvMemoEditor(mid);
           return;
         }
         var cancelBtn = e.target.closest(".mb-inv__cancel-btn");
