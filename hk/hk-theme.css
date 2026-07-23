@@ -26,6 +26,13 @@ html[data-hk-theme="blue"] {
   --accent-soft-2: #dbeafe;
   --accent-ring: #3b82f6;
   --accent-deep: #1e40af;
+  /* 인벤 = 테마(accent) 보색 */
+  --inv-accent: #ea580c;
+  --inv-dim: #c2410c;
+  --inv-soft: #fff7ed;
+  --inv-soft-2: #ffedd5;
+  --inv-ring: #fb923c;
+  --inv-deep: #9a3412;
   /* 알림 깜빡임 — accent 토큰을 따라감 */
   --alert-flash-bg: var(--accent-soft-2);
   --alert-flash-bd: var(--accent-ring);
@@ -67,6 +74,12 @@ html[data-hk-theme="teal"] {
   --accent-soft-2: #ccfbf1;
   --accent-ring: #14b8a6;
   --accent-deep: #134e4a;
+  --inv-accent: #e11d48;
+  --inv-dim: #be123c;
+  --inv-soft: #fff1f2;
+  --inv-soft-2: #ffe4e6;
+  --inv-ring: #fb7185;
+  --inv-deep: #9f1239;
 }
 
 html[data-hk-theme="green"] {
@@ -82,6 +95,12 @@ html[data-hk-theme="green"] {
   --accent-soft-2: #dcfce7;
   --accent-ring: #22c55e;
   --accent-deep: #14532d;
+  --inv-accent: #c026d3;
+  --inv-dim: #a21caf;
+  --inv-soft: #fdf4ff;
+  --inv-soft-2: #fae8ff;
+  --inv-ring: #e879f9;
+  --inv-deep: #86198f;
 }
 
 html[data-hk-theme="indigo"] {
@@ -97,6 +116,12 @@ html[data-hk-theme="indigo"] {
   --accent-soft-2: #e0e7ff;
   --accent-ring: #6366f1;
   --accent-deep: #312e81;
+  --inv-accent: #d97706;
+  --inv-dim: #b45309;
+  --inv-soft: #fffbeb;
+  --inv-soft-2: #fef3c7;
+  --inv-ring: #fbbf24;
+  --inv-deep: #92400e;
 }
 
 html[data-hk-theme="violet"] {
@@ -112,6 +137,12 @@ html[data-hk-theme="violet"] {
   --accent-soft-2: #ede9fe;
   --accent-ring: #8b5cf6;
   --accent-deep: #4c1d95;
+  --inv-accent: #65a30d;
+  --inv-dim: #4d7c0f;
+  --inv-soft: #f7fee7;
+  --inv-soft-2: #ecfccb;
+  --inv-ring: #a3e635;
+  --inv-deep: #3f6212;
 }
 
 html[data-hk-theme="rose"] {
@@ -127,6 +158,12 @@ html[data-hk-theme="rose"] {
   --accent-soft-2: #ffe4e6;
   --accent-ring: #f43f5e;
   --accent-deep: #9f1239;
+  --inv-accent: #0f766e;
+  --inv-dim: #115e59;
+  --inv-soft: #f0fdfa;
+  --inv-soft-2: #ccfbf1;
+  --inv-ring: #2dd4bf;
+  --inv-deep: #134e4a;
 }
 
 html[data-hk-theme="orange"] {
@@ -142,6 +179,12 @@ html[data-hk-theme="orange"] {
   --accent-soft-2: #ffedd5;
   --accent-ring: #f97316;
   --accent-deep: #9a3412;
+  --inv-accent: #1565c0;
+  --inv-dim: #0d47a1;
+  --inv-soft: #eff6ff;
+  --inv-soft-2: #dbeafe;
+  --inv-ring: #3b82f6;
+  --inv-deep: #1e40af;
 }
 
 html[data-hk-theme="amber"] {
@@ -157,6 +200,12 @@ html[data-hk-theme="amber"] {
   --accent-soft-2: #fef3c7;
   --accent-ring: #f59e0b;
   --accent-deep: #92400e;
+  --inv-accent: #4338ca;
+  --inv-dim: #3730a3;
+  --inv-soft: #eef2ff;
+  --inv-soft-2: #e0e7ff;
+  --inv-ring: #818cf8;
+  --inv-deep: #312e81;
 }
 
 html[data-hk-theme="cyan"] {
@@ -172,6 +221,12 @@ html[data-hk-theme="cyan"] {
   --accent-soft-2: #cffafe;
   --accent-ring: #06b6d4;
   --accent-deep: #155e75;
+  --inv-accent: #ea580c;
+  --inv-dim: #c2410c;
+  --inv-soft: #fff7ed;
+  --inv-soft-2: #ffedd5;
+  --inv-ring: #fb923c;
+  --inv-deep: #9a3412;
 }
 
 html[data-hk-theme="slate"] {
@@ -187,6 +242,12 @@ html[data-hk-theme="slate"] {
   --accent-soft-2: #e2e8f0;
   --accent-ring: #64748b;
   --accent-deep: #1e293b;
+  --inv-accent: #d97706;
+  --inv-dim: #b45309;
+  --inv-soft: #fffbeb;
+  --inv-soft-2: #fef3c7;
+  --inv-ring: #fbbf24;
+  --inv-deep: #92400e;
 }
 
 html[data-hk-theme="pink"] {
@@ -202,6 +263,12 @@ html[data-hk-theme="pink"] {
   --accent-soft-2: #fce7f3;
   --accent-ring: #ec4899;
   --accent-deep: #9d174d;
+  --inv-accent: #0f766e;
+  --inv-dim: #115e59;
+  --inv-soft: #f0fdfa;
+  --inv-soft-2: #ccfbf1;
+  --inv-ring: #2dd4bf;
+  --inv-deep: #134e4a;
 }
 
 body {

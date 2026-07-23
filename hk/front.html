@@ -4116,10 +4116,10 @@
     }
 
     .mb-workflow__tag--inv {
-      color: #065f46;
-      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
-      border: 2px solid #10b981;
-      box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+      color: var(--inv-deep);
+      background: linear-gradient(180deg, var(--inv-soft) 0%, var(--inv-soft-2) 100%);
+      border: 2px solid var(--inv-ring);
+      box-shadow: 0 1px 3px color-mix(in srgb, var(--inv-accent) 20%, transparent);
     }
 
     .order-feedback__item.order-feedback__item--mb {
@@ -4128,8 +4128,8 @@
     }
 
     .order-feedback__item.order-feedback__item--inv {
-      border-color: #6ee7b7;
-      background: #f0fdf9;
+      border-color: var(--inv-ring);
+      background: var(--inv-soft);
     }
 
     #mbInvFeedback {
@@ -4145,12 +4145,12 @@
     }
 
     #mbInvFeedback .order-feedback__head {
-      background: linear-gradient(180deg, var(--accent-soft) 0%, #ecfdf5 100%);
-      border-bottom-color: var(--border);
+      background: #fff;
+      border-bottom: 2px solid var(--border);
     }
 
     #mbInvFeedback .order-feedback__head h2 {
-      color: var(--accent-deep);
+      color: var(--accent) !important;
     }
 
     .mb-inv-panel__columns {
@@ -4173,7 +4173,7 @@
     }
 
     .mb-inv-panel__col--inv {
-      border-top: 3px solid #059669;
+      border-top: 3px solid var(--inv-accent);
     }
 
     .mb-inv-panel__col .mb-workflow__subhead {
@@ -4189,7 +4189,7 @@
     }
 
     .mb-inv-panel__col--inv .mb-workflow__subhead {
-      color: #047857;
+      color: var(--inv-accent);
     }
 
     .mb-inv-panel__col .order-work-section__title {
