@@ -12924,6 +12924,14 @@
         var showFrontEmbed = view === "frontEmbed";
         var showAi = view === "ai";
         var showZone = view === "zone";
+        if (!showRequest) {
+          var deskInp = document.getElementById("requestDeskChatInput");
+          if (deskInp && document.activeElement === deskInp) {
+            try {
+              deskInp.blur();
+            } catch (eBlur) {}
+          }
+        }
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");

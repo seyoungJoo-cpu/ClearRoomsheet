@@ -76,6 +76,19 @@
     var modal = document.getElementById("adminInquiryModal");
     if (modal) modal.hidden = true;
     modalOpen = false;
+    var compose = document.getElementById("adminInquiryNewText");
+    if (compose && document.activeElement === compose) {
+      try {
+        compose.blur();
+      } catch (e) {}
+    }
+    document.querySelectorAll(".admin-inquiry-card__reply-input").forEach(function (ta) {
+      if (document.activeElement === ta) {
+        try {
+          ta.blur();
+        } catch (e2) {}
+      }
+    });
   }
 
   function openModal() {

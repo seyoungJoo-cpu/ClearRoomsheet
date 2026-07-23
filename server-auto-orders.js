@@ -148,9 +148,12 @@ function startAutoOrderScheduler(ctx) {
           !!payload.roomingUploadedAt;
         if (hasRoomingData) {
           const uploadIso = getRoomingUploadIso(payload);
-          const staleMin = minutesSinceIso(uploadIso);
-          if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
-            appendAutoOrder("rpa_check", MSG_RPA_CHECK);
+          // 업로드 시각이 없으면 stale 판정하지 않음 (Infinity → 오발송 방지)
+          if (uploadIso) {
+            const staleMin = minutesSinceIso(uploadIso);
+            if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
+              appendAutoOrder("rpa_check", MSG_RPA_CHECK);
+            }
           }
         }
       }
