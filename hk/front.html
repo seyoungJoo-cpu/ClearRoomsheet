@@ -8839,6 +8839,23 @@
       }
 
       function hasOpenHkEditors() {
+        var ae = document.activeElement;
+        // 항상 DOM에 있는 입력창은 포커스일 때만 편집 중으로 본다
+        if (ae) {
+          if (ae.id === "requestDeskChatInput") return true;
+          if (ae.id === "adminInquiryNewText") return true;
+          if (ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
+            return true;
+          }
+          if (
+            ae.isContentEditable &&
+            ae.closest &&
+            (ae.closest("#mbInvNoticeBody") || ae.closest("#zoneVipMemoBody"))
+          ) {
+            return true;
+          }
+        }
+        // 임시로 붙는 인라인 편집 UI는 존재하면 편집 중
         return !!document.querySelector(
           [
             ".room-time-editor",
@@ -8853,11 +8870,6 @@
             ".request-feedback__memo2-editor-wrap",
             ".order-feedback__memo-editor-wrap",
             ".front-chat__msg-edit",
-            "#mbInvNoticeBody .mb-inv-notice-board__text[contenteditable='true']",
-            "#zoneVipMemoBody .zone-memo-board__text[contenteditable='true']",
-            ".admin-inquiry-card__reply-input",
-            "#adminInquiryNewText",
-            "#requestDeskChatInput",
           ].join(", ")
         );
       }
@@ -12735,7 +12747,7 @@
               HKMbWorkflow.cancelMbCheckEntry(entryId, getOperatorName() || "");
             } else {
               removeRequestEntry(entryId);
-              renderRequestLogPanel();
+              renderRequestLogPanel({ force: true });
             }
           }
           return;
@@ -12780,7 +12792,10 @@
           memo: entry.memo,
         });
         saveOrderLog();
-        renderOrderPanels();
+        if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+          HKSync.flushPending();
+        }
+        renderOrderPanels({ force: true });
       }
 
       function appendUseLog(entry) {
@@ -17757,7 +17772,7 @@
         function done() {
           if (btn) btn.style.visibility = "";
           wrap.remove();
-          renderRequestLogPanel();
+          renderRequestLogPanel({ force: true });
         }
 
         ok.addEventListener("click", function (ev) {
@@ -17876,7 +17891,7 @@
           if (btn) btn.style.visibility = "";
           if (memo2Hide) memo2Hide.style.visibility = "";
           wrap.remove();
-          renderRequestLogPanel();
+          renderRequestLogPanel({ force: true });
         }
 
         ok.addEventListener("click", function (ev) {
@@ -18027,7 +18042,7 @@
           if (useBtnHide) useBtnHide.style.visibility = "";
           if (editBtnHide) editBtnHide.style.visibility = "";
           wrap.remove();
-          renderRequestLogPanel();
+          renderRequestLogPanel({ force: true });
         }
 
         ok.addEventListener("click", function (ev) {
@@ -18148,7 +18163,7 @@
           if (m2BtnEl) m2BtnEl.style.visibility = "";
           if (cancelFb2) cancelFb2.style.visibility = "";
           wrap.remove();
-          renderRequestLogPanel();
+          renderRequestLogPanel({ force: true });
         }
 
         ok.addEventListener("click", function (ev) {
@@ -21353,7 +21368,11 @@
               } else {
                 appendCancelNameLog(roomSnap, nameVal, id);
                 removeRequestEntry(id);
-                renderRequestLogPanel();
+                if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+                  HKSync.flushPending();
+                }
+                renderRequestLogPanel({ force: true });
+                showHkActionToast("취소되었습니다.");
               }
             }
           });
