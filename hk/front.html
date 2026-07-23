@@ -697,26 +697,27 @@
       flex: 1;
       min-width: 0;
       min-height: 0;
-      max-height: 2.1rem;
+      max-height: 4.2rem;
       border: 1px solid #fbbf24;
       border-radius: 6px;
       background: #fffbeb;
       display: flex;
       flex-direction: row;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
-      padding: 2px 10px;
+      padding: 4px 10px;
       overflow: hidden;
       box-shadow: none;
     }
 
     .notice-board__content {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       min-width: 0;
       flex: 1;
       overflow: hidden;
+      max-height: 100%;
     }
 
     .notice-board__text {
@@ -725,28 +726,33 @@
       font-size: 0.8125rem;
       font-weight: 700;
       color: #1a2332;
-      line-height: 1.25;
-      white-space: nowrap;
+      line-height: 1.35;
+      white-space: pre-wrap;
       overflow: hidden;
-      text-overflow: ellipsis;
-      word-break: normal;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      word-break: break-word;
+      max-height: calc(1.35em * 3);
     }
 
     .notice-board__images {
       display: flex;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       gap: 4px;
       margin-top: 0;
       flex-shrink: 0;
-      max-width: 40%;
+      max-width: 36%;
+      max-height: 100%;
       overflow: hidden;
     }
 
     .notice-thumb-image {
       display: block;
-      width: 22px;
-      max-height: 22px;
-      height: 22px;
+      width: 36px;
+      max-height: 36px;
+      height: 36px;
       object-fit: cover;
       border-radius: 4px;
       border: 1px solid #fbbf24;
@@ -762,7 +768,8 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
       flex-shrink: 0;
-      line-height: 1;
+      line-height: 1.35;
+      padding-top: 2px;
     }
 
     .notice-board.is-notice-alert {
