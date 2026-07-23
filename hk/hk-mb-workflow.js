@@ -110,6 +110,16 @@
     }
   }
 
+  function appendAccepterLabel(li, entry, field) {
+    var key = field || "acceptedBy";
+    var name = entry && entry[key] != null ? String(entry[key]).trim() : "";
+    if (!name) return;
+    var el = document.createElement("div");
+    el.className = "hk-accepter-label";
+    el.textContent = "접수자 : " + name;
+    li.appendChild(el);
+  }
+
   function appendMbInvItemCommon(li, entry, timePrefix, timeValue) {
     var t = document.createElement("div");
     t.className = "request-feedback__item-time";
@@ -248,6 +258,7 @@
       li.className = "order-work-item";
       li.setAttribute("data-mb-inv-id", entry.id || "");
       appendMbInvItemCommon(li, entry, "접수 ", entry.acceptedAt || entry.at);
+      appendAccepterLabel(li, entry);
       appendMbInvAcceptedMaintActions(li, entry);
       acceptedList.appendChild(li);
     });
@@ -633,6 +644,7 @@
       row.appendChild(r);
       li.appendChild(row);
       appendMbCheckMemoDisplay(li, entry);
+      appendMbCheckBy(li, entry);
 
       if (ctx.getMaintenanceMode()) {
         var wrap = document.createElement("div");
@@ -663,6 +675,7 @@
       if (ctx.getFrontMode()) {
         var frontActs = document.createElement("div");
         frontActs.className = "order-feedback__front-actions";
+        appendMbCheckMemoBtn(frontActs, entry);
         var cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.className = "request-feedback__cancel-btn mb-check__cancel-btn";
@@ -671,6 +684,7 @@
         frontActs.appendChild(cancelBtn);
         li.appendChild(frontActs);
       }
+      appendMbCheckChatUi(li, entry);
       list.appendChild(li);
     });
     if (empty) empty.hidden = entries.length > 0;
@@ -683,6 +697,231 @@
     memEl.className = "mb-check__memo-display";
     memEl.textContent = memoStr;
     li.appendChild(memEl);
+  }
+
+  function appendMbCheckBy(li, entry) {
+    var byName = entry.by != null ? String(entry.by).trim() : "";
+    if (!byName) return;
+    var byEl = document.createElement("div");
+    byEl.className = "order-feedback__item-by";
+    byEl.textContent = byName;
+    li.appendChild(byEl);
+  }
+
+  function appendMbCheckChatUi(li, entry) {
+    var chatWrap = document.createElement("div");
+    chatWrap.className = "order-chat";
+    var msgList = document.createElement("ul");
+    msgList.className = "order-chat__messages";
+    var chat = Array.isArray(entry.chat) ? entry.chat : [];
+    chat.sort(function (a, b) {
+      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+    });
+    chat.forEach(function (msg) {
+      var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
+      var msgLi = document.createElement("li");
+      msgLi.className = "order-chat__msg";
+      if (typeof ctx.applyChatBubbleAlign === "function") {
+        ctx.applyChatBubbleAlign(msgLi, byName);
+      } else if (typeof ctx.isOwnChatAuthor === "function") {
+        msgLi.classList.add(
+          ctx.isOwnChatAuthor(byName) ? "hk-chat-msg--mine" : "hk-chat-msg--other"
+        );
+      }
+      var byEl = document.createElement("div");
+      byEl.className = "order-chat__msg-by";
+      byEl.textContent = byName;
+      msgLi.appendChild(byEl);
+      if (typeof ctx.applyChatBubbleColors === "function") {
+        ctx.applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
+      }
+      ctx.hkAppendMessageContent(msgLi, msg.text, msg.image, "order-chat__msg-text");
+      if (msg.edited) {
+        var textEl = msgLi.querySelector(".order-chat__msg-text");
+        if (textEl) {
+          var editedMark = document.createElement("span");
+          editedMark.className = "front-chat__msg-edited";
+          editedMark.textContent = "(수정됨)";
+          textEl.appendChild(editedMark);
+        }
+      }
+      msgList.appendChild(msgLi);
+    });
+    chatWrap.appendChild(msgList);
+
+    var chatKey = "mbCheckChat:" + (entry.id || "");
+    var chatForm = document.createElement("form");
+    chatForm.className = "order-chat__form hk-compose-row mb-check-chat__form";
+    chatForm.setAttribute("data-mb-check-id", entry.id || "");
+    var chatInput = document.createElement("input");
+    chatInput.type = "text";
+    chatInput.placeholder = "메시지 입력";
+    chatInput.autocomplete = "off";
+    chatForm.appendChild(chatInput);
+    chatForm.appendChild(ctx.hkCreatePhotoButton(chatKey));
+    ctx.hkBindPhotoPaste(chatInput, chatKey, {
+      autoSend: function (text, image) {
+        appendMbCheckChat(entry.id || "", text, image);
+      },
+    });
+    var chatSend = document.createElement("button");
+    chatSend.type = "submit";
+    chatSend.className = "order-chat__send";
+    chatSend.textContent = "전송";
+    chatForm.appendChild(chatSend);
+    chatWrap.appendChild(chatForm);
+    chatWrap.appendChild(ctx.hkCreatePhotoPreview(chatKey));
+    li.appendChild(chatWrap);
+  }
+
+  function appendMbCheckMemoBtn(parent, entry) {
+    if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+    var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+    var memoBtn = document.createElement("button");
+    memoBtn.type = "button";
+    memoBtn.className = "request-feedback__memo-btn mb-check__memo-btn";
+    memoBtn.setAttribute("data-mb-check-id", entry.id || "");
+    memoBtn.textContent = memoStr ? "메모 수정" : "메모 입력";
+    memoBtn.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+    parent.appendChild(memoBtn);
+  }
+
+  function updateMbCheckMemo(id, memo) {
+    var entry = findMbCheckEntry(id);
+    if (!entry) return;
+    var phase = getPhase(entry);
+    if (phase !== "alert" && phase !== "accepted" && phase !== "gst") return;
+    if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+    entry.memo = memo != null ? String(memo).trim() : "";
+    saveMbCheckLog();
+    renderMbCheckPanels();
+  }
+
+  function openMbCheckMemoEditor(entryId) {
+    if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+    var entry = findMbCheckEntry(entryId);
+    if (!entry) return;
+    var phase = getPhase(entry);
+    if (phase !== "alert" && phase !== "accepted" && phase !== "gst") return;
+    var li =
+      document.querySelector(
+        '#mbCheckFeedbackList .order-feedback__item[data-mb-check-id="' +
+          entryId +
+          '"]'
+      ) ||
+      document.querySelector(
+        '.order-work-item[data-mb-check-id="' + entryId + '"]'
+      );
+    if (!li) return;
+    var oldWrap = li.querySelector(".mb-check__memo-editor-wrap");
+    if (oldWrap) {
+      oldWrap.remove();
+      li.querySelectorAll(
+        ".mb-check__memo-btn, .mb-check__cancel-btn, .mb-check__post-btn, .mb-check__rerequest-btn, .mb-check__accept-btn, .mb-check__gst-btn"
+      ).forEach(function (b) {
+        b.style.visibility = "";
+      });
+      return;
+    }
+    document.querySelectorAll(".mb-check__memo-editor-wrap").forEach(function (n) {
+      n.remove();
+    });
+    li.querySelectorAll(
+      ".mb-check__memo-btn, .mb-check__cancel-btn, .mb-check__post-btn, .mb-check__rerequest-btn, .mb-check__accept-btn, .mb-check__gst-btn"
+    ).forEach(function (b) {
+      b.style.visibility = "hidden";
+    });
+    var wrap = document.createElement("div");
+    wrap.className =
+      "request-feedback__memo-editor-wrap order-feedback__memo-editor-wrap mb-check__memo-editor-wrap";
+    var ed = document.createElement("div");
+    ed.className = "request-feedback__memo-editor";
+    var ta = document.createElement("textarea");
+    ta.setAttribute("aria-label", "MB CHECK 메모");
+    ta.placeholder = "메모를 입력하세요.";
+    ta.value = entry.memo != null ? String(entry.memo) : "";
+    var act = document.createElement("div");
+    act.className = "request-feedback__memo-editor-actions";
+    var ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "request-feedback__memo-save";
+    ok.textContent = "적용";
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "닫기";
+    act.appendChild(ok);
+    act.appendChild(cancel);
+    ed.appendChild(ta);
+    ed.appendChild(act);
+    wrap.appendChild(ed);
+    li.appendChild(wrap);
+
+    function done() {
+      li.querySelectorAll(
+        ".mb-check__memo-btn, .mb-check__cancel-btn, .mb-check__post-btn, .mb-check__rerequest-btn, .mb-check__accept-btn, .mb-check__gst-btn"
+      ).forEach(function (b) {
+        b.style.visibility = "";
+      });
+      wrap.remove();
+      renderMbCheckPanels();
+    }
+
+    ok.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      updateMbCheckMemo(entryId, ta.value);
+      wrap.remove();
+    });
+    cancel.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      done();
+    });
+    ta.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        cancel.click();
+      }
+    });
+    wrap.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+    });
+    ta.focus();
+  }
+
+  function appendMbCheckChat(id, text, image) {
+    var entry = findMbCheckEntry(id);
+    if (!entry) return;
+    var phase = getPhase(entry);
+    if (phase === "cancelled") return;
+    var msgText = String(text || "").trim();
+    var msgImage = image != null ? String(image).trim() : "";
+    if (!msgText && !msgImage) return;
+    if (!requireName(function () {
+      appendMbCheckChat(id, msgText, msgImage);
+    })) return;
+    if (!Array.isArray(entry.chat)) entry.chat = [];
+    entry.chat.push({
+      at: new Date().toISOString(),
+      by: ctx.getOperatorName(),
+      text: msgText,
+      image: msgImage || "",
+    });
+    ctx.hkClearPhoto("mbCheckChat:" + id);
+    saveMbCheckLog();
+    renderMbCheckPanels();
+    requestAnimationFrame(function () {
+      var card =
+        document.querySelector(
+          '.order-work-item[data-mb-check-id="' + id + '"]'
+        ) ||
+        document.querySelector(
+          '.order-feedback__item[data-mb-check-id="' + id + '"]'
+        );
+      if (!card) return;
+      var msgList = card.querySelector(".order-chat__messages");
+      if (msgList) msgList.scrollTop = msgList.scrollHeight;
+      var chatInput = card.querySelector(".order-chat__form input");
+      if (chatInput) chatInput.focus();
+    });
   }
 
   function renderMbCheckWorkPanels() {
@@ -707,13 +946,10 @@
       return getPhase(e) === "posted";
     });
 
-    acceptedEntries.forEach(function (entry) {
-      var li = document.createElement("li");
-      li.className = "order-work-item";
-      li.setAttribute("data-mb-check-id", entry.id || "");
+    function appendMbCheckWorkBase(li, entry, timeValue) {
       var t = document.createElement("div");
       t.className = "request-feedback__item-time";
-      ctx.setLineWithEmTime(t, "", ctx.formatReqAt(entry.acceptedAt || entry.at));
+      ctx.setLineWithEmTime(t, "", ctx.formatReqAt(timeValue || entry.at));
       li.appendChild(t);
       var row = document.createElement("div");
       row.className = "request-feedback__item-row";
@@ -723,17 +959,28 @@
       row.appendChild(r);
       li.appendChild(row);
       appendMbCheckMemoDisplay(li, entry);
+      appendMbCheckBy(li, entry);
+    }
+
+    acceptedEntries.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "order-work-item";
+      li.setAttribute("data-mb-check-id", entry.id || "");
+      appendMbCheckWorkBase(li, entry, entry.acceptedAt || entry.at);
+      appendAccepterLabel(li, entry);
+      var acts = document.createElement("div");
+      acts.className = "order-work__actions";
+      appendMbCheckMemoBtn(acts, entry);
       if (ctx.getFrontMode()) {
-        var acts = document.createElement("div");
-        acts.className = "order-work__actions";
         var postBtn = document.createElement("button");
         postBtn.type = "button";
         postBtn.className = "order-work__accept-btn mb-check__post-btn";
         postBtn.setAttribute("data-mb-check-id", entry.id || "");
         postBtn.textContent = "포스팅 완료";
         acts.appendChild(postBtn);
-        li.appendChild(acts);
       }
+      if (acts.childNodes.length) li.appendChild(acts);
+      appendMbCheckChatUi(li, entry);
       acceptedList.appendChild(li);
     });
 
@@ -741,29 +988,21 @@
       var li = document.createElement("li");
       li.className = "order-work-item";
       li.setAttribute("data-mb-check-id", entry.id || "");
-      var t = document.createElement("div");
-      t.className = "request-feedback__item-time";
-      ctx.setLineWithEmTime(t, "", ctx.formatReqAt(entry.gstAt || entry.at));
-      li.appendChild(t);
-      var row = document.createElement("div");
-      row.className = "request-feedback__item-row";
-      var r = document.createElement("span");
-      r.className = "request-feedback__item-room";
-      r.textContent = ctx.formatRoomNoDisplay(String(entry.room || ""));
-      row.appendChild(r);
-      li.appendChild(row);
-      appendMbCheckMemoDisplay(li, entry);
+      appendMbCheckWorkBase(li, entry, entry.gstAt || entry.at);
+      appendAccepterLabel(li, entry, "gstBy");
+      var gstActs = document.createElement("div");
+      gstActs.className = "order-work__actions";
+      appendMbCheckMemoBtn(gstActs, entry);
       if (ctx.getFrontMode()) {
-        var gstActs = document.createElement("div");
-        gstActs.className = "order-work__actions";
         var rereqBtn = document.createElement("button");
         rereqBtn.type = "button";
         rereqBtn.className = "mb-check__rerequest-btn";
         rereqBtn.setAttribute("data-mb-check-id", entry.id || "");
         rereqBtn.textContent = "재요청";
         gstActs.appendChild(rereqBtn);
-        li.appendChild(gstActs);
       }
+      if (gstActs.childNodes.length) li.appendChild(gstActs);
+      appendMbCheckChatUi(li, entry);
       if (gstList) gstList.appendChild(li);
     });
 
@@ -771,18 +1010,9 @@
       var li = document.createElement("li");
       li.className = "order-work-item";
       li.setAttribute("data-mb-check-id", entry.id || "");
-      var t = document.createElement("div");
-      t.className = "request-feedback__item-time";
-      ctx.setLineWithEmTime(t, "", ctx.formatReqAt(entry.postedAt || entry.at));
-      li.appendChild(t);
-      var row = document.createElement("div");
-      row.className = "request-feedback__item-row";
-      var r = document.createElement("span");
-      r.className = "request-feedback__item-room";
-      r.textContent = ctx.formatRoomNoDisplay(String(entry.room || ""));
-      row.appendChild(r);
-      li.appendChild(row);
-      appendMbCheckMemoDisplay(li, entry);
+      appendMbCheckWorkBase(li, entry, entry.postedAt || entry.at);
+      appendAccepterLabel(li, entry);
+      appendMbCheckChatUi(li, entry);
       postedList.appendChild(li);
     });
 
@@ -805,6 +1035,7 @@
       phase: "alert",
       at: new Date().toISOString(),
       by: ctx.getOperatorName(),
+      chat: [],
     });
     saveMbCheckLog();
     renderMbCheckPanels();
@@ -823,6 +1054,7 @@
     entry.memo = acceptMemo || regMemo;
     entry.acceptedAt = new Date().toISOString();
     entry.acceptedBy = ctx.getOperatorName();
+    if (!Array.isArray(entry.chat)) entry.chat = [];
     saveMbCheckLog();
     renderMbCheckPanels();
   }
@@ -840,6 +1072,7 @@
     entry.memo = gstMemo || regMemo;
     entry.gstAt = new Date().toISOString();
     entry.gstBy = ctx.getOperatorName();
+    if (!Array.isArray(entry.chat)) entry.chat = [];
     saveMbCheckLog();
     renderMbCheckPanels();
   }
@@ -993,6 +1226,15 @@
     var mbCheckPanel = document.getElementById("mbCheckPanel");
     if (mbCheckPanel) {
       mbCheckPanel.addEventListener("click", function (e) {
+        var memoBtn = e.target.closest(".mb-check__memo-btn");
+        if (memoBtn) {
+          if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var mid = memoBtn.getAttribute("data-mb-check-id");
+          if (mid) openMbCheckMemoEditor(mid);
+          return;
+        }
         var postBtn = e.target.closest(".mb-check__post-btn");
         if (postBtn) {
           if (!ctx.getFrontMode()) return;
@@ -1006,6 +1248,17 @@
           var reqId = rereqBtn.getAttribute("data-mb-check-id");
           if (reqId) rerequestMbCheckFromGst(reqId);
         }
+      });
+      mbCheckPanel.addEventListener("submit", function (e) {
+        var chatForm = e.target.closest(".mb-check-chat__form");
+        if (!chatForm) return;
+        e.preventDefault();
+        var cid = chatForm.getAttribute("data-mb-check-id");
+        var inp = chatForm.querySelector("input");
+        var text = inp ? inp.value : "";
+        var img = cid && ctx.hkGetPhoto ? ctx.hkGetPhoto("mbCheckChat:" + cid) : null;
+        if (cid) appendMbCheckChat(cid, text, img);
+        if (inp) inp.value = "";
       });
     }
 
@@ -1040,6 +1293,15 @@
     var mbCheckFb = document.getElementById("mbCheckFeedback");
     if (mbCheckFb) {
       mbCheckFb.addEventListener("click", function (e) {
+        var memoBtn = e.target.closest(".mb-check__memo-btn");
+        if (memoBtn) {
+          if (!ctx.getFrontMode() && !ctx.getMaintenanceMode()) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var mid = memoBtn.getAttribute("data-mb-check-id");
+          if (mid) openMbCheckMemoEditor(mid);
+          return;
+        }
         var acceptBtn = e.target.closest(".mb-check__accept-btn");
         if (acceptBtn) {
           if (!ctx.getMaintenanceMode()) return;
@@ -1074,6 +1336,17 @@
           var cid = cancelBtn.getAttribute("data-mb-check-id");
           if (cid) ctx.openCancelConfirmModal(cid);
         }
+      });
+      mbCheckFb.addEventListener("submit", function (e) {
+        var chatForm = e.target.closest(".mb-check-chat__form");
+        if (!chatForm) return;
+        e.preventDefault();
+        var cid = chatForm.getAttribute("data-mb-check-id");
+        var inp = chatForm.querySelector("input");
+        var text = inp ? inp.value : "";
+        var img = cid && ctx.hkGetPhoto ? ctx.hkGetPhoto("mbCheckChat:" + cid) : null;
+        if (cid) appendMbCheckChat(cid, text, img);
+        if (inp) inp.value = "";
       });
     }
   }
