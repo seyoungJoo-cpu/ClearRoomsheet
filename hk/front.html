@@ -7795,6 +7795,7 @@
             class="sidebar-nav__btn"
             id="sidebarBtnOrder"
             aria-pressed="true"
+            title="오더 관리 (Ctrl+1)"
           >
             오더 관리
           </button>
@@ -7803,6 +7804,7 @@
             class="sidebar-nav__btn"
             id="sidebarBtnRequest"
             aria-pressed="false"
+            title="정비 관리 (Ctrl+2)"
           >
             정비 관리
           </button>
@@ -7811,6 +7813,7 @@
             class="sidebar-nav__btn"
             id="sidebarBtnFacility"
             aria-pressed="false"
+            title="시설 관리 (Ctrl+3)"
           >
             시설 관리
           </button>
@@ -7819,6 +7822,7 @@
             class="sidebar-nav__btn sidebar-nav__btn--compact"
             id="sidebarBtnMbInv"
             aria-pressed="false"
+            title="MB & 인벤 변경 (Ctrl+4)"
           >
             MB &amp; 인벤 변경
           </button>
@@ -7827,6 +7831,7 @@
             class="sidebar-nav__btn"
             id="sidebarBtnMbCheck"
             aria-pressed="false"
+            title="MB CHECK (Ctrl+5)"
           >
             MB CHECK
           </button>
@@ -7893,11 +7898,12 @@
             id="sidebarZonesToggle"
             aria-expanded="false"
             aria-controls="sidebarZoneNav"
+            title="특이객실 (Ctrl+` — 누를 때마다 다음 구역)"
           >
             <span class="sidebar-section__toggle-label">특이객실</span>
             <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
           </button>
-          <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역">
+          <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
         </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
@@ -21796,6 +21802,62 @@
             showSidebarAiView();
           });
         }
+      })();
+
+      (function setupSidebarNavShortcuts() {
+        function cycleSpecialZone() {
+          if (typeof HKStorage === "undefined" || !HKStorage.getZoneOrder) return;
+          var order = HKStorage.getZoneOrder(HKStorage.load());
+          if (!order || !order.length) return;
+          if (!document.querySelector("#sidebarZoneNav .zone-tab")) {
+            renderSidebarZoneTabs();
+          }
+          var current =
+            sidebarMainView === "zone" ? currentZone || getActiveZone() : null;
+          var idx = current ? order.indexOf(current) : -1;
+          var nextId = order[(idx + 1) % order.length];
+          var tab = document.querySelector(
+            '#sidebarZoneNav .zone-tab[data-zone="' + nextId + '"]'
+          );
+          if (!tab) {
+            renderSidebarZoneTabs();
+            tab = document.querySelector(
+              '#sidebarZoneNav .zone-tab[data-zone="' + nextId + '"]'
+            );
+          }
+          if (tab) activateZoneTab(tab);
+        }
+
+        document.addEventListener("keydown", function (e) {
+          if (!e.ctrlKey || e.metaKey || e.altKey) return;
+          if (document.body.classList.contains("operator-locked")) return;
+
+          var handled = false;
+          if (!e.shiftKey && (e.code === "Digit1" || e.key === "1")) {
+            showSidebarOrderView();
+            handled = true;
+          } else if (!e.shiftKey && (e.code === "Digit2" || e.key === "2")) {
+            showSidebarRequestView();
+            handled = true;
+          } else if (!e.shiftKey && (e.code === "Digit3" || e.key === "3")) {
+            showSidebarFacilityView();
+            handled = true;
+          } else if (!e.shiftKey && (e.code === "Digit4" || e.key === "4")) {
+            showSidebarMbInvView();
+            handled = true;
+          } else if (!e.shiftKey && (e.code === "Digit5" || e.key === "5")) {
+            showSidebarMbCheckView();
+            handled = true;
+          } else if (e.code === "Backquote" || e.key === "`" || e.key === "~") {
+            cycleSpecialZone();
+            handled = true;
+          }
+
+          if (handled) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        });
       })();
 
       (function setupAiModeForm() {
