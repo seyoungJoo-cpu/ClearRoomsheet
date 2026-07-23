@@ -725,66 +725,69 @@
       var isNewCloseDay =
         !!payload.hkCloseDayAt &&
         String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
-      if (
-        (isCloseDayReplace || isNewCloseDay) &&
-        typeof global.HKStorage.replaceRemote === "function"
-      ) {
-        global.HKStorage.replaceRemote(payload.hkStorage);
-      } else {
-        global.HKStorage.applyRemote(payload.hkStorage);
+      // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 (사용·재등록·공지 등 유실 방지)
+      if (isCloseDayReplace || isNewCloseDay || !dirty.hkStorage) {
+        if (
+          (isCloseDayReplace || isNewCloseDay) &&
+          typeof global.HKStorage.replaceRemote === "function"
+        ) {
+          global.HKStorage.replaceRemote(payload.hkStorage);
+        } else {
+          global.HKStorage.applyRemote(payload.hkStorage);
+        }
+        changed.push("hkStorage");
+        clearDirty("hkStorage");
       }
-      changed.push("hkStorage");
-      clearDirty("hkStorage");
     }
-    if (Array.isArray(payload.hkRequestLog)) {
+    if (Array.isArray(payload.hkRequestLog) && !dirty.hkRequestLog) {
       cache.requestLog = payload.hkRequestLog.slice();
       writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
       changed.push("hkRequestLog");
       clearDirty("hkRequestLog");
     }
-    if (Array.isArray(payload.hkCancelLog)) {
+    if (Array.isArray(payload.hkCancelLog) && !dirty.hkCancelLog) {
       cache.cancelLog = payload.hkCancelLog.slice();
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
       changed.push("hkCancelLog");
       clearDirty("hkCancelLog");
     }
-    if (Array.isArray(payload.hkUseLog)) {
+    if (Array.isArray(payload.hkUseLog) && !dirty.hkUseLog) {
       cache.useLog = payload.hkUseLog.slice();
       writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
       changed.push("hkUseLog");
       clearDirty("hkUseLog");
     }
-    if (Array.isArray(payload.hkChangeLog)) {
+    if (Array.isArray(payload.hkChangeLog) && !dirty.hkChangeLog) {
       cache.changeLog = payload.hkChangeLog.slice();
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
       changed.push("hkChangeLog");
       clearDirty("hkChangeLog");
     }
-    if (Array.isArray(payload.hkOrderLog)) {
+    if (Array.isArray(payload.hkOrderLog) && !dirty.hkOrderLog) {
       cache.orderLog = payload.hkOrderLog.slice();
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
       changed.push("hkOrderLog");
       clearDirty("hkOrderLog");
     }
-    if (Array.isArray(payload.hkMbInvLog)) {
+    if (Array.isArray(payload.hkMbInvLog) && !dirty.hkMbInvLog) {
       cache.mbInvLog = payload.hkMbInvLog.slice();
       writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
       changed.push("hkMbInvLog");
       clearDirty("hkMbInvLog");
     }
-    if (Array.isArray(payload.hkMbCheckLog)) {
+    if (Array.isArray(payload.hkMbCheckLog) && !dirty.hkMbCheckLog) {
       cache.mbCheckLog = payload.hkMbCheckLog.slice();
       writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
       changed.push("hkMbCheckLog");
       clearDirty("hkMbCheckLog");
     }
-    if (Array.isArray(payload.hkFrontChat)) {
+    if (Array.isArray(payload.hkFrontChat) && !dirty.hkFrontChat) {
       cache.frontChat = payload.hkFrontChat.slice();
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       changed.push("hkFrontChat");
       clearDirty("hkFrontChat");
     }
-    if (Array.isArray(payload.hkTeamChat)) {
+    if (Array.isArray(payload.hkTeamChat) && !dirty.hkTeamChat) {
       cache.teamChat = payload.hkTeamChat.slice();
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       changed.push("hkTeamChat");
@@ -1248,6 +1251,13 @@
       schedulePush({ hkStorage: true });
     },
     pushStorageNow: pushStorageNow,
+    flushPending: function () {
+      if (pushTimer) {
+        clearTimeout(pushTimer);
+        pushTimer = null;
+      }
+      return queueScheduledFlush();
+    },
     getXmlPayload: function () {
       return getRoomingXmlSnapshot();
     },

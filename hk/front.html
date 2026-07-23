@@ -3136,6 +3136,31 @@
       color: #047857;
     }
 
+    .order-work-section--deployed .order-work-section__title-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: #047857;
+      cursor: pointer;
+    }
+
+    .order-work-section--deployed .order-work-section__chevron {
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+
+    .order-work-section--deployed.is-collapsed .order-work-list,
+    .order-work-section--deployed.is-collapsed .order-work-empty {
+      display: none !important;
+    }
+
     .order-work-section--unavailable .order-work-section__title {
       color: #b91c1c;
     }
@@ -6511,6 +6536,110 @@
       flex-wrap: wrap;
       gap: 12px;
       align-items: flex-end;
+      flex: 1 1 280px;
+      min-width: 0;
+    }
+
+    .request-panel__body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .request-desk-chat {
+      flex: 0 1 240px;
+      min-width: 200px;
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-raised, #f7f8fa);
+      max-height: 210px;
+      overflow: hidden;
+    }
+
+    .request-desk-chat__head {
+      flex-shrink: 0;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .request-desk-chat__messages {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 90px;
+    }
+
+    .request-desk-chat__empty {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--muted, #888);
+    }
+
+    .request-desk-chat__msg {
+      font-size: 0.75rem;
+      line-height: 1.35;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border);
+    }
+
+    .request-desk-chat__msg-meta {
+      font-size: 0.6875rem;
+      color: var(--muted, #888);
+      margin-bottom: 2px;
+    }
+
+    .request-desk-chat__msg-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .request-desk-chat__form {
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      padding: 6px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .request-desk-chat__form input {
+      flex: 1;
+      min-width: 0;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.75rem;
+    }
+
+    .request-desk-chat__form button {
+      height: 30px;
+      padding: 0 10px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--accent);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .request-desk-chat__form button:hover {
+      border-color: var(--accent);
     }
 
     .request-form-memo-full {
@@ -7809,7 +7938,9 @@
         </section>
 
         <section class="order-work-section order-work-section--deployed" id="orderDeployedSection" aria-labelledby="orderDeployedTitle">
-          <h3 class="order-work-section__title" id="orderDeployedTitle">투입완료</h3>
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderDeployedTitle" aria-expanded="true" aria-controls="orderDeployedList">
+            투입완료 <span class="order-work-section__chevron" id="orderDeployedChevron" aria-hidden="true">▼</span>
+          </button>
           <ul class="order-work-list order-work-list--deployed" id="orderDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
         </section>
@@ -8208,6 +8339,7 @@
           <h2 id="requestTitle">정비 관리</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckRequestPanel" hidden>확인</button>
         </div>
+        <div class="request-panel__body">
         <form class="request-row" id="requestForm">
           <div class="field">
             <label for="roomNo">객실번호</label>
@@ -8252,6 +8384,22 @@
             </div>
           </div>
         </form>
+        <aside class="request-desk-chat" id="requestDeskChat" aria-label="정비 관리 채팅">
+          <div class="request-desk-chat__head">채팅</div>
+          <div class="request-desk-chat__messages" id="requestDeskChatMessages" aria-live="polite"></div>
+          <form class="request-desk-chat__form" id="requestDeskChatForm">
+            <input
+              type="text"
+              id="requestDeskChatInput"
+              placeholder="메시지 입력"
+              autocomplete="off"
+              maxlength="500"
+              aria-label="정비 관리 채팅 입력"
+            />
+            <button type="submit">전송</button>
+          </form>
+        </aside>
+        </div>
         <div class="request-type-filters" id="requestTypeFilters" aria-label="처리·예정 TYPE 필터">
           <div class="request-type-filters__actions">
             <button
@@ -8707,6 +8855,9 @@
             ".front-chat__msg-edit",
             "#mbInvNoticeBody .mb-inv-notice-board__text[contenteditable='true']",
             "#zoneVipMemoBody .zone-memo-board__text[contenteditable='true']",
+            ".admin-inquiry-card__reply-input",
+            "#adminInquiryNewText",
+            "#requestDeskChatInput",
           ].join(", ")
         );
       }
@@ -10080,6 +10231,95 @@
         }
       }
 
+      function getRequestDeskChatMessages() {
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
+        return data && Array.isArray(data.requestDeskChat) ? data.requestDeskChat : [];
+      }
+
+      function renderRequestDeskChat(opts) {
+        opts = opts || {};
+        var mount = document.getElementById("requestDeskChatMessages");
+        if (!mount) return;
+        if (!opts.force && isHkUserEditing()) {
+          var ae = document.activeElement;
+          if (ae && ae.id === "requestDeskChatInput") return;
+        }
+        var msgs = getRequestDeskChatMessages();
+        mount.innerHTML = "";
+        if (!msgs.length) {
+          var empty = document.createElement("p");
+          empty.className = "request-desk-chat__empty";
+          empty.textContent = "메시지가 없습니다.";
+          mount.appendChild(empty);
+          return;
+        }
+        msgs.forEach(function (m) {
+          if (!m) return;
+          var row = document.createElement("div");
+          row.className = "request-desk-chat__msg";
+          row.setAttribute("data-msg-id", m.id || "");
+          var meta = document.createElement("div");
+          meta.className = "request-desk-chat__msg-meta";
+          var by = m.by != null ? String(m.by).trim() : "";
+          var atLabel = m.at ? formatReqAt(m.at) : "";
+          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          var text = document.createElement("div");
+          text.className = "request-desk-chat__msg-text";
+          text.textContent = m.text != null ? String(m.text) : "";
+          row.appendChild(meta);
+          row.appendChild(text);
+          mount.appendChild(row);
+        });
+        mount.scrollTop = mount.scrollHeight;
+      }
+
+      function appendRequestDeskChatMessage(text) {
+        var msg = String(text || "").trim();
+        if (!msg) return false;
+        var name = getOperatorName();
+        if (!name) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              appendRequestDeskChatMessage(msg);
+            },
+          });
+          return false;
+        }
+        var data = HKStorage.load();
+        if (!Array.isArray(data.requestDeskChat)) data.requestDeskChat = [];
+        data.requestDeskChat.push({
+          id: "rdc-" + Date.now() + "-" + Math.floor(Math.random() * 1e9),
+          at: new Date().toISOString(),
+          by: name,
+          text: msg,
+        });
+        if (data.requestDeskChat.length > 120) {
+          data.requestDeskChat = data.requestDeskChat.slice(-120);
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        renderRequestDeskChat({ force: true });
+        return true;
+      }
+
+      function bindRequestDeskChatUi() {
+        var form = document.getElementById("requestDeskChatForm");
+        if (!form || form.__hkDeskChatBound) return;
+        form.__hkDeskChatBound = true;
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var inp = document.getElementById("requestDeskChatInput");
+          var val = inp ? String(inp.value || "") : "";
+          if (appendRequestDeskChatMessage(val) && inp) {
+            inp.value = "";
+            inp.focus();
+          }
+        });
+      }
+
       function saveOrderLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setOrderLog(orderLogEntries);
@@ -10154,6 +10394,7 @@
           detectFacilityDailyChange();
           detectInvenNotifyChange();
           applyFrontEmbedStatesFromStorage();
+          renderRequestDeskChat({ force: true });
           if (
             sidebarMainView === "invenNotify" &&
             typeof HKInvenNotify !== "undefined"
@@ -10414,7 +10655,7 @@
         var data = HKStorage.load();
         syncZoneLabelsFromStorage();
         var order = HKStorage.getZoneOrder(data);
-        var activeZone = getActiveZone();
+        var activeZone = currentZone || getActiveZone();
         if (activeZone && order.indexOf(activeZone) < 0) {
           var removedZone = activeZone;
           activeZone = null;
@@ -10440,8 +10681,10 @@
           if (pendingZoneAlerts[zoneId]) btn.classList.add("is-change-alert");
           nav.appendChild(btn);
         });
-        if (activeZone) expandSidebarZonesSection();
-        else syncSidebarZonesCollapseUi();
+        if (activeZone) {
+          currentZone = activeZone;
+          expandSidebarZonesSection();
+        } else syncSidebarZonesCollapseUi();
       }
 
       var zoneRoomManageOpen = false;
@@ -11006,6 +11249,7 @@
 
         if (t.classList.contains("btn-remove")) {
           var ix2 = parseInt(t.getAttribute("data-index"), 10);
+          if (!confirm("이 객실을 삭제하시겠습니까?")) return;
           deleteZoneRoomRow(zone, ix2);
         }
       }
@@ -11026,7 +11270,8 @@
         updateZoneBlockTitle(z);
         setZonePanelOpen(true);
         updateZoneAddRoomBtnUi();
-        renderRoomsForZone(z);
+        renderRoomsForZone(z, { force: true });
+        renderZoneVipMemoBoard(z);
       }
 
       function dismissAllRoomAlertsInZone(zone) {
@@ -11069,7 +11314,8 @@
         var isExpanded = block && !block.classList.contains("is-collapsed");
 
         if (wasActive && isExpanded) {
-          showSidebarRequestView();
+          // 같은 구역 재클릭: 접지 않고 다시 그려 전환 버그 방지
+          activateZoneTab(tab);
           return;
         }
 
@@ -12771,6 +13017,33 @@
             renderFrontChatPanel(true);
             var inpFront = document.getElementById("frontChatInput");
             if (inpFront) inpFront.focus();
+          });
+        }
+        if (showRequest) {
+          requestAnimationFrame(function () {
+            renderRequestLogPanel({ force: true });
+            renderRequestDeskChat({ force: true });
+          });
+        }
+        if (showOrder || showFacility) {
+          requestAnimationFrame(function () {
+            renderOrderPanels({ force: true });
+          });
+        }
+        if (showMbInv && typeof HKMbWorkflow !== "undefined") {
+          requestAnimationFrame(function () {
+            HKMbWorkflow.renderMbInvPanels();
+          });
+        }
+        if (showMbCheck && typeof HKMbWorkflow !== "undefined") {
+          requestAnimationFrame(function () {
+            HKMbWorkflow.renderMbCheckPanels();
+          });
+        }
+        if (showZone) {
+          requestAnimationFrame(function () {
+            var z = getActiveZone() || currentZone;
+            if (z) renderRoomsForZone(z, { force: true });
           });
         }
       }
@@ -14604,6 +14877,7 @@
         clearRequestSidebarAlerts();
         applySidebarMainView("request");
         renderRequestLogPanel({ force: true });
+        renderRequestDeskChat({ force: true });
       }
 
       function showSidebarOrderView() {
@@ -14611,6 +14885,7 @@
         clearZoneTabSelection();
         clearOrderSidebarAlerts();
         applySidebarMainView("order");
+        renderOrderPanels({ force: true });
       }
 
       function showSidebarFacilityView() {
@@ -14619,18 +14894,25 @@
         clearFacilitySidebarAlerts();
         applySidebarMainView("facility");
         updateFacilityOrderFoDisplay();
+        renderOrderPanels({ force: true });
       }
 
       function showSidebarFacilityMiscView() {
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("facilityMisc");
+        if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.onViewActivated) {
+          HKFacilityLogs.onViewActivated("facilityMisc");
+        }
       }
 
       function showSidebarFacilityDailyFoundView() {
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("facilityDailyFound");
+        if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.onViewActivated) {
+          HKFacilityLogs.onViewActivated("facilityDailyFound");
+        }
       }
 
       function showSidebarMbInvView() {
@@ -14638,6 +14920,10 @@
         clearZoneTabSelection();
         clearMbInvSidebarAlerts();
         applySidebarMainView("mbInv");
+        if (typeof HKMbWorkflow !== "undefined") {
+          HKMbWorkflow.renderMbInvPanels();
+        }
+        renderMbInvNoticeBoard();
       }
 
       function showSidebarMbCheckView() {
@@ -14645,12 +14931,18 @@
         clearZoneTabSelection();
         clearMbCheckSidebarAlerts();
         applySidebarMainView("mbCheck");
+        if (typeof HKMbWorkflow !== "undefined") {
+          HKMbWorkflow.renderMbCheckPanels();
+        }
       }
 
       function showSidebarInvenNotifyView() {
         collapseZoneBlock();
         clearZoneTabSelection();
         applySidebarMainView("invenNotify");
+        if (typeof HKInvenNotify !== "undefined") {
+          HKInvenNotify.render(true);
+        }
       }
 
       function syncFrontEmbedTabUi() {
@@ -14719,6 +15011,11 @@
 
       function showSidebarZoneView(zone) {
         applySidebarMainView("zone");
+        var z = zone || getActiveZone() || currentZone;
+        if (z) {
+          renderRoomsForZone(z, { force: true });
+          renderZoneVipMemoBoard(z);
+        }
       }
 
       function openCancelNameModal(entryId) {
@@ -18560,6 +18857,9 @@
         }
         dataRm.rooms[zone].splice(idx, 1);
         HKStorage.save(dataRm, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
         var deleteEntry = {
           id: "chg-" + Date.now() + "-" + Math.floor(Math.random() * 1e6),
           at: new Date().toISOString(),
@@ -18719,6 +19019,7 @@
             return;
           }
           if (isNaN(ix)) return;
+          if (!confirm("이 객실을 삭제하시겠습니까?")) return;
           deleteZoneRoomRow(zone, ix);
         }
       }
@@ -19071,7 +19372,7 @@
         }
         renderSidebarZoneTabs();
         syncZoneLabelsFromStorage();
-        currentZone = getActiveZone();
+        currentZone = getActiveZone() || currentZone;
         applyNotice({ detectChange: !!opts.detectNoticeChange });
         applyMbInvNotice();
         applyZoneVipMemo();
@@ -19084,7 +19385,10 @@
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
         }
-        if (currentZone) {
+        if (currentZone && sidebarMainView === "zone") {
+          renderRoomsForZone(currentZone, { force: !!opts.force });
+          if (zoneRoomManageOpen) renderZoneRoomManagePanel(currentZone);
+        } else if (currentZone) {
           renderRoomsForZone(currentZone);
           if (zoneRoomManageOpen) renderZoneRoomManagePanel(currentZone);
         } else {
@@ -19092,6 +19396,7 @@
         }
         applyZoneAlertUi();
         renderRequestLogPanel();
+        renderRequestDeskChat();
       }
 
       function applyFacilityLogSidebarUi() {
@@ -19703,7 +20008,7 @@
           }
           var useEl = e.target.closest(".sched-card__use-btn");
           if (useEl) {
-            if (!frontMode) return;
+            if (!frontMode && !maintenanceMode) return;
             e.preventDefault();
             e.stopPropagation();
             var ridU = useEl.getAttribute("data-req-id");
@@ -19711,7 +20016,11 @@
               var useEntry = findRequestEntry(ridU);
               if (useEntry) appendUseLog(useEntry);
               removeRequestEntry(ridU);
-              renderRequestLogPanel();
+              if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+                HKSync.flushPending();
+              }
+              renderRequestLogPanel({ force: true });
+              showHkActionToast("사용 처리되었습니다.");
             }
             return;
           }
@@ -19967,6 +20276,7 @@
           HKMbWorkflow.renderMbCheckPanels();
         }
         renderRequestLogPanel();
+        renderRequestDeskChat();
         renderOrderPanels();
         renderFrontChatPanel(sidebarMainView === "front" || sidebarMainView === "chat");
         applyOrderSidebarAlertUi();
@@ -19995,6 +20305,8 @@
       loadRequestLog();
       loadOrderLog();
       loadFrontChat();
+      bindRequestDeskChatUi();
+      renderRequestDeskChat({ force: true });
       initFrontChatTracking();
       initOrderIssueTracking();
       initRequestAlertTracking();
@@ -20655,6 +20967,30 @@
 
       bindOrderPanelUi(document.getElementById("orderPanel"));
       bindOrderPanelUi(document.getElementById("facilityPanel"));
+
+      (function setupOrderDeployedCollapse() {
+        var titleBtn = document.getElementById("orderDeployedTitle");
+        var section = document.getElementById("orderDeployedSection");
+        var chevron = document.getElementById("orderDeployedChevron");
+        if (!titleBtn || !section) return;
+        var key = "lotte-hk-order-deployed-collapsed";
+        function applyCollapsed(collapsed) {
+          section.classList.toggle("is-collapsed", !!collapsed);
+          titleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          if (chevron) chevron.textContent = collapsed ? "▶" : "▼";
+          try {
+            sessionStorage.setItem(key, collapsed ? "1" : "0");
+          } catch (e) {}
+        }
+        try {
+          applyCollapsed(sessionStorage.getItem(key) === "1");
+        } catch (e) {
+          applyCollapsed(false);
+        }
+        titleBtn.addEventListener("click", function () {
+          applyCollapsed(!section.classList.contains("is-collapsed"));
+        });
+      })();
 
       document.addEventListener("click", function (e) {
         if (

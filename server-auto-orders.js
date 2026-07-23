@@ -1,7 +1,7 @@
 "use strict";
 
 const ROBOT_NAME = "도우미 로봇";
-const MSG_RPA_CHECK = "프론트 근무자분들 정비 RPA 확인해주세요";
+const MSG_RPA_CHECK = "정비 RPA 멈춤";
 const MSG_RPA_RUN = "프론트 근무자분들 정비 RPA 실행해주세요";
 const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
 const STALE_XML_MINUTES = 15;
@@ -46,10 +46,8 @@ function minutesSinceIso(iso) {
 
 function getRoomingUploadIso(payload) {
   if (!payload) return null;
+  // updatedAt 은 다른 동기화로도 갱신되므로 업로드 판정에 쓰지 않음
   if (payload.roomingUploadedAt) return String(payload.roomingUploadedAt);
-  if (payload.updatedAt && Array.isArray(payload.vacRows) && payload.vacRows.length) {
-    return String(payload.updatedAt);
-  }
   return null;
 }
 

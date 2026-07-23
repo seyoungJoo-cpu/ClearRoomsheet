@@ -466,8 +466,11 @@ function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
       return;
     }
     if (hkIsRoomMarkedDeleted(deletedRooms, zone, k)) {
-      delete map[k];
-      return;
+      if (deletedRooms && deletedRooms[zone]) {
+        deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+          return hkRoomNumberKey(n) !== k;
+        });
+      }
     }
     var merged = map[k] ? hkMergeRoomEntry(map[k], room) : room;
     if (!merged) {
@@ -504,6 +507,56 @@ function collectHkCustomZoneIds(customZones) {
     if (z && z.id) ids.push(z.id);
   });
   return ids;
+}
+
+function pickNoticeFieldsForServer(prev, incoming) {
+  var baseObj = prev && typeof prev === "object" ? prev : {};
+  var incObj = incoming && typeof incoming === "object" ? incoming : {};
+  var baseAt =
+    baseObj.noticeUpdatedAt != null ? String(baseObj.noticeUpdatedAt).trim() : "";
+  var incAt =
+    incObj.noticeUpdatedAt != null ? String(incObj.noticeUpdatedAt).trim() : "";
+  var incHasText = Object.prototype.hasOwnProperty.call(incObj, "notice");
+  var incHasImages =
+    Object.prototype.hasOwnProperty.call(incObj, "noticeImages") ||
+    Object.prototype.hasOwnProperty.call(incObj, "noticeImage");
+  var incHasAt = Object.prototype.hasOwnProperty.call(incObj, "noticeUpdatedAt");
+  var preferIncoming = true;
+  if (baseAt && incAt && incAt < baseAt) preferIncoming = false;
+  else if (baseAt && !incAt && (incHasText || incHasImages)) preferIncoming = false;
+  else if (!incHasText && !incHasImages && !incHasAt) preferIncoming = false;
+  function normalizeImages(src) {
+    var images = [];
+    if (src && Array.isArray(src.noticeImages)) {
+      src.noticeImages.forEach(function (img) {
+        var s = img != null ? String(img).trim() : "";
+        if (s) images.push(s);
+      });
+    }
+    if (!images.length && src && src.noticeImage != null) {
+      var single = String(src.noticeImage).trim();
+      if (single) images.push(single);
+    }
+    return images;
+  }
+  if (!preferIncoming) {
+    return {
+      notice: baseObj.notice != null ? String(baseObj.notice) : "",
+      noticeImages: normalizeImages(baseObj),
+      noticeUpdatedAt: baseAt,
+    };
+  }
+  return {
+    notice: incHasText
+      ? typeof incObj.notice === "string"
+        ? incObj.notice
+        : ""
+      : baseObj.notice != null
+        ? String(baseObj.notice)
+        : "",
+    noticeImages: incHasImages ? normalizeImages(incObj) : normalizeImages(baseObj),
+    noticeUpdatedAt: incAt || baseAt || "",
+  };
 }
 
 function pickMbInvNoticeFieldsForServer(prev, incoming) {
@@ -559,36 +612,14 @@ function mergeHkStorage(prev, incoming) {
   if (!prev || typeof prev !== "object") return incoming;
 
   var customZones = mergeHkCustomZones(prev, incoming);
-  var noticeImages = [];
-  if (Object.prototype.hasOwnProperty.call(incoming, "noticeImages")) {
-    if (Array.isArray(incoming.noticeImages)) {
-      incoming.noticeImages.forEach(function (img) {
-        var s = img != null ? String(img).trim() : "";
-        if (s) noticeImages.push(s);
-      });
-    }
-  } else if (Array.isArray(prev.noticeImages)) {
-    noticeImages = prev.noticeImages.slice();
-  }
-  if (!noticeImages.length) {
-    var noticeImgSrc = Object.prototype.hasOwnProperty.call(incoming, "noticeImage")
-      ? incoming.noticeImage != null
-        ? String(incoming.noticeImage).trim()
-        : ""
-      : prev.noticeImage != null
-        ? String(prev.noticeImage).trim()
-        : "";
-    if (noticeImgSrc) noticeImages.push(noticeImgSrc);
-  }
-
+  var noticePicked = pickNoticeFieldsForServer(prev, incoming);
   var mbInvPicked = pickMbInvNoticeFieldsForServer(prev, incoming);
 
   var out = {
-    notice: Object.prototype.hasOwnProperty.call(incoming, "notice")
-      ? incoming.notice
-      : prev.notice,
-    noticeImage: noticeImages[0] || "",
-    noticeImages: noticeImages,
+    notice: noticePicked.notice,
+    noticeImage: noticePicked.noticeImages[0] || "",
+    noticeImages: noticePicked.noticeImages,
+    noticeUpdatedAt: noticePicked.noticeUpdatedAt,
     mbInvNotice: mbInvPicked.mbInvNotice,
     mbInvNoticeImages: mbInvPicked.mbInvNoticeImages,
     mbInvNoticeUpdatedAt: mbInvPicked.mbInvNoticeUpdatedAt,
@@ -650,6 +681,54 @@ function mergeHkStorage(prev, incoming) {
       : prev.facilityDailyFoundLog || null,
     rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [] },
     deletedRooms: {},
+    requestDeskChat: (function () {
+      function normChat(arr) {
+        if (!Array.isArray(arr)) return [];
+        var out = [];
+        arr.forEach(function (m) {
+          if (!m || typeof m !== "object") return;
+          var id = m.id != null ? String(m.id).trim() : "";
+          if (!id) return;
+          out.push({
+            id: id,
+            at: m.at != null ? String(m.at) : "",
+            by: m.by != null ? String(m.by) : "",
+            text: m.text != null ? String(m.text) : "",
+          });
+        });
+        return out;
+      }
+      var map = {};
+      normChat(prev.requestDeskChat).forEach(function (m) {
+        map[m.id] = m;
+      });
+      if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
+        normChat(incoming.requestDeskChat).forEach(function (m) {
+          var prevM = map[m.id];
+          if (!prevM) {
+            map[m.id] = m;
+            return;
+          }
+          var ta = new Date(prevM.at || 0).getTime();
+          var tb = new Date(m.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          if (tb >= ta) map[m.id] = m;
+        });
+      }
+      return Object.keys(map)
+        .map(function (k) {
+          return map[k];
+        })
+        .sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        })
+        .slice(-120);
+    })(),
   };
 
   var mergedDeleted = hkMergeDeletedRoomsMaps(

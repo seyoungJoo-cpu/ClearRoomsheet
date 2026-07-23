@@ -4460,7 +4460,17 @@
         data.notice = document.getElementById("noticeInput").value;
         data.noticeImages = adminNoticeImages.slice();
         data.noticeImage = adminNoticeImages[0] || "";
-        HKStorage.save(data);
+        if (typeof HKStorage.stampNotice === "function") {
+          HKStorage.stampNotice(data);
+        } else {
+          data.noticeUpdatedAt = new Date().toISOString();
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        } else if (typeof HKSync !== "undefined" && HKSync.schedulePushStorage) {
+          HKSync.schedulePushStorage();
+        }
         toast("공지가 변경되었습니다.");
       });
 

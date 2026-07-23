@@ -16,6 +16,8 @@
   };
 
   var modalOpen = false;
+  /** 답변 작성 중 동기화로 리렌더될 때 초안 유지 */
+  var replyDrafts = {};
 
   function getInquiries() {
     if (typeof global.HKSync === "undefined" || !global.HKSync.getAdminInquiries) {
@@ -50,7 +52,27 @@
       .replace(/"/g, "&quot;");
   }
 
+  function captureDraftsFromDom() {
+    var list = document.getElementById("adminInquiryList");
+    if (!list) return;
+    list.querySelectorAll(".admin-inquiry-card__reply-input").forEach(function (ta) {
+      var card = ta.closest(".admin-inquiry-card");
+      var id = card ? card.getAttribute("data-inq-id") : "";
+      if (!id) return;
+      var val = String(ta.value || "");
+      if (val.trim()) replyDrafts[id] = val;
+      else delete replyDrafts[id];
+    });
+    var compose = document.getElementById("adminInquiryNewText");
+    if (compose) {
+      var composeVal = String(compose.value || "");
+      if (composeVal.trim()) replyDrafts.__compose__ = composeVal;
+      else delete replyDrafts.__compose__;
+    }
+  }
+
   function closeModal() {
+    captureDraftsFromDom();
     var modal = document.getElementById("adminInquiryModal");
     if (modal) modal.hidden = true;
     modalOpen = false;
@@ -100,6 +122,10 @@
       replyBy: "",
     });
     if (ta) ta.value = "";
+    delete replyDrafts.__compose__;
+    if (typeof global.HKSync.flushPending === "function") {
+      global.HKSync.flushPending();
+    }
     renderList();
     updateBadge();
   }
@@ -115,6 +141,10 @@
         replyAt: new Date().toISOString(),
         replyBy: deps.getOperatorName() || "관리자",
       });
+      delete replyDrafts[inquiryId];
+      if (typeof global.HKSync.flushPending === "function") {
+        global.HKSync.flushPending();
+      }
       renderList();
       updateBadge();
     });
@@ -125,6 +155,10 @@
     deps.requireRoleAuth("inquiry", function () {
       if (typeof global.HKSync === "undefined" || !global.HKSync.deleteAdminInquiry) return;
       if (!global.HKSync.deleteAdminInquiry(inquiryId)) return;
+      delete replyDrafts[inquiryId];
+      if (typeof global.HKSync.flushPending === "function") {
+        global.HKSync.flushPending();
+      }
       renderList();
       updateBadge();
     });
@@ -134,6 +168,26 @@
     var list = document.getElementById("adminInquiryList");
     var empty = document.getElementById("adminInquiryEmpty");
     if (!list) return;
+    captureDraftsFromDom();
+    var activeId = null;
+    var activeSelStart = 0;
+    var activeSelEnd = 0;
+    var ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
+      var activeCard = ae.closest(".admin-inquiry-card");
+      activeId = activeCard ? activeCard.getAttribute("data-inq-id") : null;
+      try {
+        activeSelStart = ae.selectionStart || 0;
+        activeSelEnd = ae.selectionEnd || 0;
+      } catch (e) {}
+    } else if (ae && ae.id === "adminInquiryNewText") {
+      activeId = "__compose__";
+      try {
+        activeSelStart = ae.selectionStart || 0;
+        activeSelEnd = ae.selectionEnd || 0;
+      } catch (e) {}
+    }
+
     list.innerHTML = "";
     var entries = getInquiries().slice();
     entries.sort(function (a, b) {
@@ -145,9 +199,9 @@
     });
     if (!entries.length) {
       if (empty) empty.hidden = false;
-      return;
+    } else {
+      if (empty) empty.hidden = true;
     }
-    if (empty) empty.hidden = true;
     entries.forEach(function (entry) {
       if (!entry) return;
       var li = document.createElement("li");
@@ -213,6 +267,15 @@
         replyTa.rows = 2;
         replyTa.placeholder = "답변 입력";
         replyTa.setAttribute("aria-label", "관리자 답변");
+        if (entry.id && replyDrafts[entry.id] != null) {
+          replyTa.value = replyDrafts[entry.id];
+        }
+        replyTa.addEventListener("input", function () {
+          if (!entry.id) return;
+          var v = String(replyTa.value || "");
+          if (v.trim()) replyDrafts[entry.id] = v;
+          else delete replyDrafts[entry.id];
+        });
         var replyBtn = document.createElement("button");
         replyBtn.type = "button";
         replyBtn.className = "admin-inquiry-card__reply-btn";
@@ -227,6 +290,30 @@
 
       list.appendChild(li);
     });
+
+    var compose = document.getElementById("adminInquiryNewText");
+    if (compose && replyDrafts.__compose__ != null && !String(compose.value || "").trim()) {
+      compose.value = replyDrafts.__compose__;
+    }
+
+    if (activeId === "__compose__" && compose) {
+      compose.focus();
+      try {
+        compose.setSelectionRange(activeSelStart, activeSelEnd);
+      } catch (e) {}
+    } else if (activeId) {
+      var restoreTa = list.querySelector(
+        '.admin-inquiry-card[data-inq-id="' +
+          activeId.replace(/"/g, '\\"') +
+          '"] .admin-inquiry-card__reply-input'
+      );
+      if (restoreTa) {
+        restoreTa.focus();
+        try {
+          restoreTa.setSelectionRange(activeSelStart, activeSelEnd);
+        } catch (e2) {}
+      }
+    }
   }
 
   function bindUi() {
@@ -250,6 +337,11 @@
     }
     var newTa = document.getElementById("adminInquiryNewText");
     if (newTa) {
+      newTa.addEventListener("input", function () {
+        var v = String(newTa.value || "");
+        if (v.trim()) replyDrafts.__compose__ = v;
+        else delete replyDrafts.__compose__;
+      });
       newTa.addEventListener("keydown", function (e) {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();

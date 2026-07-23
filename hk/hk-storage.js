@@ -217,8 +217,12 @@
         return;
       }
       if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
-        delete map[k];
-        return;
+        // 재등록된 객실이면 tombstone 해제
+        if (deletedRooms && deletedRooms[zone]) {
+          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+            return roomNumberKey(n) !== k;
+          });
+        }
       }
       var merged = map[k] ? mergeRoomEntry(map[k], room) : parseRoomEntry(room);
       if (!merged) {
@@ -246,7 +250,13 @@
         return;
       }
       if (zone && deletedRooms && isRoomMarkedDeleted(deletedRooms, zone, room.number)) {
-        return;
+        // 배열에 다시 들어온 객실이면 tombstone 해제 (재등록 유지)
+        if (deletedRooms[zone]) {
+          var rk = roomNumberKey(room.number);
+          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+            return roomNumberKey(n) !== rk;
+          });
+        }
       }
       out.push(room);
     });
@@ -293,6 +303,52 @@
       });
     }
     return images;
+  }
+
+  function normalizeNoticeUpdatedAt(data) {
+    if (!data || data.noticeUpdatedAt == null) return "";
+    return String(data.noticeUpdatedAt).trim();
+  }
+
+  function pickNoticeFields(base, incoming) {
+    var baseObj = base && typeof base === "object" ? base : {};
+    var incObj = incoming && typeof incoming === "object" ? incoming : {};
+    var baseAt = normalizeNoticeUpdatedAt(baseObj);
+    var incAt = normalizeNoticeUpdatedAt(incObj);
+    var incHasText = Object.prototype.hasOwnProperty.call(incObj, "notice");
+    var incHasImages =
+      Object.prototype.hasOwnProperty.call(incObj, "noticeImages") ||
+      Object.prototype.hasOwnProperty.call(incObj, "noticeImage");
+    var incHasAt = Object.prototype.hasOwnProperty.call(incObj, "noticeUpdatedAt");
+    var preferIncoming = true;
+    if (baseAt && incAt && incAt < baseAt) preferIncoming = false;
+    else if (baseAt && !incAt && (incHasText || incHasImages)) preferIncoming = false;
+    else if (!incHasText && !incHasImages && !incHasAt) preferIncoming = false;
+    if (!preferIncoming) {
+      return {
+        notice: baseObj.notice != null ? String(baseObj.notice) : "",
+        noticeImages: normalizeNoticeImages(baseObj),
+        noticeUpdatedAt: baseAt,
+      };
+    }
+    var images = incHasImages ? normalizeNoticeImages(incObj) : normalizeNoticeImages(baseObj);
+    return {
+      notice: incHasText
+        ? typeof incObj.notice === "string"
+          ? incObj.notice
+          : ""
+        : baseObj.notice != null
+          ? String(baseObj.notice)
+          : "",
+      noticeImages: images,
+      noticeUpdatedAt: incAt || baseAt || "",
+    };
+  }
+
+  function stampNotice(data) {
+    if (!data || typeof data !== "object") return data;
+    data.noticeUpdatedAt = new Date().toISOString();
+    return data;
   }
 
   function normalizeMbInvNoticeUpdatedAt(data) {
@@ -346,6 +402,55 @@
     return data;
   }
 
+  function normalizeRequestDeskChat(raw) {
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    raw.forEach(function (m) {
+      if (!m || typeof m !== "object") return;
+      var id = m.id != null ? String(m.id).trim() : "";
+      if (!id) return;
+      out.push({
+        id: id,
+        at: m.at != null ? String(m.at) : "",
+        by: m.by != null ? String(m.by) : "",
+        text: m.text != null ? String(m.text) : "",
+      });
+    });
+    out.sort(function (a, b) {
+      var ta = new Date(a.at || 0).getTime();
+      var tb = new Date(b.at || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      return ta - tb;
+    });
+    if (out.length > 120) out = out.slice(-120);
+    return out;
+  }
+
+  function mergeRequestDeskChat(baseArr, incomingArr) {
+    var map = {};
+    normalizeRequestDeskChat(baseArr).forEach(function (m) {
+      map[m.id] = m;
+    });
+    normalizeRequestDeskChat(incomingArr).forEach(function (m) {
+      var prev = map[m.id];
+      if (!prev) {
+        map[m.id] = m;
+        return;
+      }
+      var ta = new Date(prev.at || 0).getTime();
+      var tb = new Date(m.at || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb >= ta) map[m.id] = m;
+    });
+    return normalizeRequestDeskChat(
+      Object.keys(map).map(function (k) {
+        return map[k];
+      })
+    );
+  }
+
   function normalizeFrontEmbedStates(raw) {
     var out = { dd: null, inven: null, chichi: null };
     if (!raw || typeof raw !== "object") return out;
@@ -384,6 +489,7 @@
         "공지 내용을 여기에 표시합니다. (우측 상단 관리자에서 수정할 수 있습니다.)",
       noticeImage: "",
       noticeImages: [],
+      noticeUpdatedAt: "",
       mbInvNotice: "",
       mbInvNoticeImages: [],
       mbInvNoticeUpdatedAt: "",
@@ -394,6 +500,7 @@
       zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
       deletedRooms: {},
+      requestDeskChat: [],
       rooms: {
         VIP: [],
         RC: [],
@@ -434,6 +541,7 @@
     if (typeof data.notice === "string") d.notice = data.notice;
     d.noticeImages = normalizeNoticeImages(data);
     d.noticeImage = d.noticeImages[0] || "";
+    d.noticeUpdatedAt = normalizeNoticeUpdatedAt(data);
     if (typeof data.mbInvNotice === "string") d.mbInvNotice = data.mbInvNotice;
     d.mbInvNoticeImages = normalizeMbInvNoticeImages(data);
     d.mbInvNoticeUpdatedAt = normalizeMbInvNoticeUpdatedAt(data);
@@ -469,6 +577,7 @@
 
     d.customZones = customZones;
     d.deletedRooms = normalizeDeletedRooms(data, customZones);
+    d.requestDeskChat = normalizeRequestDeskChat(data.requestDeskChat);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -594,16 +703,17 @@
     var base = normalize(prev || defaultData());
     if (!incoming || typeof incoming !== "object") return base;
     var merged = Object.assign({}, base);
-    if (typeof incoming.notice === "string") merged.notice = incoming.notice;
-    if (Array.isArray(incoming.noticeImages)) {
-      merged.noticeImages = normalizeNoticeImages(incoming);
-    } else if (incoming.noticeImage != null) {
-      merged.noticeImages = normalizeNoticeImages({
-        noticeImage: incoming.noticeImage,
-        noticeImages: base.noticeImages,
-      });
+    if (typeof incoming.notice === "string" || Array.isArray(incoming.noticeImages) || incoming.noticeImage != null || Object.prototype.hasOwnProperty.call(incoming, "noticeUpdatedAt")) {
+      var noticePicked = pickNoticeFields(base, incoming);
+      merged.notice = noticePicked.notice;
+      merged.noticeImages = noticePicked.noticeImages;
+      merged.noticeUpdatedAt = noticePicked.noticeUpdatedAt;
+    } else {
+      merged.notice = base.notice;
+      merged.noticeImages = base.noticeImages;
+      merged.noticeUpdatedAt = base.noticeUpdatedAt || "";
     }
-    merged.noticeImage = merged.noticeImages[0] || "";
+    merged.noticeImage = (merged.noticeImages && merged.noticeImages[0]) || "";
     var mbInvPicked = pickMbInvNoticeFields(base, incoming);
     merged.mbInvNotice = mbInvPicked.mbInvNotice;
     merged.mbInvNoticeImages = mbInvPicked.mbInvNoticeImages;
@@ -668,6 +778,14 @@
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
       merged.rooms = base.rooms;
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
+      merged.requestDeskChat = mergeRequestDeskChat(
+        base.requestDeskChat,
+        incoming.requestDeskChat
+      );
+    } else {
+      merged.requestDeskChat = base.requestDeskChat || [];
+    }
     return normalize(merged);
   }
 
@@ -701,6 +819,8 @@
     markRoomDeleted: markRoomDeleted,
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
+    pickNoticeFields: pickNoticeFields,
+    stampNotice: stampNotice,
     normalizeMbInvNoticeImages: normalizeMbInvNoticeImages,
     pickMbInvNoticeFields: pickMbInvNoticeFields,
     stampMbInvNotice: stampMbInvNotice,
