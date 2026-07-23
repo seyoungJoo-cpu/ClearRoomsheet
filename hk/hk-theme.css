@@ -26,6 +26,12 @@ html[data-hk-theme="blue"] {
   --accent-soft-2: #dbeafe;
   --accent-ring: #3b82f6;
   --accent-deep: #1e40af;
+  /* 알림 깜빡임 — accent 토큰을 따라감 */
+  --alert-flash-bg: var(--accent-soft-2);
+  --alert-flash-bd: var(--accent-ring);
+  --alert-flash-fg: var(--accent-deep);
+  --alert-flash-glow: color-mix(in srgb, var(--accent) 45%, transparent);
+  --alert-active-glow: color-mix(in srgb, var(--accent) 20%, transparent);
 
   /* 배경은 루밍과 동일 원색, 글씨/테두리는 기존 뱃지 가독성 색 */
   --st-ip-bg: #00ff00;
