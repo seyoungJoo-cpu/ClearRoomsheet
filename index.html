@@ -5278,6 +5278,13 @@
             saveRoomingStateToLocal();
           });
         }
+        document.addEventListener("keydown", function (e) {
+          if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+          if (e.key !== "F9" && e.code !== "F9") return;
+          e.preventDefault();
+          var link = document.getElementById("linkToHkFront");
+          if (link) link.click();
+        });
         pullSharedState(false).then(function (hasRemote) {
           if (!hasRemote) {
             if (!hasLocalRoomingData()) loadRoomingStateFromLocal();

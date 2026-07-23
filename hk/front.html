@@ -9860,10 +9860,23 @@
           });
         }
         document.addEventListener("keydown", function (e) {
-          if (e.key !== "F8" && e.code !== "F8") return;
           if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-          e.preventDefault();
-          showOperatorGate({ mode: "shift" });
+          if (e.key === "F8" || e.code === "F8") {
+            e.preventDefault();
+            showOperatorGate({ mode: "shift" });
+            return;
+          }
+          if (e.key === "F9" || e.code === "F9") {
+            e.preventDefault();
+            var roomingLink = document.getElementById("linkRoomingFromFront");
+            if (roomingLink) {
+              if (typeof HKEntryGuard !== "undefined") HKEntryGuard.allow();
+              roomingLink.click();
+            } else {
+              if (typeof HKEntryGuard !== "undefined") HKEntryGuard.allow();
+              window.location.href = "/";
+            }
+          }
         });
       }
 
