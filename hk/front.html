@@ -8647,28 +8647,47 @@
       </section>
 
       <section class="order-panel mb-check-panel" id="mbCheckPanel" hidden aria-labelledby="mbCheckPanelTitle">
-        <div class="panel-head-row">
-          <h2 id="mbCheckPanelTitle">MB CHECK</h2>
-          <button type="button" class="panel-alert-ack-btn" id="btnAckMbCheckPanel" hidden>확인</button>
-        </div>
-        <form class="mb-check-change-form" id="mbCheckForm">
-          <div class="order-row">
-            <div class="field field--room-no">
-              <label for="mbCheckRoomNo">객실번호</label>
-              <input type="text" id="mbCheckRoomNo" placeholder="예: 1205" autocomplete="off" />
+        <div class="order-panel__body">
+          <div class="order-panel__main">
+            <div class="panel-head-row">
+              <h2 id="mbCheckPanelTitle">MB CHECK</h2>
+              <button type="button" class="panel-alert-ack-btn" id="btnAckMbCheckPanel" hidden>확인</button>
             </div>
-            <button type="submit" class="btn-order">등록</button>
+            <form class="mb-check-change-form" id="mbCheckForm">
+              <div class="order-row">
+                <div class="field field--room-no">
+                  <label for="mbCheckRoomNo">객실번호</label>
+                  <input type="text" id="mbCheckRoomNo" placeholder="예: 1205" autocomplete="off" />
+                </div>
+                <button type="submit" class="btn-order">등록</button>
+              </div>
+              <div class="field mb-inv-form__memo">
+                <label for="mbCheckMemo">메모</label>
+                <input
+                  type="text"
+                  id="mbCheckMemo"
+                  placeholder="메모 (선택)"
+                  autocomplete="off"
+                />
+              </div>
+            </form>
           </div>
-          <div class="field mb-inv-form__memo">
-            <label for="mbCheckMemo">메모</label>
-            <input
-              type="text"
-              id="mbCheckMemo"
-              placeholder="메모 (선택)"
-              autocomplete="off"
-            />
-          </div>
-        </form>
+          <aside class="order-desk-chat" id="mbCheckDeskChat" aria-label="MB CHECK 채팅">
+            <div class="order-desk-chat__head">채팅</div>
+            <div class="order-desk-chat__messages" id="mbCheckDeskChatMessages" aria-live="polite"></div>
+            <form class="order-desk-chat__form" id="mbCheckDeskChatForm">
+              <input
+                type="text"
+                id="mbCheckDeskChatInput"
+                placeholder="메시지 입력"
+                autocomplete="off"
+                maxlength="500"
+                aria-label="MB CHECK 채팅 입력"
+              />
+              <button type="submit">전송</button>
+            </form>
+          </aside>
+        </div>
 
         <section class="order-work-section order-work-section--accepted" aria-labelledby="mbCheckAcceptedTitle">
           <h3 class="order-work-section__title" id="mbCheckAcceptedTitle">접수</h3>
@@ -9205,6 +9224,7 @@
         if (ae) {
           if (ae.id === "requestDeskChatInput") return true;
           if (ae.id === "orderDeskChatInput") return true;
+          if (ae.id === "mbCheckDeskChatInput") return true;
           if (ae.id === "adminInquiryNewText") return true;
           if (ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
             return true;
@@ -9458,6 +9478,7 @@
               renderOrderPanels();
               renderRequestDeskChat({ force: true });
               renderOrderDeskChat({ force: true });
+              renderMbCheckDeskChat({ force: true });
               if (typeof HKMbWorkflow !== "undefined") {
                 HKMbWorkflow.renderMbInvPanels();
               }
@@ -10873,6 +10894,96 @@
         });
       }
 
+      function getMbCheckDeskChatMessages() {
+        var data = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
+        return data && Array.isArray(data.mbCheckDeskChat) ? data.mbCheckDeskChat : [];
+      }
+
+      function renderMbCheckDeskChat(opts) {
+        opts = opts || {};
+        var mount = document.getElementById("mbCheckDeskChatMessages");
+        if (!mount) return;
+        if (!opts.force && isHkUserEditing()) {
+          var ae = document.activeElement;
+          if (ae && ae.id === "mbCheckDeskChatInput") return;
+        }
+        var msgs = getMbCheckDeskChatMessages();
+        mount.innerHTML = "";
+        if (!msgs.length) {
+          var empty = document.createElement("p");
+          empty.className = "order-desk-chat__empty";
+          empty.textContent = "메시지가 없습니다.";
+          mount.appendChild(empty);
+          return;
+        }
+        msgs.forEach(function (m) {
+          if (!m) return;
+          var row = document.createElement("div");
+          row.className = "order-desk-chat__msg";
+          row.setAttribute("data-msg-id", m.id || "");
+          var meta = document.createElement("div");
+          meta.className = "order-desk-chat__msg-meta";
+          var by = m.by != null ? String(m.by).trim() : "";
+          var atLabel = m.at ? formatReqAt(m.at) : "";
+          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          var text = document.createElement("div");
+          text.className = "order-desk-chat__msg-text";
+          text.textContent = m.text != null ? String(m.text) : "";
+          row.appendChild(meta);
+          row.appendChild(text);
+          applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          mount.appendChild(row);
+        });
+        mount.scrollTop = mount.scrollHeight;
+      }
+
+      function appendMbCheckDeskChatMessage(text) {
+        var msg = String(text || "").trim();
+        if (!msg) return false;
+        var name = getOperatorName();
+        if (!name) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              appendMbCheckDeskChatMessage(msg);
+            },
+          });
+          return false;
+        }
+        var data = HKStorage.load();
+        if (!Array.isArray(data.mbCheckDeskChat)) data.mbCheckDeskChat = [];
+        data.mbCheckDeskChat.push({
+          id: "mcdc-" + Date.now() + "-" + Math.floor(Math.random() * 1e9),
+          at: new Date().toISOString(),
+          by: name,
+          text: msg,
+        });
+        if (data.mbCheckDeskChat.length > 120) {
+          data.mbCheckDeskChat = data.mbCheckDeskChat.slice(-120);
+        }
+        HKStorage.save(data, { skipSync: true });
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        renderMbCheckDeskChat({ force: true });
+        return true;
+      }
+
+      function bindMbCheckDeskChatUi() {
+        var form = document.getElementById("mbCheckDeskChatForm");
+        if (!form || form.__hkMbCheckDeskChatBound) return;
+        form.__hkMbCheckDeskChatBound = true;
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var inp = document.getElementById("mbCheckDeskChatInput");
+          var val = inp ? String(inp.value || "") : "";
+          if (appendMbCheckDeskChatMessage(val) && inp) {
+            inp.value = "";
+            inp.focus();
+          }
+        });
+      }
+
       function saveOrderLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setOrderLog(orderLogEntries);
@@ -10949,6 +11060,7 @@
           applyFrontEmbedStatesFromStorage();
           renderRequestDeskChat({ force: true });
           renderOrderDeskChat({ force: true });
+          renderMbCheckDeskChat({ force: true });
           if (
             sidebarMainView === "invenNotify" &&
             typeof HKInvenNotify !== "undefined"
@@ -13498,6 +13610,14 @@
             } catch (eBlur2) {}
           }
         }
+        if (!showMbCheck) {
+          var mbCheckDeskInp = document.getElementById("mbCheckDeskChatInput");
+          if (mbCheckDeskInp && document.activeElement === mbCheckDeskInp) {
+            try {
+              mbCheckDeskInp.blur();
+            } catch (eBlur3) {}
+          }
+        }
         var reqPanel = document.querySelector(".request-panel");
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
@@ -13629,6 +13749,7 @@
         if (showMbCheck && typeof HKMbWorkflow !== "undefined") {
           requestAnimationFrame(function () {
             HKMbWorkflow.renderMbCheckPanels();
+            renderMbCheckDeskChat({ force: true });
           });
         }
         if (showZone) {
@@ -15526,6 +15647,7 @@
         if (typeof HKMbWorkflow !== "undefined") {
           HKMbWorkflow.renderMbCheckPanels();
         }
+        renderMbCheckDeskChat({ force: true });
       }
 
       function showSidebarInvenNotifyView() {
@@ -17865,9 +17987,7 @@
           var deployedBy = entry.deployedBy != null ? String(entry.deployedBy).trim() : "";
           if (deployedBy) {
             var depMeta = document.createElement("div");
-            depMeta.className = "order-feedback__item-memo";
-            depMeta.style.marginTop = "6px";
-            depMeta.style.paddingTop = "6px";
+            depMeta.className = "hk-accepter-label";
             depMeta.textContent = (isFacilityPanel ? "입실 : " : "투입 : ") + deployedBy;
             li.appendChild(depMeta);
           }
@@ -20027,6 +20147,7 @@
         renderRequestLogPanel();
         renderRequestDeskChat();
         renderOrderDeskChat();
+        renderMbCheckDeskChat();
       }
 
       function applyFacilityLogSidebarUi() {
@@ -20908,6 +21029,8 @@
         renderRequestLogPanel();
         renderRequestDeskChat();
         renderOrderPanels();
+        renderOrderDeskChat();
+        renderMbCheckDeskChat();
         renderFrontChatPanel(sidebarMainView === "front" || sidebarMainView === "chat");
         applyOrderSidebarAlertUi();
         applyRequestSidebarAlertUi();
@@ -20939,6 +21062,8 @@
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
       renderOrderDeskChat({ force: true });
+      bindMbCheckDeskChatUi();
+      renderMbCheckDeskChat({ force: true });
       initFrontChatTracking();
       initOrderIssueTracking();
       initRequestAlertTracking();

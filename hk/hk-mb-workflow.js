@@ -684,7 +684,6 @@
         frontActs.appendChild(cancelBtn);
         li.appendChild(frontActs);
       }
-      appendMbCheckChatUi(li, entry);
       list.appendChild(li);
     });
     if (empty) empty.hidden = entries.length > 0;
@@ -706,72 +705,6 @@
     byEl.className = "order-feedback__item-by";
     byEl.textContent = byName;
     li.appendChild(byEl);
-  }
-
-  function appendMbCheckChatUi(li, entry) {
-    var chatWrap = document.createElement("div");
-    chatWrap.className = "order-chat";
-    var msgList = document.createElement("ul");
-    msgList.className = "order-chat__messages";
-    var chat = Array.isArray(entry.chat) ? entry.chat : [];
-    chat.sort(function (a, b) {
-      return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
-    });
-    chat.forEach(function (msg) {
-      var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
-      var msgLi = document.createElement("li");
-      msgLi.className = "order-chat__msg";
-      if (typeof ctx.applyChatBubbleAlign === "function") {
-        ctx.applyChatBubbleAlign(msgLi, byName);
-      } else if (typeof ctx.isOwnChatAuthor === "function") {
-        msgLi.classList.add(
-          ctx.isOwnChatAuthor(byName) ? "hk-chat-msg--mine" : "hk-chat-msg--other"
-        );
-      }
-      var byEl = document.createElement("div");
-      byEl.className = "order-chat__msg-by";
-      byEl.textContent = byName;
-      msgLi.appendChild(byEl);
-      if (typeof ctx.applyChatBubbleColors === "function") {
-        ctx.applyChatBubbleColors(msgLi, byName, byEl, "order-chat__msg-text");
-      }
-      ctx.hkAppendMessageContent(msgLi, msg.text, msg.image, "order-chat__msg-text");
-      if (msg.edited) {
-        var textEl = msgLi.querySelector(".order-chat__msg-text");
-        if (textEl) {
-          var editedMark = document.createElement("span");
-          editedMark.className = "front-chat__msg-edited";
-          editedMark.textContent = "(수정됨)";
-          textEl.appendChild(editedMark);
-        }
-      }
-      msgList.appendChild(msgLi);
-    });
-    chatWrap.appendChild(msgList);
-
-    var chatKey = "mbCheckChat:" + (entry.id || "");
-    var chatForm = document.createElement("form");
-    chatForm.className = "order-chat__form hk-compose-row mb-check-chat__form";
-    chatForm.setAttribute("data-mb-check-id", entry.id || "");
-    var chatInput = document.createElement("input");
-    chatInput.type = "text";
-    chatInput.placeholder = "메시지 입력";
-    chatInput.autocomplete = "off";
-    chatForm.appendChild(chatInput);
-    chatForm.appendChild(ctx.hkCreatePhotoButton(chatKey));
-    ctx.hkBindPhotoPaste(chatInput, chatKey, {
-      autoSend: function (text, image) {
-        appendMbCheckChat(entry.id || "", text, image);
-      },
-    });
-    var chatSend = document.createElement("button");
-    chatSend.type = "submit";
-    chatSend.className = "order-chat__send";
-    chatSend.textContent = "전송";
-    chatForm.appendChild(chatSend);
-    chatWrap.appendChild(chatForm);
-    chatWrap.appendChild(ctx.hkCreatePhotoPreview(chatKey));
-    li.appendChild(chatWrap);
   }
 
   function appendMbCheckMemoBtn(parent, entry) {
@@ -887,43 +820,6 @@
     ta.focus();
   }
 
-  function appendMbCheckChat(id, text, image) {
-    var entry = findMbCheckEntry(id);
-    if (!entry) return;
-    var phase = getPhase(entry);
-    if (phase === "cancelled") return;
-    var msgText = String(text || "").trim();
-    var msgImage = image != null ? String(image).trim() : "";
-    if (!msgText && !msgImage) return;
-    if (!requireName(function () {
-      appendMbCheckChat(id, msgText, msgImage);
-    })) return;
-    if (!Array.isArray(entry.chat)) entry.chat = [];
-    entry.chat.push({
-      at: new Date().toISOString(),
-      by: ctx.getOperatorName(),
-      text: msgText,
-      image: msgImage || "",
-    });
-    ctx.hkClearPhoto("mbCheckChat:" + id);
-    saveMbCheckLog();
-    renderMbCheckPanels();
-    requestAnimationFrame(function () {
-      var card =
-        document.querySelector(
-          '.order-work-item[data-mb-check-id="' + id + '"]'
-        ) ||
-        document.querySelector(
-          '.order-feedback__item[data-mb-check-id="' + id + '"]'
-        );
-      if (!card) return;
-      var msgList = card.querySelector(".order-chat__messages");
-      if (msgList) msgList.scrollTop = msgList.scrollHeight;
-      var chatInput = card.querySelector(".order-chat__form input");
-      if (chatInput) chatInput.focus();
-    });
-  }
-
   function renderMbCheckWorkPanels() {
     var acceptedList = document.getElementById("mbCheckAcceptedList");
     var acceptedEmpty = document.getElementById("mbCheckAcceptedEmpty");
@@ -980,7 +876,6 @@
         acts.appendChild(postBtn);
       }
       if (acts.childNodes.length) li.appendChild(acts);
-      appendMbCheckChatUi(li, entry);
       acceptedList.appendChild(li);
     });
 
@@ -1002,7 +897,6 @@
         gstActs.appendChild(rereqBtn);
       }
       if (gstActs.childNodes.length) li.appendChild(gstActs);
-      appendMbCheckChatUi(li, entry);
       if (gstList) gstList.appendChild(li);
     });
 
@@ -1012,7 +906,6 @@
       li.setAttribute("data-mb-check-id", entry.id || "");
       appendMbCheckWorkBase(li, entry, entry.postedAt || entry.at);
       appendAccepterLabel(li, entry);
-      appendMbCheckChatUi(li, entry);
       postedList.appendChild(li);
     });
 
@@ -1249,17 +1142,6 @@
           if (reqId) rerequestMbCheckFromGst(reqId);
         }
       });
-      mbCheckPanel.addEventListener("submit", function (e) {
-        var chatForm = e.target.closest(".mb-check-chat__form");
-        if (!chatForm) return;
-        e.preventDefault();
-        var cid = chatForm.getAttribute("data-mb-check-id");
-        var inp = chatForm.querySelector("input");
-        var text = inp ? inp.value : "";
-        var img = cid && ctx.hkGetPhoto ? ctx.hkGetPhoto("mbCheckChat:" + cid) : null;
-        if (cid) appendMbCheckChat(cid, text, img);
-        if (inp) inp.value = "";
-      });
     }
 
     var mbInvFb = document.getElementById("mbInvFeedback");
@@ -1336,17 +1218,6 @@
           var cid = cancelBtn.getAttribute("data-mb-check-id");
           if (cid) ctx.openCancelConfirmModal(cid);
         }
-      });
-      mbCheckFb.addEventListener("submit", function (e) {
-        var chatForm = e.target.closest(".mb-check-chat__form");
-        if (!chatForm) return;
-        e.preventDefault();
-        var cid = chatForm.getAttribute("data-mb-check-id");
-        var inp = chatForm.querySelector("input");
-        var text = inp ? inp.value : "";
-        var img = cid && ctx.hkGetPhoto ? ctx.hkGetPhoto("mbCheckChat:" + cid) : null;
-        if (cid) appendMbCheckChat(cid, text, img);
-        if (inp) inp.value = "";
       });
     }
   }
