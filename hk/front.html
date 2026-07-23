@@ -9841,6 +9841,12 @@
             showOperatorGate({ mode: "shift" });
           });
         }
+        document.addEventListener("keydown", function (e) {
+          if (e.key !== "F8" && e.code !== "F8") return;
+          if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+          e.preventDefault();
+          showOperatorGate({ mode: "shift" });
+        });
       }
 
       function normalizeRoomDigits(roomStr) {
