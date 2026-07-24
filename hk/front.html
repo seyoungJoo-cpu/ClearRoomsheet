@@ -2770,6 +2770,15 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
+    .room-card__no-box.hk-st-badge {
+      font-weight: 800;
+      border-width: 1px;
+    }
+
+    .room-card__no-box.hk-st-badge .room-card__no {
+      color: inherit;
+    }
+
     .room-card.is-clickable:hover .room-card__no-box {
       border-color: var(--accent);
       background: var(--surface-raised);
@@ -9190,6 +9199,7 @@
       var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
       var openDeployedOrderChatId = "";
+      var orderChatComposeDraft = null;
       var facilityTimeEditIds = {};
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
@@ -9225,6 +9235,7 @@
           if (ae.id === "requestDeskChatInput") return true;
           if (ae.id === "orderDeskChatInput") return true;
           if (ae.id === "mbCheckDeskChatInput") return true;
+          if (ae.closest && ae.closest(".order-chat__form")) return true;
           if (ae.id === "adminInquiryNewText") return true;
           if (ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
             return true;
@@ -13797,7 +13808,7 @@
 
       function normalizeAiQueryInput(text) {
         var s = String(text || "")
-          .replace(/[？?！!.,，~～]/g, "")
+          .replace(/[？?！!~～]/g, "")
           .replace(/\s+/g, " ")
           .trim();
         if (!s) return "";
@@ -14311,7 +14322,8 @@
           "· 물 오더 찾아줘 · 물 오더 몇개야?\n" +
           "· 타입(ENCFT) 지금 정비 가능한 객실 (CL 우선, IN 제외)\n" +
           "· CL 객실 / 10층 DI 객실 / IN 객실\n" +
-          "· VIP 특이객실 · 1205 상태\n\n" +
+          "· VIP 특이객실 · 1205 상태\n" +
+          "· 1205,1206,1208 (여러 객실 한번에 · 번호에 상태색)\n\n" +
           "【기타】\n" +
           "· MB CHECK · MB & 인벤 변경 · MB 인벤 문제\n" +
           "· 오늘 변경 이력\n\n" +
@@ -14403,9 +14415,28 @@
                   : "—";
       }
 
+      function parseAiRoomNumberList(text) {
+        var seen = {};
+        var out = [];
+        String(text || "")
+          .split(/[,，\s/|·]+/)
+          .forEach(function (part) {
+            var digits = normalizeRoomDigits
+              ? normalizeRoomDigits(part)
+              : String(part || "").replace(/\D/g, "");
+            if (!digits || digits.length < 3 || digits.length > 4) return;
+            if (seen[digits]) return;
+            seen[digits] = true;
+            out.push(digits);
+          });
+        return out;
+      }
+
       function detectAiIntent(text) {
+        var rawText = String(text || "");
+        var multiRooms = parseAiRoomNumberList(rawText);
         var q = normalizeAiQueryInput(text);
-        if (!q) return { type: "unknown" };
+        if (!q && !multiRooms.length) return { type: "unknown" };
         if (/^(help|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
           return { type: "help" };
         }
@@ -14500,7 +14531,13 @@
         if (typeCode && /객실|목록|몇|알려|보여|찾/.test(q) && !isAiTypeCheckInStyleQuery(q)) {
           return { type: "type_list", typeCode: typeCode };
         }
+        if (multiRooms.length >= 2) {
+          return { type: "room_info", rooms: multiRooms };
+        }
         if (roomM) return { type: "room_info", room: roomM[1] };
+        if (multiRooms.length === 1) {
+          return { type: "room_info", room: multiRooms[0] };
+        }
         if (typeCode && /가능|입실|객실/.test(q)) {
           return { type: "type_checkin", typeCode: typeCode };
         }
@@ -14704,6 +14741,30 @@
             },
           ],
         };
+      }
+
+      function queryAiRoomsInfo(roomList) {
+        var rooms = [];
+        var missing = [];
+        (roomList || []).forEach(function (r) {
+          var info = queryAiRoomInfo(r);
+          if (info.error) {
+            missing.push(normalizeRoomDigits(r) || String(r || ""));
+            return;
+          }
+          rooms = rooms.concat(info.rooms || []);
+        });
+        if (!rooms.length) {
+          return {
+            error:
+              missing.length > 1
+                ? "입력한 객실 정보를 찾을 수 없습니다."
+                : missing[0]
+                  ? "객실 " + formatRoomNoDisplay(missing[0]) + " 정보가 XML·요청 로그에 없습니다."
+                  : "객실번호를 확인해 주세요.",
+          };
+        }
+        return { rooms: rooms, missing: missing };
       }
 
       function queryAiMbInvEntries() {
@@ -15225,15 +15286,42 @@
         }
 
         if (intent.type === "room_info") {
-          var roomInfo = queryAiRoomInfo(intent.room);
+          var roomInfo =
+            intent.rooms && intent.rooms.length
+              ? queryAiRoomsInfo(intent.rooms)
+              : queryAiRoomInfo(intent.room);
           if (roomInfo.error) {
             appendAiChatBotError(roomInfo.error);
             return;
           }
-          appendAiChatBotResponse(
-            "객실 " + formatRoomNoDisplay(intent.room) + " 정보",
-            roomInfo.rooms
-          );
+          var titleRooms =
+            intent.rooms && intent.rooms.length
+              ? intent.rooms
+              : intent.room
+                ? [intent.room]
+                : [];
+          var title =
+            titleRooms.length > 1
+              ? "객실 " +
+                titleRooms
+                  .map(function (r) {
+                    return formatRoomNoDisplay(r);
+                  })
+                  .join(", ") +
+                " (" +
+                roomInfo.rooms.length +
+                "개)"
+              : "객실 " + formatRoomNoDisplay(intent.room || titleRooms[0] || "") + " 정보";
+          if (roomInfo.missing && roomInfo.missing.length) {
+            title +=
+              " · 없음 " +
+              roomInfo.missing
+                .map(function (r) {
+                  return formatRoomNoDisplay(r);
+                })
+                .join(", ");
+          }
+          appendAiChatBotResponse(title, roomInfo.rooms);
           return;
         }
 
@@ -15549,7 +15637,9 @@
         var head = document.createElement("div");
         head.className = "room-card__head";
         var noBox = document.createElement("span");
-        noBox.className = "room-card__no-box";
+        var stKey = hkStatusSuffix(item.status);
+        noBox.className =
+          "room-card__no-box hk-st-badge" + (stKey ? " hk-st--" + stKey : "");
         var no = document.createElement("span");
         no.className = "room-card__no";
         no.textContent = formatRoomNoDisplay(item.room || "");
@@ -17186,10 +17276,21 @@
         chatInput.type = "text";
         chatInput.placeholder = "메시지 입력";
         chatInput.autocomplete = "off";
+        chatInput.className = "order-chat__input";
+        if (entry.id) {
+          chatInput.setAttribute("data-order-chat-id", entry.id);
+        }
         chatInput.setAttribute(
           "aria-label",
           opts.chatLabel || "문제 발생 채팅 메시지"
         );
+        if (
+          orderChatComposeDraft &&
+          orderChatComposeDraft.orderId === (entry.id || "") &&
+          orderChatComposeDraft.value
+        ) {
+          chatInput.value = orderChatComposeDraft.value;
+        }
         chatForm.appendChild(chatInput);
         chatForm.appendChild(hkCreatePhotoButton(chatKey));
         hkBindPhotoPaste(chatInput, chatKey, {
@@ -17208,6 +17309,21 @@
         li.appendChild(chatWrap);
         requestAnimationFrame(function () {
           msgList.scrollTop = msgList.scrollHeight;
+          if (
+            orderChatComposeDraft &&
+            orderChatComposeDraft.orderId === (entry.id || "") &&
+            orderChatComposeDraft.restoreFocus
+          ) {
+            try {
+              chatInput.focus();
+              var pos =
+                orderChatComposeDraft.selectionStart != null
+                  ? orderChatComposeDraft.selectionStart
+                  : chatInput.value.length;
+              chatInput.setSelectionRange(pos, pos);
+            } catch (eFocus) {}
+            orderChatComposeDraft.restoreFocus = false;
+          }
         });
       }
 
@@ -17449,8 +17565,13 @@
           }
         });
         if (!deployed) return false;
-        renderOrderPanels({ force: true });
-        if (needRequestRender) renderRequestLogPanel({ force: true });
+        if (isHkUserEditing()) {
+          renderOrderPanels();
+          if (needRequestRender) renderRequestLogPanel();
+        } else {
+          renderOrderPanels({ force: true });
+          if (needRequestRender) renderRequestLogPanel({ force: true });
+        }
         return true;
       }
 
@@ -17676,6 +17797,12 @@
           image: msgImage || "",
         });
         hkClearPhoto("orderChat:" + orderId);
+        orderChatComposeDraft = {
+          orderId: orderId,
+          value: "",
+          selectionStart: 0,
+          restoreFocus: true,
+        };
         saveOrderLog();
         renderOrderPanels({ force: true });
         requestAnimationFrame(function () {
@@ -17771,8 +17898,24 @@
         renderOrderWorkPanelBundle("facility", isFacilityOrder, opts);
       }
 
+      function captureOrderChatComposeDraft() {
+        var ae = document.activeElement;
+        if (!ae || !ae.closest || !ae.closest(".order-chat__form")) {
+          return;
+        }
+        var form = ae.closest(".order-chat__form");
+        var orderId = form.getAttribute("data-order-id") || "";
+        orderChatComposeDraft = {
+          orderId: orderId,
+          value: ae.value != null ? String(ae.value) : "",
+          selectionStart: ae.selectionStart,
+          restoreFocus: true,
+        };
+      }
+
       function renderOrderWorkPanelBundle(prefix, entryFilter, opts) {
         opts = opts || {};
+        captureOrderChatComposeDraft();
         var isFacilityPanel = prefix === "facility";
         var issueList = document.getElementById(prefix + "IssueList");
         var issueEmpty = document.getElementById(prefix + "IssueEmpty");
@@ -18998,7 +19141,7 @@
         var images = Array.isArray(data.mbInvNoticeImages) ? data.mbInvNoticeImages.slice() : [];
         images.push(url);
         saveMbInvNoticePatch({ images: images });
-        renderMbInvNoticeBoard();
+        applyMbInvNotice();
       }
 
       function bindMemoBoardImagePaste(el, onImageUrl) {

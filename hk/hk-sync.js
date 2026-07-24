@@ -594,6 +594,13 @@
     var body = {};
     if (pendingPush.hkStorage && dirty.hkStorage && global.HKStorage) {
       body.hkStorage = global.HKStorage.load();
+      try {
+        var closeAt = global.localStorage.getItem(CLOSE_DAY_KEY) || "";
+        if (closeAt && body.hkStorage && typeof body.hkStorage === "object") {
+          body.hkStorage.closeDayAt = closeAt;
+        }
+        if (closeAt) body.hkCloseDayAt = closeAt;
+      } catch (eCd) {}
     }
     if (pendingPush.hkRequestLog && dirty.hkRequestLog) {
       body.hkRequestLog = cache.requestLog;
@@ -725,10 +732,30 @@
       var isNewCloseDay =
         !!payload.hkCloseDayAt &&
         String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
-      // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 (사용·재등록·공지 등 유실 방지)
-      if (isCloseDayReplace || isNewCloseDay || !dirty.hkStorage) {
+      var remoteStorageCd =
+        payload.hkStorage.closeDayAt != null
+          ? String(payload.hkStorage.closeDayAt).trim()
+          : "";
+      var localStorageCd = "";
+      try {
+        var localData = global.HKStorage.load();
+        localStorageCd =
+          localData && localData.closeDayAt != null
+            ? String(localData.closeDayAt).trim()
+            : "";
+      } catch (eLocalCd) {}
+      var storageEpochNewer =
+        !!remoteStorageCd &&
+        (!localStorageCd || String(remoteStorageCd) > String(localStorageCd));
+      // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 — 단, 마감/더 최신 closeDay는 강제 반영
+      if (
+        isCloseDayReplace ||
+        isNewCloseDay ||
+        storageEpochNewer ||
+        !dirty.hkStorage
+      ) {
         if (
-          (isCloseDayReplace || isNewCloseDay) &&
+          (isCloseDayReplace || isNewCloseDay || storageEpochNewer) &&
           typeof global.HKStorage.replaceRemote === "function"
         ) {
           global.HKStorage.replaceRemote(payload.hkStorage);
@@ -1196,6 +1223,7 @@
       }
       applyCloseDayMarker(payload);
       clearAllDirty();
+      pendingPush = {};
       return postPayload(payload).then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
         if (Array.isArray(payload.hkAdminInquiries)) {

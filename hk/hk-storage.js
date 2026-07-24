@@ -204,9 +204,22 @@
     };
   }
 
-  function mergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
+  function mergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, incomingDeletedRooms) {
     var map = {};
-    function ingest(room) {
+    var incomingKeys = {};
+    (incomingArr || []).forEach(function (room) {
+      if (!room || !room.number) return;
+      var k = roomNumberKey(room.number);
+      if (k) incomingKeys[k] = true;
+    });
+    function incomingClaimsDeleted(k) {
+      return isRoomMarkedDeleted(incomingDeletedRooms, zone, k);
+    }
+    function canReviveFromIncoming(k) {
+      // 같은 페이로드에 객실이 있고, 그 페이로드의 deletedRooms에 없으면 재등록으로 본다
+      return !!incomingKeys[k] && !incomingClaimsDeleted(k);
+    }
+    function ingest(room, fromIncoming) {
       if (!room || !room.number) return;
       var k = roomNumberKey(room.number);
       if (!k) return;
@@ -217,11 +230,15 @@
         return;
       }
       if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
-        // 재등록된 객실이면 tombstone 해제
-        if (deletedRooms && deletedRooms[zone]) {
-          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-            return roomNumberKey(n) !== k;
-          });
+        if (fromIncoming && canReviveFromIncoming(k)) {
+          if (deletedRooms && deletedRooms[zone]) {
+            deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+              return roomNumberKey(n) !== k;
+            });
+          }
+        } else {
+          // tombstone 유지 — 다른 PC의 잔존 배열로 삭제 객실이 되살아나지 않게 함
+          return;
         }
       }
       var merged = map[k] ? mergeRoomEntry(map[k], room) : parseRoomEntry(room);
@@ -231,8 +248,12 @@
       }
       map[k] = merged;
     }
-    (prevArr || []).forEach(ingest);
-    (incomingArr || []).forEach(ingest);
+    (prevArr || []).forEach(function (room) {
+      ingest(room, false);
+    });
+    (incomingArr || []).forEach(function (room) {
+      ingest(room, true);
+    });
     return Object.keys(map).map(function (k) {
       return map[k];
     });
@@ -250,13 +271,8 @@
         return;
       }
       if (zone && deletedRooms && isRoomMarkedDeleted(deletedRooms, zone, room.number)) {
-        // 배열에 다시 들어온 객실이면 tombstone 해제 (재등록 유지)
-        if (deletedRooms[zone]) {
-          var rk = roomNumberKey(room.number);
-          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-            return roomNumberKey(n) !== rk;
-          });
-        }
+        // 삭제 tombstone이 있으면 배열에 있어도 무시 (되살아남 방지)
+        return;
       }
       out.push(room);
     });
@@ -503,6 +519,8 @@
       requestDeskChat: [],
       orderDeskChat: [],
       mbCheckDeskChat: [],
+      closeDayAt: "",
+      deletedCustomZones: [],
       rooms: {
         VIP: [],
         RC: [],
@@ -579,6 +597,9 @@
 
     d.customZones = customZones;
     d.deletedRooms = normalizeDeletedRooms(data, customZones);
+    d.deletedCustomZones = normalizeDeletedCustomZones(data);
+    d.closeDayAt =
+      data.closeDayAt != null ? String(data.closeDayAt).trim() : "";
     d.requestDeskChat = normalizeRequestDeskChat(data.requestDeskChat);
     d.orderDeskChat = normalizeRequestDeskChat(data.orderDeskChat);
     d.mbCheckDeskChat = normalizeRequestDeskChat(data.mbCheckDeskChat);
@@ -662,6 +683,66 @@
     }
   }
 
+  function normalizeDeletedCustomZones(data) {
+    if (!data || !Array.isArray(data.deletedCustomZones)) return [];
+    var seen = {};
+    var out = [];
+    data.deletedCustomZones.forEach(function (id) {
+      var z = id != null ? String(id).trim() : "";
+      if (!z || isStandardZone(z) || seen[z]) return;
+      seen[z] = true;
+      out.push(z);
+    });
+    return out;
+  }
+
+  function mergeDeletedCustomZones(baseArr, incomingArr) {
+    var seen = {};
+    var out = [];
+    function add(arr) {
+      (arr || []).forEach(function (id) {
+        var z = id != null ? String(id).trim() : "";
+        if (!z || isStandardZone(z) || seen[z]) return;
+        seen[z] = true;
+        out.push(z);
+      });
+    }
+    add(baseArr);
+    add(incomingArr);
+    return out;
+  }
+
+  function mergeCustomZonesById(baseZones, incomingZones, deletedIds, incomingZonesList) {
+    var map = {};
+    function put(z) {
+      if (!z || typeof z !== "object") return;
+      var id = z.id != null ? String(z.id).trim() : "";
+      var label = z.label != null ? String(z.label).trim() : "";
+      if (!id || !label || isStandardZone(id)) return;
+      map[id] = { id: id, label: label };
+    }
+    (baseZones || []).forEach(put);
+    (incomingZones || []).forEach(put);
+    // 같은 페이로드에 존이 다시 있으면 삭제 tombstone 해제(재추가)
+    var incomingIds = {};
+    (incomingZonesList || incomingZones || []).forEach(function (z) {
+      if (z && z.id) incomingIds[String(z.id).trim()] = true;
+    });
+    var deleted = (deletedIds || []).filter(function (id) {
+      return !incomingIds[id];
+    });
+    return {
+      zones: Object.keys(map)
+        .filter(function (id) {
+          return deleted.indexOf(id) < 0;
+        })
+        .map(function (id) {
+          return map[id];
+        }),
+      deleted: deleted,
+    };
+  }
+
   function removeCustomZone(data, zoneId) {
     if (!data || !zoneId || isStandardZone(zoneId)) return data;
     data.customZones = (data.customZones || []).filter(function (z) {
@@ -673,17 +754,33 @@
     if (data.deletedRooms && Object.prototype.hasOwnProperty.call(data.deletedRooms, zoneId)) {
       delete data.deletedRooms[zoneId];
     }
+    if (!Array.isArray(data.deletedCustomZones)) data.deletedCustomZones = [];
+    if (data.deletedCustomZones.indexOf(zoneId) < 0) {
+      data.deletedCustomZones.push(zoneId);
+    }
     return data;
   }
 
-  function mergeRoomsObject(prevRooms, incomingRooms, customZones, deletedRooms) {
+  function mergeRoomsObject(
+    prevRooms,
+    incomingRooms,
+    customZones,
+    deletedRooms,
+    incomingDeletedRooms
+  ) {
     var out = {};
     STANDARD_ZONE_IDS.forEach(function (zone) {
       var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
       var inc =
         incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : null;
       out[zone] = parseRoomsArray(
-        mergeRoomArraysByNumber(prev, inc || [], zone, deletedRooms),
+        mergeRoomArraysByNumber(
+          prev,
+          inc || [],
+          zone,
+          deletedRooms,
+          incomingDeletedRooms
+        ),
         zone,
         deletedRooms
       );
@@ -695,7 +792,13 @@
       var inc =
         incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : null;
       out[zone] = parseRoomsArray(
-        mergeRoomArraysByNumber(prev, inc || [], zone, deletedRooms),
+        mergeRoomArraysByNumber(
+          prev,
+          inc || [],
+          zone,
+          deletedRooms,
+          incomingDeletedRooms
+        ),
         zone,
         deletedRooms
       );
@@ -762,25 +865,65 @@
     } else if (!Object.prototype.hasOwnProperty.call(incoming, "zoneMemos")) {
       merged.zoneMemos = base.zoneMemos;
     }
-    if (Array.isArray(incoming.customZones)) {
-      merged.customZones = incoming.customZones.slice();
-    } else if (!Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
-      merged.customZones = base.customZones;
+
+    var baseCd =
+      base.closeDayAt != null ? String(base.closeDayAt).trim() : "";
+    var incCd =
+      incoming.closeDayAt != null ? String(incoming.closeDayAt).trim() : "";
+    // 마감 이후의 저장소가 더 최신이면, 마감 전 클라이언트 객실·존 데이터를 무시
+    var incomingIsStaleClose =
+      !!baseCd && (!incCd || String(incCd) < String(baseCd));
+    if (incCd && (!baseCd || String(incCd) >= String(baseCd))) {
+      merged.closeDayAt = incCd;
+    } else {
+      merged.closeDayAt = baseCd;
     }
-    var mergedDeleted = mergeDeletedRoomsMaps(
-      base.deletedRooms,
-      Object.prototype.hasOwnProperty.call(incoming, "deletedRooms") ? incoming.deletedRooms : null
-    );
-    merged.deletedRooms = mergedDeleted;
-    if (incoming.rooms && typeof incoming.rooms === "object") {
-      merged.rooms = mergeRoomsObject(
-        base.rooms,
-        incoming.rooms,
-        merged.customZones,
-        mergedDeleted
+
+    if (incomingIsStaleClose) {
+      merged.customZones = base.customZones || [];
+      merged.deletedCustomZones = base.deletedCustomZones || [];
+      merged.deletedRooms = base.deletedRooms || {};
+      merged.rooms = base.rooms || merged.rooms;
+    } else {
+      var mergedDeletedCustom = mergeDeletedCustomZones(
+        base.deletedCustomZones,
+        Object.prototype.hasOwnProperty.call(incoming, "deletedCustomZones")
+          ? incoming.deletedCustomZones
+          : null
       );
-    } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
-      merged.rooms = base.rooms;
+      var zoneMerge = mergeCustomZonesById(
+        base.customZones,
+        Object.prototype.hasOwnProperty.call(incoming, "customZones")
+          ? incoming.customZones
+          : base.customZones,
+        mergedDeletedCustom,
+        Object.prototype.hasOwnProperty.call(incoming, "customZones")
+          ? incoming.customZones
+          : null
+      );
+      merged.customZones = zoneMerge.zones;
+      merged.deletedCustomZones = zoneMerge.deleted;
+
+      var mergedDeleted = mergeDeletedRoomsMaps(
+        base.deletedRooms,
+        Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
+          ? incoming.deletedRooms
+          : null
+      );
+      merged.deletedRooms = mergedDeleted;
+      if (incoming.rooms && typeof incoming.rooms === "object") {
+        merged.rooms = mergeRoomsObject(
+          base.rooms,
+          incoming.rooms,
+          merged.customZones,
+          mergedDeleted,
+          Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
+            ? incoming.deletedRooms
+            : null
+        );
+      } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
+        merged.rooms = base.rooms;
+      }
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
       merged.requestDeskChat = mergeRequestDeskChat(

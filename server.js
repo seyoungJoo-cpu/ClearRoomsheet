@@ -453,9 +453,21 @@ function hkMergeRoomEntry(prev, incoming) {
   return Object.assign({}, prev, incoming, { tray: ti || tp || "" });
 }
 
-function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
+function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, incomingDeletedRooms) {
   var map = {};
-  function ingest(room) {
+  var incomingKeys = {};
+  (incomingArr || []).forEach(function (room) {
+    if (!room || !room.number) return;
+    var k = hkRoomNumberKey(room.number);
+    if (k) incomingKeys[k] = true;
+  });
+  function incomingClaimsDeleted(k) {
+    return hkIsRoomMarkedDeleted(incomingDeletedRooms, zone, k);
+  }
+  function canReviveFromIncoming(k) {
+    return !!incomingKeys[k] && !incomingClaimsDeleted(k);
+  }
+  function ingest(room, fromIncoming) {
     if (!room || !room.number) return;
     var k = hkRoomNumberKey(room.number);
     if (!k) return;
@@ -466,10 +478,14 @@ function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
       return;
     }
     if (hkIsRoomMarkedDeleted(deletedRooms, zone, k)) {
-      if (deletedRooms && deletedRooms[zone]) {
-        deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-          return hkRoomNumberKey(n) !== k;
-        });
+      if (fromIncoming && canReviveFromIncoming(k)) {
+        if (deletedRooms && deletedRooms[zone]) {
+          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+            return hkRoomNumberKey(n) !== k;
+          });
+        }
+      } else {
+        return;
       }
     }
     var merged = map[k] ? hkMergeRoomEntry(map[k], room) : room;
@@ -479,26 +495,76 @@ function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms) {
     }
     map[k] = merged;
   }
-  (prevArr || []).forEach(ingest);
-  (incomingArr || []).forEach(ingest);
+  (prevArr || []).forEach(function (room) {
+    ingest(room, false);
+  });
+  (incomingArr || []).forEach(function (room) {
+    ingest(room, true);
+  });
   return Object.keys(map).map(function (k) {
     return map[k];
   });
 }
 
-function hkMergeZoneRooms(prevRooms, incomingRooms, zone, deletedRooms) {
+function hkMergeZoneRooms(prevRooms, incomingRooms, zone, deletedRooms, incomingDeletedRooms) {
   var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
   var inc =
     incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : [];
-  return hkMergeRoomArraysByNumber(prev, inc, zone, deletedRooms);
+  return hkMergeRoomArraysByNumber(
+    prev,
+    inc,
+    zone,
+    deletedRooms,
+    incomingDeletedRooms
+  );
 }
 
 function mergeHkCustomZones(prev, incoming) {
-  if (Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
-    return Array.isArray(incoming.customZones) ? incoming.customZones.slice() : [];
+  var baseZones = Array.isArray(prev.customZones) ? prev.customZones : [];
+  var incZones = Object.prototype.hasOwnProperty.call(incoming, "customZones")
+    ? Array.isArray(incoming.customZones)
+      ? incoming.customZones
+      : []
+    : null;
+  var baseDeleted = Array.isArray(prev.deletedCustomZones)
+    ? prev.deletedCustomZones
+    : [];
+  var incDeleted = Object.prototype.hasOwnProperty.call(incoming, "deletedCustomZones")
+    ? Array.isArray(incoming.deletedCustomZones)
+      ? incoming.deletedCustomZones
+      : []
+    : [];
+  var deletedMap = {};
+  baseDeleted.concat(incDeleted).forEach(function (id) {
+    var z = id != null ? String(id).trim() : "";
+    if (z) deletedMap[z] = true;
+  });
+  var map = {};
+  function put(z) {
+    if (!z || typeof z !== "object") return;
+    var id = z.id != null ? String(z.id).trim() : "";
+    var label = z.label != null ? String(z.label).trim() : "";
+    if (!id || !label) return;
+    map[id] = { id: id, label: label };
   }
-  if (Array.isArray(prev.customZones)) return prev.customZones.slice();
-  return [];
+  baseZones.forEach(put);
+  if (incZones) {
+    incZones.forEach(function (z) {
+      put(z);
+      if (z && z.id) delete deletedMap[String(z.id).trim()];
+    });
+  }
+  var zones = Object.keys(map)
+    .filter(function (id) {
+      return !deletedMap[id];
+    })
+    .map(function (id) {
+      return map[id];
+    });
+  return {
+    customZones: zones,
+    deletedCustomZones: Object.keys(deletedMap),
+  };
 }
 
 function collectHkCustomZoneIds(customZones) {
@@ -611,7 +677,31 @@ function mergeHkStorage(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
 
-  var customZones = mergeHkCustomZones(prev, incoming);
+  var prevCd = prev.closeDayAt != null ? String(prev.closeDayAt).trim() : "";
+  var incCd = incoming.closeDayAt != null ? String(incoming.closeDayAt).trim() : "";
+  var incomingIsStaleClose = !!prevCd && (!incCd || String(incCd) < String(prevCd));
+  if (incomingIsStaleClose) {
+    // 마감 전 클라이언트의 객실·존 푸시는 무시 (어제 특이객실 되살아남 방지)
+    var noticeOnly = pickNoticeFieldsForServer(prev, incoming);
+    var mbOnly = pickMbInvNoticeFieldsForServer(prev, incoming);
+    return Object.assign({}, prev, {
+      notice: noticeOnly.notice,
+      noticeImage: noticeOnly.noticeImages[0] || "",
+      noticeImages: noticeOnly.noticeImages,
+      noticeUpdatedAt: noticeOnly.noticeUpdatedAt,
+      mbInvNotice: mbOnly.mbInvNotice,
+      mbInvNoticeImages: mbOnly.mbInvNoticeImages,
+      mbInvNoticeUpdatedAt: mbOnly.mbInvNoticeUpdatedAt,
+      closeDayAt: prevCd,
+      rooms: prev.rooms,
+      deletedRooms: prev.deletedRooms,
+      customZones: prev.customZones,
+      deletedCustomZones: prev.deletedCustomZones,
+    });
+  }
+
+  var zonePack = mergeHkCustomZones(prev, incoming);
+  var customZones = zonePack.customZones;
   var noticePicked = pickNoticeFieldsForServer(prev, incoming);
   var mbInvPicked = pickMbInvNoticeFieldsForServer(prev, incoming);
 
@@ -639,7 +729,7 @@ function mergeHkStorage(prev, incoming) {
           : null;
       if (!incStates) return prevStates;
       var keys = ["dd", "inven", "chichi"];
-      var out = {
+      var outStates = {
         dd: prevStates.dd || null,
         inven: prevStates.inven || null,
         chichi: prevStates.chichi || null,
@@ -649,22 +739,24 @@ function mergeHkStorage(prev, incoming) {
         var b = incStates[key];
         if (!b) return;
         if (!a) {
-          out[key] = b;
+          outStates[key] = b;
           return;
         }
         var ta = new Date(a.updatedAt || 0).getTime();
         var tb = new Date(b.updatedAt || 0).getTime();
         if (isNaN(ta)) ta = 0;
         if (isNaN(tb)) tb = 0;
-        if (tb >= ta) out[key] = b;
+        if (tb >= ta) outStates[key] = b;
       });
-      return out;
+      return outStates;
     })(),
     zoneMemos:
       incoming.zoneMemos && typeof incoming.zoneMemos === "object"
         ? incoming.zoneMemos
         : prev.zoneMemos || { VIP: { text: "", images: [] } },
     customZones: customZones,
+    deletedCustomZones: zonePack.deletedCustomZones,
+    closeDayAt: incCd && (!prevCd || String(incCd) >= String(prevCd)) ? incCd : prevCd,
     facilityMiscLog: Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")
       ? incoming.facilityMiscLog && typeof incoming.facilityMiscLog === "object"
         ? incoming.facilityMiscLog
@@ -784,13 +876,28 @@ function mergeHkStorage(prev, incoming) {
     Object.prototype.hasOwnProperty.call(incoming, "deletedRooms") ? incoming.deletedRooms : null
   );
   out.deletedRooms = mergedDeleted;
+  var incomingDeleted = Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
+    ? incoming.deletedRooms
+    : null;
 
   HK_STANDARD_ZONES.forEach(function (zone) {
-    out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
+    out.rooms[zone] = hkMergeZoneRooms(
+      prev.rooms,
+      incoming.rooms,
+      zone,
+      mergedDeleted,
+      incomingDeleted
+    );
   });
 
   collectHkCustomZoneIds(customZones).forEach(function (zone) {
-    out.rooms[zone] = hkMergeZoneRooms(prev.rooms, incoming.rooms, zone, mergedDeleted);
+    out.rooms[zone] = hkMergeZoneRooms(
+      prev.rooms,
+      incoming.rooms,
+      zone,
+      mergedDeleted,
+      incomingDeleted
+    );
   });
 
   return out;
@@ -997,8 +1104,25 @@ function mergeSyncPayload(prev, incoming) {
       out.hkStorage = incoming.hkStorage && typeof incoming.hkStorage === "object"
         ? incoming.hkStorage
         : {};
+      out.hkCloseDayReset = true;
     } else {
-      out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
+      delete out.hkCloseDayReset;
+      var serverCloseAt = prev.hkCloseDayAt || "";
+      var clientCloseAt =
+        (incoming.hkCloseDayAt != null && String(incoming.hkCloseDayAt).trim()) ||
+        (incoming.hkStorage &&
+        incoming.hkStorage.closeDayAt != null &&
+        String(incoming.hkStorage.closeDayAt).trim()) ||
+        "";
+      if (
+        serverCloseAt &&
+        (!clientCloseAt || String(clientCloseAt) < String(serverCloseAt))
+      ) {
+        // 마감 이후인데 클라이언트가 마감 전(또는 모름)이면 객실 저장소 푸시 거부
+        out.hkStorage = prev.hkStorage;
+      } else {
+        out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
+      }
     }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
@@ -1041,7 +1165,11 @@ function mergeSyncPayload(prev, incoming) {
     out.hkLastRoomChange = incoming.hkLastRoomChange || null;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkCloseDayAt")) {
-    out.hkCloseDayAt = incoming.hkCloseDayAt || null;
+    var prevClose = prev.hkCloseDayAt != null ? String(prev.hkCloseDayAt) : "";
+    var incClose = incoming.hkCloseDayAt != null ? String(incoming.hkCloseDayAt) : "";
+    if (incoming.hkCloseDayReset === true || !prevClose || (incClose && incClose >= prevClose)) {
+      out.hkCloseDayAt = incoming.hkCloseDayAt || null;
+    }
   }
   return out;
 }

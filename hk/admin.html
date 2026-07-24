@@ -1045,15 +1045,21 @@
         var el = document.activeElement;
         if (!el || !el.closest) return false;
         return !!(
-          el.closest(".admin-app") ||
+          el.closest(".wrap") ||
           el.closest("#zoneGrid") ||
-          el.closest(".notice-block") ||
+          el.closest(".notice-field") ||
+          el.closest(".card") ||
           el.id === "noticeInput" ||
           el.id === "mbInvNoticeInput" ||
+          el.id === "vipZoneMemoInput" ||
           el.id === "newZoneLabel" ||
           el.classList.contains("zone-card__title-input")
         );
       }
+
+      var adminNoticeDirty = false;
+      var adminMbInvNoticeDirty = false;
+      var adminVipMemoDirty = false;
 
       function deferAdminRefresh(applyFn) {
         if (!isAdminUserEditing()) {
@@ -3871,7 +3877,22 @@
       }
 
       function getResetStorageData(preservedFacility) {
+        var prev = HKStorage.load();
         var reset = HKStorage.defaultData();
+        // 사이드바 커스텀 그룹 정의는 유지하고, 등록 객실만 비운다
+        if (Array.isArray(prev.customZones) && prev.customZones.length) {
+          reset.customZones = prev.customZones.map(function (z) {
+            return { id: z.id, label: z.label };
+          });
+          reset.customZones.forEach(function (z) {
+            if (z && z.id) reset.rooms[z.id] = [];
+          });
+        }
+        if (Array.isArray(prev.deletedCustomZones)) {
+          reset.deletedCustomZones = prev.deletedCustomZones.slice();
+        }
+        var closeAt = new Date().toISOString();
+        reset.closeDayAt = closeAt;
         if (preservedFacility) {
           if (preservedFacility.facilityMiscLog) {
             reset.facilityMiscLog = preservedFacility.facilityMiscLog;
@@ -3944,6 +3965,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
           HKSync.pushSnapshot({
             hkCloseDayReset: true,
+            hkCloseDayAt: resetStorage.closeDayAt || new Date().toISOString(),
             hkStorage: resetStorage,
             hkRequestLog: [],
             hkOrderLog: preservedOrderLog,
@@ -4143,9 +4165,13 @@
         var noticeEl = document.getElementById("noticeInput");
         var mbInvNoticeEl = document.getElementById("mbInvNoticeInput");
         var vipMemoEl = document.getElementById("vipZoneMemoInput");
-        var editingNotice = noticeEl && document.activeElement === noticeEl;
-        var editingMbInvNotice = mbInvNoticeEl && document.activeElement === mbInvNoticeEl;
-        var editingVipMemo = vipMemoEl && document.activeElement === vipMemoEl;
+        var editingNotice =
+          (noticeEl && document.activeElement === noticeEl) || adminNoticeDirty;
+        var editingMbInvNotice =
+          (mbInvNoticeEl && document.activeElement === mbInvNoticeEl) ||
+          adminMbInvNoticeDirty;
+        var editingVipMemo =
+          (vipMemoEl && document.activeElement === vipMemoEl) || adminVipMemoDirty;
         if (noticeEl && !editingNotice) {
           noticeEl.value = data.notice;
         }
@@ -4466,6 +4492,7 @@
           data.noticeUpdatedAt = new Date().toISOString();
         }
         HKStorage.save(data, { skipSync: true });
+        adminNoticeDirty = false;
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         } else if (typeof HKSync !== "undefined" && HKSync.schedulePushStorage) {
@@ -4485,6 +4512,7 @@
           data.mbInvNoticeUpdatedAt = new Date().toISOString();
         }
         HKStorage.save(data, { skipSync: true });
+        adminMbInvNoticeDirty = false;
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         } else if (typeof HKSync !== "undefined" && HKSync.schedulePushStorage) {
@@ -4492,6 +4520,27 @@
         }
         toast("MB & 인벤 메모장이 저장되었습니다.");
       });
+
+      (function bindAdminNoticeDirtyFlags() {
+        var noticeInput = document.getElementById("noticeInput");
+        var mbInvInput = document.getElementById("mbInvNoticeInput");
+        var vipInput = document.getElementById("vipZoneMemoInput");
+        if (noticeInput) {
+          noticeInput.addEventListener("input", function () {
+            adminNoticeDirty = true;
+          });
+        }
+        if (mbInvInput) {
+          mbInvInput.addEventListener("input", function () {
+            adminMbInvNoticeDirty = true;
+          });
+        }
+        if (vipInput) {
+          vipInput.addEventListener("input", function () {
+            adminVipMemoDirty = true;
+          });
+        }
+      })();
 
       (function setupMbInvNoticeImageUi() {
         var addBtn = document.getElementById("btnAddMbInvNoticeImage");
@@ -4541,6 +4590,7 @@
         data.zoneMemos.VIP.text = input ? input.value : "";
         data.zoneMemos.VIP.images = adminVipMemoImages.slice();
         HKStorage.save(data);
+        adminVipMemoDirty = false;
         toast("VIP 메모장이 저장되었습니다.");
       });
 
@@ -4603,6 +4653,11 @@
         if (!data.customZones) data.customZones = [];
         data.customZones.push({ id: id, label: label });
         if (!data.rooms[id]) data.rooms[id] = [];
+        if (Array.isArray(data.deletedCustomZones)) {
+          data.deletedCustomZones = data.deletedCustomZones.filter(function (zid) {
+            return zid !== id;
+          });
+        }
         HKStorage.save(data);
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
