@@ -1019,6 +1019,34 @@
     ctx.onCancelListRefresh();
   }
 
+  var ITEM_CODE1_LABELS = {
+    BBS: "소독기",
+    BBT: "아기욕조",
+    BEG: "가드",
+    BIPILL: "바이오",
+    BOPILL: "바디필로우",
+    CBF: "발판",
+    CRIB: "아기침대",
+    CTS: "커버",
+    EXB: "엑배",
+    HUMI: "가습기",
+    IRON: "다리미",
+    KBD: "한실이불",
+    KOPILL: "한실베개",
+    MFPILL: "메모리폼",
+    WOPILL: "양모",
+    ZBPILL: "젠메밀",
+  };
+
+  function expandInvItemCodesInMemo(text) {
+    var s = String(text == null ? "" : text);
+    if (!s) return "";
+    return s.replace(/\b([A-Za-z][A-Za-z0-9]{1,11})\b/g, function (code) {
+      var upper = code.toUpperCase();
+      return ITEM_CODE1_LABELS[upper] || code;
+    });
+  }
+
   function processMbInvFormSubmit(category) {
     var prefix = category === "inv" ? "inv" : "mb";
     var fromEl = document.getElementById(prefix + "RoomFrom");
@@ -1028,6 +1056,10 @@
     var from = fromEl ? String(fromEl.value || "").trim() : "";
     var to = toEl ? String(toEl.value || "").trim() : "";
     var memo = memoEl ? String(memoEl.value || "").trim() : "";
+    if (category === "inv" && memo) {
+      memo = expandInvItemCodesInMemo(memo);
+      if (memoEl) memoEl.value = memo;
+    }
     var memoImage = ctx.hkGetPhoto ? ctx.hkGetPhoto(photoKey) || "" : "";
     if (!from || !to) {
       if (!from && fromEl) fromEl.focus();
@@ -1075,6 +1107,14 @@
         e.preventDefault();
         processMbInvFormSubmit("inv");
       });
+      var invMemoEl = document.getElementById("invMemo");
+      if (invMemoEl && !invMemoEl.__hkItemCodeBound) {
+        invMemoEl.__hkItemCodeBound = true;
+        invMemoEl.addEventListener("blur", function () {
+          var next = expandInvItemCodesInMemo(invMemoEl.value);
+          if (next !== invMemoEl.value) invMemoEl.value = next;
+        });
+      }
     }
     var checkForm = document.getElementById("mbCheckForm");
     if (checkForm) {

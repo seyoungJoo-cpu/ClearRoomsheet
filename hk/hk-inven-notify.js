@@ -14,6 +14,7 @@
   var uiHooks = {};
   var state = defaultInvenNotify();
 
+  var cardSearchQuery = "";
   var els = {
     mount: null,
     toolbar: null,
@@ -22,6 +23,7 @@
     btnSave: null,
     toolbarHint: null,
     hint: null,
+    searchInput: null,
   };
 
   function defaultInvenNotify() {
@@ -89,6 +91,10 @@
       id: id,
       wing: wing,
       room: room,
+      roomFrom:
+        raw.roomFrom != null && String(raw.roomFrom).trim()
+          ? String(raw.roomFrom).trim()
+          : "",
       confirmationNo: confirmationNo,
       itemsText: raw.itemsText != null ? String(raw.itemsText).trim() : "",
       memo: raw.memo != null ? String(raw.memo).trim() : "",
@@ -154,6 +160,7 @@
         id: prev && prev.id ? prev.id : "ic-" + key,
         wing: g.wing,
         room: g.room,
+        roomFrom: prev ? prev.roomFrom || "" : "",
         confirmationNo: g.confirmationNo,
         itemsText: joinItemsText(g.items),
         memo: prev ? prev.memo || "" : "",
@@ -410,7 +417,7 @@
     if (isFrontModeActive()) {
       els.toolbarHint.textContent = draftDirty
         ? "초안 편집 중 · 저장해야 다른 PC에 공유됩니다."
-        : "저장됨 · 만들기/메모/삭제는 저장 후 동기화됩니다.";
+        : "저장됨 · 만들기/트레이스/삭제는 저장 후 동기화됩니다.";
     } else if (isMaintenanceModeActive()) {
       els.toolbarHint.textContent = "정비오더 모드 · 투입완료로 처리하세요.";
     } else {
@@ -691,10 +698,45 @@
     if (!side || !card) return false;
     var room = String(side.room || "").trim();
     var conf = String(side.confirmationNo || "").trim();
+    var cardRoom = String(card.room || "").trim();
+    var origin = String(card.roomFrom || card.room || "").trim();
     return (
-      room === String(card.room || "").trim() &&
-      conf === String(card.confirmationNo || "").trim()
+      conf === String(card.confirmationNo || "").trim() &&
+      (room === cardRoom || room === origin)
     );
+  }
+
+  function formatCardRoomLabel(card) {
+    var cur = formatRoomDisplay(card.room);
+    var from = card.roomFrom ? formatRoomDisplay(card.roomFrom) : "";
+    if (from && cur && from !== cur) return from + " → " + cur;
+    return cur || "—";
+  }
+
+  function classifyWingByRoom(room) {
+    var d = String(room || "").replace(/\D/g, "");
+    var tail = d.length >= 2 ? parseInt(d.slice(-2), 10) : NaN;
+    if (!isNaN(tail) && tail > 50) return "annex";
+    return "main";
+  }
+
+  function syncCardRoomToTableRows(card, prevRoom) {
+    if (!card || !state.table || !Array.isArray(state.table.rows)) return;
+    var wing = card.wing === "annex" ? "annex" : "main";
+    var matchRoom = String(prevRoom || card.roomFrom || card.room || "").trim();
+    state.table.rows.forEach(function (row) {
+      var n = normalizeTableRow(row);
+      var side = n[wing];
+      if (!side) return;
+      if (
+        String(side.room || "").trim() === matchRoom &&
+        String(side.confirmationNo || "").trim() ===
+          String(card.confirmationNo || "").trim()
+      ) {
+        side.room = card.room;
+        row[wing] = side;
+      }
+    });
   }
 
   function removeCardFromTableRows(card) {
@@ -720,7 +762,7 @@
     if (!isFrontModeActive()) return;
     var card = findCard(cardId);
     if (!card) return;
-    var label = formatRoomDisplay(card.room) || card.room;
+    var label = formatCardRoomLabel(card);
     if (!confirm("객실 " + label + " 카드를 삭제할까요?\n(저장 후 다른 PC에 반영됩니다)")) {
       return;
     }
@@ -750,7 +792,7 @@
     var card = findCard(cardId);
     if (!card) return;
     var next = window.prompt(
-      "트레이스 수정 (객실 " + (formatRoomDisplay(card.room) || card.room) + ")",
+      "트레이스 수정 (객실 " + formatCardRoomLabel(card) + ")",
       card.trace || ""
     );
     if (next == null) return;
@@ -760,11 +802,62 @@
     renderCards();
   }
 
+  function editNotifyCardRoom(cardId) {
+    if (!isFrontModeActive()) return;
+    var card = findCard(cardId);
+    if (!card) return;
+    var current = formatRoomDisplay(card.room) || card.room || "";
+    var nextRaw = window.prompt(
+      "객실번호 변경 (현재 " + formatCardRoomLabel(card) + ")",
+      current
+    );
+    if (nextRaw == null) return;
+    var next = String(nextRaw).trim();
+    if (!next) {
+      alert("객실번호를 입력하세요.");
+      return;
+    }
+    var prevRoom = card.room;
+    if (!card.roomFrom) card.roomFrom = prevRoom;
+    card.room = next;
+    if (formatRoomDisplay(card.roomFrom) === formatRoomDisplay(card.room)) {
+      card.roomFrom = "";
+    }
+    card.wing = classifyWingByRoom(card.room);
+    syncCardRoomToTableRows(card, prevRoom);
+    markDraftDirty();
+    renderCards();
+  }
+
+  function cardMatchesSearch(card, q) {
+    if (!q) return true;
+    var hay = [
+      card.room,
+      card.roomFrom,
+      formatCardRoomLabel(card),
+      card.confirmationNo,
+      card.itemsText,
+      card.trace,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return hay.indexOf(q) >= 0;
+  }
+
+  function changeMatchesSearch(entry, q) {
+    if (!q) return true;
+    var hay = [entry.roomFrom, entry.roomTo, entry.memo].join(" ").toLowerCase();
+    return hay.indexOf(q) >= 0;
+  }
+
   function createCardEl(card) {
     var li = document.createElement("li");
     li.className = "room-card inven-notify-card";
     li.setAttribute("data-card-id", card.id);
     if (card.done) li.classList.add("inven-notify-card--done");
+    if (card.roomFrom && formatRoomDisplay(card.roomFrom) !== formatRoomDisplay(card.room)) {
+      li.classList.add("inven-notify-card--room-moved");
+    }
 
     var head = document.createElement("div");
     head.className = "room-card__head";
@@ -772,7 +865,7 @@
     noBox.className = "room-card__no-box";
     var no = document.createElement("span");
     no.className = "room-card__no";
-    no.textContent = formatRoomDisplay(card.room);
+    no.textContent = formatCardRoomLabel(card);
     noBox.appendChild(no);
     head.appendChild(noBox);
     if (card.confirmationNo) {
@@ -810,6 +903,12 @@
     acts.className = "inven-notify-card__actions";
     var hasAct = false;
     if (isFrontModeActive()) {
+      var roomBtn = document.createElement("button");
+      roomBtn.type = "button";
+      roomBtn.className = "inven-notify-card__room-btn";
+      roomBtn.setAttribute("data-card-id", card.id);
+      roomBtn.textContent = "객실변경";
+      acts.appendChild(roomBtn);
       var traceBtn = document.createElement("button");
       traceBtn.type = "button";
       traceBtn.className = "inven-notify-card__memo-btn";
@@ -936,14 +1035,19 @@
   function renderCards() {
     if (!els.boards) return;
     els.boards.innerHTML = "";
-    var cards = state.cards || [];
+    var q = String(cardSearchQuery || "").trim().toLowerCase();
+    var cards = (state.cards || []).filter(function (c) {
+      return cardMatchesSearch(c, q);
+    });
     var mainCards = cards.filter(function (c) {
       return c.wing === "main";
     });
     var annexCards = cards.filter(function (c) {
       return c.wing === "annex";
     });
-    var changes = getInvChangeEntries();
+    var changes = getInvChangeEntries().filter(function (e) {
+      return changeMatchesSearch(e, q);
+    });
     var mainChanges = changes.filter(function (e) {
       return classifyChangeWing(e) === "main";
     });
@@ -970,6 +1074,21 @@
     empty.id = "invenNotifyEmpty";
     empty.textContent =
       "인벤에서 「만들기」를 실행하거나, 프론트 모드에서 저장하세요.";
+
+    var searchRow = document.createElement("div");
+    searchRow.className = "inven-notify-search-row";
+    var searchInput = document.createElement("input");
+    searchInput.type = "search";
+    searchInput.id = "invenNotifySearch";
+    searchInput.className = "inven-notify-search";
+    searchInput.placeholder = "객실·예약번호·물품·트레이스 검색";
+    searchInput.autocomplete = "off";
+    searchInput.value = cardSearchQuery || "";
+    searchInput.addEventListener("input", function () {
+      cardSearchQuery = String(searchInput.value || "");
+      renderCards();
+    });
+    searchRow.appendChild(searchInput);
 
     var boards = document.createElement("div");
     boards.className = "inven-notify-boards";
@@ -1004,10 +1123,17 @@
     toolbar.appendChild(toolbarHint);
 
     mount.appendChild(toolbar);
+    mount.appendChild(searchRow);
     mount.appendChild(empty);
     mount.appendChild(boards);
 
     boards.addEventListener("click", function (e) {
+      var roomBtn = e.target.closest(".inven-notify-card__room-btn");
+      if (roomBtn) {
+        e.preventDefault();
+        editNotifyCardRoom(roomBtn.getAttribute("data-card-id"));
+        return;
+      }
       var memoBtn = e.target.closest(".inven-notify-card__memo-btn");
       if (memoBtn) {
         e.preventDefault();
@@ -1034,6 +1160,7 @@
     els.toolbar = toolbar;
     els.btnSave = btnSave;
     els.toolbarHint = toolbarHint;
+    els.searchInput = searchInput;
     els.hint = document.getElementById("invenNotifyHint");
     uiReady = true;
     return true;

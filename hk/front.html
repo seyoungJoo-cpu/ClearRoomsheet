@@ -4696,6 +4696,49 @@
       background: #166534;
     }
 
+    .inven-notify-search-row {
+      margin: 0 0 10px;
+    }
+
+    .inven-notify-search {
+      width: 100%;
+      max-width: 420px;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      background: #fff;
+    }
+
+    .inven-notify-search:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .inven-notify-card--room-moved .room-card__no {
+      font-size: 0.75rem;
+      letter-spacing: -0.01em;
+    }
+
+    .inven-notify-card__room-btn {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .inven-notify-card__room-btn:hover {
+      background: #dbeafe;
+    }
+
     .inven-notify-card__memo-btn,
     .inven-notify-card__delete-btn {
       height: 28px;
@@ -8953,7 +8996,7 @@
                   <input
                     type="text"
                     id="invMemo"
-                    placeholder="메모 (선택)"
+                    placeholder="예: BEG → 가드 (코드 자동변환)"
                     autocomplete="off"
                   />
                   <button type="button" class="hk-photo-btn" id="btnPhotoInvMemo" title="사진 첨부">사진</button>
@@ -8997,7 +9040,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckInvenNotifyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          인벤「만들기」후 프론트에서 저장해야 동기화됩니다. 트레이스 수정·카드 삭제도 저장 후 공유됩니다. 정비오더 모드에서 투입완료할 수 있습니다.
+          인벤「만들기」후 프론트에서 저장해야 동기화됩니다. 객실변경(102→103)·트레이스·삭제는 저장 후 공유. 상단 검색 가능.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
