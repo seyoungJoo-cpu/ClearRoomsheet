@@ -389,8 +389,9 @@
     }
     var inc = incObj.invenNotify;
     var baseInv = baseObj.invenNotify;
+    // 표가 없는(=아직 못 받은) 쪽이 null을 보내도 기존 표를 지우지 않는다.
     if (!inc || typeof inc !== "object") {
-      return inc == null ? null : baseInv != null ? baseInv : null;
+      return baseInv != null ? baseInv : null;
     }
     if (!baseInv || typeof baseInv !== "object") return inc;
     var baseAt = getInvenNotifyUpdatedAt(baseInv);

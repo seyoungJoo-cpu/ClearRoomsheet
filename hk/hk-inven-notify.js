@@ -5,6 +5,7 @@
 (function (global) {
   var DRAFT_LS = "hk-inven-notify-draft-v5";
   var skipNextRemoteRender = false;
+  var lastPublished = null;
   var lastRenderEditable = null;
   var uiReady = false;
   var draftDirty = false;
@@ -136,13 +137,52 @@
     if (!global.HKStorage) return;
     opts = opts || {};
     var storage = global.HKStorage.load();
-    storage.invenNotify = normalizeInvenNotify(data);
+    var next = normalizeInvenNotify(data);
+    storage.invenNotify = next;
     skipNextRemoteRender = true;
     // 인벤 통보는 저장/초기화 시에만 동기화 (다른 저장과 묶인 자동 푸시 방지)
     global.HKStorage.save(storage, { skipSync: true });
-    if (opts.pushNow && global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
-      global.HKSync.pushStorageNow();
+    if (opts.pushNow) {
+      lastPublished = cloneState(next);
+      if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+        global.HKSync.pushStorageNow();
+      }
     }
+  }
+
+  /**
+   * 다른 PC 시계가 앞서 있어도 방금 누른 저장이 밀리지 않도록,
+   * 현재 저장소(=서버에서 받은 최신본)보다 항상 뒤선 시각을 찍는다.
+   */
+  function nextUpdatedAt() {
+    var now = Date.now();
+    var knownAt = "";
+    try {
+      knownAt = loadInvenNotify().table.updatedAt || "";
+    } catch (e) {}
+    if (lastPublished && lastPublished.table.updatedAt > knownAt) {
+      knownAt = lastPublished.table.updatedAt;
+    }
+    var knownMs = knownAt ? Date.parse(knownAt) : NaN;
+    if (!isNaN(knownMs) && knownMs >= now) now = knownMs + 1000;
+    return new Date(now).toISOString();
+  }
+
+  /** 저장 직후 오래된 원격본이 들어오면 방금 저장한 표로 되돌리고 다시 푸시 */
+  function reconcileWithPublished(stored) {
+    if (!lastPublished) return stored;
+    var storedAt = stored && stored.table ? stored.table.updatedAt || "" : "";
+    var pubAt = lastPublished.table.updatedAt || "";
+    if (!pubAt || storedAt >= pubAt) {
+      lastPublished = null;
+      return stored;
+    }
+    saveInvenNotify(lastPublished, { pushNow: true });
+    return cloneState(lastPublished);
+  }
+
+  function loadPublishedState() {
+    return reconcileWithPublished(cloneState(loadInvenNotify()));
   }
 
   function getPublishedSignature() {
@@ -267,6 +307,7 @@
 
   function resetOnCloseDay() {
     clearDraftLocal();
+    lastPublished = null;
     state = cloneState(defaultInvenNotify());
     draftDirty = false;
     sortState = { col: null, dir: null };
@@ -298,7 +339,7 @@
     }
     syncTableFromDom();
     state = cloneState(defaultInvenNotify());
-    state.table.updatedAt = new Date().toISOString();
+    state.table.updatedAt = nextUpdatedAt();
     sortState = { col: null, dir: null };
     cellEditUndoKey = null;
     clearSelection();
@@ -364,7 +405,7 @@
       return;
     }
     syncTableFromDom();
-    state.table.updatedAt = new Date().toISOString();
+    state.table.updatedAt = nextUpdatedAt();
     saveInvenNotify(state, { pushNow: true });
     draftDirty = false;
     clearDraftLocal();
@@ -1402,11 +1443,11 @@
         state = pending;
         draftDirty = true;
       } else {
-        state = cloneState(loadInvenNotify());
+        state = loadPublishedState();
         draftDirty = false;
       }
     } else {
-      state = cloneState(loadInvenNotify());
+      state = loadPublishedState();
       draftDirty = false;
       sortState = { col: null, dir: null };
       undoStack = [];
@@ -1447,7 +1488,7 @@
       }
     } else {
       if (!draftDirty) {
-        state = cloneState(loadInvenNotify());
+        state = loadPublishedState();
       }
       clearSelection();
     }
