@@ -126,7 +126,15 @@
   }
 
   function roomNumberKey(number) {
-    return String(number == null ? "" : number).trim();
+    var s = String(number == null ? "" : number).trim();
+    if (!s) return "";
+    if (/->/.test(s) || /에서/.test(s)) {
+      return s.replace(/\s+/g, " ");
+    }
+    var d = s.replace(/\D/g, "");
+    if (!d) return s;
+    if (d.length <= 4) return d.length >= 4 ? d.slice(-4) : ("0000" + d).slice(-4);
+    return d.slice(-4);
   }
 
   function markRoomDeletedInMap(deletedRooms, zone, roomNumber) {
@@ -134,7 +142,10 @@
     var k = roomNumberKey(roomNumber);
     if (!k) return;
     if (!deletedRooms[zone]) deletedRooms[zone] = [];
-    if (deletedRooms[zone].indexOf(k) < 0) deletedRooms[zone].push(k);
+    var exists = deletedRooms[zone].some(function (n) {
+      return roomNumberKey(n) === k;
+    });
+    if (!exists) deletedRooms[zone].push(k);
   }
 
   function isRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
@@ -142,7 +153,10 @@
     if (!k) return false;
     var list = deletedRooms && deletedRooms[zone];
     if (!Array.isArray(list)) return false;
-    return list.indexOf(k) >= 0;
+    for (var i = 0; i < list.length; i++) {
+      if (roomNumberKey(list[i]) === k) return true;
+    }
+    return false;
   }
 
   function normalizeDeletedRooms(data, customZones) {

@@ -6425,7 +6425,8 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .sched-cards-panel {
@@ -6434,11 +6435,9 @@
       background: var(--bg-card);
       padding: 12px 14px 14px;
       margin-bottom: 0;
-      flex: 1;
-      min-height: 0;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
     .sched-cards-panel__title {
@@ -6564,11 +6563,8 @@
       border: 1px solid #bbf7d0;
       border-radius: 10px;
       background: #f0fdf4;
-      flex-shrink: 0;
-      max-height: 28vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
     .sched-ip-panel[hidden] {
@@ -6580,15 +6576,107 @@
       font-size: 0.875rem;
       font-weight: 800;
       color: #15803d;
-      flex-shrink: 0;
     }
 
     .sched-ip-panel__list {
       list-style: none;
       margin: 0;
       padding: 0;
-      overflow-y: auto;
-      min-height: 0;
+    }
+
+    .sched-used-panel {
+      margin-top: 12px;
+      padding: 10px 12px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .sched-used-panel[hidden] {
+      display: none !important;
+    }
+
+    .sched-used-panel__title {
+      margin: 0 0 8px;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: #475569;
+    }
+
+    .sched-used-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+    }
+
+    .sched-used-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: #334155;
+      padding: 2px 0;
+    }
+
+    .sched-used-item__room {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sched-used-item__time {
+      color: #64748b;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .request-quick-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .request-quick-chip-row[hidden] {
+      display: none !important;
+    }
+
+    .request-quick-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      border: 1px solid transparent;
+    }
+
+    .btn-request-quick {
+      margin-left: 0;
+      background: #fff;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+
+    .btn-request-quick:hover {
+      background: #eff6ff;
+    }
+
+    .request-feedback__item-wing {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #1e40af;
+      background: #dbeafe;
+      vertical-align: middle;
     }
 
     .sched-ip-panel__empty {
@@ -8216,7 +8304,7 @@
                     type="text"
                     id="orderRoomNo"
                     name="orderRoomNo"
-                    placeholder="예: 1205"
+                    placeholder="예: 1205 또는 203,204"
                     autocomplete="off"
                   />
                 </div>
@@ -8734,7 +8822,7 @@
                     type="text"
                     id="roomNo"
                     name="roomNo"
-                    placeholder="예: 1205"
+                    placeholder="예: 1205 또는 203,204"
                     autocomplete="off"
                   />
                 </div>
@@ -8751,6 +8839,10 @@
                 </button>
               </div>
               <button type="submit" class="btn-request">요청</button>
+              <button type="button" class="btn-request btn-request-quick" id="btnRequestQuick">
+                빠른거
+              </button>
+              <div class="request-quick-chip-row" id="requestQuickChipRow" hidden aria-live="polite"></div>
               <div class="request-form-memo-full">
                 <div class="field" style="width: 100%; max-width: 520px">
                   <label for="requestMemo">FD <span class="field-label-optional">(선택)</span></label>
@@ -8842,6 +8934,10 @@
         <h2 class="sched-ip-panel__title" id="schedIpTitle">IP</h2>
         <div class="sched-ip-panel__list" id="schedIpCardList"></div>
         <p class="sched-ip-panel__empty" id="schedIpEmpty">IP 객실이 없습니다.</p>
+      </section>
+      <section class="sched-used-panel" id="schedUsedPanel" aria-labelledby="schedUsedTitle" hidden>
+        <h2 class="sched-used-panel__title" id="schedUsedTitle">사용</h2>
+        <ul class="sched-used-list" id="schedUsedList"></ul>
       </section>
       </div>
     </main>
@@ -10491,6 +10587,9 @@
       function roomWingLabelForInput(roomInput) {
         var raw = String(roomInput || "").trim();
         if (!raw) return "";
+        if (/[,，]/.test(raw)) {
+          raw = raw.split(/[,，]/)[0].trim();
+        }
         if (!isRoomInRoomingXml(raw)) return "";
         var nr = roomNumberForStatusLookup(raw);
         var cl = hkBoardClassifyRoom(nr || raw);
@@ -11266,6 +11365,22 @@
         var raw = String(roomInput || "").trim();
         if (!raw) return "";
         if (/->/.test(raw) || /에서/.test(raw)) return raw;
+        if (/[,，]/.test(raw) || /\n/.test(raw)) {
+          var parts = parseBulkRoomNumbers(raw);
+          if (parts.length > 1) {
+            return parts
+              .map(function (p) {
+                return normalizeRoomDigits(roomNumberForStatusLookup(p) || p) || p;
+              })
+              .filter(Boolean)
+              .join(",");
+          }
+          if (parts.length === 1) {
+            return (
+              normalizeRoomDigits(roomNumberForStatusLookup(parts[0]) || parts[0]) || parts[0]
+            );
+          }
+        }
         return normalizeRoomDigits(roomNumberForStatusLookup(raw) || raw) || raw;
       }
 
@@ -11384,15 +11499,19 @@
       }
 
       function parseBulkRoomNumbers(raw) {
-        var seen = {};
         var out = [];
         String(raw || "")
           .split(/[,，\s]+/)
           .forEach(function (part) {
             var n = part.trim();
-            if (!n || seen[n]) return;
-            seen[n] = true;
-            out.push(n);
+            if (!n) return;
+            var canon = normalizeRoomDigits(n) || n;
+            if (!canon) return;
+            var dup = out.some(function (x) {
+              return roomsAreSame(x, canon);
+            });
+            if (dup) return;
+            out.push(canon);
           });
         return out;
       }
@@ -11783,7 +11902,8 @@
         var zone = getActiveZone();
         if (!zone) return;
 
-        if (t.classList.contains("btn-add")) {
+        if (t.closest && t.closest(".btn-add")) {
+          t = t.closest(".btn-add");
           if (!getOperatorName()) {
             alert("이름을 입력하세요.");
             return;
@@ -11800,6 +11920,8 @@
               showHkActionToast("객실번호를 입력하세요.");
               return;
             }
+            nFrom = nFrom ? canonicalRoomInput(nFrom) || nFrom : "";
+            nTo = nTo ? canonicalRoomInput(nTo) || nTo : "";
             if (nFrom && nTo) num = nFrom + " -> " + nTo;
             else num = nFrom || nTo;
           } else {
@@ -11816,10 +11938,6 @@
             }
             var dataBulk = HKStorage.load();
             if (!dataBulk.rooms[zone]) dataBulk.rooms[zone] = [];
-            var existingNums = {};
-            (dataBulk.rooms[zone] || []).forEach(function (r) {
-              existingNums[r.number || ""] = true;
-            });
             var memo1Bulk =
               (addRoot.querySelector(".af-memo1") && addRoot.querySelector(".af-memo1").value.trim()) ||
               "";
@@ -11829,11 +11947,13 @@
             var toAdd = [];
             var skipped = [];
             numbers.forEach(function (n) {
-              if (existingNums[n]) {
+              var exists = (dataBulk.rooms[zone] || []).some(function (r) {
+                return roomsAreSame(r.number || "", n);
+              });
+              if (exists || toAdd.some(function (x) { return roomsAreSame(x, n); })) {
                 skipped.push(n);
                 return;
               }
-              existingNums[n] = true;
               toAdd.push(n);
             });
             if (!toAdd.length) {
@@ -11857,7 +11977,7 @@
               if (entry) changeEntries.push(entry);
             });
             HKStorage.save(dataBulk, { skipSync: true });
-            publishRoomChangesSequential(changeEntries).then(function () {
+            function finishBulkAdd() {
               if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
                 HKSync.pushStorageNow();
               }
@@ -11872,12 +11992,13 @@
                 msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
               }
               showHkActionToast(msg);
-            });
+            }
+            publishRoomChangesSequential(changeEntries).then(finishBulkAdd).catch(finishBulkAdd);
             return;
           }
           var data = HKStorage.load();
           var dup = (data.rooms[zone] || []).some(function (r) {
-            return (r.number || "") === num;
+            return roomsAreSame(r.number || "", num);
           });
           if (dup) {
             showHkActionToast("이미 등록된 객실번호입니다.");
@@ -11903,7 +12024,7 @@
           }
           data.rooms[zone].push(newRow);
           HKStorage.save(data, { skipSync: true });
-          publishRoomChange(addEntry).then(function () {
+          function finishSingleAdd() {
             if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
               HKSync.pushStorageNow();
             }
@@ -11911,7 +12032,8 @@
             renderZoneRoomManagePanel(zone, { force: true });
             renderRoomsForZone(zone, { force: true });
             showHkActionToast("객실이 추가되었습니다.");
-          });
+          }
+          publishRoomChange(addEntry).then(finishSingleAdd).catch(finishSingleAdd);
           return;
         }
 
@@ -12377,6 +12499,25 @@
         if (!s) return "";
         var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
         if (m) return m[1].trim() + " -> " + m[2].trim();
+        if (/[,，]/.test(s)) {
+          return s
+            .split(/[,，]/)
+            .map(function (part) {
+              var t = String(part || "").trim();
+              if (!t) return "";
+              if (/->/.test(t) || /에서/.test(t)) return t;
+              var d = t.replace(/\D/g, "");
+              if (!d) return t;
+              return d.replace(/^0+/, "") || "0";
+            })
+            .filter(Boolean)
+            .join(",");
+        }
+        if (/->/.test(s) || /에서/.test(s)) return s;
+        var digits = s.replace(/\D/g, "");
+        if (digits && digits === s.replace(/\s+/g, "")) {
+          return digits.replace(/^0+/, "") || "0";
+        }
         return s;
       }
 
@@ -12747,15 +12888,17 @@
         entry.updatedAt = new Date().toISOString();
       }
 
-      /** 처리·예정(정비예상시간) 입력: 시각 또는 IP */
+      /** 처리·예정(정비예상시간) 입력: 시각·IP·자유 텍스트(예: 202 14:00) */
       function parseRequestSchedInput(input) {
         var s = String(input == null ? "" : input).trim();
         if (!s) return { ok: true, value: "" };
         if (/^ip$/i.test(s)) return { ok: true, value: "IP" };
         if (typeof HKStorage !== "undefined" && HKStorage.parseTime24) {
-          return HKStorage.parseTime24(s);
+          var timeParsed = HKStorage.parseTime24(s);
+          if (timeParsed && timeParsed.ok && timeParsed.value) return timeParsed;
         }
-        return { ok: false, value: "" };
+        // 시간 형식이 아니면 그대로 저장 (객실번호+시간 등 자유 입력)
+        return { ok: true, value: s.replace(/\s+/g, " ") };
       }
 
       function applyRequestIpSched(entryId) {
@@ -13158,8 +13301,10 @@
         }
         if (panel) panel.hidden = !requestRoomBoardOpen;
         if (sched) sched.hidden = requestRoomBoardOpen;
+        var usedPanel = document.getElementById("schedUsedPanel");
         if (requestRoomBoardOpen) {
           if (ipPanel) ipPanel.hidden = true;
+          if (usedPanel) usedPanel.hidden = true;
           renderRequestRoomBoard();
         } else {
           renderSchedRequestCards();
@@ -16363,7 +16508,7 @@
       }
 
       function isRequestPendingAlert(entry) {
-        if (!entry) return false;
+        if (!entry || entry.used) return false;
         if (entry.sched && String(entry.sched).trim()) return false;
         // IP여도 요청알림에는 유지 (처리·예정 IP 칩과 동시 표시)
         return true;
@@ -16374,9 +16519,20 @@
       }
 
       function isScheduledRequestEntry(entry) {
-        if (!entry) return false;
+        if (!entry || entry.used) return false;
         if (entry.sched && String(entry.sched).trim()) return true;
         return isRequestLiveIp(entry);
+      }
+
+      function isUsedRequestEntry(entry) {
+        return !!(entry && entry.used);
+      }
+
+      function markRequestEntryUsed(entry) {
+        if (!entry) return;
+        entry.used = true;
+        entry.usedAt = new Date().toISOString();
+        entry.updatedAt = entry.usedAt;
       }
 
       function hasPendingRequestModifyCards() {
@@ -17176,6 +17332,13 @@
             ? formatRoomNoDisplay(String(entry.room))
             : "객실 " + formatRoomNoDisplay(String(entry.room))
           : "—";
+        var wingLabel = roomWingLabelForInput(entry.room);
+        if (wingLabel) {
+          var wingBadge = document.createElement("span");
+          wingBadge.className = "request-feedback__item-wing";
+          wingBadge.textContent = wingLabel;
+          r.appendChild(wingBadge);
+        }
         if (entry.urgent) {
           var ub = document.createElement("span");
           ub.className = "request-feedback__item-urgent-badge";
@@ -17644,7 +17807,7 @@
             var timeInp = document.createElement("input");
             timeInp.type = "text";
             timeInp.className = "order-work__facility-time-input hk-time-em";
-            timeInp.placeholder = "1430 / 14:30 / IP";
+            timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
             timeInp.value = prefill;
             timeInp.setAttribute("data-order-id", entry.id || "");
             timeInp.setAttribute("aria-label", "시설시간");
@@ -17670,7 +17833,7 @@
         if (!maintenanceMode) return;
         var p = parseRequestSchedInput(rawTime);
         if (!p.ok || !p.value) {
-          alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)");
+          alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)");
           return;
         }
         if (!getOperatorName()) {
@@ -17742,7 +17905,7 @@
         var timeInp = document.createElement("input");
         timeInp.type = "text";
         timeInp.className = "order-work__facility-time-input hk-time-em";
-        timeInp.placeholder = "1430 / 14:30 / IP";
+        timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
         timeInp.setAttribute("data-order-id", entry.id || "");
         timeInp.setAttribute("aria-label", "시설시간");
         var timeBtn = document.createElement("button");
@@ -18517,16 +18680,18 @@
               memoCardBtn.textContent = memoSched ? "메모 수정" : "메모 입력";
               memoCardBtn.setAttribute("aria-label", memoSched ? "메모 수정" : "메모 입력");
               actions.appendChild(memoCardBtn);
+              if (getFacilityRequestStatus(entry.id) !== "none") {
+                appendFacilityRequestStatusBtn(actions, entry.id);
+              }
+            }
+            if (maintenanceMode || frontMode) {
               var useBtn = document.createElement("button");
               useBtn.type = "button";
               useBtn.className = "sched-card__use-btn";
               useBtn.setAttribute("data-req-id", entry.id);
-              useBtn.setAttribute("aria-label", "사용 완료하여 목록에서 제거");
+              useBtn.setAttribute("aria-label", "사용 처리하여 하단 사용 섹션으로 이동");
               useBtn.textContent = "사용";
               actions.appendChild(useBtn);
-              if (getFacilityRequestStatus(entry.id) !== "none") {
-                appendFacilityRequestStatusBtn(actions, entry.id);
-              }
             }
             li.appendChild(actions);
           }
@@ -18564,8 +18729,44 @@
             hint.hidden = false;
           }
         }
+        renderSchedUsedSection();
         if (requestRoomBoardOpen) renderRequestRoomBoard();
         if (zoneRoomBoardOpen) renderZoneRoomBoard();
+      }
+
+      function renderSchedUsedSection() {
+        var panel = document.getElementById("schedUsedPanel");
+        var list = document.getElementById("schedUsedList");
+        if (!panel || !list) return;
+        list.innerHTML = "";
+        var usedEntries = requestLogEntries.filter(isUsedRequestEntry);
+        usedEntries.sort(function (a, b) {
+          var ta = new Date((a && (a.usedAt || a.updatedAt || a.at)) || 0).getTime();
+          var tb = new Date((b && (b.usedAt || b.updatedAt || b.at)) || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return tb - ta;
+        });
+        if (!usedEntries.length || requestRoomBoardOpen) {
+          panel.hidden = true;
+          return;
+        }
+        panel.hidden = false;
+        usedEntries.forEach(function (entry) {
+          var li = document.createElement("li");
+          li.className = "sched-used-item";
+          li.setAttribute("data-req-id", entry.id || "");
+          var roomEl = document.createElement("span");
+          roomEl.className = "sched-used-item__room";
+          roomEl.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+          var timeEl = document.createElement("span");
+          timeEl.className = "sched-used-item__time";
+          var schedTxt = String(entry.sched || "").trim();
+          timeEl.textContent = schedTxt || "—";
+          li.appendChild(roomEl);
+          li.appendChild(timeEl);
+          list.appendChild(li);
+        });
       }
 
       function openRequestSchedEditor(entryId) {
@@ -18630,7 +18831,7 @@
         var inp = document.createElement("input");
         inp.type = "text";
         inp.classList.add("hk-time-em");
-        inp.placeholder = "1430 / 14:30 / IP";
+        inp.placeholder = "1430 / 14:30 / IP / 202 14:00";
         inp.value = entry.sched || "";
         inp.setAttribute("aria-label", "처리·예정 시간");
         var ok = document.createElement("button");
@@ -18656,7 +18857,7 @@
           ev.stopPropagation();
           var p = parseRequestSchedInput(inp.value);
           if (!p.ok) {
-            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)\n비우면 삭제됩니다.");
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)\n비우면 삭제됩니다.");
             return;
           }
           applyRequestSchedChange(entry, p.value);
@@ -18748,7 +18949,7 @@
         var inp = document.createElement("input");
         inp.type = "text";
         inp.classList.add("hk-time-em");
-        inp.placeholder = "1430 / 14:30 / IP";
+        inp.placeholder = "1430 / 14:30 / IP / 202 14:00";
         inp.value = entry.facilitySched || "";
         inp.setAttribute("aria-label", "시설시간");
         var ok = document.createElement("button");
@@ -18775,7 +18976,7 @@
           ev.stopPropagation();
           var p = parseRequestSchedInput(inp.value);
           if (!p.ok) {
-            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP)\n비우면 삭제됩니다.");
+            alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)\n비우면 삭제됩니다.");
             return;
           }
           if (p.value) entry.facilitySched = p.value;
@@ -19729,6 +19930,13 @@
           if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
             HKSync.pushStorageNow();
           }
+          if (onDone) onDone();
+          else {
+            renderZoneRoomManagePanel(zone, { force: true });
+            renderRoomsForZone(zone, { force: true });
+            showHkActionToast("변경되었습니다.");
+          }
+        }).catch(function () {
           if (onDone) onDone();
           else {
             renderZoneRoomManagePanel(zone, { force: true });
@@ -20908,13 +21116,22 @@
             var ridU = useEl.getAttribute("data-req-id");
             if (ridU) {
               var useEntry = findRequestEntry(ridU);
-              if (useEntry) appendUseLog(useEntry);
-              removeRequestEntry(ridU);
-              if (typeof HKSync !== "undefined" && HKSync.flushPending) {
-                HKSync.flushPending();
+              if (useEntry) {
+                appendUseLog(useEntry);
+                markRequestEntryUsed(useEntry);
+                saveRequestLog();
+                if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+                  HKSync.flushPending();
+                }
+                renderRequestLogPanel({ force: true });
+                showHkActionToast("사용 처리되었습니다.");
+                var usedPanel = document.getElementById("schedUsedPanel");
+                if (usedPanel) {
+                  try {
+                    usedPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  } catch (errScroll) {}
+                }
               }
-              renderRequestLogPanel({ force: true });
-              showHkActionToast("사용 처리되었습니다.");
             }
             return;
           }
@@ -21677,6 +21894,7 @@
           btnUrgentEl.setAttribute("aria-pressed", "false");
         }
         clearRoomStatusDisplay();
+        renderRequestQuickChips([]);
         refreshRequestTypeFilterViews();
       }
 
@@ -21685,6 +21903,52 @@
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           processRequestFormSubmit();
+        });
+      }
+
+      function renderRequestQuickChips(rooms) {
+        var row = document.getElementById("requestQuickChipRow");
+        if (!row) return;
+        row.innerHTML = "";
+        if (!rooms || !rooms.length) {
+          row.hidden = true;
+          return;
+        }
+        row.hidden = false;
+        rooms.forEach(function (room) {
+          var st = lookupRoomStatusFromXml(room) || "";
+          var chip = document.createElement("span");
+          chip.className = "request-quick-chip " + hkStatusBadgeClasses(st);
+          chip.textContent = formatRoomNoDisplay(room) + (st ? " " + st : "");
+          chip.title = "객실 " + formatRoomNoDisplay(room) + (st ? " · " + st : " · 상태 없음");
+          row.appendChild(chip);
+        });
+      }
+
+      function processRequestQuickCheck() {
+        var roomEl = document.getElementById("roomNo");
+        var raw = roomEl && roomEl.value.trim();
+        if (!raw) {
+          showRequestHint("객실번호를 입력해 주세요. (예: 202,203,204)");
+          if (roomEl) roomEl.focus();
+          return;
+        }
+        var rooms = parseBulkRoomNumbers(raw);
+        if (!rooms.length) {
+          showRequestHint("객실번호를 확인하세요.");
+          return;
+        }
+        if (roomEl) roomEl.value = rooms.map(formatRoomNoDisplay).join(",");
+        renderRequestQuickChips(rooms);
+        showHkActionToast(
+          rooms.length + "개 객실 상태 표시 · 시간 입력에 '202 14:00' 형식도 가능"
+        );
+      }
+
+      var btnRequestQuick = document.getElementById("btnRequestQuick");
+      if (btnRequestQuick) {
+        btnRequestQuick.addEventListener("click", function () {
+          processRequestQuickCheck();
         });
       }
 
