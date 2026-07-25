@@ -712,19 +712,25 @@
       if (phase === "cancelled") return;
       var room = entry.room != null ? String(entry.room).trim() : "";
       if (!room) return;
-      room.split(/[,，]/).forEach(function (part) {
-        var key = formatRoomDisplay(part.trim());
+      room.split(/[,，]|->|→|에서/).forEach(function (part) {
+        var key = roomDupKey(part);
         if (key) keys[key] = true;
       });
     });
     return keys;
   }
 
+  function roomDupKey(v) {
+    var d = String(v == null ? "" : v).replace(/\D/g, "");
+    if (!d) return "";
+    return d.replace(/^0+/, "") || "0";
+  }
+
   function cardHasOrderDuplicate(card) {
     var orderKeys = getActiveOrderRoomKeys();
     var path = getCardRoomPath(card);
     for (var i = 0; i < path.length; i++) {
-      var key = formatRoomDisplay(path[i]);
+      var key = roomDupKey(path[i]);
       if (key && orderKeys[key]) return true;
     }
     return false;
