@@ -372,6 +372,34 @@
     return String(data.mbInvNoticeUpdatedAt).trim();
   }
 
+  function getInvenNotifyUpdatedAt(inv) {
+    if (!inv || typeof inv !== "object") return "";
+    if (inv.table && inv.table.updatedAt != null) {
+      return String(inv.table.updatedAt).trim();
+    }
+    return inv.updatedAt != null ? String(inv.updatedAt).trim() : "";
+  }
+
+  /** 인벤 통보는 updatedAt이 더 최신인 쪽만 채택 (빈 표 초기화도 포함) */
+  function pickInvenNotify(base, incoming) {
+    var baseObj = base && typeof base === "object" ? base : {};
+    var incObj = incoming && typeof incoming === "object" ? incoming : {};
+    if (!Object.prototype.hasOwnProperty.call(incObj, "invenNotify")) {
+      return baseObj.invenNotify != null ? baseObj.invenNotify : null;
+    }
+    var inc = incObj.invenNotify;
+    var baseInv = baseObj.invenNotify;
+    if (!inc || typeof inc !== "object") {
+      return inc == null ? null : baseInv != null ? baseInv : null;
+    }
+    if (!baseInv || typeof baseInv !== "object") return inc;
+    var baseAt = getInvenNotifyUpdatedAt(baseInv);
+    var incAt = getInvenNotifyUpdatedAt(inc);
+    if (baseAt && incAt && incAt < baseAt) return baseInv;
+    if (baseAt && !incAt) return baseInv;
+    return inc;
+  }
+
   /** 미니바(MB&인벤) 메모장은 최신 updatedAt 쪽을 채택 */
   function pickMbInvNoticeFields(base, incoming) {
     var baseObj = base && typeof base === "object" ? base : {};
@@ -825,15 +853,7 @@
     merged.mbInvNotice = mbInvPicked.mbInvNotice;
     merged.mbInvNoticeImages = mbInvPicked.mbInvNoticeImages;
     merged.mbInvNoticeUpdatedAt = mbInvPicked.mbInvNoticeUpdatedAt;
-    if (Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
-      if (incoming.invenNotify && typeof incoming.invenNotify === "object") {
-        merged.invenNotify = incoming.invenNotify;
-      } else {
-        merged.invenNotify = null;
-      }
-    } else {
-      merged.invenNotify = base.invenNotify;
-    }
+    merged.invenNotify = pickInvenNotify(base, incoming);
     if (Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates")) {
       merged.frontEmbedStates = mergeFrontEmbedStates(
         base.frontEmbedStates,

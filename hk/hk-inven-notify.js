@@ -132,12 +132,17 @@
     return normalizeInvenNotify(storage.invenNotify);
   }
 
-  function saveInvenNotify(data) {
+  function saveInvenNotify(data, opts) {
     if (!global.HKStorage) return;
+    opts = opts || {};
     var storage = global.HKStorage.load();
     storage.invenNotify = normalizeInvenNotify(data);
     skipNextRemoteRender = true;
-    global.HKStorage.save(storage);
+    // 인벤 통보는 저장/초기화 시에만 동기화 (다른 저장과 묶인 자동 푸시 방지)
+    global.HKStorage.save(storage, { skipSync: true });
+    if (opts.pushNow && global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
+    }
   }
 
   function getPublishedSignature() {
@@ -286,13 +291,12 @@
     }
     if (
       !confirm(
-        "표를 모두 비울까요?\n\n인벤 통보 표가 초기화되며, 바로 저장·공유됩니다."
+        "표를 모두 비울까요?\n\n빈 표로 초기화되며 바로 다른 PC에 공유됩니다."
       )
     ) {
       return;
     }
     syncTableFromDom();
-    pushUndoSnapshot();
     state = cloneState(defaultInvenNotify());
     state.table.updatedAt = new Date().toISOString();
     sortState = { col: null, dir: null };
@@ -301,17 +305,13 @@
     undoStack = [];
     draftDirty = false;
     clearDraftLocal();
-    saveInvenNotify(state);
-    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
-      global.HKSync.pushStorageNow();
-    }
+    saveInvenNotify(state, { pushNow: true });
     updateSaveButton();
     updateToolbarHint();
     if (els.tableWrap) {
       els.tableWrap.classList.remove("inven-notify-table-wrap--draft");
     }
-    renderTable();
-    updateEmpty();
+    renderInvenNotifyPanel(true);
     if (els.btnSave) {
       var prev = els.btnSave.textContent;
       els.btnSave.textContent = "초기화 완료";
@@ -365,7 +365,7 @@
     }
     syncTableFromDom();
     state.table.updatedAt = new Date().toISOString();
-    saveInvenNotify(state);
+    saveInvenNotify(state, { pushNow: true });
     draftDirty = false;
     clearDraftLocal();
     undoStack = [];
@@ -386,9 +386,6 @@
         }
         updateSaveButton();
       }, 1800);
-    }
-    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
-      global.HKSync.pushStorageNow();
     }
     if (uiHooks.onPublished) uiHooks.onPublished();
   }
@@ -1437,10 +1434,10 @@
     }
     if (!force && colResizeActive) return;
     if (!force && editable && draftDirty) {
-      /* keep local draft */
+      /* keep local draft — 저장 전 편집분은 원격으로 덮어쓰지 않음 */
     } else if (editable) {
       var pending = loadDraftLocal();
-      if (pending && pending.table.rows.length) {
+      if (pending && (pending.table.rows.length || draftDirty)) {
         state = pending;
         draftDirty = true;
       } else {
@@ -1454,6 +1451,11 @@
       undoStack = [];
       cellEditUndoKey = null;
       clearSelection();
+    }
+
+    // force 렌더라도 저장 직후 skip 플래그가 있으면 초안/방금 저장본 유지
+    if (force && skipNextRemoteRender) {
+      skipNextRemoteRender = false;
     }
 
     lastRenderEditable = editable;

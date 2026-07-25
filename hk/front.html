@@ -21322,26 +21322,26 @@
           return;
         }
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
+          var shouldOpenNotify = !!(msg.meta && msg.meta.openNotify === true);
           if (!frontMode) {
-            showHkActionToast("프론트 모드를 켠 뒤 인벤 「만들기」를 다시 실행하세요.");
+            // 정렬·상태복원 등 백그라운드 메시지는 무시. 「만들기」만 안내 토스트.
+            if (shouldOpenNotify) {
+              showHkActionToast("프론트 모드를 켠 뒤 인벤 「만들기」를 다시 실행하세요.");
+            }
             return;
           }
-          var shouldOpenNotify = !!(msg.meta && msg.meta.openNotify === true);
-          var onInvenNotify = sidebarMainView === "invenNotify";
-          // 정렬·상태복원 메시지는 화면 전환/초안 덮어쓰기를 하지 않음
-          if (!shouldOpenNotify && !onInvenNotify) return;
+          // 「만들기」로 보낸 표만 초안에 반영 (정렬·복원은 무시)
+          if (!shouldOpenNotify) return;
           HKInvenNotify.importInvenTable(msg.rows, msg.meta || {});
           var rowCount = Array.isArray(msg.rows) ? msg.rows.length : 0;
-          if (shouldOpenNotify) showSidebarInvenNotifyView();
+          showSidebarInvenNotifyView();
           HKInvenNotify.render(true);
-          if (shouldOpenNotify) {
-            if (rowCount > 0) {
-              showHkActionToast(
-                "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
-              );
-            } else {
-              showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
-            }
+          if (rowCount > 0) {
+            showHkActionToast(
+              "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
+            );
+          } else {
+            showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
           }
         }
       });
