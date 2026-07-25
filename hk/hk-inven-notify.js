@@ -709,7 +709,7 @@
     entries.forEach(function (entry) {
       if (!entry) return;
       var phase = entry.phase != null ? String(entry.phase) : "";
-      if (phase === "cancelled" || phase === "deployed") return;
+      if (phase === "cancelled") return;
       var room = entry.room != null ? String(entry.room).trim() : "";
       if (!room) return;
       room.split(/[,，]/).forEach(function (part) {
