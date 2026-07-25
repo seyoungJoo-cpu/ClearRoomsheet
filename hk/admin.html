@@ -3893,6 +3893,20 @@
         }
         var closeAt = new Date().toISOString();
         reset.closeDayAt = closeAt;
+        // 오더/정비 작은 채팅창은 7일 보관 (마감해도 유지)
+        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
+          reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
+          reset.orderDeskChat = HKStorage.normalizeRequestDeskChat(prev.orderDeskChat);
+          reset.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(prev.mbCheckDeskChat);
+        } else {
+          reset.requestDeskChat = Array.isArray(prev.requestDeskChat)
+            ? prev.requestDeskChat.slice()
+            : [];
+          reset.orderDeskChat = Array.isArray(prev.orderDeskChat) ? prev.orderDeskChat.slice() : [];
+          reset.mbCheckDeskChat = Array.isArray(prev.mbCheckDeskChat)
+            ? prev.mbCheckDeskChat.slice()
+            : [];
+        }
         if (preservedFacility) {
           if (preservedFacility.facilityMiscLog) {
             reset.facilityMiscLog = preservedFacility.facilityMiscLog;
@@ -3983,7 +3997,7 @@
               HKInvenNotify.resetOnCloseDay();
             }
             refresh();
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
           });
           return;
         }
@@ -3996,7 +4010,7 @@
           HKInvenNotify.resetOnCloseDay();
         }
         refresh();
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
       }
 
       function performCloseDay() {

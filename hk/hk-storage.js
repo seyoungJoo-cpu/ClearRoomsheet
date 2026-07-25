@@ -461,16 +461,23 @@
     return data;
   }
 
+  var DESK_CHAT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+  var DESK_CHAT_MAX_MESSAGES = 2000;
+
   function normalizeRequestDeskChat(raw) {
     if (!Array.isArray(raw)) return [];
+    var cutoff = Date.now() - DESK_CHAT_RETENTION_MS;
     var out = [];
     raw.forEach(function (m) {
       if (!m || typeof m !== "object") return;
       var id = m.id != null ? String(m.id).trim() : "";
       if (!id) return;
+      var at = m.at != null ? String(m.at) : "";
+      var t = new Date(at || 0).getTime();
+      if (!isNaN(t) && t > 0 && t < cutoff) return;
       out.push({
         id: id,
-        at: m.at != null ? String(m.at) : "",
+        at: at,
         by: m.by != null ? String(m.by) : "",
         text: m.text != null ? String(m.text) : "",
       });
@@ -482,7 +489,7 @@
       if (isNaN(tb)) tb = 0;
       return ta - tb;
     });
-    if (out.length > 120) out = out.slice(-120);
+    if (out.length > DESK_CHAT_MAX_MESSAGES) out = out.slice(-DESK_CHAT_MAX_MESSAGES);
     return out;
   }
 
@@ -1025,5 +1032,6 @@
     stampMbInvNotice: stampMbInvNotice,
     normalizeFrontEmbedStates: normalizeFrontEmbedStates,
     mergeFrontEmbedStates: mergeFrontEmbedStates,
+    normalizeRequestDeskChat: normalizeRequestDeskChat,
   };
 })(typeof window !== "undefined" ? window : this);

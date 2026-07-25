@@ -10904,8 +10904,8 @@
           by: name,
           text: msg,
         });
-        if (data.requestDeskChat.length > 120) {
-          data.requestDeskChat = data.requestDeskChat.slice(-120);
+        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
+          data.requestDeskChat = HKStorage.normalizeRequestDeskChat(data.requestDeskChat);
         }
         HKStorage.save(data, { skipSync: true });
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
@@ -10994,8 +10994,8 @@
           by: name,
           text: msg,
         });
-        if (data.orderDeskChat.length > 120) {
-          data.orderDeskChat = data.orderDeskChat.slice(-120);
+        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
+          data.orderDeskChat = HKStorage.normalizeRequestDeskChat(data.orderDeskChat);
         }
         HKStorage.save(data, { skipSync: true });
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
