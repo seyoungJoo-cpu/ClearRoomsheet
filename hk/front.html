@@ -11084,8 +11084,8 @@
           by: name,
           text: msg,
         });
-        if (data.mbCheckDeskChat.length > 120) {
-          data.mbCheckDeskChat = data.mbCheckDeskChat.slice(-120);
+        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
+          data.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(data.mbCheckDeskChat);
         }
         HKStorage.save(data, { skipSync: true });
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
