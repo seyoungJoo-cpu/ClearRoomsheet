@@ -91,6 +91,7 @@
       room: room,
       confirmationNo: confirmationNo,
       itemsText: raw.itemsText != null ? String(raw.itemsText).trim() : "",
+      memo: raw.memo != null ? String(raw.memo).trim() : "",
       trace: raw.trace != null ? String(raw.trace).trim() : "",
       done: !!raw.done,
       doneAt: raw.doneAt != null ? String(raw.doneAt) : "",
@@ -155,6 +156,7 @@
         room: g.room,
         confirmationNo: g.confirmationNo,
         itemsText: joinItemsText(g.items),
+        memo: prev ? prev.memo || "" : "",
         trace: g.traces.join(" | "),
         done: prev ? !!prev.done : false,
         doneAt: prev ? prev.doneAt || "" : "",
@@ -408,7 +410,7 @@
     if (isFrontModeActive()) {
       els.toolbarHint.textContent = draftDirty
         ? "초안 편집 중 · 저장해야 다른 PC에 공유됩니다."
-        : "저장됨 · 인벤「만들기」후 저장하세요.";
+        : "저장됨 · 만들기/메모/삭제는 저장 후 동기화됩니다.";
     } else if (isMaintenanceModeActive()) {
       els.toolbarHint.textContent = "정비오더 모드 · 투입완료로 처리하세요.";
     } else {
@@ -685,6 +687,66 @@
     if (uiHooks.onPublished) uiHooks.onPublished();
   }
 
+  function sideMatchesCard(side, card) {
+    if (!side || !card) return false;
+    var room = String(side.room || "").trim();
+    var conf = String(side.confirmationNo || "").trim();
+    return (
+      room === String(card.room || "").trim() &&
+      conf === String(card.confirmationNo || "").trim()
+    );
+  }
+
+  function removeCardFromTableRows(card) {
+    if (!card || !state.table || !Array.isArray(state.table.rows)) return;
+    var wing = card.wing === "annex" ? "annex" : "main";
+    var nextRows = [];
+    state.table.rows.forEach(function (row) {
+      var n = normalizeTableRow(row);
+      if (sideMatchesCard(n[wing], card)) {
+        n[wing] = emptySide();
+      }
+      if (
+        String(n.main.room || "").trim() ||
+        String(n.annex.room || "").trim()
+      ) {
+        nextRows.push(n);
+      }
+    });
+    state.table.rows = nextRows;
+  }
+
+  function deleteNotifyCard(cardId) {
+    if (!isFrontModeActive()) return;
+    var card = findCard(cardId);
+    if (!card) return;
+    var label = formatRoomDisplay(card.room) || card.room;
+    if (!confirm("객실 " + label + " 카드를 삭제할까요?\n(저장 후 다른 PC에 반영됩니다)")) {
+      return;
+    }
+    state.cards = (state.cards || []).filter(function (c) {
+      return c && c.id !== cardId;
+    });
+    removeCardFromTableRows(card);
+    markDraftDirty();
+    renderCards();
+    updateEmpty();
+  }
+
+  function editNotifyCardMemo(cardId) {
+    if (!isFrontModeActive()) return;
+    var card = findCard(cardId);
+    if (!card) return;
+    var next = window.prompt(
+      "메모 수정 (객실 " + (formatRoomDisplay(card.room) || card.room) + ")",
+      card.memo || ""
+    );
+    if (next == null) return;
+    card.memo = String(next).trim();
+    markDraftDirty();
+    renderCards();
+  }
+
   function createCardEl(card) {
     var li = document.createElement("li");
     li.className = "room-card inven-notify-card";
@@ -714,6 +776,13 @@
     items.textContent = card.itemsText || "—";
     li.appendChild(items);
 
+    if (card.memo) {
+      var memoEl = document.createElement("p");
+      memoEl.className = "inven-notify-card__memo";
+      memoEl.textContent = "메모 · " + card.memo;
+      li.appendChild(memoEl);
+    }
+
     if (card.trace) {
       var trace = document.createElement("p");
       trace.className = "inven-notify-card__trace";
@@ -729,17 +798,36 @@
         (card.doneBy ? " · " + card.doneBy : "") +
         (card.doneAt ? " · " + formatAt(card.doneAt) : "");
       li.appendChild(doneMeta);
-    } else if (isMaintenanceModeActive()) {
-      var acts = document.createElement("div");
-      acts.className = "inven-notify-card__actions";
+    }
+
+    var acts = document.createElement("div");
+    acts.className = "inven-notify-card__actions";
+    var hasAct = false;
+    if (isFrontModeActive()) {
+      var memoBtn = document.createElement("button");
+      memoBtn.type = "button";
+      memoBtn.className = "inven-notify-card__memo-btn";
+      memoBtn.setAttribute("data-card-id", card.id);
+      memoBtn.textContent = card.memo ? "메모 수정" : "메모";
+      acts.appendChild(memoBtn);
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "inven-notify-card__delete-btn";
+      delBtn.setAttribute("data-card-id", card.id);
+      delBtn.textContent = "삭제";
+      acts.appendChild(delBtn);
+      hasAct = true;
+    }
+    if (!card.done && isMaintenanceModeActive()) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "inven-notify-card__done-btn";
       btn.setAttribute("data-card-id", card.id);
       btn.textContent = "투입완료";
       acts.appendChild(btn);
-      li.appendChild(acts);
+      hasAct = true;
     }
+    if (hasAct) li.appendChild(acts);
     return li;
   }
 
@@ -914,6 +1002,18 @@
     mount.appendChild(boards);
 
     boards.addEventListener("click", function (e) {
+      var memoBtn = e.target.closest(".inven-notify-card__memo-btn");
+      if (memoBtn) {
+        e.preventDefault();
+        editNotifyCardMemo(memoBtn.getAttribute("data-card-id"));
+        return;
+      }
+      var delBtn = e.target.closest(".inven-notify-card__delete-btn");
+      if (delBtn) {
+        e.preventDefault();
+        deleteNotifyCard(delBtn.getAttribute("data-card-id"));
+        return;
+      }
       var doneBtn = e.target.closest(".inven-notify-card__done-btn");
       if (!doneBtn) return;
       e.preventDefault();

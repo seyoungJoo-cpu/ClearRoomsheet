@@ -4651,6 +4651,14 @@
       word-break: keep-all;
     }
 
+    .inven-notify-card__memo {
+      margin: 4px 0 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #4338ca;
+      line-height: 1.35;
+    }
+
     .inven-notify-card__trace {
       margin: 4px 0 0;
       font-size: 0.6875rem;
@@ -4667,6 +4675,7 @@
     .inven-notify-card__actions {
       margin-top: 8px;
       display: flex;
+      flex-wrap: wrap;
       gap: 6px;
     }
 
@@ -4685,6 +4694,37 @@
 
     .inven-notify-card__done-btn:hover {
       background: #166534;
+    }
+
+    .inven-notify-card__memo-btn,
+    .inven-notify-card__delete-btn {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .inven-notify-card__memo-btn {
+      border: 1px solid #c7d2fe;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .inven-notify-card__memo-btn:hover {
+      background: #e0e7ff;
+    }
+
+    .inven-notify-card__delete-btn {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .inven-notify-card__delete-btn:hover {
+      background: #fee2e2;
     }
 
     .inven-notify-card--change {
@@ -8957,7 +8997,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckInvenNotifyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          인벤「만들기」대여 오더를 객실·예약번호로 묶어 카드로 표시합니다. 본관/별관 분리 · 오름차순. 정비오더 모드에서 투입완료할 수 있습니다.
+          인벤「만들기」후 프론트에서 저장해야 동기화됩니다. 메모 수정·카드 삭제도 저장 후 공유됩니다. 정비오더 모드에서 투입완료할 수 있습니다.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
