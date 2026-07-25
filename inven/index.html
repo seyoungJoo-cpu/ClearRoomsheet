@@ -608,7 +608,8 @@
       }
     }
 
-    function renderRows() {
+    function renderRows(opts) {
+      opts = opts || {};
       const mainRows = sortByState(dataframeRows.filter((r) => r.building === "본관동"), "main");
       const annexRows = sortByState(dataframeRows.filter((r) => r.building === "별관동"), "annex");
       const rowCount = Math.max(mainRows.length, annexRows.length);
@@ -645,7 +646,7 @@
       todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${todayStr}`;
       meta.textContent = `전체 rows: ${dataframeRows.length}, 트레이스 매칭: ${matched}, 본관동: ${mainRows.length}, 별관동: ${annexRows.length}`;
       saveEmbedState();
-      notifyParentTable(mainRows, annexRows, rowCount);
+      notifyParentTable(mainRows, annexRows, rowCount, opts);
     }
 
     function saveEmbedState() {
@@ -701,8 +702,9 @@
       }
     });
 
-    function notifyParentTable(mainRows, annexRows, rowCount) {
+    function notifyParentTable(mainRows, annexRows, rowCount, opts) {
       if (window.parent === window) return;
+      opts = opts || {};
       const rows = [];
       for (let i = 0; i < rowCount; i += 1) {
         const toSide = (r, idx) =>
@@ -728,7 +730,7 @@
             updatedAt: new Date().toISOString(),
             source: "inven",
             rowCount: rows.length,
-            openNotify: true,
+            openNotify: !!opts.openNotify,
           },
         },
         "*"
@@ -757,7 +759,7 @@
         }
         const traceMap = buildTraceMap(gitDoc);
         dataframeRows = buildDataFrame(invDoc, traceMap);
-        renderRows();
+        renderRows({ openNotify: true });
         const stats = dataframeRows._parseStats || {};
         if (!dataframeRows.length) {
           const todayStr = todayTruncArrivalString();

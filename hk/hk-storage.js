@@ -884,6 +884,7 @@
       merged.deletedCustomZones = base.deletedCustomZones || [];
       merged.deletedRooms = base.deletedRooms || {};
       merged.rooms = base.rooms || merged.rooms;
+      // invenNotify / 공지 등은 위에서 이미 병합됨
     } else {
       var mergedDeletedCustom = mergeDeletedCustomZones(
         base.deletedCustomZones,

@@ -681,10 +681,10 @@ function mergeHkStorage(prev, incoming) {
   var incCd = incoming.closeDayAt != null ? String(incoming.closeDayAt).trim() : "";
   var incomingIsStaleClose = !!prevCd && (!incCd || String(incCd) < String(prevCd));
   if (incomingIsStaleClose) {
-    // 마감 전 클라이언트의 객실·존 푸시는 무시 (어제 특이객실 되살아남 방지)
+    // 마감 전 클라이언트의 객실·존 푸시는 무시하되, 인벤 통보·공지 등 당일 업무 데이터는 반영
     var noticeOnly = pickNoticeFieldsForServer(prev, incoming);
     var mbOnly = pickMbInvNoticeFieldsForServer(prev, incoming);
-    return Object.assign({}, prev, {
+    var staleOut = Object.assign({}, prev, {
       notice: noticeOnly.notice,
       noticeImage: noticeOnly.noticeImages[0] || "",
       noticeImages: noticeOnly.noticeImages,
@@ -698,6 +698,31 @@ function mergeHkStorage(prev, incoming) {
       customZones: prev.customZones,
       deletedCustomZones: prev.deletedCustomZones,
     });
+    if (Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
+      staleOut.invenNotify =
+        incoming.invenNotify && typeof incoming.invenNotify === "object"
+          ? incoming.invenNotify
+          : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates")) {
+      staleOut.frontEmbedStates = incoming.frontEmbedStates;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")) {
+      staleOut.facilityMiscLog = incoming.facilityMiscLog;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDailyFoundLog")) {
+      staleOut.facilityDailyFoundLog = incoming.facilityDailyFoundLog;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
+      staleOut.requestDeskChat = incoming.requestDeskChat;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat")) {
+      staleOut.orderDeskChat = incoming.orderDeskChat;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat")) {
+      staleOut.mbCheckDeskChat = incoming.mbCheckDeskChat;
+    }
+    return staleOut;
   }
 
   var zonePack = mergeHkCustomZones(prev, incoming);
@@ -1107,22 +1132,9 @@ function mergeSyncPayload(prev, incoming) {
       out.hkCloseDayReset = true;
     } else {
       delete out.hkCloseDayReset;
-      var serverCloseAt = prev.hkCloseDayAt || "";
-      var clientCloseAt =
-        (incoming.hkCloseDayAt != null && String(incoming.hkCloseDayAt).trim()) ||
-        (incoming.hkStorage &&
-        incoming.hkStorage.closeDayAt != null &&
-        String(incoming.hkStorage.closeDayAt).trim()) ||
-        "";
-      if (
-        serverCloseAt &&
-        (!clientCloseAt || String(clientCloseAt) < String(serverCloseAt))
-      ) {
-        // 마감 이후인데 클라이언트가 마감 전(또는 모름)이면 객실 저장소 푸시 거부
-        out.hkStorage = prev.hkStorage;
-      } else {
-        out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
-      }
+      // 전체 저장소 거부는 인벤 통보·공지 저장까지 막으므로, mergeHkStorage가
+      // 마감 전 객실만 걸러내도록 항상 병합한다.
+      out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
     }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {

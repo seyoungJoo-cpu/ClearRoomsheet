@@ -339,6 +339,7 @@
       alert("프론트 모드에서만 저장할 수 있습니다.");
       return;
     }
+    syncTableFromDom();
     state.table.updatedAt = new Date().toISOString();
     saveInvenNotify(state);
     draftDirty = false;
@@ -361,6 +362,9 @@
         }
         updateSaveButton();
       }, 1800);
+    }
+    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
     }
     if (uiHooks.onPublished) uiHooks.onPublished();
   }

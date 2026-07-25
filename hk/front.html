@@ -21326,18 +21326,22 @@
             showHkActionToast("프론트 모드를 켠 뒤 인벤 「만들기」를 다시 실행하세요.");
             return;
           }
+          var shouldOpenNotify = !!(msg.meta && msg.meta.openNotify === true);
+          var onInvenNotify = sidebarMainView === "invenNotify";
+          // 정렬·상태복원 메시지는 화면 전환/초안 덮어쓰기를 하지 않음
+          if (!shouldOpenNotify && !onInvenNotify) return;
           HKInvenNotify.importInvenTable(msg.rows, msg.meta || {});
           var rowCount = Array.isArray(msg.rows) ? msg.rows.length : 0;
-          if (msg.meta && msg.meta.openNotify) {
-            showSidebarInvenNotifyView();
-          }
+          if (shouldOpenNotify) showSidebarInvenNotifyView();
           HKInvenNotify.render(true);
-          if (rowCount > 0) {
-            showHkActionToast(
-              "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
-            );
-          } else {
-            showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
+          if (shouldOpenNotify) {
+            if (rowCount > 0) {
+              showHkActionToast(
+                "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
+              );
+            } else {
+              showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
+            }
           }
         }
       });
