@@ -733,16 +733,29 @@
     updateEmpty();
   }
 
-  function editNotifyCardMemo(cardId) {
+  function syncCardTraceToTableRows(card) {
+    if (!card || !state.table || !Array.isArray(state.table.rows)) return;
+    var wing = card.wing === "annex" ? "annex" : "main";
+    state.table.rows.forEach(function (row) {
+      var n = normalizeTableRow(row);
+      if (sideMatchesCard(n[wing], card)) {
+        n[wing].trace = card.trace || "";
+        row[wing] = n[wing];
+      }
+    });
+  }
+
+  function editNotifyCardTrace(cardId) {
     if (!isFrontModeActive()) return;
     var card = findCard(cardId);
     if (!card) return;
     var next = window.prompt(
-      "메모 수정 (객실 " + (formatRoomDisplay(card.room) || card.room) + ")",
-      card.memo || ""
+      "트레이스 수정 (객실 " + (formatRoomDisplay(card.room) || card.room) + ")",
+      card.trace || ""
     );
     if (next == null) return;
-    card.memo = String(next).trim();
+    card.trace = String(next).trim();
+    syncCardTraceToTableRows(card);
     markDraftDirty();
     renderCards();
   }
@@ -776,13 +789,6 @@
     items.textContent = card.itemsText || "—";
     li.appendChild(items);
 
-    if (card.memo) {
-      var memoEl = document.createElement("p");
-      memoEl.className = "inven-notify-card__memo";
-      memoEl.textContent = "메모 · " + card.memo;
-      li.appendChild(memoEl);
-    }
-
     if (card.trace) {
       var trace = document.createElement("p");
       trace.className = "inven-notify-card__trace";
@@ -804,12 +810,12 @@
     acts.className = "inven-notify-card__actions";
     var hasAct = false;
     if (isFrontModeActive()) {
-      var memoBtn = document.createElement("button");
-      memoBtn.type = "button";
-      memoBtn.className = "inven-notify-card__memo-btn";
-      memoBtn.setAttribute("data-card-id", card.id);
-      memoBtn.textContent = card.memo ? "메모 수정" : "메모";
-      acts.appendChild(memoBtn);
+      var traceBtn = document.createElement("button");
+      traceBtn.type = "button";
+      traceBtn.className = "inven-notify-card__memo-btn";
+      traceBtn.setAttribute("data-card-id", card.id);
+      traceBtn.textContent = card.trace ? "트레이스 수정" : "트레이스";
+      acts.appendChild(traceBtn);
       var delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.className = "inven-notify-card__delete-btn";
@@ -1005,7 +1011,7 @@
       var memoBtn = e.target.closest(".inven-notify-card__memo-btn");
       if (memoBtn) {
         e.preventDefault();
-        editNotifyCardMemo(memoBtn.getAttribute("data-card-id"));
+        editNotifyCardTrace(memoBtn.getAttribute("data-card-id"));
         return;
       }
       var delBtn = e.target.closest(".inven-notify-card__delete-btn");
