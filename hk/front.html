@@ -6655,6 +6655,22 @@
       border: 1px solid transparent;
     }
 
+    .request-feedback__chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px 6px;
+      margin-top: 6px;
+    }
+
+    .request-feedback__chips .request-quick-chip {
+      padding: 2px 7px;
+      font-size: 0.75rem;
+    }
+
+    .sched-req-card > .request-feedback__chips {
+      margin-top: 4px;
+    }
+
     .btn-request-quick {
       margin-left: 0;
       background: #fff;
@@ -16082,6 +16098,14 @@
           var id = li.getAttribute("data-req-id");
           var entry = findRequestEntry(id);
           if (!entry) return;
+          if (isMultiRoomRequest(entry)) {
+            var chipsEl = li.querySelector(".request-feedback__chips");
+            if (chipsEl) {
+              var freshChips = buildRequestRoomChips(entry);
+              chipsEl.replaceWith(freshChips);
+            }
+            return;
+          }
           var st = liveRequestEntryStatus(entry);
           var stKey = hkStatusSuffix(st);
           li.classList.remove(
@@ -16118,14 +16142,54 @@
         });
       }
 
+      function getEntryRoomList(entry) {
+        if (!entry) return [];
+        var raw = String(entry.room || "").trim();
+        if (!raw) return [];
+        if (/[,，]/.test(raw)) {
+          return raw
+            .split(/[,，]/)
+            .map(function (s) {
+              return s.trim();
+            })
+            .filter(Boolean);
+        }
+        return [raw];
+      }
+
+      function isMultiRoomRequest(entry) {
+        return getEntryRoomList(entry).length >= 2;
+      }
+
+      function buildRequestRoomChips(entry) {
+        var wrap = document.createElement("div");
+        wrap.className = "request-feedback__chips";
+        getEntryRoomList(entry).forEach(function (room) {
+          var st = lookupRoomStatusFromXml(room) || "";
+          var chip = document.createElement("span");
+          chip.className = "request-quick-chip " + hkStatusBadgeClasses(st);
+          chip.textContent = formatRoomNoDisplay(room) + (st ? " " + st : "");
+          chip.title =
+            "객실 " + formatRoomNoDisplay(room) + (st ? " · " + st : " · 상태 없음");
+          wrap.appendChild(chip);
+        });
+        return wrap;
+      }
+
+      function requestRoomLabelText(entry) {
+        var base = entry && entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+        return "객실 " + base + (entry && entry.quick ? " 중 빠른거" : "");
+      }
+
       function buildRequestFeedbackItemLi(entry) {
         var li = document.createElement("li");
         li.className = "request-feedback__item";
         li.setAttribute("data-req-id", entry.id);
         if (entry.urgent) li.classList.add("is-urgent");
+        var multi = isMultiRoomRequest(entry);
         var liveSt = liveRequestEntryStatus(entry);
         var stKey = hkStatusSuffix(liveSt);
-        if (stKey !== "none") li.classList.add("hk-st--" + stKey);
+        if (!multi && stKey !== "none") li.classList.add("hk-st--" + stKey);
 
         var t = document.createElement("div");
         t.className = "request-feedback__item-time";
@@ -16135,8 +16199,7 @@
         row.className = "request-feedback__item-row";
         var r = document.createElement("span");
         r.className = "request-feedback__item-room";
-        r.textContent =
-          "객실 " + (entry.room ? formatRoomNoDisplay(String(entry.room)) : "—");
+        r.textContent = requestRoomLabelText(entry);
         if (entry.urgent) {
           var ub = document.createElement("span");
           ub.className = "request-feedback__item-urgent-badge";
@@ -16146,15 +16209,18 @@
         }
         var s = document.createElement("span");
         s.className = "request-feedback__item-st";
-        s.appendChild(
-          buildRoomStatusGroup(liveSt, entry.room, {
-            statusClass: "request-feedback__item-st hk-st-badge",
-          })
-        );
+        if (!multi) {
+          s.appendChild(
+            buildRoomStatusGroup(liveSt, entry.room, {
+              statusClass: "request-feedback__item-st hk-st-badge",
+            })
+          );
+        }
         row.appendChild(r);
         row.appendChild(s);
         li.appendChild(t);
         li.appendChild(row);
+        if (multi) li.appendChild(buildRequestRoomChips(entry));
 
         var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
         var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
@@ -18572,17 +18638,20 @@
             li.title = "수정된 내용이 있습니다 · 클릭하면 강조 해제";
           }
 
+          var multiSched = isMultiRoomRequest(entry);
           var head = document.createElement("div");
           head.className = "room-card__head";
           var noBox = document.createElement("span");
           noBox.className = "room-card__no-box";
           var no = document.createElement("span");
           no.className = "room-card__no";
-          no.textContent = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+          no.textContent = entry.room
+            ? formatRoomNoDisplay(String(entry.room)) + (entry.quick ? " 중 빠른거" : "")
+            : "—";
           noBox.appendChild(no);
           var st = facDenied ? "입실 불가" : liveRequestEntryStatus(entry);
           head.appendChild(noBox);
-          appendRoomTypeToCardHead(head, entry.room);
+          if (!multiSched) appendRoomTypeToCardHead(head, entry.room);
           if (facDenied) {
             var deniedGroup = document.createElement("span");
             deniedGroup.className = "hk-status-group";
@@ -18591,12 +18660,15 @@
             deniedSt.textContent = "입실 불가";
             deniedGroup.appendChild(deniedSt);
             head.appendChild(deniedGroup);
-          } else {
+          } else if (!multiSched) {
             head.appendChild(
               buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
             );
           }
           li.appendChild(head);
+          if (multiSched && !facDenied) {
+            li.appendChild(buildRequestRoomChips(entry));
+          }
 
           var sl = document.createElement("p");
           sl.className = "room-card__time-display";
@@ -21799,7 +21871,8 @@
         updateFacilityOrderFoDisplay();
       }
 
-      function appendRequestLog(room, statusVal, isUrgent, memoText, memoImage) {
+      function appendRequestLog(room, statusVal, isUrgent, memoText, memoImage, opts) {
+        opts = opts || {};
         room = canonicalRoomInput(room);
         var id = "req-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         requestLogEntries.unshift({
@@ -21813,6 +21886,7 @@
           memoImage: memoImage != null ? String(memoImage).trim() : "",
           memo2: "",
           memo2Image: "",
+          quick: !!opts.quick,
           by: getOperatorName(),
         });
         knownRequestSnapshots[id] = requestContentSignature(requestLogEntries[0]);
@@ -21938,11 +22012,33 @@
           showRequestHint("객실번호를 확인하세요.");
           return;
         }
-        if (roomEl) roomEl.value = rooms.map(formatRoomNoDisplay).join(",");
-        renderRequestQuickChips(rooms);
-        showHkActionToast(
-          rooms.length + "개 객실 상태 표시 · 시간 입력에 '202 14:00' 형식도 가능"
-        );
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              processRequestQuickCheck();
+            },
+          });
+          return;
+        }
+        var btnUrgentEl = document.getElementById("btnUrgent");
+        var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
+        var memoCombined = collectMemoForSubmit();
+        var memoImage = hkGetPhoto("requestMemo");
+        memoStack.length = 0;
+        renderMemoStack();
+        hkClearPhoto("requestMemo");
+        var roomLabel = rooms.map(formatRoomNoDisplay).join(",");
+        appendRequestLog(roomLabel, "", isUrgent, memoCombined, memoImage, { quick: true });
+        if (roomEl) roomEl.value = "";
+        if (btnUrgentEl) {
+          btnUrgentEl.classList.remove("is-on");
+          btnUrgentEl.setAttribute("aria-pressed", "false");
+        }
+        clearRoomStatusDisplay();
+        renderRequestQuickChips([]);
+        refreshRequestTypeFilterViews();
+        showHkActionToast(rooms.length + "개 객실 빠른거 요청되었습니다.");
       }
 
       var btnRequestQuick = document.getElementById("btnRequestQuick");
