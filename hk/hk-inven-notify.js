@@ -808,39 +808,6 @@
     renderTable();
   }
 
-  function deleteSelectedCol() {
-    var sel = getSelectionOrCell();
-    if (!sel || sel.c0 !== sel.c1) {
-      alert("삭제할 열의 셀 하나를 선택하세요.");
-      return;
-    }
-    var at = sel.c0;
-    if (at === 0 || at === 5) {
-      alert("순번 열은 삭제할 수 없습니다.");
-      return;
-    }
-    pushUndoSnapshot();
-    var sk = sideKeyFromFlat(at);
-    var sideIdx = at < 5 ? 0 : 1;
-    var ki = TABLE_KEYS.indexOf(sk.key);
-    state.table.rows.forEach(function (row) {
-      if (!row[sk.side]) return;
-      for (var k = ki; k < TABLE_KEYS.length - 1; k++) {
-        row[sk.side][TABLE_KEYS[k]] = row[sk.side][TABLE_KEYS[k + 1]] || "";
-      }
-      row[sk.side][TABLE_KEYS[TABLE_KEYS.length - 1]] = "";
-    });
-    state.table.merges = (state.table.merges || []).filter(function (m) {
-      var blockStart = sideIdx * 5;
-      var blockEnd = blockStart + 5;
-      if (m.c >= blockStart && m.c < blockEnd) return false;
-      return true;
-    });
-    clearSelection();
-    markDraftDirty();
-    renderTable();
-  }
-
   function syncTableFromDom() {
     if (!els.tableBody) return;
     els.tableBody.querySelectorAll(".inven-notify-table__cell").forEach(function (td) {
@@ -1267,12 +1234,6 @@
           return;
         }
         insertCol(sel.c0);
-      })
-    );
-    toolGroup.appendChild(
-      makeToolbarButton("열 삭제", "선택한 열 삭제(순번 제외)", function () {
-        syncTableFromDom();
-        deleteSelectedCol();
       })
     );
     toolGroup.appendChild(
