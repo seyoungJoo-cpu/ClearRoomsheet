@@ -460,6 +460,11 @@
     renderMbInvLogPanel();
     renderMbInvWorkBlock("mb", "mbChange");
     renderMbInvWorkBlock("inv", "invChange");
+    if (typeof global.HKInvenNotify !== "undefined" && global.HKInvenNotify.render) {
+      try {
+        global.HKInvenNotify.render();
+      } catch (e) {}
+    }
   }
 
   function appendMbInvLog(category, roomFrom, roomTo, memo, memoImage) {
@@ -1237,6 +1242,9 @@
     findMbCheckEntry: findMbCheckEntry,
     cancelMbInvEntry: cancelMbInvEntry,
     cancelMbCheckEntry: cancelMbCheckEntry,
+    getEntries: function () {
+      return mbInvLogEntries.slice();
+    },
     isMbInvEntryId: function (id) {
       return id != null && String(id).indexOf("mbinv-") === 0;
     },
