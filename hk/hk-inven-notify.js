@@ -76,6 +76,25 @@
     return ("000000" + d).slice(-6);
   }
 
+  function normalizeRoomPath(raw, room, roomFrom) {
+    var path = [];
+    var seen = {};
+    function pushRoom(v) {
+      var s = v != null ? String(v).trim() : "";
+      if (!s) return;
+      var key = formatRoomDisplay(s) || s;
+      if (seen[key]) return;
+      seen[key] = true;
+      path.push(s);
+    }
+    if (Array.isArray(raw)) {
+      raw.forEach(pushRoom);
+    }
+    if (!path.length && roomFrom) pushRoom(roomFrom);
+    pushRoom(room);
+    return path;
+  }
+
   function normalizeCard(raw) {
     if (!raw || typeof raw !== "object") return null;
     var wing = raw.wing === "annex" ? "annex" : "main";
@@ -83,6 +102,14 @@
     if (!room) return null;
     var confirmationNo =
       raw.confirmationNo != null ? String(raw.confirmationNo).trim() : "";
+    var roomFrom =
+      raw.roomFrom != null && String(raw.roomFrom).trim()
+        ? String(raw.roomFrom).trim()
+        : "";
+    var roomPath = normalizeRoomPath(raw.roomPath, room, roomFrom);
+    if (roomPath.length) room = roomPath[roomPath.length - 1];
+    if (roomPath.length >= 2) roomFrom = roomPath[0];
+    else roomFrom = "";
     var id =
       raw.id != null && String(raw.id).trim()
         ? String(raw.id).trim()
@@ -91,10 +118,8 @@
       id: id,
       wing: wing,
       room: room,
-      roomFrom:
-        raw.roomFrom != null && String(raw.roomFrom).trim()
-          ? String(raw.roomFrom).trim()
-          : "",
+      roomFrom: roomFrom,
+      roomPath: roomPath,
       confirmationNo: confirmationNo,
       itemsText: raw.itemsText != null ? String(raw.itemsText).trim() : "",
       memo: raw.memo != null ? String(raw.memo).trim() : "",
@@ -161,6 +186,7 @@
         wing: g.wing,
         room: g.room,
         roomFrom: prev ? prev.roomFrom || "" : "",
+        roomPath: prev ? prev.roomPath || null : null,
         confirmationNo: g.confirmationNo,
         itemsText: joinItemsText(g.items),
         memo: prev ? prev.memo || "" : "",
@@ -428,8 +454,7 @@
   function updateEmpty() {
     if (!els.empty) return;
     var hasCards = (state.cards || []).length > 0;
-    var hasChanges = getInvChangeEntries().length > 0;
-    els.empty.hidden = hasCards || hasChanges;
+    els.empty.hidden = hasCards;
   }
 
   function updateHint() {
@@ -623,26 +648,6 @@
     });
   }
 
-  function getInvChangeEntries() {
-    var entries = [];
-    try {
-      if (global.HKMbWorkflow && typeof global.HKMbWorkflow.getEntries === "function") {
-        entries = global.HKMbWorkflow.getEntries() || [];
-      } else if (global.HKSync && typeof global.HKSync.getMbInvLog === "function") {
-        entries = global.HKSync.getMbInvLog() || [];
-      }
-    } catch (e) {
-      entries = [];
-    }
-    var doneMap = (state && state.changeDone) || {};
-    return entries.filter(function (e) {
-      if (!e || e.category !== "inv") return false;
-      if (e.phase === "cancelled") return false;
-      if (doneMap[e.id]) return false;
-      return true;
-    });
-  }
-
   function findCard(id) {
     return (state.cards || []).find(function (c) {
       return c && c.id === id;
@@ -671,46 +676,70 @@
     if (uiHooks.onPublished) uiHooks.onPublished();
   }
 
-  function markChangeDone(entryId) {
-    if (!isMaintenanceModeActive()) return;
-    if (
-      !requireOperator(function () {
-        markChangeDone(entryId);
-      })
-    ) {
-      return;
+  function getCardRoomPath(card) {
+    if (!card) return [];
+    if (Array.isArray(card.roomPath) && card.roomPath.length) {
+      return card.roomPath.slice();
     }
-    if (!entryId) return;
-    if (!state.changeDone) state.changeDone = {};
-    state.changeDone[entryId] = {
-      at: new Date().toISOString(),
-      by: getOperatorName(),
-    };
-    state.table.updatedAt = nextUpdatedAt();
-    saveInvenNotify(state, { pushNow: true });
-    draftDirty = false;
-    clearDraftLocal();
-    renderCards();
-    if (uiHooks.onPublished) uiHooks.onPublished();
+    return normalizeRoomPath(null, card.room, card.roomFrom);
+  }
+
+  function formatCardRoomLabel(card) {
+    var path = getCardRoomPath(card);
+    if (!path.length) return "—";
+    return path
+      .map(function (r) {
+        return formatRoomDisplay(r) || r;
+      })
+      .join(" → ");
+  }
+
+  function getActiveOrderRoomKeys() {
+    var keys = {};
+    var entries = [];
+    try {
+      if (uiHooks.getActiveOrderEntries) {
+        entries = uiHooks.getActiveOrderEntries() || [];
+      } else if (global.HKSync && typeof global.HKSync.getOrderLog === "function") {
+        entries = global.HKSync.getOrderLog() || [];
+      }
+    } catch (e) {
+      entries = [];
+    }
+    entries.forEach(function (entry) {
+      if (!entry) return;
+      var phase = entry.phase != null ? String(entry.phase) : "";
+      if (phase === "cancelled" || phase === "deployed") return;
+      var room = entry.room != null ? String(entry.room).trim() : "";
+      if (!room) return;
+      room.split(/[,，]/).forEach(function (part) {
+        var key = formatRoomDisplay(part.trim());
+        if (key) keys[key] = true;
+      });
+    });
+    return keys;
+  }
+
+  function cardHasOrderDuplicate(card) {
+    var orderKeys = getActiveOrderRoomKeys();
+    var path = getCardRoomPath(card);
+    for (var i = 0; i < path.length; i++) {
+      var key = formatRoomDisplay(path[i]);
+      if (key && orderKeys[key]) return true;
+    }
+    return false;
   }
 
   function sideMatchesCard(side, card) {
     if (!side || !card) return false;
     var room = String(side.room || "").trim();
     var conf = String(side.confirmationNo || "").trim();
-    var cardRoom = String(card.room || "").trim();
-    var origin = String(card.roomFrom || card.room || "").trim();
-    return (
-      conf === String(card.confirmationNo || "").trim() &&
-      (room === cardRoom || room === origin)
-    );
-  }
-
-  function formatCardRoomLabel(card) {
-    var cur = formatRoomDisplay(card.room);
-    var from = card.roomFrom ? formatRoomDisplay(card.roomFrom) : "";
-    if (from && cur && from !== cur) return from + " → " + cur;
-    return cur || "—";
+    if (conf !== String(card.confirmationNo || "").trim()) return false;
+    var path = getCardRoomPath(card);
+    var sideKey = formatRoomDisplay(room) || room;
+    return path.some(function (r) {
+      return (formatRoomDisplay(r) || r) === sideKey;
+    });
   }
 
   function classifyWingByRoom(room) {
@@ -723,7 +752,7 @@
   function syncCardRoomToTableRows(card, prevRoom) {
     if (!card || !state.table || !Array.isArray(state.table.rows)) return;
     var wing = card.wing === "annex" ? "annex" : "main";
-    var matchRoom = String(prevRoom || card.roomFrom || card.room || "").trim();
+    var matchRoom = String(prevRoom || card.room || "").trim();
     state.table.rows.forEach(function (row) {
       var n = normalizeTableRow(row);
       var side = n[wing];
@@ -818,11 +847,16 @@
       return;
     }
     var prevRoom = card.room;
-    if (!card.roomFrom) card.roomFrom = prevRoom;
+    var path = getCardRoomPath(card);
+    var nextKey = formatRoomDisplay(next) || next;
+    var lastKey =
+      path.length > 0
+        ? formatRoomDisplay(path[path.length - 1]) || path[path.length - 1]
+        : "";
+    if (nextKey !== lastKey) path.push(next);
+    card.roomPath = path;
     card.room = next;
-    if (formatRoomDisplay(card.roomFrom) === formatRoomDisplay(card.room)) {
-      card.roomFrom = "";
-    }
+    card.roomFrom = path.length >= 2 ? path[0] : "";
     card.wing = classifyWingByRoom(card.room);
     syncCardRoomToTableRows(card, prevRoom);
     markDraftDirty();
@@ -834,6 +868,7 @@
     var hay = [
       card.room,
       card.roomFrom,
+      getCardRoomPath(card).join(" "),
       formatCardRoomLabel(card),
       card.confirmationNo,
       card.itemsText,
@@ -844,20 +879,15 @@
     return hay.indexOf(q) >= 0;
   }
 
-  function changeMatchesSearch(entry, q) {
-    if (!q) return true;
-    var hay = [entry.roomFrom, entry.roomTo, entry.memo].join(" ").toLowerCase();
-    return hay.indexOf(q) >= 0;
-  }
-
   function createCardEl(card) {
     var li = document.createElement("li");
     li.className = "room-card inven-notify-card";
     li.setAttribute("data-card-id", card.id);
     if (card.done) li.classList.add("inven-notify-card--done");
-    if (card.roomFrom && formatRoomDisplay(card.roomFrom) !== formatRoomDisplay(card.room)) {
-      li.classList.add("inven-notify-card--room-moved");
-    }
+    var path = getCardRoomPath(card);
+    if (path.length >= 2) li.classList.add("inven-notify-card--room-moved");
+    var dup = cardHasOrderDuplicate(card);
+    if (dup) li.classList.add("inven-notify-card--dup");
 
     var head = document.createElement("div");
     head.className = "room-card__head";
@@ -876,6 +906,13 @@
       head.appendChild(conf);
     }
     li.appendChild(head);
+
+    if (dup) {
+      var dupEl = document.createElement("div");
+      dupEl.className = "inven-notify-card__dup";
+      dupEl.textContent = "중복확인요망";
+      li.appendChild(dupEl);
+    }
 
     var items = document.createElement("p");
     items.className = "inven-notify-card__items";
@@ -936,55 +973,7 @@
     return li;
   }
 
-  function createChangeCardEl(entry) {
-    var li = document.createElement("li");
-    li.className = "room-card inven-notify-card inven-notify-card--change";
-    li.setAttribute("data-change-id", entry.id || "");
-
-    var tag = document.createElement("div");
-    tag.className = "inven-notify-card__change-tag";
-    tag.textContent = "인벤 변경";
-    li.appendChild(tag);
-
-    var row = document.createElement("div");
-    row.className = "inven-notify-card__change-row";
-    var fromCard = document.createElement("span");
-    fromCard.className = "room-card__no-box inven-notify-card__arrow-room";
-    fromCard.textContent = formatRoomDisplay(entry.roomFrom);
-    var arrow = document.createElement("span");
-    arrow.className = "inven-notify-card__arrow";
-    arrow.textContent = "→";
-    var toCard = document.createElement("span");
-    toCard.className = "room-card__no-box inven-notify-card__arrow-room";
-    toCard.textContent = formatRoomDisplay(entry.roomTo);
-    row.appendChild(fromCard);
-    row.appendChild(arrow);
-    row.appendChild(toCard);
-    li.appendChild(row);
-
-    var memo = entry.memo != null ? String(entry.memo).trim() : "";
-    if (memo) {
-      var memoEl = document.createElement("p");
-      memoEl.className = "inven-notify-card__items";
-      memoEl.textContent = memo;
-      li.appendChild(memoEl);
-    }
-
-    if (isMaintenanceModeActive()) {
-      var acts = document.createElement("div");
-      acts.className = "inven-notify-card__actions";
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "inven-notify-card__done-btn";
-      btn.setAttribute("data-change-id", entry.id || "");
-      btn.textContent = "투입완료";
-      acts.appendChild(btn);
-      li.appendChild(acts);
-    }
-    return li;
-  }
-
-  function renderWingBoard(wing, title, cards, changeEntries) {
+  function renderWingBoard(wing, title, cards) {
     var section = document.createElement("section");
     section.className = "inven-notify-wing";
     section.setAttribute("data-wing", wing);
@@ -1006,14 +995,11 @@
     openCards.forEach(function (c) {
       list.appendChild(createCardEl(c));
     });
-    changeEntries.forEach(function (e) {
-      list.appendChild(createChangeCardEl(e));
-    });
     doneCards.forEach(function (c) {
       list.appendChild(createCardEl(c));
     });
 
-    if (!openCards.length && !doneCards.length && !changeEntries.length) {
+    if (!openCards.length && !doneCards.length) {
       var empty = document.createElement("p");
       empty.className = "inven-notify-wing__empty";
       empty.textContent = title + " 오더 없음";
@@ -1022,14 +1008,6 @@
       section.appendChild(list);
     }
     return section;
-  }
-
-  function classifyChangeWing(entry) {
-    var room = entry.roomTo || entry.roomFrom || "";
-    var d = String(room).replace(/\D/g, "");
-    var tail = d.length >= 2 ? parseInt(d.slice(-2), 10) : NaN;
-    if (!isNaN(tail) && tail > 50) return "annex";
-    return "main";
   }
 
   function renderCards() {
@@ -1045,18 +1023,9 @@
     var annexCards = cards.filter(function (c) {
       return c.wing === "annex";
     });
-    var changes = getInvChangeEntries().filter(function (e) {
-      return changeMatchesSearch(e, q);
-    });
-    var mainChanges = changes.filter(function (e) {
-      return classifyChangeWing(e) === "main";
-    });
-    var annexChanges = changes.filter(function (e) {
-      return classifyChangeWing(e) === "annex";
-    });
 
-    els.boards.appendChild(renderWingBoard("main", "본관", mainCards, mainChanges));
-    els.boards.appendChild(renderWingBoard("annex", "별관", annexCards, annexChanges));
+    els.boards.appendChild(renderWingBoard("main", "본관", mainCards));
+    els.boards.appendChild(renderWingBoard("annex", "별관", annexCards));
     els.boards.hidden = false;
     updateEmpty();
   }
@@ -1150,9 +1119,7 @@
       if (!doneBtn) return;
       e.preventDefault();
       var cardId = doneBtn.getAttribute("data-card-id");
-      var changeId = doneBtn.getAttribute("data-change-id");
       if (cardId) markCardDone(cardId);
-      else if (changeId) markChangeDone(changeId);
     });
 
     els.empty = empty;

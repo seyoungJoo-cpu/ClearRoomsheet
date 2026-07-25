@@ -4720,6 +4720,21 @@
     .inven-notify-card--room-moved .room-card__no {
       font-size: 0.75rem;
       letter-spacing: -0.01em;
+      line-height: 1.35;
+      white-space: normal;
+    }
+
+    .inven-notify-card__dup {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #b45309;
+      letter-spacing: -0.01em;
+    }
+
+    .inven-notify-card--dup {
+      border-color: #f59e0b;
+      background: #fffbeb;
     }
 
     .inven-notify-card__room-btn {
@@ -4768,40 +4783,6 @@
 
     .inven-notify-card__delete-btn:hover {
       background: #fee2e2;
-    }
-
-    .inven-notify-card--change {
-      border-color: #93c5fd;
-      background: #f8fbff;
-    }
-
-    .inven-notify-card__change-tag {
-      font-size: 0.6875rem;
-      font-weight: 800;
-      color: #1d4ed8;
-      margin-bottom: 6px;
-    }
-
-    .inven-notify-card__change-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .inven-notify-card__arrow {
-      font-weight: 800;
-      color: #1d4ed8;
-    }
-
-    .inven-notify-card__arrow-room {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 2.5rem;
-      padding: 4px 8px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
     }
 
     @media (max-width: 900px) {
@@ -17658,6 +17639,9 @@
         renderOrderLogPanel(opts);
         renderFacilityOrderLogPanel(opts);
         renderOrderWorkPanels(opts);
+        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.render) {
+          HKInvenNotify.render();
+        }
       }
 
       function appendOrderItemCommon(li, entry, opts) {
@@ -21864,6 +21848,9 @@
           showOperatorGate: showOperatorGate,
           formatRoomNoDisplay: formatRoomNoDisplay,
           formatAt: formatReqAt,
+          getActiveOrderEntries: function () {
+            return orderLogEntries || [];
+          },
         });
       }
       if (typeof HKFacilityLogs !== "undefined") {
