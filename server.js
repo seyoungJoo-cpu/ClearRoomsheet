@@ -1244,6 +1244,97 @@ app.get("/health", function (req, res) {
   res.status(200).send("ok");
 });
 
+function htmlToPlainText(html) {
+  var s = String(html || "");
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  s = s.replace(/<style[\s\S]*?<\/style>/gi, " ");
+  s = s.replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
+  s = s.replace(/<!--[\s\S]*?-->/g, " ");
+  var title = "";
+  var tm = s.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (tm) title = String(tm[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  s = s.replace(/<\/(p|div|h1|h2|h3|h4|h5|h6|li|tr|br|section|article)>/gi, "\n");
+  s = s.replace(/<(br|hr)\s*\/?>/gi, "\n");
+  s = s.replace(/<[^>]+>/g, " ");
+  s = s
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'");
+  s = s
+    .split(/\n+/)
+    .map(function (line) {
+      return line.replace(/\s+/g, " ").trim();
+    })
+    .filter(Boolean)
+    .join("\n");
+  if (s.length > 40000) s = s.slice(0, 40000);
+  return { title: title, text: s };
+}
+
+function isAllowedFetchUrl(raw) {
+  try {
+    var u = new URL(String(raw || "").trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    var host = String(u.hostname || "").toLowerCase();
+    if (!host || host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
+    if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(host)) return false;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+app.post("/api/fetch-page", checkSyncAuth, async function (req, res) {
+  var url = req.body && req.body.url != null ? String(req.body.url).trim() : "";
+  if (!url || !isAllowedFetchUrl(url)) {
+    res.status(400).json({ error: "invalid_url" });
+    return;
+  }
+  try {
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = setTimeout(function () {
+      if (controller) controller.abort();
+    }, 15000);
+    var resp = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller ? controller.signal : undefined,
+      headers: {
+        "User-Agent": "ClearRoomsheetHotelInfoBot/1.0",
+        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    clearTimeout(timer);
+    if (!resp.ok) {
+      res.status(502).json({ error: "fetch_failed", status: resp.status });
+      return;
+    }
+    var ctype = String(resp.headers.get("content-type") || "").toLowerCase();
+    if (ctype && ctype.indexOf("text/html") < 0 && ctype.indexOf("text/plain") < 0 && ctype.indexOf("xml") < 0) {
+      res.status(415).json({ error: "unsupported_content", contentType: ctype });
+      return;
+    }
+    var html = await resp.text();
+    var parsed = htmlToPlainText(html);
+    res.json({
+      ok: true,
+      url: url,
+      finalUrl: resp.url || url,
+      title: parsed.title,
+      text: parsed.text,
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(502).json({
+      error: "fetch_failed",
+      message: err && err.message ? String(err.message) : String(err),
+    });
+  }
+});
+
 app.use(
   "/inven",
   express.static(path.join(__dirname, "inven"), { index: ["index.html", "index.HTML"] })

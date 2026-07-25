@@ -569,6 +569,7 @@
       requestDeskChat: [],
       orderDeskChat: [],
       mbCheckDeskChat: [],
+      hotelInfo: defaultHotelInfo(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -579,6 +580,60 @@
         AJ: [],
       },
     };
+  }
+
+  function defaultHotelInfo() {
+    return {
+      text: "",
+      urls: [],
+      pages: [],
+      updatedAt: "",
+    };
+  }
+
+  function normalizeHotelInfo(raw) {
+    var d = defaultHotelInfo();
+    if (!raw || typeof raw !== "object") return d;
+    d.text = raw.text != null ? String(raw.text) : "";
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    var urls = [];
+    var seen = {};
+    (Array.isArray(raw.urls) ? raw.urls : []).forEach(function (u) {
+      var s = u != null ? String(u).trim() : "";
+      if (!s || seen[s]) return;
+      seen[s] = true;
+      urls.push(s);
+    });
+    d.urls = urls;
+    var pages = [];
+    (Array.isArray(raw.pages) ? raw.pages : []).forEach(function (p) {
+      if (!p || typeof p !== "object") return;
+      var url = p.url != null ? String(p.url).trim() : "";
+      if (!url) return;
+      pages.push({
+        url: url,
+        title: p.title != null ? String(p.title) : "",
+        text: p.text != null ? String(p.text) : "",
+        fetchedAt: p.fetchedAt != null ? String(p.fetchedAt) : "",
+        error: p.error != null ? String(p.error) : "",
+      });
+    });
+    d.pages = pages;
+    return d;
+  }
+
+  function pickHotelInfo(baseObj, incObj) {
+    var baseInfo = normalizeHotelInfo(baseObj && baseObj.hotelInfo);
+    var incInfo = normalizeHotelInfo(incObj && incObj.hotelInfo);
+    if (!Object.prototype.hasOwnProperty.call(incObj || {}, "hotelInfo")) {
+      return baseInfo;
+    }
+    var baseAt = baseInfo.updatedAt || "";
+    var incAt = incInfo.updatedAt || "";
+    if (incAt && (!baseAt || String(incAt) >= String(baseAt))) return incInfo;
+    if (baseAt && !incAt) return baseInfo;
+    if (incAt || incInfo.text || (incInfo.urls && incInfo.urls.length)) return incInfo;
+    return baseInfo;
   }
 
   function parseRoomEntry(x) {
@@ -653,6 +708,7 @@
     d.requestDeskChat = normalizeRequestDeskChat(data.requestDeskChat);
     d.orderDeskChat = normalizeRequestDeskChat(data.orderDeskChat);
     d.mbCheckDeskChat = normalizeRequestDeskChat(data.mbCheckDeskChat);
+    d.hotelInfo = normalizeHotelInfo(data.hotelInfo);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -992,6 +1048,7 @@
     } else {
       merged.mbCheckDeskChat = base.mbCheckDeskChat || [];
     }
+    merged.hotelInfo = pickHotelInfo(base, incoming);
     return normalize(merged);
   }
 
@@ -1033,5 +1090,7 @@
     normalizeFrontEmbedStates: normalizeFrontEmbedStates,
     mergeFrontEmbedStates: mergeFrontEmbedStates,
     normalizeRequestDeskChat: normalizeRequestDeskChat,
+    normalizeHotelInfo: normalizeHotelInfo,
+    defaultHotelInfo: defaultHotelInfo,
   };
 })(typeof window !== "undefined" ? window : this);

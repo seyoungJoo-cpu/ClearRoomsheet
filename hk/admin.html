@@ -937,6 +937,38 @@
       <div class="zone-grid" id="zoneGrid"></div>
     </section>
 
+    <section class="card" id="hotelInfoCard">
+      <h2>인포등록</h2>
+      <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+        호텔 인포메이션을 등록하면 <strong>AI 모드</strong>에서 질문에 답할 때 참고합니다.
+        공식 홈페이지 URL을 넣으면 저장 시 내용을 읽어 함께 저장합니다. 마감해도 유지됩니다.
+      </p>
+      <label for="hotelInfoText" style="display:block;font-size:0.8125rem;font-weight:700;margin-bottom:6px;">호텔 인포메이션</label>
+      <textarea
+        id="hotelInfoText"
+        rows="10"
+        placeholder="예) 체크인 15:00 / 체크아웃 11:00&#10;와이파이: lobby / 비밀번호: ****&#10;주차: 지하 1층 · 2시간 무료&#10;조식: 1층 레스토랑 07:00~10:00"
+        style="width:100%;min-height:160px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:0.875rem;line-height:1.5;resize:vertical;box-sizing:border-box;"
+      ></textarea>
+      <label for="hotelInfoUrlInput" style="display:block;font-size:0.8125rem;font-weight:700;margin:14px 0 6px;">공식 홈페이지 URL</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input
+          type="url"
+          id="hotelInfoUrlInput"
+          placeholder="https://www.example-hotel.com"
+          autocomplete="off"
+          style="flex:1;min-width:220px;height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:0.875rem;"
+        />
+        <button type="button" class="btn-secondary" id="btnAddHotelInfoUrl">URL 추가</button>
+      </div>
+      <ul id="hotelInfoUrlList" style="list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;"></ul>
+      <p id="hotelInfoMeta" style="margin:10px 0 0;font-size:0.75rem;color:var(--text-muted);"></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <button type="button" class="btn-primary" id="btnSaveHotelInfo">인포 저장</button>
+        <button type="button" class="btn-secondary" id="btnRefreshHotelInfoPages">등록 URL 다시 읽기</button>
+      </div>
+    </section>
+
     <section class="card rooming-xml-card">
       <h2>루밍 XML 초기화</h2>
       <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
@@ -954,6 +986,7 @@
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 읽기 모드 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림·문제발생</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다.
+        <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
       <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 읽기모드 저장 + 초기화)</button>
@@ -967,7 +1000,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js"></script>
+  <script src="hk-storage.js?v=hotel-info-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js"></script>
@@ -1052,6 +1085,8 @@
           el.id === "noticeInput" ||
           el.id === "mbInvNoticeInput" ||
           el.id === "vipZoneMemoInput" ||
+          el.id === "hotelInfoText" ||
+          el.id === "hotelInfoUrlInput" ||
           el.id === "newZoneLabel" ||
           el.classList.contains("zone-card__title-input")
         );
@@ -1060,6 +1095,212 @@
       var adminNoticeDirty = false;
       var adminMbInvNoticeDirty = false;
       var adminVipMemoDirty = false;
+      var adminHotelInfoDirty = false;
+      var hotelInfoUrlsDraft = [];
+      var hotelInfoPagesDraft = [];
+
+      function getAdminSyncPassword() {
+        try {
+          return sessionStorage.getItem("clear_html_sync_pwd") || "74321";
+        } catch (e) {
+          return "74321";
+        }
+      }
+
+      function normalizeHotelInfoUrl(raw) {
+        var s = String(raw || "").trim();
+        if (!s) return "";
+        if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+        try {
+          var u = new URL(s);
+          if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+          return u.toString();
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function renderHotelInfoUrlList() {
+        var list = document.getElementById("hotelInfoUrlList");
+        if (!list) return;
+        list.innerHTML = "";
+        hotelInfoUrlsDraft.forEach(function (url, idx) {
+          var li = document.createElement("li");
+          li.style.cssText =
+            "display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;";
+          var a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = url;
+          a.style.cssText =
+            "flex:1;min-width:0;font-size:0.8125rem;word-break:break-all;color:var(--accent);";
+          var page = hotelInfoPagesDraft.find(function (p) {
+            return p && p.url === url;
+          });
+          var meta = document.createElement("span");
+          meta.style.cssText =
+            "flex-shrink:0;font-size:0.6875rem;color:var(--text-muted);white-space:nowrap;";
+          if (page && page.error) meta.textContent = "읽기실패";
+          else if (page && page.text) meta.textContent = "읽음";
+          else meta.textContent = "미읽음";
+          var del = document.createElement("button");
+          del.type = "button";
+          del.className = "btn-secondary";
+          del.textContent = "삭제";
+          del.style.height = "28px";
+          del.addEventListener("click", function () {
+            hotelInfoUrlsDraft = hotelInfoUrlsDraft.filter(function (_, i) {
+              return i !== idx;
+            });
+            hotelInfoPagesDraft = hotelInfoPagesDraft.filter(function (p) {
+              return p && p.url !== url;
+            });
+            adminHotelInfoDirty = true;
+            renderHotelInfoUrlList();
+            updateHotelInfoMeta();
+          });
+          li.appendChild(a);
+          li.appendChild(meta);
+          li.appendChild(del);
+          list.appendChild(li);
+        });
+      }
+
+      function updateHotelInfoMeta(info) {
+        var el = document.getElementById("hotelInfoMeta");
+        if (!el) return;
+        var src =
+          info ||
+          (typeof HKStorage !== "undefined" ? HKStorage.load().hotelInfo : null) ||
+          {};
+        var at = src.updatedAt ? formatAt(src.updatedAt) : "";
+        var pageOk = hotelInfoPagesDraft.filter(function (p) {
+          return p && p.text && !p.error;
+        }).length;
+        el.textContent =
+          (at ? "마지막 저장 · " + at + " · " : "") +
+          "URL " +
+          hotelInfoUrlsDraft.length +
+          "개 · 읽은 페이지 " +
+          pageOk +
+          "개";
+      }
+
+      function loadHotelInfoIntoForm(data, force) {
+        var textEl = document.getElementById("hotelInfoText");
+        var editing =
+          (textEl && document.activeElement === textEl) ||
+          (document.activeElement &&
+            (document.activeElement.id === "hotelInfoUrlInput" ||
+              document.activeElement.closest("#hotelInfoCard"))) ||
+          adminHotelInfoDirty;
+        if (editing && !force) return;
+        var info =
+          typeof HKStorage.normalizeHotelInfo === "function"
+            ? HKStorage.normalizeHotelInfo(data && data.hotelInfo)
+            : (data && data.hotelInfo) || { text: "", urls: [], pages: [] };
+        if (textEl) textEl.value = info.text || "";
+        hotelInfoUrlsDraft = Array.isArray(info.urls) ? info.urls.slice() : [];
+        hotelInfoPagesDraft = Array.isArray(info.pages) ? info.pages.slice() : [];
+        adminHotelInfoDirty = false;
+        renderHotelInfoUrlList();
+        updateHotelInfoMeta(info);
+      }
+
+      function fetchHotelInfoPage(url) {
+        return fetch("/api/fetch-page", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Sync-Password": getAdminSyncPassword(),
+          },
+          body: JSON.stringify({ url: url }),
+        }).then(function (res) {
+          return res.json().then(function (body) {
+            if (!res.ok || !body || !body.ok) {
+              return {
+                url: url,
+                title: "",
+                text: "",
+                fetchedAt: new Date().toISOString(),
+                error:
+                  (body && (body.message || body.error)) ||
+                  "fetch_failed_" + res.status,
+              };
+            }
+            return {
+              url: body.finalUrl || body.url || url,
+              title: body.title || "",
+              text: body.text || "",
+              fetchedAt: body.fetchedAt || new Date().toISOString(),
+              error: "",
+            };
+          });
+        }).catch(function (err) {
+          return {
+            url: url,
+            title: "",
+            text: "",
+            fetchedAt: new Date().toISOString(),
+            error: err && err.message ? err.message : "network_error",
+          };
+        });
+      }
+
+      function fetchAllHotelInfoPages(urls) {
+        var list = Array.isArray(urls) ? urls.slice() : [];
+        if (!list.length) return Promise.resolve([]);
+        var chain = Promise.resolve([]);
+        list.forEach(function (url) {
+          chain = chain.then(function (acc) {
+            return fetchHotelInfoPage(url).then(function (page) {
+              acc.push(page);
+              return acc;
+            });
+          });
+        });
+        return chain;
+      }
+
+      function saveHotelInfo(opts) {
+        opts = opts || {};
+        var textEl = document.getElementById("hotelInfoText");
+        var text = textEl ? String(textEl.value || "") : "";
+        var data = HKStorage.load();
+        var doFetch = opts.refreshPages !== false;
+        var run = doFetch
+          ? fetchAllHotelInfoPages(hotelInfoUrlsDraft)
+          : Promise.resolve(hotelInfoPagesDraft.slice());
+        toast(doFetch ? "홈페이지 읽는 중…" : "인포 저장 중…");
+        return run.then(function (pages) {
+          hotelInfoPagesDraft = pages;
+          data.hotelInfo = {
+            text: text,
+            urls: hotelInfoUrlsDraft.slice(),
+            pages: pages,
+            updatedAt: new Date().toISOString(),
+          };
+          if (typeof HKStorage.normalizeHotelInfo === "function") {
+            data.hotelInfo = HKStorage.normalizeHotelInfo(data.hotelInfo);
+          }
+          HKStorage.save(data);
+          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+            HKSync.pushStorageNow();
+          }
+          adminHotelInfoDirty = false;
+          renderHotelInfoUrlList();
+          updateHotelInfoMeta(data.hotelInfo);
+          var fail = pages.filter(function (p) {
+            return p && p.error;
+          }).length;
+          if (fail) {
+            toast("인포 저장됨 · URL " + fail + "개 읽기 실패(내용은 유지)");
+          } else {
+            toast("인포 저장 완료");
+          }
+        });
+      }
 
       function deferAdminRefresh(applyFn) {
         if (!isAdminUserEditing()) {
@@ -2002,6 +2243,29 @@
               return vip.images.map(function (img, i) {
                 return [i === 0 ? vip.text || "" : "", excelImageCell(img)];
               });
+            })(),
+          },
+          {
+            title: "호텔 인포등록",
+            headers: ["구분", "내용"],
+            rows: (function () {
+              var info =
+                typeof HKStorage.normalizeHotelInfo === "function"
+                  ? HKStorage.normalizeHotelInfo(snapshot.data.hotelInfo)
+                  : snapshot.data.hotelInfo || {};
+              var rows = [["인포 텍스트", info.text || ""]];
+              (info.urls || []).forEach(function (u, i) {
+                rows.push(["URL " + (i + 1), u]);
+              });
+              (info.pages || []).forEach(function (p, i) {
+                if (!p) return;
+                rows.push([
+                  "페이지 " + (i + 1) + (p.title ? " · " + p.title : ""),
+                  (p.error ? "[읽기실패] " + p.error + "\n" : "") +
+                    (p.text || "").slice(0, 5000),
+                ]);
+              });
+              return rows;
             })(),
           },
           {
@@ -3915,6 +4179,13 @@
             reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
           }
         }
+        // 호텔 인포는 마감과 무관하게 유지
+        if (prev.hotelInfo) {
+          reset.hotelInfo =
+            typeof HKStorage.normalizeHotelInfo === "function"
+              ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
+              : prev.hotelInfo;
+        }
         return reset;
       }
 
@@ -4217,6 +4488,7 @@
                 : []
           );
         }
+        loadHotelInfoIntoForm(data, false);
         renderZoneGrid(data);
       }
 
@@ -4777,6 +5049,53 @@
       if (closeDayBtn) {
         closeDayBtn.addEventListener("click", performCloseDay);
       }
+
+      (function setupHotelInfoForm() {
+        var textEl = document.getElementById("hotelInfoText");
+        var urlInput = document.getElementById("hotelInfoUrlInput");
+        var addBtn = document.getElementById("btnAddHotelInfoUrl");
+        var saveBtn = document.getElementById("btnSaveHotelInfo");
+        var refreshBtn = document.getElementById("btnRefreshHotelInfoPages");
+        if (textEl) {
+          textEl.addEventListener("input", function () {
+            adminHotelInfoDirty = true;
+          });
+        }
+        if (addBtn && urlInput) {
+          addBtn.addEventListener("click", function () {
+            var url = normalizeHotelInfoUrl(urlInput.value);
+            if (!url) {
+              toast("올바른 URL을 입력하세요.");
+              return;
+            }
+            if (hotelInfoUrlsDraft.indexOf(url) >= 0) {
+              toast("이미 등록된 URL입니다.");
+              return;
+            }
+            hotelInfoUrlsDraft.push(url);
+            adminHotelInfoDirty = true;
+            urlInput.value = "";
+            renderHotelInfoUrlList();
+            updateHotelInfoMeta();
+          });
+          urlInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addBtn.click();
+            }
+          });
+        }
+        if (saveBtn) {
+          saveBtn.addEventListener("click", function () {
+            saveHotelInfo({ refreshPages: true });
+          });
+        }
+        if (refreshBtn) {
+          refreshBtn.addEventListener("click", function () {
+            saveHotelInfo({ refreshPages: true });
+          });
+        }
+      })();
 
       var clearRoomingXmlBtn = document.getElementById("btnClearRoomingXml");
       if (clearRoomingXmlBtn) {

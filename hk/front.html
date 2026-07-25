@@ -9481,7 +9481,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js"></script>
+  <script src="hk-storage.js?v=hotel-info-1"></script>
   <script src="hk-sync.js?v=xml-upload-time-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js"></script>
@@ -14754,8 +14754,10 @@
           "· 1205,1206,1208 (여러 객실 한번에 · 번호에 상태색)\n\n" +
           "【기타】\n" +
           "· MB CHECK · MB & 인벤 변경 · MB 인벤 문제\n" +
-          "· 오늘 변경 이력\n\n" +
-          "※ 오더·요청 카드에 객실 정비 상태(IP·CL·PU·DI·OO·OS)가 표시됩니다."
+          "· 오늘 변경 이력\n" +
+          "· 호텔 인포 / 체크인 시간 / 주차 / 와이파이 / 조식\n\n" +
+          "※ 오더·요청 카드에 객실 정비 상태(IP·CL·PU·DI·OO·OS)가 표시됩니다.\n" +
+          "※ 호텔 인포는 관리자 「인포등록」에 저장된 내용·홈페이지를 참고합니다."
         );
       }
 
@@ -14860,6 +14862,145 @@
         return out;
       }
 
+      function getAiHotelInfo() {
+        try {
+          var data = HKStorage.load();
+          if (typeof HKStorage.normalizeHotelInfo === "function") {
+            return HKStorage.normalizeHotelInfo(data.hotelInfo);
+          }
+          return data.hotelInfo || { text: "", urls: [], pages: [] };
+        } catch (e) {
+          return { text: "", urls: [], pages: [] };
+        }
+      }
+
+      function hasAiHotelInfoContent(info) {
+        if (!info) return false;
+        if (String(info.text || "").trim()) return true;
+        if (Array.isArray(info.urls) && info.urls.length) return true;
+        return (info.pages || []).some(function (p) {
+          return p && String(p.text || "").trim();
+        });
+      }
+
+      function splitAiHotelInfoChunks(text, source) {
+        var raw = String(text || "").trim();
+        if (!raw) return [];
+        var parts = raw.split(/\n{2,}|\n(?=[^\n]{0,40}[:：])/);
+        if (parts.length < 2) {
+          parts = raw.split(/\n+/);
+        }
+        return parts
+          .map(function (p) {
+            return String(p || "").replace(/\s+/g, " ").trim();
+          })
+          .filter(function (p) {
+            return p.length >= 4;
+          })
+          .map(function (p) {
+            return { source: source || "인포등록", text: p };
+          });
+      }
+
+      function tokenizeAiHotelQuery(q) {
+        return String(q || "")
+          .toLowerCase()
+          .replace(/[^\w가-힣]+/g, " ")
+          .split(/\s+/)
+          .filter(function (t) {
+            return t.length >= 2 && !/^(알려|말해|뭐야|뭐야요|인가요|해주세요|해줘|관련|대한|호텔|정보)$/.test(t);
+          });
+      }
+
+      function scoreAiHotelChunk(chunk, tokens) {
+        var hay = String(chunk.text || "").toLowerCase();
+        if (!hay) return 0;
+        var score = 0;
+        tokens.forEach(function (t) {
+          if (hay.indexOf(t) >= 0) score += 2 + Math.min(2, t.length / 4);
+        });
+        return score;
+      }
+
+      function queryAiHotelInfo(question) {
+        var info = getAiHotelInfo();
+        if (!hasAiHotelInfoContent(info)) {
+          return {
+            ok: false,
+            error:
+              "등록된 호텔 인포가 없습니다.\n관리자 → 「인포등록」에서 내용·홈페이지 URL을 저장하세요.",
+          };
+        }
+        var q = String(question || "").trim();
+        var wantAll =
+          !q ||
+          /^(호텔\s*)?(인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피)$/i.test(
+            normalizeAiQueryInput(q)
+          );
+        var chunks = splitAiHotelInfoChunks(info.text, "인포등록");
+        (info.pages || []).forEach(function (page) {
+          if (!page || !page.text) return;
+          var label = page.title
+            ? "홈페이지 · " + page.title
+            : "홈페이지 · " + (page.url || "");
+          splitAiHotelInfoChunks(page.text, label).forEach(function (c) {
+            chunks.push(c);
+          });
+        });
+        var body = "";
+        if (wantAll) {
+          var parts = [];
+          if (String(info.text || "").trim()) {
+            parts.push("【등록 인포】\n" + String(info.text).trim());
+          }
+          if (info.urls && info.urls.length) {
+            parts.push("【등록 URL】\n" + info.urls.join("\n"));
+          }
+          (info.pages || []).forEach(function (page) {
+            if (!page || !String(page.text || "").trim()) return;
+            var head = page.title || page.url || "홈페이지";
+            var excerpt = String(page.text).trim();
+            if (excerpt.length > 1800) excerpt = excerpt.slice(0, 1800) + "…";
+            parts.push("【" + head + "】\n" + excerpt);
+          });
+          body = parts.join("\n\n");
+        } else {
+          var tokens = tokenizeAiHotelQuery(q);
+          var ranked = chunks
+            .map(function (c) {
+              return { chunk: c, score: scoreAiHotelChunk(c, tokens) };
+            })
+            .filter(function (x) {
+              return x.score > 0;
+            })
+            .sort(function (a, b) {
+              return b.score - a.score;
+            });
+          if (!ranked.length) {
+            body =
+              "관련 문구를 찾지 못했습니다.\n등록 인포·홈페이지에 해당 내용이 없을 수 있습니다.\n\n" +
+              (String(info.text || "").trim()
+                ? "【등록 인포 전문】\n" + String(info.text).trim()
+                : "(등록 인포 텍스트 없음)");
+          } else {
+            var picked = [];
+            var seen = {};
+            ranked.forEach(function (x) {
+              if (picked.length >= 6) return;
+              var key = x.chunk.text.slice(0, 80);
+              if (seen[key]) return;
+              seen[key] = true;
+              picked.push("· (" + x.chunk.source + ") " + x.chunk.text);
+            });
+            body = picked.join("\n\n");
+            if (info.urls && info.urls.length) {
+              body += "\n\n【참고 URL】\n" + info.urls.join("\n");
+            }
+          }
+        }
+        return { ok: true, body: body };
+      }
+
       function detectAiIntent(text) {
         var rawText = String(text || "");
         var multiRooms = parseAiRoomNumberList(rawText);
@@ -14867,6 +15008,15 @@
         if (!q && !multiRooms.length) return { type: "unknown" };
         if (/^(help|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
           return { type: "help" };
+        }
+        if (
+          /호텔\s*인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|공식\s*사이트/.test(q) ||
+          (/체크\s*인|체크\s*아웃|체크인|체크아웃|와이\s*파이|wifi|wi-?fi|주차|조식|수영장|피트니스|연락처|안내\s*데스크/i.test(
+            q
+          ) &&
+            !/객실|타입|type|입실\s*가능|정비\s*가능|\b(IP|CL|PU|DI|OO|OS)\b/i.test(q))
+        ) {
+          return { type: "hotel_info", query: rawText };
         }
         if (/현황|요약|브리핑|전체\s*상황|지금\s*상황|오늘\s*현황/.test(q)) {
           return { type: "summary" };
@@ -15274,6 +15424,16 @@
 
         if (intent.type === "help") {
           appendAiChatBotResult("AI 모드 도움말", [], buildAiHelpMessage());
+          return;
+        }
+
+        if (intent.type === "hotel_info") {
+          var hotelAns = queryAiHotelInfo(intent.query || rawQ);
+          if (!hotelAns.ok) {
+            appendAiChatBotError(hotelAns.error);
+            return;
+          }
+          appendAiChatBotResult("호텔 인포메이션", [], hotelAns.body);
           return;
         }
 
