@@ -280,29 +280,53 @@
   }
 
   function resetInvenTable() {
-    if (!isFrontModeActive()) return;
+    if (!isFrontModeActive()) {
+      alert("프론트 모드에서만 초기화할 수 있습니다.");
+      return;
+    }
     if (
       !confirm(
-        "표를 초기화할까요?\n\n저장되지 않은 변경은 사라지고, 마지막 저장본(없으면 빈 표)으로 돌아갑니다."
+        "표를 모두 비울까요?\n\n인벤 통보 표가 초기화되며, 바로 저장·공유됩니다."
       )
     ) {
       return;
     }
     syncTableFromDom();
     pushUndoSnapshot();
-    var published = loadInvenNotify();
-    state.table = cloneTable(published.table);
+    state = cloneState(defaultInvenNotify());
+    state.table.updatedAt = new Date().toISOString();
     sortState = { col: null, dir: null };
     cellEditUndoKey = null;
     clearSelection();
+    undoStack = [];
     draftDirty = false;
     clearDraftLocal();
+    saveInvenNotify(state);
+    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
+    }
     updateSaveButton();
     updateToolbarHint();
     if (els.tableWrap) {
-      els.tableWrap.classList.toggle("inven-notify-table-wrap--draft", draftDirty);
+      els.tableWrap.classList.remove("inven-notify-table-wrap--draft");
     }
     renderTable();
+    updateEmpty();
+    if (els.btnSave) {
+      var prev = els.btnSave.textContent;
+      els.btnSave.textContent = "초기화 완료";
+      els.btnSave.classList.add("is-done");
+      if (publishFeedbackTimer) clearTimeout(publishFeedbackTimer);
+      publishFeedbackTimer = setTimeout(function () {
+        publishFeedbackTimer = null;
+        if (els.btnSave) {
+          els.btnSave.textContent = prev;
+          els.btnSave.classList.remove("is-done");
+        }
+        updateSaveButton();
+      }, 1800);
+    }
+    if (uiHooks.onPublished) uiHooks.onPublished();
   }
 
   function isInvenNotifyPanelActive() {
@@ -609,6 +633,14 @@
     renderTable();
   }
 
+  function isSideRowEmpty(sideData) {
+    if (!sideData) return true;
+    return TABLE_KEYS.every(function (key) {
+      if (key === "seq") return true;
+      return !(sideData[key] != null && String(sideData[key]).trim());
+    });
+  }
+
   function sortByColumn(col) {
     if (sortState.col === col) {
       if (sortState.dir === "asc") sortState.dir = "desc";
@@ -626,13 +658,35 @@
     }
     if (isFrontModeActive()) pushUndoSnapshot();
     var sk = sideKeyFromFlat(sortState.col);
+    var side = sk.side;
+    var key = sk.key;
     var dir = sortState.dir === "asc" ? 1 : -1;
-    state.table.rows.sort(function (a, b) {
-      var av = (a[sk.side] && a[sk.side][sk.key]) != null ? String(a[sk.side][sk.key]) : "";
-      var bv = (b[sk.side] && b[sk.side][sk.key]) != null ? String(b[sk.side][sk.key]) : "";
+    // 본관동·별관동을 각각 독립 정렬 (반대편 열은 그대로 유지)
+    var sides = state.table.rows.map(function (row) {
+      return normalizeTableSide(row && row[side]);
+    });
+    sides.sort(function (a, b) {
+      var aEmpty = isSideRowEmpty(a);
+      var bEmpty = isSideRowEmpty(b);
+      if (aEmpty && !bEmpty) return 1;
+      if (!aEmpty && bEmpty) return -1;
+      if (aEmpty && bEmpty) return 0;
+      var av = a[key] != null ? String(a[key]) : "";
+      var bv = b[key] != null ? String(b[key]) : "";
       var cmp = av.localeCompare(bv, "ko", { numeric: true, sensitivity: "base" });
       if (cmp !== 0) return cmp * dir;
       return 0;
+    });
+    var seq = 0;
+    sides.forEach(function (sideData, i) {
+      if (!state.table.rows[i]) state.table.rows[i] = normalizeTableRow({});
+      if (isSideRowEmpty(sideData)) {
+        sideData.seq = "";
+      } else {
+        seq += 1;
+        sideData.seq = String(seq);
+      }
+      state.table.rows[i][side] = sideData;
     });
     if (isFrontModeActive()) markDraftDirty();
     renderTable();
@@ -1249,7 +1303,7 @@
       })
     );
     toolGroup.appendChild(
-      makeToolbarButton("초기화", "마지막 저장본(없으면 빈 표)으로 되돌리기", function () {
+      makeToolbarButton("초기화", "표를 비우고 바로 저장·공유", function () {
         resetInvenTable();
       })
     );
