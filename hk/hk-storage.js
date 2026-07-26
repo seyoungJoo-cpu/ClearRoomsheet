@@ -540,6 +540,11 @@
     return !!(entry && typeof entry === "object" && entry.__cleared === true);
   }
 
+  function frontEmbedUpdatedAtMs(entry) {
+    var t = new Date((entry && entry.updatedAt) || 0).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
   function mergeFrontEmbedStates(baseStates, incomingStates) {
     var base = normalizeFrontEmbedStates(baseStates);
     var incoming = normalizeFrontEmbedStates(incomingStates);
@@ -552,11 +557,19 @@
         out[key] = b;
         return;
       }
-      var ta = new Date(a.updatedAt || 0).getTime();
-      var tb = new Date(b.updatedAt || 0).getTime();
-      if (isNaN(ta)) ta = 0;
-      if (isNaN(tb)) tb = 0;
-      // __cleared 마커도 updatedAt으로 비교해 유지 (옛 데이터가 되살아나지 않게)
+      var ta = frontEmbedUpdatedAtMs(a);
+      var tb = frontEmbedUpdatedAtMs(b);
+      var aCleared = isClearedFrontEmbedEntry(a);
+      var bCleared = isClearedFrontEmbedEntry(b);
+      // 초기화(__cleared)는 동일·과거 시각의 옛 XML 데이터로 덮이지 않게 보호
+      if (aCleared && !bCleared) {
+        if (tb > ta) out[key] = b;
+        return;
+      }
+      if (!aCleared && bCleared) {
+        if (tb >= ta) out[key] = b;
+        return;
+      }
       if (tb >= ta) out[key] = b;
     });
     return out;
@@ -1084,6 +1097,8 @@
     save: save,
     applyRemote: applyRemote,
     replaceRemote: replaceRemote,
+    mergeFrontEmbedStates: mergeFrontEmbedStates,
+    isClearedFrontEmbedEntry: isClearedFrontEmbedEntry,
     defaultData: defaultData,
     defaultRoom: defaultRoom,
     parseTime24: parseTime24,

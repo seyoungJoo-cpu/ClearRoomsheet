@@ -817,6 +817,17 @@ function mergeHkStorage(prev, incoming) {
         var tb = new Date(b.updatedAt || 0).getTime();
         if (isNaN(ta)) ta = 0;
         if (isNaN(tb)) tb = 0;
+        var aCleared = !!(a && a.__cleared === true);
+        var bCleared = !!(b && b.__cleared === true);
+        // 초기화 마커는 동일·과거 시각의 옛 XML로 덮이지 않게 보호
+        if (aCleared && !bCleared) {
+          if (tb > ta) outStates[key] = b;
+          return;
+        }
+        if (!aCleared && bCleared) {
+          if (tb >= ta) outStates[key] = b;
+          return;
+        }
         if (tb >= ta) outStates[key] = b;
       });
       return outStates;

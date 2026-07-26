@@ -881,6 +881,32 @@
         }
         changed.push("hkStorage");
         clearDirty("hkStorage");
+      } else if (
+        dirty.hkStorage &&
+        payload.hkStorage &&
+        payload.hkStorage.frontEmbedStates &&
+        typeof global.HKStorage.mergeFrontEmbedStates === "function"
+      ) {
+        // 다른 필드 dirty여도 DD/인벤/취향 초기화(__cleared)는 원격이 더 최신이면 반영
+        try {
+          var localForEmbed = global.HKStorage.load();
+          var prevEmbed = JSON.stringify(
+            (localForEmbed && localForEmbed.frontEmbedStates) || {}
+          );
+          var mergedEmbed = global.HKStorage.mergeFrontEmbedStates(
+            localForEmbed.frontEmbedStates,
+            payload.hkStorage.frontEmbedStates
+          );
+          if (JSON.stringify(mergedEmbed) !== prevEmbed) {
+            localForEmbed.frontEmbedStates = mergedEmbed;
+            global.localStorage.setItem(
+              global.HKStorage.key,
+              JSON.stringify(localForEmbed)
+            );
+            changed.push("hkStorage");
+            changed.push("frontEmbedStates");
+          }
+        } catch (eEmbedMerge) {}
       }
     }
     if (Array.isArray(payload.hkRequestLog) && !dirty.hkRequestLog) {

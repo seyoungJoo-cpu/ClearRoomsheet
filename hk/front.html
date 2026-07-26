@@ -11531,24 +11531,26 @@
         ) {
           updateTopbarXmlUploadTime(payload);
         }
-        if (changed.indexOf("hkStorage") >= 0) {
-          refreshMain({ detectNoticeChange: true });
-          detectFacilityMiscChange();
-          detectFacilityDailyChange();
-          detectInvenNotifyChange();
-          applyFrontEmbedStatesFromStorage();
-          renderRequestDeskChat({ force: true });
-          renderOrderDeskChat({ force: true });
-          renderMbCheckDeskChat({ force: true });
-          if (
-            sidebarMainView === "invenNotify" &&
-            typeof HKInvenNotify !== "undefined"
-          ) {
-            HKInvenNotify.render();
+        if (changed.indexOf("hkStorage") >= 0 || changed.indexOf("frontEmbedStates") >= 0) {
+          if (changed.indexOf("hkStorage") >= 0) {
+            refreshMain({ detectNoticeChange: true });
+            detectFacilityMiscChange();
+            detectFacilityDailyChange();
+            detectInvenNotifyChange();
+            renderRequestDeskChat({ force: true });
+            renderOrderDeskChat({ force: true });
+            renderMbCheckDeskChat({ force: true });
+            if (
+              sidebarMainView === "invenNotify" &&
+              typeof HKInvenNotify !== "undefined"
+            ) {
+              HKInvenNotify.render();
+            }
+            if (typeof HKFacilityLogs !== "undefined") {
+              HKFacilityLogs.refreshFromRemote();
+            }
           }
-          if (typeof HKFacilityLogs !== "undefined") {
-            HKFacilityLogs.refreshFromRemote();
-          }
+          applyFrontEmbedStatesFromStorage({ force: true });
         }
         if (changed.indexOf("hkCloseDayAt") >= 0) {
           handleCloseDayFromSync(payload);
@@ -11898,6 +11900,29 @@
       };
 
       var lastAppliedFrontEmbedSig = "";
+      /** iframe 저장 메시지가 초기화 직후 옛 XML을 되살리지 않도록 세대 번호 */
+      var frontEmbedEpoch = { dd: 0, inven: 0, chichi: 0 };
+
+      function bumpFrontEmbedEpoch(key) {
+        if (!FRONT_EMBED_STATE_KEYS[key]) return 0;
+        frontEmbedEpoch[key] = (frontEmbedEpoch[key] || 0) + 1;
+        return frontEmbedEpoch[key];
+      }
+
+      function syncFrontEmbedEpochFromStorage() {
+        try {
+          var data = HKStorage.load();
+          var states =
+            data.frontEmbedStates && typeof data.frontEmbedStates === "object"
+              ? data.frontEmbedStates
+              : {};
+          ["dd", "inven", "chichi"].forEach(function (key) {
+            if (isClearedFrontEmbedState(states[key])) {
+              if (!(frontEmbedEpoch[key] > 0)) frontEmbedEpoch[key] = 1;
+            }
+          });
+        } catch (e) {}
+      }
 
       function frontEmbedStateSig(states) {
         try {
@@ -11908,6 +11933,12 @@
       }
 
       function isClearedFrontEmbedState(state) {
+        if (
+          typeof HKStorage !== "undefined" &&
+          typeof HKStorage.isClearedFrontEmbedEntry === "function"
+        ) {
+          return HKStorage.isClearedFrontEmbedEntry(state);
+        }
         return !!(state && typeof state === "object" && state.__cleared === true);
       }
 
@@ -11939,6 +11970,7 @@
               type: "HK_EMBED_STATE_APPLY",
               key: key,
               state: effectiveFrontEmbedState(state),
+              epoch: frontEmbedEpoch[key] || 0,
             },
             "*"
           );
@@ -12019,7 +12051,7 @@
         }
       }
 
-      function saveFrontEmbedStateFromChild(key, state) {
+      function saveFrontEmbedStateFromChild(key, state, epoch) {
         if (!FRONT_EMBED_STATE_KEYS[key]) return;
         var data = HKStorage.load();
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
@@ -12030,7 +12062,15 @@
           return;
         }
         if (typeof state !== "object") return;
+        var curEpoch = frontEmbedEpoch[key] || 0;
+        var msgEpoch = epoch == null || epoch === "" ? null : Number(epoch);
+        // 초기화 이후·이전 세대 iframe의 저장은 무시 (옛 XML 되살림 방지)
+        if (msgEpoch != null && !isNaN(msgEpoch) && msgEpoch < curEpoch) return;
+        if (isClearedFrontEmbedState(data.frontEmbedStates[key])) {
+          if (msgEpoch == null || isNaN(msgEpoch) || msgEpoch !== curEpoch) return;
+        }
         var next = Object.assign({}, state);
+        delete next.__cleared;
         if (!next.updatedAt) next.updatedAt = new Date().toISOString();
         data.frontEmbedStates[key] = next;
         writeFrontEmbedLocalStorage(key, next);
@@ -12060,6 +12100,7 @@
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
           data.frontEmbedStates = { dd: null, inven: null, chichi: null };
         }
+        bumpFrontEmbedEpoch(key);
         data.frontEmbedStates[key] = {
           __cleared: true,
           updatedAt: new Date().toISOString(),
@@ -22252,6 +22293,7 @@
         applyFacilityLogSidebarAlertUi();
         applyInvenNotifySidebarAlertUi();
         seedFrontEmbedStatesFromLocalIfNeeded();
+        syncFrontEmbedEpochFromStorage();
         applyFrontEmbedStatesFromStorage({ force: true });
         rebuildChangeAlertsFromLog({ skipRender: true });
         rebuildRequestModifyAlerts();
@@ -22397,7 +22439,7 @@
         var msg = ev.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "HK_EMBED_STATE_SAVE" && msg.key) {
-          saveFrontEmbedStateFromChild(msg.key, msg.state);
+          saveFrontEmbedStateFromChild(msg.key, msg.state, msg.epoch);
           return;
         }
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {
@@ -22455,6 +22497,7 @@
 
       refreshMain();
       seedFrontEmbedStatesFromLocalIfNeeded();
+      syncFrontEmbedEpochFromStorage();
       applyFrontEmbedStatesFromStorage({ force: true });
       showSidebarOrderView();
       renderOrderPanels();

@@ -299,6 +299,7 @@
     const ACCESS_PASSWORD = "74321";
     const AUTH_STORAGE_KEY = "inven_html_unlocked";
     const STATE_STORAGE_KEY = "hk-inven-embed-state-v1";
+    let embedEpoch = 0;
 
     const authGate = document.getElementById("auth-gate");
     const authForm = document.getElementById("auth-form");
@@ -673,7 +674,12 @@
       if (window.parent && window.parent !== window) {
         try {
           window.parent.postMessage(
-            { type: "HK_EMBED_STATE_SAVE", key: "inven", state: payload },
+            {
+              type: "HK_EMBED_STATE_SAVE",
+              key: "inven",
+              state: payload,
+              epoch: embedEpoch,
+            },
             "*"
           );
         } catch (err) {}
@@ -704,6 +710,10 @@
     window.addEventListener("message", function (ev) {
       const msg = ev.data;
       if (!msg || msg.type !== "HK_EMBED_STATE_APPLY" || msg.key !== "inven") return;
+      if (msg.epoch != null && msg.epoch !== "") {
+        const n = Number(msg.epoch);
+        if (!isNaN(n)) embedEpoch = n;
+      }
       if (msg.state) {
         try {
           localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(msg.state));

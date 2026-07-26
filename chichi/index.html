@@ -1436,6 +1436,7 @@ function render() {
 }
 
 const CHICHI_STATE_KEY = "hk-chichi-embed-state-v1";
+let chichiEmbedEpoch = 0;
 
 function saveChichiEmbedState() {
   try {
@@ -1450,7 +1451,12 @@ function saveChichiEmbedState() {
     localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(payload));
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(
-        { type: "HK_EMBED_STATE_SAVE", key: "chichi", state: payload },
+        {
+          type: "HK_EMBED_STATE_SAVE",
+          key: "chichi",
+          state: payload,
+          epoch: chichiEmbedEpoch,
+        },
         "*"
       );
     }
@@ -1483,6 +1489,10 @@ function restoreChichiEmbedState() {
 window.addEventListener("message", function (ev) {
   const msg = ev.data;
   if (!msg || msg.type !== "HK_EMBED_STATE_APPLY" || msg.key !== "chichi") return;
+  if (msg.epoch != null && msg.epoch !== "") {
+    const n = Number(msg.epoch);
+    if (!isNaN(n)) chichiEmbedEpoch = n;
+  }
   if (msg.state) {
     try {
       localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(msg.state));
@@ -1613,7 +1623,7 @@ uploadBtn.addEventListener('click', async () => {
       if (window.parent && window.parent !== window) {
         try {
           window.parent.postMessage(
-            { type: "HK_EMBED_STATE_SAVE", key: "chichi", state: null },
+            { type: "HK_EMBED_STATE_SAVE", key: "chichi", state: null, epoch: chichiEmbedEpoch },
             "*"
           );
         } catch (err) {}
