@@ -159,49 +159,6 @@
     tbody tr:nth-child(even) {
       background: #f8fafc;
     }
-    .test-date-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 10px;
-      margin: 0 0 12px;
-      padding: 8px 10px;
-      border: 1px dashed #f59e0b;
-      border-radius: 8px;
-      background: #fffbeb;
-      font-size: 13px;
-    }
-    .test-date-row label {
-      font-weight: 700;
-      color: #b45309;
-    }
-    .test-date-row input[type="date"] {
-      padding: 4px 8px;
-      border: 1px solid #fbbf24;
-      border-radius: 6px;
-      font: inherit;
-    }
-    .test-date-row button {
-      padding: 4px 10px;
-      border: 1px solid #f59e0b;
-      border-radius: 6px;
-      background: #fff;
-      color: #92400e;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .test-date-row button:hover {
-      background: #fef3c7;
-    }
-    .test-date-hint {
-      color: #a16207;
-      font-size: 12px;
-    }
-    .test-date-row.is-override {
-      border-color: #ef4444;
-      background: #fef2f2;
-    }
     .auth-gate {
       position: fixed;
       inset: 0;
@@ -298,12 +255,6 @@
     <div class="card">
       <h1>인벤토리 투입물품</h1>
       <p class="meta" id="todayBanner" style="margin-top:0">TRUNC_ARRIVAL 기준일(오늘): —</p>
-      <div class="test-date-row" id="testDateRow">
-        <label for="testDateInput">기준일(테스트)</label>
-        <input id="testDateInput" type="date" title="테스트용 · TRUNC_ARRIVAL 오늘 기준을 바꿉니다" />
-        <button id="testDateReset" type="button">실제 오늘로</button>
-        <span class="test-date-hint" id="testDateHint">테스트용 · 만들기 시 이 날짜로 필터합니다</span>
-      </div>
       <div id="dropZone" class="drop-zone">
         <p class="upload-desc">INVEN TRACE(FRD), inventory Forecast(inv) 레포트 입니다.</p>
         <p class="drop-hint">여기에 XML 파일을 드래그 앤 드롭하세요. (파일명에 inventory / gitraces 포함 시 자동 분류)</p>
@@ -348,7 +299,6 @@
     const ACCESS_PASSWORD = "74321";
     const AUTH_STORAGE_KEY = "inven_html_unlocked";
     const STATE_STORAGE_KEY = "hk-inven-embed-state-v1";
-    const TEST_DATE_KEY = "hk-inven-test-date-v1";
 
     const authGate = document.getElementById("auth-gate");
     const authForm = document.getElementById("auth-form");
@@ -403,13 +353,8 @@
     const tbody = document.getElementById("tbody");
     const meta = document.getElementById("meta");
     const todayBanner = document.getElementById("todayBanner");
-    const testDateRow = document.getElementById("testDateRow");
-    const testDateInput = document.getElementById("testDateInput");
-    const testDateReset = document.getElementById("testDateReset");
-    const testDateHint = document.getElementById("testDateHint");
 
     let dataframeRows = [];
-    let testDateOverride = null; // { d, mo, y, yyyy } | null
 
     function getKstDateParts() {
       try {
@@ -440,92 +385,19 @@
       }
     }
 
-    function getEffectiveDateParts() {
-      return testDateOverride || getKstDateParts();
-    }
-
-    function loadTestDateOverride() {
-      try {
-        const raw = localStorage.getItem(TEST_DATE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed || !parsed.yyyy || !parsed.mo || !parsed.d) return null;
-        return {
-          d: Number(parsed.d),
-          mo: Number(parsed.mo),
-          y: Number(parsed.y != null ? parsed.y : parsed.yyyy % 100),
-          yyyy: Number(parsed.yyyy),
-        };
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function saveTestDateOverride(parts) {
-      try {
-        if (!parts) localStorage.removeItem(TEST_DATE_KEY);
-        else localStorage.setItem(TEST_DATE_KEY, JSON.stringify(parts));
-      } catch (e) {}
-    }
-
-    function partsToDateInputValue(parts) {
-      if (!parts) return "";
-      return (
-        String(parts.yyyy) +
-        "-" +
-        String(parts.mo).padStart(2, "0") +
-        "-" +
-        String(parts.d).padStart(2, "0")
-      );
-    }
-
-    function parseDateInputValue(v) {
-      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim());
-      if (!m) return null;
-      return {
-        yyyy: Number(m[1]),
-        mo: Number(m[2]),
-        d: Number(m[3]),
-        y: Number(m[1]) % 100,
-      };
-    }
-
     function updateTodayBanner() {
-      const k = getEffectiveDateParts();
+      const k = getKstDateParts();
       const label =
         String(k.d).padStart(2, "0") +
         "-" +
         String(k.mo).padStart(2, "0") +
         "-" +
         String(k.y).padStart(2, "0");
-      if (testDateOverride) {
-        todayBanner.textContent =
-          `TRUNC_ARRIVAL 기준일(테스트): ${label} · 실제 오늘 ${todayTruncArrivalStringReal()}`;
-        if (testDateRow) testDateRow.classList.add("is-override");
-        if (testDateHint) testDateHint.textContent = "테스트 날짜 적용 중 · 만들기 다시 실행하세요";
-      } else {
-        todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${label}`;
-        if (testDateRow) testDateRow.classList.remove("is-override");
-        if (testDateHint) testDateHint.textContent = "테스트용 · 만들기 시 이 날짜로 필터합니다";
-      }
-      if (testDateInput) {
-        testDateInput.value = partsToDateInputValue(getEffectiveDateParts());
-      }
-    }
-
-    function todayTruncArrivalStringReal() {
-      const k = getKstDateParts();
-      return (
-        String(k.d).padStart(2, "0") +
-        "-" +
-        String(k.mo).padStart(2, "0") +
-        "-" +
-        String(k.y).padStart(2, "0")
-      );
+      todayBanner.textContent = `TRUNC_ARRIVAL 기준일(오늘, 일-월-년): ${label}`;
     }
 
     function todayTruncArrivalString() {
-      const k = getEffectiveDateParts();
+      const k = getKstDateParts();
       return (
         String(k.d).padStart(2, "0") +
         "-" +
@@ -562,7 +434,7 @@
     function isTruncArrivalToday(truncRaw) {
       const parsed = parseTruncArrival(truncRaw);
       if (!parsed) return false;
-      const k = getEffectiveDateParts();
+      const k = getKstDateParts();
       return parsed.d === k.d && parsed.mo === k.mo && parsed.y === k.y;
     }
     let selectedInvFile = null;
@@ -1010,40 +882,10 @@
     });
 
     updateSortHeaderMarks();
-    testDateOverride = loadTestDateOverride();
+    try {
+      localStorage.removeItem("hk-inven-test-date-v1");
+    } catch (e) {}
     updateTodayBanner();
-    if (testDateInput) {
-      testDateInput.addEventListener("change", function () {
-        const parts = parseDateInputValue(testDateInput.value);
-        if (!parts) return;
-        const real = getKstDateParts();
-        if (
-          parts.d === real.d &&
-          parts.mo === real.mo &&
-          parts.yyyy === real.yyyy
-        ) {
-          testDateOverride = null;
-          saveTestDateOverride(null);
-        } else {
-          testDateOverride = parts;
-          saveTestDateOverride(parts);
-        }
-        updateTodayBanner();
-        if (selectedInvFile && selectedGitFile) {
-          loadBtn.click();
-        }
-      });
-    }
-    if (testDateReset) {
-      testDateReset.addEventListener("click", function () {
-        testDateOverride = null;
-        saveTestDateOverride(null);
-        updateTodayBanner();
-        if (selectedInvFile && selectedGitFile) {
-          loadBtn.click();
-        }
-      });
-    }
     restoreEmbedState();
   </script>
 </body>
