@@ -1367,7 +1367,7 @@
           <div
             id="indiDepSummary"
             class="arr-summary"
-            title="총 OUT − 실제 OUT(OUT예정) · 총 OUT=OUT예정+(O예정,A)+(Out,IN)+OUT"
+            title="OUT 합계 − OUT 개수(실제 차액) · OUT 합계=OUT예정+(O예정,A)+(Out,IN)+OUT"
             hidden
           >
             <span class="arr-summary__label">DEP</span>
@@ -2721,15 +2721,19 @@
         updateIndiDepSummary();
       }
 
-      /** DEP 총 OUT − 실제 OUT(OUT예정) */
+      /** DEP OUT 합계 − OUT 개수(실제 차액) */
       function computeDepSummaryFromRows() {
         var counts = summarizeIndiCategories(cachedRows || []).counts;
-        var remaining = (counts.OUT_SCHED || 0) + (counts.OUT_A || 0);
-        var actual = (counts.OUT || 0) + (counts.OUT_IN || 0);
+        var total =
+          (counts.OUT_SCHED || 0) +
+          (counts.OUT_A || 0) +
+          (counts.OUT_IN || 0) +
+          (counts.OUT || 0);
+        var outCount = counts.OUT || 0;
         return {
-          total: remaining + actual,
-          actual: actual,
-          remaining: remaining,
+          total: total,
+          outCount: outCount,
+          difference: total - outCount,
         };
       }
 
@@ -2739,7 +2743,7 @@
         if (!el || !textEl) return;
         var summ = computeDepSummaryFromRows();
         textEl.textContent =
-          summ.total + " - " + summ.actual + "(" + summ.remaining + ")";
+          summ.total + " - " + summ.outCount + "(" + summ.difference + ")";
         var hasDepData = summ.total > 0;
         el.hidden = !hasDepData;
         el.classList.toggle("is-visible", hasDepData);
