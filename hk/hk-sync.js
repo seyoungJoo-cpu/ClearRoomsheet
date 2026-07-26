@@ -60,9 +60,16 @@
     hkTeamChat: false,
     hkAdminInquiries: false,
   };
+  var dirtyVersion = {};
+  Object.keys(dirty).forEach(function (field) {
+    dirtyVersion[field] = 0;
+  });
 
   function markDirty(field) {
-    if (Object.prototype.hasOwnProperty.call(dirty, field)) dirty[field] = true;
+    if (Object.prototype.hasOwnProperty.call(dirty, field)) {
+      dirty[field] = true;
+      dirtyVersion[field] = (dirtyVersion[field] || 0) + 1;
+    }
   }
 
   function clearDirty(field) {
@@ -135,6 +142,86 @@
         if (isNaN(ta)) ta = 0;
         if (isNaN(tb)) tb = 0;
         return tb - ta;
+      });
+  }
+
+  function orderEntryClock(entry) {
+    if (!entry || typeof entry !== "object") return 0;
+    var max = 0;
+    Object.keys(entry).forEach(function (key) {
+      if (!/At$/.test(key) || !entry[key]) return;
+      var t = new Date(entry[key]).getTime();
+      if (!isNaN(t) && t > max) max = t;
+    });
+    (Array.isArray(entry.chat) ? entry.chat : []).forEach(function (msg) {
+      if (!msg) return;
+      var t = new Date(msg.at || msg.updatedAt || 0).getTime();
+      if (!isNaN(t) && t > max) max = t;
+    });
+    return max;
+  }
+
+  function orderPhaseRank(entry) {
+    if (!entry) return 0;
+    if (entry.issueOpen === true || String(entry.phase || "") === "issue") return 3;
+    var p = String(entry.phase || "alert");
+    if (p === "cancelled") return 5;
+    if (p === "deployed") return 4;
+    if (p === "unavailable") return 3;
+    if (p === "accepted") return 2;
+    return 1;
+  }
+
+  function mergeOrderChats(a, b) {
+    var out = [];
+    var seen = {};
+    [a, b].forEach(function (list) {
+      (Array.isArray(list) ? list : []).forEach(function (msg) {
+        if (!msg) return;
+        var key =
+          (msg.id != null ? String(msg.id) : "") ||
+          [msg.at || "", msg.by || "", msg.text || msg.message || ""].join("|");
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(msg);
+      });
+    });
+    out.sort(function (x, y) {
+      return new Date(x.at || 0).getTime() - new Date(y.at || 0).getTime();
+    });
+    return out;
+  }
+
+  /** 동시 편집 시 새 오더/접수/투입완료가 서로 지워지지 않도록 ID 기준 병합 */
+  function mergeOrderLogsLocal(local, remote) {
+    var map = {};
+    (Array.isArray(remote) ? remote : []).forEach(function (entry) {
+      if (entry && entry.id) map[entry.id] = entry;
+    });
+    (Array.isArray(local) ? local : []).forEach(function (entry) {
+      if (!entry || !entry.id) return;
+      var other = map[entry.id];
+      if (!other) {
+        map[entry.id] = entry;
+        return;
+      }
+      var localClock = orderEntryClock(entry);
+      var remoteClock = orderEntryClock(other);
+      var localWins =
+        localClock > remoteClock ||
+        (localClock === remoteClock && orderPhaseRank(entry) >= orderPhaseRank(other));
+      var merged = localWins
+        ? Object.assign({}, other, entry)
+        : Object.assign({}, entry, other);
+      merged.chat = mergeOrderChats(other.chat, entry.chat);
+      map[entry.id] = merged;
+    });
+    return Object.keys(map)
+      .map(function (id) {
+        return map[id];
+      })
+      .sort(function (a, b) {
+        return new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime();
       });
   }
 
@@ -668,6 +755,7 @@
 
   function runScheduledFlush() {
     var body = buildPushBody();
+    var sentVersions = {};
     if (pendingLastRoomChange) {
       body.hkLastRoomChange = pendingLastRoomChange;
       pendingLastRoomChange = null;
@@ -677,12 +765,32 @@
       pendingPush = {};
       return Promise.resolve(false);
     }
+    keys.forEach(function (key) {
+      if (Object.prototype.hasOwnProperty.call(dirtyVersion, key)) {
+        sentVersions[key] = dirtyVersion[key] || 0;
+      }
+    });
+    var sentLastRoomChange = body.hkLastRoomChange || null;
     pendingPush = {};
     return postPayloadNow(body).then(function (data) {
       if (data && data.version != null) {
         keys.forEach(function (key) {
-          clearDirty(key);
+          if (
+            Object.prototype.hasOwnProperty.call(dirtyVersion, key) &&
+            (dirtyVersion[key] || 0) === sentVersions[key]
+          ) {
+            clearDirty(key);
+          } else if (Object.prototype.hasOwnProperty.call(dirty, key)) {
+            pendingPush[key] = true;
+          }
         });
+      } else {
+        keys.forEach(function (key) {
+          if (Object.prototype.hasOwnProperty.call(dirty, key)) pendingPush[key] = true;
+        });
+        if (sentLastRoomChange && !pendingLastRoomChange) {
+          pendingLastRoomChange = sentLastRoomChange;
+        }
       }
       return data;
     });
@@ -790,11 +898,16 @@
       changed.push("hkChangeLog");
       clearDirty("hkChangeLog");
     }
-    if (Array.isArray(payload.hkOrderLog) && !dirty.hkOrderLog) {
-      cache.orderLog = payload.hkOrderLog.slice();
+    if (Array.isArray(payload.hkOrderLog)) {
+      if (dirty.hkOrderLog) {
+        cache.orderLog = mergeOrderLogsLocal(cache.orderLog, payload.hkOrderLog);
+        pendingPush.hkOrderLog = true;
+      } else {
+        cache.orderLog = payload.hkOrderLog.slice();
+        clearDirty("hkOrderLog");
+      }
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
       changed.push("hkOrderLog");
-      clearDirty("hkOrderLog");
     }
     if (Array.isArray(payload.hkMbInvLog) && !dirty.hkMbInvLog) {
       cache.mbInvLog = payload.hkMbInvLog.slice();
@@ -845,6 +958,7 @@
     });
 
     isApplyingRemote = false;
+    if (hasPendingPushWork()) queueScheduledFlush();
     if (changed.length) {
       emitChange(changed, Object.assign({}, payload, xmlPayloadForListeners()));
     }
@@ -997,7 +1111,7 @@
       schedulePush({ hkRequestLog: true });
     },
     getOrderLog: function () {
-      return cache.orderLog;
+      return cache.orderLog.slice();
     },
     setOrderLog: function (entries) {
       cache.orderLog = Array.isArray(entries) ? entries.slice() : [];

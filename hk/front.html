@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/favicon.png" />
   <script src="hk-entry-guard.js"></script>
-  <link rel="stylesheet" href="hk-theme.css" />
+  <link rel="stylesheet" href="hk-theme.css?v=themes-21-sync-1" />
   <style>
     :root {
       --sidebar-w: 176px;
@@ -9481,10 +9481,10 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=hotel-info-1"></script>
-  <script src="hk-sync.js?v=xml-upload-time-1"></script>
+  <script src="hk-storage.js?v=manual-tray-1"></script>
+  <script src="hk-sync.js?v=order-realtime-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
-  <script src="hk-chat-colors.js"></script>
+  <script src="hk-chat-colors.js?v=themes-21-1"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
   <script src="hk-inven-notify.js?v=order-dup-1"></script>
@@ -9651,6 +9651,7 @@
       }
 
       function isZoneRoomManageEditing() {
+        if (zoneRoomManageBusy) return true;
         var el = document.activeElement;
         if (!el || !el.closest) return false;
         if (!el.closest("#zoneRoomManagePanel")) return false;
@@ -9661,19 +9662,24 @@
         return hasOpenHkEditors() || isZoneRoomManageEditing();
       }
 
+      var pendingDeferredSyncApplies = [];
+      var zoneRoomManageBusy = false;
+
       function deferHkSyncUiApply(applyFn) {
         if (!isHkUserEditing()) {
           applyFn();
           return;
         }
-        pendingDeferredSyncApply = applyFn;
+        pendingDeferredSyncApplies.push(applyFn);
       }
 
       function flushDeferredHkSyncUiApply() {
-        if (!pendingDeferredSyncApply || isHkUserEditing()) return;
-        var fn = pendingDeferredSyncApply;
-        pendingDeferredSyncApply = null;
-        fn();
+        if (!pendingDeferredSyncApplies.length || isHkUserEditing()) return;
+        var list = pendingDeferredSyncApplies.slice();
+        pendingDeferredSyncApplies = [];
+        list.forEach(function (fn) {
+          fn();
+        });
       }
 
       document.addEventListener(
@@ -11380,10 +11386,14 @@
       function saveOrderLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setOrderLog(orderLogEntries);
+          if (HKSync.flushPending) HKSync.flushPending();
         }
       }
 
       function handleHkSyncChange(changed, payload) {
+        // 캐시는 즉시 반영하고, 사용자가 입력 중일 때는 화면 갱신만 미룬다.
+        if (changed.indexOf("hkRequestLog") >= 0) syncRequestLogFromServer();
+        if (changed.indexOf("hkOrderLog") >= 0) syncOrderLogFromServer();
         deferHkSyncUiApply(function () {
           handleHkSyncChangeApply(changed, payload);
         });
@@ -12259,22 +12269,28 @@
               var entry = buildRoomChangeEntry(zone, null, row);
               if (entry) changeEntries.push(entry);
             });
-            HKStorage.save(dataBulk, { skipSync: true });
+            zoneRoomManageBusy = true;
+            HKStorage.save(dataBulk);
             function finishBulkAdd() {
-              if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-                HKSync.pushStorageNow();
-              }
-              clearFrontZoneAddForm(addRoot, zone);
-              renderZoneRoomManagePanel(zone, { force: true });
-              renderRoomsForZone(zone, { force: true });
-              var msg =
-                toAdd.length === 1
-                  ? "객실이 추가되었습니다."
-                  : "객실 " + toAdd.length + "개가 추가되었습니다.";
-              if (skipped.length) {
-                msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
-              }
-              showHkActionToast(msg);
+              var pushed =
+                typeof HKSync !== "undefined" && HKSync.pushStorageNow
+                  ? HKSync.pushStorageNow()
+                  : Promise.resolve(true);
+              Promise.resolve(pushed).finally(function () {
+                zoneRoomManageBusy = false;
+                clearFrontZoneAddForm(addRoot, zone);
+                renderZoneRoomManagePanel(zone, { force: true });
+                renderRoomsForZone(zone, { force: true });
+                flushDeferredHkSyncUiApply();
+                var msg =
+                  toAdd.length === 1
+                    ? "객실이 추가되었습니다."
+                    : "객실 " + toAdd.length + "개가 추가되었습니다.";
+                if (skipped.length) {
+                  msg += " (" + skipped.join(", ") + "은 이미 등록됨)";
+                }
+                showHkActionToast(msg);
+              });
             }
             publishRoomChangesSequential(changeEntries).then(finishBulkAdd).catch(finishBulkAdd);
             return;
@@ -12306,15 +12322,21 @@
             HKStorage.unmarkRoomDeleted(data, zone, num);
           }
           data.rooms[zone].push(newRow);
-          HKStorage.save(data, { skipSync: true });
+          zoneRoomManageBusy = true;
+          HKStorage.save(data);
           function finishSingleAdd() {
-            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-              HKSync.pushStorageNow();
-            }
-            clearFrontZoneAddForm(addRoot, zone);
-            renderZoneRoomManagePanel(zone, { force: true });
-            renderRoomsForZone(zone, { force: true });
-            showHkActionToast("객실이 추가되었습니다.");
+            var pushed =
+              typeof HKSync !== "undefined" && HKSync.pushStorageNow
+                ? HKSync.pushStorageNow()
+                : Promise.resolve(true);
+            Promise.resolve(pushed).finally(function () {
+              zoneRoomManageBusy = false;
+              clearFrontZoneAddForm(addRoot, zone);
+              renderZoneRoomManagePanel(zone, { force: true });
+              renderRoomsForZone(zone, { force: true });
+              flushDeferredHkSyncUiApply();
+              showHkActionToast("객실이 추가되었습니다.");
+            });
           }
           publishRoomChange(addEntry).then(finishSingleAdd).catch(finishSingleAdd);
           return;
@@ -12426,8 +12448,6 @@
         pendingRoomAlerts[roomAlertKey(entry.zone, entry.room)] = entry.id;
         if (!opts.silent) {
           applyZoneAlertUi();
-          var activeZone = getActiveZone();
-          if (activeZone === entry.zone) renderRoomsForZone(activeZone);
         }
       }
 
@@ -16513,9 +16533,9 @@
           });
         if (needBoardMove) {
           if (isHkUserEditing()) {
-            pendingDeferredSyncApply = function () {
+            deferHkSyncUiApply(function () {
               renderRequestLogPanel({ force: true });
-            };
+            });
           } else {
             renderRequestLogPanel();
             return;
@@ -20253,6 +20273,7 @@
         rooms.forEach(function (r) {
           if (roomsAreSame(r.number || "", roomNumber)) {
             r.tray = tray || "";
+            r.trayUpdatedAt = new Date().toISOString();
             if (!tray && typeof HKStorage.unmarkRoomDeleted === "function") {
               HKStorage.unmarkRoomDeleted(data, zone, roomNumber);
             }
@@ -20260,7 +20281,7 @@
           }
         });
         if (!found) return false;
-        HKStorage.save(data, { skipSync: true });
+        HKStorage.save(data);
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
@@ -20284,7 +20305,6 @@
         li.className =
           "room-card" +
           (maintenanceMode && !cardOpts.trayMode ? " is-clickable" : "") +
-          (roomPending ? " is-change-alert" : "") +
           (canHistory ? " is-history-toggle" : "") +
           (historyOpen ? " is-history-open" : "");
         li.setAttribute("data-room-index", String(idx));
@@ -20429,13 +20449,15 @@
         next.time = prevRow && prevRow.time != null ? prevRow.time : "";
         next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
         next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
+        next.trayUpdatedAt =
+          prevRow && prevRow.trayUpdatedAt != null ? String(prevRow.trayUpdatedAt) : "";
         var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
         if (!changeEntry) {
           showHkActionToast("변경된 내용이 없습니다.");
           return;
         }
         dataSave.rooms[zone][idx] = next;
-        HKStorage.save(dataSave, { skipSync: true });
+        HKStorage.save(dataSave);
         publishRoomChange(changeEntry).then(function () {
           if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
             HKSync.pushStorageNow();

@@ -24,6 +24,7 @@
       memo2Image: "",
       time: "",
       tray: "",
+      trayUpdatedAt: "",
     };
   }
 
@@ -205,7 +206,12 @@
     if (!prev || !prev.number) return incoming;
     var ti = incoming.tray != null ? String(incoming.tray).trim() : "";
     var tp = prev.tray != null ? String(prev.tray).trim() : "";
+    var tiAt = incoming.trayUpdatedAt != null ? String(incoming.trayUpdatedAt) : "";
+    var tpAt = prev.trayUpdatedAt != null ? String(prev.trayUpdatedAt) : "";
     if (ti === "deleted" || tp === "deleted") return null;
+    var incomingTrayWins = tiAt && (!tpAt || tiAt >= tpAt);
+    var tray = incomingTrayWins ? ti : tpAt ? tp : ti || tp || "";
+    var trayUpdatedAt = incomingTrayWins ? tiAt : tpAt || tiAt || "";
     return {
       number: incoming.number || prev.number,
       status: incoming.status != null ? String(incoming.status).trim() : prev.status,
@@ -214,7 +220,8 @@
       memo2Image:
         incoming.memo2Image != null ? String(incoming.memo2Image) : prev.memo2Image,
       time: incoming.time != null ? normalizeTimeField(incoming.time) : prev.time,
-      tray: ti || tp || "",
+      tray: tray,
+      trayUpdatedAt: trayUpdatedAt,
     };
   }
 
@@ -656,6 +663,8 @@
       d.memo2Image = x.memo2Image != null ? String(x.memo2Image) : "";
       d.time = x.time != null ? normalizeTimeField(x.time) : "";
       d.tray = x.tray != null ? String(x.tray).trim() : "";
+      d.trayUpdatedAt =
+        x.trayUpdatedAt != null ? String(x.trayUpdatedAt).trim() : "";
     }
     return d;
   }

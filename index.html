@@ -206,6 +206,12 @@
       align-items: center;
       gap: 0.55rem;
     }
+    .arr-summary-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.3rem;
+    }
     .arr-summary {
       display: none;
       align-items: center;
@@ -1348,6 +1354,7 @@
       <div class="toolbar">
         <h2>룸 상태판</h2>
         <div class="toolbar-actions">
+          <div class="arr-summary-stack">
           <div
             id="indiArrSummary"
             class="arr-summary"
@@ -1356,6 +1363,16 @@
           >
             <span class="arr-summary__label">ARR</span>
             <span id="indiArrSummaryText">0 - 0(0)</span>
+          </div>
+          <div
+            id="indiDepSummary"
+            class="arr-summary"
+            title="총 OUT − 실제 OUT(OUT예정) · 총 OUT=OUT예정+(O예정,A)+(Out,IN)+OUT"
+            hidden
+          >
+            <span class="arr-summary__label">DEP</span>
+            <span id="indiDepSummaryText">0 - 0(0)</span>
+          </div>
           </div>
           <button type="button" id="btnMake" class="btn-make">만들기</button>
         </div>
@@ -2701,6 +2718,31 @@
         var hasArrData = summ.unit > 0;
         el.hidden = !hasArrData;
         el.classList.toggle("is-visible", hasArrData);
+        updateIndiDepSummary();
+      }
+
+      /** DEP 총 OUT − 실제 OUT(OUT예정) */
+      function computeDepSummaryFromRows() {
+        var counts = summarizeIndiCategories(cachedRows || []).counts;
+        var remaining = (counts.OUT_SCHED || 0) + (counts.OUT_A || 0);
+        var actual = (counts.OUT || 0) + (counts.OUT_IN || 0);
+        return {
+          total: remaining + actual,
+          actual: actual,
+          remaining: remaining,
+        };
+      }
+
+      function updateIndiDepSummary() {
+        var el = document.getElementById("indiDepSummary");
+        var textEl = document.getElementById("indiDepSummaryText");
+        if (!el || !textEl) return;
+        var summ = computeDepSummaryFromRows();
+        textEl.textContent =
+          summ.total + " - " + summ.actual + "(" + summ.remaining + ")";
+        var hasDepData = summ.total > 0;
+        el.hidden = !hasDepData;
+        el.classList.toggle("is-visible", hasDepData);
       }
 
       function renderIndiCategorySummaryBar(el, counts, total) {

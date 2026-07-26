@@ -52,6 +52,16 @@
     { id: "orange", label: "주황", swatch: "#ea580c" },
     { id: "amber", label: "앰버", swatch: "#d97706" },
     { id: "slate", label: "슬레이트", swatch: "#475569" },
+    { id: "sky", label: "스카이", swatch: "#0284c7" },
+    { id: "lime", label: "라임", swatch: "#65a30d" },
+    { id: "emerald", label: "에메랄드", swatch: "#059669" },
+    { id: "fuchsia", label: "푸시아", swatch: "#c026d3" },
+    { id: "purple", label: "퍼플", swatch: "#9333ea" },
+    { id: "red", label: "레드", swatch: "#dc2626" },
+    { id: "yellow", label: "옐로", swatch: "#ca8a04" },
+    { id: "brown", label: "브라운", swatch: "#92400e" },
+    { id: "navy", label: "네이비", swatch: "#1e3a8a" },
+    { id: "zinc", label: "징크", swatch: "#52525b" },
   ];
 
   function loadMap() {

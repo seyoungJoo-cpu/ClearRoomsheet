@@ -109,7 +109,15 @@ function logPushSendError(endpoint, err) {
 function getOrderPhase(entry) {
   if (!entry) return "alert";
   const p = entry.phase != null ? String(entry.phase).trim() : "";
-  if (p === "accepted" || p === "cancelled") return p;
+  if (
+    p === "accepted" ||
+    p === "issue" ||
+    p === "cancelled" ||
+    p === "deployed" ||
+    p === "unavailable"
+  ) {
+    return p;
+  }
   return "alert";
 }
 
@@ -404,7 +412,13 @@ function copyHkRoomArray(rooms, zone) {
 }
 
 function hkRoomNumberKey(number) {
-  return String(number == null ? "" : number).trim();
+  var s = String(number == null ? "" : number).trim();
+  if (!s) return "";
+  if (/->/.test(s) || /에서/.test(s)) return s.replace(/\s+/g, " ");
+  var d = s.replace(/\D/g, "");
+  if (!d) return s;
+  if (d.length <= 4) return d.length >= 4 ? d.slice(-4) : ("0000" + d).slice(-4);
+  return d.slice(-4);
 }
 
 function hkMarkRoomDeletedInMap(deletedRooms, zone, roomNumber) {
@@ -449,8 +463,16 @@ function hkMergeRoomEntry(prev, incoming) {
   if (!prev || !prev.number) return incoming;
   var ti = incoming.tray != null ? String(incoming.tray).trim() : "";
   var tp = prev.tray != null ? String(prev.tray).trim() : "";
+  var tiAt = incoming.trayUpdatedAt != null ? String(incoming.trayUpdatedAt) : "";
+  var tpAt = prev.trayUpdatedAt != null ? String(prev.trayUpdatedAt) : "";
   if (ti === "deleted" || tp === "deleted") return null;
-  return Object.assign({}, prev, incoming, { tray: ti || tp || "" });
+  var incomingTrayWins = tiAt && (!tpAt || tiAt >= tpAt);
+  var tray = incomingTrayWins ? ti : tpAt ? tp : ti || tp || "";
+  var trayUpdatedAt = incomingTrayWins ? tiAt : tpAt || tiAt || "";
+  return Object.assign({}, prev, incoming, {
+    tray: tray,
+    trayUpdatedAt: trayUpdatedAt,
+  });
 }
 
 function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, incomingDeletedRooms) {
@@ -956,6 +978,86 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
+function orderEntryClock(entry) {
+  if (!entry || typeof entry !== "object") return 0;
+  var max = 0;
+  Object.keys(entry).forEach(function (key) {
+    if (!/At$/.test(key) || !entry[key]) return;
+    var t = new Date(entry[key]).getTime();
+    if (!isNaN(t) && t > max) max = t;
+  });
+  (Array.isArray(entry.chat) ? entry.chat : []).forEach(function (msg) {
+    if (!msg) return;
+    var t = new Date(msg.at || msg.updatedAt || 0).getTime();
+    if (!isNaN(t) && t > max) max = t;
+  });
+  return max;
+}
+
+function orderPhaseRank(entry) {
+  if (!entry) return 0;
+  if (entry.issueOpen === true || String(entry.phase || "") === "issue") return 3;
+  var p = String(entry.phase || "alert");
+  if (p === "cancelled") return 5;
+  if (p === "deployed") return 4;
+  if (p === "unavailable") return 3;
+  if (p === "accepted") return 2;
+  return 1;
+}
+
+function mergeOrderChats(a, b) {
+  var out = [];
+  var seen = {};
+  [a, b].forEach(function (list) {
+    (Array.isArray(list) ? list : []).forEach(function (msg) {
+      if (!msg) return;
+      var key =
+        (msg.id != null ? String(msg.id) : "") ||
+        [msg.at || "", msg.by || "", msg.text || msg.message || ""].join("|");
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push(msg);
+    });
+  });
+  out.sort(function (x, y) {
+    return new Date(x.at || 0).getTime() - new Date(y.at || 0).getTime();
+  });
+  return out;
+}
+
+function mergeOrderLogs(prev, incoming) {
+  if (!Array.isArray(incoming)) return Array.isArray(prev) ? prev.slice() : [];
+  var map = {};
+  (Array.isArray(prev) ? prev : []).forEach(function (entry) {
+    if (entry && entry.id) map[entry.id] = entry;
+  });
+  incoming.forEach(function (entry) {
+    if (!entry || !entry.id) return;
+    var old = map[entry.id];
+    if (!old) {
+      map[entry.id] = entry;
+      return;
+    }
+    var incClock = orderEntryClock(entry);
+    var oldClock = orderEntryClock(old);
+    var incomingWins =
+      incClock > oldClock ||
+      (incClock === oldClock && orderPhaseRank(entry) >= orderPhaseRank(old));
+    var merged = incomingWins
+      ? Object.assign({}, old, entry)
+      : Object.assign({}, entry, old);
+    merged.chat = mergeOrderChats(old.chat, entry.chat);
+    map[entry.id] = merged;
+  });
+  return Object.keys(map)
+    .map(function (id) {
+      return map[id];
+    })
+    .sort(function (a, b) {
+      return new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime();
+    });
+}
+
 function adminInquiryHasReply(entry) {
   if (!entry) return false;
   if (entry.replyAt != null && String(entry.replyAt).trim()) return true;
@@ -1165,7 +1267,10 @@ function mergeSyncPayload(prev, incoming) {
     out.hkRequestLog = replaceLogArray(incoming.hkRequestLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkOrderLog")) {
-    out.hkOrderLog = replaceLogArray(incoming.hkOrderLog);
+    out.hkOrderLog =
+      incoming.hkCloseDayReset === true
+        ? replaceLogArray(incoming.hkOrderLog)
+        : mergeOrderLogs(prev.hkOrderLog, incoming.hkOrderLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) {
     out.hkMbInvLog = replaceLogArray(incoming.hkMbInvLog);
