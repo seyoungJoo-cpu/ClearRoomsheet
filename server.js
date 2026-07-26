@@ -808,7 +808,7 @@ function mergeHkStorage(prev, incoming) {
       keys.forEach(function (key) {
         var a = prevStates[key];
         var b = incStates[key];
-        if (!b) return;
+        if (!b || typeof b !== "object") return;
         if (!a) {
           outStates[key] = b;
           return;

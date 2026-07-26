@@ -1367,7 +1367,7 @@
           <div
             id="indiDepSummary"
             class="arr-summary"
-            title="OUT 합계 − OUT 개수(실제 차액) · OUT 합계=OUT예정+(O예정,A)+(Out,IN)+OUT"
+            title="OUT 합계(상태요약 OUT) − OUT 개수(실제 차액) · OUT 합계=Departed 포함 객실 수"
             hidden
           >
             <span class="arr-summary__label">DEP</span>
@@ -2721,14 +2721,11 @@
         updateIndiDepSummary();
       }
 
-      /** DEP OUT 합계 − OUT 개수(실제 차액) */
+      /** DEP OUT 합계(상태요약 OUT 체크 개수) − OUT 개수(실제 차액) */
       function computeDepSummaryFromRows() {
-        var counts = summarizeIndiCategories(cachedRows || []).counts;
-        var total =
-          (counts.OUT_SCHED || 0) +
-          (counts.OUT_A || 0) +
-          (counts.OUT_IN || 0) +
-          (counts.OUT || 0);
+        var rows = get499BoardRows(cachedRows || []);
+        var counts = summarizeIndiCategories(rows).counts;
+        var total = countOutRooms(rows);
         var outCount = counts.OUT || 0;
         return {
           total: total,

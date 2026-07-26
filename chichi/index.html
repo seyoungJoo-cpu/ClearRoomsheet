@@ -1599,15 +1599,26 @@ uploadBtn.addEventListener('click', async () => {
   }
 });
 
-resetBtn.addEventListener('click', () => {
-  STATE.files = [];
-  STATE.records = [];
-  STATE.hiddenIds.clear();
-  fileInput.value = '';
-  fileInfo.innerHTML = '선택된 파일이 없습니다.';
-  uploadBtn.disabled = true;
-  resultArea.classList.add('hidden');
-});
+    resetBtn.addEventListener('click', () => {
+      STATE.files = [];
+      STATE.records = [];
+      STATE.hiddenIds.clear();
+      fileInput.value = '';
+      fileInfo.innerHTML = '선택된 파일이 없습니다.';
+      uploadBtn.disabled = true;
+      resultArea.classList.add('hidden');
+      try {
+        localStorage.removeItem(CHICHI_STATE_KEY);
+      } catch (err) {}
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage(
+            { type: "HK_EMBED_STATE_SAVE", key: "chichi", state: null },
+            "*"
+          );
+        } catch (err) {}
+      }
+    });
 
 tabsEl.addEventListener('click', (e) => {
   const t = e.target.closest('.tab');

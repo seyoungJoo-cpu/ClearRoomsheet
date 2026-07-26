@@ -5258,6 +5258,28 @@
       padding: 0;
       border: none;
       text-align: left;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .front-embed-hub__reset {
+      margin-left: auto;
+      padding: 5px 12px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #9a3412;
+      background: #ffedd5;
+      border: 1px solid #fdba74;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .front-embed-hub__reset:hover {
+      background: #fed7aa;
     }
 
     .front-embed-hub__body {
@@ -8440,6 +8462,14 @@
           >
             고객취향확인
           </button>
+          <button
+            type="button"
+            class="front-embed-hub__reset"
+            id="btnResetFrontEmbed"
+            title="현재 탭(DD·인벤·취향)을 XML 업로드 전처럼 비웁니다"
+          >
+            초기화
+          </button>
         </div>
         <div class="front-embed-hub__body">
       <section class="front-embed-panel" id="ddEmbedPanel" hidden aria-label="DD">
@@ -9520,8 +9550,8 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=manual-tray-1"></script>
-  <script src="hk-sync.js?v=order-realtime-1"></script>
+  <script src="hk-storage.js?v=embed-clear-1"></script>
+  <script src="hk-sync.js?v=close-day-room-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
@@ -11876,11 +11906,21 @@
         }
       }
 
+      function isClearedFrontEmbedState(state) {
+        return !!(state && typeof state === "object" && state.__cleared === true);
+      }
+
+      function effectiveFrontEmbedState(state) {
+        if (!state || typeof state !== "object") return null;
+        if (isClearedFrontEmbedState(state)) return null;
+        return state;
+      }
+
       function writeFrontEmbedLocalStorage(key, state) {
         var lsKey = FRONT_EMBED_STATE_KEYS[key];
         if (!lsKey) return;
         try {
-          if (state && typeof state === "object") {
+          if (state && typeof state === "object" && !isClearedFrontEmbedState(state)) {
             localStorage.setItem(lsKey, JSON.stringify(state));
           } else {
             localStorage.removeItem(lsKey);
@@ -11897,7 +11937,7 @@
             {
               type: "HK_EMBED_STATE_APPLY",
               key: key,
-              state: state || null,
+              state: effectiveFrontEmbedState(state),
             },
             "*"
           );
@@ -11915,7 +11955,7 @@
         if (!opts.force && sig === lastAppliedFrontEmbedSig) return;
         lastAppliedFrontEmbedSig = sig;
         ["dd", "inven", "chichi"].forEach(function (key) {
-          var state = states[key] || null;
+          var state = effectiveFrontEmbedState(states[key] || null);
           writeFrontEmbedLocalStorage(key, state);
           if (opts.notifyFrames !== false) postFrontEmbedStateToFrame(key, state);
         });
@@ -11935,14 +11975,27 @@
         }
         var changed = false;
         ["dd", "inven", "chichi"].forEach(function (key) {
-          if (data.frontEmbedStates[key]) return;
+          var cur = data.frontEmbedStates[key];
+          if (cur && !isClearedFrontEmbedState(cur)) return;
           var lsKey = FRONT_EMBED_STATE_KEYS[key];
           if (!lsKey) return;
+          if (isClearedFrontEmbedState(cur)) {
+            try {
+              localStorage.removeItem(lsKey);
+            } catch (eClr) {}
+            return;
+          }
           try {
             var raw = localStorage.getItem(lsKey);
             if (!raw) return;
             var parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return;
+            if (isClearedFrontEmbedState(parsed)) {
+              try {
+                localStorage.removeItem(lsKey);
+              } catch (e2) {}
+              return;
+            }
             var localAt = new Date(parsed.updatedAt || 0).getTime();
             if (isNaN(localAt)) localAt = 0;
             // 마감 시각 이전이거나 시각 없는 잔여 데이터는 시드하지 않고 지움
@@ -11967,11 +12020,15 @@
 
       function saveFrontEmbedStateFromChild(key, state) {
         if (!FRONT_EMBED_STATE_KEYS[key]) return;
-        if (!state || typeof state !== "object") return;
         var data = HKStorage.load();
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
           data.frontEmbedStates = { dd: null, inven: null, chichi: null };
         }
+        if (state == null) {
+          clearFrontEmbedKey(key, { skipConfirm: true, silentToast: true, data: data });
+          return;
+        }
+        if (typeof state !== "object") return;
         var next = Object.assign({}, state);
         if (!next.updatedAt) next.updatedAt = new Date().toISOString();
         data.frontEmbedStates[key] = next;
@@ -11983,6 +12040,55 @@
         }
       }
 
+      /** 현재 탭(또는 key)을 XML 업로드 전처럼 비우고 다른 PC에도 동기화 */
+      function clearFrontEmbedKey(key, opts) {
+        opts = opts || {};
+        if (!FRONT_EMBED_STATE_KEYS[key]) return false;
+        var labels = { dd: "DD", inven: "인벤", chichi: "고객취향" };
+        if (!opts.skipConfirm) {
+          if (
+            !confirm(
+              (labels[key] || key) +
+                " 화면을 초기화할까요?\n\n업로드·입력 내용이 비워지고 다른 PC에도 바로 반영됩니다."
+            )
+          ) {
+            return false;
+          }
+        }
+        var data = opts.data || HKStorage.load();
+        if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
+          data.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        }
+        data.frontEmbedStates[key] = {
+          __cleared: true,
+          updatedAt: new Date().toISOString(),
+        };
+        writeFrontEmbedLocalStorage(key, null);
+        lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
+        HKStorage.save(data);
+        postFrontEmbedStateToFrame(key, null);
+        var frame = document.getElementById(FRONT_EMBED_FRAME_IDS[key]);
+        if (frame) {
+          var src = frame.getAttribute("src") || frame.src || "";
+          if (src) {
+            frame.src = "about:blank";
+            frame.src = src;
+          }
+        }
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        if (!opts.silentToast) {
+          showHkActionToast((labels[key] || key) + " 초기화됨");
+        }
+        return true;
+      }
+
+      function resetActiveFrontEmbedPanel() {
+        var key = frontEmbedTab || "dd";
+        clearFrontEmbedKey(key);
+      }
+
       Object.keys(FRONT_EMBED_FRAME_IDS).forEach(function (key) {
         var frame = document.getElementById(FRONT_EMBED_FRAME_IDS[key]);
         if (!frame) return;
@@ -11992,8 +12098,12 @@
             data.frontEmbedStates && typeof data.frontEmbedStates === "object"
               ? data.frontEmbedStates
               : {};
-          var state = states[key] || null;
-          if (!state) return;
+          var state = effectiveFrontEmbedState(states[key] || null);
+          if (!state) {
+            writeFrontEmbedLocalStorage(key, null);
+            postFrontEmbedStateToFrame(key, null);
+            return;
+          }
           writeFrontEmbedLocalStorage(key, state);
           postFrontEmbedStateToFrame(key, state);
         });
@@ -16480,8 +16590,11 @@
             data.frontEmbedStates && typeof data.frontEmbedStates === "object"
               ? data.frontEmbedStates
               : {};
-          var state = states[frontEmbedTab] || null;
-          if (state) postFrontEmbedStateToFrame(frontEmbedTab, state);
+          var state =
+            typeof effectiveFrontEmbedState === "function"
+              ? effectiveFrontEmbedState(states[frontEmbedTab] || null)
+              : states[frontEmbedTab] || null;
+          postFrontEmbedStateToFrame(frontEmbedTab, state);
         }
       }
 
@@ -23081,6 +23194,13 @@
             applyFrontEmbedTab(tab);
           });
         });
+        var btnResetFrontEmbed = document.getElementById("btnResetFrontEmbed");
+        if (btnResetFrontEmbed) {
+          btnResetFrontEmbed.addEventListener("click", function () {
+            if (!frontMode) return;
+            resetActiveFrontEmbedPanel();
+          });
+        }
         if (bAi) {
           bAi.addEventListener("click", function () {
             if (sidebarMainView === "ai") return;

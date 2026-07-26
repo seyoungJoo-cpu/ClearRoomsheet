@@ -1000,9 +1000,9 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=manual-tray-1"></script>
+  <script src="hk-storage.js?v=embed-clear-1"></script>
   <script src="hk-facility-logs.js"></script>
-  <script src="hk-sync.js?v=order-realtime-1"></script>
+  <script src="hk-sync.js?v=close-day-room-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-inven-notify.js?v=order-dup-1"></script>
   <script>
@@ -1855,7 +1855,11 @@
           var raw = "";
           try {
             if (synced[item.embedKey] && typeof synced[item.embedKey] === "object") {
-              raw = JSON.stringify(synced[item.embedKey]);
+              if (synced[item.embedKey].__cleared === true) {
+                raw = "";
+              } else {
+                raw = JSON.stringify(synced[item.embedKey]);
+              }
             } else {
               raw = localStorage.getItem(item.key) || "";
             }

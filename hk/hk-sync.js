@@ -855,12 +855,21 @@
       var storageEpochNewer =
         !!remoteStorageCd &&
         (!localStorageCd || String(remoteStorageCd) > String(localStorageCd));
-      // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 — 단, 마감/더 최신 closeDay는 강제 반영
+      var sameCloseEpoch =
+        !!remoteStorageCd &&
+        !!localStorageCd &&
+        String(remoteStorageCd) === String(localStorageCd);
+      // 마감 직후 같은 closeDayAt 인데 로컬에 미전송 특이객실 등록이 있으면
+      // 서버에 남은 hkCloseDayReset 빈 저장소로 덮어쓰지 않는다.
+      var skipStaleCloseDayClobber =
+        !!dirty.hkStorage &&
+        sameCloseEpoch &&
+        !isNewCloseDay &&
+        !storageEpochNewer;
+      // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 — 단, 새 마감/더 최신 closeDay는 강제 반영
       if (
-        isCloseDayReplace ||
-        isNewCloseDay ||
-        storageEpochNewer ||
-        !dirty.hkStorage
+        !skipStaleCloseDayClobber &&
+        (isCloseDayReplace || isNewCloseDay || storageEpochNewer || !dirty.hkStorage)
       ) {
         if (
           (isCloseDayReplace || isNewCloseDay || storageEpochNewer) &&

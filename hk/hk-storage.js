@@ -530,9 +530,14 @@
     ["dd", "inven", "chichi"].forEach(function (key) {
       var entry = raw[key];
       if (!entry || typeof entry !== "object") return;
+      // __cleared 마커도 보관해 동기화 시 초기화가 유지되게 함
       out[key] = entry;
     });
     return out;
+  }
+
+  function isClearedFrontEmbedEntry(entry) {
+    return !!(entry && typeof entry === "object" && entry.__cleared === true);
   }
 
   function mergeFrontEmbedStates(baseStates, incomingStates) {
@@ -551,6 +556,7 @@
       var tb = new Date(b.updatedAt || 0).getTime();
       if (isNaN(ta)) ta = 0;
       if (isNaN(tb)) tb = 0;
+      // __cleared 마커도 updatedAt으로 비교해 유지 (옛 데이터가 되살아나지 않게)
       if (tb >= ta) out[key] = b;
     });
     return out;
