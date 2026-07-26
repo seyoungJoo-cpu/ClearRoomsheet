@@ -7,60 +7,51 @@
   var THEME_LS_KEY = "lotte-hk-ui-theme-by-user-v1";
   var DEFAULT_THEME_ID = "blue";
 
+  // 무지개 그라데이션 순서(빨강→자홍→중립). 비슷하거나 중복되던 색은 제거.
   var PASTELS = [
-    { id: "mint", bg: "#d1fae5", border: "#6ee7b7", text: "#064e3b", by: "#047857" },
+    { id: "red", bg: "#fee2e2", border: "#fca5a5", text: "#7f1d1d", by: "#b91c1c" },
+    { id: "orange", bg: "#ffedd5", border: "#fdba74", text: "#7c2d12", by: "#c2410c" },
+    { id: "amber", bg: "#fef3c7", border: "#fcd34d", text: "#78350f", by: "#b45309" },
+    { id: "yellow", bg: "#fef9c3", border: "#fde047", text: "#713f12", by: "#a16207" },
+    { id: "lime", bg: "#ecfccb", border: "#bef264", text: "#365314", by: "#4d7c0f" },
+    { id: "green", bg: "#dcfce7", border: "#86efac", text: "#14532d", by: "#15803d" },
+    { id: "emerald", bg: "#d1fae5", border: "#6ee7b7", text: "#064e3b", by: "#047857" },
+    { id: "teal", bg: "#ccfbf1", border: "#5eead4", text: "#134e4a", by: "#0f766e" },
+    { id: "cyan", bg: "#cffafe", border: "#67e8f9", text: "#164e63", by: "#0e7490" },
     { id: "sky", bg: "#e0f2fe", border: "#7dd3fc", text: "#0c4a6e", by: "#0369a1" },
-    { id: "lavender", bg: "#ede9fe", border: "#c4b5fd", text: "#4c1d95", by: "#6d28d9" },
+    { id: "blue", bg: "#dbeafe", border: "#93c5fd", text: "#1e3a8a", by: "#1d4ed8" },
+    { id: "indigo", bg: "#e0e7ff", border: "#a5b4fc", text: "#312e81", by: "#4338ca" },
+    { id: "violet", bg: "#ede9fe", border: "#c4b5fd", text: "#4c1d95", by: "#6d28d9" },
+    { id: "purple", bg: "#f3e8ff", border: "#d8b4fe", text: "#581c87", by: "#7e22ce" },
+    { id: "fuchsia", bg: "#fae8ff", border: "#f0abfc", text: "#701a75", by: "#a21caf" },
+    { id: "pink", bg: "#fce7f3", border: "#f9a8d4", text: "#831843", by: "#be185d" },
     { id: "rose", bg: "#ffe4e6", border: "#fda4af", text: "#881337", by: "#be123c" },
-    { id: "peach", bg: "#ffedd5", border: "#fdba74", text: "#7c2d12", by: "#c2410c" },
-    { id: "lemon", bg: "#fef9c3", border: "#fde047", text: "#713f12", by: "#a16207" },
-    { id: "sage", bg: "#ecfccb", border: "#bef264", text: "#365314", by: "#4d7c0f" },
-    { id: "blush", bg: "#fce7f3", border: "#f9a8d4", text: "#831843", by: "#9d174d" },
-    { id: "ice", bg: "#e0e7ff", border: "#a5b4fc", text: "#312e81", by: "#4338ca" },
-    { id: "sand", bg: "#fef3c7", border: "#fcd34d", text: "#78350f", by: "#b45309" },
-    { id: "aqua", bg: "#cffafe", border: "#67e8f9", text: "#164e63", by: "#0e7490" },
-    { id: "seafoam", bg: "#ccfbf1", border: "#5eead4", text: "#134e4a", by: "#0f766e" },
-    { id: "celadon", bg: "#dcfce7", border: "#86efac", text: "#14532d", by: "#15803d" },
-    { id: "honey", bg: "#fef08a", border: "#facc15", text: "#713f12", by: "#ca8a04" },
-    { id: "apricot", bg: "#fed7aa", border: "#fb923c", text: "#7c2d12", by: "#ea580c" },
-    { id: "coral", bg: "#ffddd6", border: "#fb7185", text: "#9f1239", by: "#e11d48" },
-    { id: "pink", bg: "#fbcfe8", border: "#f472b6", text: "#831843", by: "#db2777" },
-    { id: "orchid", bg: "#f5d0fe", border: "#e879f9", text: "#701a75", by: "#a21caf" },
-    { id: "plum", bg: "#ede9fe", border: "#a78bfa", text: "#4c1d95", by: "#7c3aed" },
-    { id: "periwinkle", bg: "#e0e7ff", border: "#818cf8", text: "#312e81", by: "#4f46e5" },
-    { id: "cornflower", bg: "#dbeafe", border: "#60a5fa", text: "#1e3a8a", by: "#2563eb" },
-    { id: "steel", bg: "#e2e8f0", border: "#94a3b8", text: "#1e293b", by: "#475569" },
-    { id: "mist", bg: "#f1f5f9", border: "#cbd5e1", text: "#334155", by: "#64748b" },
-    { id: "cloud", bg: "#f8fafc", border: "#e2e8f0", text: "#1e293b", by: "#475569" },
-    { id: "linen", bg: "#fafaf9", border: "#d6d3d1", text: "#44403c", by: "#78716c" },
-    { id: "cream", bg: "#fffbeb", border: "#fde68a", text: "#78350f", by: "#b45309" },
-    { id: "vanilla", bg: "#fff7ed", border: "#fed7aa", text: "#7c2d12", by: "#c2410c" },
-    { id: "melon", bg: "#d9f99d", border: "#a3e635", text: "#365314", by: "#4d7c0f" },
-    { id: "jade", bg: "#a7f3d0", border: "#34d399", text: "#064e3b", by: "#059669" },
-    { id: "teal", bg: "#99f6e4", border: "#2dd4bf", text: "#134e4a", by: "#0d9488" },
+    { id: "slate", bg: "#e2e8f0", border: "#94a3b8", text: "#1e293b", by: "#475569" },
+    { id: "stone", bg: "#f5f5f4", border: "#d6d3d1", text: "#44403c", by: "#78716c" },
   ];
 
+  // 스와치도 색상환 그라데이션 순서(빨강→자홍→중립)로 정렬. 유사한 중립색은 뒤로 모음.
   var THEMES = [
-    { id: "blue", label: "파랑", swatch: "#1565c0" },
-    { id: "teal", label: "청록", swatch: "#0f766e" },
-    { id: "green", label: "초록", swatch: "#15803d" },
-    { id: "cyan", label: "시안", swatch: "#0891b2" },
-    { id: "indigo", label: "인디고", swatch: "#4338ca" },
-    { id: "violet", label: "보라", swatch: "#7c3aed" },
-    { id: "pink", label: "핑크", swatch: "#db2777" },
-    { id: "rose", label: "로즈", swatch: "#e11d48" },
+    { id: "red", label: "레드", swatch: "#dc2626" },
     { id: "orange", label: "주황", swatch: "#ea580c" },
     { id: "amber", label: "앰버", swatch: "#d97706" },
-    { id: "slate", label: "슬레이트", swatch: "#475569" },
-    { id: "sky", label: "스카이", swatch: "#0284c7" },
-    { id: "lime", label: "라임", swatch: "#65a30d" },
-    { id: "emerald", label: "에메랄드", swatch: "#059669" },
-    { id: "fuchsia", label: "푸시아", swatch: "#c026d3" },
-    { id: "purple", label: "퍼플", swatch: "#9333ea" },
-    { id: "red", label: "레드", swatch: "#dc2626" },
     { id: "yellow", label: "옐로", swatch: "#ca8a04" },
-    { id: "brown", label: "브라운", swatch: "#92400e" },
+    { id: "lime", label: "라임", swatch: "#65a30d" },
+    { id: "green", label: "초록", swatch: "#15803d" },
+    { id: "emerald", label: "에메랄드", swatch: "#059669" },
+    { id: "teal", label: "청록", swatch: "#0f766e" },
+    { id: "cyan", label: "시안", swatch: "#0891b2" },
+    { id: "sky", label: "스카이", swatch: "#0284c7" },
+    { id: "blue", label: "파랑", swatch: "#1565c0" },
     { id: "navy", label: "네이비", swatch: "#1e3a8a" },
+    { id: "indigo", label: "인디고", swatch: "#4338ca" },
+    { id: "violet", label: "보라", swatch: "#7c3aed" },
+    { id: "purple", label: "퍼플", swatch: "#9333ea" },
+    { id: "fuchsia", label: "푸시아", swatch: "#c026d3" },
+    { id: "pink", label: "핑크", swatch: "#db2777" },
+    { id: "rose", label: "로즈", swatch: "#e11d48" },
+    { id: "brown", label: "브라운", swatch: "#92400e" },
+    { id: "slate", label: "슬레이트", swatch: "#475569" },
     { id: "zinc", label: "징크", swatch: "#52525b" },
   ];
 
@@ -111,6 +102,13 @@
     return PASTELS[0];
   }
 
+  function isValidColorId(id) {
+    for (var i = 0; i < PASTELS.length; i++) {
+      if (PASTELS[i].id === id) return true;
+    }
+    return false;
+  }
+
   function getThemeById(id) {
     for (var i = 0; i < THEMES.length; i++) {
       if (THEMES[i].id === id) return THEMES[i];
@@ -141,7 +139,8 @@
     var key = normName(name);
     if (!key) return PASTELS[0].id;
     var map = loadMap();
-    if (map[key]) return map[key];
+    // 저장된 색이 현재 팔레트에 있으면 그대로, 없으면(팔레트 개편 등) 이름 해시로 재배정
+    if (map[key] && isValidColorId(map[key])) return map[key];
     var id = assignRandomColorId(name);
     map[key] = id;
     saveMap(map);
