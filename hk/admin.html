@@ -4201,13 +4201,13 @@
             reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
           }
         }
-        // 호텔 인포는 마감과 무관하게 유지
-        if (prev.hotelInfo) {
-          reset.hotelInfo =
-            typeof HKStorage.normalizeHotelInfo === "function"
-              ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
-              : prev.hotelInfo;
-        }
+        // 인포등록(호텔 인포·홈페이지)은 마감해도 절대 초기화하지 않음
+        reset.hotelInfo =
+          typeof HKStorage.normalizeHotelInfo === "function"
+            ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
+            : prev.hotelInfo && typeof prev.hotelInfo === "object"
+              ? prev.hotelInfo
+              : reset.hotelInfo;
         return reset;
       }
 
@@ -4293,8 +4293,10 @@
             adminNoticeDirty = false;
             adminMbInvNoticeDirty = false;
             adminVipMemoDirty = false;
+            adminHotelInfoDirty = false;
             refresh({ force: true });
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
+            loadHotelInfoIntoForm(HKStorage.load(), true);
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지)");
           });
           return;
         }
@@ -4310,14 +4312,16 @@
         adminNoticeDirty = false;
         adminMbInvNoticeDirty = false;
         adminVipMemoDirty = false;
+        adminHotelInfoDirty = false;
         refresh({ force: true });
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
+        loadHotelInfoIntoForm(HKStorage.load(), true);
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·객실·요청·MB 등 초기화\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
