@@ -1135,6 +1135,8 @@
       color: #047857;
       background: #d1fae5;
       border-color: #6ee7b7;
+      font-size: 0.8125rem;
+      font-weight: 800;
     }
 
     .request-feedback__facility-btn.is-done.is-denied {
@@ -1777,14 +1779,16 @@
 
     .request-feedback__facility-pending-hint {
       margin-left: 6px;
-      font-size: 0.625rem;
-      font-weight: 600;
+      font-size: 0.8125rem;
+      font-weight: 800;
       color: #0f766e;
-      opacity: 0.9;
+      opacity: 1;
+      letter-spacing: -0.01em;
     }
 
     .request-feedback__facility-unavailable {
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 0.8125rem;
       color: #b91c1c;
     }
 
@@ -2652,13 +2656,16 @@
       outline: 2px solid var(--accent);
     }
 
-    .room-card.is-change-alert {
-      animation: room-change-alert 0.75s ease-in-out infinite;
+    /* 객실·처리예정 카드는 깜빡이지 않음 — 사이드바 구역/요청 탭만 알림 */
+    .room-card.is-change-alert,
+    .sched-req-card.is-change-alert {
+      animation: none;
       cursor: pointer;
     }
 
-    .room-card.is-change-alert:hover {
-      border-color: var(--alert-flash-bd);
+    .room-card.is-change-alert:hover,
+    .sched-req-card.is-change-alert:hover {
+      border-color: var(--border);
     }
 
     .room-card.is-history-toggle {
@@ -7022,15 +7029,6 @@
       line-height: 1.15;
     }
 
-    .sched-req-card.is-change-alert {
-      animation: room-change-alert 0.75s ease-in-out infinite;
-      cursor: pointer;
-    }
-
-    .sched-req-card.is-change-alert:hover {
-      border-color: var(--alert-flash-bd);
-    }
-
     .sched-req-card__actions {
       display: flex;
       flex-wrap: wrap;
@@ -7072,6 +7070,18 @@
       font-size: 0.65rem;
       min-height: 0;
       height: auto;
+    }
+
+    .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
+    .sched-req-card .request-feedback__facility-pending-hint {
+      font-size: 0.8125rem;
+      font-weight: 800;
+      padding: 3px 8px;
+    }
+
+    .sched-req-card .room-card__time-display.request-feedback__sched.is-facility-pending {
+      font-size: 0.8125rem;
+      font-weight: 700;
     }
 
     .request-row {
@@ -19187,10 +19197,7 @@
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("sched-req-card--urgent");
           if (facDenied) li.classList.add("sched-req-card--facility-unavailable");
-          if (pendingRequestModifyIds[entry.id]) {
-            li.classList.add("is-change-alert");
-            li.title = "수정된 내용이 있습니다 · 클릭하면 강조 해제";
-          }
+          /* 카드 깜빡임 없음 — 사이드바(정비관리/요청)만 알림 */
 
           var multiSched = isMultiRoomRequest(entry);
           var head = document.createElement("div");
