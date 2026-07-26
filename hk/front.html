@@ -6008,6 +6008,35 @@
       letter-spacing: -0.02em;
     }
 
+    .hk-chat-day-sep {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      margin: 8px 0 4px;
+      padding: 0 2px;
+      list-style: none;
+      align-self: stretch;
+      box-sizing: border-box;
+    }
+
+    .hk-chat-day-sep__line {
+      flex: 1 1 auto;
+      min-width: 12px;
+      height: 0;
+      border-top: 1px solid var(--border, #d1d5db);
+      opacity: 0.9;
+    }
+
+    .hk-chat-day-sep__label {
+      flex: 0 0 auto;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--text-muted, #6b7280);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
     .front-chat__form {
       display: flex;
       gap: 8px;
@@ -11135,8 +11164,10 @@
           mount.appendChild(empty);
           return;
         }
+        var dayKey = "";
         msgs.forEach(function (m) {
           if (!m) return;
+          dayKey = maybeAppendChatDaySeparator(mount, dayKey, m.at, "div");
           var row = document.createElement("div");
           row.className = "request-desk-chat__msg";
           row.setAttribute("data-msg-id", m.id || "");
@@ -11225,8 +11256,10 @@
           mount.appendChild(empty);
           return;
         }
+        var dayKey = "";
         msgs.forEach(function (m) {
           if (!m) return;
+          dayKey = maybeAppendChatDaySeparator(mount, dayKey, m.at, "div");
           var row = document.createElement("div");
           row.className = "order-desk-chat__msg";
           row.setAttribute("data-msg-id", m.id || "");
@@ -11315,8 +11348,10 @@
           mount.appendChild(empty);
           return;
         }
+        var dayKey = "";
         msgs.forEach(function (m) {
           if (!m) return;
+          dayKey = maybeAppendChatDaySeparator(mount, dayKey, m.at, "div");
           var row = document.createElement("div");
           row.className = "order-desk-chat__msg";
           row.setAttribute("data-msg-id", m.id || "");
@@ -12859,6 +12894,50 @@
         var d = new Date(iso);
         if (isNaN(d.getTime())) return "";
         return pad2(d.getMonth() + 1) + "." + pad2(d.getDate());
+      }
+
+      function chatDayKey(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        return (
+          d.getFullYear() +
+          "-" +
+          pad2(d.getMonth() + 1) +
+          "-" +
+          pad2(d.getDate())
+        );
+      }
+
+      function appendChatDaySeparator(mount, iso, tagName) {
+        if (!mount || !iso) return;
+        var label = formatChatMsgDate(iso);
+        if (!label) return;
+        var el = document.createElement(tagName || "div");
+        el.className = "hk-chat-day-sep";
+        el.setAttribute("role", "separator");
+        el.setAttribute("aria-label", label);
+        var lineL = document.createElement("span");
+        lineL.className = "hk-chat-day-sep__line";
+        var text = document.createElement("span");
+        text.className = "hk-chat-day-sep__label";
+        text.textContent = label;
+        var lineR = document.createElement("span");
+        lineR.className = "hk-chat-day-sep__line";
+        el.appendChild(lineL);
+        el.appendChild(text);
+        el.appendChild(lineR);
+        mount.appendChild(el);
+      }
+
+      /** 날짜가 바뀌면 구분선 추가. 반환값은 현재 일자 키. */
+      function maybeAppendChatDaySeparator(mount, prevDayKey, iso, tagName) {
+        var key = chatDayKey(iso);
+        if (!key) return prevDayKey || "";
+        if (key !== (prevDayKey || "")) {
+          appendChatDaySeparator(mount, iso, tagName);
+        }
+        return key;
       }
 
       function appendChatMsgTimeEl(parent, iso, className) {
@@ -17935,7 +18014,9 @@
           if (isNaN(tb)) tb = 0;
           return ta - tb;
         });
+        var dayKey = "";
         chat.forEach(function (msg) {
+            dayKey = maybeAppendChatDaySeparator(msgList, dayKey, msg.at, "li");
             var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var msgLi = document.createElement("li");
             msgLi.className = "order-chat__msg";
@@ -21177,7 +21258,9 @@
           if (empty) empty.hidden = true;
         } else {
           if (empty) empty.hidden = true;
+          var dayKey = "";
           messages.forEach(function (msg) {
+            dayKey = maybeAppendChatDaySeparator(list, dayKey, msg.at, "li");
             var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
             var li = document.createElement("li");
             li.className = "front-chat__msg";
@@ -22029,6 +22112,7 @@
           applyChatBubbleColors: applyChatBubbleColors,
           applyChatBubbleAlign: applyChatBubbleAlign,
           isOwnChatAuthor: isOwnChatAuthor,
+          maybeAppendChatDaySeparator: maybeAppendChatDaySeparator,
           appendCancelNameLog: appendCancelNameLog,
           openCancelConfirmModal: openCancelConfirmModal,
           onCancelListRefresh: function () {},
@@ -22070,6 +22154,7 @@
           hkSetPhotoPreview: hkSetPhotoPreview,
           applyChatBubbleColors: applyChatBubbleColors,
           applyChatBubbleAlign: applyChatBubbleAlign,
+          maybeAppendChatDaySeparator: maybeAppendChatDaySeparator,
           onMiscLogChanged: detectFacilityMiscChange,
           onDailyLogChanged: detectFacilityDailyChange,
           openCancelConfirmModal: openCancelConfirmModal,

@@ -1159,7 +1159,11 @@
     chat.sort(function (a, b) {
       return new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
     });
+    var dayKey = "";
     chat.forEach(function (msg) {
+        if (uiHooks.maybeAppendChatDaySeparator) {
+          dayKey = uiHooks.maybeAppendChatDaySeparator(msgList, dayKey, msg.at, "li");
+        }
         var byName = msg.by != null ? String(msg.by).trim() || "—" : "—";
         var msgLi = document.createElement("li");
         msgLi.className = "order-chat__msg";
