@@ -837,7 +837,21 @@
           localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(msg.state));
         } catch (err) {}
         applyEmbedState(msg.state);
+        return;
       }
+      try {
+        localStorage.removeItem(STATE_STORAGE_KEY);
+      } catch (err) {}
+      dataframeRows = [];
+      selectedInvFile = null;
+      selectedGitFile = null;
+      if (invFileEl) invFileEl.value = "";
+      if (gitFileEl) gitFileEl.value = "";
+      if (invFileNameEl) invFileNameEl.textContent = "선택된 파일 없음";
+      if (gitFileNameEl) gitFileNameEl.textContent = "선택된 파일 없음";
+      tbody.innerHTML = "";
+      meta.textContent = "Inventory XML과 Gitraces XML을 모두 선택해 주세요.";
+      updateTodayBanner();
     });
 
     function notifyParentTable(mainRows, annexRows, rowCount, opts) {

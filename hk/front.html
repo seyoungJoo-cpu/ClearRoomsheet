@@ -11876,11 +11876,17 @@
         });
       }
 
-      /** 서버에 아직 없는 경우, 이 PC localStorage 내용을 한 번 올려 동기화 시드 */
+      /** 서버에 아직 없는 경우, 이 PC localStorage 내용을 한 번 올려 동기화 시드.
+       * 마감(closeDayAt) 이후의 잔여 localStorage는 되살리지 않고 삭제한다. */
       function seedFrontEmbedStatesFromLocalIfNeeded() {
         var data = HKStorage.load();
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
           data.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        }
+        var closeAtMs = 0;
+        if (data.closeDayAt) {
+          closeAtMs = new Date(data.closeDayAt).getTime();
+          if (isNaN(closeAtMs)) closeAtMs = 0;
         }
         var changed = false;
         ["dd", "inven", "chichi"].forEach(function (key) {
@@ -11892,6 +11898,15 @@
             if (!raw) return;
             var parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return;
+            var localAt = new Date(parsed.updatedAt || 0).getTime();
+            if (isNaN(localAt)) localAt = 0;
+            // 마감 시각 이전이거나 시각 없는 잔여 데이터는 시드하지 않고 지움
+            if (closeAtMs && localAt <= closeAtMs) {
+              try {
+                localStorage.removeItem(lsKey);
+              } catch (e2) {}
+              return;
+            }
             if (!parsed.updatedAt) parsed.updatedAt = new Date().toISOString();
             data.frontEmbedStates[key] = parsed;
             changed = true;

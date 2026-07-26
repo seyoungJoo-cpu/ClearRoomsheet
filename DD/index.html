@@ -999,7 +999,19 @@
           localStorage.setItem(DD_STATE_KEY, JSON.stringify(msg.state));
         } catch (err) {}
         applyDdEmbedState(msg.state);
+        return;
       }
+      try {
+        localStorage.removeItem(DD_STATE_KEY);
+      } catch (err) {}
+      ddRooms.value = "";
+      currentRows = [];
+      sortState = { levels: [] };
+      renderRows([]);
+      updateSortHeaderUi();
+      kpiRooms.textContent = "0";
+      kpiFound.textContent = "0";
+      kpiMissing.textContent = "0";
     });
 
     function bindSortHandlers() {

@@ -1488,7 +1488,22 @@ window.addEventListener("message", function (ev) {
       localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(msg.state));
     } catch (err) {}
     applyChichiEmbedState(msg.state);
+    return;
   }
+  try {
+    localStorage.removeItem(CHICHI_STATE_KEY);
+  } catch (err) {}
+  STATE.files = [];
+  STATE.records = [];
+  STATE.hiddenIds.clear();
+  if (typeof fileInput !== "undefined" && fileInput) fileInput.value = "";
+  if (typeof fileInfo !== "undefined" && fileInfo) {
+    fileInfo.innerHTML = "선택된 파일이 없습니다.";
+  }
+  if (typeof uploadBtn !== "undefined" && uploadBtn) uploadBtn.disabled = true;
+  if (typeof resultArea !== "undefined" && resultArea) resultArea.classList.add("hidden");
+  updateCounters();
+  updateRestoreBar();
 });
 
 function updateRestoreBar() {

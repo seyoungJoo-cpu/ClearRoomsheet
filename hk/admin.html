@@ -1824,11 +1824,23 @@
         };
       }
 
+      function clearFrontEmbedLocalStorage() {
+        [
+          "hk-dd-embed-state-v1",
+          "hk-inven-embed-state-v1",
+          "hk-chichi-embed-state-v1",
+        ].forEach(function (key) {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {}
+        });
+      }
+
       function collectFrontEmbedSnapshot() {
         var keys = [
           { key: "hk-dd-embed-state-v1", label: "DD", embedKey: "dd" },
           { key: "hk-inven-embed-state-v1", label: "인벤", embedKey: "inven" },
-          { key: "hk-chichi-embed-state-v1", label: "치치", embedKey: "chichi" },
+          { key: "hk-chichi-embed-state-v1", label: "고객취향", embedKey: "chichi" },
         ];
         var synced = {};
         try {
@@ -2147,7 +2159,7 @@
             (snapshot.rooming && snapshot.rooming.fasnUploadSummary) || "—",
           ],
           [
-            "프론트 임베드(DD·인벤·치치)",
+            "프론트 임베드(DD·인벤·고객취향)",
             (snapshot.frontEmbeds || []).filter(function (x) {
               return x && x.hasContent;
             }).length
@@ -2871,7 +2883,7 @@
             }),
           },
           {
-            title: "프론트 임베드(DD·인벤·치치)",
+            title: "프론트 임베드(DD·인벤·고객취향)",
             headers: ["구분", "저장키", "내용유무", "JSON"],
             rows: (snapshot.frontEmbeds || []).map(function (item) {
               return [
@@ -4157,6 +4169,16 @@
         }
         var closeAt = new Date().toISOString();
         reset.closeDayAt = closeAt;
+        // 공지(사진 포함)·MB 인벤 공지·프론트 임베드(DD·인벤·취향) 초기화
+        // noticeUpdatedAt 스탬프로 이후 merge 시 옛 공지가 되살아나지 않게 함
+        reset.notice = "";
+        reset.noticeImage = "";
+        reset.noticeImages = [];
+        reset.noticeUpdatedAt = closeAt;
+        reset.mbInvNotice = "";
+        reset.mbInvNoticeImages = [];
+        reset.mbInvNoticeUpdatedAt = closeAt;
+        reset.frontEmbedStates = { dd: null, inven: null, chichi: null };
         // 오더/정비 작은 채팅창은 7일 보관 (마감해도 유지)
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
@@ -4267,7 +4289,11 @@
             if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
               HKInvenNotify.resetOnCloseDay();
             }
-            refresh();
+            clearFrontEmbedLocalStorage();
+            adminNoticeDirty = false;
+            adminMbInvNoticeDirty = false;
+            adminVipMemoDirty = false;
+            refresh({ force: true });
             toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
           });
           return;
@@ -4280,14 +4306,18 @@
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
         }
-        refresh();
+        clearFrontEmbedLocalStorage();
+        adminNoticeDirty = false;
+        adminMbInvNoticeDirty = false;
+        adminVipMemoDirty = false;
+        refresh({ force: true });
         toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·객실·요청·MB 등 초기화\n3) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
