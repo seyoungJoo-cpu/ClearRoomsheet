@@ -989,6 +989,31 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
+/** 요청 로그: id 기준으로 더 최신 updatedAt/at 을 유지 (시간 입력 등이 옛 스냅샷에 덮이지 않게) */
+function mergeRequestLogById(prevArr, incomingArr) {
+  var byId = {};
+  function consider(entry) {
+    if (!entry || typeof entry !== "object") return;
+    var id = entry.id != null ? String(entry.id) : "";
+    if (!id) return;
+    var cur = byId[id];
+    if (!cur) {
+      byId[id] = entry;
+      return;
+    }
+    var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
+    var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
+    if (isNaN(ta)) ta = 0;
+    if (isNaN(tb)) tb = 0;
+    if (tb >= ta) byId[id] = entry;
+  }
+  (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
+  (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
+  return Object.keys(byId).map(function (id) {
+    return byId[id];
+  });
+}
+
 function orderEntryClock(entry) {
   if (!entry || typeof entry !== "object") return 0;
   var max = 0;
@@ -1275,7 +1300,7 @@ function mergeSyncPayload(prev, incoming) {
     }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
-    out.hkRequestLog = replaceLogArray(incoming.hkRequestLog);
+    out.hkRequestLog = mergeRequestLogById(prev.hkRequestLog, incoming.hkRequestLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkOrderLog")) {
     out.hkOrderLog =

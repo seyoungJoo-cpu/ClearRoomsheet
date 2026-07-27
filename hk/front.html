@@ -9721,6 +9721,18 @@
 
       function isZoneRoomManageEditing() {
         if (zoneRoomManageBusy) return true;
+        var panel = document.getElementById("zoneRoomManagePanel");
+        if (!panel || panel.hidden) return false;
+        var addMount = document.getElementById("zoneRoomAddMount");
+        if (addMount) {
+          var typed = false;
+          addMount
+            .querySelectorAll(".af-num, .af-num-from, .af-num-to, .af-memo1, .af-memo2")
+            .forEach(function (el) {
+              if (el && String(el.value || "").trim()) typed = true;
+            });
+          if (typed) return true;
+        }
         var el = document.activeElement;
         if (!el || !el.closest) return false;
         if (!el.closest("#zoneRoomManagePanel")) return false;
@@ -11104,9 +11116,37 @@
       }
 
       function syncRequestLogFromServer() {
-        if (typeof HKSync !== "undefined") {
-          requestLogEntries = HKSync.getRequestLog();
+        if (typeof HKSync === "undefined") return;
+        var remote = HKSync.getRequestLog();
+        if (!Array.isArray(remote)) {
+          requestLogEntries = [];
+          return;
         }
+        // 로컬에만 있는 최신 수정(시간 입력 등)이 옛 서버 스냅샷에 덮이지 않게 병합
+        if (!requestLogEntries || !requestLogEntries.length) {
+          requestLogEntries = remote.slice();
+          return;
+        }
+        var byId = {};
+        requestLogEntries.forEach(function (e) {
+          if (e && e.id) byId[e.id] = e;
+        });
+        remote.forEach(function (e) {
+          if (!e || !e.id) return;
+          var local = byId[e.id];
+          if (!local) {
+            byId[e.id] = e;
+            return;
+          }
+          var lt = new Date(local.updatedAt || local.at || 0).getTime();
+          var rt = new Date(e.updatedAt || e.at || 0).getTime();
+          if (isNaN(lt)) lt = 0;
+          if (isNaN(rt)) rt = 0;
+          if (rt > lt) byId[e.id] = e;
+        });
+        requestLogEntries = Object.keys(byId).map(function (id) {
+          return byId[id];
+        });
       }
 
       function syncOrderLogFromServer() {
@@ -11180,6 +11220,9 @@
       function saveRequestLog() {
         if (typeof HKSync !== "undefined") {
           HKSync.setRequestLog(requestLogEntries);
+          if (typeof HKSync.flushPending === "function") {
+            HKSync.flushPending();
+          }
         }
       }
 
@@ -11467,8 +11510,15 @@
       }
 
       function handleHkSyncChange(changed, payload) {
-        // 캐시는 즉시 반영하고, 사용자가 입력 중일 때는 화면 갱신만 미룬다.
-        if (changed.indexOf("hkRequestLog") >= 0) syncRequestLogFromServer();
+        // 캐시는 즉시 반영하되, 요청 시간 입력·편집 중에는 로컬 엔트리를 덮지 않는다.
+        if (changed.indexOf("hkRequestLog") >= 0) {
+          var editingReq =
+            isHkUserEditing() ||
+            !!document.querySelector(
+              ".request-feedback__sched-editor-wrap, .request-feedback__facility-sched-editor-wrap"
+            );
+          if (!editingReq) syncRequestLogFromServer();
+        }
         if (changed.indexOf("hkOrderLog") >= 0) syncOrderLogFromServer();
         deferHkSyncUiApply(function () {
           handleHkSyncChangeApply(changed, payload);
@@ -12392,8 +12442,9 @@
         if (!addMount || !editList) return;
 
         var label = zoneLabels[zone] || HKStorage.getZoneLabel(zone, HKStorage.load());
+        // 동기화·리렌더로 입력 중이던 객실번호가 지워지지 않게 기본 보존
         var keepValues = null;
-        if (opts.preserveAddValues) {
+        if (!opts.clearAddForm) {
           keepValues = {
             num:
               (addMount.querySelector(".af-num") && addMount.querySelector(".af-num").value) || "",
@@ -19740,8 +19791,9 @@
             alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)\n비우면 삭제됩니다.");
             return;
           }
-          applyRequestSchedChange(entry, p.value);
-          markRequestEntrySavedLocally(entry);
+          var live = findRequestEntry(entryId) || entry;
+          applyRequestSchedChange(live, p.value);
+          markRequestEntrySavedLocally(live);
           saveRequestLog();
           done();
         });
@@ -19759,8 +19811,9 @@
         ipQuick.title = "IP로 적용";
         ipQuick.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          applyRequestSchedChange(entry, "IP");
-          markRequestEntrySavedLocally(entry);
+          var liveIp = findRequestEntry(entryId) || entry;
+          applyRequestSchedChange(liveIp, "IP");
+          markRequestEntrySavedLocally(liveIp);
           saveRequestLog();
           done();
         });
@@ -19859,9 +19912,10 @@
             alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)\n비우면 삭제됩니다.");
             return;
           }
-          if (p.value) entry.facilitySched = p.value;
-          else delete entry.facilitySched;
-          markRequestEntrySavedLocally(entry);
+          var live = findRequestEntry(entryId) || entry;
+          if (p.value) live.facilitySched = p.value;
+          else delete live.facilitySched;
+          markRequestEntrySavedLocally(live);
           saveRequestLog();
           done();
         });
@@ -19879,8 +19933,9 @@
         ipQuickFac.title = "IP로 적용";
         ipQuickFac.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          entry.facilitySched = "IP";
-          markRequestEntrySavedLocally(entry);
+          var liveIp = findRequestEntry(entryId) || entry;
+          liveIp.facilitySched = "IP";
+          markRequestEntrySavedLocally(liveIp);
           saveRequestLog();
           done();
         });

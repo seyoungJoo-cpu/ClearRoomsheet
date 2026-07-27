@@ -82,6 +82,31 @@
     });
   }
 
+  /** 요청 로그 id별 최신 updatedAt 유지 (처리·예정 시간 입력이 옛 캐시에 덮이지 않게) */
+  function mergeRequestLogEntries(prevArr, incomingArr) {
+    var byId = {};
+    function consider(entry) {
+      if (!entry || typeof entry !== "object") return;
+      var id = entry.id != null ? String(entry.id) : "";
+      if (!id) return;
+      var cur = byId[id];
+      if (!cur) {
+        byId[id] = entry;
+        return;
+      }
+      var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
+      var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb >= ta) byId[id] = entry;
+    }
+    (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
+    (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
+    return Object.keys(byId).map(function (id) {
+      return byId[id];
+    });
+  }
+
   function adminInquiryHasReply(entry) {
     if (!entry) return false;
     if (entry.replyAt != null && String(entry.replyAt).trim()) return true;
@@ -910,10 +935,20 @@
       }
     }
     if (Array.isArray(payload.hkRequestLog) && !dirty.hkRequestLog) {
-      cache.requestLog = payload.hkRequestLog.slice();
+      cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
       writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
       changed.push("hkRequestLog");
       clearDirty("hkRequestLog");
+    } else if (
+      Array.isArray(payload.hkRequestLog) &&
+      dirty.hkRequestLog &&
+      typeof mergeRequestLogEntries === "function"
+    ) {
+      // dirty여도 원격에만 있는 새 요청은 합치고, 로컬이 더 최신이면 유지
+      var mergedReq = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
+      cache.requestLog = mergedReq;
+      writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+      changed.push("hkRequestLog");
     }
     if (Array.isArray(payload.hkCancelLog) && !dirty.hkCancelLog) {
       cache.cancelLog = payload.hkCancelLog.slice();

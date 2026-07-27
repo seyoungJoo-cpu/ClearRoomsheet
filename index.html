@@ -1367,7 +1367,7 @@
           <div
             id="indiDepSummary"
             class="arr-summary"
-            title="OUT 합계(상태요약 OUT) − OUT 개수(실제 차액) · OUT 합계=Departed 포함 객실 수"
+            title="OUT 합계(OUT예정+(O예정,A)+(Out,IN)+OUT) − OUT(Departed 포함, 상태요약 OUT) · 차액"
             hidden
           >
             <span class="arr-summary__label">DEP</span>
@@ -2566,6 +2566,7 @@
 
       function isOutDepartedResv(item) {
         var rs = normalizeResvStatus(item && item.resvStatus);
+        // 상태요약 OUT · DEP OUT: Departed / Departed, Arrival (Arrived, Departed 포함)
         return rs.indexOf("Departed") >= 0;
       }
 
@@ -2721,12 +2722,17 @@
         updateIndiDepSummary();
       }
 
-      /** DEP OUT 합계(상태요약 OUT 체크 개수) − OUT 개수(실제 차액) */
+      /** DEP OUT 합계(OUT예정+O예정,A+Out,IN+OUT) − OUT(Departed 포함=상태요약 OUT) */
       function computeDepSummaryFromRows() {
         var rows = get499BoardRows(cachedRows || []);
         var counts = summarizeIndiCategories(rows).counts;
-        var total = countOutRooms(rows);
-        var outCount = counts.OUT || 0;
+        var total =
+          (counts.OUT_SCHED || 0) +
+          (counts.OUT_A || 0) +
+          (counts.OUT_IN || 0) +
+          (counts.OUT || 0);
+        // OUT = Departed가 포함된 객실 수 (상태 요약 OUT 체크와 동일)
+        var outCount = countOutRooms(rows);
         return {
           total: total,
           outCount: outCount,
