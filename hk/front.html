@@ -11115,35 +11115,54 @@
         el.title = "루밍 XML 업로드 " + label;
       }
 
-      function syncRequestLogFromServer() {
+      function syncRequestLogFromServer(opts) {
+        opts = opts || {};
         if (typeof HKSync === "undefined") return;
         var remote = HKSync.getRequestLog();
         if (!Array.isArray(remote)) {
           requestLogEntries = [];
           return;
         }
-        // 로컬에만 있는 최신 수정(시간 입력 등)이 옛 서버 스냅샷에 덮이지 않게 병합
+        // 마감 등으로 서버가 빈 배열이면 로컬도 비움 (병합으로 되살리지 않음)
+        if (
+          opts.replace ||
+          opts.allowEmptyReplace ||
+          (remote.length === 0 && !opts.keepLocalWhenRemoteEmpty)
+        ) {
+          requestLogEntries = remote.slice();
+          return;
+        }
         if (!requestLogEntries || !requestLogEntries.length) {
           requestLogEntries = remote.slice();
           return;
         }
         var byId = {};
-        requestLogEntries.forEach(function (e) {
-          if (e && e.id) byId[e.id] = e;
-        });
-        remote.forEach(function (e) {
-          if (!e || !e.id) return;
-          var local = byId[e.id];
-          if (!local) {
-            byId[e.id] = e;
+        function hasSched(entry) {
+          return !!(entry && entry.sched != null && String(entry.sched).trim());
+        }
+        function consider(entry) {
+          if (!entry || !entry.id) return;
+          var id = String(entry.id);
+          var cur = byId[id];
+          if (!cur) {
+            byId[id] = entry;
             return;
           }
-          var lt = new Date(local.updatedAt || local.at || 0).getTime();
-          var rt = new Date(e.updatedAt || e.at || 0).getTime();
+          var lt = new Date(cur.updatedAt || cur.at || 0).getTime();
+          var rt = new Date(entry.updatedAt || entry.at || 0).getTime();
           if (isNaN(lt)) lt = 0;
           if (isNaN(rt)) rt = 0;
-          if (rt > lt) byId[e.id] = e;
-        });
+          if (rt > lt) {
+            byId[id] = entry;
+            return;
+          }
+          if (lt > rt) return;
+          if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
+          else if (!hasSched(entry) && hasSched(cur)) return;
+          else byId[id] = entry;
+        }
+        requestLogEntries.forEach(consider);
+        remote.forEach(consider);
         requestLogEntries = Object.keys(byId).map(function (id) {
           return byId[id];
         });
@@ -11512,12 +11531,21 @@
       function handleHkSyncChange(changed, payload) {
         // 캐시는 즉시 반영하되, 요청 시간 입력·편집 중에는 로컬 엔트리를 덮지 않는다.
         if (changed.indexOf("hkRequestLog") >= 0) {
+          var closeReq =
+            payload &&
+            (payload.hkCloseDayReset === true ||
+              changed.indexOf("hkCloseDayAt") >= 0);
           var editingReq =
-            isHkUserEditing() ||
-            !!document.querySelector(
-              ".request-feedback__sched-editor-wrap, .request-feedback__facility-sched-editor-wrap"
-            );
-          if (!editingReq) syncRequestLogFromServer();
+            !closeReq &&
+            (isHkUserEditing() ||
+              !!document.querySelector(
+                ".request-feedback__sched-editor-wrap, .request-feedback__facility-sched-editor-wrap"
+              ));
+          if (closeReq) {
+            syncRequestLogFromServer({ replace: true, allowEmptyReplace: true });
+          } else if (!editingReq) {
+            syncRequestLogFromServer();
+          }
         }
         if (changed.indexOf("hkOrderLog") >= 0) syncOrderLogFromServer();
         deferHkSyncUiApply(function () {
@@ -11527,9 +11555,17 @@
 
       function handleHkSyncChangeApply(changed, payload) {
         if (changed.indexOf("hkRequestLog") >= 0) {
-          syncRequestLogFromServer();
+          var closeReq =
+            payload &&
+            (payload.hkCloseDayReset === true ||
+              changed.indexOf("hkCloseDayAt") >= 0);
+          if (closeReq) {
+            syncRequestLogFromServer({ replace: true, allowEmptyReplace: true });
+          } else {
+            syncRequestLogFromServer();
+          }
           detectNewRequestItems();
-          renderRequestLogPanel();
+          renderRequestLogPanel({ force: true });
           checkAndAutoDeployFacilityOrders();
         }
         if (changed.indexOf("hkOrderLog") >= 0) {
@@ -12220,6 +12256,23 @@
 
       function handleCloseDayFromSync(payload) {
         if (!payload || !payload.hkCloseDayAt) return;
+        // 마감 시 정비등록(요청 로그) 로컬 UI도 비움
+        if (Array.isArray(payload.hkRequestLog)) {
+          requestLogEntries = payload.hkRequestLog.slice();
+        } else if (payload.hkCloseDayReset === true) {
+          requestLogEntries = [];
+        } else {
+          syncRequestLogFromServer({ replace: true, allowEmptyReplace: true });
+        }
+        if (typeof HKSync !== "undefined" && HKSync.clearRequestLog && !requestLogEntries.length) {
+          // 캐시도 비어 있으면 유지 (pushSnapshot이 이미 비운 경우)
+        }
+        initRequestAlertTracking();
+        clearRequestSidebarAlerts();
+        renderRequestLogPanel({ force: true });
+        if (typeof renderSchedRequestCards === "function") {
+          renderSchedRequestCards();
+        }
         syncAllChatFromServer();
         renderFrontChatPanel({ force: true });
         initFrontChatTracking();
@@ -13605,12 +13658,8 @@
 
       function applyRequestIpSched(entryId) {
         if (!maintenanceMode || !entryId) return;
-        var entry = findRequestEntry(entryId);
-        if (!entry) return;
-        applyRequestSchedChange(entry, "IP");
-        markRequestEntrySavedLocally(entry);
-        saveRequestLog();
-        renderRequestLogPanel();
+        if (!commitRequestSched(entryId, "IP")) return;
+        renderRequestLogPanel({ force: true });
       }
 
       function appendSchedTimeDisplay(containerEl, entry, opts) {
@@ -14190,10 +14239,46 @@
       }
 
       function findRequestEntry(id) {
+        if (id == null || id === "") return null;
+        var want = String(id);
         for (var i = 0; i < requestLogEntries.length; i++) {
-          if (requestLogEntries[i].id === id) return requestLogEntries[i];
+          var e = requestLogEntries[i];
+          if (e && String(e.id) === want) return e;
         }
         return null;
+      }
+
+      /** 처리·예정 시간을 현재 로그 배열에 확실히 반영 후 저장 */
+      function commitRequestSched(entryId, newSched) {
+        var want = entryId != null ? String(entryId) : "";
+        if (!want) return null;
+        var live = findRequestEntry(want);
+        if (!live && typeof HKSync !== "undefined") {
+          var cacheLog = HKSync.getRequestLog();
+          if (Array.isArray(cacheLog)) {
+            for (var i = 0; i < cacheLog.length; i++) {
+              if (cacheLog[i] && String(cacheLog[i].id) === want) {
+                live = cacheLog[i];
+                requestLogEntries.push(live);
+                break;
+              }
+            }
+          }
+        }
+        if (!live) return null;
+        applyRequestSchedChange(live, newSched);
+        markRequestEntrySavedLocally(live);
+        // 배열 안 동일 id 항목이 여러 참조면 모두 맞춤
+        requestLogEntries.forEach(function (e) {
+          if (e && String(e.id) === want && e !== live) {
+            e.sched = live.sched;
+            if (live.schedPrev != null) e.schedPrev = live.schedPrev;
+            else delete e.schedPrev;
+            e.updatedAt = live.updatedAt;
+          }
+        });
+        saveRequestLog();
+        return live;
       }
 
       function isOrderEntryId(id) {
@@ -19791,10 +19876,10 @@
             alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)\n비우면 삭제됩니다.");
             return;
           }
-          var live = findRequestEntry(entryId) || entry;
-          applyRequestSchedChange(live, p.value);
-          markRequestEntrySavedLocally(live);
-          saveRequestLog();
+          if (!commitRequestSched(entryId, p.value)) {
+            alert("요청을 찾지 못했습니다. 화면을 새로고침 후 다시 시도해 주세요.");
+            return;
+          }
           done();
         });
 
@@ -19811,10 +19896,10 @@
         ipQuick.title = "IP로 적용";
         ipQuick.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          var liveIp = findRequestEntry(entryId) || entry;
-          applyRequestSchedChange(liveIp, "IP");
-          markRequestEntrySavedLocally(liveIp);
-          saveRequestLog();
+          if (!commitRequestSched(entryId, "IP")) {
+            alert("요청을 찾지 못했습니다. 화면을 새로고침 후 다시 시도해 주세요.");
+            return;
+          }
           done();
         });
         row.insertBefore(ipQuick, ok);

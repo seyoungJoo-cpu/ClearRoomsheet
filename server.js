@@ -989,30 +989,41 @@ function replaceLogArray(incoming) {
   return Array.isArray(incoming) ? incoming.slice() : [];
 }
 
-/** 요청 로그: id 기준으로 더 최신 updatedAt/at 을 유지 (시간 입력 등이 옛 스냅샷에 덮이지 않게) */
-function mergeRequestLogById(prevArr, incomingArr) {
-  var byId = {};
-  function consider(entry) {
-    if (!entry || typeof entry !== "object") return;
-    var id = entry.id != null ? String(entry.id) : "";
-    if (!id) return;
-    var cur = byId[id];
-    if (!cur) {
-      byId[id] = entry;
-      return;
+  /** 요청 로그: id 기준으로 더 최신 updatedAt/at 을 유지 (시간 입력 등이 옛 스냅샷에 덮이지 않게) */
+  function mergeRequestLogById(prevArr, incomingArr) {
+    var byId = {};
+    function hasSched(entry) {
+      return !!(entry && entry.sched != null && String(entry.sched).trim());
     }
-    var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
-    var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
-    if (isNaN(ta)) ta = 0;
-    if (isNaN(tb)) tb = 0;
-    if (tb >= ta) byId[id] = entry;
+    function consider(entry) {
+      if (!entry || typeof entry !== "object") return;
+      var id = entry.id != null ? String(entry.id) : "";
+      if (!id) return;
+      var cur = byId[id];
+      if (!cur) {
+        byId[id] = entry;
+        return;
+      }
+      var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
+      var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb > ta) {
+        byId[id] = entry;
+        return;
+      }
+      if (ta > tb) return;
+      // 시각 동일: 처리·예정 시간이 있는 쪽 우선 (빈 캐시가 덮지 않게)
+      if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
+      else if (!hasSched(entry) && hasSched(cur)) return;
+      else byId[id] = entry;
+    }
+    (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
+    (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
+    return Object.keys(byId).map(function (id) {
+      return byId[id];
+    });
   }
-  (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
-  (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
-  return Object.keys(byId).map(function (id) {
-    return byId[id];
-  });
-}
 
 function orderEntryClock(entry) {
   if (!entry || typeof entry !== "object") return 0;
@@ -1300,7 +1311,12 @@ function mergeSyncPayload(prev, incoming) {
     }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
-    out.hkRequestLog = mergeRequestLogById(prev.hkRequestLog, incoming.hkRequestLog);
+    // 마감 초기화([])는 병합하지 않고 교체 — 병합하면 옛 정비등록이 되살아남
+    if (incoming.hkCloseDayReset === true) {
+      out.hkRequestLog = replaceLogArray(incoming.hkRequestLog);
+    } else {
+      out.hkRequestLog = mergeRequestLogById(prev.hkRequestLog, incoming.hkRequestLog);
+    }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkOrderLog")) {
     out.hkOrderLog =

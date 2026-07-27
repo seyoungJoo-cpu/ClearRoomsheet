@@ -85,6 +85,9 @@
   /** 요청 로그 id별 최신 updatedAt 유지 (처리·예정 시간 입력이 옛 캐시에 덮이지 않게) */
   function mergeRequestLogEntries(prevArr, incomingArr) {
     var byId = {};
+    function hasSched(entry) {
+      return !!(entry && entry.sched != null && String(entry.sched).trim());
+    }
     function consider(entry) {
       if (!entry || typeof entry !== "object") return;
       var id = entry.id != null ? String(entry.id) : "";
@@ -98,7 +101,14 @@
       var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
       if (isNaN(ta)) ta = 0;
       if (isNaN(tb)) tb = 0;
-      if (tb >= ta) byId[id] = entry;
+      if (tb > ta) {
+        byId[id] = entry;
+        return;
+      }
+      if (ta > tb) return;
+      if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
+      else if (!hasSched(entry) && hasSched(cur)) return;
+      else byId[id] = entry;
     }
     (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
     (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
@@ -934,21 +944,28 @@
         } catch (eEmbedMerge) {}
       }
     }
-    if (Array.isArray(payload.hkRequestLog) && !dirty.hkRequestLog) {
-      cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
-      writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
-      changed.push("hkRequestLog");
-      clearDirty("hkRequestLog");
-    } else if (
-      Array.isArray(payload.hkRequestLog) &&
-      dirty.hkRequestLog &&
-      typeof mergeRequestLogEntries === "function"
-    ) {
-      // dirty여도 원격에만 있는 새 요청은 합치고, 로컬이 더 최신이면 유지
-      var mergedReq = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
-      cache.requestLog = mergedReq;
-      writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
-      changed.push("hkRequestLog");
+    if (Array.isArray(payload.hkRequestLog)) {
+      var closeResetReq =
+        payload.hkCloseDayReset === true ||
+        (!!payload.hkCloseDayAt &&
+          String(payload.hkCloseDayAt) !== String(prevCloseDayAt || ""));
+      if (closeResetReq || (!dirty.hkRequestLog && payload.hkRequestLog.length === 0)) {
+        // 마감·빈 요청로그: 병합하지 않고 교체 (옛 정비등록 되살림 방지)
+        cache.requestLog = payload.hkRequestLog.slice();
+        writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+        clearDirty("hkRequestLog");
+        changed.push("hkRequestLog");
+      } else if (!dirty.hkRequestLog) {
+        cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
+        writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+        changed.push("hkRequestLog");
+        clearDirty("hkRequestLog");
+      } else {
+        // dirty여도 원격에만 있는 새 요청은 합치고, 로컬이 더 최신이면 유지
+        cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
+        writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+        changed.push("hkRequestLog");
+      }
     }
     if (Array.isArray(payload.hkCancelLog) && !dirty.hkCancelLog) {
       cache.cancelLog = payload.hkCancelLog.slice();
@@ -1410,11 +1427,20 @@
       pendingPush = {};
       return postPayload(payload).then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
-        if (Array.isArray(payload.hkAdminInquiries)) {
-          emitChange(["hkAdminInquiries"], {
-            hkAdminInquiries: cache.adminInquiries.slice(),
-          });
-        }
+        var closeChanged = ["hkCloseDayAt", "hkStorage", "hkRequestLog"];
+        if (Array.isArray(payload.hkOrderLog)) closeChanged.push("hkOrderLog");
+        if (Array.isArray(payload.hkMbInvLog)) closeChanged.push("hkMbInvLog");
+        if (Array.isArray(payload.hkMbCheckLog)) closeChanged.push("hkMbCheckLog");
+        if (Array.isArray(payload.hkAdminInquiries)) closeChanged.push("hkAdminInquiries");
+        emitChange(closeChanged, {
+          hkCloseDayReset: true,
+          hkCloseDayAt: payload.hkCloseDayAt,
+          hkRequestLog: cache.requestLog.slice(),
+          hkStorage: payload.hkStorage,
+          hkAdminInquiries: Array.isArray(payload.hkAdminInquiries)
+            ? payload.hkAdminInquiries.slice()
+            : cache.adminInquiries.slice(),
+        });
         return data;
       });
     },
