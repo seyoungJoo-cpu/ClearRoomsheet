@@ -13332,37 +13332,40 @@
       function formatRoomNoDisplay(raw) {
         var s = String(raw == null ? "" : raw).trim();
         if (!s) return "";
-        function padRoomPart(part) {
+        function formatRoomPart(part) {
           var t = String(part || "").trim();
           if (!t) return "";
           if (/->/.test(t) || /에서/.test(t)) return t;
-          var d = t.replace(/\D/g, "");
-          if (!d) return t;
-          if (d.length <= 4) return d.padStart(4, "0");
-          return d.slice(-4);
+          // 숫자만인 경우: 1~4(01/001/0001 등)만 0001~0004, 나머지는 앞 0 제거
+          var digitsOnly = t.replace(/\s+/g, "");
+          if (/^\d+$/.test(digitsOnly)) {
+            var stripped = digitsOnly.replace(/^0+/, "") || "0";
+            if (stripped === "1" || stripped === "2" || stripped === "3" || stripped === "4") {
+              return stripped.padStart(4, "0");
+            }
+            return stripped;
+          }
+          // "2층 TEST2" 등 일반 문구는 그대로
+          return t;
         }
         var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
-        if (m) return padRoomPart(m[1]) + " -> " + padRoomPart(m[2]);
+        if (m) return formatRoomPart(m[1]) + " -> " + formatRoomPart(m[2]);
         if (/[,，]/.test(s)) {
           return s
             .split(/[,，]/)
-            .map(padRoomPart)
+            .map(formatRoomPart)
             .filter(Boolean)
             .join(",");
         }
         if (/->/.test(s)) {
           return s
             .split(/\s*->\s*/)
-            .map(padRoomPart)
+            .map(formatRoomPart)
             .filter(Boolean)
             .join(" -> ");
         }
         if (/에서/.test(s)) return s;
-        var digits = s.replace(/\D/g, "");
-        if (digits && digits === s.replace(/\s+/g, "")) {
-          return padRoomPart(digits);
-        }
-        return s;
+        return formatRoomPart(s);
       }
 
       function loadRequestLog() {
