@@ -20063,13 +20063,15 @@
                   ? "채팅(" + chatCount + ")"
                   : "채팅";
               actions.appendChild(chatBtn);
-              var useBtn = document.createElement("button");
-              useBtn.type = "button";
-              useBtn.className = "sched-card__use-btn";
-              useBtn.setAttribute("data-req-id", entry.id);
-              useBtn.setAttribute("aria-label", "사용 처리하여 하단 사용 섹션으로 이동");
-              useBtn.textContent = "사용";
-              actions.appendChild(useBtn);
+              if (frontMode) {
+                var useBtn = document.createElement("button");
+                useBtn.type = "button";
+                useBtn.className = "sched-card__use-btn";
+                useBtn.setAttribute("data-req-id", entry.id);
+                useBtn.setAttribute("aria-label", "사용 처리하여 하단 사용 섹션으로 이동");
+                useBtn.textContent = "사용";
+                actions.appendChild(useBtn);
+              }
             }
             li.appendChild(actions);
           } else {
