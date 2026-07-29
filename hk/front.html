@@ -9752,8 +9752,12 @@
       var ROOM_BLINK_DISMISS_LS = "lotte-hk-room-blink-dismiss-v2";
       var REQUEST_MODIFY_ACK_LS = "lotte-hk-request-modify-ack-v1";
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
-      var openDeployedOrderChatId = "";
-      var openSchedRequestChatId = "";
+      var closedDeployedOrderChatIds = {};
+      var forcedOpenDeployedOrderChatIds = {};
+      var closedSchedRequestChatIds = {};
+      var forcedOpenSchedRequestChatIds = {};
+      var prevDeployedChatCountById = {};
+      var prevSchedChatCountById = {};
       var orderChatComposeDraft = null;
       var facilityTimeEditIds = {};
       var cachedVacBoardRows = [];
@@ -19092,15 +19096,54 @@
         li.appendChild(timeWrap);
       }
 
+      function entryHasChatMessages(entry) {
+        return !!(entry && Array.isArray(entry.chat) && entry.chat.length);
+      }
+
+      function noteChatAutoOpenFromFirstMessage(id, count, prevMap, closedMap) {
+        var key = String(id || "");
+        if (!key) return;
+        var n = count > 0 ? count : 0;
+        var prev = prevMap[key] || 0;
+        if (prev === 0 && n > 0) {
+          delete closedMap[key];
+        }
+        prevMap[key] = n;
+      }
+
+      function isDeployedOrderChatOpen(entry) {
+        if (!entry || entry.id == null || entry.id === "") return false;
+        var id = String(entry.id);
+        if (closedDeployedOrderChatIds[id]) return false;
+        if (forcedOpenDeployedOrderChatIds[id]) return true;
+        return entryHasChatMessages(entry);
+      }
+
+      function isSchedRequestChatOpen(entry) {
+        if (!entry || entry.id == null || entry.id === "") return false;
+        var id = String(entry.id);
+        if (closedSchedRequestChatIds[id]) return false;
+        if (forcedOpenSchedRequestChatIds[id]) return true;
+        return entryHasChatMessages(entry);
+      }
+
       function toggleDeployedOrderChat(orderId) {
         if (!orderId) return;
-        openDeployedOrderChatId = openDeployedOrderChatId === orderId ? "" : orderId;
+        var id = String(orderId);
+        var entry = findOrderEntry(orderId) || { id: id, chat: [] };
+        if (isDeployedOrderChatOpen(entry)) {
+          closedDeployedOrderChatIds[id] = true;
+          delete forcedOpenDeployedOrderChatIds[id];
+          renderOrderPanels();
+          return;
+        }
+        delete closedDeployedOrderChatIds[id];
+        forcedOpenDeployedOrderChatIds[id] = true;
         renderOrderPanels();
-        if (!openDeployedOrderChatId) return;
         requestAnimationFrame(function () {
           var card = document.querySelector(
             '.order-work-section--deployed .order-work-item.is-chat-open[data-order-id="' +
-              orderId +
+              id +
               '"]'
           );
           if (!card) return;
@@ -19111,12 +19154,20 @@
 
       function toggleSchedRequestChat(reqId) {
         if (!reqId) return;
-        openSchedRequestChatId = openSchedRequestChatId === reqId ? "" : String(reqId);
+        var id = String(reqId);
+        var entry = findRequestEntry(reqId) || { id: id, chat: [] };
+        if (isSchedRequestChatOpen(entry)) {
+          closedSchedRequestChatIds[id] = true;
+          delete forcedOpenSchedRequestChatIds[id];
+          renderSchedRequestCards();
+          return;
+        }
+        delete closedSchedRequestChatIds[id];
+        forcedOpenSchedRequestChatIds[id] = true;
         renderSchedRequestCards();
-        if (!openSchedRequestChatId) return;
         requestAnimationFrame(function () {
           var card = document.querySelector(
-            '.sched-req-card.is-chat-open[data-req-id="' + openSchedRequestChatId + '"]'
+            '.sched-req-card.is-chat-open[data-req-id="' + id + '"]'
           );
           if (!card) return;
           var chatInput = card.querySelector(".order-chat__form input");
@@ -19219,7 +19270,8 @@
         if (typeof HKSync !== "undefined" && HKSync.flushPending) {
           HKSync.flushPending();
         }
-        openSchedRequestChatId = String(reqId);
+        delete closedSchedRequestChatIds[String(reqId)];
+        forcedOpenSchedRequestChatIds[String(reqId)] = true;
         renderSchedRequestCards();
         requestAnimationFrame(function () {
           var card = document.querySelector(
@@ -19262,6 +19314,8 @@
           selectionStart: 0,
           restoreFocus: true,
         };
+        delete closedDeployedOrderChatIds[String(orderId)];
+        forcedOpenDeployedOrderChatIds[String(orderId)] = true;
         saveOrderLog();
         renderOrderPanels({ force: true });
         requestAnimationFrame(function () {
@@ -19572,8 +19626,14 @@
           return ta - tb;
         });
         deployedEntries.forEach(function (entry) {
+          noteChatAutoOpenFromFirstMessage(
+            entry.id,
+            Array.isArray(entry.chat) ? entry.chat.length : 0,
+            prevDeployedChatCountById,
+            closedDeployedOrderChatIds
+          );
           var li = document.createElement("li");
-          var chatOpen = openDeployedOrderChatId === entry.id;
+          var chatOpen = isDeployedOrderChatOpen(entry);
           li.className =
             "order-work-item order-work-item--deployed" +
             (chatOpen ? " is-chat-open" : " is-chat-toggle");
@@ -19984,20 +20044,25 @@
               }
             }
             if (maintenanceMode || frontMode) {
+              noteChatAutoOpenFromFirstMessage(
+                entry.id,
+                Array.isArray(entry.chat) ? entry.chat.length : 0,
+                prevSchedChatCountById,
+                closedSchedRequestChatIds
+              );
+              var schedChatOpen = isSchedRequestChatOpen(entry);
               var chatBtn = document.createElement("button");
               chatBtn.type = "button";
               chatBtn.className =
-                "sched-card__chat-btn" +
-                (openSchedRequestChatId === entry.id ? " is-on" : "");
+                "sched-card__chat-btn" + (schedChatOpen ? " is-on" : "");
               chatBtn.setAttribute("data-req-id", entry.id);
               chatBtn.setAttribute("aria-label", "이 요청 채팅 열기");
               var chatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
-              chatBtn.textContent =
-                openSchedRequestChatId === entry.id
-                  ? "채팅 닫기"
-                  : chatCount > 0
-                    ? "채팅(" + chatCount + ")"
-                    : "채팅";
+              chatBtn.textContent = schedChatOpen
+                ? "채팅 닫기"
+                : chatCount > 0
+                  ? "채팅(" + chatCount + ")"
+                  : "채팅";
               actions.appendChild(chatBtn);
               var useBtn = document.createElement("button");
               useBtn.type = "button";
@@ -20008,9 +20073,16 @@
               actions.appendChild(useBtn);
             }
             li.appendChild(actions);
+          } else {
+            noteChatAutoOpenFromFirstMessage(
+              entry.id,
+              Array.isArray(entry.chat) ? entry.chat.length : 0,
+              prevSchedChatCountById,
+              closedSchedRequestChatIds
+            );
           }
 
-          if (openSchedRequestChatId === entry.id) {
+          if (isSchedRequestChatOpen(entry)) {
             li.classList.add("is-chat-open");
             appendSchedRequestChatUi(li, entry);
           }
