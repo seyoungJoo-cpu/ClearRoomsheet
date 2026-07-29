@@ -990,40 +990,48 @@ function replaceLogArray(incoming) {
 }
 
   /** 요청 로그: id 기준으로 더 최신 updatedAt/at 을 유지 (시간 입력 등이 옛 스냅샷에 덮이지 않게) */
-  function mergeRequestLogById(prevArr, incomingArr) {
-    var byId = {};
-    function hasSched(entry) {
-      return !!(entry && entry.sched != null && String(entry.sched).trim());
-    }
-    function consider(entry) {
-      if (!entry || typeof entry !== "object") return;
-      var id = entry.id != null ? String(entry.id) : "";
-      if (!id) return;
-      var cur = byId[id];
-      if (!cur) {
-        byId[id] = entry;
-        return;
-      }
-      var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
-      var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
-      if (isNaN(ta)) ta = 0;
-      if (isNaN(tb)) tb = 0;
-      if (tb > ta) {
-        byId[id] = entry;
-        return;
-      }
-      if (ta > tb) return;
-      // 시각 동일: 처리·예정 시간이 있는 쪽 우선 (빈 캐시가 덮지 않게)
-      if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
-      else if (!hasSched(entry) && hasSched(cur)) return;
-      else byId[id] = entry;
-    }
-    (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
-    (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
-    return Object.keys(byId).map(function (id) {
-      return byId[id];
-    });
+function mergeRequestLogById(prevArr, incomingArr) {
+  var byId = {};
+  function hasSched(entry) {
+    return !!(entry && entry.sched != null && String(entry.sched).trim());
   }
+  function isCancelled(entry) {
+    return !!(entry && (entry.cancelled === true || entry.canceled === true));
+  }
+  function consider(entry) {
+    if (!entry || typeof entry !== "object") return;
+    var id = entry.id != null ? String(entry.id) : "";
+    if (!id) return;
+    var cur = byId[id];
+    if (!cur) {
+      byId[id] = entry;
+      return;
+    }
+    var ta = new Date(cur.updatedAt || cur.at || 0).getTime();
+    var tb = new Date(entry.updatedAt || entry.at || 0).getTime();
+    if (isNaN(ta)) ta = 0;
+    if (isNaN(tb)) tb = 0;
+    if (tb > ta) {
+      byId[id] = entry;
+      return;
+    }
+    if (ta > tb) return;
+    // 시각 동일: 취소·처리예정 시간이 있는 쪽 우선
+    if (isCancelled(entry) && !isCancelled(cur)) {
+      byId[id] = entry;
+      return;
+    }
+    if (!isCancelled(entry) && isCancelled(cur)) return;
+    if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
+    else if (!hasSched(entry) && hasSched(cur)) return;
+    else byId[id] = entry;
+  }
+  (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
+  (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
+  return Object.keys(byId).map(function (id) {
+    return byId[id];
+  });
+}
 
 function orderEntryClock(entry) {
   if (!entry || typeof entry !== "object") return 0;

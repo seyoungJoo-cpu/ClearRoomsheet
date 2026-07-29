@@ -88,6 +88,9 @@
     function hasSched(entry) {
       return !!(entry && entry.sched != null && String(entry.sched).trim());
     }
+    function isCancelled(entry) {
+      return !!(entry && (entry.cancelled === true || entry.canceled === true));
+    }
     function consider(entry) {
       if (!entry || typeof entry !== "object") return;
       var id = entry.id != null ? String(entry.id) : "";
@@ -106,6 +109,11 @@
         return;
       }
       if (ta > tb) return;
+      if (isCancelled(entry) && !isCancelled(cur)) {
+        byId[id] = entry;
+        return;
+      }
+      if (!isCancelled(entry) && isCancelled(cur)) return;
       if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
       else if (!hasSched(entry) && hasSched(cur)) return;
       else byId[id] = entry;
