@@ -4080,6 +4080,83 @@
       margin-top: 2px;
     }
 
+    .order-chat__msg.is-reactable {
+      cursor: pointer;
+      position: relative;
+    }
+
+    .order-chat__reactions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 4px;
+    }
+
+    .order-chat__reaction {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      font-size: 0.6875rem;
+      line-height: 1.3;
+      cursor: pointer;
+      color: #334155;
+    }
+
+    .order-chat__reaction:hover {
+      border-color: #93c5fd;
+      background: #f8fafc;
+    }
+
+    .order-chat__reaction.is-mine {
+      border-color: #60a5fa;
+      background: #eff6ff;
+    }
+
+    .order-chat__reaction-count {
+      font-weight: 700;
+      font-size: 0.625rem;
+    }
+
+    .chat-reaction-picker {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      z-index: 30;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 2px;
+      padding: 4px 5px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .order-chat__msg.hk-chat-msg--mine .chat-reaction-picker {
+      left: auto;
+      right: 0;
+    }
+
+    .chat-reaction-picker__btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .chat-reaction-picker__btn:hover {
+      background: #f1f5f9;
+    }
+
     .order-chat__form {
       display: flex;
       gap: 6px;
@@ -18573,6 +18650,219 @@
         return isOrderIssueOpen(entry) || getOrderPhase(entry) === "deployed";
       }
 
+      var CHAT_REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "✅", "🔥"];
+      var openChatReactionPickerKey = "";
+
+      function chatMessageStableKey(msg) {
+        if (!msg) return "";
+        if (msg.id != null && String(msg.id).trim()) return String(msg.id).trim();
+        return (
+          "k:" +
+          String(msg.at || "") +
+          "|" +
+          String(msg.by || "") +
+          "|" +
+          String(msg.text || "") +
+          "|" +
+          String(msg.image || "").slice(0, 40)
+        );
+      }
+
+      function ensureChatMessageId(msg) {
+        if (!msg) return "";
+        if (msg.id != null && String(msg.id).trim()) return String(msg.id).trim();
+        msg.id =
+          "legacy-" +
+          String(msg.at || "") +
+          "-" +
+          String(msg.by || "")
+            .replace(/\s+/g, "_")
+            .slice(0, 24) +
+          "-" +
+          String(msg.text || "").length +
+          "-" +
+          String(msg.image || "").slice(0, 24).length;
+        return String(msg.id);
+      }
+
+      function findChatMessageInEntry(entry, msgId) {
+        if (!entry || !Array.isArray(entry.chat) || !msgId) return null;
+        var want = String(msgId);
+        for (var i = 0; i < entry.chat.length; i++) {
+          var msg = entry.chat[i];
+          if (!msg) continue;
+          if (String(msg.id || "") === want) return msg;
+          if (chatMessageStableKey(msg) === want) return msg;
+        }
+        return null;
+      }
+
+      function closeChatReactionPicker() {
+        openChatReactionPickerKey = "";
+        document.querySelectorAll(".chat-reaction-picker").forEach(function (el) {
+          el.remove();
+        });
+      }
+
+      function renderChatMsgReactions(msgLi, msg, kind, entryId) {
+        if (!msgLi) return;
+        var old = msgLi.querySelector(".order-chat__reactions");
+        if (old) old.remove();
+        var reactions = msg && msg.reactions && typeof msg.reactions === "object" ? msg.reactions : null;
+        if (!reactions) return;
+        var me = getOperatorName() || "";
+        var wrap = document.createElement("div");
+        wrap.className = "order-chat__reactions";
+        var keys = Object.keys(reactions);
+        var added = 0;
+        keys.forEach(function (emoji) {
+          var list = Array.isArray(reactions[emoji]) ? reactions[emoji] : [];
+          if (!list.length) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "order-chat__reaction";
+          var mine = me && list.indexOf(me) >= 0;
+          if (mine) btn.classList.add("is-mine");
+          btn.setAttribute("data-chat-kind", kind);
+          btn.setAttribute("data-entry-id", entryId || "");
+          btn.setAttribute("data-msg-id", chatMessageStableKey(msg));
+          btn.setAttribute("data-emoji", emoji);
+          btn.title = list.join(", ");
+          btn.textContent = emoji + " ";
+          var count = document.createElement("span");
+          count.className = "order-chat__reaction-count";
+          count.textContent = String(list.length);
+          btn.appendChild(count);
+          wrap.appendChild(btn);
+          added += 1;
+        });
+        if (added) msgLi.appendChild(wrap);
+      }
+
+      function attachChatMsgReactionUi(msgLi, msg, kind, entryId) {
+        if (!msgLi || !msg) return;
+        var msgId = ensureChatMessageId(msg);
+        msgLi.classList.add("is-reactable");
+        msgLi.setAttribute("data-chat-kind", kind);
+        msgLi.setAttribute("data-entry-id", entryId || "");
+        msgLi.setAttribute("data-msg-id", msgId);
+        renderChatMsgReactions(msgLi, msg, kind, entryId);
+      }
+
+      function showChatReactionPicker(msgLi) {
+        if (!msgLi) return;
+        var kind = msgLi.getAttribute("data-chat-kind") || "";
+        var entryId = msgLi.getAttribute("data-entry-id") || "";
+        var msgId = msgLi.getAttribute("data-msg-id") || "";
+        var key = kind + ":" + entryId + ":" + msgId;
+        if (openChatReactionPickerKey === key) {
+          closeChatReactionPicker();
+          return;
+        }
+        closeChatReactionPicker();
+        openChatReactionPickerKey = key;
+        var picker = document.createElement("div");
+        picker.className = "chat-reaction-picker";
+        picker.setAttribute("role", "toolbar");
+        picker.setAttribute("aria-label", "이모티콘 리액션");
+        CHAT_REACTION_EMOJIS.forEach(function (emoji) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "chat-reaction-picker__btn";
+          b.setAttribute("data-chat-kind", kind);
+          b.setAttribute("data-entry-id", entryId);
+          b.setAttribute("data-msg-id", msgId);
+          b.setAttribute("data-emoji", emoji);
+          b.setAttribute("aria-label", emoji + " 리액션");
+          b.textContent = emoji;
+          picker.appendChild(b);
+        });
+        msgLi.appendChild(picker);
+      }
+
+      function toggleChatMsgReaction(kind, entryId, msgId, emoji) {
+        if (!kind || !entryId || !msgId || !emoji) return;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              toggleChatMsgReaction(kind, entryId, msgId, emoji);
+            },
+          });
+          return;
+        }
+        var entry =
+          kind === "sched" ? findRequestEntry(entryId) : findOrderEntry(entryId);
+        if (!entry) return;
+        if (kind === "sched" && isRequestCancelled(entry)) return;
+        if (kind !== "sched" && !canUseOrderChat(entry)) return;
+        if (!Array.isArray(entry.chat)) entry.chat = [];
+        var msg = findChatMessageInEntry(entry, msgId);
+        if (!msg) return;
+        ensureChatMessageId(msg);
+        if (!msg.reactions || typeof msg.reactions !== "object") msg.reactions = {};
+        var me = getOperatorName();
+        var list = Array.isArray(msg.reactions[emoji]) ? msg.reactions[emoji].slice() : [];
+        var idx = list.indexOf(me);
+        if (idx >= 0) list.splice(idx, 1);
+        else list.push(me);
+        if (list.length) msg.reactions[emoji] = list;
+        else delete msg.reactions[emoji];
+        entry.updatedAt = new Date().toISOString();
+        closeChatReactionPicker();
+        if (kind === "sched") {
+          markRequestEntrySavedLocally(entry);
+          saveRequestLog();
+          if (typeof HKSync !== "undefined" && HKSync.flushPending) HKSync.flushPending();
+          forcedOpenSchedRequestChatIds[String(entryId)] = true;
+          delete closedSchedRequestChatIds[String(entryId)];
+          renderSchedRequestCards();
+        } else {
+          forcedOpenDeployedOrderChatIds[String(entryId)] = true;
+          delete closedDeployedOrderChatIds[String(entryId)];
+          saveOrderLog();
+          renderOrderPanels({ force: true });
+        }
+      }
+
+      function handleChatReactionClick(e) {
+        var pickBtn = e.target.closest(".chat-reaction-picker__btn");
+        if (pickBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleChatMsgReaction(
+            pickBtn.getAttribute("data-chat-kind"),
+            pickBtn.getAttribute("data-entry-id"),
+            pickBtn.getAttribute("data-msg-id"),
+            pickBtn.getAttribute("data-emoji")
+          );
+          return true;
+        }
+        var chip = e.target.closest(".order-chat__reaction");
+        if (chip) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleChatMsgReaction(
+            chip.getAttribute("data-chat-kind"),
+            chip.getAttribute("data-entry-id"),
+            chip.getAttribute("data-msg-id"),
+            chip.getAttribute("data-emoji")
+          );
+          return true;
+        }
+        var msgLi = e.target.closest(".order-chat__msg.is-reactable");
+        if (msgLi && !e.target.closest(".order-chat__form")) {
+          e.preventDefault();
+          e.stopPropagation();
+          showChatReactionPicker(msgLi);
+          return true;
+        }
+        if (!e.target.closest(".chat-reaction-picker")) {
+          closeChatReactionPicker();
+        }
+        return false;
+      }
+
       function appendOrderChatUi(li, entry, opts) {
         opts = opts || {};
         var chatWrap = document.createElement("div");
@@ -18621,6 +18911,7 @@
               timeEl.textContent = formatReqAt(msg.at);
               msgLi.appendChild(timeEl);
             }
+            attachChatMsgReactionUi(msgLi, msg, "order", entry.id || "");
             msgList.appendChild(msgLi);
           });
         chatWrap.appendChild(msgList);
@@ -19218,6 +19509,7 @@
             timeEl.textContent = formatReqAt(msg.at);
             msgLi.appendChild(timeEl);
           }
+          attachChatMsgReactionUi(msgLi, msg, "sched", entry.id || "");
           msgList.appendChild(msgLi);
         });
         chatWrap.appendChild(msgList);
@@ -19260,6 +19552,11 @@
         }
         if (!Array.isArray(entry.chat)) entry.chat = [];
         entry.chat.push({
+          id:
+            "c" +
+            Date.now().toString(36) +
+            "-" +
+            Math.random().toString(36).slice(2, 8),
           at: new Date().toISOString(),
           by: getOperatorName(),
           text: msgText,
@@ -19304,6 +19601,11 @@
         }
         if (!Array.isArray(entry.chat)) entry.chat = [];
         entry.chat.push({
+          id:
+            "c" +
+            Date.now().toString(36) +
+            "-" +
+            Math.random().toString(36).slice(2, 8),
           at: new Date().toISOString(),
           by: getOperatorName(),
           text: msgText,
@@ -22513,11 +22815,11 @@
           var reqId = chatForm.getAttribute("data-req-id");
           var chatInput = chatForm.querySelector("input");
           var text = chatInput ? chatInput.value : "";
-          var chatImage = reqId ? hkGetPhoto("schedReqChat:" + reqId) : null;
-          if (reqId) appendSchedRequestChat(reqId, text, chatImage);
+          if (reqId) appendSchedRequestChat(reqId, text, "");
           if (chatInput) chatInput.value = "";
         });
         schedCardsPanelEl.addEventListener("click", function (e) {
+          if (handleChatReactionClick(e)) return;
           var ackCard = e.target.closest(".sched-req-card.is-change-alert");
           if (
             ackCard &&
@@ -23498,6 +23800,7 @@
       function bindOrderPanelUi(panelEl) {
         if (!panelEl) return;
         panelEl.addEventListener("click", function (e) {
+          if (handleChatReactionClick(e)) return;
           var acceptIssueBtn = e.target.closest(".order-work__accept-btn");
           if (acceptIssueBtn) {
             if (!maintenanceMode) return;
@@ -23608,6 +23911,21 @@
 
       bindOrderPanelUi(document.getElementById("orderPanel"));
       bindOrderPanelUi(document.getElementById("facilityPanel"));
+
+      document.addEventListener("click", function (e) {
+        if (
+          openChatReactionPickerKey &&
+          !e.target.closest(".chat-reaction-picker") &&
+          !e.target.closest(".order-chat__msg.is-reactable")
+        ) {
+          closeChatReactionPicker();
+        }
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && openChatReactionPickerKey) {
+          closeChatReactionPicker();
+        }
+      });
 
       (function setupOrderSectionsCollapse() {
         var ids = [
