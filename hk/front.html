@@ -4424,22 +4424,25 @@
     }
 
     .zone-cancelled-rooms__list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 0.8125rem;
-      line-height: 1.4;
-      color: #475569;
-    }
-
-    .zone-cancelled-rooms__item {
       display: block;
-      padding: 5px 8px;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #334155;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      padding: 6px 8px;
       border-radius: 4px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      white-space: normal;
       word-break: break-word;
+    }
+
+    .zone-cancelled-rooms__nos {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .zone-cancelled-rooms__item {
+      display: none;
     }
 
     .zone-cancelled-rooms__item strong {
@@ -7128,6 +7131,9 @@
     }
 
     .sched-req-card.is-chat-open {
+      max-width: 360px;
+      grid-column: span 2;
+      z-index: 2;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18);
       border-color: #93c5fd;
     }
@@ -7137,7 +7143,21 @@
     }
 
     .sched-req-card .order-chat__messages {
-      max-height: 180px;
+      max-height: 140px;
+    }
+
+    .sched-req-card.is-chat-open .order-chat__messages {
+      max-height: 220px;
+    }
+
+    .sched-req-card.is-chat-open .order-chat__msg {
+      font-size: 0.875rem;
+      max-width: 95%;
+    }
+
+    .sched-req-card.is-chat-open .order-chat__form input {
+      height: 36px;
+      font-size: 0.875rem;
     }
 
     .sched-type-groups {
@@ -7161,9 +7181,10 @@
       list-style: none;
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 6px;
+      align-content: start;
     }
 
     .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
@@ -13307,26 +13328,35 @@
       function formatRoomNoDisplay(raw) {
         var s = String(raw == null ? "" : raw).trim();
         if (!s) return "";
+        function padRoomPart(part) {
+          var t = String(part || "").trim();
+          if (!t) return "";
+          if (/->/.test(t) || /에서/.test(t)) return t;
+          var d = t.replace(/\D/g, "");
+          if (!d) return t;
+          if (d.length <= 4) return d.padStart(4, "0");
+          return d.slice(-4);
+        }
         var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
-        if (m) return m[1].trim() + " -> " + m[2].trim();
+        if (m) return padRoomPart(m[1]) + " -> " + padRoomPart(m[2]);
         if (/[,，]/.test(s)) {
           return s
             .split(/[,，]/)
-            .map(function (part) {
-              var t = String(part || "").trim();
-              if (!t) return "";
-              if (/->/.test(t) || /에서/.test(t)) return t;
-              var d = t.replace(/\D/g, "");
-              if (!d) return t;
-              return d.replace(/^0+/, "") || "0";
-            })
+            .map(padRoomPart)
             .filter(Boolean)
             .join(",");
         }
-        if (/->/.test(s) || /에서/.test(s)) return s;
+        if (/->/.test(s)) {
+          return s
+            .split(/\s*->\s*/)
+            .map(padRoomPart)
+            .filter(Boolean)
+            .join(" -> ");
+        }
+        if (/에서/.test(s)) return s;
         var digits = s.replace(/\D/g, "");
         if (digits && digits === s.replace(/\s+/g, "")) {
-          return digits.replace(/^0+/, "") || "0";
+          return padRoomPart(digits);
         }
         return s;
       }
@@ -18805,14 +18835,7 @@
             renderRequestLogPanel({ force: true });
           }
         }
-        if (!auto && !opts.skipScroll) {
-          requestAnimationFrame(function () {
-            var card = document.querySelector(
-              '.order-work-section--deployed .order-work-item[data-order-id="' + orderId + '"]'
-            );
-            if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          });
-        }
+        // 투입완료 시 스크롤/포커스 이동하지 않음
         return true;
       }
 
@@ -19074,9 +19097,8 @@
               '"]'
           );
           if (!card) return;
-          card.scrollIntoView({ behavior: "smooth", block: "nearest" });
           var chatInput = card.querySelector(".order-chat__form input");
-          if (chatInput) chatInput.focus();
+          if (chatInput) chatInput.focus({ preventScroll: true });
         });
       }
 
@@ -19090,9 +19112,8 @@
             '.sched-req-card.is-chat-open[data-req-id="' + openSchedRequestChatId + '"]'
           );
           if (!card) return;
-          card.scrollIntoView({ behavior: "smooth", block: "nearest" });
           var chatInput = card.querySelector(".order-chat__form input");
-          if (chatInput) chatInput.focus();
+          if (chatInput) chatInput.focus({ preventScroll: true });
         });
       }
 
@@ -19201,7 +19222,7 @@
           var msgList = card.querySelector(".order-chat__messages");
           if (msgList) msgList.scrollTop = msgList.scrollHeight;
           var chatInput = card.querySelector(".order-chat__form input");
-          if (chatInput) chatInput.focus();
+          if (chatInput) chatInput.focus({ preventScroll: true });
         });
       }
 
@@ -19250,7 +19271,7 @@
           var msgList = card.querySelector(".order-chat__messages");
           if (msgList) msgList.scrollTop = msgList.scrollHeight;
           var chatInput = card.querySelector(".order-chat__form input");
-          if (chatInput) chatInput.focus();
+          if (chatInput) chatInput.focus({ preventScroll: true });
         });
       }
 
@@ -21621,9 +21642,22 @@
           return;
         }
         section.hidden = false;
+        // 하단: 객실번호만 네자리,네자리 형태로 나열
+        var seenDisp = {};
+        var nos = [];
         rows.forEach(function (row) {
-          appendZoneCancelChangeItem(listEl, row.entry, row.room);
+          var disp = formatRoomNoDisplay(row.room || "");
+          if (!disp || seenDisp[disp]) return;
+          seenDisp[disp] = true;
+          nos.push(disp);
         });
+        nos.sort(function (a, b) {
+          return String(a).localeCompare(String(b), undefined, { numeric: true });
+        });
+        var line = document.createElement("div");
+        line.className = "zone-cancelled-rooms__nos";
+        line.textContent = nos.join(",");
+        listEl.appendChild(line);
       }
 
       function renderZoneTrays(zone, rooms) {
