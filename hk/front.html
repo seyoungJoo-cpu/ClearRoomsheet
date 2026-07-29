@@ -3343,8 +3343,9 @@
     }
 
     .order-work-list--deployed .order-work-item.is-chat-open {
-      max-width: 360px;
+      max-width: 250px;
       grid-column: span 2;
+      align-self: start;
       z-index: 2;
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.22);
     }
@@ -3362,17 +3363,18 @@
     }
 
     .order-work-list--deployed .order-work-item.is-chat-open .order-chat__messages {
-      max-height: 220px;
+      max-height: 84px;
+      overflow-y: auto;
     }
 
     .order-work-list--deployed .order-work-item.is-chat-open .order-chat__msg {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       max-width: 95%;
     }
 
     .order-work-list--deployed .order-work-item.is-chat-open .order-chat__form input {
-      height: 36px;
-      font-size: 0.875rem;
+      height: 30px;
+      font-size: 0.75rem;
     }
 
     .order-work-item__chat-hint {
@@ -7131,33 +7133,35 @@
     }
 
     .sched-req-card.is-chat-open {
-      max-width: 360px;
+      max-width: 250px;
       grid-column: span 2;
+      align-self: start;
       z-index: 2;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18);
       border-color: #93c5fd;
     }
 
     .sched-req-card .order-chat {
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     .sched-req-card .order-chat__messages {
-      max-height: 140px;
+      max-height: 72px;
     }
 
     .sched-req-card.is-chat-open .order-chat__messages {
-      max-height: 220px;
+      max-height: 84px;
+      overflow-y: auto;
     }
 
     .sched-req-card.is-chat-open .order-chat__msg {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       max-width: 95%;
     }
 
     .sched-req-card.is-chat-open .order-chat__form input {
-      height: 36px;
-      font-size: 0.875rem;
+      height: 30px;
+      font-size: 0.75rem;
     }
 
     .sched-type-groups {
@@ -8721,8 +8725,8 @@
             <section class="zone-updates" id="zoneUpdatesSection" hidden aria-label="구역 변경 내역">
               <div class="zone-updates__list" id="zoneUpdatesList"></div>
             </section>
-            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="취소·변경 객실">
-              <div class="zone-cancelled-rooms__label">취소·변경</div>
+            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="적용 객실">
+              <div class="zone-cancelled-rooms__label">적용 객실</div>
               <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
             </section>
             <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
@@ -21581,72 +21585,13 @@
           return;
         }
         var data = HKStorage.load();
-        var seenRooms = {};
-        var cancelledRooms = [];
-        function addCancelledRoom(no) {
-          var key = String(no == null ? "" : no).trim();
-          if (!key || seenRooms[key]) return;
-          seenRooms[key] = true;
-          cancelledRooms.push(key);
-        }
-        var deletedList =
-          data.deletedRooms && Array.isArray(data.deletedRooms[zone])
-            ? data.deletedRooms[zone]
-            : [];
-        deletedList.forEach(addCancelledRoom);
-        ((data.rooms && data.rooms[zone]) || []).forEach(function (room) {
-          if (room && getRoomTray(room) === "deleted") addCancelledRoom(room.number);
-        });
-
-        var seenEntryIds = {};
-        var rows = [];
-        function pushRow(entry, roomFallback) {
-          if (entry && entry.id) {
-            if (seenEntryIds[entry.id]) return;
-            seenEntryIds[entry.id] = true;
-          }
-          var at = entry && entry.at ? new Date(entry.at).getTime() : 0;
-          if (isNaN(at)) at = 0;
-          rows.push({ entry: entry || null, room: roomFallback || (entry && entry.room) || "", at: at });
-        }
-
-        getRoomChangeLogEntries().forEach(function (entry) {
-          if (!entry || entry.zone !== zone) return;
-          if (entry.kind === "delete" || isZoneRoomNumberChangeEntry(entry)) {
-            pushRow(entry, entry.room);
-          }
-        });
-
-        cancelledRooms.forEach(function (no) {
-          var del = findZoneRoomDeleteEntry(zone, no);
-          if (del) {
-            pushRow(del, no);
-            return;
-          }
-          var already = rows.some(function (row) {
-            return roomsAreSame(row.room, no);
-          });
-          if (!already) pushRow(null, no);
-        });
-
-        rows.sort(function (a, b) {
-          if (b.at !== a.at) return b.at - a.at;
-          return String(a.room || "").localeCompare(String(b.room || ""), undefined, {
-            numeric: true,
-          });
-        });
-        if (rows.length > 40) rows = rows.slice(0, 40);
-
-        if (!rows.length) {
-          section.hidden = true;
-          return;
-        }
-        section.hidden = false;
-        // 하단: 객실번호만 네자리,네자리 형태로 나열
+        var rooms = (data.rooms && data.rooms[zone]) || [];
         var seenDisp = {};
         var nos = [];
-        rows.forEach(function (row) {
-          var disp = formatRoomNoDisplay(row.room || "");
+        rooms.forEach(function (room) {
+          if (!room) return;
+          if (getRoomTray(room) === "deleted") return;
+          var disp = formatRoomNoDisplay(room.number || "");
           if (!disp || seenDisp[disp]) return;
           seenDisp[disp] = true;
           nos.push(disp);
@@ -21654,6 +21599,11 @@
         nos.sort(function (a, b) {
           return String(a).localeCompare(String(b), undefined, { numeric: true });
         });
+        if (!nos.length) {
+          section.hidden = true;
+          return;
+        }
+        section.hidden = false;
         var line = document.createElement("div");
         line.className = "zone-cancelled-rooms__nos";
         line.textContent = nos.join(",");
