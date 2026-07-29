@@ -4122,39 +4122,48 @@
     }
 
     .chat-reaction-picker {
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 0;
-      z-index: 30;
-      display: flex;
-      flex-wrap: nowrap;
+      position: static;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 2px;
-      padding: 4px 5px;
-      border-radius: 999px;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 6px;
+      padding: 4px;
+      box-sizing: border-box;
+      border-radius: 8px;
       border: 1px solid #cbd5e1;
       background: #fff;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
     }
 
     .order-chat__msg.hk-chat-msg--mine .chat-reaction-picker {
       left: auto;
-      right: 0;
+      right: auto;
     }
 
     .chat-reaction-picker__btn {
-      width: 28px;
-      height: 28px;
+      width: 100%;
+      min-width: 0;
+      height: 26px;
       padding: 0;
       border: none;
-      border-radius: 50%;
+      border-radius: 6px;
       background: transparent;
-      font-size: 1rem;
+      font-size: 0.875rem;
       line-height: 1;
       cursor: pointer;
     }
 
     .chat-reaction-picker__btn:hover {
       background: #f1f5f9;
+    }
+
+    .sched-req-card .chat-reaction-picker__btn,
+    .order-work-item--deployed .chat-reaction-picker__btn {
+      height: 24px;
+      font-size: 0.8125rem;
     }
 
     .order-chat__form {
