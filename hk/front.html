@@ -4128,19 +4128,25 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 2px;
       width: 100%;
-      max-width: 100%;
-      margin-top: 6px;
+      max-width: 85%;
+      margin: 0;
       padding: 4px;
       box-sizing: border-box;
       border-radius: 8px;
       border: 1px solid #cbd5e1;
       background: #fff;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+      flex-shrink: 0;
     }
 
-    .order-chat__msg.hk-chat-msg--mine .chat-reaction-picker {
-      left: auto;
-      right: auto;
+    .order-chat__msg.hk-chat-msg--mine + .chat-reaction-picker {
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .order-chat__msg.hk-chat-msg--other + .chat-reaction-picker {
+      align-self: flex-start;
+      margin-right: auto;
     }
 
     .chat-reaction-picker__btn {
@@ -4158,6 +4164,11 @@
 
     .chat-reaction-picker__btn:hover {
       background: #f1f5f9;
+    }
+
+    .sched-req-card .chat-reaction-picker,
+    .order-work-item--deployed .chat-reaction-picker {
+      max-width: 100%;
     }
 
     .sched-req-card .chat-reaction-picker__btn,
