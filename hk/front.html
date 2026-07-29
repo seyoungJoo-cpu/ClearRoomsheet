@@ -7162,6 +7162,17 @@
       font-size: 0.75rem;
     }
 
+    .sched-req-card .order-chat__send,
+    .sched-req-chat-form .order-chat__send {
+      height: 22px;
+      min-width: 0;
+      padding: 0 6px;
+      border-radius: 4px;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
     .sched-type-groups {
       display: flex;
       flex-direction: column;
@@ -19210,7 +19221,6 @@
           msgList.appendChild(msgLi);
         });
         chatWrap.appendChild(msgList);
-        var chatKey = "schedReqChat:" + (entry.id || "");
         var chatForm = document.createElement("form");
         chatForm.className = "order-chat__form hk-compose-row sched-req-chat-form";
         chatForm.setAttribute("data-req-id", entry.id || "");
@@ -19221,19 +19231,12 @@
         chatInput.className = "order-chat__input";
         chatInput.setAttribute("aria-label", "처리·예정 요청 채팅");
         chatForm.appendChild(chatInput);
-        chatForm.appendChild(hkCreatePhotoButton(chatKey));
-        hkBindPhotoPaste(chatInput, chatKey, {
-          autoSend: function (text, image) {
-            appendSchedRequestChat(entry.id || "", text, image);
-          },
-        });
         var chatSend = document.createElement("button");
         chatSend.type = "submit";
         chatSend.className = "order-chat__send";
         chatSend.textContent = "전송";
         chatForm.appendChild(chatSend);
         chatWrap.appendChild(chatForm);
-        chatWrap.appendChild(hkCreatePhotoPreview(chatKey));
         li.appendChild(chatWrap);
         requestAnimationFrame(function () {
           msgList.scrollTop = msgList.scrollHeight;
