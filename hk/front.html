@@ -3344,7 +3344,6 @@
 
     .order-work-list--deployed .order-work-item.is-chat-open {
       max-width: 250px;
-      grid-column: span 2;
       align-self: start;
       z-index: 2;
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.22);
@@ -14145,8 +14144,9 @@
           );
         });
         list.sort(function (a, b) {
-          var ta = new Date((a && (a.updatedAt || a.at)) || 0).getTime();
-          var tb = new Date((b && (b.updatedAt || b.at)) || 0).getTime();
+          // 채팅·메모 등으로 updatedAt이 바뀌어도 카드 순서는 접수 시각(at) 기준 유지
+          var ta = new Date((a && a.at) || 0).getTime();
+          var tb = new Date((b && b.at) || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
           if (tb !== ta) return tb - ta;
