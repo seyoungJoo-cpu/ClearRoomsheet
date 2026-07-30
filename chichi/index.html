@@ -1760,7 +1760,14 @@ document.getElementById('tableHead').addEventListener('click', (e) => {
 
 // 초기 정렬 표시
 updateSortIndicators();
-restoreChichiEmbedState();
+// 프론트 임베드는 부모(HK) 상태가 기준 — 로컬 잔여 XML을 기본값으로 되살리지 않음
+if (!isHkFrontEmbed()) {
+  restoreChichiEmbedState();
+} else {
+  try {
+    localStorage.removeItem(CHICHI_STATE_KEY);
+  } catch (eEmbedClr) {}
+}
 </script>
 </body>
 </html>

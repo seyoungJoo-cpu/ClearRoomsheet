@@ -8924,7 +8924,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.html?embed=hkFront"
+          src="/DD/index.html?embed=hkFront&v=empty-default-1"
           loading="eager"
         ></iframe>
       </section>
@@ -8934,7 +8934,7 @@
           class="front-embed-panel__frame"
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
-          src="/inven/index.html?embed=hkFront"
+          src="/inven/index.html?embed=hkFront&v=empty-default-1"
           loading="eager"
         ></iframe>
       </section>
@@ -12517,6 +12517,18 @@
       function effectiveFrontEmbedState(state) {
         if (!state || typeof state !== "object") return null;
         if (isClearedFrontEmbedState(state)) return null;
+        // 마감 시각 이전·동일 잔여 데이터는 빈 상태로 취급 (기본값=빈 파일)
+        try {
+          var data = HKStorage.load();
+          var closeRaw = data && data.closeDayAt ? String(data.closeDayAt) : "";
+          if (closeRaw) {
+            var closeAt = new Date(closeRaw).getTime();
+            if (!isNaN(closeAt) && closeAt > 0) {
+              var updatedAt = new Date(state.updatedAt || 0).getTime();
+              if (isNaN(updatedAt) || updatedAt <= closeAt) return null;
+            }
+          }
+        } catch (eEff) {}
         return state;
       }
 
@@ -12566,61 +12578,23 @@
         });
       }
 
-      /** 서버에 아직 없는 경우, 이 PC localStorage 내용을 한 번 올려 동기화 시드.
-       * 마감(closeDayAt) 이후의 잔여 localStorage는 되살리지 않고 삭제한다. */
+      /** 로컬 잔여만 정리. 서버/마감 상태를 로컬 XML로 되살리지 않음(기본값=빈 상태). */
       function seedFrontEmbedStatesFromLocalIfNeeded() {
         var data = HKStorage.load();
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
           data.frontEmbedStates = { dd: null, inven: null, chichi: null };
         }
-        var closeAtMs = 0;
-        if (data.closeDayAt) {
-          closeAtMs = new Date(data.closeDayAt).getTime();
-          if (isNaN(closeAtMs)) closeAtMs = 0;
-        }
-        var changed = false;
         ["dd", "inven", "chichi"].forEach(function (key) {
           var cur = data.frontEmbedStates[key];
-          if (cur && !isClearedFrontEmbedState(cur)) return;
           var lsKey = FRONT_EMBED_STATE_KEYS[key];
           if (!lsKey) return;
-          if (isClearedFrontEmbedState(cur)) {
+          // 서버에 데이터가 없거나 마감 초기화면이면 로컬 캐시도 비움
+          if (!cur || isClearedFrontEmbedState(cur)) {
             try {
               localStorage.removeItem(lsKey);
             } catch (eClr) {}
-            return;
           }
-          try {
-            var raw = localStorage.getItem(lsKey);
-            if (!raw) return;
-            var parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object") return;
-            if (isClearedFrontEmbedState(parsed)) {
-              try {
-                localStorage.removeItem(lsKey);
-              } catch (e2) {}
-              return;
-            }
-            var localAt = new Date(parsed.updatedAt || 0).getTime();
-            if (isNaN(localAt)) localAt = 0;
-            // 마감 시각 이전이거나 시각 없는 잔여 데이터는 시드하지 않고 지움
-            if (closeAtMs && localAt <= closeAtMs) {
-              try {
-                localStorage.removeItem(lsKey);
-              } catch (e2) {}
-              return;
-            }
-            if (!parsed.updatedAt) parsed.updatedAt = new Date().toISOString();
-            data.frontEmbedStates[key] = parsed;
-            changed = true;
-          } catch (e) {}
         });
-        if (!changed) return;
-        lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
-        HKStorage.save(data);
-        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-          HKSync.pushStorageNow();
-        }
       }
 
       function saveFrontEmbedStateFromChild(key, state, epoch) {

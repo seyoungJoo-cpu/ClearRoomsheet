@@ -896,7 +896,14 @@
       localStorage.removeItem("hk-inven-test-date-v1");
     } catch (e) {}
     updateTodayBanner();
-    restoreEmbedState();
+    // 프론트 임베드는 부모(HK) 상태가 기준 — 로컬 잔여 XML을 기본값으로 되살리지 않음
+    if (!isHkFrontEmbed()) {
+      restoreEmbedState();
+    } else {
+      try {
+        localStorage.removeItem(STATE_STORAGE_KEY);
+      } catch (eEmbedClr) {}
+    }
   </script>
 </body>
 </html>
