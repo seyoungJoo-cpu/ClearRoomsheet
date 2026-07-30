@@ -6858,6 +6858,7 @@
       min-height: 0;
       overflow-y: auto;
       align-content: start;
+      align-items: start;
     }
 
     .sched-req-card.room-card {
@@ -6982,6 +6983,8 @@
     .sched-req-card {
       position: relative;
       padding-bottom: 6px;
+      align-self: start;
+      height: fit-content;
     }
 
     .sched-ip-panel {
@@ -7229,8 +7232,10 @@
     }
 
     .sched-req-card.is-chat-open {
-      max-width: 212px;
+      max-width: 200px;
+      width: 100%;
       align-self: start;
+      height: fit-content;
       z-index: 2;
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18);
       border-color: #93c5fd;
@@ -7244,8 +7249,9 @@
       max-height: 72px;
     }
 
+    /* 대화 약 2개만 보이도록 */
     .sched-req-card.is-chat-open .order-chat__messages {
-      max-height: 84px;
+      max-height: 76px;
       overflow-y: auto;
     }
 
@@ -7295,6 +7301,7 @@
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 6px;
       align-content: start;
+      align-items: start;
     }
 
     .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
@@ -18797,7 +18804,19 @@
           b.textContent = emoji;
           picker.appendChild(b);
         });
-        msgLi.appendChild(picker);
+        // 말풍선 아래(다음 형제)에 표시
+        var list = msgLi.parentNode;
+        if (list) {
+          if (msgLi.nextSibling) list.insertBefore(picker, msgLi.nextSibling);
+          else list.appendChild(picker);
+          requestAnimationFrame(function () {
+            try {
+              picker.scrollIntoView({ block: "nearest", inline: "nearest" });
+            } catch (err) {}
+          });
+        } else {
+          msgLi.appendChild(picker);
+        }
       }
 
       function toggleChatMsgReaction(kind, entryId, msgId, emoji) {

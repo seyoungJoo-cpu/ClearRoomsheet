@@ -170,7 +170,8 @@ function sendOrderPushNotifications(orders) {
     if (orders.length && !pushSubscriptions.size) {
       console.log("Web Push: new order(s) but no subscribers — enable bell on device");
     }
-    return;
+    // 구독자 없어도 Promise 반환 — .catch() 호출 시 TypeError로 프로세스 죽지 않게
+    return Promise.resolve();
   }
   console.log(
     "Web Push: sending " + orders.length + " alert(s) to " + pushSubscriptions.size + " device(s)"
@@ -1391,7 +1392,7 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
       nextPayload && nextPayload.hkOrderLog
     );
     if (newAlerts.length) {
-      sendOrderPushNotifications(newAlerts).catch(function (err) {
+      Promise.resolve(sendOrderPushNotifications(newAlerts)).catch(function (err) {
         console.warn("Web Push send failed:", err && err.message ? err.message : err);
       });
     }

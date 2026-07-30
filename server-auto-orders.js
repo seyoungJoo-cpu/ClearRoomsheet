@@ -113,7 +113,7 @@ function startAutoOrderScheduler(ctx) {
 
     const newAlerts = findNewOrderAlerts(prevLog, nextLog);
     if (newAlerts.length) {
-      sendOrderPushNotifications(newAlerts).catch(function (err) {
+      Promise.resolve(sendOrderPushNotifications(newAlerts)).catch(function (err) {
         console.warn(
           "Auto order push failed:",
           err && err.message ? err.message : err
