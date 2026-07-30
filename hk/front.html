@@ -17776,13 +17776,6 @@
             facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
           }
           maintActs.appendChild(facilityBtn);
-          var cancelMaintBtn = document.createElement("button");
-          cancelMaintBtn.type = "button";
-          cancelMaintBtn.className = "request-feedback__cancel-btn";
-          cancelMaintBtn.setAttribute("data-req-id", entry.id);
-          cancelMaintBtn.textContent = "요청 취소";
-          cancelMaintBtn.setAttribute("aria-label", "이 요청을 목록에서 제거");
-          maintActs.appendChild(cancelMaintBtn);
           li.appendChild(maintActs);
         } else if (frontMode) {
           if (entry.sched && String(entry.sched).trim()) {
