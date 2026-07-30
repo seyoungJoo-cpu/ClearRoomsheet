@@ -1181,11 +1181,11 @@
     return (
       '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;table-layout:fixed;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
       "<colgroup>" +
-      '<col style="width:4ch" />' +
       '<col style="width:8ch" />' +
-      '<col style="width:10ch" />' +
-      '<col style="width:18ch" />' +
-      '<col style="width:15ch" />' +
+      '<col style="width:16ch" />' +
+      '<col style="width:20ch" />' +
+      '<col style="width:36ch" />' +
+      '<col style="width:30ch" />' +
       "</colgroup>" +
       "<thead>" +
       '<tr><th colspan="5" style="background:#f9a8d4;font-weight:800;">' +
