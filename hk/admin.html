@@ -1565,6 +1565,7 @@
         var p = phase != null ? String(phase).trim() : "alert";
         if (p === "accepted") return "접수";
         if (p === "deployed") return "투입완료";
+        if (p === "doorhandle") return "문고리";
         if (p === "issue") return "문제발생";
         if (p === "cancelled") return "취소";
         return "알림";
@@ -3584,6 +3585,7 @@
           p === "accepted" ||
           p === "issue" ||
           p === "cancelled" ||
+          p === "doorhandle" ||
           p === "deployed" ||
           p === "unavailable"
         ) {
@@ -4150,6 +4152,7 @@
           var p = entry.phase != null ? String(entry.phase).trim() : "";
           if (p === "cancelled") return false;
           if (p === "deployed") return false;
+          if (p === "doorhandle") return false;
           if (entry.issueOpen === true || p === "issue") return true;
           if (p === "accepted") return false;
           return true;

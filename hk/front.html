@@ -3264,6 +3264,10 @@
       color: #64748b;
     }
 
+    .order-work-section--doorhandle .order-work-section__title {
+      color: #9a3412;
+    }
+
     .order-work-section--deployed .order-work-section__title {
       color: #047857;
     }
@@ -3788,6 +3792,10 @@
       border: 2px dashed #cbd5e1;
     }
 
+    .order-work-section--doorhandle .order-work-item {
+      border: 2px solid #fdba74;
+    }
+
     .order-work-section--deployed .order-work-item {
       border: 2px solid #10b981;
     }
@@ -3940,6 +3948,29 @@
 
     .order-work__wan-btn:hover {
       background: #d1fae5;
+    }
+
+    .order-work__doorhandle-btn {
+      margin-top: 6px;
+      padding: 4px 8px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid #ea580c;
+      background: #fff7ed;
+      color: #c2410c;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .order-work__doorhandle-btn:hover {
+      background: #ffedd5;
+    }
+
+    .order-work-item--doorhandle {
+      background: #fff7ed;
     }
 
     .order-work__facility-time-wrap {
@@ -8937,6 +8968,14 @@
           </button>
           <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--doorhandle" id="orderDoorhandleSection" aria-labelledby="orderDoorhandleTitle">
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderDoorhandleTitle" aria-expanded="true" aria-controls="orderDoorhandleList" data-order-section-toggle="orderDoorhandleSection">
+            문고리 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
+          <ul class="order-work-list" id="orderDoorhandleList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderDoorhandleEmpty">문고리 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--deployed" id="orderDeployedSection" aria-labelledby="orderDeployedTitle">
@@ -14706,6 +14745,30 @@
         renderOrderPanels({ force: true });
       }
 
+      function moveOrderToDoorhandle(orderId) {
+        var entry = findOrderEntry(orderId);
+        if (!entry || getOrderPhase(entry) !== "deployed") return false;
+        if (!maintenanceMode) return false;
+        if (!getOperatorName()) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              moveOrderToDoorhandle(orderId);
+            },
+          });
+          return false;
+        }
+        entry.phase = "doorhandle";
+        entry.doorhandleAt = new Date().toISOString();
+        entry.doorhandleBy = getOperatorName();
+        saveOrderLog();
+        if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+          HKSync.flushPending();
+        }
+        renderOrderPanels({ force: true });
+        return true;
+      }
+
       function appendUseLog(entry) {
         if (!entry || typeof HKSync === "undefined") return;
         HKSync.prependUseLog({
@@ -15610,6 +15673,7 @@
         var p = getOrderPhase(entry);
         if (p === "accepted") return "접수";
         if (p === "deployed") return isFacilityOrder(entry) ? "입실가능" : "투입완료";
+        if (p === "doorhandle") return "문고리";
         if (p === "cancelled") return "취소";
         return isFacilityOrder(entry) ? "시설알림" : "알림";
       }
@@ -17673,6 +17737,7 @@
           p === "accepted" ||
           p === "issue" ||
           p === "cancelled" ||
+          p === "doorhandle" ||
           p === "deployed" ||
           p === "unavailable"
         )
@@ -19798,6 +19863,8 @@
         var acceptedEmpty = document.getElementById(prefix + "AcceptedEmpty");
         var cancelledList = document.getElementById(prefix + "CancelledList");
         var cancelledEmpty = document.getElementById(prefix + "CancelledEmpty");
+        var doorhandleList = document.getElementById(prefix + "DoorhandleList");
+        var doorhandleEmpty = document.getElementById(prefix + "DoorhandleEmpty");
         var deployedList = document.getElementById(prefix + "DeployedList");
         var deployedEmpty = document.getElementById(prefix + "DeployedEmpty");
         var unavailableList = isFacilityPanel
@@ -19812,6 +19879,7 @@
         acceptedList.innerHTML = "";
         cancelledList.innerHTML = "";
         deployedList.innerHTML = "";
+        if (doorhandleList) doorhandleList.innerHTML = "";
         if (unavailableList) unavailableList.innerHTML = "";
 
         var issueEntries = orderLogEntries.filter(function (e) {
@@ -19833,6 +19901,11 @@
         var cancelledEntries = orderLogEntries.filter(function (e) {
           return entryFilter(e) && getOrderPhase(e) === "cancelled";
         });
+        var doorhandleEntries = !isFacilityPanel
+          ? orderLogEntries.filter(function (e) {
+              return entryFilter(e) && getOrderPhase(e) === "doorhandle";
+            })
+          : [];
         var deployedEntries = orderLogEntries.filter(function (e) {
           return entryFilter(e) && getOrderPhase(e) === "deployed";
         });
@@ -19849,6 +19922,9 @@
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
           cancelledEntries = cancelledEntries.filter(function (e) {
+            return roomMatchesSchedSearch(e.room, filterRaw);
+          });
+          doorhandleEntries = doorhandleEntries.filter(function (e) {
             return roomMatchesSchedSearch(e.room, filterRaw);
           });
           deployedEntries = deployedEntries.filter(function (e) {
@@ -19980,6 +20056,34 @@
           cancelledList.appendChild(li);
         });
 
+        if (doorhandleList) {
+          doorhandleEntries.sort(function (a, b) {
+            var ta = new Date(a.doorhandleAt || a.deployedAt || a.at || 0).getTime();
+            var tb = new Date(b.doorhandleAt || b.deployedAt || b.at || 0).getTime();
+            if (isNaN(ta)) ta = 0;
+            if (isNaN(tb)) tb = 0;
+            return ta - tb;
+          });
+          doorhandleEntries.forEach(function (entry) {
+            var li = document.createElement("li");
+            li.className = "order-work-item order-work-item--doorhandle";
+            li.setAttribute("data-order-id", entry.id || "");
+            appendOrderItemCommon(li, entry, {
+              extraLabel: "문고리 ",
+              extraAt: entry.doorhandleAt || entry.deployedAt || entry.at,
+            });
+            var doorBy =
+              entry.doorhandleBy != null ? String(entry.doorhandleBy).trim() : "";
+            if (doorBy) {
+              var doorMeta = document.createElement("div");
+              doorMeta.className = "hk-accepter-label";
+              doorMeta.textContent = "문고리 : " + doorBy;
+              li.appendChild(doorMeta);
+            }
+            doorhandleList.appendChild(li);
+          });
+        }
+
         deployedEntries.sort(function (a, b) {
           var ta = new Date(a.deployedAt || a.acceptedAt || a.at || 0).getTime();
           var tb = new Date(b.deployedAt || b.acceptedAt || b.at || 0).getTime();
@@ -20027,6 +20131,17 @@
               chatLabel: isFacilityPanel ? "입실 가능 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
             });
           }
+          if (!isFacilityPanel && maintenanceMode) {
+            var doorActs = document.createElement("div");
+            doorActs.className = "order-work__actions";
+            var doorBtn = document.createElement("button");
+            doorBtn.type = "button";
+            doorBtn.className = "order-work__doorhandle-btn";
+            doorBtn.setAttribute("data-order-id", entry.id || "");
+            doorBtn.textContent = "문고리";
+            doorActs.appendChild(doorBtn);
+            li.appendChild(doorActs);
+          }
           deployedList.appendChild(li);
         });
 
@@ -20054,6 +20169,14 @@
             cancelledEmpty.textContent = "취소된 오더가 없습니다.";
           }
         }
+        if (doorhandleEmpty) {
+          doorhandleEmpty.hidden = doorhandleEntries.length > 0;
+          if (!doorhandleEntries.length && filterRaw) {
+            doorhandleEmpty.textContent = "입력한 객실번호에 해당하는 문고리 건이 없습니다.";
+          } else {
+            doorhandleEmpty.textContent = "문고리 건이 없습니다.";
+          }
+        }
         if (deployedEmpty) {
           deployedEmpty.hidden = deployedEntries.length > 0;
           if (!deployedEntries.length && filterRaw) {
@@ -20079,6 +20202,7 @@
           Issue: issueEntries.length,
           Accepted: acceptedEntries.length,
           Cancelled: cancelledEntries.length,
+          Doorhandle: doorhandleEntries.length,
           Deployed: deployedEntries.length,
           Unavailable: unavailableEntries.length,
         }, !!filterRaw);
@@ -20093,12 +20217,14 @@
       }
 
       function applyOrderSectionSearchOpen(prefix, counts, searching) {
-        ["Issue", "Accepted", "Cancelled", "Deployed", "Unavailable"].forEach(function (name) {
-          var section = document.getElementById(prefix + name + "Section");
-          if (!section) return;
-          var hit = searching && (counts[name] || 0) > 0;
-          section.classList.toggle("is-search-open", !!hit);
-        });
+        ["Issue", "Accepted", "Cancelled", "Doorhandle", "Deployed", "Unavailable"].forEach(
+          function (name) {
+            var section = document.getElementById(prefix + name + "Section");
+            if (!section) return;
+            var hit = searching && (counts[name] || 0) > 0;
+            section.classList.toggle("is-search-open", !!hit);
+          }
+        );
       }
 
       function renderOrderAlertFeedbackPanel(listId, emptyId, entryFilter, opts) {
@@ -23877,6 +24003,15 @@
             if (wanId) completeOrderDeployment(wanId);
             return;
           }
+          var doorBtn = e.target.closest(".order-work__doorhandle-btn");
+          if (doorBtn) {
+            if (!maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var doorId = doorBtn.getAttribute("data-order-id");
+            if (doorId) moveOrderToDoorhandle(doorId);
+            return;
+          }
           var facTimeBtn = e.target.closest(".order-work__facility-time-btn");
           if (facTimeBtn) {
             if (!maintenanceMode) return;
@@ -23924,7 +24059,8 @@
           if (
             deployedCard &&
             !e.target.closest(".order-chat") &&
-            !e.target.closest(".order-work__wan-btn")
+            !e.target.closest(".order-work__wan-btn") &&
+            !e.target.closest(".order-work__doorhandle-btn")
           ) {
             var depOrderId = deployedCard.getAttribute("data-order-id");
             if (depOrderId) {
