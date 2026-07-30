@@ -1139,65 +1139,45 @@
     return rows;
   }
 
-  function buildExcelSideHtml(title, groups) {
+  function buildExcelSheetPayload(groups) {
+    var aoa = [["#", "객실번호", "예약번호", "물품 및 수량", "비고"]];
+    var merges = [];
     var rows = expandSheetRows(groups);
-    var body = "";
     if (!rows.length) {
-      body =
-        '<tr><td colspan="5" style="text-align:center;color:#64748b;">' +
-        escapeHtml(title) +
-        " 오더 없음</td></tr>";
-    } else {
-      rows.forEach(function (row) {
-        body += "<tr>";
-        body += "<td>" + escapeHtml(String(row.no)) + "</td>";
-        if (row.isFirst) {
-          body +=
-            '<td rowspan="' +
-            row.span +
-            '" style="text-align:center;font-weight:700;">' +
-            escapeHtml(row.room) +
-            "</td>";
-          body +=
-            '<td rowspan="' +
-            row.span +
-            '" style="text-align:center;">' +
-            escapeHtml(row.conf) +
-            "</td>";
-        }
-        body +=
-          '<td style="text-align:left;">' + escapeHtml(row.item) + "</td>";
-        if (row.isFirst) {
-          body +=
-            '<td rowspan="' +
-            row.span +
-            '" style="text-align:left;">' +
-            escapeHtml(row.note) +
-            "</td>";
-        }
-        body += "</tr>";
-      });
+      aoa.push(["", "(오더 없음)", "", "", ""]);
+      return { aoa: aoa, merges: merges };
     }
-    return (
-      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;table-layout:fixed;width:100%;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
-      "<colgroup>" +
-      '<col style="width:7.27%" />' +
-      '<col style="width:14.55%" />' +
-      '<col style="width:18.18%" />' +
-      '<col style="width:32.73%" />' +
-      '<col style="width:27.27%" />' +
-      "</colgroup>" +
-      "<thead>" +
-      '<tr><th colspan="5" style="background:#f9a8d4;font-weight:800;">' +
-      escapeHtml(title) +
-      "</th></tr>" +
-      '<tr style="background:#fce7f3;font-weight:700;">' +
-      "<th>#</th><th>객실번호</th><th>예약번호</th><th>물품 및 수량</th><th>비고</th>" +
-      "</tr>" +
-      "</thead><tbody>" +
-      body +
-      "</tbody></table>"
-    );
+    rows.forEach(function (row, idx) {
+      var r = idx + 1; /* header 다음 행 (0-based) */
+      var line = ["", "", "", String(row.item || ""), ""];
+      line[0] = row.no;
+      if (row.isFirst) {
+        line[1] = row.room;
+        line[2] = row.conf;
+        line[4] = row.note || "";
+        if (row.span > 1) {
+          merges.push({ s: { r: r, c: 1 }, e: { r: r + row.span - 1, c: 1 } });
+          merges.push({ s: { r: r, c: 2 }, e: { r: r + row.span - 1, c: 2 } });
+          merges.push({ s: { r: r, c: 4 }, e: { r: r + row.span - 1, c: 4 } });
+        }
+      }
+      aoa.push(line);
+    });
+    return { aoa: aoa, merges: merges };
+  }
+
+  function appendExcelSheet(wb, title, groups) {
+    var payload = buildExcelSheetPayload(groups);
+    var ws = XLSX.utils.aoa_to_sheet(payload.aoa);
+    ws["!merges"] = payload.merges;
+    ws["!cols"] = [
+      { wch: 5 },
+      { wch: 10 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 22 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, String(title || "Sheet").slice(0, 31));
   }
 
   function getFilteredWingCards(wing) {
@@ -1215,6 +1195,10 @@
       alert("다운로드할 인벤 통보가 없습니다.");
       return;
     }
+    if (typeof XLSX === "undefined" || !XLSX.utils || !XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
 
     var now = new Date();
     function pad(n) {
@@ -1228,32 +1212,10 @@
       pad(now.getHours()) +
       pad(now.getMinutes());
 
-    var html =
-      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
-      '<head><meta charset="UTF-8" />' +
-      "<style>td,th{border:1px solid #94a3b8;padding:4px 6px;vertical-align:middle;} td{mso-number-format:\\'@\\';}</style>" +
-      "</head><body>" +
-      "<h3>인벤 통보</h3>" +
-      '<table><tr><td style="vertical-align:top;padding-right:12px;">' +
-      buildExcelSideHtml("본관", mainGroups) +
-      '</td><td style="vertical-align:top;">' +
-      buildExcelSideHtml("별관", annexGroups) +
-      "</td></tr></table>" +
-      "</body></html>";
-
-    var blob = new Blob(["\uFEFF" + html], {
-      type: "application/vnd.ms-excel;charset=utf-8",
-    });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "인벤통보_" + stamp + ".xls";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () {
-      URL.revokeObjectURL(url);
-    }, 1000);
+    var wb = XLSX.utils.book_new();
+    appendExcelSheet(wb, "본관", mainGroups);
+    appendExcelSheet(wb, "별관", annexGroups);
+    XLSX.writeFile(wb, "인벤통보_" + stamp + ".xlsx");
   }
 
   function renderSheetTable(host, title, cards) {
