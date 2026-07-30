@@ -105,18 +105,46 @@
       if (isNaN(ta)) ta = 0;
       if (isNaN(tb)) tb = 0;
       if (tb > ta) {
-        byId[id] = entry;
+        var newer = entry;
+        var older = cur;
+        var mergedReq = Object.assign({}, older, newer);
+        mergedReq.chat = mergeOrderChats(older.chat, newer.chat);
+        byId[id] = mergedReq;
         return;
       }
-      if (ta > tb) return;
+      if (ta > tb) {
+        var mergedKeep = Object.assign({}, entry, cur);
+        mergedKeep.chat = mergeOrderChats(entry.chat, cur.chat);
+        byId[id] = mergedKeep;
+        return;
+      }
       if (isCancelled(entry) && !isCancelled(cur)) {
-        byId[id] = entry;
+        var mCancel = Object.assign({}, cur, entry);
+        mCancel.chat = mergeOrderChats(cur.chat, entry.chat);
+        byId[id] = mCancel;
         return;
       }
-      if (!isCancelled(entry) && isCancelled(cur)) return;
-      if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
-      else if (!hasSched(entry) && hasSched(cur)) return;
-      else byId[id] = entry;
+      if (!isCancelled(entry) && isCancelled(cur)) {
+        var mKeepCancel = Object.assign({}, entry, cur);
+        mKeepCancel.chat = mergeOrderChats(entry.chat, cur.chat);
+        byId[id] = mKeepCancel;
+        return;
+      }
+      if (hasSched(entry) && !hasSched(cur)) {
+        var mSched = Object.assign({}, cur, entry);
+        mSched.chat = mergeOrderChats(cur.chat, entry.chat);
+        byId[id] = mSched;
+        return;
+      }
+      if (!hasSched(entry) && hasSched(cur)) {
+        var mKeepSched = Object.assign({}, entry, cur);
+        mKeepSched.chat = mergeOrderChats(entry.chat, cur.chat);
+        byId[id] = mKeepSched;
+        return;
+      }
+      var mEq = Object.assign({}, cur, entry);
+      mEq.chat = mergeOrderChats(cur.chat, entry.chat);
+      byId[id] = mEq;
     }
     (Array.isArray(prevArr) ? prevArr : []).forEach(consider);
     (Array.isArray(incomingArr) ? incomingArr : []).forEach(consider);
@@ -209,10 +237,29 @@
     if (entry.issueOpen === true || String(entry.phase || "") === "issue") return 3;
     var p = String(entry.phase || "alert");
     if (p === "cancelled") return 5;
+    if (p === "doorhandle") return 4;
     if (p === "deployed") return 4;
     if (p === "unavailable") return 3;
     if (p === "accepted") return 2;
     return 1;
+  }
+
+  function mergeChatReactions(ra, rb) {
+    var out = {};
+    [ra, rb].forEach(function (src) {
+      if (!src || typeof src !== "object") return;
+      Object.keys(src).forEach(function (emoji) {
+        var list = Array.isArray(src[emoji]) ? src[emoji] : [];
+        if (!out[emoji]) out[emoji] = [];
+        list.forEach(function (name) {
+          var n = name != null ? String(name) : "";
+          if (!n) return;
+          if (out[emoji].indexOf(n) < 0) out[emoji].push(n);
+        });
+        if (!out[emoji].length) delete out[emoji];
+      });
+    });
+    return out;
   }
 
   function mergeOrderChats(a, b) {
@@ -224,9 +271,22 @@
         var key =
           (msg.id != null ? String(msg.id) : "") ||
           [msg.at || "", msg.by || "", msg.text || msg.message || ""].join("|");
-        if (seen[key]) return;
-        seen[key] = true;
-        out.push(msg);
+        if (Object.prototype.hasOwnProperty.call(seen, key)) {
+          var existing = out[seen[key]];
+          if (!existing) return;
+          existing.reactions = mergeChatReactions(existing.reactions, msg.reactions);
+          if (!existing.id && msg.id) existing.id = msg.id;
+          if (msg.updatedAt && (!existing.updatedAt || String(msg.updatedAt) > String(existing.updatedAt))) {
+            existing.updatedAt = msg.updatedAt;
+          }
+          return;
+        }
+        seen[key] = out.length;
+        var copy = Object.assign({}, msg);
+        if (copy.reactions && typeof copy.reactions === "object") {
+          copy.reactions = mergeChatReactions(copy.reactions, null);
+        }
+        out.push(copy);
       });
     });
     out.sort(function (x, y) {

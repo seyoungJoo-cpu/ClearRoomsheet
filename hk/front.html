@@ -4553,11 +4553,19 @@
     }
 
     .zone-cancelled-rooms__list {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: #475569;
+    }
+
+    .zone-cancelled-rooms__nos {
+      font-variant-numeric: tabular-nums;
       font-size: 0.875rem;
-      line-height: 1.55;
+      font-weight: 800;
       color: #334155;
-      font-weight: 700;
       letter-spacing: 0.01em;
       padding: 6px 8px;
       border-radius: 4px;
@@ -4566,12 +4574,21 @@
       word-break: break-word;
     }
 
-    .zone-cancelled-rooms__nos {
-      font-variant-numeric: tabular-nums;
+    .zone-cancelled-rooms__history-label {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #64748b;
     }
 
     .zone-cancelled-rooms__item {
-      display: none;
+      display: block;
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      white-space: normal;
+      word-break: break-word;
     }
 
     .zone-cancelled-rooms__item strong {
@@ -4816,9 +4833,11 @@
     }
 
     .inven-notify-card__trace {
-      margin: 4px 0 0;
-      font-size: 0.6875rem;
-      color: var(--text-muted);
+      margin: 6px 0 0;
+      font-size: 0.9375rem;
+      font-weight: 800;
+      color: #1e293b;
+      line-height: 1.4;
     }
 
     .inven-notify-card__done-meta {
@@ -8869,7 +8888,7 @@
             <section class="zone-updates" id="zoneUpdatesSection" hidden aria-label="구역 변경 내역">
               <div class="zone-updates__list" id="zoneUpdatesList"></div>
             </section>
-            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="적용 객실">
+            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="적용 객실 및 수정·삭제 기록">
               <div class="zone-cancelled-rooms__label">적용 객실</div>
               <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
             </section>
@@ -9043,10 +9062,10 @@
 
         <section class="order-work-section order-work-section--accepted" id="facilityAcceptedSection" aria-labelledby="facilityAcceptedTitle">
           <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityAcceptedTitle" aria-expanded="true" aria-controls="facilityAcceptedList" data-order-section-toggle="facilityAcceptedSection">
-            접수완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+            처리중 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
           </button>
           <ul class="order-work-list" id="facilityAcceptedList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityAcceptedEmpty">접수완료 건이 없습니다.</p>
+          <p class="order-work-empty" id="facilityAcceptedEmpty">처리중 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--cancelled" id="facilityCancelledSection" aria-labelledby="facilityCancelledTitle">
@@ -9059,10 +9078,10 @@
 
         <section class="order-work-section order-work-section--deployed" id="facilityDeployedSection" aria-labelledby="facilityDeployedTitle">
           <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityDeployedTitle" aria-expanded="true" aria-controls="facilityDeployedList" data-order-section-toggle="facilityDeployedSection">
-            입실 가능 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+            처리완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
           </button>
           <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityDeployedEmpty">입실 가능 건이 없습니다.</p>
+          <p class="order-work-empty" id="facilityDeployedEmpty">처리완료 건이 없습니다.</p>
         </section>
 
         <section class="order-work-section order-work-section--unavailable" id="facilityUnavailableSection" aria-labelledby="facilityUnavailableTitle">
@@ -9809,7 +9828,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=embed-clear-1"></script>
-  <script src="hk-sync.js?v=admin-inq-sync-2"></script>
+  <script src="hk-sync.js?v=react-merge-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
@@ -13511,16 +13530,12 @@
           var t = String(part || "").trim();
           if (!t) return "";
           if (/->/.test(t) || /에서/.test(t)) return t;
-          // 숫자만인 경우: 1~4(01/001/0001 등)만 0001~0004, 나머지는 앞 0 제거
+          // 숫자만 1~4자리면 네자리로 (314→0314, 1→0001)
           var digitsOnly = t.replace(/\s+/g, "");
           if (/^\d+$/.test(digitsOnly)) {
-            var stripped = digitsOnly.replace(/^0+/, "") || "0";
-            if (stripped === "1" || stripped === "2" || stripped === "3" || stripped === "4") {
-              return stripped.padStart(4, "0");
-            }
-            return stripped;
+            if (digitsOnly.length <= 4) return digitsOnly.padStart(4, "0");
+            return digitsOnly.slice(-4);
           }
-          // "2층 TEST2" 등 일반 문구는 그대로
           return t;
         }
         var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
@@ -18738,7 +18753,35 @@
         li.appendChild(row);
 
         var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
-        if (memoStr) {
+        var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
+        if (isFacilityOrder(entry) && entry.sourceReqId && (!memoStr || !memo2Str)) {
+          var srcReqMemo = findRequestEntry(entry.sourceReqId);
+          if (srcReqMemo) {
+            if (!memoStr && srcReqMemo.memo != null) {
+              memoStr = String(srcReqMemo.memo).trim();
+            }
+            if (!memo2Str && srcReqMemo.memo2 != null) {
+              memo2Str = String(srcReqMemo.memo2).trim();
+            }
+          }
+        }
+        if (isFacilityOrder(entry)) {
+          if (memoStr) {
+            var mem1El = document.createElement("div");
+            mem1El.className = "order-feedback__item-memo";
+            mem1El.textContent = compact ? "메모1 : " + memoStr : "메모1 : " + memoStr;
+            li.appendChild(mem1El);
+          }
+          if (memo2Str) {
+            var mem2El = document.createElement("div");
+            mem2El.className = "order-feedback__item-memo order-feedback__item-memo--m2";
+            mem2El.textContent = compact ? "메모2 : " + memo2Str : "메모2 : " + memo2Str;
+            li.appendChild(mem2El);
+          }
+          if (!memoStr && !memo2Str) {
+            /* no memo */
+          }
+        } else if (memoStr) {
           var memEl = document.createElement("div");
           memEl.className = "order-feedback__item-memo";
           memEl.textContent = compact ? memoStr : "메모 : " + memoStr;
@@ -18931,6 +18974,7 @@
         else list.push(me);
         if (list.length) msg.reactions[emoji] = list;
         else delete msg.reactions[emoji];
+        msg.updatedAt = new Date().toISOString();
         entry.updatedAt = new Date().toISOString();
         closeChatReactionPicker();
         if (kind === "sched") {
@@ -18944,6 +18988,7 @@
           forcedOpenDeployedOrderChatIds[String(entryId)] = true;
           delete closedDeployedOrderChatIds[String(entryId)];
           saveOrderLog();
+          if (typeof HKSync !== "undefined" && HKSync.flushPending) HKSync.flushPending();
           renderOrderPanels({ force: true });
         }
       }
@@ -19364,7 +19409,7 @@
         wanBtn.type = "button";
         wanBtn.className = "order-work__wan-btn";
         wanBtn.setAttribute("data-order-id", entry.id || "");
-        wanBtn.textContent = isFacilityOrder(entry) ? "입실 가능" : "투입 완료";
+        wanBtn.textContent = isFacilityOrder(entry) ? "처리완료" : "투입 완료";
         acts.appendChild(wanBtn);
         li.appendChild(acts);
         if (isFacilityOrder(entry) && entry.sourceReqId) {
@@ -20116,7 +20161,7 @@
           if (deployedBy) {
             var depMeta = document.createElement("div");
             depMeta.className = "hk-accepter-label";
-            depMeta.textContent = (isFacilityPanel ? "입실 : " : "투입 : ") + deployedBy;
+            depMeta.textContent = (isFacilityPanel ? "처리완료 : " : "투입 : ") + deployedBy;
             li.appendChild(depMeta);
           }
           if (!chatOpen) {
@@ -20128,7 +20173,7 @@
             li.appendChild(hint);
           } else {
             appendOrderChatUi(li, entry, {
-              chatLabel: isFacilityPanel ? "입실 가능 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
+              chatLabel: isFacilityPanel ? "처리완료 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
             });
           }
           if (!isFacilityPanel && maintenanceMode) {
@@ -20156,9 +20201,13 @@
         if (acceptedEmpty) {
           acceptedEmpty.hidden = acceptedEntries.length > 0;
           if (!acceptedEntries.length && filterRaw) {
-            acceptedEmpty.textContent = "입력한 객실번호에 해당하는 접수완료 건이 없습니다.";
+            acceptedEmpty.textContent = isFacilityPanel
+              ? "입력한 객실번호에 해당하는 처리중 건이 없습니다."
+              : "입력한 객실번호에 해당하는 접수완료 건이 없습니다.";
           } else {
-            acceptedEmpty.textContent = "접수완료 건이 없습니다.";
+            acceptedEmpty.textContent = isFacilityPanel
+              ? "처리중 건이 없습니다."
+              : "접수완료 건이 없습니다.";
           }
         }
         if (cancelledEmpty) {
@@ -20181,11 +20230,11 @@
           deployedEmpty.hidden = deployedEntries.length > 0;
           if (!deployedEntries.length && filterRaw) {
             deployedEmpty.textContent = isFacilityPanel
-              ? "입력한 객실번호에 해당하는 입실 가능 건이 없습니다."
+              ? "입력한 객실번호에 해당하는 처리완료 건이 없습니다."
               : "입력한 객실번호에 해당하는 투입완료 건이 없습니다.";
           } else {
             deployedEmpty.textContent = isFacilityPanel
-              ? "입실 가능 건이 없습니다."
+              ? "처리완료 건이 없습니다."
               : "투입완료 건이 없습니다.";
           }
         }
@@ -21765,16 +21814,18 @@
         hkAppendImageEl(b2, m2Img);
         surface.appendChild(b2);
 
-        if (cardOpts.showCheckIn && frontMode) {
+        if (cardOpts.showCheckIn && (frontMode || maintenanceMode)) {
           var actionsIn = document.createElement("div");
           actionsIn.className = "room-card__actions";
-          var btnIn = document.createElement("button");
-          btnIn.type = "button";
-          btnIn.className = "btn-zone-checkin";
-          btnIn.textContent = "입실";
-          btnIn.setAttribute("data-zone", zone);
-          btnIn.setAttribute("data-room", room.number || "");
-          actionsIn.appendChild(btnIn);
+          if (frontMode) {
+            var btnIn = document.createElement("button");
+            btnIn.type = "button";
+            btnIn.className = "btn-zone-checkin";
+            btnIn.textContent = "입실";
+            btnIn.setAttribute("data-zone", zone);
+            btnIn.setAttribute("data-room", room.number || "");
+            actionsIn.appendChild(btnIn);
+          }
           var btnEdit = document.createElement("button");
           btnEdit.type = "button";
           btnEdit.className = "btn-zone-card-edit";
@@ -21999,7 +22050,7 @@
           return t.classList.contains(cls);
         });
         if (!matched) return;
-        if (!frontMode) return;
+        if (!frontMode && !maintenanceMode) return;
         e.preventDefault();
         e.stopPropagation();
         var zone = t.getAttribute("data-zone") || getActiveZone();
@@ -22007,6 +22058,7 @@
         var ix = parseInt(t.getAttribute("data-index"), 10);
         if (!zone) return;
         if (t.classList.contains("btn-zone-checkin")) {
+          if (!frontMode) return;
           if (!roomNo) return;
           setRoomTrayForZone(zone, roomNo, "in");
           showHkActionToast("입실 칸으로 이동했습니다.");
@@ -22014,6 +22066,7 @@
           return;
         }
         if (t.classList.contains("btn-zone-restore")) {
+          if (!frontMode) return;
           if (!roomNo) return;
           setRoomTrayForZone(zone, roomNo, "");
           showHkActionToast("객실 목록으로 복원했습니다.");
@@ -22021,6 +22074,7 @@
           return;
         }
         if (t.classList.contains("btn-zone-card-edit")) {
+          if (!frontMode && !maintenanceMode) return;
           if (!getOperatorName()) {
             alert("이름을 입력하세요.");
             return;
@@ -22108,10 +22162,10 @@
         var room = formatRoomNoDisplay(roomRaw);
         var kindLabel =
           entry && entry.kind === "delete"
-            ? "취소"
+            ? "삭제"
             : entry
-              ? "변경"
-              : "취소";
+              ? "수정"
+              : "삭제";
         var text = " · " + kindLabel;
         if (entry) {
           var changes = Array.isArray(entry.changes) ? entry.changes : [];
@@ -22164,15 +22218,86 @@
         nos.sort(function (a, b) {
           return String(a).localeCompare(String(b), undefined, { numeric: true });
         });
-        if (!nos.length) {
+
+        var seenRooms = {};
+        var cancelledRooms = [];
+        function addCancelledRoom(no) {
+          var key = String(no == null ? "" : no).trim();
+          if (!key || seenRooms[key]) return;
+          seenRooms[key] = true;
+          cancelledRooms.push(key);
+        }
+        var deletedList =
+          data.deletedRooms && Array.isArray(data.deletedRooms[zone])
+            ? data.deletedRooms[zone]
+            : [];
+        deletedList.forEach(addCancelledRoom);
+        rooms.forEach(function (room) {
+          if (room && getRoomTray(room) === "deleted") addCancelledRoom(room.number);
+        });
+
+        var seenEntryIds = {};
+        var rows = [];
+        function pushRow(entry, roomFallback) {
+          if (entry && entry.id) {
+            if (seenEntryIds[entry.id]) return;
+            seenEntryIds[entry.id] = true;
+          }
+          var at = entry && entry.at ? new Date(entry.at).getTime() : 0;
+          if (isNaN(at)) at = 0;
+          rows.push({
+            entry: entry || null,
+            room: roomFallback || (entry && entry.room) || "",
+            at: at,
+          });
+        }
+        getRoomChangeLogEntries().forEach(function (entry) {
+          if (!entry || entry.zone !== zone) return;
+          if (entry.kind === "delete" || isZoneRoomNumberChangeEntry(entry) || entry.kind === "edit") {
+            pushRow(entry, entry.room);
+          } else if (entry.kind === "update" || (Array.isArray(entry.changes) && entry.changes.length)) {
+            if (!isInitialRoomAddEntry(entry)) pushRow(entry, entry.room);
+          }
+        });
+        cancelledRooms.forEach(function (no) {
+          var del = findZoneRoomDeleteEntry(zone, no);
+          if (del) {
+            pushRow(del, no);
+            return;
+          }
+          var already = rows.some(function (row) {
+            return roomsAreSame(row.room, no);
+          });
+          if (!already) pushRow(null, no);
+        });
+        rows.sort(function (a, b) {
+          if (b.at !== a.at) return b.at - a.at;
+          return String(a.room || "").localeCompare(String(b.room || ""), undefined, {
+            numeric: true,
+          });
+        });
+        if (rows.length > 40) rows = rows.slice(0, 40);
+
+        if (!nos.length && !rows.length) {
           section.hidden = true;
           return;
         }
         section.hidden = false;
-        var line = document.createElement("div");
-        line.className = "zone-cancelled-rooms__nos";
-        line.textContent = nos.join(",");
-        listEl.appendChild(line);
+        if (nos.length) {
+          var line = document.createElement("div");
+          line.className = "zone-cancelled-rooms__nos";
+          line.textContent = nos.join(",");
+          listEl.appendChild(line);
+        }
+        if (rows.length) {
+          var histLabel = document.createElement("div");
+          histLabel.className = "zone-cancelled-rooms__history-label";
+          histLabel.textContent = "수정·삭제 기록";
+          listEl.appendChild(histLabel);
+          rows.forEach(function (row) {
+            appendZoneCancelChangeItem(listEl, row.entry, row.room);
+          });
+        }
       }
 
       function renderZoneTrays(zone, rooms) {
@@ -23576,6 +23701,10 @@
           id: id,
           room: room,
           memo: memoText != null && String(memoText).trim() ? String(memoText).trim() : "",
+          memo2:
+            extra.memo2 != null && String(extra.memo2).trim()
+              ? String(extra.memo2).trim()
+              : "",
           memoImage: memoImage != null ? String(memoImage).trim() : "",
           foStatus: fo || "",
           phase: "alert",
@@ -23613,13 +23742,18 @@
           return null;
         }
         var memo = facilityMemo != null ? String(facilityMemo).trim() : "";
+        if (!memo) {
+          memo = reqEntry.memo != null ? String(reqEntry.memo).trim() : "";
+        }
         if (!memo) memo = "시설 확인";
+        var memo2 = reqEntry.memo2 != null ? String(reqEntry.memo2).trim() : "";
         var memoImage = reqEntry.memoImage || reqEntry.memo2Image || "";
         return appendOrderLog(reqEntry.room, memo, !!reqEntry.urgent, memoImage, {
           category: "facility",
           sourceReqId: reqEntry.id,
           fromMaint: true,
           photoKey: "facilityOrderMemo",
+          memo2: memo2,
         });
       }
 
