@@ -12479,12 +12479,31 @@
       });
 
       function resetFrontEmbedPanelsOnCloseDay() {
+        var data = HKStorage.load();
+        if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
+          data.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        }
+        var stamp =
+          (data.closeDayAt && String(data.closeDayAt)) || new Date().toISOString();
+        var needSave = false;
         Object.keys(FRONT_EMBED_STATE_KEYS).forEach(function (key) {
+          bumpFrontEmbedEpoch(key);
           try {
             localStorage.removeItem(FRONT_EMBED_STATE_KEYS[key]);
           } catch (e) {}
+          var cur = data.frontEmbedStates[key];
+          if (!isClearedFrontEmbedState(cur)) {
+            data.frontEmbedStates[key] = { __cleared: true, updatedAt: stamp };
+            needSave = true;
+          }
+          postFrontEmbedStateToFrame(key, null);
         });
-        lastAppliedFrontEmbedSig = "";
+        lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
+        if (needSave) {
+          try {
+            HKStorage.save(data, { skipSync: true });
+          } catch (eSave) {}
+        }
         Object.keys(FRONT_EMBED_FRAME_IDS).forEach(function (key) {
           var frame = document.getElementById(FRONT_EMBED_FRAME_IDS[key]);
           if (!frame) return;

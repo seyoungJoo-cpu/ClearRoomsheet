@@ -515,9 +515,28 @@
 
   function resetOnCloseDay() {
     clearDraftLocal();
-    lastPublished = null;
-    state = cloneState(defaultInvenNotify());
+    var empty = cloneState(defaultInvenNotify());
+    // 마감 스냅샷에 이미 빈 표(+updatedAt)가 있으면 그 시각을 유지해 merge 우선순위 보존
+    try {
+      var stored = loadInvenNotify();
+      if (
+        stored &&
+        stored.table &&
+        stored.table.updatedAt &&
+        (!stored.cards || !stored.cards.length) &&
+        (!stored.table.rows || !stored.table.rows.length)
+      ) {
+        empty.table.updatedAt = String(stored.table.updatedAt);
+      } else {
+        empty.table.updatedAt = nextUpdatedAt();
+      }
+    } catch (e) {
+      empty.table.updatedAt = nextUpdatedAt();
+    }
+    state = empty;
+    lastPublished = cloneState(state);
     draftDirty = false;
+    saveInvenNotify(state, { pushNow: false });
     if (ensureUi()) {
       if (els.boards) els.boards.classList.remove("inven-notify-boards--draft");
       renderCards();

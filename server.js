@@ -753,8 +753,47 @@ function mergeHkStorage(prev, incoming) {
     if (Object.prototype.hasOwnProperty.call(incoming, "invenNotify")) {
       staleOut.invenNotify = pickInvenNotifyForServer(prev, incoming);
     }
+    // 마감 전 클라이언트가 frontEmbedStates를 통째로 덮어 초기화를 깨지 않게 함
     if (Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates")) {
-      staleOut.frontEmbedStates = incoming.frontEmbedStates;
+      var prevEmbed =
+        prev.frontEmbedStates && typeof prev.frontEmbedStates === "object"
+          ? prev.frontEmbedStates
+          : {};
+      var incEmbed =
+        incoming.frontEmbedStates && typeof incoming.frontEmbedStates === "object"
+          ? incoming.frontEmbedStates
+          : {};
+      var embedKeys = ["dd", "inven", "chichi"];
+      var mergedEmbed = {
+        dd: prevEmbed.dd || null,
+        inven: prevEmbed.inven || null,
+        chichi: prevEmbed.chichi || null,
+      };
+      embedKeys.forEach(function (key) {
+        var a = prevEmbed[key];
+        var b = incEmbed[key];
+        if (!b || typeof b !== "object") return;
+        if (!a) {
+          mergedEmbed[key] = b;
+          return;
+        }
+        var ta = new Date(a.updatedAt || 0).getTime();
+        var tb = new Date(b.updatedAt || 0).getTime();
+        if (isNaN(ta)) ta = 0;
+        if (isNaN(tb)) tb = 0;
+        var aCleared = !!(a && a.__cleared === true);
+        var bCleared = !!(b && b.__cleared === true);
+        if (aCleared && !bCleared) {
+          if (tb > ta) mergedEmbed[key] = b;
+          return;
+        }
+        if (!aCleared && bCleared) {
+          if (tb >= ta) mergedEmbed[key] = b;
+          return;
+        }
+        if (tb >= ta) mergedEmbed[key] = b;
+      });
+      staleOut.frontEmbedStates = mergedEmbed;
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")) {
       staleOut.facilityMiscLog = incoming.facilityMiscLog;

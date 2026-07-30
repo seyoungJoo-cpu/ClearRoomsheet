@@ -4173,8 +4173,9 @@
         }
         var closeAt = new Date().toISOString();
         reset.closeDayAt = closeAt;
-        // 공지(사진 포함)·MB 인벤 공지·프론트 임베드(DD·인벤·취향) 초기화
-        // noticeUpdatedAt 스탬프로 이후 merge 시 옛 공지가 되살아나지 않게 함
+        // 공지(사진 포함)·MB 인벤 공지·프론트 임베드(DD·인벤·취향)·인벤통보 초기화
+        // noticeUpdatedAt / __cleared / invenNotify.table.updatedAt 스탬프로
+        // 이후 merge 시 옛 데이터가 되살아나지 않게 함
         reset.notice = "";
         reset.noticeImage = "";
         reset.noticeImages = [];
@@ -4182,7 +4183,22 @@
         reset.mbInvNotice = "";
         reset.mbInvNoticeImages = [];
         reset.mbInvNoticeUpdatedAt = closeAt;
-        reset.frontEmbedStates = { dd: null, inven: null, chichi: null };
+        reset.frontEmbedStates = {
+          dd: { __cleared: true, updatedAt: closeAt },
+          inven: { __cleared: true, updatedAt: closeAt },
+          chichi: { __cleared: true, updatedAt: closeAt },
+        };
+        reset.invenNotify = {
+          version: 6,
+          table: {
+            updatedAt: closeAt,
+            colWidths: [],
+            merges: [],
+            rows: [],
+          },
+          cards: [],
+          changeDone: {},
+        };
         // 오더/정비 작은 채팅창은 7일 보관 (마감해도 유지)
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
@@ -4325,7 +4341,7 @@
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·객실·요청·MB 등 초기화\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·인벤통보·객실·요청·MB 등 초기화\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
