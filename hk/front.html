@@ -3926,6 +3926,12 @@
       margin-left: auto;
     }
 
+    .order-work__actions--toggle .order-work__doorhandle-btn {
+      flex: 0 0 auto;
+      margin-top: 0;
+      margin-left: 0;
+    }
+
     .order-work__actions--toggle .order-work__facility-time-btn--clear {
       flex: 0 0 auto;
       margin-top: 0;
@@ -14943,7 +14949,9 @@
 
       function moveOrderToDoorhandle(orderId) {
         var entry = findOrderEntry(orderId);
-        if (!entry || getOrderPhase(entry) !== "deployed") return false;
+        if (!entry || getOrderPhase(entry) !== "accepted") return false;
+        if (isOrderIssueOpen(entry)) return false;
+        if (isFacilityOrder(entry)) return false;
         if (!maintenanceMode) return false;
         if (!getOperatorName()) {
           showOperatorGate({
@@ -19592,6 +19600,15 @@
         wanBtn.setAttribute("data-order-id", entry.id || "");
         wanBtn.textContent = isFacilityOrder(entry) ? "처리완료" : "투입 완료";
         acts.appendChild(wanBtn);
+        if (!isFacilityOrder(entry)) {
+          var doorBtn = document.createElement("button");
+          doorBtn.type = "button";
+          doorBtn.className = "order-work__doorhandle-btn";
+          doorBtn.setAttribute("data-order-id", entry.id || "");
+          doorBtn.textContent = "문고리";
+          doorBtn.setAttribute("aria-label", "문고리");
+          acts.appendChild(doorBtn);
+        }
         li.appendChild(acts);
         if (isFacilityOrder(entry) && entry.sourceReqId) {
           var prefill = getFacilityOrderDueTime(entry);
@@ -20371,17 +20388,6 @@
             appendOrderChatUi(li, entry, {
               chatLabel: isFacilityPanel ? "처리완료 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
             });
-          }
-          if (!isFacilityPanel && maintenanceMode) {
-            var doorActs = document.createElement("div");
-            doorActs.className = "order-work__actions";
-            var doorBtn = document.createElement("button");
-            doorBtn.type = "button";
-            doorBtn.className = "order-work__doorhandle-btn";
-            doorBtn.setAttribute("data-order-id", entry.id || "");
-            doorBtn.textContent = "문고리";
-            doorActs.appendChild(doorBtn);
-            li.appendChild(doorActs);
           }
           deployedList.appendChild(li);
         });
