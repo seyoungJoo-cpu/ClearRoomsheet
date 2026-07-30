@@ -3348,7 +3348,10 @@
 
     .order-work-list--deployed .order-work-item.is-chat-open {
       max-width: 200px;
+      width: 100%;
+      grid-column: span 2;
       align-self: start;
+      height: fit-content;
       z-index: 2;
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.22);
     }
@@ -3628,6 +3631,45 @@
 
     .facility-log-card.is-chat-open {
       cursor: default;
+    }
+
+    /* 완료 카드: 접힘=컴팩트, 채팅 열림=정비관리와 같이 2칸·200px */
+    .facility-log-panel .order-work-list--deployed {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+
+    .facility-log-panel .order-work-list--deployed .facility-log-card {
+      width: 100%;
+      max-width: 180px;
+      padding: 10px 10px 12px;
+    }
+
+    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open {
+      max-width: 200px;
+      width: 100%;
+      grid-column: span 2;
+      align-self: start;
+      height: fit-content;
+      z-index: 2;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.22);
+    }
+
+    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__messages {
+      max-height: 84px;
+      overflow-y: auto;
+    }
+
+    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__msg {
+      font-size: 0.75rem;
+      max-width: 95%;
+    }
+
+    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__form input {
+      height: 30px;
+      font-size: 0.75rem;
     }
 
     .main.main--order .order-work-empty,
@@ -5916,13 +5958,13 @@
       width: min(360px, 42vw);
     }
 
-    .facility-log-panel .order-work-list {
+    .facility-log-panel .order-work-list:not(.order-work-list--deployed) {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .facility-log-panel .facility-log-card {
+    .facility-log-panel .order-work-list:not(.order-work-list--deployed) .facility-log-card {
       width: 100%;
       max-width: min(100%, 720px);
       padding: 10px 12px 12px;
@@ -7361,6 +7403,16 @@
       font-size: 0.625rem;
     }
 
+    .room-card__surface > .request-feedback__chips {
+      margin-top: 4px;
+      gap: 3px 4px;
+    }
+
+    .room-card__surface > .request-feedback__chips .request-quick-chip {
+      padding: 1px 6px;
+      font-size: 0.6875rem;
+    }
+
     .btn-request-quick {
       margin-left: 0;
       background: #fff;
@@ -7488,6 +7540,7 @@
     .sched-req-card.is-chat-open {
       max-width: 200px;
       width: 100%;
+      grid-column: span 2;
       align-self: start;
       height: fit-content;
       z-index: 2;
@@ -17630,29 +17683,45 @@
         });
       }
 
-      function getEntryRoomList(entry) {
-        if (!entry) return [];
-        var raw = String(entry.room || "").trim();
-        if (!raw) return [];
-        if (/[,，]/.test(raw)) {
-          return raw
+      function getRoomNumberParts(raw) {
+        var s = String(raw == null ? "" : raw).trim();
+        if (!s) return [];
+        var m = s.match(/^(.+?)\s*에서\s+(.+?)\s*로\s*$/);
+        if (m) {
+          return [m[1].trim(), m[2].trim()].filter(Boolean);
+        }
+        if (/[,，]/.test(s)) {
+          return s
             .split(/[,，]/)
-            .map(function (s) {
-              return s.trim();
+            .map(function (part) {
+              return part.trim();
             })
             .filter(Boolean);
         }
-        return [raw];
+        if (/\s*->\s*/.test(s)) {
+          return s
+            .split(/\s*->\s*/)
+            .map(function (part) {
+              return part.trim();
+            })
+            .filter(Boolean);
+        }
+        return [s];
+      }
+
+      function getEntryRoomList(entry) {
+        if (!entry) return [];
+        return getRoomNumberParts(entry.room);
       }
 
       function isMultiRoomRequest(entry) {
         return getEntryRoomList(entry).length >= 2;
       }
 
-      function buildRequestRoomChips(entry) {
+      function buildRoomStatusChipsFromRooms(rooms) {
         var wrap = document.createElement("div");
         wrap.className = "request-feedback__chips";
-        getEntryRoomList(entry).forEach(function (room) {
+        (rooms || []).forEach(function (room) {
           var st = lookupRoomStatusFromXml(room) || "";
           var chip = document.createElement("span");
           chip.className = "request-quick-chip " + hkStatusBadgeClasses(st);
@@ -17662,6 +17731,10 @@
           wrap.appendChild(chip);
         });
         return wrap;
+      }
+
+      function buildRequestRoomChips(entry) {
+        return buildRoomStatusChipsFromRooms(getEntryRoomList(entry));
       }
 
       function requestRoomLabelText(entry) {
@@ -21953,12 +22026,15 @@
 
       function buildZoneRoomCardLi(zone, room, idx, cardOpts) {
         cardOpts = cardOpts || {};
-        var st = lookupRoomStatusFromXml(room.number || "").trim();
+        var roomParts = getRoomNumberParts(room.number || "");
+        var multiRoom = roomParts.length >= 2;
+        var st = multiRoom ? "" : lookupRoomStatusFromXml(room.number || "").trim();
         var m1 = (room.memo1 || "").trim();
         var m2 = (room.memo2 || "").trim();
         var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
         var tm = (room.time || "").trim();
-        var editableMemo = (maintenanceMode || frontMode) && !cardOpts.trayMode;
+        var editableMemo =
+          (maintenanceMode || frontMode || isOperatorSessionUnlocked()) && !cardOpts.trayMode;
 
         var li = document.createElement("li");
         var roomPending = isRoomChangePending(zone, room.number);
@@ -21969,7 +22045,8 @@
           "room-card" +
           (maintenanceMode && !cardOpts.trayMode ? " is-clickable" : "") +
           (canHistory ? " is-history-toggle" : "") +
-          (historyOpen ? " is-history-open" : "");
+          (historyOpen ? " is-history-open" : "") +
+          (multiRoom ? " is-multi-room" : "");
         li.setAttribute("data-room-index", String(idx));
         if (canHistory) {
           li.setAttribute("role", "button");
@@ -21999,11 +22076,16 @@
         no.textContent = formatRoomNoDisplay(room.number || "");
         noBox.appendChild(no);
         head.appendChild(noBox);
-        appendRoomTypeToCardHead(head, room.number || "");
-        head.appendChild(
-          buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
-        );
+        if (!multiRoom) appendRoomTypeToCardHead(head, room.number || "");
+        if (!multiRoom) {
+          head.appendChild(
+            buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
+          );
+        }
         surface.appendChild(head);
+        if (multiRoom) {
+          surface.appendChild(buildRoomStatusChipsFromRooms(roomParts));
+        }
 
         var timeDisp = document.createElement("p");
         timeDisp.className = "room-card__time-display";
@@ -23458,7 +23540,7 @@
       }
 
       function tryOpenRoomMemoEditorFromClick(e) {
-        if (!frontMode && !maintenanceMode) return false;
+        if (!frontMode && !maintenanceMode && !isOperatorSessionUnlocked()) return false;
         if (e.target.closest(".room-memo1-editor") || e.target.closest(".room-memo2-editor")) {
           return false;
         }
