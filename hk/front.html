@@ -19961,6 +19961,16 @@
           image: msgImage || "",
         });
         hkClearPhoto("orderChat:" + orderId);
+        // 리렌더 전 입력값을 비움 — captureOrderChatComposeDraft가 방금 보낸 글을 다시 넣지 않게
+        try {
+          var liveForms = document.querySelectorAll(
+            '.order-chat__form[data-order-id="' + String(orderId).replace(/"/g, '\\"') + '"]'
+          );
+          liveForms.forEach(function (form) {
+            var inp = form.querySelector("input");
+            if (inp) inp.value = "";
+          });
+        } catch (eClearChat) {}
         orderChatComposeDraft = {
           orderId: orderId,
           value: "",
@@ -19970,7 +19980,7 @@
         delete closedDeployedOrderChatIds[String(orderId)];
         forcedOpenDeployedOrderChatIds[String(orderId)] = true;
         saveOrderLog();
-        renderOrderPanels({ force: true });
+        renderOrderPanels({ force: true, skipOrderChatDraftCapture: true });
         requestAnimationFrame(function () {
           var card =
             document.querySelector(
@@ -19985,7 +19995,10 @@
           var msgList = card.querySelector(".order-chat__messages");
           if (msgList) msgList.scrollTop = msgList.scrollHeight;
           var chatInput = card.querySelector(".order-chat__form input");
-          if (chatInput) chatInput.focus({ preventScroll: true });
+          if (chatInput) {
+            chatInput.value = "";
+            chatInput.focus({ preventScroll: true });
+          }
         });
       }
 
@@ -20081,7 +20094,9 @@
 
       function renderOrderWorkPanelBundle(prefix, entryFilter, opts) {
         opts = opts || {};
-        captureOrderChatComposeDraft();
+        if (!opts.skipOrderChatDraftCapture) {
+          captureOrderChatComposeDraft();
+        }
         var isFacilityPanel = prefix === "facility";
         var issueList = document.getElementById(prefix + "IssueList");
         var issueEmpty = document.getElementById(prefix + "IssueEmpty");
@@ -24430,8 +24445,8 @@
           var chatInput = chatForm.querySelector("input");
           var text = chatInput ? chatInput.value : "";
           var chatImage = orderId ? hkGetPhoto("orderChat:" + orderId) : null;
-          if (orderId) appendOrderChat(orderId, text, chatImage);
           if (chatInput) chatInput.value = "";
+          if (orderId) appendOrderChat(orderId, text, chatImage);
         });
       }
 
