@@ -3932,6 +3932,23 @@
       margin-left: 0;
     }
 
+    .order-work__actions--toggle .order-feedback__memo-btn {
+      flex: 0 0 auto;
+      margin-top: 0;
+      margin-left: 0;
+      padding: 4px 8px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+      border: 1px solid #6366f1;
+      background: #eef2ff;
+      color: #4338ca;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
     .order-work__actions--toggle .order-work__facility-time-btn--clear {
       flex: 0 0 auto;
       margin-top: 0;
@@ -17934,37 +17951,43 @@
       function openFacilityOrderMemoEditor(orderId) {
         if (!maintenanceMode && !frontMode) return;
         var entry = findOrderEntry(orderId);
-        if (!entry || !isFacilityOrder(entry) || getOrderPhase(entry) !== "alert") return;
-        var li = document.querySelector(
-          '#facilityFeedbackList .order-feedback__item[data-order-id="' + orderId + '"]'
-        );
+        if (!entry || !isFacilityOrder(entry)) return;
+        var phase = getOrderPhase(entry);
+        if (phase === "cancelled" || phase === "deployed" || phase === "doorhandle") return;
+        var li =
+          document.querySelector(
+            '#facilityFeedbackList .order-feedback__item[data-order-id="' + orderId + '"]'
+          ) ||
+          document.querySelector(
+            '#facilityPanel .order-work-item[data-order-id="' + orderId + '"]'
+          );
         if (!li) return;
+        var hideSel =
+          ".order-feedback__memo-btn, .order-feedback__accept-btn, .order-work__wan-btn, .order-work__issue-btn, .order-work__facility-time-btn, .order-work__facility-time-input";
         var oldWrap = li.querySelector(".order-feedback__memo-editor-wrap");
         if (oldWrap) {
           oldWrap.remove();
-          li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
-            function (b) {
-              b.style.visibility = "";
-            }
-          );
+          li.querySelectorAll(hideSel).forEach(function (b) {
+            b.style.visibility = "";
+          });
           return;
         }
         document.querySelectorAll(".order-feedback__memo-editor-wrap").forEach(function (n) {
           n.remove();
         });
         document
-          .querySelectorAll("#facilityFeedbackList .order-feedback__memo-btn, #facilityFeedbackList .order-feedback__accept-btn")
+          .querySelectorAll(
+            "#facilityFeedbackList .order-feedback__memo-btn, #facilityFeedbackList .order-feedback__accept-btn, #facilityPanel .order-feedback__memo-btn"
+          )
           .forEach(function (b) {
             b.style.visibility = "";
           });
         var memoEditKey = "facilityOrderMemoEdit:" + orderId;
         hkClearPhoto(memoEditKey);
         if (entry.memoImage) hkSetPhotoPreview(memoEditKey, entry.memoImage);
-        li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
-          function (b) {
-            b.style.visibility = "hidden";
-          }
-        );
+        li.querySelectorAll(hideSel).forEach(function (b) {
+          b.style.visibility = "hidden";
+        });
         var wrap = document.createElement("div");
         wrap.className = "request-feedback__memo-editor-wrap order-feedback__memo-editor-wrap";
         var ed = document.createElement("div");
@@ -17994,11 +18017,9 @@
 
         function done() {
           hkClearPhoto(memoEditKey);
-          li.querySelectorAll(".order-feedback__memo-btn, .order-feedback__accept-btn").forEach(
-            function (b) {
-              b.style.visibility = "";
-            }
-          );
+          li.querySelectorAll(hideSel).forEach(function (b) {
+            b.style.visibility = "";
+          });
           wrap.remove();
           renderOrderPanels({ force: true });
         }
@@ -19576,22 +19597,33 @@
           doorBtn.setAttribute("aria-label", "문고리");
           acts.appendChild(doorBtn);
         }
+        if (isFacilityOrder(entry)) {
+          var memoStrFac = entry.memo != null ? String(entry.memo).trim() : "";
+          var facilityMemoBtn = document.createElement("button");
+          facilityMemoBtn.type = "button";
+          facilityMemoBtn.className = "request-feedback__memo-btn order-feedback__memo-btn";
+          facilityMemoBtn.setAttribute("data-order-id", entry.id || "");
+          facilityMemoBtn.textContent = memoStrFac ? "메모 수정" : "메모 입력";
+          facilityMemoBtn.setAttribute(
+            "aria-label",
+            memoStrFac ? "시설 오더 메모 수정" : "시설 오더 메모 입력"
+          );
+          acts.appendChild(facilityMemoBtn);
+          var unavailBtn = document.createElement("button");
+          unavailBtn.type = "button";
+          unavailBtn.className =
+            "order-work__facility-time-btn order-work__facility-time-btn--clear";
+          unavailBtn.setAttribute("data-order-id", entry.id || "");
+          unavailBtn.setAttribute("data-facility-time-action", "clear");
+          unavailBtn.textContent = "불가";
+          unavailBtn.title = "입실 불가";
+          unavailBtn.setAttribute("aria-label", "입실 불가");
+          acts.appendChild(unavailBtn);
+        }
         li.appendChild(acts);
         if (isFacilityOrder(entry) && entry.sourceReqId) {
           var prefill = getFacilityOrderDueTime(entry);
           var editing = !!(entry.id && facilityTimeEditIds[entry.id]);
-          function appendFacilityClearBtn(parent) {
-            var clearBtn = document.createElement("button");
-            clearBtn.type = "button";
-            clearBtn.className =
-              "order-work__facility-time-btn order-work__facility-time-btn--clear";
-            clearBtn.setAttribute("data-order-id", entry.id || "");
-            clearBtn.setAttribute("data-facility-time-action", "clear");
-            clearBtn.textContent = "불가";
-            clearBtn.title = "시설시간 취소";
-            clearBtn.setAttribute("aria-label", "시설시간 불가(취소)");
-            parent.appendChild(clearBtn);
-          }
           if (prefill && !editing) {
             var timeDisp = document.createElement("div");
             timeDisp.className = "order-work__facility-time-display";
@@ -19610,7 +19642,6 @@
             editBtn.setAttribute("data-facility-time-action", "edit");
             editBtn.textContent = "수정";
             editWrap.appendChild(editBtn);
-            appendFacilityClearBtn(editWrap);
             li.appendChild(editWrap);
           } else {
             var timeWrap = document.createElement("div");
@@ -19630,7 +19661,6 @@
             timeBtn.textContent = "시설시간 적용";
             timeWrap.appendChild(timeInp);
             timeWrap.appendChild(timeBtn);
-            appendFacilityClearBtn(timeWrap);
             li.appendChild(timeWrap);
           }
         }
@@ -19679,7 +19709,7 @@
 
       function clearFacilityAcceptedTime(orderId) {
         var entry = findOrderEntry(orderId);
-        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
+        if (!entry || !isFacilityOrder(entry)) return;
         if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
         if (isFacilityOrderUnavailableBucket(entry)) return;
         if (!maintenanceMode) return;
@@ -19692,18 +19722,21 @@
           });
           return;
         }
-        var srcReq = findRequestEntry(entry.sourceReqId);
-        if (!srcReq) return;
-        delete entry.facilityDueTime;
-        delete srcReq.facilityOkTime;
-        delete srcReq.facilitySched;
-        srcReq.facilityUnavailable = true;
+        if (entry.sourceReqId) {
+          var srcReq = findRequestEntry(entry.sourceReqId);
+          if (srcReq) {
+            delete entry.facilityDueTime;
+            delete srcReq.facilityOkTime;
+            delete srcReq.facilitySched;
+            srcReq.facilityUnavailable = true;
+            markRequestEntrySavedLocally(srcReq);
+            saveRequestLog();
+          }
+        }
         entry.phase = "unavailable";
         entry.unavailableAt = new Date().toISOString();
         entry.unavailableBy = getOperatorName();
         if (entry.id) delete facilityTimeEditIds[entry.id];
-        markRequestEntrySavedLocally(srcReq);
-        saveRequestLog();
         saveOrderLog();
         renderRequestLogPanel({ force: true });
         renderOrderPanels({ force: true });
@@ -19711,23 +19744,39 @@
 
       function appendFacilityUnavailableActions(li, entry) {
         if (!maintenanceMode || !entry || !isFacilityOrder(entry)) return;
-        var timeWrap = document.createElement("div");
-        timeWrap.className = "order-work__facility-time-wrap";
-        var timeInp = document.createElement("input");
-        timeInp.type = "text";
-        timeInp.className = "order-work__facility-time-input hk-time-em";
-        timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
-        timeInp.setAttribute("data-order-id", entry.id || "");
-        timeInp.setAttribute("aria-label", "시설시간");
-        var timeBtn = document.createElement("button");
-        timeBtn.type = "button";
-        timeBtn.className = "order-work__facility-time-btn";
-        timeBtn.setAttribute("data-order-id", entry.id || "");
-        timeBtn.setAttribute("data-facility-time-action", "apply");
-        timeBtn.textContent = "시설시간 적용";
-        timeWrap.appendChild(timeInp);
-        timeWrap.appendChild(timeBtn);
-        li.appendChild(timeWrap);
+        if (entry.sourceReqId) {
+          var timeWrap = document.createElement("div");
+          timeWrap.className = "order-work__facility-time-wrap";
+          var timeInp = document.createElement("input");
+          timeInp.type = "text";
+          timeInp.className = "order-work__facility-time-input hk-time-em";
+          timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
+          timeInp.setAttribute("data-order-id", entry.id || "");
+          timeInp.setAttribute("aria-label", "시설시간");
+          var timeBtn = document.createElement("button");
+          timeBtn.type = "button";
+          timeBtn.className = "order-work__facility-time-btn";
+          timeBtn.setAttribute("data-order-id", entry.id || "");
+          timeBtn.setAttribute("data-facility-time-action", "apply");
+          timeBtn.textContent = "시설시간 적용";
+          timeWrap.appendChild(timeInp);
+          timeWrap.appendChild(timeBtn);
+          li.appendChild(timeWrap);
+        }
+        var memoStrFac = entry.memo != null ? String(entry.memo).trim() : "";
+        var memoActs = document.createElement("div");
+        memoActs.className = "order-work__actions";
+        var facilityMemoBtn = document.createElement("button");
+        facilityMemoBtn.type = "button";
+        facilityMemoBtn.className = "request-feedback__memo-btn order-feedback__memo-btn";
+        facilityMemoBtn.setAttribute("data-order-id", entry.id || "");
+        facilityMemoBtn.textContent = memoStrFac ? "메모 수정" : "메모 입력";
+        facilityMemoBtn.setAttribute(
+          "aria-label",
+          memoStrFac ? "시설 오더 메모 수정" : "시설 오더 메모 입력"
+        );
+        memoActs.appendChild(facilityMemoBtn);
+        li.appendChild(memoActs);
       }
 
       function entryHasChatMessages(entry) {
@@ -24371,6 +24420,15 @@
             e.stopPropagation();
             var orderId = issueBtn.getAttribute("data-order-id");
             if (orderId) raiseOrderIssue(orderId);
+            return;
+          }
+          var facMemoBtn = e.target.closest(".order-feedback__memo-btn");
+          if (facMemoBtn) {
+            if (!maintenanceMode && !frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var facMemoOrderId = facMemoBtn.getAttribute("data-order-id");
+            if (facMemoOrderId) openFacilityOrderMemoEditor(facMemoOrderId);
             return;
           }
           var deployedCard = e.target.closest(
