@@ -3633,43 +3633,21 @@
       cursor: default;
     }
 
-    /* 완료 카드: 접힘=컴팩트, 채팅 열림=정비관리와 같이 2칸·200px */
+    /* 완료 카드: 접수 카드와 동일한 전체 너비 */
     .facility-log-panel .order-work-list--deployed {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      display: flex;
+      flex-direction: column;
       gap: 10px;
-      align-items: start;
     }
 
     .facility-log-panel .order-work-list--deployed .facility-log-card {
       width: 100%;
-      max-width: 180px;
-      padding: 10px 10px 12px;
+      max-width: min(100%, 720px);
+      padding: 10px 12px 12px;
     }
 
     .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open {
-      max-width: 200px;
-      width: 100%;
-      grid-column: span 2;
-      align-self: start;
-      height: fit-content;
-      z-index: 2;
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.22);
-    }
-
-    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__messages {
-      max-height: 84px;
-      overflow-y: auto;
-    }
-
-    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__msg {
-      font-size: 0.75rem;
-      max-width: 95%;
-    }
-
-    .facility-log-panel .order-work-list--deployed .facility-log-card.is-chat-open .order-chat__form input {
-      height: 30px;
-      font-size: 0.75rem;
     }
 
     .main.main--order .order-work-empty,
