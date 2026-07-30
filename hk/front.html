@@ -4822,7 +4822,8 @@
     }
 
     .inven-notify-sheet-table {
-      width: 100%;
+      width: max-content;
+      max-width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
       font-size: 0.75rem;
@@ -4831,10 +4832,11 @@
     .inven-notify-sheet-table th,
     .inven-notify-sheet-table td {
       border: 1px solid #94a3b8;
-      padding: 4px 6px;
+      padding: 4px 4px;
       vertical-align: middle;
       text-align: center;
       word-break: keep-all;
+      overflow: hidden;
     }
 
     .inven-notify-sheet-wing {
@@ -4852,30 +4854,52 @@
       font-size: 0.6875rem;
     }
 
+    .inven-notify-sheet-col-no {
+      width: 4ch;
+    }
+
+    .inven-notify-sheet-col-room {
+      width: 8ch;
+    }
+
+    .inven-notify-sheet-col-conf {
+      width: 10ch;
+    }
+
+    .inven-notify-sheet-col-item {
+      width: 18ch;
+    }
+
+    .inven-notify-sheet-col-note {
+      width: 15ch;
+    }
+
     .inven-notify-sheet-no {
-      width: 2.2rem;
+      width: 4ch;
       font-variant-numeric: tabular-nums;
       color: var(--text-muted);
     }
 
     .inven-notify-sheet-room {
-      width: 4.5rem;
+      width: 8ch;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
     }
 
     .inven-notify-sheet-conf {
-      width: 5.5rem;
+      width: 10ch;
       font-variant-numeric: tabular-nums;
       font-size: 0.6875rem;
     }
 
     .inven-notify-sheet-item {
+      width: 18ch;
       text-align: left;
       font-weight: 600;
     }
 
     .inven-notify-sheet-note {
+      width: 15ch;
       text-align: left;
       color: #475569;
       font-size: 0.6875rem;
@@ -9983,7 +10007,7 @@
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
-  <script src="hk-inven-notify.js?v=view2-excel-1"></script>
+  <script src="hk-inven-notify.js?v=view2-cols-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script>

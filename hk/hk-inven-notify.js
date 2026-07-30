@@ -1179,7 +1179,14 @@
       });
     }
     return (
-      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
+      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;table-layout:fixed;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
+      "<colgroup>" +
+      '<col style="width:4ch" />' +
+      '<col style="width:8ch" />' +
+      '<col style="width:10ch" />' +
+      '<col style="width:18ch" />' +
+      '<col style="width:15ch" />' +
+      "</colgroup>" +
       "<thead>" +
       '<tr><th colspan="5" style="background:#f9a8d4;font-weight:800;">' +
       escapeHtml(title) +
@@ -1255,6 +1262,20 @@
 
     var table = document.createElement("table");
     table.className = "inven-notify-sheet-table";
+
+    var colgroup = document.createElement("colgroup");
+    [
+      "inven-notify-sheet-col-no",
+      "inven-notify-sheet-col-room",
+      "inven-notify-sheet-col-conf",
+      "inven-notify-sheet-col-item",
+      "inven-notify-sheet-col-note",
+    ].forEach(function (cls) {
+      var col = document.createElement("col");
+      col.className = cls;
+      colgroup.appendChild(col);
+    });
+    table.appendChild(colgroup);
 
     var thead = document.createElement("thead");
     var wingRow = document.createElement("tr");
