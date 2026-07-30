@@ -29,6 +29,7 @@
     btnSave: null,
     btnView1: null,
     btnView2: null,
+    btnExcel: null,
     toolbarHint: null,
     hint: null,
     searchInput: null,
@@ -462,14 +463,25 @@
 
   function updateEmpty() {
     var hasCards = (state.cards || []).length > 0;
-    if (els.empty) els.empty.hidden = hasCards;
+    var isSheet = viewMode === "2";
+    if (els.empty) {
+      // 2번 보기에서는 표가 빈 상태를 보여 주므로 1번용 안내 문구는 숨김
+      els.empty.hidden = hasCards || isSheet;
+    }
     if (els.sheetEmpty) els.sheetEmpty.hidden = true;
+    if (els.btnExcel) els.btnExcel.hidden = !isSheet;
   }
 
   function applyViewMode() {
     var isSheet = viewMode === "2";
-    if (els.boards) els.boards.hidden = isSheet;
-    if (els.sheet) els.sheet.hidden = !isSheet;
+    if (els.boards) {
+      els.boards.hidden = isSheet;
+      els.boards.setAttribute("aria-hidden", isSheet ? "true" : "false");
+    }
+    if (els.sheet) {
+      els.sheet.hidden = !isSheet;
+      els.sheet.setAttribute("aria-hidden", isSheet ? "false" : "true");
+    }
     if (els.btnView1) {
       els.btnView1.classList.toggle("is-active", !isSheet);
       els.btnView1.setAttribute("aria-pressed", !isSheet ? "true" : "false");
@@ -1106,6 +1118,137 @@
     });
   }
 
+  function expandSheetRows(groups) {
+    var rows = [];
+    var lineNo = 0;
+    (groups || []).forEach(function (group) {
+      var span = Math.max(1, (group.items && group.items.length) || 1);
+      group.items.forEach(function (item, idx) {
+        lineNo += 1;
+        rows.push({
+          no: lineNo,
+          room: group.room,
+          conf: group.conf,
+          item: item,
+          note: group.note || "",
+          span: span,
+          isFirst: idx === 0,
+        });
+      });
+    });
+    return rows;
+  }
+
+  function buildExcelSideHtml(title, groups) {
+    var rows = expandSheetRows(groups);
+    var body = "";
+    if (!rows.length) {
+      body =
+        '<tr><td colspan="5" style="text-align:center;color:#64748b;">' +
+        escapeHtml(title) +
+        " 오더 없음</td></tr>";
+    } else {
+      rows.forEach(function (row) {
+        body += "<tr>";
+        body += "<td>" + escapeHtml(String(row.no)) + "</td>";
+        if (row.isFirst) {
+          body +=
+            '<td rowspan="' +
+            row.span +
+            '" style="text-align:center;font-weight:700;">' +
+            escapeHtml(row.room) +
+            "</td>";
+          body +=
+            '<td rowspan="' +
+            row.span +
+            '" style="text-align:center;">' +
+            escapeHtml(row.conf) +
+            "</td>";
+        }
+        body +=
+          '<td style="text-align:left;">' + escapeHtml(row.item) + "</td>";
+        if (row.isFirst) {
+          body +=
+            '<td rowspan="' +
+            row.span +
+            '" style="text-align:left;">' +
+            escapeHtml(row.note) +
+            "</td>";
+        }
+        body += "</tr>";
+      });
+    }
+    return (
+      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
+      "<thead>" +
+      '<tr><th colspan="5" style="background:#f9a8d4;font-weight:800;">' +
+      escapeHtml(title) +
+      "</th></tr>" +
+      '<tr style="background:#fce7f3;font-weight:700;">' +
+      "<th>#</th><th>객실번호</th><th>예약번호</th><th>물품 및 수량</th><th>비고</th>" +
+      "</tr>" +
+      "</thead><tbody>" +
+      body +
+      "</tbody></table>"
+    );
+  }
+
+  function getFilteredWingCards(wing) {
+    var q = String(cardSearchQuery || "").trim().toLowerCase();
+    return (state.cards || []).filter(function (c) {
+      if (!cardMatchesSearch(c, q)) return false;
+      return wing === "annex" ? c.wing === "annex" : c.wing !== "annex";
+    });
+  }
+
+  function downloadSheetExcel() {
+    var mainGroups = buildSheetGroups(getFilteredWingCards("main"));
+    var annexGroups = buildSheetGroups(getFilteredWingCards("annex"));
+    if (!mainGroups.length && !annexGroups.length) {
+      alert("다운로드할 인벤 통보가 없습니다.");
+      return;
+    }
+
+    var now = new Date();
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    var stamp =
+      now.getFullYear() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      "_" +
+      pad(now.getHours()) +
+      pad(now.getMinutes());
+
+    var html =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="UTF-8" />' +
+      "<style>td,th{border:1px solid #94a3b8;padding:4px 6px;vertical-align:middle;} td{mso-number-format:\\'@\\';}</style>" +
+      "</head><body>" +
+      "<h3>인벤 통보</h3>" +
+      '<table><tr><td style="vertical-align:top;padding-right:12px;">' +
+      buildExcelSideHtml("본관", mainGroups) +
+      '</td><td style="vertical-align:top;">' +
+      buildExcelSideHtml("별관", annexGroups) +
+      "</td></tr></table>" +
+      "</body></html>";
+
+    var blob = new Blob(["\uFEFF" + html], {
+      type: "application/vnd.ms-excel;charset=utf-8",
+    });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "인벤통보_" + stamp + ".xls";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
   function renderSheetTable(host, title, cards) {
     if (!host) return;
     host.innerHTML = "";
@@ -1289,7 +1432,19 @@
 
     viewTabs.appendChild(btnView1);
     viewTabs.appendChild(btnView2);
+
+    var btnExcel = document.createElement("button");
+    btnExcel.type = "button";
+    btnExcel.className = "btn-order inven-notify-tool-btn inven-notify-excel-btn";
+    btnExcel.textContent = "엑셀";
+    btnExcel.title = "2번 표 형태로 엑셀 다운로드";
+    btnExcel.hidden = true;
+    btnExcel.addEventListener("click", function () {
+      downloadSheetExcel();
+    });
+
     searchRow.appendChild(viewTabs);
+    searchRow.appendChild(btnExcel);
     searchRow.appendChild(searchInput);
 
     var boards = document.createElement("div");
@@ -1388,6 +1543,7 @@
     els.btnSave = btnSave;
     els.btnView1 = btnView1;
     els.btnView2 = btnView2;
+    els.btnExcel = btnExcel;
     els.toolbarHint = toolbarHint;
     els.searchInput = searchInput;
     els.hint = document.getElementById("invenNotifyHint");
