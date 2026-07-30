@@ -1002,7 +1002,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=embed-clear-1"></script>
   <script src="hk-facility-logs.js"></script>
-  <script src="hk-sync.js?v=close-day-room-1"></script>
+  <script src="hk-sync.js?v=admin-inq-sync-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-inven-notify.js?v=order-dup-1"></script>
   <script>
@@ -4265,6 +4265,20 @@
               }
             }
           } catch (e) {}
+        }
+        // 스냅샷에 문의가 있으면 그쪽도 합침 (마감 PC 로컬이 비어 있어도 유실 방지)
+        if (Array.isArray(snapshot.adminInquiries) && snapshot.adminInquiries.length) {
+          var inqMap = {};
+          preservedAdminInquiries.forEach(function (e) {
+            if (e && e.id) inqMap[e.id] = e;
+          });
+          snapshot.adminInquiries.forEach(function (e) {
+            if (!e || !e.id) return;
+            if (!inqMap[e.id]) inqMap[e.id] = e;
+          });
+          preservedAdminInquiries = Object.keys(inqMap).map(function (k) {
+            return inqMap[k];
+          });
         }
         var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
         var preservedFacility =

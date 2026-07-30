@@ -557,7 +557,10 @@
   function writeJsonArray(key, arr) {
     try {
       global.localStorage.setItem(key, JSON.stringify(arr));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   var LOCAL_CACHE_KEYS = [
@@ -570,6 +573,7 @@
     MB_CHECK_LOG_KEY,
     FRONT_CHAT_KEY,
     TEAM_CHAT_KEY,
+    ADMIN_INQUIRY_KEY,
     SYNC_VERSION_KEY,
     CLOSE_DAY_KEY,
   ];
@@ -621,6 +625,7 @@
     cache.mbCheckLog = [];
     cache.frontChat = [];
     cache.teamChat = [];
+    cache.adminInquiries = [];
     clearAllDirty();
     pendingPush = {};
     pendingLastRoomChange = null;
@@ -782,11 +787,96 @@
       .then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
         if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+        // 서버 merge 결과를 즉시 반영 — 빈 로컬을 보낸 뒤 version만 맞춰 문의가 안 보이는 문제 방지
+        if (data && data.payload) {
+          applyPostEchoPayload(data.payload);
+        }
         return data;
       })
       .catch(function () {
         return false;
       });
+  }
+
+  /** POST 응답에 실려 온 서버 merge 결과를 로컬에 적용 */
+  function applyPostEchoPayload(payload) {
+    if (!payload || typeof payload !== "object") return;
+    var changed = [];
+    isApplyingRemote = true;
+    try {
+      if (Array.isArray(payload.hkAdminInquiries)) {
+        cache.adminInquiries = payload.hkAdminInquiries.slice();
+        writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+        changed.push("hkAdminInquiries");
+      }
+      if (Array.isArray(payload.hkRequestLog)) {
+        cache.requestLog = payload.hkRequestLog.slice();
+        writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+        changed.push("hkRequestLog");
+      }
+      if (Array.isArray(payload.hkOrderLog)) {
+        cache.orderLog = payload.hkOrderLog.slice();
+        writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+        changed.push("hkOrderLog");
+      }
+      if (Array.isArray(payload.hkCancelLog)) {
+        cache.cancelLog = payload.hkCancelLog.slice();
+        writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
+        changed.push("hkCancelLog");
+      }
+      if (Array.isArray(payload.hkUseLog)) {
+        cache.useLog = payload.hkUseLog.slice();
+        writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
+        changed.push("hkUseLog");
+      }
+      if (Array.isArray(payload.hkChangeLog)) {
+        cache.changeLog = payload.hkChangeLog.slice();
+        writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+        changed.push("hkChangeLog");
+      }
+      if (Array.isArray(payload.hkMbInvLog)) {
+        cache.mbInvLog = payload.hkMbInvLog.slice();
+        writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+        changed.push("hkMbInvLog");
+      }
+      if (Array.isArray(payload.hkMbCheckLog)) {
+        cache.mbCheckLog = payload.hkMbCheckLog.slice();
+        writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
+        changed.push("hkMbCheckLog");
+      }
+      if (Array.isArray(payload.hkFrontChat)) {
+        cache.frontChat = payload.hkFrontChat.slice();
+        writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
+        changed.push("hkFrontChat");
+      }
+      if (Array.isArray(payload.hkTeamChat)) {
+        cache.teamChat = payload.hkTeamChat.slice();
+        writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
+        changed.push("hkTeamChat");
+      }
+    } finally {
+      isApplyingRemote = false;
+    }
+    if (changed.length) emitChange(changed, payload);
+  }
+
+  /** 버전 동일해도 서버에 있는 관리자 문의가 로컬에 빠지지 않게 병합 */
+  function reconcileAdminInquiriesFromRemote(remoteList) {
+    if (!Array.isArray(remoteList)) return false;
+    var merged = mergeAdminInquiriesLocal(cache.adminInquiries, remoteList);
+    var beforeSig = "";
+    var afterSig = "";
+    try {
+      beforeSig = JSON.stringify(cache.adminInquiries || []);
+      afterSig = JSON.stringify(merged || []);
+    } catch (e) {
+      beforeSig = String((cache.adminInquiries && cache.adminInquiries.length) || 0);
+      afterSig = String((merged && merged.length) || 0);
+    }
+    if (beforeSig === afterSig) return false;
+    cache.adminInquiries = merged;
+    writeJsonArray(ADMIN_INQUIRY_KEY, cache.adminInquiries);
+    return true;
   }
 
   function postPayload(body) {
@@ -1135,10 +1225,24 @@
           applyRemotePayload(data.payload);
           return true;
         }
+        // 버전이 같아도 관리자 문의는 서버와 재병합 (빈 로컬 캐시에 갇히는 문제 방지)
+        var reconChanged = [];
+        if (reconcileAdminInquiriesFromRemote(data.payload.hkAdminInquiries)) {
+          reconChanged.push("hkAdminInquiries");
+        }
         if (!isPoll) {
-          loadCachesFromLocal();
           if (data.payload) mergeRoomingPayload(data.payload);
-          emitLocalCacheHydrate();
+          if (reconChanged.length) {
+            emitChange(reconChanged, {
+              hkAdminInquiries: cache.adminInquiries.slice(),
+            });
+          } else {
+            emitLocalCacheHydrate();
+          }
+        } else if (reconChanged.length) {
+          emitChange(reconChanged, {
+            hkAdminInquiries: cache.adminInquiries.slice(),
+          });
         }
         return true;
       })
@@ -1161,7 +1265,7 @@
       }, 3000);
     }
     return pullPromise.then(function () {
-      loadCachesFromLocal();
+      // pull 직후 localStorage로 다시 덮지 않음 — 쓰기 실패/빈 캐시가 서버 반영을 지울 수 있음
       emitLocalCacheHydrate();
     });
   }

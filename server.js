@@ -1441,6 +1441,30 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     ok: true,
     version: sharedState.version,
     updatedAt: sharedState.updatedAt,
+    // 클라이언트가 보낸 키의 서버 merge 결과를 돌려줘 로컬이 빈/부분 상태로 version만 맞추지 않게 함
+    payload: (function () {
+      var body = req.body && typeof req.body === "object" ? req.body : {};
+      var next = nextPayload && typeof nextPayload === "object" ? nextPayload : {};
+      var echo = {};
+      var keys = [
+        "hkAdminInquiries",
+        "hkRequestLog",
+        "hkOrderLog",
+        "hkCancelLog",
+        "hkUseLog",
+        "hkChangeLog",
+        "hkMbInvLog",
+        "hkMbCheckLog",
+        "hkFrontChat",
+        "hkTeamChat",
+      ];
+      keys.forEach(function (k) {
+        if (Object.prototype.hasOwnProperty.call(body, k) && Array.isArray(next[k])) {
+          echo[k] = next[k];
+        }
+      });
+      return Object.keys(echo).length ? echo : undefined;
+    })(),
   });
   saveSharedStateToDisk();
 });
