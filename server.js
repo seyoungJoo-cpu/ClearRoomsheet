@@ -1624,19 +1624,46 @@ app.post("/api/fetch-page", checkSyncAuth, async function (req, res) {
   }
 });
 
+function setStaticCacheHeaders(res, filePath) {
+  var lower = String(filePath || "").toLowerCase();
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    return;
+  }
+  if (lower.endsWith(".js") || lower.endsWith(".css")) {
+    // 배포 직후 구버전 JS가 남지 않도록 사용 전 재검증
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
+  }
+}
+
 app.use(
   "/inven",
-  express.static(path.join(__dirname, "inven"), { index: ["index.html", "index.HTML"] })
+  express.static(path.join(__dirname, "inven"), {
+    index: ["index.html", "index.HTML"],
+    setHeaders: setStaticCacheHeaders,
+  })
 );
 app.use(
   "/DD",
-  express.static(path.join(__dirname, "DD"), { index: ["index.html", "index.HTML"] })
+  express.static(path.join(__dirname, "DD"), {
+    index: ["index.html", "index.HTML"],
+    setHeaders: setStaticCacheHeaders,
+  })
 );
 app.use(
   "/chichi",
-  express.static(path.join(__dirname, "chichi"), { index: ["index.html", "index.HTML"] })
+  express.static(path.join(__dirname, "chichi"), {
+    index: ["index.html", "index.HTML"],
+    setHeaders: setStaticCacheHeaders,
+  })
 );
-app.use(express.static(path.join(__dirname)));
+app.use(
+  express.static(path.join(__dirname), {
+    setHeaders: setStaticCacheHeaders,
+  })
+);
 
 app.listen(PORT, "0.0.0.0", function () {
   console.log("makeroom listening on port " + PORT);

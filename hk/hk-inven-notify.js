@@ -6,6 +6,7 @@
 (function (global) {
   var DRAFT_LS = "hk-inven-notify-draft-v6";
   var LEGACY_DRAFT_LS = "hk-inven-notify-draft-v5";
+  var VIEW_KEY = "hk-inven-notify-view-v1";
   var skipNextRemoteRender = false;
   var lastPublished = null;
   var uiReady = false;
@@ -13,14 +14,21 @@
   var publishFeedbackTimer = null;
   var uiHooks = {};
   var state = defaultInvenNotify();
+  var viewMode = "1";
 
   var cardSearchQuery = "";
   var els = {
     mount: null,
     toolbar: null,
     boards: null,
+    sheet: null,
+    sheetMain: null,
+    sheetAnnex: null,
+    sheetEmpty: null,
     empty: null,
     btnSave: null,
+    btnView1: null,
+    btnView2: null,
     toolbarHint: null,
     hint: null,
     searchInput: null,
@@ -428,6 +436,7 @@
     updateSaveButton();
     updateToolbarHint();
     if (els.boards) els.boards.classList.add("inven-notify-boards--draft");
+    if (els.sheet) els.sheet.classList.add("inven-notify-sheet--draft");
   }
 
   function updateSaveButton() {
@@ -452,9 +461,33 @@
   }
 
   function updateEmpty() {
-    if (!els.empty) return;
     var hasCards = (state.cards || []).length > 0;
-    els.empty.hidden = hasCards;
+    if (els.empty) els.empty.hidden = hasCards;
+    if (els.sheetEmpty) els.sheetEmpty.hidden = true;
+  }
+
+  function applyViewMode() {
+    var isSheet = viewMode === "2";
+    if (els.boards) els.boards.hidden = isSheet;
+    if (els.sheet) els.sheet.hidden = !isSheet;
+    if (els.btnView1) {
+      els.btnView1.classList.toggle("is-active", !isSheet);
+      els.btnView1.setAttribute("aria-pressed", !isSheet ? "true" : "false");
+    }
+    if (els.btnView2) {
+      els.btnView2.classList.toggle("is-active", isSheet);
+      els.btnView2.setAttribute("aria-pressed", isSheet ? "true" : "false");
+    }
+    updateEmpty();
+    try {
+      localStorage.setItem(VIEW_KEY, viewMode);
+    } catch (e) {}
+  }
+
+  function setViewMode(mode) {
+    viewMode = mode === "2" ? "2" : "1";
+    applyViewMode();
+    if (viewMode === "2") renderSheet();
   }
 
   function updateHint() {
@@ -476,6 +509,7 @@
     updateSaveButton();
     updateToolbarHint();
     if (els.boards) els.boards.classList.remove("inven-notify-boards--draft");
+    if (els.sheet) els.sheet.classList.remove("inven-notify-sheet--draft");
     if (els.btnSave) {
       var prev = els.btnSave.textContent;
       els.btnSave.textContent = "저장 완료";
@@ -539,6 +573,7 @@
     saveInvenNotify(state, { pushNow: false });
     if (ensureUi()) {
       if (els.boards) els.boards.classList.remove("inven-notify-boards--draft");
+      if (els.sheet) els.sheet.classList.remove("inven-notify-sheet--draft");
       renderCards();
       updateSaveButton();
       updateToolbarHint();
@@ -1035,6 +1070,145 @@
     return section;
   }
 
+  function splitItemLines(itemsText) {
+    return String(itemsText || "")
+      .split(/\n+/)
+      .map(function (line) {
+        return String(line || "").trim();
+      })
+      .filter(Boolean);
+  }
+
+  function buildSheetGroups(cards) {
+    var sorted = (cards || []).slice().sort(function (a, b) {
+      var ak = roomSortKey(a && a.room);
+      var bk = roomSortKey(b && b.room);
+      if (ak !== bk) return ak < bk ? -1 : 1;
+      return String((a && a.confirmationNo) || "").localeCompare(
+        String((b && b.confirmationNo) || ""),
+        "ko"
+      );
+    });
+
+    return sorted.map(function (card) {
+      var items = splitItemLines(card.itemsText);
+      if (!items.length) items = ["—"];
+      var noteParts = [];
+      if (card.memo) noteParts.push(String(card.memo).trim());
+      if (card.trace) noteParts.push(String(card.trace).trim());
+      return {
+        room: formatCardRoomLabel(card),
+        conf: String(card.confirmationNo || "").trim() || "—",
+        items: items,
+        note: noteParts.filter(Boolean).join(" / ") || "",
+        done: !!card.done,
+      };
+    });
+  }
+
+  function renderSheetTable(host, title, cards) {
+    if (!host) return;
+    host.innerHTML = "";
+
+    var table = document.createElement("table");
+    table.className = "inven-notify-sheet-table";
+
+    var thead = document.createElement("thead");
+    var wingRow = document.createElement("tr");
+    var wingTh = document.createElement("th");
+    wingTh.className = "inven-notify-sheet-wing";
+    wingTh.colSpan = 5;
+    wingTh.textContent = title;
+    wingRow.appendChild(wingTh);
+    thead.appendChild(wingRow);
+
+    var headRow = document.createElement("tr");
+    ["#", "객실번호", "예약번호", "물품 및 수량", "비고"].forEach(function (label) {
+      var th = document.createElement("th");
+      th.className = "inven-notify-sheet-sub";
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    var groups = buildSheetGroups(cards);
+    var lineNo = 0;
+
+    if (!groups.length) {
+      var emptyTr = document.createElement("tr");
+      var emptyTd = document.createElement("td");
+      emptyTd.colSpan = 5;
+      emptyTd.className = "inven-notify-sheet-blank";
+      emptyTd.textContent = title + " 오더 없음";
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+    } else {
+      groups.forEach(function (group) {
+        var span = Math.max(1, group.items.length);
+        group.items.forEach(function (item, idx) {
+          lineNo += 1;
+          var tr = document.createElement("tr");
+          if (group.done) tr.className = "is-done";
+
+          var tdNo = document.createElement("td");
+          tdNo.className = "inven-notify-sheet-no";
+          tdNo.textContent = String(lineNo);
+          tr.appendChild(tdNo);
+
+          if (idx === 0) {
+            var tdRoom = document.createElement("td");
+            tdRoom.className = "inven-notify-sheet-room";
+            tdRoom.rowSpan = span;
+            tdRoom.textContent = group.room;
+            tr.appendChild(tdRoom);
+
+            var tdConf = document.createElement("td");
+            tdConf.className = "inven-notify-sheet-conf";
+            tdConf.rowSpan = span;
+            tdConf.textContent = group.conf;
+            tr.appendChild(tdConf);
+          }
+
+          var tdItem = document.createElement("td");
+          tdItem.className = "inven-notify-sheet-item";
+          tdItem.textContent = item;
+          tr.appendChild(tdItem);
+
+          if (idx === 0) {
+            var tdNote = document.createElement("td");
+            tdNote.className = "inven-notify-sheet-note";
+            tdNote.rowSpan = span;
+            tdNote.textContent = group.note || "";
+            tr.appendChild(tdNote);
+          }
+
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    table.appendChild(tbody);
+    host.appendChild(table);
+  }
+
+  function renderSheet() {
+    if (!els.sheetMain || !els.sheetAnnex) return;
+    var q = String(cardSearchQuery || "").trim().toLowerCase();
+    var cards = (state.cards || []).filter(function (c) {
+      return cardMatchesSearch(c, q);
+    });
+    var mainCards = cards.filter(function (c) {
+      return c.wing === "main";
+    });
+    var annexCards = cards.filter(function (c) {
+      return c.wing === "annex";
+    });
+    renderSheetTable(els.sheetMain, "본관", mainCards);
+    renderSheetTable(els.sheetAnnex, "별관", annexCards);
+  }
+
   function renderCards() {
     if (!els.boards) return;
     els.boards.innerHTML = "";
@@ -1051,14 +1225,19 @@
 
     els.boards.appendChild(renderWingBoard("main", "본관", mainCards));
     els.boards.appendChild(renderWingBoard("annex", "별관", annexCards));
-    els.boards.hidden = false;
-    updateEmpty();
+    renderSheet();
+    applyViewMode();
   }
 
   function ensureUi() {
     var mount = document.getElementById("invenNotifyMount");
     if (!mount) return false;
     if (uiReady && els.mount === mount) return true;
+
+    try {
+      var savedView = String(localStorage.getItem(VIEW_KEY) || "").trim();
+      if (savedView === "1" || savedView === "2") viewMode = savedView;
+    } catch (e) {}
 
     mount.innerHTML = "";
     els.mount = mount;
@@ -1082,12 +1261,63 @@
       cardSearchQuery = String(searchInput.value || "");
       renderCards();
     });
+
+    var viewTabs = document.createElement("div");
+    viewTabs.className = "inven-notify-view-tabs";
+    viewTabs.setAttribute("role", "tablist");
+    viewTabs.setAttribute("aria-label", "인벤 통보 보기");
+
+    var btnView1 = document.createElement("button");
+    btnView1.type = "button";
+    btnView1.className = "inven-notify-view-tab is-active";
+    btnView1.setAttribute("data-inven-notify-view", "1");
+    btnView1.setAttribute("aria-pressed", "true");
+    btnView1.textContent = "1";
+    btnView1.addEventListener("click", function () {
+      setViewMode("1");
+    });
+
+    var btnView2 = document.createElement("button");
+    btnView2.type = "button";
+    btnView2.className = "inven-notify-view-tab";
+    btnView2.setAttribute("data-inven-notify-view", "2");
+    btnView2.setAttribute("aria-pressed", "false");
+    btnView2.textContent = "2";
+    btnView2.addEventListener("click", function () {
+      setViewMode("2");
+    });
+
+    viewTabs.appendChild(btnView1);
+    viewTabs.appendChild(btnView2);
+    searchRow.appendChild(viewTabs);
     searchRow.appendChild(searchInput);
 
     var boards = document.createElement("div");
     boards.className = "inven-notify-boards";
     boards.id = "invenNotifyBoards";
     boards.hidden = true;
+
+    var sheet = document.createElement("div");
+    sheet.className = "inven-notify-sheet";
+    sheet.id = "invenNotifySheet";
+    sheet.hidden = true;
+    var sheetScroll = document.createElement("div");
+    sheetScroll.className = "inven-notify-sheet-scroll";
+    var sheetMain = document.createElement("div");
+    sheetMain.className = "inven-notify-sheet-col";
+    sheetMain.setAttribute("data-inven-notify-sheet-main", "");
+    var sheetAnnex = document.createElement("div");
+    sheetAnnex.className = "inven-notify-sheet-col";
+    sheetAnnex.setAttribute("data-inven-notify-sheet-annex", "");
+    sheetScroll.appendChild(sheetMain);
+    sheetScroll.appendChild(sheetAnnex);
+    sheet.appendChild(sheetScroll);
+    var sheetEmpty = document.createElement("p");
+    sheetEmpty.className = "inven-notify-empty";
+    sheetEmpty.setAttribute("data-inven-notify-sheet-empty", "");
+    sheetEmpty.hidden = true;
+    sheetEmpty.textContent = "표시할 인벤 통보가 없습니다.";
+    sheet.appendChild(sheetEmpty);
 
     var toolbar = document.createElement("div");
     toolbar.className = "inven-notify-toolbar";
@@ -1120,6 +1350,7 @@
     mount.appendChild(searchRow);
     mount.appendChild(empty);
     mount.appendChild(boards);
+    mount.appendChild(sheet);
 
     boards.addEventListener("click", function (e) {
       var roomBtn = e.target.closest(".inven-notify-card__room-btn");
@@ -1149,12 +1380,19 @@
 
     els.empty = empty;
     els.boards = boards;
+    els.sheet = sheet;
+    els.sheetMain = sheetMain;
+    els.sheetAnnex = sheetAnnex;
+    els.sheetEmpty = sheetEmpty;
     els.toolbar = toolbar;
     els.btnSave = btnSave;
+    els.btnView1 = btnView1;
+    els.btnView2 = btnView2;
     els.toolbarHint = toolbarHint;
     els.searchInput = searchInput;
     els.hint = document.getElementById("invenNotifyHint");
     uiReady = true;
+    applyViewMode();
     return true;
   }
 
@@ -1187,6 +1425,10 @@
     if (els.boards) {
       els.boards.classList.toggle("inven-notify-boards--draft", editable && draftDirty);
       els.boards.classList.toggle("inven-notify-boards--readonly", !editable);
+    }
+    if (els.sheet) {
+      els.sheet.classList.toggle("inven-notify-sheet--draft", editable && draftDirty);
+      els.sheet.classList.toggle("inven-notify-sheet--readonly", !editable);
     }
     renderCards();
     updateSaveButton();

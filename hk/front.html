@@ -4761,6 +4761,143 @@
       margin-bottom: 10px;
     }
 
+    .inven-notify-view-tabs {
+      display: inline-flex;
+      align-items: stretch;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .inven-notify-view-tab {
+      appearance: none;
+      border: 0;
+      margin: 0;
+      min-width: 2rem;
+      padding: 5px 10px;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: var(--text-muted);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .inven-notify-view-tab + .inven-notify-view-tab {
+      border-left: 1px solid var(--border);
+    }
+
+    .inven-notify-view-tab.is-active {
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .inven-notify-sheet {
+      margin-bottom: 10px;
+    }
+
+    .inven-notify-sheet--draft {
+      outline: 2px dashed #f59e0b;
+      outline-offset: 4px;
+      border-radius: 10px;
+    }
+
+    .inven-notify-sheet-scroll {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: auto;
+      border: 1px solid #94a3b8;
+      background: #fff;
+    }
+
+    .inven-notify-sheet-col + .inven-notify-sheet-col {
+      border-left: 2px solid #334155;
+    }
+
+    .inven-notify-sheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.75rem;
+    }
+
+    .inven-notify-sheet-table th,
+    .inven-notify-sheet-table td {
+      border: 1px solid #94a3b8;
+      padding: 4px 6px;
+      vertical-align: middle;
+      text-align: center;
+      word-break: keep-all;
+    }
+
+    .inven-notify-sheet-wing {
+      background: #f9a8d4;
+      color: #111;
+      font-weight: 800;
+      font-size: 0.875rem;
+      letter-spacing: 0.02em;
+    }
+
+    .inven-notify-sheet-sub {
+      background: #fce7f3;
+      color: #111;
+      font-weight: 700;
+      font-size: 0.6875rem;
+    }
+
+    .inven-notify-sheet-no {
+      width: 2.2rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+    }
+
+    .inven-notify-sheet-room {
+      width: 4.5rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .inven-notify-sheet-conf {
+      width: 5.5rem;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.6875rem;
+    }
+
+    .inven-notify-sheet-item {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .inven-notify-sheet-note {
+      text-align: left;
+      color: #475569;
+      font-size: 0.6875rem;
+    }
+
+    .inven-notify-sheet-blank {
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 16px 8px !important;
+    }
+
+    .inven-notify-sheet-table tr.is-done td {
+      opacity: 0.55;
+      background: #f8fafc;
+    }
+
+    @media (max-width: 900px) {
+      .inven-notify-sheet-scroll {
+        grid-template-columns: 1fr;
+      }
+
+      .inven-notify-sheet-col + .inven-notify-sheet-col {
+        border-left: 0;
+        border-top: 2px solid #334155;
+      }
+    }
+
     .inven-notify-boards--draft {
       outline: 2px dashed #f59e0b;
       outline-offset: 4px;
@@ -4872,7 +5009,15 @@
     }
 
     .inven-notify-search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin: 0 0 10px;
+    }
+
+    .inven-notify-search-row .inven-notify-search {
+      flex: 1;
+      min-width: 0;
     }
 
     .inven-notify-search {
@@ -9828,12 +9973,12 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=embed-clear-1"></script>
-  <script src="hk-sync.js?v=react-merge-3"></script>
+  <script src="hk-sync.js?v=force-sync-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
-  <script src="hk-inven-notify.js?v=order-dup-1"></script>
+  <script src="hk-inven-notify.js?v=view-tabs-2"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script>
@@ -23382,13 +23527,30 @@
 
       window.addEventListener("pageshow", function () {
         if (typeof HKSync !== "undefined") {
-          HKSync.hydrateFromLocal();
           HKSync.pull(false).finally(function () {
             refreshSyncedPanelsFromCache();
           });
           return;
         }
         refreshMain();
+      });
+
+      var hkPageHiddenAt = 0;
+      var HK_RESUME_FORCE_SYNC_MS = 15000;
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") {
+          hkPageHiddenAt = Date.now();
+          return;
+        }
+        if (document.visibilityState !== "visible") return;
+        if (typeof HKSync === "undefined") return;
+        var hiddenFor = hkPageHiddenAt ? Date.now() - hkPageHiddenAt : 0;
+        hkPageHiddenAt = 0;
+        // 짧은 앱 전환은 건너뛰고, 15초 이상 숨겨졌을 때만 강제 동기화
+        if (hiddenFor < HK_RESUME_FORCE_SYNC_MS) return;
+        HKSync.pull(false).finally(function () {
+          refreshSyncedPanelsFromCache();
+        });
       });
 
       setupOperatorNameUi();

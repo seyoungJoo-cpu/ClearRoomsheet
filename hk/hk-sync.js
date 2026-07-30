@@ -1260,7 +1260,11 @@
 
   function pull(isPoll) {
     return fetch("/api/sync", {
-      headers: { "X-Sync-Password": getSyncPassword() },
+      headers: {
+        "X-Sync-Password": getSyncPassword(),
+        "Cache-Control": "no-cache",
+      },
+      cache: "no-store",
     })
       .then(function (r) {
         if (!r.ok) return null;
@@ -1279,27 +1283,20 @@
           }
           return false;
         }
-        if (shouldApplyRemoteSync(data) || (!isPoll && !lastAppliedSyncUpdatedAt)) {
+        // 페이지 진입·재진입(!isPoll)은 버전 같아도 서버 기준으로 강제 적용
+        // (이름 입력 없이 세션 유지로 들어와도 옛 로컬 캐시에 갇히지 않음)
+        if (shouldApplyRemoteSync(data) || !isPoll) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
           applyRemotePayload(data.payload);
           return true;
         }
-        // 버전이 같아도 관리자 문의는 서버와 재병합 (빈 로컬 캐시에 갇히는 문제 방지)
+        // 폴링: 버전이 같아도 관리자 문의는 서버와 재병합 (빈 로컬 캐시에 갇히는 문제 방지)
         var reconChanged = [];
         if (reconcileAdminInquiriesFromRemote(data.payload.hkAdminInquiries)) {
           reconChanged.push("hkAdminInquiries");
         }
-        if (!isPoll) {
-          if (data.payload) mergeRoomingPayload(data.payload);
-          if (reconChanged.length) {
-            emitChange(reconChanged, {
-              hkAdminInquiries: cache.adminInquiries.slice(),
-            });
-          } else {
-            emitLocalCacheHydrate();
-          }
-        } else if (reconChanged.length) {
+        if (reconChanged.length) {
           emitChange(reconChanged, {
             hkAdminInquiries: cache.adminInquiries.slice(),
           });
