@@ -4815,6 +4815,12 @@
       overflow: auto;
       border: 1px solid #94a3b8;
       background: #fff;
+      width: 100%;
+    }
+
+    .inven-notify-sheet-col {
+      min-width: 0;
+      width: 100%;
     }
 
     .inven-notify-sheet-col + .inven-notify-sheet-col {
@@ -4822,8 +4828,7 @@
     }
 
     .inven-notify-sheet-table {
-      width: max-content;
-      max-width: 100%;
+      width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
       font-size: 0.75rem;
@@ -4836,6 +4841,7 @@
       vertical-align: middle;
       text-align: center;
       word-break: keep-all;
+      overflow-wrap: anywhere;
       overflow: hidden;
     }
 
@@ -4854,52 +4860,53 @@
       font-size: 0.6875rem;
     }
 
-    .inven-notify-sheet-col-no {
-      width: 8ch;
+    /* 비율 #4 : 객실8 : 예약10 : 물품18 : 비고15 — 화면 너비에 맞춤 */
+    .inven-notify-sheet-col-no,
+    .inven-notify-sheet-no {
+      width: 7.27%;
     }
 
-    .inven-notify-sheet-col-room {
-      width: 16ch;
+    .inven-notify-sheet-col-room,
+    .inven-notify-sheet-room {
+      width: 14.55%;
     }
 
-    .inven-notify-sheet-col-conf {
-      width: 20ch;
+    .inven-notify-sheet-col-conf,
+    .inven-notify-sheet-conf {
+      width: 18.18%;
     }
 
-    .inven-notify-sheet-col-item {
-      width: 36ch;
+    .inven-notify-sheet-col-item,
+    .inven-notify-sheet-item {
+      width: 32.73%;
     }
 
-    .inven-notify-sheet-col-note {
-      width: 30ch;
+    .inven-notify-sheet-col-note,
+    .inven-notify-sheet-note {
+      width: 27.27%;
     }
 
     .inven-notify-sheet-no {
-      width: 8ch;
       font-variant-numeric: tabular-nums;
       color: var(--text-muted);
     }
 
     .inven-notify-sheet-room {
-      width: 16ch;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
     }
 
     .inven-notify-sheet-conf {
-      width: 20ch;
       font-variant-numeric: tabular-nums;
       font-size: 0.6875rem;
     }
 
     .inven-notify-sheet-item {
-      width: 36ch;
       text-align: left;
       font-weight: 600;
     }
 
     .inven-notify-sheet-note {
-      width: 30ch;
       text-align: left;
       color: #475569;
       font-size: 0.6875rem;
@@ -10007,7 +10014,7 @@
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
-  <script src="hk-inven-notify.js?v=view2-cols-1"></script>
+  <script src="hk-inven-notify.js?v=view2-cols-fluid"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script>

@@ -1179,13 +1179,13 @@
       });
     }
     return (
-      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;table-layout:fixed;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
+      '<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse;table-layout:fixed;width:100%;font-family:Malgun Gothic,Arial,sans-serif;font-size:11pt;">' +
       "<colgroup>" +
-      '<col style="width:8ch" />' +
-      '<col style="width:16ch" />' +
-      '<col style="width:20ch" />' +
-      '<col style="width:36ch" />' +
-      '<col style="width:30ch" />' +
+      '<col style="width:7.27%" />' +
+      '<col style="width:14.55%" />' +
+      '<col style="width:18.18%" />' +
+      '<col style="width:32.73%" />' +
+      '<col style="width:27.27%" />' +
       "</colgroup>" +
       "<thead>" +
       '<tr><th colspan="5" style="background:#f9a8d4;font-weight:800;">' +
