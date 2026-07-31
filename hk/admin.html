@@ -4187,9 +4187,45 @@
         reset.mbInvNoticeImages = [];
         reset.mbInvNoticeUpdatedAt = closeAt;
         reset.frontEmbedStates = {
-          dd: { __cleared: true, updatedAt: closeAt },
-          inven: { __cleared: true, updatedAt: closeAt },
-          chichi: { __cleared: true, updatedAt: closeAt },
+          dd: (function () {
+            var prevDd = prev.frontEmbedStates && prev.frontEmbedStates.dd;
+            var m = { __cleared: true, updatedAt: closeAt, clearId: closeAt };
+            if (
+              prevDd &&
+              typeof prevDd === "object" &&
+              prevDd.__cleared !== true &&
+              typeof HKStorage.frontEmbedContentSig === "function"
+            ) {
+              m.clearedSig = HKStorage.frontEmbedContentSig(prevDd);
+            }
+            return m;
+          })(),
+          inven: (function () {
+            var prevInv = prev.frontEmbedStates && prev.frontEmbedStates.inven;
+            var m = { __cleared: true, updatedAt: closeAt, clearId: closeAt };
+            if (
+              prevInv &&
+              typeof prevInv === "object" &&
+              prevInv.__cleared !== true &&
+              typeof HKStorage.frontEmbedContentSig === "function"
+            ) {
+              m.clearedSig = HKStorage.frontEmbedContentSig(prevInv);
+            }
+            return m;
+          })(),
+          chichi: (function () {
+            var prevCh = prev.frontEmbedStates && prev.frontEmbedStates.chichi;
+            var m = { __cleared: true, updatedAt: closeAt, clearId: closeAt };
+            if (
+              prevCh &&
+              typeof prevCh === "object" &&
+              prevCh.__cleared !== true &&
+              typeof HKStorage.frontEmbedContentSig === "function"
+            ) {
+              m.clearedSig = HKStorage.frontEmbedContentSig(prevCh);
+            }
+            return m;
+          })(),
         };
         reset.invenNotify = {
           version: 6,

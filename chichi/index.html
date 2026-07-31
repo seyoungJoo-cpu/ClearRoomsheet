@@ -1437,6 +1437,7 @@ function render() {
 
 const CHICHI_STATE_KEY = "hk-chichi-embed-state-v1";
 let chichiEmbedEpoch = 0;
+let chichiEmbedClearId = "";
 
 function saveChichiEmbedState() {
   try {
@@ -1448,6 +1449,7 @@ function saveChichiEmbedState() {
       hiddenIds: Array.from(STATE.hiddenIds),
       updatedAt: new Date().toISOString(),
     };
+    if (chichiEmbedClearId) payload.afterClearId = chichiEmbedClearId;
     localStorage.setItem(CHICHI_STATE_KEY, JSON.stringify(payload));
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(
@@ -1456,6 +1458,7 @@ function saveChichiEmbedState() {
           key: "chichi",
           state: payload,
           epoch: chichiEmbedEpoch,
+          afterClearId: chichiEmbedClearId || "",
         },
         "*"
       );
@@ -1492,6 +1495,11 @@ window.addEventListener("message", function (ev) {
   if (msg.epoch != null && msg.epoch !== "") {
     const n = Number(msg.epoch);
     if (!isNaN(n)) chichiEmbedEpoch = n;
+  }
+  if (msg.clearId != null && String(msg.clearId).trim()) {
+    chichiEmbedClearId = String(msg.clearId).trim();
+  } else if (!msg.state) {
+    // 부모 clearId를 받기 전까지는 저장이 초기화를 덮지 않게 유지
   }
   if (msg.state) {
     try {

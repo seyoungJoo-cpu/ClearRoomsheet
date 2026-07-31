@@ -540,6 +540,61 @@
     return !!(entry && typeof entry === "object" && entry.__cleared === true);
   }
 
+  function frontEmbedClearId(entry) {
+    if (!entry || typeof entry !== "object") return "";
+    if (entry.clearId != null && String(entry.clearId).trim()) {
+      return String(entry.clearId).trim();
+    }
+    if (isClearedFrontEmbedEntry(entry) && entry.updatedAt != null) {
+      return String(entry.updatedAt).trim();
+    }
+    return "";
+  }
+
+  function frontEmbedContentSig(entry) {
+    if (!entry || typeof entry !== "object") return "";
+    try {
+      var copy = Object.assign({}, entry);
+      delete copy.updatedAt;
+      delete copy.__cleared;
+      delete copy.clearId;
+      delete copy.clearedSig;
+      delete copy.afterClearId;
+      return JSON.stringify(copy);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function hasFrontEmbedPayload(entry) {
+    if (!entry || typeof entry !== "object" || isClearedFrontEmbedEntry(entry)) {
+      return false;
+    }
+    if (Array.isArray(entry.dataframeRows) && entry.dataframeRows.length > 0) return true;
+    if (Array.isArray(entry.records) && entry.records.length > 0) return true;
+    if (Array.isArray(entry.currentRows) && entry.currentRows.length > 0) return true;
+    if (entry.ddRooms != null && String(entry.ddRooms).trim()) return true;
+    return false;
+  }
+
+  /** 초기화 마커는, 초기화 이후 iframe이 afterClearId를 들고 온 새 업로드만 덮어쓸 수 있음 */
+  function frontEmbedNonClearMayReplaceClear(cleared, incoming) {
+    if (!isClearedFrontEmbedEntry(cleared) || !incoming || typeof incoming !== "object") {
+      return false;
+    }
+    if (isClearedFrontEmbedEntry(incoming) || !hasFrontEmbedPayload(incoming)) return false;
+    var clearId = frontEmbedClearId(cleared);
+    var afterId =
+      incoming.afterClearId != null ? String(incoming.afterClearId).trim() : "";
+    if (!clearId || !afterId || afterId !== clearId) return false;
+    var clearedSig =
+      cleared.clearedSig != null ? String(cleared.clearedSig) : "";
+    if (clearedSig && frontEmbedContentSig(incoming) === clearedSig) return false;
+    var ta = frontEmbedUpdatedAtMs(cleared);
+    var tb = frontEmbedUpdatedAtMs(incoming);
+    return tb >= ta;
+  }
+
   function frontEmbedUpdatedAtMs(entry) {
     var t = new Date((entry && entry.updatedAt) || 0).getTime();
     return isNaN(t) ? 0 : t;
@@ -561,13 +616,13 @@
       var tb = frontEmbedUpdatedAtMs(b);
       var aCleared = isClearedFrontEmbedEntry(a);
       var bCleared = isClearedFrontEmbedEntry(b);
-      // 초기화(__cleared)는 동일·과거 시각의 옛 XML 데이터로 덮이지 않게 보호
+      // 초기화(__cleared)는 정렬·리렌더로 updatedAt만 갱신된 옛 XML에 덮이지 않음
       if (aCleared && !bCleared) {
-        if (tb > ta) out[key] = b;
+        if (frontEmbedNonClearMayReplaceClear(a, b)) out[key] = b;
         return;
       }
       if (!aCleared && bCleared) {
-        if (tb >= ta) out[key] = b;
+        if (tb >= ta || !frontEmbedNonClearMayReplaceClear(b, a)) out[key] = b;
         return;
       }
       if (tb >= ta) out[key] = b;
@@ -1099,6 +1154,10 @@
     replaceRemote: replaceRemote,
     mergeFrontEmbedStates: mergeFrontEmbedStates,
     isClearedFrontEmbedEntry: isClearedFrontEmbedEntry,
+    frontEmbedClearId: frontEmbedClearId,
+    frontEmbedContentSig: frontEmbedContentSig,
+    hasFrontEmbedPayload: hasFrontEmbedPayload,
+    frontEmbedNonClearMayReplaceClear: frontEmbedNonClearMayReplaceClear,
     defaultData: defaultData,
     defaultRoom: defaultRoom,
     parseTime24: parseTime24,

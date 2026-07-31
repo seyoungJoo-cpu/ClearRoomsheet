@@ -8972,7 +8972,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.html?embed=hkFront&v=empty-default-1"
+          src="/DD/index.html?embed=hkFront&v=clear-guard-1"
           loading="eager"
         ></iframe>
       </section>
@@ -8982,7 +8982,7 @@
           class="front-embed-panel__frame"
           id="invenEmbedFrame"
           title="인벤토리 투입물품"
-          src="/inven/index.html?embed=hkFront&v=empty-default-1"
+          src="/inven/index.html?embed=hkFront&v=clear-guard-1"
           loading="eager"
         ></iframe>
       </section>
@@ -8992,7 +8992,7 @@
           class="front-embed-panel__frame"
           id="chichiEmbedFrame"
           title="고객취향확인"
-          src="/chichi/index.html?embed=hkFront&v=empty-default-1"
+          src="/chichi/index.html?embed=hkFront&v=clear-guard-1"
           loading="eager"
         ></iframe>
       </section>
@@ -12597,6 +12597,20 @@
         var frameId = FRONT_EMBED_FRAME_IDS[key];
         var frame = frameId ? document.getElementById(frameId) : null;
         if (!frame || !frame.contentWindow) return;
+        var clearId = "";
+        try {
+          var data = HKStorage.load();
+          var raw =
+            data.frontEmbedStates && data.frontEmbedStates[key]
+              ? data.frontEmbedStates[key]
+              : null;
+          if (isClearedFrontEmbedState(raw)) {
+            clearId =
+              typeof HKStorage.frontEmbedClearId === "function"
+                ? HKStorage.frontEmbedClearId(raw)
+                : raw.clearId || raw.updatedAt || "";
+          }
+        } catch (eClrId) {}
         try {
           frame.contentWindow.postMessage(
             {
@@ -12604,6 +12618,7 @@
               key: key,
               state: effectiveFrontEmbedState(state),
               epoch: frontEmbedEpoch[key] || 0,
+              clearId: clearId ? String(clearId) : "",
             },
             "*"
           );
@@ -12646,7 +12661,7 @@
         });
       }
 
-      function saveFrontEmbedStateFromChild(key, state, epoch) {
+      function saveFrontEmbedStateFromChild(key, state, epoch, afterClearId) {
         if (!FRONT_EMBED_STATE_KEYS[key]) return;
         var data = HKStorage.load();
         if (!data.frontEmbedStates || typeof data.frontEmbedStates !== "object") {
@@ -12661,11 +12676,27 @@
         var msgEpoch = epoch == null || epoch === "" ? null : Number(epoch);
         // 초기화 이후·이전 세대 iframe의 저장은 무시 (옛 XML 되살림 방지)
         if (msgEpoch != null && !isNaN(msgEpoch) && msgEpoch < curEpoch) return;
-        if (isClearedFrontEmbedState(data.frontEmbedStates[key])) {
-          if (msgEpoch == null || isNaN(msgEpoch) || msgEpoch !== curEpoch) return;
+        var cur = data.frontEmbedStates[key];
+        if (isClearedFrontEmbedState(cur)) {
+          var probe = Object.assign({}, state);
+          if (afterClearId != null && String(afterClearId).trim()) {
+            probe.afterClearId = String(afterClearId).trim();
+          }
+          if (
+            typeof HKStorage.frontEmbedNonClearMayReplaceClear === "function"
+              ? !HKStorage.frontEmbedNonClearMayReplaceClear(cur, probe)
+              : msgEpoch == null || isNaN(msgEpoch) || msgEpoch !== curEpoch
+          ) {
+            return;
+          }
         }
         var next = Object.assign({}, state);
         delete next.__cleared;
+        delete next.clearId;
+        delete next.clearedSig;
+        if (afterClearId != null && String(afterClearId).trim()) {
+          next.afterClearId = String(afterClearId).trim();
+        }
         if (!next.updatedAt) next.updatedAt = new Date().toISOString();
         data.frontEmbedStates[key] = next;
         writeFrontEmbedLocalStorage(key, next);
@@ -12674,6 +12705,27 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
+      }
+
+      function buildFrontEmbedClearedMarker(prevState, stamp) {
+        var clearId = stamp || new Date().toISOString();
+        var marker = {
+          __cleared: true,
+          updatedAt: clearId,
+          clearId: clearId,
+        };
+        if (prevState && typeof prevState === "object" && !isClearedFrontEmbedState(prevState)) {
+          if (typeof HKStorage.frontEmbedContentSig === "function") {
+            marker.clearedSig = HKStorage.frontEmbedContentSig(prevState);
+          }
+        } else if (
+          prevState &&
+          typeof prevState === "object" &&
+          prevState.clearedSig != null
+        ) {
+          marker.clearedSig = prevState.clearedSig;
+        }
+        return marker;
       }
 
       /** 현재 탭(또는 key)을 XML 업로드 전처럼 비우고 다른 PC에도 동기화 */
@@ -12696,10 +12748,10 @@
           data.frontEmbedStates = { dd: null, inven: null, chichi: null };
         }
         bumpFrontEmbedEpoch(key);
-        data.frontEmbedStates[key] = {
-          __cleared: true,
-          updatedAt: new Date().toISOString(),
-        };
+        data.frontEmbedStates[key] = buildFrontEmbedClearedMarker(
+          data.frontEmbedStates[key],
+          new Date().toISOString()
+        );
         writeFrontEmbedLocalStorage(key, null);
         lastAppliedFrontEmbedSig = frontEmbedStateSig(data.frontEmbedStates);
         HKStorage.save(data);
@@ -12760,8 +12812,8 @@
             localStorage.removeItem(FRONT_EMBED_STATE_KEYS[key]);
           } catch (e) {}
           var cur = data.frontEmbedStates[key];
-          if (!isClearedFrontEmbedState(cur)) {
-            data.frontEmbedStates[key] = { __cleared: true, updatedAt: stamp };
+          if (!isClearedFrontEmbedState(cur) || frontEmbedClearIdLoose(cur) !== stamp) {
+            data.frontEmbedStates[key] = buildFrontEmbedClearedMarker(cur, stamp);
             needSave = true;
           }
           postFrontEmbedStateToFrame(key, null);
@@ -12780,6 +12832,14 @@
           frame.src = "about:blank";
           frame.src = src;
         });
+      }
+
+      function frontEmbedClearIdLoose(entry) {
+        if (!entry || typeof entry !== "object") return "";
+        if (typeof HKStorage.frontEmbedClearId === "function") {
+          return HKStorage.frontEmbedClearId(entry);
+        }
+        return entry.clearId || entry.updatedAt || "";
       }
 
       function handleCloseDayFromSync(payload) {
@@ -23886,7 +23946,7 @@
         var msg = ev.data;
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "HK_EMBED_STATE_SAVE" && msg.key) {
-          saveFrontEmbedStateFromChild(msg.key, msg.state, msg.epoch);
+          saveFrontEmbedStateFromChild(msg.key, msg.state, msg.epoch, msg.afterClearId);
           return;
         }
         if (msg.type === "HK_INVEN_TABLE" && typeof HKInvenNotify !== "undefined") {

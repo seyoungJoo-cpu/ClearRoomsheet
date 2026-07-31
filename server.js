@@ -677,6 +677,99 @@ function pickInvenNotifyForServer(prev, incoming) {
   return inc;
 }
 
+function frontEmbedIsCleared(entry) {
+  return !!(entry && typeof entry === "object" && entry.__cleared === true);
+}
+
+function frontEmbedClearIdOf(entry) {
+  if (!entry || typeof entry !== "object") return "";
+  if (entry.clearId != null && String(entry.clearId).trim()) {
+    return String(entry.clearId).trim();
+  }
+  if (frontEmbedIsCleared(entry) && entry.updatedAt != null) {
+    return String(entry.updatedAt).trim();
+  }
+  return "";
+}
+
+function frontEmbedHasPayload(entry) {
+  if (!entry || typeof entry !== "object" || frontEmbedIsCleared(entry)) return false;
+  if (Array.isArray(entry.dataframeRows) && entry.dataframeRows.length > 0) return true;
+  if (Array.isArray(entry.records) && entry.records.length > 0) return true;
+  if (Array.isArray(entry.currentRows) && entry.currentRows.length > 0) return true;
+  if (entry.ddRooms != null && String(entry.ddRooms).trim()) return true;
+  return false;
+}
+
+function frontEmbedContentSigOf(entry) {
+  if (!entry || typeof entry !== "object") return "";
+  try {
+    var copy = Object.assign({}, entry);
+    delete copy.updatedAt;
+    delete copy.__cleared;
+    delete copy.clearId;
+    delete copy.clearedSig;
+    delete copy.afterClearId;
+    return JSON.stringify(copy);
+  } catch (e) {
+    return "";
+  }
+}
+
+function frontEmbedNonClearMayReplaceClear(cleared, incoming) {
+  if (!frontEmbedIsCleared(cleared) || !incoming || typeof incoming !== "object") {
+    return false;
+  }
+  if (frontEmbedIsCleared(incoming) || !frontEmbedHasPayload(incoming)) return false;
+  var clearId = frontEmbedClearIdOf(cleared);
+  var afterId =
+    incoming.afterClearId != null ? String(incoming.afterClearId).trim() : "";
+  if (!clearId || !afterId || afterId !== clearId) return false;
+  var clearedSig = cleared.clearedSig != null ? String(cleared.clearedSig) : "";
+  if (clearedSig && frontEmbedContentSigOf(incoming) === clearedSig) return false;
+  var ta = new Date(cleared.updatedAt || 0).getTime();
+  var tb = new Date(incoming.updatedAt || 0).getTime();
+  if (isNaN(ta)) ta = 0;
+  if (isNaN(tb)) tb = 0;
+  return tb >= ta;
+}
+
+function mergeFrontEmbedStatesForServer(prevStates, incStates) {
+  var prevEmbed = prevStates && typeof prevStates === "object" ? prevStates : {};
+  var incEmbed = incStates && typeof incStates === "object" ? incStates : {};
+  var keys = ["dd", "inven", "chichi"];
+  var out = {
+    dd: prevEmbed.dd || null,
+    inven: prevEmbed.inven || null,
+    chichi: prevEmbed.chichi || null,
+  };
+  keys.forEach(function (key) {
+    var a = prevEmbed[key];
+    var b = incEmbed[key];
+    if (!b || typeof b !== "object") return;
+    if (!a) {
+      out[key] = b;
+      return;
+    }
+    var ta = new Date(a.updatedAt || 0).getTime();
+    var tb = new Date(b.updatedAt || 0).getTime();
+    if (isNaN(ta)) ta = 0;
+    if (isNaN(tb)) tb = 0;
+    var aCleared = frontEmbedIsCleared(a);
+    var bCleared = frontEmbedIsCleared(b);
+    if (aCleared && !bCleared) {
+      if (frontEmbedNonClearMayReplaceClear(a, b)) out[key] = b;
+      return;
+    }
+    if (!aCleared && bCleared) {
+      if (tb >= ta || !frontEmbedNonClearMayReplaceClear(b, a)) out[key] = b;
+      return;
+    }
+    if (tb >= ta) out[key] = b;
+  });
+  return out;
+}
+
 function pickMbInvNoticeFieldsForServer(prev, incoming) {
   var baseObj = prev && typeof prev === "object" ? prev : {};
   var incObj = incoming && typeof incoming === "object" ? incoming : {};
@@ -755,45 +848,10 @@ function mergeHkStorage(prev, incoming) {
     }
     // 마감 전 클라이언트가 frontEmbedStates를 통째로 덮어 초기화를 깨지 않게 함
     if (Object.prototype.hasOwnProperty.call(incoming, "frontEmbedStates")) {
-      var prevEmbed =
-        prev.frontEmbedStates && typeof prev.frontEmbedStates === "object"
-          ? prev.frontEmbedStates
-          : {};
-      var incEmbed =
-        incoming.frontEmbedStates && typeof incoming.frontEmbedStates === "object"
-          ? incoming.frontEmbedStates
-          : {};
-      var embedKeys = ["dd", "inven", "chichi"];
-      var mergedEmbed = {
-        dd: prevEmbed.dd || null,
-        inven: prevEmbed.inven || null,
-        chichi: prevEmbed.chichi || null,
-      };
-      embedKeys.forEach(function (key) {
-        var a = prevEmbed[key];
-        var b = incEmbed[key];
-        if (!b || typeof b !== "object") return;
-        if (!a) {
-          mergedEmbed[key] = b;
-          return;
-        }
-        var ta = new Date(a.updatedAt || 0).getTime();
-        var tb = new Date(b.updatedAt || 0).getTime();
-        if (isNaN(ta)) ta = 0;
-        if (isNaN(tb)) tb = 0;
-        var aCleared = !!(a && a.__cleared === true);
-        var bCleared = !!(b && b.__cleared === true);
-        if (aCleared && !bCleared) {
-          if (tb > ta) mergedEmbed[key] = b;
-          return;
-        }
-        if (!aCleared && bCleared) {
-          if (tb >= ta) mergedEmbed[key] = b;
-          return;
-        }
-        if (tb >= ta) mergedEmbed[key] = b;
-      });
-      staleOut.frontEmbedStates = mergedEmbed;
+      staleOut.frontEmbedStates = mergeFrontEmbedStatesForServer(
+        prev.frontEmbedStates,
+        incoming.frontEmbedStates
+      );
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityMiscLog")) {
       staleOut.facilityMiscLog = incoming.facilityMiscLog;
@@ -839,38 +897,7 @@ function mergeHkStorage(prev, incoming) {
           ? incoming.frontEmbedStates
           : null;
       if (!incStates) return prevStates;
-      var keys = ["dd", "inven", "chichi"];
-      var outStates = {
-        dd: prevStates.dd || null,
-        inven: prevStates.inven || null,
-        chichi: prevStates.chichi || null,
-      };
-      keys.forEach(function (key) {
-        var a = prevStates[key];
-        var b = incStates[key];
-        if (!b || typeof b !== "object") return;
-        if (!a) {
-          outStates[key] = b;
-          return;
-        }
-        var ta = new Date(a.updatedAt || 0).getTime();
-        var tb = new Date(b.updatedAt || 0).getTime();
-        if (isNaN(ta)) ta = 0;
-        if (isNaN(tb)) tb = 0;
-        var aCleared = !!(a && a.__cleared === true);
-        var bCleared = !!(b && b.__cleared === true);
-        // 초기화 마커는 동일·과거 시각의 옛 XML로 덮이지 않게 보호
-        if (aCleared && !bCleared) {
-          if (tb > ta) outStates[key] = b;
-          return;
-        }
-        if (!aCleared && bCleared) {
-          if (tb >= ta) outStates[key] = b;
-          return;
-        }
-        if (tb >= ta) outStates[key] = b;
-      });
-      return outStates;
+      return mergeFrontEmbedStatesForServer(prevStates, incStates);
     })(),
     zoneMemos:
       incoming.zoneMemos && typeof incoming.zoneMemos === "object"

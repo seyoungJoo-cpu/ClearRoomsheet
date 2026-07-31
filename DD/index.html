@@ -944,6 +944,7 @@
 
     const DD_STATE_KEY = "hk-dd-embed-state-v1";
     let ddEmbedEpoch = 0;
+    let ddEmbedClearId = "";
 
     function saveDdEmbedState() {
       const payload = {
@@ -953,6 +954,7 @@
         template: template.value,
         updatedAt: new Date().toISOString(),
       };
+      if (ddEmbedClearId) payload.afterClearId = ddEmbedClearId;
       try {
         localStorage.setItem(DD_STATE_KEY, JSON.stringify(payload));
       } catch (err) {}
@@ -964,6 +966,7 @@
               key: "dd",
               state: payload,
               epoch: ddEmbedEpoch,
+              afterClearId: ddEmbedClearId || "",
             },
             "*"
           );
@@ -1003,6 +1006,11 @@
       if (msg.epoch != null && msg.epoch !== "") {
         const n = Number(msg.epoch);
         if (!isNaN(n)) ddEmbedEpoch = n;
+      }
+      if (msg.clearId != null && String(msg.clearId).trim()) {
+        ddEmbedClearId = String(msg.clearId).trim();
+      } else if (!msg.state) {
+        // 부모 clearId를 받기 전까지는 저장이 초기화를 덮지 않게 유지
       }
       if (msg.state) {
         try {
