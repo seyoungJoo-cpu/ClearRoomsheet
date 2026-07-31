@@ -7554,6 +7554,37 @@
       border-color: #93c5fd;
     }
 
+    .confirming-cards-panel .request-feedback__item.is-chat-open {
+      grid-column: span 2;
+      align-self: start;
+      z-index: 2;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18);
+      border-color: #a5b4fc;
+    }
+
+    .confirming-cards-panel .request-feedback__item .order-chat {
+      margin-top: 6px;
+    }
+
+    .confirming-cards-panel .request-feedback__item .order-chat__messages {
+      max-height: 72px;
+    }
+
+    .confirming-cards-panel .request-feedback__item.is-chat-open .order-chat__messages {
+      max-height: 76px;
+      overflow-y: auto;
+    }
+
+    .confirming-cards-panel .request-feedback__item.is-chat-open .order-chat__msg {
+      font-size: 0.75rem;
+      max-width: 95%;
+    }
+
+    .confirming-cards-panel .request-feedback__item.is-chat-open .order-chat__form input {
+      height: 30px;
+      font-size: 0.75rem;
+    }
+
     .sched-req-card .order-chat {
       margin-top: 6px;
     }
@@ -18028,7 +18059,33 @@
               facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
             }
             maintActs.appendChild(facilityBtn);
+            if (isConfirming) {
+              noteChatAutoOpenFromFirstMessage(
+                entry.id,
+                Array.isArray(entry.chat) ? entry.chat.length : 0,
+                prevSchedChatCountById,
+                closedSchedRequestChatIds
+              );
+              var confirmingChatOpen = isSchedRequestChatOpen(entry);
+              var confirmingChatBtn = document.createElement("button");
+              confirmingChatBtn.type = "button";
+              confirmingChatBtn.className =
+                "sched-card__chat-btn" + (confirmingChatOpen ? " is-on" : "");
+              confirmingChatBtn.setAttribute("data-req-id", entry.id);
+              confirmingChatBtn.setAttribute("aria-label", "이 요청 채팅 열기");
+              var confirmingChatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
+              confirmingChatBtn.textContent = confirmingChatOpen
+                ? "채팅 닫기"
+                : confirmingChatCount > 0
+                  ? "채팅(" + confirmingChatCount + ")"
+                  : "채팅";
+              maintActs.appendChild(confirmingChatBtn);
+              if (confirmingChatOpen) li.classList.add("is-chat-open");
+            }
             li.appendChild(maintActs);
+            if (isConfirming && isSchedRequestChatOpen(entry)) {
+              appendSchedRequestChatUi(li, entry);
+            }
           } else {
             var ackActs = document.createElement("div");
             ackActs.className = "request-feedback__maint-actions";
@@ -20239,7 +20296,11 @@
         renderSchedRequestCards();
         requestAnimationFrame(function () {
           var card = document.querySelector(
-            '.sched-req-card.is-chat-open[data-req-id="' + id + '"]'
+            '.sched-req-card.is-chat-open[data-req-id="' +
+              id +
+              '"], #confirmingCardsPanel .request-feedback__item.is-chat-open[data-req-id="' +
+              id +
+              '"]'
           );
           if (!card) return;
           var chatInput = card.querySelector(".order-chat__form input");
@@ -20345,7 +20406,11 @@
         renderSchedRequestCards();
         requestAnimationFrame(function () {
           var card = document.querySelector(
-            '.sched-req-card.is-chat-open[data-req-id="' + reqId + '"]'
+            '.sched-req-card.is-chat-open[data-req-id="' +
+              reqId +
+              '"], #confirmingCardsPanel .request-feedback__item.is-chat-open[data-req-id="' +
+              reqId +
+              '"]'
           );
           if (!card) return;
           var msgList = card.querySelector(".order-chat__messages");
@@ -23743,7 +23808,28 @@
 
       var confirmingCardsPanelEl = document.getElementById("confirmingCardsPanel");
       if (confirmingCardsPanelEl) {
+        confirmingCardsPanelEl.addEventListener("submit", function (e) {
+          var chatForm = e.target.closest(".sched-req-chat-form");
+          if (!chatForm) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var reqId = chatForm.getAttribute("data-req-id");
+          var chatInput = chatForm.querySelector("input");
+          var text = chatInput ? chatInput.value : "";
+          if (reqId) appendSchedRequestChat(reqId, text, "");
+          if (chatInput) chatInput.value = "";
+        });
         confirmingCardsPanelEl.addEventListener("click", function (e) {
+          if (handleChatReactionClick(e)) return;
+          var chatElC = e.target.closest(".sched-card__chat-btn");
+          if (chatElC) {
+            if (!frontMode && !maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridChatC = chatElC.getAttribute("data-req-id");
+            if (ridChatC) toggleSchedRequestChat(ridChatC);
+            return;
+          }
           var m2fbC = e.target.closest(".request-feedback__memo2-btn");
           if (m2fbC) {
             if (!maintenanceMode) return;
