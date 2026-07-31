@@ -650,6 +650,8 @@
       requestDeskChat: [],
       orderDeskChat: [],
       mbCheckDeskChat: [],
+      facilityDeskChat: [],
+      facilityDeskChat: [],
       hotelInfo: defaultHotelInfo(),
       closeDayAt: "",
       deletedCustomZones: [],
@@ -791,6 +793,8 @@
     d.requestDeskChat = normalizeRequestDeskChat(data.requestDeskChat);
     d.orderDeskChat = normalizeRequestDeskChat(data.orderDeskChat);
     d.mbCheckDeskChat = normalizeRequestDeskChat(data.mbCheckDeskChat);
+    d.facilityDeskChat = normalizeRequestDeskChat(data.facilityDeskChat);
+    d.facilityDeskChat = normalizeRequestDeskChat(data.facilityDeskChat);
     d.hotelInfo = normalizeHotelInfo(data.hotelInfo);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
@@ -1130,6 +1134,22 @@
       );
     } else {
       merged.mbCheckDeskChat = base.mbCheckDeskChat || [];
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
+      merged.facilityDeskChat = mergeRequestDeskChat(
+        base.facilityDeskChat,
+        incoming.facilityDeskChat
+      );
+    } else {
+      merged.facilityDeskChat = base.facilityDeskChat || [];
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
+      merged.facilityDeskChat = mergeRequestDeskChat(
+        base.facilityDeskChat,
+        incoming.facilityDeskChat
+      );
+    } else {
+      merged.facilityDeskChat = base.facilityDeskChat || [];
     }
     merged.hotelInfo = pickHotelInfo(base, incoming);
     return normalize(merged);

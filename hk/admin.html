@@ -4243,6 +4243,7 @@
           reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
           reset.orderDeskChat = HKStorage.normalizeRequestDeskChat(prev.orderDeskChat);
           reset.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(prev.mbCheckDeskChat);
+          reset.facilityDeskChat = HKStorage.normalizeRequestDeskChat(prev.facilityDeskChat);
         } else {
           reset.requestDeskChat = Array.isArray(prev.requestDeskChat)
             ? prev.requestDeskChat.slice()
@@ -4250,6 +4251,9 @@
           reset.orderDeskChat = Array.isArray(prev.orderDeskChat) ? prev.orderDeskChat.slice() : [];
           reset.mbCheckDeskChat = Array.isArray(prev.mbCheckDeskChat)
             ? prev.mbCheckDeskChat.slice()
+            : [];
+          reset.facilityDeskChat = Array.isArray(prev.facilityDeskChat)
+            ? prev.facilityDeskChat.slice()
             : [];
         }
         if (preservedFacility) {

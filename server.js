@@ -868,6 +868,9 @@ function mergeHkStorage(prev, incoming) {
     if (Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat")) {
       staleOut.mbCheckDeskChat = incoming.mbCheckDeskChat;
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
+      staleOut.facilityDeskChat = incoming.facilityDeskChat;
+    }
     return staleOut;
   }
 
@@ -993,6 +996,102 @@ function mergeHkStorage(prev, incoming) {
       });
       if (Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat")) {
         normChat(incoming.orderDeskChat).forEach(function (m) {
+          var prevM = map[m.id];
+          if (!prevM) {
+            map[m.id] = m;
+            return;
+          }
+          var ta = new Date(prevM.at || 0).getTime();
+          var tb = new Date(m.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          if (tb >= ta) map[m.id] = m;
+        });
+      }
+      return Object.keys(map)
+        .map(function (k) {
+          return map[k];
+        })
+        .sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        })
+        .slice(-120);
+    })(),
+    mbCheckDeskChat: (function () {
+      function normChat(arr) {
+        if (!Array.isArray(arr)) return [];
+        var out = [];
+        arr.forEach(function (m) {
+          if (!m || typeof m !== "object") return;
+          var id = m.id != null ? String(m.id).trim() : "";
+          if (!id) return;
+          out.push({
+            id: id,
+            at: m.at != null ? String(m.at) : "",
+            by: m.by != null ? String(m.by) : "",
+            text: m.text != null ? String(m.text) : "",
+          });
+        });
+        return out;
+      }
+      var map = {};
+      normChat(prev.mbCheckDeskChat).forEach(function (m) {
+        map[m.id] = m;
+      });
+      if (Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat")) {
+        normChat(incoming.mbCheckDeskChat).forEach(function (m) {
+          var prevM = map[m.id];
+          if (!prevM) {
+            map[m.id] = m;
+            return;
+          }
+          var ta = new Date(prevM.at || 0).getTime();
+          var tb = new Date(m.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          if (tb >= ta) map[m.id] = m;
+        });
+      }
+      return Object.keys(map)
+        .map(function (k) {
+          return map[k];
+        })
+        .sort(function (a, b) {
+          var ta = new Date(a.at || 0).getTime();
+          var tb = new Date(b.at || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return ta - tb;
+        })
+        .slice(-120);
+    })(),
+    facilityDeskChat: (function () {
+      function normChat(arr) {
+        if (!Array.isArray(arr)) return [];
+        var out = [];
+        arr.forEach(function (m) {
+          if (!m || typeof m !== "object") return;
+          var id = m.id != null ? String(m.id).trim() : "";
+          if (!id) return;
+          out.push({
+            id: id,
+            at: m.at != null ? String(m.at) : "",
+            by: m.by != null ? String(m.by) : "",
+            text: m.text != null ? String(m.text) : "",
+          });
+        });
+        return out;
+      }
+      var map = {};
+      normChat(prev.facilityDeskChat).forEach(function (m) {
+        map[m.id] = m;
+      });
+      if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
+        normChat(incoming.facilityDeskChat).forEach(function (m) {
           var prevM = map[m.id];
           if (!prevM) {
             map[m.id] = m;
