@@ -7068,6 +7068,76 @@
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     }
 
+    .confirming-cards-panel--front .sched-cards-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      grid-template-columns: none;
+    }
+
+    .confirming-cards-panel__split {
+      display: none;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .confirming-cards-panel--wing-split .confirming-cards-panel__split {
+      display: flex;
+    }
+
+    .confirming-cards-panel--wing-split > #confirmingRequestCardList,
+    .confirming-cards-panel--wing-split > #confirmingCardsEmpty {
+      display: none !important;
+    }
+
+    .confirming-cards-panel__wing {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 6px 6px;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .confirming-cards-panel__wing-title {
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-align: center;
+      color: #3730a3;
+    }
+
+    .confirming-cards-panel__wing .sched-cards-list {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    .sched-req-card--confirming-compact {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-width: 2.1rem;
+      margin: 0;
+      padding: 2px 6px;
+      min-height: 0;
+      border-radius: 5px;
+      border: 1px solid #a5b4fc;
+      background: #e0e7ff;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    .sched-req-card--confirming-compact .sched-req-card__ip-room {
+      font-size: 0.7rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #312e81;
+      line-height: 1.15;
+    }
+
     .sched-cards-panel__empty {
       margin: 0;
       font-size: 0.75rem;
@@ -9718,9 +9788,21 @@
         <div class="panel-head-row">
           <h2 class="sched-cards-panel__title" id="confirmingCardsTitle">확인중</h2>
         </div>
-        <p class="sched-cards-panel__hint">알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다.</p>
+        <p class="sched-cards-panel__hint" id="confirmingCardsHint">알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다.</p>
         <ul class="sched-cards-list" id="confirmingRequestCardList"></ul>
         <p class="sched-cards-panel__empty" id="confirmingCardsEmpty">확인중 요청이 없습니다.</p>
+        <div class="confirming-cards-panel__split" id="confirmingCardsSplit" hidden>
+          <section class="confirming-cards-panel__wing" aria-label="본관 확인중">
+            <h3 class="confirming-cards-panel__wing-title">본관</h3>
+            <ul class="sched-cards-list" id="confirmingRequestCardListMain"></ul>
+            <p class="sched-cards-panel__empty" id="confirmingCardsEmptyMain" hidden>본관 없음</p>
+          </section>
+          <section class="confirming-cards-panel__wing" aria-label="별관 확인중">
+            <h3 class="confirming-cards-panel__wing-title">별관</h3>
+            <ul class="sched-cards-list" id="confirmingRequestCardListAnnex"></ul>
+            <p class="sched-cards-panel__empty" id="confirmingCardsEmptyAnnex" hidden>별관 없음</p>
+          </section>
+        </div>
       </section>
       <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
         <div class="panel-head-row">
@@ -17692,7 +17774,9 @@
           if (!isRequestLiveIp(entry)) needBoardMove = true;
         });
         document
-          .querySelectorAll(".sched-req-card[data-req-id]:not(.sched-req-card--ip-compact)")
+          .querySelectorAll(
+            ".sched-req-card[data-req-id]:not(.sched-req-card--ip-compact):not(.sched-req-card--confirming-compact)"
+          )
           .forEach(function (li) {
             var id = li.getAttribute("data-req-id");
             var entry = findRequestEntry(id);
@@ -18088,16 +18172,42 @@
         renderSchedRequestCards();
       }
 
+      function buildConfirmingFrontChip(entry) {
+        var li = document.createElement("li");
+        li.className = "room-card sched-req-card sched-req-card--confirming-compact";
+        li.setAttribute("data-req-id", entry.id);
+        var roomLabel = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
+        var titleBits = [roomLabel, "확인중"];
+        if (entry.ackedAt) titleBits.push(formatReqAt(entry.ackedAt));
+        if (entry.memo) titleBits.push(String(entry.memo).trim());
+        li.title = titleBits.filter(Boolean).join(" · ");
+        var no = document.createElement("span");
+        no.className = "sched-req-card__ip-room";
+        no.textContent = roomLabel;
+        li.appendChild(no);
+        return li;
+      }
+
       function renderConfirmingRequestCards() {
         var panel = document.getElementById("confirmingCardsPanel");
         var list = document.getElementById("confirmingRequestCardList");
+        var listMain = document.getElementById("confirmingRequestCardListMain");
+        var listAnnex = document.getElementById("confirmingRequestCardListAnnex");
         var empty = document.getElementById("confirmingCardsEmpty");
+        var emptyMain = document.getElementById("confirmingCardsEmptyMain");
+        var emptyAnnex = document.getElementById("confirmingCardsEmptyAnnex");
+        var splitEl = document.getElementById("confirmingCardsSplit");
+        var hint = document.getElementById("confirmingCardsHint");
         if (!panel || !list) return;
-        if (!maintenanceMode) {
+        if (!maintenanceMode && !frontMode) {
           panel.hidden = true;
+          panel.classList.remove("confirming-cards-panel--front", "confirming-cards-panel--wing-split");
+          if (splitEl) splitEl.hidden = true;
           return;
         }
         list.innerHTML = "";
+        if (listMain) listMain.innerHTML = "";
+        if (listAnnex) listAnnex.innerHTML = "";
         var confirming = requestLogEntries.filter(isRequestConfirmingEntry);
         confirming = confirming.filter(function (entry) {
           return (
@@ -18112,16 +18222,53 @@
           if (isNaN(tb)) tb = 0;
           return ta - tb;
         });
+        var wingSplit = !!(maintenanceMode && listMain && listAnnex);
+        panel.classList.toggle("confirming-cards-panel--front", !!frontMode && !maintenanceMode);
+        panel.classList.toggle("confirming-cards-panel--wing-split", wingSplit);
+        if (splitEl) splitEl.hidden = !wingSplit;
+        if (hint) {
+          hint.textContent = maintenanceMode
+            ? "알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다."
+            : "정비에서 확인 중인 객실입니다.";
+        }
         if (!confirming.length) {
           panel.hidden = true;
           if (empty) empty.hidden = false;
+          if (emptyMain) emptyMain.hidden = false;
+          if (emptyAnnex) emptyAnnex.hidden = false;
           return;
         }
         panel.hidden = false;
         if (empty) empty.hidden = true;
+        var mainCount = 0;
+        var annexCount = 0;
         confirming.forEach(function (entry) {
-          list.appendChild(buildRequestFeedbackItemLi(entry));
+          var card =
+            frontMode && !maintenanceMode
+              ? buildConfirmingFrontChip(entry)
+              : buildRequestFeedbackItemLi(entry);
+          if (wingSplit) {
+            if (requestAlertWingBucket(entry.room) === "annex") {
+              listAnnex.appendChild(card);
+              annexCount++;
+            } else {
+              listMain.appendChild(card);
+              mainCount++;
+            }
+          } else {
+            list.appendChild(card);
+          }
         });
+        if (wingSplit) {
+          if (emptyMain) {
+            emptyMain.hidden = mainCount > 0;
+            emptyMain.textContent = mainCount > 0 ? "" : "본관 없음";
+          }
+          if (emptyAnnex) {
+            emptyAnnex.hidden = annexCount > 0;
+            emptyAnnex.textContent = annexCount > 0 ? "" : "별관 없음";
+          }
+        }
       }
 
       function getOrderPhase(entry) {
