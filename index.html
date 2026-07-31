@@ -1637,6 +1637,7 @@
 
       /** 연박 추가: 객실번호(4자리) → true , 499·VAC·ASN·F.ASN 보드에 「연박」표시 */
       var extendedStayRooms = {};
+      var extendedStayUpdatedAt = "";
 
       /** @type {Record<string,string>} 객실 → FO 표시(IN/O) */
       var cachedRoomResvMap = {};
@@ -2134,6 +2135,14 @@
         if (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length) return true;
         if (payload.fasnBlockMap && Object.keys(payload.fasnBlockMap).length) return true;
         if (Array.isArray(payload.fasnAllStatusRooms) && payload.fasnAllStatusRooms.length) return true;
+        if (
+          payload.extendedStayRooms &&
+          typeof payload.extendedStayRooms === "object" &&
+          Object.keys(payload.extendedStayRooms).length
+        ) {
+          return true;
+        }
+        if (payload.extendedStayUpdatedAt) return true;
         return false;
       }
 
@@ -2148,8 +2157,51 @@
         );
       }
 
+      function hasLocalExtendedStayData() {
+        return !!(
+          extendedStayRooms &&
+          typeof extendedStayRooms === "object" &&
+          Object.keys(extendedStayRooms).some(function (k) {
+            return !!extendedStayRooms[k];
+          })
+        );
+      }
+
+      function stampExtendedStayUpdatedAt(iso) {
+        extendedStayUpdatedAt =
+          iso != null && String(iso).trim()
+            ? String(iso).trim()
+            : new Date().toISOString();
+        return extendedStayUpdatedAt;
+      }
+
+      function applyExtendedStayFromRemote(data) {
+        if (!data || !Object.prototype.hasOwnProperty.call(data, "extendedStayRooms")) {
+          return false;
+        }
+        var remoteAt =
+          data.extendedStayUpdatedAt != null ? String(data.extendedStayUpdatedAt).trim() : "";
+        var localAt = extendedStayUpdatedAt ? String(extendedStayUpdatedAt).trim() : "";
+        if (localAt && remoteAt && remoteAt < localAt) return false;
+        extendedStayRooms = JSON.parse(JSON.stringify(data.extendedStayRooms || {}));
+        if (remoteAt) extendedStayUpdatedAt = remoteAt;
+        var ta = document.getElementById("extendedStayInput");
+        if (ta) {
+          var rooms = Object.keys(extendedStayRooms)
+            .filter(function (k) {
+              return extendedStayRooms[k];
+            })
+            .sort();
+          ta.value = rooms.join(", ");
+        }
+        return true;
+      }
+
       function saveRoomingStateToLocal() {
-        if (!hasLocalRoomingData() && !hasLocalFasnData()) return;
+        if (!hasLocalRoomingData() && !hasLocalFasnData() && !hasLocalExtendedStayData()) {
+          // 연박만 비운 경우에도 로컬 캐시에 빈 연박을 남겨 되살림 방지
+          if (!extendedStayUpdatedAt) return;
+        }
         try {
           localStorage.setItem(
             ROOMING_XML_LS_KEY,
@@ -2205,7 +2257,10 @@
           p.roomingClearedAt = sharedRoomingClearedAt || new Date().toISOString();
         }
         if (opts.includeExtendedStay !== false) {
-          p.extendedStayRooms = extendedStayRooms;
+          p.extendedStayRooms = extendedStayRooms || {};
+          p.extendedStayUpdatedAt =
+            extendedStayUpdatedAt ||
+            (hasLocalExtendedStayData() ? new Date().toISOString() : "");
         }
         if (opts.includeBlockAliases !== false) {
           p.blockDisplayAliases = blockDisplayAliases;
@@ -2295,16 +2350,7 @@
           cachedAllStatusRooms = data.allStatusRooms.slice();
         }
         if (data.extendedStayRooms !== undefined) {
-          extendedStayRooms = JSON.parse(JSON.stringify(data.extendedStayRooms || {}));
-          var ta = document.getElementById("extendedStayInput");
-          if (ta) {
-            var rooms = Object.keys(extendedStayRooms)
-              .filter(function (k) {
-                return extendedStayRooms[k];
-              })
-              .sort();
-            ta.value = rooms.join(", ");
-          }
+          applyExtendedStayFromRemote(data);
         }
         if (data.blockDisplayAliases) {
           blockDisplayAliases = JSON.parse(JSON.stringify(data.blockDisplayAliases));
@@ -2315,6 +2361,13 @@
           if (sharedRoomingClearedAt) {
             lastRoomingUploadedAt = "";
             lastFasnUploadedAt = "";
+            // 루밍 초기화/마감과 함께 연박도 비움 (원격에 extendedStay가 빠진 경우 대비)
+            if (!Object.prototype.hasOwnProperty.call(data, "extendedStayRooms")) {
+              extendedStayRooms = {};
+              stampExtendedStayUpdatedAt(sharedRoomingClearedAt);
+              var taClr = document.getElementById("extendedStayInput");
+              if (taClr) taClr.value = "";
+            }
             try {
               localStorage.removeItem(ROOMING_XML_LS_KEY);
               localStorage.removeItem(FASN_LS_KEY);
@@ -2378,7 +2431,9 @@
         opts = opts || {};
         var body = buildSharedStatePayload(opts);
         if (!opts.roomingUpload && !opts.fasnUpload && !opts.roomingClear) {
-          if (!body.extendedStayRooms && !body.blockDisplayAliases) return;
+          var hasExtField = Object.prototype.hasOwnProperty.call(body, "extendedStayRooms");
+          var hasAliasField = Object.prototype.hasOwnProperty.call(body, "blockDisplayAliases");
+          if (!hasExtField && !hasAliasField) return;
         }
         if (!Object.keys(body).length) return;
         fetch("/api/sync", {
@@ -4841,9 +4896,13 @@
 
       document.getElementById("btnExtendedStayApply").addEventListener("click", function () {
         rebuildExtendedStayRoomsFromTextarea();
+        stampExtendedStayUpdatedAt();
         refreshBoards();
-        schedulePushSharedState({
+        saveRoomingStateToLocal();
+        // 즉시 공유 (디바운스 없이) — 다른 PC에 바로 반영
+        pushSharedState({
           includeExtendedStay: true,
+          includeBlockAliases: false,
           syncLabel: "연박 목록 공유됨",
         });
       });

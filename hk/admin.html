@@ -4346,10 +4346,11 @@
         }, 400);
 
         var resetStorage = getResetStorageData(preservedFacility);
+        var closeAtIso = resetStorage.closeDayAt || new Date().toISOString();
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
           HKSync.pushSnapshot({
             hkCloseDayReset: true,
-            hkCloseDayAt: resetStorage.closeDayAt || new Date().toISOString(),
+            hkCloseDayAt: closeAtIso,
             hkStorage: resetStorage,
             hkRequestLog: [],
             hkOrderLog: preservedOrderLog,
@@ -4362,6 +4363,9 @@
             hkUseLog: [],
             hkChangeLog: [],
             hkLastRoomChange: null,
+            // 마감 시 연박 목록도 전체 동기화 PC에서 비움
+            extendedStayRooms: {},
+            extendedStayUpdatedAt: closeAtIso,
           }).finally(function () {
             if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
               HKInvenNotify.resetOnCloseDay();
@@ -4373,7 +4377,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지 · 연박 초기화)");
           });
           return;
         }

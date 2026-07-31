@@ -1493,7 +1493,33 @@ function mergeSyncPayload(prev, incoming) {
     out.allStatusRooms = incoming.allStatusRooms;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "extendedStayRooms")) {
-    out.extendedStayRooms = incoming.extendedStayRooms;
+    var prevExtAt =
+      prev.extendedStayUpdatedAt != null ? String(prev.extendedStayUpdatedAt).trim() : "";
+    var incExtAt =
+      incoming.extendedStayUpdatedAt != null
+        ? String(incoming.extendedStayUpdatedAt).trim()
+        : "";
+    // 연박은 시각이 더 최신일 때만 교체 — XML 업로드 PC의 빈 목록이 덮어쓰지 않게 함
+    if (!prevExtAt || (incExtAt && incExtAt >= prevExtAt)) {
+      out.extendedStayRooms =
+        incoming.extendedStayRooms && typeof incoming.extendedStayRooms === "object"
+          ? incoming.extendedStayRooms
+          : {};
+      if (incExtAt) out.extendedStayUpdatedAt = incExtAt;
+      else if (!out.extendedStayUpdatedAt) {
+        out.extendedStayUpdatedAt = new Date().toISOString();
+      }
+    }
+  } else if (Object.prototype.hasOwnProperty.call(incoming, "extendedStayUpdatedAt")) {
+    var onlyAt =
+      incoming.extendedStayUpdatedAt != null
+        ? String(incoming.extendedStayUpdatedAt).trim()
+        : "";
+    var prevOnlyAt =
+      prev.extendedStayUpdatedAt != null ? String(prev.extendedStayUpdatedAt).trim() : "";
+    if (onlyAt && (!prevOnlyAt || onlyAt >= prevOnlyAt)) {
+      out.extendedStayUpdatedAt = onlyAt;
+    }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "blockDisplayAliases")) {
     out.blockDisplayAliases = incoming.blockDisplayAliases;

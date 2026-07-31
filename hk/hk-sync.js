@@ -490,6 +490,10 @@
       allStatusRooms: [],
       blockMap: {},
       extendedStayRooms: {},
+      extendedStayUpdatedAt:
+        payload && payload.roomingClearedAt
+          ? String(payload.roomingClearedAt)
+          : new Date().toISOString(),
       uploadSummary: "",
       roomingUploadedAt: "",
       fasnVacRows: [],
@@ -1685,6 +1689,7 @@
         allStatusRooms: [],
         blockMap: {},
         extendedStayRooms: {},
+        extendedStayUpdatedAt: clearedAt,
         uploadSummary: "",
         roomingUploadedAt: "",
         fasnVacRows: [],
