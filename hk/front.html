@@ -7069,10 +7069,18 @@
     }
 
     .confirming-cards-panel--front .sched-cards-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      grid-template-columns: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px;
+    }
+
+    .confirming-cards-panel--front .request-feedback__item {
+      min-height: 120px;
+      background: #fff;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-sizing: border-box;
     }
 
     .confirming-cards-panel__split {
@@ -18136,7 +18144,34 @@
           if (getFacilityRequestStatus(entry.id) !== "none") {
             appendFacilityRequestStatusBtn(frontActs, entry.id);
           }
+          var frontConfirming = isRequestConfirmingEntry(entry);
+          if (frontConfirming) {
+            noteChatAutoOpenFromFirstMessage(
+              entry.id,
+              Array.isArray(entry.chat) ? entry.chat.length : 0,
+              prevSchedChatCountById,
+              closedSchedRequestChatIds
+            );
+            var frontChatOpen = isSchedRequestChatOpen(entry);
+            var frontChatBtn = document.createElement("button");
+            frontChatBtn.type = "button";
+            frontChatBtn.className =
+              "sched-card__chat-btn" + (frontChatOpen ? " is-on" : "");
+            frontChatBtn.setAttribute("data-req-id", entry.id);
+            frontChatBtn.setAttribute("aria-label", "이 요청 채팅 열기");
+            var frontChatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
+            frontChatBtn.textContent = frontChatOpen
+              ? "채팅 닫기"
+              : frontChatCount > 0
+                ? "채팅(" + frontChatCount + ")"
+                : "채팅";
+            frontActs.appendChild(frontChatBtn);
+            if (frontChatOpen) li.classList.add("is-chat-open");
+          }
           li.appendChild(frontActs);
+          if (frontConfirming && isSchedRequestChatOpen(entry)) {
+            appendSchedRequestChatUi(li, entry);
+          }
         }
 
         var byName = entry.by != null ? String(entry.by).trim() : "";
@@ -18230,22 +18265,6 @@
         renderSchedRequestCards();
       }
 
-      function buildConfirmingFrontChip(entry) {
-        var li = document.createElement("li");
-        li.className = "room-card sched-req-card sched-req-card--confirming-compact";
-        li.setAttribute("data-req-id", entry.id);
-        var roomLabel = entry.room ? formatRoomNoDisplay(String(entry.room)) : "—";
-        var titleBits = [roomLabel, "확인중"];
-        if (entry.ackedAt) titleBits.push(formatReqAt(entry.ackedAt));
-        if (entry.memo) titleBits.push(String(entry.memo).trim());
-        li.title = titleBits.filter(Boolean).join(" · ");
-        var no = document.createElement("span");
-        no.className = "sched-req-card__ip-room";
-        no.textContent = roomLabel;
-        li.appendChild(no);
-        return li;
-      }
-
       function renderConfirmingRequestCards() {
         var panel = document.getElementById("confirmingCardsPanel");
         var list = document.getElementById("confirmingRequestCardList");
@@ -18287,7 +18306,7 @@
         if (hint) {
           hint.textContent = maintenanceMode
             ? "알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다."
-            : "정비에서 확인 중인 객실입니다.";
+            : "정비에서 확인 중인 객실입니다. 메모·채팅을 확인할 수 있습니다.";
         }
         if (!confirming.length) {
           panel.hidden = true;
@@ -18301,10 +18320,7 @@
         var mainCount = 0;
         var annexCount = 0;
         confirming.forEach(function (entry) {
-          var card =
-            frontMode && !maintenanceMode
-              ? buildConfirmingFrontChip(entry)
-              : buildRequestFeedbackItemLi(entry);
+          var card = buildRequestFeedbackItemLi(entry);
           if (wingSplit) {
             if (requestAlertWingBucket(entry.room) === "annex") {
               listAnnex.appendChild(card);
@@ -23830,6 +23846,24 @@
             if (ridChatC) toggleSchedRequestChat(ridChatC);
             return;
           }
+          var cancelReqC = e.target.closest(".request-feedback__cancel-btn");
+          if (cancelReqC) {
+            if (!frontMode && !maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridCancelC = cancelReqC.getAttribute("data-req-id");
+            if (ridCancelC) openCancelConfirmModal(ridCancelC);
+            return;
+          }
+          var memoC = e.target.closest(".request-feedback__memo-btn");
+          if (memoC) {
+            if (!frontMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridMemoC = memoC.getAttribute("data-req-id");
+            if (ridMemoC) openRequestMemoEditor(ridMemoC);
+            return;
+          }
           var m2fbC = e.target.closest(".request-feedback__memo2-btn");
           if (m2fbC) {
             if (!maintenanceMode) return;
@@ -23862,7 +23896,7 @@
           }
           var ipBC = e.target.closest(".request-feedback__ip-btn");
           if (ipBC) {
-            if (!maintenanceMode) return;
+            if (!maintenanceMode && !frontMode) return;
             e.preventDefault();
             e.stopPropagation();
             var ridIpC = ipBC.getAttribute("data-req-id");
