@@ -7718,11 +7718,77 @@
     .request-desk-chat__head,
     .order-desk-chat__head {
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       padding: 4px 8px;
       font-size: 0.75rem;
       font-weight: 700;
       color: var(--accent);
       border-bottom: 2px solid #334155;
+    }
+
+    .desk-chat-font-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: auto;
+    }
+
+    .desk-chat-font-btn {
+      min-width: 28px;
+      height: 24px;
+      padding: 0 5px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--bg-card, #fff);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.6875rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .desk-chat-font-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .desk-chat-font-level {
+      min-width: 1.2em;
+      text-align: center;
+      font-size: 0.6875rem;
+      color: var(--muted, #64748b);
+    }
+
+    .request-desk-chat[data-desk-font="1"],
+    .order-desk-chat[data-desk-font="1"] {
+      --desk-chat-msg-size: 0.65rem;
+      --desk-chat-meta-size: 0.6rem;
+    }
+
+    .request-desk-chat[data-desk-font="2"],
+    .order-desk-chat[data-desk-font="2"] {
+      --desk-chat-msg-size: 0.725rem;
+      --desk-chat-meta-size: 0.65rem;
+    }
+
+    .request-desk-chat[data-desk-font="3"],
+    .order-desk-chat[data-desk-font="3"] {
+      --desk-chat-msg-size: 0.8rem;
+      --desk-chat-meta-size: 0.7rem;
+    }
+
+    .request-desk-chat[data-desk-font="4"],
+    .order-desk-chat[data-desk-font="4"] {
+      --desk-chat-msg-size: 0.9rem;
+      --desk-chat-meta-size: 0.775rem;
+    }
+
+    .request-desk-chat[data-desk-font="5"],
+    .order-desk-chat[data-desk-font="5"] {
+      --desk-chat-msg-size: 1rem;
+      --desk-chat-meta-size: 0.85rem;
     }
 
     .request-desk-chat__messages {
@@ -7742,7 +7808,7 @@
     }
 
     .request-desk-chat__msg {
-      font-size: 0.75rem;
+      font-size: var(--desk-chat-msg-size, 0.8rem);
       line-height: 1.35;
       padding: 4px 6px;
       border-radius: 6px;
@@ -7751,14 +7817,21 @@
     }
 
     .request-desk-chat__msg-meta {
-      font-size: 0.6875rem;
+      font-size: var(--desk-chat-meta-size, 0.7rem);
       color: var(--muted, #888);
       margin-bottom: 2px;
     }
 
     .request-desk-chat__msg-text {
+      font-size: var(--desk-chat-msg-size, 0.8rem);
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .request-desk-chat__msg.is-reactable,
+    .order-desk-chat__msg.is-reactable {
+      position: relative;
+      cursor: pointer;
     }
 
     .request-desk-chat__form,
@@ -7872,7 +7945,7 @@
     }
 
     .order-desk-chat__msg {
-      font-size: 0.75rem;
+      font-size: var(--desk-chat-msg-size, 0.8rem);
       line-height: 1.35;
       padding: 4px 6px;
       border-radius: 6px;
@@ -7881,14 +7954,27 @@
     }
 
     .order-desk-chat__msg-meta {
-      font-size: 0.6875rem;
+      font-size: var(--desk-chat-meta-size, 0.7rem);
       color: var(--muted, #888);
       margin-bottom: 2px;
     }
 
     .order-desk-chat__msg-text {
+      font-size: var(--desk-chat-msg-size, 0.8rem);
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .request-desk-chat .order-chat__reactions,
+    .order-desk-chat .order-chat__reactions {
+      margin-top: 5px;
+    }
+
+    .request-desk-chat .chat-reaction-picker,
+    .order-desk-chat .chat-reaction-picker {
+      width: min(164px, 100%);
+      max-width: 100%;
+      align-self: flex-start;
     }
 
     .request-form-memo-full {
@@ -8807,6 +8893,7 @@
             id="sidebarBtnMbInv"
             aria-pressed="false"
             title="MB & 인벤 변경 (Ctrl+4)"
+            hidden
           >
             MB &amp; 인벤 변경
           </button>
@@ -9144,8 +9231,8 @@
             <section class="zone-updates" id="zoneUpdatesSection" hidden aria-label="구역 변경 내역">
               <div class="zone-updates__list" id="zoneUpdatesList"></div>
             </section>
-            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="적용 객실 및 수정·삭제 기록">
-              <div class="zone-cancelled-rooms__label">적용 객실</div>
+            <section class="zone-cancelled-rooms" id="zoneCancelledRooms" hidden aria-label="객실 및 수정·삭제 기록">
+              <div class="zone-cancelled-rooms__label">객실</div>
               <div class="zone-cancelled-rooms__list" id="zoneCancelledRoomsList"></div>
             </section>
             <section class="zone-memo-board" id="zoneVipMemoBoard" hidden tabindex="0" aria-label="VIP 메모장">
@@ -9188,7 +9275,7 @@
                     type="text"
                     id="orderMemo"
                     name="orderMemo"
-                    placeholder="메모 (선택)"
+                    placeholder="메모 (선택 · EXB/BEG 자동변환)"
                     autocomplete="off"
                   />
                   <button type="button" class="hk-photo-btn" id="btnPhotoOrderMemo" title="사진 첨부">사진</button>
@@ -9205,7 +9292,14 @@
             </form>
           </div>
           <aside class="order-desk-chat" id="orderDeskChat" aria-label="오더 관리 채팅">
-            <div class="order-desk-chat__head">채팅</div>
+            <div class="order-desk-chat__head">
+              <span>채팅</span>
+              <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
+                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
+              </div>
+            </div>
             <div class="order-desk-chat__messages" id="orderDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="orderDeskChatForm">
               <input
@@ -9311,7 +9405,14 @@
             </form>
           </div>
           <aside class="order-desk-chat" id="facilityDeskChat" aria-label="시설 관리 채팅">
-            <div class="order-desk-chat__head">채팅</div>
+            <div class="order-desk-chat__head">
+              <span>채팅</span>
+              <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
+                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
+              </div>
+            </div>
             <div class="order-desk-chat__messages" id="facilityDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="facilityDeskChatForm">
               <input type="text" id="facilityDeskChatInput" placeholder="메시지 입력" autocomplete="off" maxlength="500" aria-label="시설 관리 채팅 입력" />
@@ -9665,7 +9766,14 @@
             </form>
           </div>
           <aside class="order-desk-chat" id="mbCheckDeskChat" aria-label="MB CHECK 채팅">
-            <div class="order-desk-chat__head">채팅</div>
+            <div class="order-desk-chat__head">
+              <span>채팅</span>
+              <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
+                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
+              </div>
+            </div>
             <div class="order-desk-chat__messages" id="mbCheckDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="mbCheckDeskChatForm">
               <input
@@ -9761,7 +9869,14 @@
             </form>
           </div>
           <aside class="request-desk-chat" id="requestDeskChat" aria-label="정비 관리 채팅">
-            <div class="request-desk-chat__head">채팅</div>
+            <div class="request-desk-chat__head">
+              <span>채팅</span>
+              <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
+                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
+              </div>
+            </div>
             <div class="request-desk-chat__messages" id="requestDeskChatMessages" aria-live="polite"></div>
             <form class="request-desk-chat__form" id="requestDeskChatForm">
               <input
@@ -11842,6 +11957,68 @@
         }
       }
 
+      var DESK_CHAT_FONT_KEY = "hk-desk-chat-font-level";
+      var DESK_CHAT_IDS = [
+        "requestDeskChat",
+        "orderDeskChat",
+        "facilityDeskChat",
+        "mbCheckDeskChat",
+      ];
+
+      function getDeskChatFontLevel() {
+        var level = 3;
+        try {
+          level = parseInt(localStorage.getItem(DESK_CHAT_FONT_KEY), 10);
+        } catch (e) {}
+        if (!isFinite(level)) level = 3;
+        return Math.max(1, Math.min(5, level));
+      }
+
+      function applyDeskChatFontLevel(level) {
+        var next = parseInt(level, 10);
+        if (!isFinite(next)) next = getDeskChatFontLevel();
+        next = Math.max(1, Math.min(5, next));
+        DESK_CHAT_IDS.forEach(function (id) {
+          var aside = document.getElementById(id);
+          if (!aside) return;
+          aside.setAttribute("data-desk-font", String(next));
+          aside.querySelectorAll("[data-desk-font-label]").forEach(function (label) {
+            label.textContent = String(next);
+          });
+        });
+        return next;
+      }
+
+      function setDeskChatFontLevel(level) {
+        var next = Math.max(1, Math.min(5, parseInt(level, 10) || 3));
+        try {
+          localStorage.setItem(DESK_CHAT_FONT_KEY, String(next));
+        } catch (e) {}
+        applyDeskChatFontLevel(next);
+        return next;
+      }
+
+      function bindDeskChatFontControls() {
+        document.querySelectorAll(".desk-chat-font-btn").forEach(function (btn) {
+          if (btn.__hkDeskFontBound) return;
+          btn.__hkDeskFontBound = true;
+          btn.addEventListener("click", function () {
+            var delta = parseInt(btn.getAttribute("data-desk-font-delta"), 10) || 0;
+            setDeskChatFontLevel(getDeskChatFontLevel() + delta);
+          });
+        });
+      }
+
+      function bindDeskChatReactionMount(mount) {
+        if (!mount || mount.__hkDeskReactionBound) return;
+        mount.__hkDeskReactionBound = true;
+        mount.addEventListener("click", handleChatReactionClick);
+      }
+
+      function attachDeskChatMsgReactionUi(row, msg, kind) {
+        attachChatMsgReactionUi(row, msg, kind, "");
+      }
+
       function getRequestDeskChatMessages() {
         var data = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
         return data && Array.isArray(data.requestDeskChat) ? data.requestDeskChat : [];
@@ -11882,6 +12059,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "request-desk-chat__msg-text");
+          attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
         });
         mount.scrollTop = mount.scrollHeight;
@@ -11923,6 +12101,7 @@
         var form = document.getElementById("requestDeskChatForm");
         if (!form || form.__hkDeskChatBound) return;
         form.__hkDeskChatBound = true;
+        bindDeskChatReactionMount(document.getElementById("requestDeskChatMessages"));
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           var inp = document.getElementById("requestDeskChatInput");
@@ -11974,6 +12153,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
         });
         mount.scrollTop = mount.scrollHeight;
@@ -12015,6 +12195,7 @@
         var form = document.getElementById("orderDeskChatForm");
         if (!form || form.__hkOrderDeskChatBound) return;
         form.__hkOrderDeskChatBound = true;
+        bindDeskChatReactionMount(document.getElementById("orderDeskChatMessages"));
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           var inp = document.getElementById("orderDeskChatInput");
@@ -12066,6 +12247,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
         });
         mount.scrollTop = mount.scrollHeight;
@@ -12107,6 +12289,7 @@
         var form = document.getElementById("mbCheckDeskChatForm");
         if (!form || form.__hkMbCheckDeskChatBound) return;
         form.__hkMbCheckDeskChatBound = true;
+        bindDeskChatReactionMount(document.getElementById("mbCheckDeskChatMessages"));
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           var inp = document.getElementById("mbCheckDeskChatInput");
@@ -12158,6 +12341,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
         });
         mount.scrollTop = mount.scrollHeight;
@@ -12199,6 +12383,7 @@
         var form = document.getElementById("facilityDeskChatForm");
         if (!form || form.__hkFacilityDeskChatBound) return;
         form.__hkFacilityDeskChatBound = true;
+        bindDeskChatReactionMount(document.getElementById("facilityDeskChatMessages"));
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           var inp = document.getElementById("facilityDeskChatInput");
@@ -12729,7 +12914,8 @@
             var closeAt = new Date(closeRaw).getTime();
             if (!isNaN(closeAt) && closeAt > 0) {
               var updatedAt = new Date(state.updatedAt || 0).getTime();
-              if (isNaN(updatedAt) || updatedAt <= closeAt) return null;
+              // 마감 시각과 동일 초의 만들기 결과가 버려지지 않도록 < 만 제외
+              if (isNaN(updatedAt) || updatedAt < closeAt) return null;
             }
           }
         } catch (eEff) {}
@@ -12851,6 +13037,14 @@
         delete next.clearedSig;
         if (afterClearId != null && String(afterClearId).trim()) {
           next.afterClearId = String(afterClearId).trim();
+        } else if (
+          cur &&
+          typeof cur === "object" &&
+          !isClearedFrontEmbedState(cur) &&
+          cur.afterClearId
+        ) {
+          // 정렬·리렌더 저장이 afterClearId를 빼먹어도 유지
+          next.afterClearId = String(cur.afterClearId).trim();
         }
         if (!next.updatedAt) next.updatedAt = new Date().toISOString();
         data.frontEmbedStates[key] = next;
@@ -14809,10 +15003,13 @@
         }
         if (panel) panel.hidden = !requestRoomBoardOpen;
         if (sched) sched.hidden = requestRoomBoardOpen;
+        var confirmingPanel = document.getElementById("confirmingCardsPanel");
         var usedPanel = document.getElementById("schedUsedPanel");
         if (requestRoomBoardOpen) {
           if (ipPanel) ipPanel.hidden = true;
           if (usedPanel) usedPanel.hidden = true;
+          // 층별보기 중에는 확인중 섹션을 숨겨 보드가 가려지지 않게 함
+          if (confirmingPanel) confirmingPanel.hidden = true;
           renderRequestRoomBoard();
         } else {
           renderSchedRequestCards();
@@ -16192,40 +16389,175 @@
       function splitAiHotelInfoChunks(text, source) {
         var raw = String(text || "").trim();
         if (!raw) return [];
-        var parts = raw.split(/\n{2,}|\n(?=[^\n]{0,40}[:：])/);
-        if (parts.length < 2) {
-          parts = raw.split(/\n+/);
+        var lineParts = raw
+          .split(/\n+/)
+          .map(function (line) {
+            return String(line || "")
+              .replace(/^\s*(?:[-*•▪◦·]+|\d+[.)])\s*/, "")
+              .replace(/\s+/g, " ")
+              .trim();
+          })
+          .filter(function (line) {
+            return line.length >= 2;
+          });
+        var splitReady = raw
+          .replace(/\r/g, "")
+          .replace(/다\.(?=\s|$)/g, "다.\n")
+          .replace(/\n\s*(?:[-*•▪◦]+)\s*/g, "\n");
+        var parts = splitReady.split(
+          /\n{2,}|\n(?=\s*[^\n]{0,40}[:：])|\n+|[·|;]+/
+        );
+        var all = parts.concat(lineParts);
+        for (var i = 0; i < lineParts.length; i++) {
+          if (i + 1 < lineParts.length) {
+            all.push(lineParts[i] + " " + lineParts[i + 1]);
+          }
+          if (i + 2 < lineParts.length) {
+            all.push(lineParts[i] + " " + lineParts[i + 1] + " " + lineParts[i + 2]);
+          }
         }
-        return parts
+        var seen = {};
+        return all
           .map(function (p) {
             return String(p || "").replace(/\s+/g, " ").trim();
           })
           .filter(function (p) {
-            return p.length >= 4;
+            if (p.length < 2 || seen[p]) return false;
+            seen[p] = true;
+            return true;
           })
           .map(function (p) {
             return { source: source || "인포등록", text: p };
           });
       }
 
+      var AI_HOTEL_SYNONYM_GROUPS = [
+        ["체크인", "체크 인", "ci", "입실"],
+        ["체크아웃", "체크 아웃", "co", "퇴실"],
+        ["조식", "아침식사", "아침 식사", "breakfast"],
+        ["수영장", "풀", "pool"],
+        ["주차", "주차장", "parking", "파킹"],
+        ["와이파이", "와이 파이", "wifi", "wi-fi", "무선인터넷", "무선 인터넷"],
+        ["인포", "인포메이션", "안내", "정보", "information"],
+        ["영업시간", "영업 시간", "운영시간", "운영 시간", "이용시간", "이용 시간"],
+        ["프런트", "프론트", "안내데스크", "안내 데스크", "리셉션", "reception"],
+        ["피트니스", "헬스장", "gym", "짐"],
+        ["레스토랑", "식당", "restaurant"],
+        ["연락처", "전화번호", "전화 번호", "tel", "phone"],
+        ["위치", "장소", "어디"],
+        ["요금", "가격", "금액", "얼마", "price"],
+      ];
+
+      function normalizeAiHotelSearchText(value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[\s_\-–—.,:：/\\()[\]{}'"!?]+/g, "");
+      }
+
       function tokenizeAiHotelQuery(q) {
-        return String(q || "")
+        var raw = String(q || "").toLowerCase();
+        var base = raw
           .toLowerCase()
           .replace(/[^\w가-힣]+/g, " ")
           .split(/\s+/)
           .filter(function (t) {
-            return t.length >= 2 && !/^(알려|말해|뭐야|뭐야요|인가요|해주세요|해줘|관련|대한|호텔|정보)$/.test(t);
+            if (!t) return false;
+            var isOneHangul = /^[가-힣]$/.test(t);
+            if (t.length < 2 && !isOneHangul) return false;
+            return !/^(알려|알려줘|알려주세요|말해|말해줘|보여|보여줘|찾아|찾아줘|뭐|뭐야|뭔가요|뭐예요|인가요|있나요|있어|주세요|해주세요|해줘|관련|관한|대한|호텔|좀|혹시|그리고|또|은|는|이|가|을|를|에|의)$/.test(
+              t
+            );
           });
+        var out = [];
+        var seen = {};
+        function add(token) {
+          var clean = String(token || "")
+            .toLowerCase()
+            .replace(/\s+/g, "")
+            .trim();
+          if (!clean || seen[clean]) return;
+          seen[clean] = true;
+          out.push(clean);
+        }
+        base.forEach(add);
+        var compact = normalizeAiHotelSearchText(raw);
+        AI_HOTEL_SYNONYM_GROUPS.forEach(function (group) {
+          var hit = group.some(function (alias) {
+            var aliasCompact = normalizeAiHotelSearchText(alias);
+            return (
+              (aliasCompact.length >= 2 && compact.indexOf(aliasCompact) >= 0) ||
+              base.indexOf(String(alias).toLowerCase()) >= 0
+            );
+          });
+          if (hit) group.forEach(add);
+        });
+        return out;
       }
 
-      function scoreAiHotelChunk(chunk, tokens) {
+      function scoreAiHotelChunk(chunk, tokens, question) {
         var hay = String(chunk.text || "").toLowerCase();
         if (!hay) return 0;
+        var hayCompact = normalizeAiHotelSearchText(hay);
+        var hayTokens = tokenizeAiHotelQuery(hay);
         var score = 0;
-        tokens.forEach(function (t) {
-          if (hay.indexOf(t) >= 0) score += 2 + Math.min(2, t.length / 4);
+        (tokens || []).forEach(function (t) {
+          var token = String(t || "").toLowerCase();
+          var compactToken = normalizeAiHotelSearchText(token);
+          if (!compactToken) return;
+          if (hay.indexOf(token) >= 0 || hayCompact.indexOf(compactToken) >= 0) {
+            score += 2.5 + Math.min(3, compactToken.length / 3);
+          } else {
+            var partial = hayTokens.some(function (ht) {
+              return (
+                compactToken.length >= 2 &&
+                ht.length >= 2 &&
+                (ht.indexOf(compactToken) >= 0 || compactToken.indexOf(ht) >= 0)
+              );
+            });
+            if (partial) score += 1.25;
+            else if (hayTokens.indexOf(compactToken) >= 0) score += 1.75;
+          }
         });
+        for (var i = 0; i + 1 < (tokens || []).length; i++) {
+          var pair =
+            normalizeAiHotelSearchText(tokens[i]) +
+            normalizeAiHotelSearchText(tokens[i + 1]);
+          if (pair.length >= 3 && hayCompact.indexOf(pair) >= 0) score += 2.5;
+        }
+        var literalTokens = String(question || "")
+          .toLowerCase()
+          .replace(/[^\w가-힣]+/g, " ")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+        for (var j = 0; j + 1 < literalTokens.length; j++) {
+          var left = hay.indexOf(literalTokens[j]);
+          var right = hay.indexOf(literalTokens[j + 1], Math.max(0, left));
+          if (left >= 0 && right >= left && right - left <= literalTokens[j].length + 12) {
+            score += 2;
+          }
+        }
+        if (score === 0) {
+          var queryCompact = normalizeAiHotelSearchText(question);
+          if (queryCompact.length >= 2 && hayCompact.indexOf(queryCompact) >= 0) {
+            score = 4 + Math.min(4, queryCompact.length / 4);
+          }
+        }
         return score;
+      }
+
+      function aiHotelBigramScore(question, text) {
+        var q = normalizeAiHotelSearchText(question);
+        var hay = normalizeAiHotelSearchText(text);
+        if (q.length < 2 || hay.length < 2) return 0;
+        var grams = {};
+        for (var i = 0; i < q.length - 1; i++) grams[q.slice(i, i + 2)] = true;
+        var keys = Object.keys(grams);
+        if (!keys.length) return 0;
+        var hits = keys.filter(function (gram) {
+          return hay.indexOf(gram) >= 0;
+        }).length;
+        return hits / keys.length;
       }
 
       function queryAiHotelInfo(question) {
@@ -16274,7 +16606,7 @@
           var tokens = tokenizeAiHotelQuery(q);
           var ranked = chunks
             .map(function (c) {
-              return { chunk: c, score: scoreAiHotelChunk(c, tokens) };
+              return { chunk: c, score: scoreAiHotelChunk(c, tokens, q) };
             })
             .filter(function (x) {
               return x.score > 0;
@@ -16282,26 +16614,56 @@
             .sort(function (a, b) {
               return b.score - a.score;
             });
+          var usedFuzzy = false;
           if (!ranked.length) {
-            body =
-              "관련 문구를 찾지 못했습니다.\n등록 인포·홈페이지에 해당 내용이 없을 수 있습니다.\n\n" +
-              (String(info.text || "").trim()
-                ? "【등록 인포 전문】\n" + String(info.text).trim()
-                : "(등록 인포 텍스트 없음)");
-          } else {
-            var picked = [];
-            var seen = {};
-            ranked.forEach(function (x) {
-              if (picked.length >= 6) return;
-              var key = x.chunk.text.slice(0, 80);
-              if (seen[key]) return;
-              seen[key] = true;
-              picked.push("· (" + x.chunk.source + ") " + x.chunk.text);
+            usedFuzzy = true;
+            ranked = chunks
+              .map(function (c) {
+                return { chunk: c, score: aiHotelBigramScore(q, c.text) };
+              })
+              .filter(function (x) {
+                return x.score > 0;
+              })
+              .sort(function (a, b) {
+                return b.score - a.score;
+              });
+          }
+          var picked = [];
+          var seen = {};
+          ranked.forEach(function (x) {
+            if (picked.length >= 12) return;
+            var key = x.chunk.source + "|" + x.chunk.text;
+            if (seen[key]) return;
+            seen[key] = true;
+            picked.push("【" + x.chunk.source + "】\n" + x.chunk.text);
+          });
+          if (!picked.length) {
+            var keywordChars = normalizeAiHotelSearchText(q).split("");
+            var fallbackRanked = chunks
+              .map(function (c) {
+                var compactText = normalizeAiHotelSearchText(c.text);
+                var hit = keywordChars.filter(function (ch, idx) {
+                  return keywordChars.indexOf(ch) === idx && compactText.indexOf(ch) >= 0;
+                }).length;
+                return { chunk: c, score: hit };
+              })
+              .sort(function (a, b) {
+                return b.score - a.score;
+              })
+              .slice(0, 3);
+            fallbackRanked.forEach(function (x) {
+              picked.push("【" + x.chunk.source + "】\n" + x.chunk.text);
             });
-            body = picked.join("\n\n");
-            if (info.urls && info.urls.length) {
-              body += "\n\n【참고 URL】\n" + info.urls.join("\n");
-            }
+          }
+          body =
+            (usedFuzzy
+              ? "정확히 일치하는 문구가 없어 유사 표현·키워드로 찾았습니다.\n관련 없을 때: 등록 인포에 답이 없을 수 있으니 아래 출처를 확인해 주세요.\n\n"
+              : "") +
+            (picked.length
+              ? picked.join("\n\n")
+              : "관련 없을 때: 등록 인포에서 연결할 키워드를 찾지 못했습니다.");
+          if (info.urls && info.urls.length) {
+            body += "\n\n【참고 URL】\n" + info.urls.join("\n");
           }
         }
         return { ok: true, body: body };
@@ -16317,7 +16679,7 @@
         }
         if (
           /호텔\s*인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|공식\s*사이트/.test(q) ||
-          (/체크\s*인|체크\s*아웃|체크인|체크아웃|와이\s*파이|wifi|wi-?fi|주차|조식|수영장|피트니스|연락처|안내\s*데스크/i.test(
+          (/체크\s*인|\bCI\b|체크\s*아웃|\bCO\b|와이\s*파이|wifi|wi-?fi|주차|parking|조식|breakfast|수영장|pool|피트니스|연락처|영업\s*시간|운영\s*시간|안내\s*데스크/i.test(
             q
           ) &&
             !/객실|타입|type|입실\s*가능|정비\s*가능|\b(IP|CL|PU|DI|OO|OS)\b/i.test(q))
@@ -16424,6 +16786,12 @@
         }
         if (typeCode && /가능|입실|객실/.test(q)) {
           return { type: "type_checkin", typeCode: typeCode };
+        }
+        if (
+          hasAiHotelInfoContent(getAiHotelInfo()) &&
+          /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포/.test(q)
+        ) {
+          return { type: "hotel_info", query: rawText };
         }
         return { type: "unknown" };
       }
@@ -16727,6 +17095,13 @@
         var q = normalizeAiQueryInput(rawQ);
         appendAiChatUserMessage(rawQ);
         var intent = detectAiIntent(q);
+        if (
+          intent.type === "unknown" &&
+          hasAiHotelInfoContent(getAiHotelInfo()) &&
+          /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포/.test(q)
+        ) {
+          intent = { type: "hotel_info", query: rawQ };
+        }
 
         if (intent.type === "help") {
           appendAiChatBotResult("AI 모드 도움말", [], buildAiHelpMessage());
@@ -17614,14 +17989,8 @@
       }
 
       function showSidebarMbInvView() {
-        collapseZoneBlock();
-        clearZoneTabSelection();
-        clearMbInvSidebarAlerts();
-        applySidebarMainView("mbInv");
-        if (typeof HKMbWorkflow !== "undefined") {
-          HKMbWorkflow.renderMbInvPanels();
-        }
-        renderMbInvNoticeBoard();
+        // MB & 인벤 변경 사이드바 메뉴 제거 — 기존 단축키/딥링크는 정비관리로 보냄
+        showSidebarRequestView();
       }
 
       function showSidebarMbCheckView() {
@@ -19586,7 +19955,7 @@
       }
 
       function toggleChatMsgReaction(kind, entryId, msgId, emoji) {
-        if (!kind || !entryId || !msgId || !emoji) return;
+        if (!kind || !msgId || !emoji) return;
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -19596,6 +19965,65 @@
           });
           return;
         }
+        var deskConfig = {
+          "desk-request": {
+            key: "requestDeskChat",
+            render: renderRequestDeskChat,
+          },
+          "desk-order": {
+            key: "orderDeskChat",
+            render: renderOrderDeskChat,
+          },
+          "desk-facility": {
+            key: "facilityDeskChat",
+            render: renderFacilityDeskChat,
+          },
+          "desk-mbcheck": {
+            key: "mbCheckDeskChat",
+            render: renderMbCheckDeskChat,
+          },
+        };
+        var desk = deskConfig[kind];
+        if (desk) {
+          var data = typeof HKStorage !== "undefined" ? HKStorage.load() : null;
+          if (!data) return;
+          var deskMessages = Array.isArray(data[desk.key]) ? data[desk.key] : [];
+          var deskMsg = null;
+          for (var di = 0; di < deskMessages.length; di++) {
+            if (
+              deskMessages[di] &&
+              (String(deskMessages[di].id || "") === String(msgId) ||
+                chatMessageStableKey(deskMessages[di]) === String(msgId))
+            ) {
+              deskMsg = deskMessages[di];
+              break;
+            }
+          }
+          if (!deskMsg) return;
+          ensureChatMessageId(deskMsg);
+          if (!deskMsg.reactions || typeof deskMsg.reactions !== "object") {
+            deskMsg.reactions = {};
+          }
+          var deskMe = getOperatorName();
+          var deskList = Array.isArray(deskMsg.reactions[emoji])
+            ? deskMsg.reactions[emoji].slice()
+            : [];
+          var deskIdx = deskList.indexOf(deskMe);
+          if (deskIdx >= 0) deskList.splice(deskIdx, 1);
+          else deskList.push(deskMe);
+          if (deskList.length) deskMsg.reactions[emoji] = deskList;
+          else delete deskMsg.reactions[emoji];
+          deskMsg.updatedAt = new Date().toISOString();
+          data[desk.key] = deskMessages;
+          HKStorage.save(data, { skipSync: true });
+          if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+            HKSync.pushStorageNow();
+          }
+          closeChatReactionPicker();
+          desk.render({ force: true });
+          return;
+        }
+        if (!entryId) return;
         var entry =
           kind === "sched" ? findRequestEntry(entryId) : findOrderEntry(entryId);
         if (!entry) return;
@@ -19657,7 +20085,9 @@
           );
           return true;
         }
-        var msgLi = e.target.closest(".order-chat__msg.is-reactable");
+        var msgLi = e.target.closest(
+          ".order-chat__msg.is-reactable, .request-desk-chat__msg.is-reactable, .order-desk-chat__msg.is-reactable"
+        );
         if (msgLi && !e.target.closest(".order-chat__form")) {
           e.preventDefault();
           e.stopPropagation();
@@ -24280,6 +24710,8 @@
       loadRequestLog();
       loadOrderLog();
       loadFrontChat();
+      bindDeskChatFontControls();
+      applyDeskChatFontLevel(getDeskChatFontLevel());
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
@@ -24499,6 +24931,16 @@
         return false;
       }
 
+      function hasConfirmingRequestForRoom(roomInput) {
+        syncRequestLogFromServer();
+        for (var i = 0; i < requestLogEntries.length; i++) {
+          var e = requestLogEntries[i];
+          if (!isRequestConfirmingEntry(e)) continue;
+          if (roomsAreSame(e.room, roomInput)) return true;
+        }
+        return false;
+      }
+
       function hasPendingRequestInFeedback(roomInput) {
         var want = normalizeRoomKey(roomInput);
         if (!want) return false;
@@ -24508,6 +24950,34 @@
           if (roomsAreSame(e.room, roomInput)) return true;
         }
         return false;
+      }
+
+      var ORDER_MEMO_ITEM_CODE_LABELS = {
+        BBS: "소독기",
+        BBT: "아기욕조",
+        BEG: "가드",
+        BIPILL: "바이오",
+        BOPILL: "바디필로우",
+        CBF: "발판",
+        CRIB: "아기침대",
+        CTS: "커버",
+        EXB: "엑스트라베드",
+        HUMI: "가습기",
+        IRON: "다리미",
+        KBD: "한실이불",
+        KOPILL: "한실베개",
+        MFPILL: "메모리폼",
+        WOPILL: "양모",
+        ZBPILL: "젠메밀",
+      };
+
+      function expandOrderMemoItemCodes(text) {
+        var s = String(text == null ? "" : text);
+        if (!s) return "";
+        return s.replace(/\b([A-Za-z][A-Za-z0-9]{1,11})\b/g, function (code) {
+          var upper = code.toUpperCase();
+          return ORDER_MEMO_ITEM_CODE_LABELS[upper] || code;
+        });
       }
 
       function appendOrderLog(room, memoText, isUrgent, memoImage, extra) {
@@ -24621,7 +25091,7 @@
         var memoEl = document.getElementById("orderMemo");
         var btnOrderUrgentEl = document.getElementById("btnOrderUrgent");
         var room = roomEl && roomEl.value.trim();
-        var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var memo = memoEl ? expandOrderMemoItemCodes(String(memoEl.value || "").trim()) : "";
         var isUrgent = btnOrderUrgentEl && btnOrderUrgentEl.classList.contains("is-on");
         var memoImage = hkGetPhoto("orderMemo");
         if (!room) {
@@ -24652,7 +25122,7 @@
         var memoEl = document.getElementById("facilityOrderMemo");
         var btnUrgentEl = document.getElementById("btnFacilityOrderUrgent");
         var room = roomEl && roomEl.value.trim();
-        var memo = memoEl ? String(memoEl.value || "").trim() : "";
+        var memo = memoEl ? expandOrderMemoItemCodes(String(memoEl.value || "").trim()) : "";
         var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
         var memoImage = hkGetPhoto("facilityOrderMemo");
         if (!room) {
@@ -24755,7 +25225,11 @@
           alert("이미 요청하셨습니다.");
           return;
         }
-        if (hasScheduledRequestForRoom(room)) {
+        if (hasConfirmingRequestForRoom(room)) {
+          if (!confirm("이미 요청했습니다. 또 요청하시겠습니까?")) {
+            return;
+          }
+        } else if (hasScheduledRequestForRoom(room)) {
           if (
             !confirm(
               "이미 요청 답변되었습니다 중복으로 요청하시겠습니까?"
@@ -25021,7 +25495,8 @@
             deployedCard &&
             !e.target.closest(".order-chat") &&
             !e.target.closest(".order-work__wan-btn") &&
-            !e.target.closest(".order-work__doorhandle-btn")
+            !e.target.closest(".order-work__doorhandle-btn") &&
+            !(e.target.tagName === "IMG" || e.target.closest("img"))
           ) {
             var depOrderId = deployedCard.getAttribute("data-order-id");
             if (depOrderId) {
@@ -25071,7 +25546,9 @@
         if (
           openChatReactionPickerKey &&
           !e.target.closest(".chat-reaction-picker") &&
-          !e.target.closest(".order-chat__msg.is-reactable")
+          !e.target.closest(
+            ".order-chat__msg.is-reactable, .request-desk-chat__msg.is-reactable, .order-desk-chat__msg.is-reactable"
+          )
         ) {
           closeChatReactionPicker();
         }
@@ -25407,7 +25884,7 @@
             showSidebarFacilityView();
             handled = true;
           } else if (!e.shiftKey && (e.code === "Digit4" || e.key === "4")) {
-            showSidebarMbInvView();
+            showSidebarMbCheckView();
             handled = true;
           } else if (!e.shiftKey && (e.code === "Digit5" || e.key === "5")) {
             showSidebarMbCheckView();

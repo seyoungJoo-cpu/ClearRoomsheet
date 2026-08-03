@@ -401,6 +401,15 @@
     return inv.updatedAt != null ? String(inv.updatedAt).trim() : "";
   }
 
+  function invenNotifyHasContent(inv) {
+    if (!inv || typeof inv !== "object") return false;
+    if (Array.isArray(inv.cards) && inv.cards.length > 0) return true;
+    if (inv.table && Array.isArray(inv.table.rows) && inv.table.rows.length > 0) {
+      return true;
+    }
+    return false;
+  }
+
   /** 인벤 통보는 updatedAt이 더 최신인 쪽만 채택 (빈 표 초기화도 포함) */
   function pickInvenNotify(base, incoming) {
     var baseObj = base && typeof base === "object" ? base : {};
@@ -417,6 +426,11 @@
     if (!baseInv || typeof baseInv !== "object") return inc;
     var baseAt = getInvenNotifyUpdatedAt(baseInv);
     var incAt = getInvenNotifyUpdatedAt(inc);
+    // 내용 있는 표를 빈 표로 덮을 때는 반드시 더 최신 시각이어야 함 (동시각·역행 방지)
+    if (invenNotifyHasContent(baseInv) && !invenNotifyHasContent(inc)) {
+      if (!incAt || (baseAt && incAt <= baseAt)) return baseInv;
+      return inc;
+    }
     if (baseAt && incAt && incAt < baseAt) return baseInv;
     if (baseAt && !incAt) return baseInv;
     return inc;
@@ -482,12 +496,17 @@
       var at = m.at != null ? String(m.at) : "";
       var t = new Date(at || 0).getTime();
       if (!isNaN(t) && t > 0 && t < cutoff) return;
-      out.push({
+      var row = {
         id: id,
         at: at,
         by: m.by != null ? String(m.by) : "",
         text: m.text != null ? String(m.text) : "",
-      });
+      };
+      if (m.reactions && typeof m.reactions === "object") {
+        row.reactions = m.reactions;
+      }
+      if (m.updatedAt) row.updatedAt = String(m.updatedAt);
+      out.push(row);
     });
     out.sort(function (a, b) {
       var ta = new Date(a.at || 0).getTime();
@@ -502,6 +521,23 @@
 
   function mergeRequestDeskChat(baseArr, incomingArr) {
     var map = {};
+    function mergeReactions(a, b) {
+      var out = {};
+      [a, b].forEach(function (src) {
+        if (!src || typeof src !== "object") return;
+        Object.keys(src).forEach(function (emoji) {
+          var list = Array.isArray(src[emoji]) ? src[emoji] : [];
+          if (!out[emoji]) out[emoji] = [];
+          list.forEach(function (name) {
+            var n = name != null ? String(name) : "";
+            if (!n) return;
+            if (out[emoji].indexOf(n) < 0) out[emoji].push(n);
+          });
+          if (!out[emoji].length) delete out[emoji];
+        });
+      });
+      return out;
+    }
     normalizeRequestDeskChat(baseArr).forEach(function (m) {
       map[m.id] = m;
     });
@@ -515,7 +551,10 @@
       var tb = new Date(m.at || 0).getTime();
       if (isNaN(ta)) ta = 0;
       if (isNaN(tb)) tb = 0;
-      if (tb >= ta) map[m.id] = m;
+      var merged = tb >= ta ? Object.assign({}, prev, m) : Object.assign({}, m, prev);
+      merged.reactions = mergeReactions(prev.reactions, m.reactions);
+      if (!Object.keys(merged.reactions || {}).length) delete merged.reactions;
+      map[m.id] = merged;
     });
     return normalizeRequestDeskChat(
       Object.keys(map).map(function (k) {
@@ -621,8 +660,9 @@
         if (frontEmbedNonClearMayReplaceClear(a, b)) out[key] = b;
         return;
       }
+      // 옛 초기화 마커가 afterClearId 없는 새 만들기 결과를 덮지 않음 — 더 최신 clear만 채택
       if (!aCleared && bCleared) {
-        if (tb >= ta || !frontEmbedNonClearMayReplaceClear(b, a)) out[key] = b;
+        if (tb >= ta) out[key] = b;
         return;
       }
       if (tb >= ta) out[key] = b;

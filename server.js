@@ -672,6 +672,18 @@ function pickInvenNotifyForServer(prev, incoming) {
   if (!baseInv || typeof baseInv !== "object") return inc;
   var baseAt = getInvenNotifyUpdatedAtForServer(baseInv);
   var incAt = getInvenNotifyUpdatedAtForServer(inc);
+  function hasContent(inv) {
+    if (!inv || typeof inv !== "object") return false;
+    if (Array.isArray(inv.cards) && inv.cards.length > 0) return true;
+    if (inv.table && Array.isArray(inv.table.rows) && inv.table.rows.length > 0) {
+      return true;
+    }
+    return false;
+  }
+  if (hasContent(baseInv) && !hasContent(inc)) {
+    if (!incAt || (baseAt && incAt <= baseAt)) return baseInv;
+    return inc;
+  }
   if (baseAt && incAt && incAt < baseAt) return baseInv;
   if (baseAt && !incAt) return baseInv;
   return inc;
@@ -761,8 +773,9 @@ function mergeFrontEmbedStatesForServer(prevStates, incStates) {
       if (frontEmbedNonClearMayReplaceClear(a, b)) out[key] = b;
       return;
     }
+    // 옛 초기화 마커가 afterClearId 없는 새 만들기 결과를 덮지 않음 — 더 최신 clear만 채택
     if (!aCleared && bCleared) {
-      if (tb >= ta || !frontEmbedNonClearMayReplaceClear(b, a)) out[key] = b;
+      if (tb >= ta) out[key] = b;
       return;
     }
     if (tb >= ta) out[key] = b;

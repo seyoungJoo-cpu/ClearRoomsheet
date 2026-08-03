@@ -985,7 +985,7 @@
         공지(사진 포함)·특이객실(VIP/R/C/CASINO/모바일체크인·커스텀·입실/삭제 트레이)·VIP 메모장·MB &amp; 인벤 메모장(사진)·인벤 통보(게시·임시저장)·요청·오더·MB &amp; 인벤 변경·MB CHECK·채팅방·프론트 채팅방·관리자 문의·객실 변경 이력·취소/사용 리스트·루밍·FASN XML·컴플레인·습득·세탁·당일습득물(사진·채팅)·DD·인벤·치치 임베드 등
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 읽기 모드 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
-        <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림·문제발생</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다.
+        <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
@@ -4153,7 +4153,8 @@
           if (p === "cancelled") return false;
           if (p === "deployed") return false;
           if (p === "doorhandle") return false;
-          if (entry.issueOpen === true || p === "issue") return true;
+          // 마감 시 문제발생은 전부 초기화
+          if (entry.issueOpen === true || p === "issue") return false;
           if (p === "accepted") return false;
           return true;
         });
@@ -4176,10 +4177,10 @@
         }
         var closeAt = new Date().toISOString();
         reset.closeDayAt = closeAt;
-        // 공지(사진 포함)·MB 인벤 공지·프론트 임베드(DD·인벤·취향)·인벤통보 초기화
+        // 공지 문구는 유지, 공지 사진만 초기화 · MB 인벤 공지·임베드·인벤통보는 초기화
         // noticeUpdatedAt / __cleared / invenNotify.table.updatedAt 스탬프로
         // 이후 merge 시 옛 데이터가 되살아나지 않게 함
-        reset.notice = "";
+        reset.notice = prev.notice != null ? String(prev.notice) : "";
         reset.noticeImage = "";
         reset.noticeImages = [];
         reset.noticeUpdatedAt = closeAt;
@@ -4377,7 +4378,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록 유지 · 연박 초기화)");
           });
           return;
         }
@@ -4396,13 +4397,13 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·문제발생·시설업무 10일 · 오더/정비 작은채팅 7일 유지 · 인포등록 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지(사진 포함)·DD·인벤·고객취향·인벤통보·객실·요청·MB 등 초기화\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·문제발생·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
