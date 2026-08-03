@@ -746,7 +746,7 @@
     return d;
   }
 
-  var GAME_RANK_IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump"];
+  var GAME_RANK_IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump", "tetris", "pong", "flappy", "mines", "reaction", "dodge"];
   var GAME_RANK_MAX = 30;
 
   function defaultGameRanks() {

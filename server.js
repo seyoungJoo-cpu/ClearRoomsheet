@@ -832,7 +832,7 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
 }
 
 function mergeGameRanksForServer(prev, incoming) {
-  var IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump"];
+  var IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump", "tetris", "pong", "flappy", "mines", "reaction", "dodge"];
   var MAX = 30;
   function normEntry(raw) {
     if (!raw || typeof raw !== "object") return null;

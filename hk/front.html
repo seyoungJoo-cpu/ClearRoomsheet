@@ -15794,6 +15794,31 @@
         return s.trim();
       }
 
+      function isAiOperationalSheetQuery(q) {
+        return /객실|오더|요청\s*알림|정비\s*요청|상태|\b(IP|CL|PU|DI|OO|OS|IN)\b|층\s*(객실|목록)|타입|입실\s*가능|MB\s*CHECK|인벤|연박|공지|현황|브리핑|변경\s*(이력|내역)|히스토리|몇개|몇\s*건/i.test(
+          String(q || "")
+        );
+      }
+
+      function extractAiTellMeTopic(text) {
+        var q = normalizeAiQueryInput(text);
+        if (!q) return "";
+        var m =
+          q.match(
+            /^(.+?)\s*(?:좀\s*)?(?:에\s*대해\s*)?(?:알려줘|알려주세요|말해줘|말해주세요|설명해줘|설명해주세요|보여줘|찾아줘|뭐야|뭔가요|뭐예요|인가요)[?.!]*$/i
+          ) ||
+          q.match(/^(?:알려줘|알려주세요|말해줘)\s*(.+)$/i) ||
+          q.match(/^(.+?)\s*(?:에\s*대해|관련|관한)\s*(?:알려줘|말해줘|설명해줘)?[?.!]*$/i);
+        if (!m || !m[1]) return "";
+        var topic = String(m[1])
+          .replace(/^(에|에\s*대해|관련|관한|호텔)\s*/i, "")
+          .replace(/\s*(좀|제발|해주세요)$/i, "")
+          .trim();
+        if (!topic || topic.length < 1) return "";
+        if (/^(도움말|help|현황|공지|연박)$/i.test(topic)) return "";
+        return topic;
+      }
+
       function fuzzyParseAiQueryTypeCode(text) {
         var upper = String(text || "")
           .toUpperCase()
@@ -16273,7 +16298,8 @@
           "【기타】\n" +
           "· MB CHECK · MB & 인벤 변경 · MB 인벤 문제\n" +
           "· 오늘 변경 이력\n" +
-          "· 호텔 인포 / 체크인 시간 / 주차 / 와이파이 / 조식\n\n" +
+          "· 호텔 인포 / 체크인 시간 / 주차 / 와이파이 / 조식\n" +
+          "· 「조식 알려줘」「주차 뭐야」처럼 물어보면 인포 내용을 찾아 답합니다\n\n" +
           "※ 오더·요청 카드에 객실 정비 상태(IP·CL·PU·DI·OO·OS)가 표시됩니다.\n" +
           "※ 호텔 인포는 관리자 「인포등록」에 저장된 내용·홈페이지를 참고합니다."
         );
@@ -16797,6 +16823,14 @@
         if (/^(help|도움말|뭐\s*물|어떤\s*질문|사용법|기능)/i.test(q)) {
           return { type: "help" };
         }
+        var tellTopic = extractAiTellMeTopic(rawText);
+        if (
+          tellTopic &&
+          !isAiOperationalSheetQuery(q) &&
+          hasAiHotelInfoContent(getAiHotelInfo())
+        ) {
+          return { type: "hotel_info", query: tellTopic };
+        }
         if (
           /호텔\s*인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|공식\s*사이트|안내\s*사항/.test(q) ||
           (/체크\s*인|\bCI\b|체크\s*아웃|\bCO\b|와이\s*파이|wifi|wi-?fi|주차|parking|조식|breakfast|수영장|pool|피트니스|스파|세탁|런드리|연락처|영업\s*시간|운영\s*시간|이용\s*시간|안내\s*데스크|프론트|리셉션|카페|바|라운지|짐\s*보관|수하물|컨시어지|요금|가격|위치|주소|오시는\s*길|레이트\s*체크아웃|얼리\s*체크인/i.test(
@@ -16804,7 +16838,7 @@
           ) &&
             !/객실|타입|type|입실\s*가능|정비\s*가능|\b(IP|CL|PU|DI|OO|OS)\b|요청\s*알림|오더\s*알림/i.test(q))
         ) {
-          return { type: "hotel_info", query: rawText };
+          return { type: "hotel_info", query: tellTopic || rawText };
         }
         if (/현황|요약|브리핑|전체\s*상황|지금\s*상황|오늘\s*현황/.test(q)) {
           return { type: "summary" };
@@ -16910,12 +16944,13 @@
         if (hasAiHotelInfoContent(getAiHotelInfo())) {
           var probe = probeAiHotelInfoScore(rawText);
           if (
-            probe >= 2.2 ||
-            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크|이용|영업|운영/.test(
+            probe >= 1.4 ||
+            tellTopic ||
+            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크|이용|영업|운영|알려|말해|설명/.test(
               q
             )
           ) {
-            return { type: "hotel_info", query: rawText };
+            return { type: "hotel_info", query: tellTopic || rawText };
           }
         }
         return { type: "unknown" };
@@ -17219,16 +17254,18 @@
         if (!rawQ) return;
         var q = normalizeAiQueryInput(rawQ);
         appendAiChatUserMessage(rawQ);
-        var intent = detectAiIntent(q);
+        var intent = detectAiIntent(rawQ);
         if (intent.type === "unknown" && hasAiHotelInfoContent(getAiHotelInfo())) {
-          var hotelProbe = probeAiHotelInfoScore(rawQ);
+          var tellTopic = extractAiTellMeTopic(rawQ);
+          var hotelProbe = probeAiHotelInfoScore(tellTopic || rawQ);
           if (
-            hotelProbe >= 2.0 ||
-            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크/.test(
+            tellTopic ||
+            hotelProbe >= 1.2 ||
+            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크|알려|말해|설명/.test(
               q
             )
           ) {
-            intent = { type: "hotel_info", query: rawQ };
+            intent = { type: "hotel_info", query: tellTopic || rawQ };
           }
         }
 
