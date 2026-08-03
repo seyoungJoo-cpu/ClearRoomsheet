@@ -9311,7 +9311,7 @@
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
-                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
               </div>
             </div>
@@ -9424,7 +9424,7 @@
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
-                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
               </div>
             </div>
@@ -9785,7 +9785,7 @@
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
-                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
               </div>
             </div>
@@ -9888,7 +9888,7 @@
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
-                <span class="desk-chat-font-level" data-desk-font-label>3</span>
+                <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
               </div>
             </div>
@@ -11973,7 +11973,7 @@
         }
       }
 
-      var DESK_CHAT_FONT_KEY = "hk-desk-chat-font-level";
+      var DESK_CHAT_FONT_KEY = "hk-desk-chat-font-level-v2";
       var DESK_CHAT_IDS = [
         "requestDeskChat",
         "orderDeskChat",
@@ -11982,11 +11982,11 @@
       ];
 
       function getDeskChatFontLevel() {
-        var level = 3;
+        var level = 1;
         try {
           level = parseInt(localStorage.getItem(DESK_CHAT_FONT_KEY), 10);
         } catch (e) {}
-        if (!isFinite(level)) level = 3;
+        if (!isFinite(level)) level = 1;
         return Math.max(1, Math.min(5, level));
       }
 
@@ -12006,7 +12006,7 @@
       }
 
       function setDeskChatFontLevel(level) {
-        var next = Math.max(1, Math.min(5, parseInt(level, 10) || 3));
+        var next = Math.max(1, Math.min(5, parseInt(level, 10) || 1));
         try {
           localStorage.setItem(DESK_CHAT_FONT_KEY, String(next));
         } catch (e) {}
