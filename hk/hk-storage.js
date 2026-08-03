@@ -693,6 +693,7 @@
       facilityDeskChat: [],
       facilityDeskChat: [],
       hotelInfo: defaultHotelInfo(),
+      gameRanks: defaultGameRanks(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -743,6 +744,87 @@
     });
     d.pages = pages;
     return d;
+  }
+
+  var GAME_RANK_IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump"];
+  var GAME_RANK_MAX = 30;
+
+  function defaultGameRanks() {
+    var boards = {};
+    GAME_RANK_IDS.forEach(function (id) {
+      boards[id] = [];
+    });
+    return { updatedAt: "", boards: boards };
+  }
+
+  function normalizeGameRankEntry(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var name = raw.name != null ? String(raw.name).trim() : "";
+    var score = Number(raw.score);
+    if (!name || !isFinite(score)) return null;
+    return {
+      name: name,
+      score: Math.floor(score),
+      at: raw.at != null ? String(raw.at) : "",
+    };
+  }
+
+  function normalizeGameRanks(raw) {
+    var d = defaultGameRanks();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
+    var src = raw.boards && typeof raw.boards === "object" ? raw.boards : raw;
+    GAME_RANK_IDS.forEach(function (id) {
+      var list = Array.isArray(src[id]) ? src[id] : [];
+      var byName = {};
+      list.forEach(function (row) {
+        var n = normalizeGameRankEntry(row);
+        if (!n) return;
+        var prev = byName[n.name];
+        if (!prev || n.score > prev.score) byName[n.name] = n;
+      });
+      d.boards[id] = Object.keys(byName)
+        .map(function (k) {
+          return byName[k];
+        })
+        .sort(function (a, b) {
+          if (b.score !== a.score) return b.score - a.score;
+          return String(a.at).localeCompare(String(b.at));
+        })
+        .slice(0, GAME_RANK_MAX);
+    });
+    return d;
+  }
+
+  function mergeGameRanks(baseRaw, incRaw) {
+    var base = normalizeGameRanks(baseRaw);
+    var inc = normalizeGameRanks(incRaw);
+    var out = defaultGameRanks();
+    var baseAt = base.updatedAt || "";
+    var incAt = inc.updatedAt || "";
+    out.updatedAt =
+      incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+    GAME_RANK_IDS.forEach(function (id) {
+      var byName = {};
+      [base.boards[id] || [], inc.boards[id] || []].forEach(function (list) {
+        list.forEach(function (row) {
+          var n = normalizeGameRankEntry(row);
+          if (!n) return;
+          var prev = byName[n.name];
+          if (!prev || n.score > prev.score) byName[n.name] = n;
+        });
+      });
+      out.boards[id] = Object.keys(byName)
+        .map(function (k) {
+          return byName[k];
+        })
+        .sort(function (a, b) {
+          if (b.score !== a.score) return b.score - a.score;
+          return String(a.at).localeCompare(String(b.at));
+        })
+        .slice(0, GAME_RANK_MAX);
+    });
+    return out;
   }
 
   function pickHotelInfo(baseObj, incObj) {
@@ -836,6 +918,7 @@
     d.facilityDeskChat = normalizeRequestDeskChat(data.facilityDeskChat);
     d.facilityDeskChat = normalizeRequestDeskChat(data.facilityDeskChat);
     d.hotelInfo = normalizeHotelInfo(data.hotelInfo);
+    d.gameRanks = normalizeGameRanks(data.gameRanks);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -1192,6 +1275,11 @@
       merged.facilityDeskChat = base.facilityDeskChat || [];
     }
     merged.hotelInfo = pickHotelInfo(base, incoming);
+    if (Object.prototype.hasOwnProperty.call(incoming, "gameRanks")) {
+      merged.gameRanks = mergeGameRanks(base.gameRanks, incoming.gameRanks);
+    } else {
+      merged.gameRanks = normalizeGameRanks(base.gameRanks);
+    }
     return normalize(merged);
   }
 
@@ -1241,5 +1329,9 @@
     normalizeRequestDeskChat: normalizeRequestDeskChat,
     normalizeHotelInfo: normalizeHotelInfo,
     defaultHotelInfo: defaultHotelInfo,
+    normalizeGameRanks: normalizeGameRanks,
+    defaultGameRanks: defaultGameRanks,
+    mergeGameRanks: mergeGameRanks,
+    GAME_RANK_IDS: GAME_RANK_IDS,
   };
 })(typeof window !== "undefined" ? window : this);

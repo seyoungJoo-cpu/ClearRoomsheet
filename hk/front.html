@@ -77,6 +77,21 @@
       color: var(--accent);
       letter-spacing: -0.02em;
       white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 6px;
+      padding: 2px 4px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .brand:hover {
+      background: rgba(15, 118, 110, 0.12);
+      color: #0f766e;
+    }
+
+    .brand:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .brand-operator {
@@ -8745,7 +8760,7 @@
   <header class="topbar is-collapsed" id="topbar">
     <div class="topbar-mobile-bar">
       <div class="brand-block">
-        <span class="brand">Lotte Hotel</span>
+        <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="Lotte Hotel 미니게임">Lotte Hotel</span>
         <span class="brand-operator" id="topbarOperatorName" hidden></span>
         <nav class="topbar-quick-nav" aria-label="교대 · 루밍 · 관리자 문의">
           <div class="topbar-quick-nav__row topbar-quick-nav__row--primary">
@@ -10247,6 +10262,7 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
+  <script src="hk-games.js?v=lounge-1"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -24720,6 +24736,96 @@
       renderMbCheckDeskChat({ force: true });
       bindFacilityDeskChatUi();
       renderFacilityDeskChat({ force: true });
+      (function setupHkGamesLounge() {
+        if (typeof HKGames === "undefined" || !HKGames.init) return;
+        HKGames.init({
+          getOperatorName: function () {
+            return getOperatorName();
+          },
+          requireOperator: function (cb) {
+            if (getOperatorName()) {
+              if (typeof cb === "function") cb();
+              return;
+            }
+            showOperatorGate({
+              mode: "initial",
+              onSaved: function () {
+                if (typeof cb === "function") cb();
+              },
+            });
+          },
+          loadRanks: function () {
+            var data = typeof HKStorage !== "undefined" ? HKStorage.load() : {};
+            if (typeof HKStorage !== "undefined" && HKStorage.normalizeGameRanks) {
+              return HKStorage.normalizeGameRanks(data.gameRanks);
+            }
+            return data.gameRanks || { updatedAt: "", boards: {} };
+          },
+          saveScore: function (gameId, score) {
+            if (typeof HKStorage === "undefined") return;
+            var who = getOperatorName();
+            var n = Math.max(0, Math.round(Number(score) || 0));
+            if (!who || !n) return;
+            var data = HKStorage.load();
+            var ranks =
+              typeof HKStorage.normalizeGameRanks === "function"
+                ? HKStorage.normalizeGameRanks(data.gameRanks)
+                : { updatedAt: "", boards: {} };
+            if (!ranks.boards) ranks.boards = {};
+            if (!Array.isArray(ranks.boards[gameId])) ranks.boards[gameId] = [];
+            var list = ranks.boards[gameId];
+            var found = false;
+            for (var i = 0; i < list.length; i++) {
+              if (list[i] && list[i].name === who) {
+                found = true;
+                if (n > Number(list[i].score || 0)) {
+                  list[i].score = n;
+                  list[i].at = new Date().toISOString();
+                }
+                break;
+              }
+            }
+            if (!found) {
+              list.push({ name: who, score: n, at: new Date().toISOString() });
+            }
+            ranks.updatedAt = new Date().toISOString();
+            if (typeof HKStorage.normalizeGameRanks === "function") {
+              ranks = HKStorage.normalizeGameRanks(ranks);
+            }
+            data.gameRanks = ranks;
+            HKStorage.save(data, { skipSync: true });
+            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+              HKSync.pushStorageNow();
+            }
+          },
+        });
+        var brandBtn = document.getElementById("brandGamesBtn");
+        function openGames() {
+          if (!getOperatorName()) {
+            showOperatorGate({
+              mode: "initial",
+              onSaved: function () {
+                HKGames.open();
+              },
+            });
+            return;
+          }
+          HKGames.open();
+        }
+        if (brandBtn) {
+          brandBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openGames();
+          });
+          brandBtn.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openGames();
+            }
+          });
+        }
+      })();
       initFrontChatTracking();
       initOrderIssueTracking();
       initRequestAlertTracking();

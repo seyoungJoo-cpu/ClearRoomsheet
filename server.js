@@ -831,6 +831,80 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
   };
 }
 
+function mergeGameRanksForServer(prev, incoming) {
+  var IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump"];
+  var MAX = 30;
+  function normEntry(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var name = raw.name != null ? String(raw.name).trim() : "";
+    var score = Number(raw.score);
+    if (!name || !isFinite(score)) return null;
+    return {
+      name: name,
+      score: Math.floor(score),
+      at: raw.at != null ? String(raw.at) : "",
+    };
+  }
+  function norm(raw) {
+    var boards = {};
+    IDS.forEach(function (id) {
+      boards[id] = [];
+    });
+    var out = { updatedAt: "", boards: boards };
+    if (!raw || typeof raw !== "object") return out;
+    out.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
+    var src = raw.boards && typeof raw.boards === "object" ? raw.boards : raw;
+    IDS.forEach(function (id) {
+      var list = Array.isArray(src[id]) ? src[id] : [];
+      var byName = {};
+      list.forEach(function (row) {
+        var n = normEntry(row);
+        if (!n) return;
+        var prevE = byName[n.name];
+        if (!prevE || n.score > prevE.score) byName[n.name] = n;
+      });
+      out.boards[id] = Object.keys(byName)
+        .map(function (k) {
+          return byName[k];
+        })
+        .sort(function (a, b) {
+          if (b.score !== a.score) return b.score - a.score;
+          return String(a.at).localeCompare(String(b.at));
+        })
+        .slice(0, MAX);
+    });
+    return out;
+  }
+  var base = norm(prev);
+  var inc = norm(incoming);
+  var out = norm(null);
+  var baseAt = base.updatedAt || "";
+  var incAt = inc.updatedAt || "";
+  out.updatedAt =
+    incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+  IDS.forEach(function (id) {
+    var byName = {};
+    [base.boards[id] || [], inc.boards[id] || []].forEach(function (list) {
+      list.forEach(function (row) {
+        var n = normEntry(row);
+        if (!n) return;
+        var prevE = byName[n.name];
+        if (!prevE || n.score > prevE.score) byName[n.name] = n;
+      });
+    });
+    out.boards[id] = Object.keys(byName)
+      .map(function (k) {
+        return byName[k];
+      })
+      .sort(function (a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        return String(a.at).localeCompare(String(b.at));
+      })
+      .slice(0, MAX);
+  });
+  return out;
+}
+
 function mergeHkStorage(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
@@ -883,6 +957,16 @@ function mergeHkStorage(prev, incoming) {
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
       staleOut.facilityDeskChat = incoming.facilityDeskChat;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "hotelInfo")) {
+      staleOut.hotelInfo = incoming.hotelInfo;
+    } else if (prev.hotelInfo) {
+      staleOut.hotelInfo = prev.hotelInfo;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "gameRanks")) {
+      staleOut.gameRanks = mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks);
+    } else if (prev.gameRanks) {
+      staleOut.gameRanks = prev.gameRanks;
     }
     return staleOut;
   }
@@ -1130,6 +1214,13 @@ function mergeHkStorage(prev, incoming) {
         })
         .slice(-120);
     })(),
+    hotelInfo: (function () {
+      if (Object.prototype.hasOwnProperty.call(incoming, "hotelInfo") && incoming.hotelInfo) {
+        return incoming.hotelInfo;
+      }
+      return prev.hotelInfo || { text: "", urls: [], pages: [], updatedAt: "" };
+    })(),
+    gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
   };
 
   var mergedDeleted = hkMergeDeletedRoomsMaps(

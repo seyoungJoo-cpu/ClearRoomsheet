@@ -4265,13 +4265,19 @@
             reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
           }
         }
-        // 인포등록(호텔 인포·홈페이지)은 마감해도 절대 초기화하지 않음
+        // 인포등록(호텔 인포·홈페이지) · 게임 랭킹은 마감해도 절대 초기화하지 않음
         reset.hotelInfo =
           typeof HKStorage.normalizeHotelInfo === "function"
             ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
             : prev.hotelInfo && typeof prev.hotelInfo === "object"
               ? prev.hotelInfo
               : reset.hotelInfo;
+        reset.gameRanks =
+          typeof HKStorage.normalizeGameRanks === "function"
+            ? HKStorage.normalizeGameRanks(prev.gameRanks)
+            : prev.gameRanks && typeof prev.gameRanks === "object"
+              ? prev.gameRanks
+              : reset.gameRanks;
         return reset;
       }
 
@@ -4378,7 +4384,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹 유지 · 연박 초기화)");
           });
           return;
         }
@@ -4397,7 +4403,7 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹 유지)");
       }
 
       function performCloseDay() {
