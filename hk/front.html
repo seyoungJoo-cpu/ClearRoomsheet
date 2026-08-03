@@ -16403,87 +16403,99 @@
       }
 
       function splitAiHotelInfoChunks(text, source) {
-        var raw = String(text || "").trim();
+        var raw = String(text || "").replace(/\r/g, "").trim();
         if (!raw) return [];
-        var lineParts = raw
-          .split(/\n+/)
-          .map(function (line) {
-            return String(line || "")
-              .replace(/^\s*(?:[-*•▪◦·]+|\d+[.)])\s*/, "")
-              .replace(/\s+/g, " ")
-              .trim();
-          })
-          .filter(function (line) {
-            return line.length >= 2;
-          });
-        var splitReady = raw
-          .replace(/\r/g, "")
-          .replace(/다\.(?=\s|$)/g, "다.\n")
-          .replace(/\n\s*(?:[-*•▪◦]+)\s*/g, "\n");
-        var parts = splitReady.split(
-          /\n{2,}|\n(?=\s*[^\n]{0,40}[:：])|\n+|[·|;]+/
-        );
-        var all = parts.concat(lineParts);
-        for (var i = 0; i < lineParts.length; i++) {
-          if (i + 1 < lineParts.length) {
-            all.push(lineParts[i] + " " + lineParts[i + 1]);
-          }
-          if (i + 2 < lineParts.length) {
-            all.push(lineParts[i] + " " + lineParts[i + 1] + " " + lineParts[i + 2]);
-          }
-        }
+        var chunks = [];
         var seen = {};
-        return all
-          .map(function (p) {
-            return String(p || "").replace(/\s+/g, " ").trim();
-          })
-          .filter(function (p) {
-            if (p.length < 2 || seen[p]) return false;
-            seen[p] = true;
-            return true;
-          })
-          .map(function (p) {
-            return { source: source || "인포등록", text: p };
+        function pushChunk(t, src, kind) {
+          var clean = String(t || "").replace(/\s+/g, " ").trim();
+          if (clean.length < 2) return;
+          var key = (src || "") + "|" + clean;
+          if (seen[key]) return;
+          seen[key] = true;
+          chunks.push({
+            source: src || source || "인포등록",
+            text: clean,
+            kind: kind || "line",
           });
+        }
+        var lines = raw.split(/\n+/).map(function (line) {
+          return String(line || "")
+            .replace(/^\s*(?:[-*•▪◦·●○]+|\d+[.)]|[①-⑳])\s*/, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        }).filter(Boolean);
+        var sectionTitle = "";
+        lines.forEach(function (line, idx) {
+          var isHeading =
+            line.length <= 40 &&
+            (/[:：]$/.test(line) ||
+              /^(체크\s*인|체크\s*아웃|조식|주차|와이\s*파이|수영장|피트니스|스파|세탁|연락처|프론트|안내|위치|요금|영업|운영|이용|레스토랑|카페|바|라운지|짐|수하물|컨시어지|키즈|반려동물|금연|흡연)/i.test(
+                line
+              ) ||
+              (/^[\[【〈].+[\]】〉]$/.test(line) && line.length <= 36));
+          if (isHeading) {
+            sectionTitle = line.replace(/[:：]$/, "").replace(/^[\[【〈]|[\]】〉]$/g, "");
+            pushChunk(line, source, "heading");
+          }
+          pushChunk(line, sectionTitle ? source + " · " + sectionTitle : source, "line");
+          if (idx + 1 < lines.length) {
+            pushChunk(
+              line + " " + lines[idx + 1],
+              sectionTitle ? source + " · " + sectionTitle : source,
+              "pair"
+            );
+          }
+          if (idx + 2 < lines.length) {
+            pushChunk(
+              line + " " + lines[idx + 1] + " " + lines[idx + 2],
+              sectionTitle ? source + " · " + sectionTitle : source,
+              "triple"
+            );
+          }
+        });
+        raw.split(/\n{2,}|다\.(?=\s)|[·|;]{2,}/).forEach(function (block) {
+          pushChunk(block, source, "block");
+        });
+        return chunks;
       }
 
       var AI_HOTEL_SYNONYM_GROUPS = [
-        ["체크인", "체크 인", "ci", "입실"],
-        ["체크아웃", "체크 아웃", "co", "퇴실"],
-        ["조식", "아침식사", "아침 식사", "breakfast"],
-        ["수영장", "풀", "pool"],
-        ["주차", "주차장", "parking", "파킹"],
-        ["와이파이", "와이 파이", "wifi", "wi-fi", "무선인터넷", "무선 인터넷"],
-        ["인포", "인포메이션", "안내", "정보", "information"],
-        ["영업시간", "영업 시간", "운영시간", "운영 시간", "이용시간", "이용 시간"],
-        ["프런트", "프론트", "안내데스크", "안내 데스크", "리셉션", "reception"],
-        ["피트니스", "헬스장", "gym", "짐"],
-        ["레스토랑", "식당", "restaurant"],
-        ["연락처", "전화번호", "전화 번호", "tel", "phone"],
-        ["위치", "장소", "어디"],
-        ["요금", "가격", "금액", "얼마", "price"],
+        ["체크인", "체크 인", "ci", "입실", "입실시간", "체크인시간", "도착"],
+        ["체크아웃", "체크 아웃", "co", "퇴실", "퇴실시간", "체크아웃시간", "출발"],
+        ["조식", "아침식사", "아침 식사", "breakfast", "뷔페", "조식시간", "조식장소"],
+        ["수영장", "풀", "pool", "수영", "야외수영장", "실내수영장"],
+        ["주차", "주차장", "parking", "파킹", "발레", "주차요금", "주차비"],
+        ["와이파이", "와이 파이", "wifi", "wi-fi", "무선인터넷", "무선 인터넷", "인터넷", "비밀번호", "패스워드"],
+        ["인포", "인포메이션", "안내", "정보", "information", "안내사항"],
+        ["영업시간", "영업 시간", "운영시간", "운영 시간", "이용시간", "이용 시간", "오픈", "마감시간"],
+        ["프런트", "프론트", "안내데스크", "안내 데스크", "리셉션", "reception", "데스크"],
+        ["피트니스", "헬스장", "gym", "짐", "운동"],
+        ["레스토랑", "식당", "restaurant", "다이닝", "식사"],
+        ["카페", "커피", "라운지", "바", "bar", "lounge"],
+        ["스파", "사우나", "찜질", "마사지", "spa"],
+        ["세탁", "런드리", "laundry", "드라이클리닝"],
+        ["연락처", "전화번호", "전화 번호", "tel", "phone", "문의", "내선"],
+        ["위치", "장소", "어디", "주소", "찾아오시는", "오시는길", "층"],
+        ["요금", "가격", "금액", "얼마", "price", "비용", "유료", "무료"],
+        ["짐보관", "수하물", "짐", "luggage", "baggage", "보관"],
+        ["컨시어지", "concierge", "티켓", "관광"],
+        ["키즈", "어린이", "유아", "아기", "유모차", "아기침대"],
+        ["반려동물", "펫", "강아지", "고양이", "pet"],
+        ["금연", "흡연", "흡연구역"],
+        ["엘리베이터", "엘베", "승강기"],
+        ["미니바", "냉장고", "어메니티"],
+        ["레이트체크아웃", "레이트 체크아웃", "늦은체크아웃", "late checkout"],
+        ["얼리체크인", "얼리 체크인", "이른체크인", "early checkin"],
       ];
 
       function normalizeAiHotelSearchText(value) {
         return String(value || "")
           .toLowerCase()
-          .replace(/[\s_\-–—.,:：/\\()[\]{}'"!?]+/g, "");
+          .replace(/[\s_\-–—.,:：/\\()[\]{}'"!?·•]+/g, "");
       }
 
-      function tokenizeAiHotelQuery(q) {
-        var raw = String(q || "").toLowerCase();
-        var base = raw
-          .toLowerCase()
-          .replace(/[^\w가-힣]+/g, " ")
-          .split(/\s+/)
-          .filter(function (t) {
-            if (!t) return false;
-            var isOneHangul = /^[가-힣]$/.test(t);
-            if (t.length < 2 && !isOneHangul) return false;
-            return !/^(알려|알려줘|알려주세요|말해|말해줘|보여|보여줘|찾아|찾아줘|뭐|뭐야|뭔가요|뭐예요|인가요|있나요|있어|주세요|해주세요|해줘|관련|관한|대한|호텔|좀|혹시|그리고|또|은|는|이|가|을|를|에|의)$/.test(
-              t
-            );
-          });
+      function expandAiHotelTokens(tokens) {
         var out = [];
         var seen = {};
         function add(token) {
@@ -16495,85 +16507,140 @@
           seen[clean] = true;
           out.push(clean);
         }
-        base.forEach(add);
-        var compact = normalizeAiHotelSearchText(raw);
+        (tokens || []).forEach(add);
+        var joined = out.join("");
         AI_HOTEL_SYNONYM_GROUPS.forEach(function (group) {
           var hit = group.some(function (alias) {
-            var aliasCompact = normalizeAiHotelSearchText(alias);
+            var a = normalizeAiHotelSearchText(alias);
             return (
-              (aliasCompact.length >= 2 && compact.indexOf(aliasCompact) >= 0) ||
-              base.indexOf(String(alias).toLowerCase()) >= 0
+              (a.length >= 2 && joined.indexOf(a) >= 0) ||
+              out.indexOf(String(alias).toLowerCase().replace(/\s+/g, "")) >= 0
             );
           });
           if (hit) group.forEach(add);
         });
+        out.slice().forEach(function (t) {
+          if (/^[가-힣]{4,}$/.test(t)) {
+            for (var i = 2; i <= t.length - 2; i++) {
+              add(t.slice(0, i));
+              add(t.slice(i));
+            }
+          }
+        });
         return out;
+      }
+
+      function tokenizeAiHotelQuery(q) {
+        var raw = String(q || "").toLowerCase();
+        var base = raw
+          .replace(/[^\w가-힣]+/g, " ")
+          .split(/\s+/)
+          .filter(function (t) {
+            if (!t) return false;
+            var isOneHangul = /^[가-힣]$/.test(t);
+            if (t.length < 2 && !isOneHangul) return false;
+            return !/^(알려|알려줘|알려주세요|말해|말해줘|보여|보여줘|찾아|찾아줘|뭐|뭐야|뭔가요|뭐예요|인가요|있나요|있어|주세요|해주세요|해줘|관련|관한|대한|호텔|좀|혹시|그리고|또|은|는|이|가|을|를|에|의|요|죠|까|니|나)$/.test(
+              t
+            );
+          });
+        return expandAiHotelTokens(base);
+      }
+
+      function extractAiHotelQuestionHints(question) {
+        var q = String(question || "");
+        return {
+          wantsTime: /몇\s*시|시간|타임|오픈|마감|언제|까지|부터/.test(q),
+          wantsPlace: /어디|장소|위치|주소|층|호실|어느/.test(q),
+          wantsPhone: /전화|연락|번호|문의|내선|tel|phone/.test(q),
+          wantsPrice: /얼마|요금|가격|비용|유료|무료|원/.test(q),
+          wantsHow: /어떻게|방법|절차|신청|예약/.test(q),
+        };
       }
 
       function scoreAiHotelChunk(chunk, tokens, question) {
         var hay = String(chunk.text || "").toLowerCase();
         if (!hay) return 0;
         var hayCompact = normalizeAiHotelSearchText(hay);
-        var hayTokens = tokenizeAiHotelQuery(hay);
+        var sourceCompact = normalizeAiHotelSearchText(chunk.source || "");
         var score = 0;
+        var matched = 0;
         (tokens || []).forEach(function (t) {
           var token = String(t || "").toLowerCase();
           var compactToken = normalizeAiHotelSearchText(token);
           if (!compactToken) return;
           if (hay.indexOf(token) >= 0 || hayCompact.indexOf(compactToken) >= 0) {
-            score += 2.5 + Math.min(3, compactToken.length / 3);
-          } else {
-            var partial = hayTokens.some(function (ht) {
-              return (
-                compactToken.length >= 2 &&
-                ht.length >= 2 &&
-                (ht.indexOf(compactToken) >= 0 || compactToken.indexOf(ht) >= 0)
-              );
-            });
-            if (partial) score += 1.25;
-            else if (hayTokens.indexOf(compactToken) >= 0) score += 1.75;
+            score += 3.2 + Math.min(4, compactToken.length / 2.5);
+            matched += 1;
+            if (chunk.kind === "heading" || sourceCompact.indexOf(compactToken) >= 0) {
+              score += 2.5;
+            }
+          } else if (
+            compactToken.length >= 2 &&
+            (hayCompact.indexOf(compactToken.slice(0, Math.min(3, compactToken.length))) >= 0 ||
+              (compactToken.length >= 3 &&
+                hayCompact.indexOf(compactToken.slice(0, compactToken.length - 1)) >= 0))
+          ) {
+            score += 1.1;
           }
         });
         for (var i = 0; i + 1 < (tokens || []).length; i++) {
           var pair =
             normalizeAiHotelSearchText(tokens[i]) +
             normalizeAiHotelSearchText(tokens[i + 1]);
-          if (pair.length >= 3 && hayCompact.indexOf(pair) >= 0) score += 2.5;
+          if (pair.length >= 3 && hayCompact.indexOf(pair) >= 0) score += 3.5;
         }
-        var literalTokens = String(question || "")
-          .toLowerCase()
-          .replace(/[^\w가-힣]+/g, " ")
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean);
-        for (var j = 0; j + 1 < literalTokens.length; j++) {
-          var left = hay.indexOf(literalTokens[j]);
-          var right = hay.indexOf(literalTokens[j + 1], Math.max(0, left));
-          if (left >= 0 && right >= left && right - left <= literalTokens[j].length + 12) {
-            score += 2;
-          }
+        var hints = extractAiHotelQuestionHints(question);
+        if (hints.wantsTime && /\d{1,2}\s*[:시]\s*\d{0,2}|오전|오후|AM|PM|시\s*~|~/.test(hay)) {
+          score += 2.8;
         }
+        if (hints.wantsPlace && /(층|호|옆|앞|뒤|로비|지하|B\d|\dF|위치|주소)/i.test(hay)) {
+          score += 2.4;
+        }
+        if (hints.wantsPhone && /(\d{2,4}[-\s]?\d{3,4}[-\s]?\d{4}|내선\s*\d+)/.test(hay)) {
+          score += 3.2;
+        }
+        if (hints.wantsPrice && /(원|무료|유료|₩|￦|요금)/.test(hay)) {
+          score += 2.4;
+        }
+        if (hints.wantsHow && /(방법|신청|예약|문의|프론트|데스크)/.test(hay)) {
+          score += 1.8;
+        }
+        if (chunk.kind === "pair" || chunk.kind === "triple") score *= 1.05;
+        if (chunk.kind === "block") score *= 1.08;
+        if (matched >= 2) score += matched * 1.2;
         if (score === 0) {
           var queryCompact = normalizeAiHotelSearchText(question);
           if (queryCompact.length >= 2 && hayCompact.indexOf(queryCompact) >= 0) {
-            score = 4 + Math.min(4, queryCompact.length / 4);
+            score = 5 + Math.min(5, queryCompact.length / 3);
           }
         }
         return score;
       }
 
-      function aiHotelBigramScore(question, text) {
+      function aiHotelNgramScore(question, text) {
         var q = normalizeAiHotelSearchText(question);
         var hay = normalizeAiHotelSearchText(text);
         if (q.length < 2 || hay.length < 2) return 0;
         var grams = {};
-        for (var i = 0; i < q.length - 1; i++) grams[q.slice(i, i + 2)] = true;
+        for (var n = 2; n <= 3; n++) {
+          for (var i = 0; i <= q.length - n; i++) grams[q.slice(i, i + n)] = true;
+        }
         var keys = Object.keys(grams);
         if (!keys.length) return 0;
         var hits = keys.filter(function (gram) {
           return hay.indexOf(gram) >= 0;
         }).length;
         return hits / keys.length;
+      }
+
+      function buildAiHotelAnswerBody(picked, opts) {
+        opts = opts || {};
+        var body = "";
+        if (opts.note) body += opts.note + "\n\n";
+        body += picked.length
+          ? picked.join("\n\n")
+          : "등록된 인포에서 관련 내용을 찾지 못했습니다. 관리자 「인포등록」에 해당 항목이 있는지 확인해 주세요.";
+        return body;
       }
 
       function queryAiHotelInfo(question) {
@@ -16588,7 +16655,7 @@
         var q = String(question || "").trim();
         var wantAll =
           !q ||
-          /^(호텔\s*)?(인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피)$/i.test(
+          /^(호텔\s*)?(인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|전체\s*인포|인포\s*전체)$/i.test(
             normalizeAiQueryInput(q)
           );
         var chunks = splitAiHotelInfoChunks(info.text, "인포등록");
@@ -16614,7 +16681,7 @@
             if (!page || !String(page.text || "").trim()) return;
             var head = page.title || page.url || "홈페이지";
             var excerpt = String(page.text).trim();
-            if (excerpt.length > 1800) excerpt = excerpt.slice(0, 1800) + "…";
+            if (excerpt.length > 2500) excerpt = excerpt.slice(0, 2500) + "…";
             parts.push("【" + head + "】\n" + excerpt);
           });
           body = parts.join("\n\n");
@@ -16622,7 +16689,10 @@
           var tokens = tokenizeAiHotelQuery(q);
           var ranked = chunks
             .map(function (c) {
-              return { chunk: c, score: scoreAiHotelChunk(c, tokens, q) };
+              return {
+                chunk: c,
+                score: scoreAiHotelChunk(c, tokens, q),
+              };
             })
             .filter(function (x) {
               return x.score > 0;
@@ -16631,58 +16701,92 @@
               return b.score - a.score;
             });
           var usedFuzzy = false;
-          if (!ranked.length) {
+          if (!ranked.length || ranked[0].score < 2.2) {
             usedFuzzy = true;
-            ranked = chunks
+            var fuzzy = chunks
               .map(function (c) {
-                return { chunk: c, score: aiHotelBigramScore(q, c.text) };
+                var base = scoreAiHotelChunk(c, tokens, q);
+                var ng = aiHotelNgramScore(q, c.text) * 8;
+                return { chunk: c, score: Math.max(base, ng) };
               })
               .filter(function (x) {
-                return x.score > 0;
+                return x.score > 0.12;
               })
               .sort(function (a, b) {
                 return b.score - a.score;
               });
+            if (fuzzy.length) ranked = fuzzy;
           }
           var picked = [];
           var seen = {};
           ranked.forEach(function (x) {
-            if (picked.length >= 12) return;
-            var key = x.chunk.source + "|" + x.chunk.text;
+            if (picked.length >= 14) return;
+            if (x.chunk.kind === "heading" && x.chunk.text.length < 8 && picked.length) return;
+            var key = x.chunk.text;
             if (seen[key]) return;
+            var dup = Object.keys(seen).some(function (prev) {
+              return (
+                (prev.length > 40 && key.indexOf(prev) >= 0) ||
+                (key.length > 40 && prev.indexOf(key) >= 0)
+              );
+            });
+            if (dup) return;
             seen[key] = true;
             picked.push("【" + x.chunk.source + "】\n" + x.chunk.text);
           });
           if (!picked.length) {
-            var keywordChars = normalizeAiHotelSearchText(q).split("");
-            var fallbackRanked = chunks
+            var qCompact = normalizeAiHotelSearchText(q);
+            chunks
               .map(function (c) {
-                var compactText = normalizeAiHotelSearchText(c.text);
-                var hit = keywordChars.filter(function (ch, idx) {
-                  return keywordChars.indexOf(ch) === idx && compactText.indexOf(ch) >= 0;
-                }).length;
+                var t = normalizeAiHotelSearchText(c.text);
+                var hit = 0;
+                for (var i = 0; i < qCompact.length; i++) {
+                  if (t.indexOf(qCompact.charAt(i)) >= 0) hit++;
+                }
                 return { chunk: c, score: hit };
               })
               .sort(function (a, b) {
                 return b.score - a.score;
               })
-              .slice(0, 3);
-            fallbackRanked.forEach(function (x) {
-              picked.push("【" + x.chunk.source + "】\n" + x.chunk.text);
-            });
+              .slice(0, 4)
+              .forEach(function (x) {
+                if (x.score > 0) {
+                  picked.push("【" + x.chunk.source + "】\n" + x.chunk.text);
+                }
+              });
           }
-          body =
-            (usedFuzzy
-              ? "정확히 일치하는 문구가 없어 유사 표현·키워드로 찾았습니다.\n관련 없을 때: 등록 인포에 답이 없을 수 있으니 아래 출처를 확인해 주세요.\n\n"
-              : "") +
-            (picked.length
-              ? picked.join("\n\n")
-              : "관련 없을 때: 등록 인포에서 연결할 키워드를 찾지 못했습니다.");
+          body = buildAiHotelAnswerBody(picked, {
+            note: usedFuzzy
+              ? "질문과 가장 가까운 인포 내용을 골라 정리했습니다. (표현이 달라도 유사 항목을 함께 찾습니다)"
+              : "",
+          });
           if (info.urls && info.urls.length) {
             body += "\n\n【참고 URL】\n" + info.urls.join("\n");
           }
         }
-        return { ok: true, body: body };
+        return { ok: true, body: body, hitCount: (body.match(/【/g) || []).length };
+      }
+
+      function probeAiHotelInfoScore(question) {
+        var info = getAiHotelInfo();
+        if (!hasAiHotelInfoContent(info) || !String(question || "").trim()) return 0;
+        var q = String(question || "").trim();
+        var tokens = tokenizeAiHotelQuery(q);
+        var chunks = splitAiHotelInfoChunks(info.text, "인포등록");
+        (info.pages || []).forEach(function (page) {
+          if (!page || !page.text) return;
+          splitAiHotelInfoChunks(page.text, "홈페이지").forEach(function (c) {
+            chunks.push(c);
+          });
+        });
+        var best = 0;
+        chunks.forEach(function (c) {
+          var s1 = scoreAiHotelChunk(c, tokens, q);
+          var s2 = aiHotelNgramScore(q, c.text) * 8;
+          if (s1 > best) best = s1;
+          if (s2 > best) best = s2;
+        });
+        return best;
       }
 
       function detectAiIntent(text) {
@@ -16694,11 +16798,11 @@
           return { type: "help" };
         }
         if (
-          /호텔\s*인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|공식\s*사이트/.test(q) ||
-          (/체크\s*인|\bCI\b|체크\s*아웃|\bCO\b|와이\s*파이|wifi|wi-?fi|주차|parking|조식|breakfast|수영장|pool|피트니스|연락처|영업\s*시간|운영\s*시간|안내\s*데스크/i.test(
+          /호텔\s*인포|인포메이션|호텔\s*정보|호텔\s*안내|홈페이지|홈피|공식\s*사이트|안내\s*사항/.test(q) ||
+          (/체크\s*인|\bCI\b|체크\s*아웃|\bCO\b|와이\s*파이|wifi|wi-?fi|주차|parking|조식|breakfast|수영장|pool|피트니스|스파|세탁|런드리|연락처|영업\s*시간|운영\s*시간|이용\s*시간|안내\s*데스크|프론트|리셉션|카페|바|라운지|짐\s*보관|수하물|컨시어지|요금|가격|위치|주소|오시는\s*길|레이트\s*체크아웃|얼리\s*체크인/i.test(
             q
           ) &&
-            !/객실|타입|type|입실\s*가능|정비\s*가능|\b(IP|CL|PU|DI|OO|OS)\b/i.test(q))
+            !/객실|타입|type|입실\s*가능|정비\s*가능|\b(IP|CL|PU|DI|OO|OS)\b|요청\s*알림|오더\s*알림/i.test(q))
         ) {
           return { type: "hotel_info", query: rawText };
         }
@@ -16803,11 +16907,16 @@
         if (typeCode && /가능|입실|객실/.test(q)) {
           return { type: "type_checkin", typeCode: typeCode };
         }
-        if (
-          hasAiHotelInfoContent(getAiHotelInfo()) &&
-          /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포/.test(q)
-        ) {
-          return { type: "hotel_info", query: rawText };
+        if (hasAiHotelInfoContent(getAiHotelInfo())) {
+          var probe = probeAiHotelInfoScore(rawText);
+          if (
+            probe >= 2.2 ||
+            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크|이용|영업|운영/.test(
+              q
+            )
+          ) {
+            return { type: "hotel_info", query: rawText };
+          }
         }
         return { type: "unknown" };
       }
@@ -17111,12 +17220,16 @@
         var q = normalizeAiQueryInput(rawQ);
         appendAiChatUserMessage(rawQ);
         var intent = detectAiIntent(q);
-        if (
-          intent.type === "unknown" &&
-          hasAiHotelInfoContent(getAiHotelInfo()) &&
-          /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포/.test(q)
-        ) {
-          intent = { type: "hotel_info", query: rawQ };
+        if (intent.type === "unknown" && hasAiHotelInfoContent(getAiHotelInfo())) {
+          var hotelProbe = probeAiHotelInfoScore(rawQ);
+          if (
+            hotelProbe >= 2.0 ||
+            /어디|몇\s*시|얼마|뭐|무엇|어떻게|안내|정보|인포|요금|가격|시간|위치|연락|전화|주차|조식|와이|체크/.test(
+              q
+            )
+          ) {
+            intent = { type: "hotel_info", query: rawQ };
+          }
         }
 
         if (intent.type === "help") {
