@@ -850,16 +850,19 @@ function mergeGameRanksForServer(prev, incoming) {
     IDS.forEach(function (id) {
       boards[id] = [];
     });
-    var out = { updatedAt: "", boards: boards };
+    var out = { updatedAt: "", resetAt: "", boards: boards };
     if (!raw || typeof raw !== "object") return out;
     out.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
+    out.resetAt = raw.resetAt != null ? String(raw.resetAt) : "";
     var src = raw.boards && typeof raw.boards === "object" ? raw.boards : raw;
+    var resetAt = out.resetAt;
     IDS.forEach(function (id) {
       var list = Array.isArray(src[id]) ? src[id] : [];
       var byName = {};
       list.forEach(function (row) {
         var n = normEntry(row);
         if (!n) return;
+        if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
         var prevE = byName[n.name];
         if (!prevE || n.score > prevE.score) byName[n.name] = n;
       });
@@ -880,14 +883,22 @@ function mergeGameRanksForServer(prev, incoming) {
   var out = norm(null);
   var baseAt = base.updatedAt || "";
   var incAt = inc.updatedAt || "";
+  var baseReset = base.resetAt || "";
+  var incReset = inc.resetAt || "";
   out.updatedAt =
     incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+  out.resetAt =
+    incReset && (!baseReset || String(incReset) >= String(baseReset))
+      ? incReset
+      : baseReset || incReset;
+  var resetAt = out.resetAt;
   IDS.forEach(function (id) {
     var byName = {};
     [base.boards[id] || [], inc.boards[id] || []].forEach(function (list) {
       list.forEach(function (row) {
         var n = normEntry(row);
         if (!n) return;
+        if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
         var prevE = byName[n.name];
         if (!prevE || n.score > prevE.score) byName[n.name] = n;
       });

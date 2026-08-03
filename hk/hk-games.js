@@ -77,7 +77,7 @@
     style.textContent = [
       '.hk-games-overlay{position:fixed;inset:0;z-index:10000;display:none;color:#f5f0df;background:radial-gradient(circle at 85% 8%,#12453c 0,transparent 34%),linear-gradient(145deg,#07131d,#0a2025 58%,#07151b);font-family:Georgia,"Noto Serif KR","Apple SD Gothic Neo","Malgun Gothic",serif;overflow:auto;overscroll-behavior:contain}',
       '.hk-games-overlay.open{display:block}.hkg-shell{width:min(1180px,calc(100% - 32px));margin:auto;min-height:100%;padding:28px 0 40px;box-sizing:border-box}.hkg-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}',
-      '.hkg-brand{display:flex;align-items:center;gap:12px}.hkg-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid #c5a96a;border-radius:50%;color:#e8cf91;font-family:serif;font-size:22px}.hkg-eyebrow{color:#cdb575;font-size:11px;letter-spacing:.22em;text-transform:uppercase}.hkg-brand strong{display:block;font-family:Georgia,serif;font-size:20px;letter-spacing:.03em}',
+      '.hkg-brand{display:flex;align-items:center;gap:12px}.hkg-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid #c5a96a;border-radius:50%;color:#e8cf91;font-family:serif;font-size:22px;cursor:pointer;background:transparent;padding:0}.hkg-mark:hover{border-color:#efd28a;color:#fff6dc;background:#ffffff10}.hkg-eyebrow{color:#cdb575;font-size:11px;letter-spacing:.22em;text-transform:uppercase}.hkg-brand strong{display:block;font-family:Georgia,serif;font-size:20px;letter-spacing:.03em}',
       '.hkg-btn{appearance:none;border:1px solid #8f7b4f;background:#122a2d;color:#f4e8c9;border-radius:12px;padding:10px 15px;font-weight:700;cursor:pointer;transition:.18s}.hkg-btn:hover{transform:translateY(-1px);border-color:#d5bd80;background:#18383a}.hkg-btn.primary{color:#15211f;background:linear-gradient(135deg,#f0d796,#bea15e);border:0}.hkg-btn.icon{font-size:18px;padding:8px 12px}',
       '.hkg-hero{padding:28px 30px;border:1px solid rgba(220,194,126,.26);border-radius:24px;background:linear-gradient(115deg,rgba(13,52,49,.9),rgba(8,25,32,.92));box-shadow:0 24px 70px #0007}.hkg-hero h1{font-family:Georgia,serif;font-size:clamp(34px,6vw,68px);line-height:.95;margin:5px 0 12px;color:#fff6dc}.hkg-hero p{margin:0;color:#aebfba}.hkg-who{margin-top:15px;color:#e5cd91;font-size:13px}',
       '.hkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.hkg-card{position:relative;text-align:left;min-height:225px;padding:22px;border:1px solid #ffffff18;border-radius:20px;color:inherit;background:linear-gradient(145deg,#123034dd,#0b1c25ee);box-shadow:0 14px 35px #0004;cursor:pointer;overflow:hidden;transition:.22s}.hkg-card:hover{transform:translateY(-4px);border-color:#cbb27088}.hkg-card:after{content:"";position:absolute;width:90px;height:90px;right:-25px;top:-25px;border-radius:50%;background:#d5bb7020}.hkg-card-icon{font-size:35px}.hkg-card h2{font-family:Georgia,serif;margin:10px 0 5px;font-size:22px}.hkg-card-desc{font-size:13px;color:#9fb2ad;min-height:38px}.hkg-best{margin:14px 0 9px;color:#ebd28f;font-weight:800}.hkg-mini{font-size:12px;color:#b9c8c3;line-height:1.65}.hkg-mini b{display:inline-block;width:18px;color:#d9bd78}',
@@ -93,7 +93,7 @@
     document.head.appendChild(style);
     root = el('div', 'hk-games-overlay');
     root.innerHTML =
-      '<div class="hkg-shell"><header class="hkg-top"><div class="hkg-brand"><span class="hkg-mark">L</span><div><span class="hkg-eyebrow">Housekeeping Lounge</span><strong>Lotte Break</strong></div></div><button class="hkg-btn icon hkg-close" aria-label="닫기">✕</button></header>' +
+      '<div class="hkg-shell"><header class="hkg-top"><div class="hkg-brand"><button type="button" class="hkg-mark" title="랭킹 초기화" aria-label="랭킹 초기화">L</button><div><span class="hkg-eyebrow">Front Lounge</span><strong>Lotte Break</strong></div></div><button class="hkg-btn icon hkg-close" aria-label="닫기">✕</button></header>' +
       '<main class="hkg-hub"><section class="hkg-hero"><span class="hkg-eyebrow">A moment for yourself</span><h1>Lotte Break</h1><p>잠깐의 휴식, 가볍게 즐기고 동료들과 기록을 나눠보세요.</p><div class="hkg-who"></div></section><section class="hkg-grid"></section></main>' +
       '<main class="hkg-game"><header class="hkg-game-head"><button class="hkg-btn hkg-back">← 라운지</button><h1></h1><div class="hkg-hud"></div></header><div class="hkg-layout"><section class="hkg-stage"><div class="hkg-stage-inner"></div><div class="hkg-message"><div class="hkg-message-box"></div></div></section><aside class="hkg-ranking"></aside></div></main></div><div class="hkg-toast" role="status"></div>';
     document.body.appendChild(root);
@@ -108,7 +108,27 @@
     refs.toast = root.querySelector('.hkg-toast');
     root.querySelector('.hkg-close').addEventListener('click', close);
     root.querySelector('.hkg-back').addEventListener('click', showHub);
+    root.querySelector('.hkg-mark').addEventListener('click', promptResetRanks);
     document.addEventListener('keydown', globalKey);
+  }
+  function promptResetRanks() {
+    var pw = window.prompt('랭킹을 초기화하려면 비밀번호를 입력하세요.');
+    if (pw == null) return;
+    if (String(pw).trim() !== '1111') {
+      toast('비밀번호가 올바르지 않습니다');
+      return;
+    }
+    if (!window.confirm('모든 미니게임 랭킹을 초기화할까요?')) return;
+    try {
+      if (config.resetRanks) config.resetRanks();
+      toast('랭킹이 초기화되었습니다');
+      if (active && active.id) renderRanking(active.id);
+      else if (refs.hub && refs.hub.offsetParent !== null) renderHub();
+      else renderHub();
+    } catch (err) {
+      toast('랭킹 초기화에 실패했습니다');
+      if (window.console) console.error(err);
+    }
   }
   function globalKey(e) {
     if (!root || !root.classList.contains('open') || e.key !== 'Escape') return;

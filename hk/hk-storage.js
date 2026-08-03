@@ -754,7 +754,7 @@
     GAME_RANK_IDS.forEach(function (id) {
       boards[id] = [];
     });
-    return { updatedAt: "", boards: boards };
+    return { updatedAt: "", resetAt: "", boards: boards };
   }
 
   function normalizeGameRankEntry(raw) {
@@ -773,13 +773,16 @@
     var d = defaultGameRanks();
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
+    d.resetAt = raw.resetAt != null ? String(raw.resetAt) : "";
     var src = raw.boards && typeof raw.boards === "object" ? raw.boards : raw;
+    var resetAt = d.resetAt;
     GAME_RANK_IDS.forEach(function (id) {
       var list = Array.isArray(src[id]) ? src[id] : [];
       var byName = {};
       list.forEach(function (row) {
         var n = normalizeGameRankEntry(row);
         if (!n) return;
+        if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
         var prev = byName[n.name];
         if (!prev || n.score > prev.score) byName[n.name] = n;
       });
@@ -802,14 +805,22 @@
     var out = defaultGameRanks();
     var baseAt = base.updatedAt || "";
     var incAt = inc.updatedAt || "";
+    var baseReset = base.resetAt || "";
+    var incReset = inc.resetAt || "";
     out.updatedAt =
       incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+    out.resetAt =
+      incReset && (!baseReset || String(incReset) >= String(baseReset))
+        ? incReset
+        : baseReset || incReset;
+    var resetAt = out.resetAt;
     GAME_RANK_IDS.forEach(function (id) {
       var byName = {};
       [base.boards[id] || [], inc.boards[id] || []].forEach(function (list) {
         list.forEach(function (row) {
           var n = normalizeGameRankEntry(row);
           if (!n) return;
+          if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
           var prev = byName[n.name];
           if (!prev || n.score > prev.score) byName[n.name] = n;
         });
