@@ -3,11 +3,11 @@
 
   var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge'];
   var META = {
-    candy: { icon: '🍬', name: '캔디 스위트', desc: '달콤한 보석을 맞추는 30수 퍼즐' },
+    candy: { icon: '🍬', name: '캔디 스위트', desc: '1분 안에 보석을 맞추는 타임어택' },
     merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
     snake: { icon: '🐍', name: '미드나잇 스네이크', desc: '벽을 피해 야식을 모아보세요' },
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 8쌍을 빠르게 찾기' },
-    breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '3개의 공으로 벽돌을 모두 격파' },
+    breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '키보드로 패들을 움직여 벽돌 격파' },
     jump: { icon: '🪽', name: '스카이 점프', desc: '발판을 밟고 끝없이 높이 오르기' },
     tetris: { icon: '🟪', name: '타워 테트리스', desc: '블록을 쌓아 라인을 지우는 클래식' },
     pong: { icon: '🏓', name: '로비 핑퐁', desc: '패들로 공을 받아내며 랠리 이어가기' },
@@ -83,7 +83,7 @@
       '.hkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.hkg-card{position:relative;text-align:left;min-height:225px;padding:22px;border:1px solid #ffffff18;border-radius:20px;color:inherit;background:linear-gradient(145deg,#123034dd,#0b1c25ee);box-shadow:0 14px 35px #0004;cursor:pointer;overflow:hidden;transition:.22s}.hkg-card:hover{transform:translateY(-4px);border-color:#cbb27088}.hkg-card:after{content:"";position:absolute;width:90px;height:90px;right:-25px;top:-25px;border-radius:50%;background:#d5bb7020}.hkg-card-icon{font-size:35px}.hkg-card h2{font-family:Georgia,serif;margin:10px 0 5px;font-size:22px}.hkg-card-desc{font-size:13px;color:#9fb2ad;min-height:38px}.hkg-best{margin:14px 0 9px;color:#ebd28f;font-weight:800}.hkg-mini{font-size:12px;color:#b9c8c3;line-height:1.65}.hkg-mini b{display:inline-block;width:18px;color:#d9bd78}',
       '.hkg-game{display:none}.hkg-game.show{display:block}.hkg-game-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}.hkg-game-head h1{font-family:Georgia,serif;margin:0;font-size:clamp(25px,4vw,40px);flex:1}.hkg-hud{display:flex;gap:10px;flex-wrap:wrap}.hkg-pill{padding:8px 12px;border:1px solid #ffffff1c;background:#0d2429;border-radius:12px;font-size:13px}.hkg-pill b{color:#efd58f;margin-left:5px}',
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
-      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;transition:transform .16s,opacity .18s,box-shadow .16s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.15) rotate(20deg);opacity:.05}',
+      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .22s,box-shadow .2s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.8)}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory{width:min(100%,560px);display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:auto;perspective:800px}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
@@ -203,6 +203,7 @@
       on: function (node, type, fn, opts) { node.addEventListener(type, fn, opts); removers.push(function () { node.removeEventListener(type, fn, opts); }); },
       raf: function (fn) { var id = requestAnimationFrame(fn); frames.push(id); return id; },
       timer: function (fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; },
+      clearTimers: function () { timers.forEach(clearTimeout); timers = []; },
       destroy: function () { removers.forEach(function (x) { x(); }); frames.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); removers = []; frames = []; timers = []; }
     };
   }
@@ -226,16 +227,74 @@
     refs.message.querySelector('button').onclick = restart;
     refs.message.classList.add('show');
   }
+  function shakeStage() {
+    var stage = root && root.querySelector('.hkg-stage');
+    if (!stage) return;
+    stage.classList.remove('shake');
+    void stage.offsetWidth;
+    stage.classList.add('shake');
+  }
+  function floatScore(x, y, text, parent) {
+    var host = parent || refs.stage;
+    if (!host) return;
+    var node = el('div', 'hkg-float', text);
+    node.style.left = Math.round(x) + 'px';
+    node.style.top = Math.round(y) + 'px';
+    host.style.position = host.style.position || 'relative';
+    host.appendChild(node);
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 950);
+  }
+  function makeFx() {
+    var parts = [];
+    return {
+      burst: function (x, y, color, n, speed) {
+        n = n || 12; speed = speed || 180;
+        for (var i = 0; i < n; i++) {
+          var a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+          var sp = speed * (0.45 + Math.random());
+          parts.push({
+            x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+            life: 0.35 + Math.random() * 0.45, max: 0.8, r: 2 + Math.random() * 3.5, color: color || '#efd28a'
+          });
+        }
+      },
+      spark: function (x, y, color) {
+        this.burst(x, y, color || '#fff4d0', 8, 120);
+      },
+      update: function (dt) {
+        parts.forEach(function (p) {
+          p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 420 * dt; p.vx *= 0.98;
+        });
+        parts = parts.filter(function (p) { return p.life > 0; });
+      },
+      draw: function (ctx) {
+        parts.forEach(function (p) {
+          ctx.globalAlpha = Math.max(0, p.life / p.max);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+      }
+    };
+  }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
   var games = {};
 
   games.candy = function () {
-    var c = controller(), board = [], selected = -1, moves = 30, score = 0, busy = false;
+    var c = controller(), board = [], selected = -1, score = 0, busy = false, alive = true;
     var colors = ['#ef5350', '#ffca45', '#4bc6a6', '#55a9e8', '#d86bd7', '#f08b43'];
+    var TIME = 60, left = TIME, started = Date.now(), colorCount = 5;
     refs.stage.innerHTML = '<div class="hkg-candy"></div>';
     var grid = refs.stage.firstChild;
-    setHud([['점수', '0', 'score'], ['남은 수', '30', 'moves']]);
-    function random() { return Math.floor(Math.random() * colors.length); }
+    setHud([['점수', '0', 'score'], ['남은 시간', '1:00', 'time'], ['콤보', 'x1', 'combo']]);
+    function fmt(sec) {
+      sec = Math.max(0, Math.ceil(sec));
+      return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    }
+    function random() { return Math.floor(Math.random() * colorCount); }
     function seed() {
       board = [];
       for (var i = 0; i < 64; i++) {
@@ -276,20 +335,39 @@
     }
     function settle(combo, done) {
       var hit = matches(), keys = Object.keys(hit);
-      if (!keys.length) { busy = false; if (done) done(); return; }
-      busy = true; score += keys.length * 10 * combo; hud('score', formatScore(score)); draw(hit);
+      if (!keys.length) { busy = false; hud('combo', 'x1'); if (done) done(); return; }
+      busy = true;
+      var gain = keys.length * 12 * combo;
+      score += gain; hud('score', formatScore(score)); hud('combo', 'x' + combo);
+      draw(hit);
+      shakeStage();
+      var rect = grid.getBoundingClientRect(), hostRect = refs.stage.getBoundingClientRect();
+      floatScore(rect.left - hostRect.left + rect.width / 2, rect.top - hostRect.top + 20, '+' + gain, refs.stage);
       c.timer(function () {
         for (var col = 0; col < 8; col++) {
           var keep = [];
           for (var row = 7; row >= 0; row--) if (!hit[col + row * 8]) keep.push(board[col + row * 8]);
           for (row = 7; row >= 0; row--) board[col + row * 8] = keep[7 - row] == null ? random() : keep[7 - row];
         }
-        draw(); c.timer(function () { settle(combo + 1, done); }, 180);
-      }, 210);
+        draw(); c.timer(function () { settle(combo + 1, done); }, 160);
+      }, 190);
+    }
+    function tick() {
+      if (!alive) return;
+      left = TIME - (Date.now() - started) / 1000;
+      hud('time', fmt(left));
+      if (left <= 40 && colorCount < 6) { colorCount = 6; toast('색이 늘어났어요!'); }
+      if (left <= 20 && colorCount < 6) colorCount = 6;
+      if (left <= 0) {
+        alive = false; left = 0; hud('time', '0:00');
+        gameOver('타임 오버!', '최종 점수 ' + formatScore(score), function () { startGame('candy'); }, score);
+        return;
+      }
+      c.timer(tick, 200);
     }
     function click(e) {
       var node = e.target.closest('.hkg-gem');
-      if (!node || busy || moves <= 0) return;
+      if (!node || busy || !alive) return;
       var i = Number(node.getAttribute('data-i'));
       if (selected < 0) { selected = i; draw(); return; }
       var a = selected; selected = -1;
@@ -297,28 +375,28 @@
       if (!adjacent) { selected = i; draw(); return; }
       var temp = board[a]; board[a] = board[i]; board[i] = temp;
       if (!Object.keys(matches()).length) { temp = board[a]; board[a] = board[i]; board[i] = temp; draw(); toast('매치가 만들어지는 두 캔디를 바꿔보세요'); return; }
-      moves--; hud('moves', moves); draw(); settle(1, function () {
-        if (!moves) gameOver('브레이크 종료', '최종 점수 ' + formatScore(score), function () { startGame('candy'); }, score);
-      });
+      draw(); settle(1, function () {});
     }
     c.on(grid, 'click', click);
-    seed();
-    actions(function () { startGame('candy'); }, function () { return score; }, '인접한 캔디를 눌러 자리를 바꾸세요. 연쇄 매치는 배수가 올라갑니다.');
+    seed(); tick();
+    actions(function () { startGame('candy'); }, function () { return score; }, '1분 안에 인접한 캔디를 바꿔 맞추세요. 시간이 지날수록 색이 늘어납니다.');
     return { id: 'candy', destroy: c.destroy };
   };
 
   games.merge2048 = function () {
-    var c = controller(), board, score, over = false, touch;
+    var c = controller(), board, score, over = false, touch, moves = 0;
     refs.stage.innerHTML = '<div class="hkg-2048"></div>';
     var grid = refs.stage.firstChild;
-    setHud([['점수', '0', 'score'], ['최고', formatScore(best('merge2048', name())), 'best']]);
+    setHud([['점수', '0', 'score'], ['최고', formatScore(best('merge2048', name())), 'best'], ['이동', '0', 'moves']]);
     function add() {
       var empty = []; board.forEach(function (v, i) { if (!v) empty.push(i); });
-      if (empty.length) board[empty[Math.floor(Math.random() * empty.length)]] = Math.random() < .9 ? 2 : 4;
+      if (!empty.length) return;
+      var fourChance = Math.min(0.22, 0.1 + moves * 0.004);
+      board[empty[Math.floor(Math.random() * empty.length)]] = Math.random() < (1 - fourChance) ? 2 : 4;
     }
     function draw() {
       grid.innerHTML = board.map(function (v) { return '<div class="hkg-tile" data-v="' + Math.min(v, 2048) + '">' + (v || '') + '</div>'; }).join('');
-      hud('score', formatScore(score));
+      hud('score', formatScore(score)); hud('moves', moves);
     }
     function line(values) {
       var a = values.filter(Boolean), out = [], gained = 0;
@@ -349,7 +427,7 @@
       }
       board = next;
       if (old === board.join(',')) return;
-      add(); draw();
+      moves++; add(); draw();
       if (board.indexOf(2048) >= 0 && !grid.dataset.won) { grid.dataset.won = '1'; toast('2048 달성! 계속 플레이할 수 있어요'); }
       if (!canMove()) { over = true; gameOver('더 움직일 수 없어요', '최종 점수 ' + formatScore(score), function () { startGame('merge2048'); }, score); }
     }
@@ -379,7 +457,7 @@
   }
 
   games.snake = function () {
-    var c = controller(), cv = canvasBase(600, 600), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 125, dead = false, touch;
+    var c = controller(), cv = canvasBase(600, 600), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 118, dead = false, touch, fx = makeFx(), anim = 0;
     setHud([['점수', '0', 'score'], ['속도', '1.0x', 'speed']]);
     function spawn() { do { food = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) }; } while (snake.some(function (p) { return p.x === food.x && p.y === food.y; })); }
     function input(x, y) { if (dir.x + x || dir.y + y) next = { x: x, y: y }; }
@@ -387,30 +465,49 @@
       var m = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
       if (m[e.key]) { e.preventDefault(); input(m[e.key][0], m[e.key][1]); }
     }
-    function draw() {
+    function draw(alpha) {
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 600, 600);
       ctx.strokeStyle = '#0e292c'; for (var i = 0; i <= 20; i++) { ctx.beginPath(); ctx.moveTo(i * 30, 0); ctx.lineTo(i * 30, 600); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i * 30); ctx.lineTo(600, i * 30); ctx.stroke(); }
-      ctx.fillStyle = '#e2bd64'; ctx.beginPath(); ctx.arc(food.x * 30 + 15, food.y * 30 + 15, 10, 0, Math.PI * 2); ctx.fill();
-      snake.forEach(function (p, i) { ctx.fillStyle = i ? '#43a982' : '#9ad2a9'; ctx.beginPath(); ctx.roundRect(p.x * 30 + 2, p.y * 30 + 2, 26, 26, 8); ctx.fill(); });
+      var pulse = 10 + Math.sin(anim * 6) * 2;
+      ctx.fillStyle = '#e2bd64'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(food.x * 30 + 15, food.y * 30 + 15, pulse, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      snake.forEach(function (p, i) {
+        var t = alpha || 0;
+        var ox = i + 1 < snake.length ? snake[i + 1].x : p.x - dir.x;
+        var oy = i + 1 < snake.length ? snake[i + 1].y : p.y - dir.y;
+        var x = (ox + (p.x - ox) * t) * 30 + 2;
+        var y = (oy + (p.y - oy) * t) * 30 + 2;
+        ctx.fillStyle = i ? '#43a982' : '#9ad2a9';
+        ctx.beginPath(); ctx.roundRect(x, y, 26, 26, 8); ctx.fill();
+        if (!i) { ctx.fillStyle = '#163c39'; ctx.fillRect(x + 6, y + 8, 4, 4); ctx.fillRect(x + 16, y + 8, 4, 4); }
+      });
+      fx.draw(ctx);
     }
     function loop(t) {
       if (dead) return;
+      var dt = Math.min(0.033, (t - (loop._last || t)) / 1000 || 0); loop._last = t;
+      anim += dt; fx.update(dt);
+      var alpha = Math.min(1, (t - last) / step);
       if (t - last >= step) {
         last = t; dir = next; var head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
         if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20 || snake.some(function (p) { return p.x === head.x && p.y === head.y; })) {
-          dead = true; gameOver('벽에 닿았어요', '야식 ' + (score / 10) + '개 · ' + formatScore(score) + '점', function () { startGame('snake'); }, score); return;
+          dead = true; fx.burst(snake[0].x * 30 + 15, snake[0].y * 30 + 15, '#ef5350', 18, 220); shakeStage();
+          gameOver('벽에 닿았어요', '야식 ' + (score / 10) + '개 · ' + formatScore(score) + '점', function () { startGame('snake'); }, score); return;
         }
         snake.unshift(head);
-        if (head.x === food.x && head.y === food.y) { score += 10; step = Math.max(62, step - 3); hud('score', score); hud('speed', (125 / step).toFixed(1) + 'x'); spawn(); } else snake.pop();
-        draw();
+        if (head.x === food.x && head.y === food.y) {
+          score += 10; step = Math.max(55, step - 3.5); hud('score', score); hud('speed', (118 / step).toFixed(1) + 'x');
+          fx.burst(food.x * 30 + 15, food.y * 30 + 15, '#efd28a', 16, 200); spawn();
+        } else snake.pop();
+        alpha = 0;
       }
-      c.raf(loop);
+      draw(alpha); c.raf(loop);
     }
     c.on(document, 'keydown', key);
     c.on(cv.canvas, 'touchstart', function (e) { touch = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
     c.on(cv.canvas, 'touchend', function (e) { var dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1]; if (Math.abs(dx) > Math.abs(dy)) input(dx > 0 ? 1 : -1, 0); else input(0, dy > 0 ? 1 : -1); }, { passive: true });
-    snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]; dir = next = { x: 1, y: 0 }; score = 0; spawn(); draw(); c.raf(loop);
-    actions(function () { startGame('snake'); }, function () { return score; }, '방향키/WASD 또는 스와이프로 조작하세요. 벽은 통과할 수 없습니다.');
+    snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]; dir = next = { x: 1, y: 0 }; score = 0; spawn(); draw(1); c.raf(loop);
+    actions(function () { startGame('snake'); }, function () { return score; }, '방향키/WASD 또는 스와이프로 조작하세요. 먹을수록 점점 빨라집니다.');
     return { id: 'snake', destroy: c.destroy };
   };
 
@@ -419,7 +516,7 @@
     refs.stage.innerHTML = '<div class="hkg-memory"></div>';
     var grid = refs.stage.firstChild;
     setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', '1,000', 'score']]);
-    function calc() { return Math.max(100, 1000 - moves * 10 - seconds * 2); }
+    function calc() { return Math.max(80, 1000 - moves * 12 - seconds * 3); }
     function draw() { grid.innerHTML = cards.map(function (x, i) { return '<button class="hkg-memory-card ' + (x.open ? 'open ' : '') + (x.done ? 'done' : '') + '" data-i="' + i + '">' + x.icon + '</button>'; }).join(''); }
     function click(e) {
       var node = e.target.closest('[data-i]'); if (!node || locked) return;
@@ -429,9 +526,10 @@
       moves++; hud('moves', moves);
       if (cards[first].icon === cards[i].icon) {
         cards[first].done = cards[i].done = true; matched += 2; first = -1; draw();
+        floatScore(grid.offsetWidth / 2, 40, 'MATCH!', refs.stage);
         if (matched === 16) { clearInterval(timer); var score = calc(); hud('score', formatScore(score)); gameOver('모든 짝을 찾았어요!', moves + '번 이동 · ' + seconds + '초 · ' + score + '점', function () { startGame('memory'); }, score); }
       } else {
-        locked = true; c.timer(function () { cards[first].open = cards[i].open = false; first = -1; locked = false; draw(); }, 650);
+        locked = true; c.timer(function () { cards[first].open = cards[i].open = false; first = -1; locked = false; draw(); }, 520);
       }
       hud('score', formatScore(calc()));
     }
@@ -444,72 +542,115 @@
   };
 
   games.breakout = function () {
-    var c = controller(), cv = canvasBase(720, 520), ctx = cv.ctx, paddle, ball, bricks, score = 0, lives = 3, running = true, last = 0;
+    var c = controller(), cv = canvasBase(720, 520), ctx = cv.ctx, paddle, ball, bricks, score = 0, lives = 3, running = true, last = 0, keys = {}, fx = makeFx(), speedMul = 1;
     setHud([['점수', '0', 'score'], ['공', '3', 'lives'], ['벽돌', '50', 'bricks']]);
-    function resetBall() { ball = { x: 360, y: 420, vx: (Math.random() > .5 ? 1 : -1) * 230, vy: -260, r: 8 }; paddle.x = 310; }
+    function resetBall() {
+      var base = 250 * speedMul;
+      ball = { x: paddle.x + paddle.w / 2, y: 420, vx: (Math.random() > .5 ? 1 : -1) * base * 0.9, vy: -base, r: 8 };
+    }
     function setup() {
-      paddle = { x: 310, y: 485, w: 100, h: 13 }; bricks = [];
+      paddle = { x: 310, y: 485, w: 96, h: 14 }; bricks = [];
       for (var r = 0; r < 5; r++) for (var col = 0; col < 10; col++) bricks.push({ x: 12 + col * 70, y: 50 + r * 32, w: 64, h: 22, color: ['#d1b566', '#4fa98b', '#d47756', '#5f99af', '#b96d79'][r] });
       resetBall();
     }
     function draw() {
       var g = ctx.createLinearGradient(0, 0, 0, 520); g.addColorStop(0, '#0b2529'); g.addColorStop(1, '#061318'); ctx.fillStyle = g; ctx.fillRect(0, 0, 720, 520);
-      bricks.forEach(function (b) { ctx.fillStyle = b.color; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 5); ctx.fill(); ctx.fillStyle = '#ffffff26'; ctx.fillRect(b.x + 4, b.y + 3, b.w - 8, 3); });
+      bricks.forEach(function (b) {
+        ctx.fillStyle = b.color; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 5); ctx.fill();
+        ctx.fillStyle = '#ffffff30'; ctx.fillRect(b.x + 4, b.y + 3, b.w - 8, 3);
+        ctx.fillStyle = '#00000022'; ctx.fillRect(b.x + 4, b.y + b.h - 5, b.w - 8, 3);
+      });
       ctx.fillStyle = '#e4c878'; ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7); ctx.fill();
-      ctx.fillStyle = '#fff4d0'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowColor = '#efd685'; ctx.shadowBlur = 16; ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.025, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t;
+      fx.update(dt);
+      var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
+      paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x + steer * 520 * dt));
       ball.x += ball.vx * dt; ball.y += ball.vy * dt;
-      if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); } if (ball.x > 720 - ball.r) { ball.x = 720 - ball.r; ball.vx = -Math.abs(ball.vx); } if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); }
+      if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); fx.spark(ball.x, ball.y, '#9ad2a9'); }
+      if (ball.x > 720 - ball.r) { ball.x = 720 - ball.r; ball.vx = -Math.abs(ball.vx); fx.spark(ball.x, ball.y, '#9ad2a9'); }
+      if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); fx.spark(ball.x, ball.y, '#9ad2a9'); }
       if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.y < paddle.y + paddle.h && ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
-        ball.y = paddle.y - ball.r; var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2); ball.vx = hit * 330; ball.vy = -Math.abs(ball.vy) * 1.025;
+        ball.y = paddle.y - ball.r; var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+        ball.vx = hit * 340 * speedMul; ball.vy = -Math.abs(ball.vy) * 1.03; fx.spark(ball.x, ball.y, '#efd28a');
       }
       for (var i = bricks.length - 1; i >= 0; i--) {
-        var b = bricks[i]; if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w && ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
-          bricks.splice(i, 1); ball.vy *= -1; score += 10; hud('score', score); hud('bricks', bricks.length); break;
+        var b = bricks[i];
+        if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w && ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+          bricks.splice(i, 1); ball.vy *= -1; score += 12; speedMul = Math.min(1.45, 1 + (50 - bricks.length) * 0.009);
+          hud('score', score); hud('bricks', bricks.length);
+          fx.burst(b.x + b.w / 2, b.y + b.h / 2, b.color, 14, 200);
+          break;
         }
       }
-      if (!bricks.length) { running = false; gameOver('클리어!', '모든 벽돌을 격파했습니다 · ' + score + '점', function () { startGame('breakout'); }, score); return; }
-      if (ball.y > 540) { lives--; hud('lives', lives); if (!lives) { running = false; gameOver('공을 모두 사용했어요', '격파 점수 ' + score, function () { startGame('breakout'); }, score); return; } resetBall(); }
+      if (!bricks.length) { running = false; fx.burst(360, 200, '#efd28a', 30, 260); gameOver('클리어!', '모든 벽돌을 격파했습니다 · ' + score + '점', function () { startGame('breakout'); }, score); return; }
+      if (ball.y > 540) {
+        lives--; hud('lives', lives); shakeStage();
+        if (!lives) { running = false; gameOver('공을 모두 사용했어요', '격파 점수 ' + score, function () { startGame('breakout'); }, score); return; }
+        resetBall();
+      }
       draw(); c.raf(loop);
     }
-    function point(e) { var rect = cv.canvas.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * 720 / rect.width; paddle.x = Math.max(0, Math.min(620, x - 50)); }
-    c.on(cv.canvas, 'mousemove', point); c.on(cv.canvas, 'touchmove', function (e) { e.preventDefault(); point(e); }, { passive: false });
+    function key(e) {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].indexOf(e.key) < 0) return;
+      e.preventDefault();
+      keys[e.key.toLowerCase()] = e.type === 'keydown';
+      keys[e.key] = e.type === 'keydown';
+    }
+    c.on(document, 'keydown', key); c.on(document, 'keyup', key);
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('breakout'); }, function () { return score; }, '마우스 또는 손가락으로 패들을 움직이세요.');
+    actions(function () { startGame('breakout'); }, function () { return score; }, '←→ / A·D 키로 패들을 움직이세요. 벽돌을 깰수록 공이 빨라집니다.');
     return { id: 'breakout', destroy: c.destroy };
   };
 
   games.jump = function () {
-    var c = controller(), cv = canvasBase(520, 700), ctx = cv.ctx, player, platforms, keys = {}, score = 0, running = true, last = 0, touchX = null;
+    var c = controller(), cv = canvasBase(520, 700), ctx = cv.ctx, player, platforms, keys = {}, score = 0, running = true, last = 0, touchX = null, fx = makeFx();
     setHud([['높이', '0', 'score'], ['최고', formatScore(best('jump', name())), 'best']]);
     function setup() {
       player = { x: 245, y: 580, w: 30, h: 38, vx: 0, vy: -650 };
       platforms = [{ x: 200, y: 640, w: 120 }];
-      for (var y = 550; y > -100; y -= 80 + Math.random() * 25) platforms.push({ x: 20 + Math.random() * 390, y: y, w: 82 + Math.random() * 35 });
+      for (var y = 550; y > -100; y -= 78 + Math.random() * 28) platforms.push({ x: 20 + Math.random() * 390, y: y, w: 78 + Math.random() * 34 });
     }
+    function gapScale() { return Math.max(0.72, 1 - score / 18000); }
     function addPlatforms() {
       var top = Math.min.apply(null, platforms.map(function (p) { return p.y; }));
-      while (top > -120) { top -= 75 + Math.random() * 35; platforms.push({ x: 15 + Math.random() * 400, y: top, w: 75 + Math.random() * 45 }); }
+      var g = gapScale();
+      while (top > -120) {
+        top -= (72 + Math.random() * 40) / g;
+        platforms.push({ x: 15 + Math.random() * 400, y: top, w: (70 + Math.random() * 40) * g });
+      }
     }
     function draw() {
       var g = ctx.createLinearGradient(0, 0, 0, 700); g.addColorStop(0, '#123e42'); g.addColorStop(1, '#07161c'); ctx.fillStyle = g; ctx.fillRect(0, 0, 520, 700);
-      ctx.fillStyle = '#ffffff12'; for (var i = 0; i < 35; i++) { ctx.beginPath(); ctx.arc((i * 83) % 520, (i * 137) % 700, i % 3 + 1, 0, 7); ctx.fill(); }
+      ctx.fillStyle = '#ffffff12'; for (var i = 0; i < 35; i++) { ctx.beginPath(); ctx.arc((i * 83) % 520, (i * 137 + score * 0.02) % 700, i % 3 + 1, 0, 7); ctx.fill(); }
       platforms.forEach(function (p) { ctx.fillStyle = '#d6bc75'; ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, 11, 6); ctx.fill(); ctx.fillStyle = '#719b7a'; ctx.fillRect(p.x + 7, p.y + 10, p.w - 14, 4); });
-      ctx.fillStyle = '#f0e4bd'; ctx.beginPath(); ctx.roundRect(player.x, player.y, player.w, player.h, 10); ctx.fill(); ctx.fillStyle = '#163c39'; ctx.fillRect(player.x + 6, player.y + 10, 5, 5); ctx.fillRect(player.x + 19, player.y + 10, 5, 5);
+      ctx.fillStyle = '#f0e4bd'; ctx.beginPath(); ctx.roundRect(player.x, player.y, player.w, player.h, 10); ctx.fill();
+      ctx.fillStyle = '#163c39'; ctx.fillRect(player.x + 6, player.y + 10, 5, 5); ctx.fillRect(player.x + 19, player.y + 10, 5, 5);
+      fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.025, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
       var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
       if (touchX != null) steer = touchX < player.x + player.w / 2 ? -1 : 1;
-      player.vx += steer * 1250 * dt; player.vx *= Math.pow(.04, dt); player.vx = Math.max(-260, Math.min(260, player.vx)); player.x += player.vx * dt; player.vy += 1450 * dt; var oldBottom = player.y + player.h; player.y += player.vy * dt;
+      player.vx += steer * 1300 * dt; player.vx *= Math.pow(.05, dt); player.vx = Math.max(-280, Math.min(280, player.vx));
+      player.x += player.vx * dt; player.vy += 1480 * dt; var oldBottom = player.y + player.h; player.y += player.vy * dt;
       if (player.x < -player.w) player.x = 520; if (player.x > 520) player.x = -player.w;
-      if (player.vy > 0) platforms.some(function (p) { if (oldBottom <= p.y && player.y + player.h >= p.y && player.x + player.w > p.x && player.x < p.x + p.w) { player.y = p.y - player.h; player.vy = -670; return true; } return false; });
+      if (player.vy > 0) platforms.some(function (p) {
+        if (oldBottom <= p.y && player.y + player.h >= p.y && player.x + player.w > p.x && player.x < p.x + p.w) {
+          player.y = p.y - player.h; player.vy = -690; fx.spark(player.x + player.w / 2, player.y + player.h, '#d6bc75'); return true;
+        }
+        return false;
+      });
       if (player.y < 270) {
-        var shift = 270 - player.y; player.y = 270; platforms.forEach(function (p) { p.y += shift; }); score += Math.round(shift); hud('score', formatScore(score)); platforms = platforms.filter(function (p) { return p.y < 730; }); addPlatforms();
+        var shift = 270 - player.y; player.y = 270; platforms.forEach(function (p) { p.y += shift; });
+        score += Math.round(shift); hud('score', formatScore(score));
+        platforms = platforms.filter(function (p) { return p.y < 730; }); addPlatforms();
       }
-      if (player.y > 730) { running = false; gameOver('아래로 떨어졌어요', '오른 높이 ' + formatScore(score), function () { startGame('jump'); }, score); return; }
+      if (player.y > 730) { running = false; shakeStage(); gameOver('아래로 떨어졌어요', '오른 높이 ' + formatScore(score), function () { startGame('jump'); }, score); return; }
       draw(); c.raf(loop);
     }
     function key(e) { if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].indexOf(e.key) >= 0) { e.preventDefault(); keys[e.key.toLowerCase()] = e.type === 'keydown'; keys[e.key] = e.type === 'keydown'; } }
@@ -518,17 +659,18 @@
     c.on(cv.canvas, 'touchmove', function (e) { var r = cv.canvas.getBoundingClientRect(); touchX = (e.touches[0].clientX - r.left) * 520 / r.width; }, { passive: true });
     c.on(cv.canvas, 'touchend', function () { touchX = null; }, { passive: true });
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 방향키/A·D 또는 화면 좌우를 눌러 이동하세요. 좌우 벽은 연결됩니다.');
+    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 방향키/A·D 또는 화면 좌우를 눌러 이동하세요. 높이 오를수록 발판이 좁아집니다.');
     return { id: 'jump', destroy: c.destroy };
   };
 
   games.tetris = function () {
-    var c = controller(), cv = canvasBase(320, 640), ctx = cv.ctx, W = 10, H = 20, cell = 32;
+    var c = controller(), cv = canvasBase(360, 680), ctx = cv.ctx, W = 10, H = 20, cell = 34, padX = 10, padY = 10;
     var shapes = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
     var colors = ['#55c2c8', '#efd28a', '#d86bd7', '#55a9e8', '#f08b43', '#4bc6a6', '#ef5350'];
-    var grid, piece, nextId, score = 0, lines = 0, drop = 0, step = 650, over = false, keys = {};
+    var grid, piece, nextId, score = 0, lines = 0, drop = 0, softDrop = 0, step = 620, over = false, held = {}, fx = makeFx(), flashRows = [];
     setHud([['점수', '0', 'score'], ['라인', '0', 'lines'], ['레벨', '1', 'level']]);
     function empty() { return Array.from({ length: H }, function () { return Array(W).fill(0); }); }
+    function level() { return 1 + Math.floor(lines / 8); }
     function spawn() {
       nextId = nextId == null ? Math.floor(Math.random() * shapes.length) : nextId;
       var id = nextId; nextId = Math.floor(Math.random() * shapes.length);
@@ -545,16 +687,25 @@
     }
     function merge() {
       piece.m.forEach(function (row, r) { row.forEach(function (v, col) { if (v && piece.y + r >= 0) grid[piece.y + r][piece.x + col] = piece.id + 1; }); });
-      var cleared = 0;
-      for (var r = H - 1; r >= 0; r--) {
-        if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(W).fill(0)); cleared++; r++; }
-      }
-      if (cleared) {
-        lines += cleared; score += [0, 100, 250, 450, 800][cleared] * (1 + Math.floor(lines / 10));
-        step = Math.max(120, 650 - Math.floor(lines / 10) * 55);
-        hud('score', formatScore(score)); hud('lines', lines); hud('level', 1 + Math.floor(lines / 10));
-      }
-      spawn();
+      var cleared = [], r;
+      for (r = H - 1; r >= 0; r--) if (grid[r].every(Boolean)) cleared.push(r);
+      if (cleared.length) {
+        flashRows = cleared.slice();
+        cleared.forEach(function (row) {
+          for (var x = 0; x < W; x++) fx.burst(padX + x * cell + cell / 2, padY + row * cell + cell / 2, '#fff4d0', 4, 140);
+        });
+        c.timer(function () {
+          cleared.sort(function (a, b) { return b - a; }).forEach(function (row) {
+            grid.splice(row, 1); grid.unshift(Array(W).fill(0));
+          });
+          flashRows = [];
+          lines += cleared.length;
+          score += [0, 120, 300, 520, 900][cleared.length] * level();
+          step = Math.max(110, 620 - (level() - 1) * 48);
+          hud('score', formatScore(score)); hud('lines', lines); hud('level', level());
+          spawn();
+        }, 120);
+      } else spawn();
     }
     function rotate() {
       var m = piece.m, rotated = m[0].map(function (_, i) { return m.map(function (row) { return row[i]; }).reverse(); });
@@ -564,109 +715,205 @@
     }
     function soft() { if (!collide(piece.x, piece.y + 1, piece.m)) piece.y++; else merge(); }
     function hard() { while (!collide(piece.x, piece.y + 1, piece.m)) { piece.y++; score += 2; } hud('score', formatScore(score)); merge(); }
-    function drawCell(x, y, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x * cell + 1, y * cell + 1, cell - 2, cell - 2, 5); ctx.fill(); ctx.fillStyle = '#ffffff22'; ctx.fillRect(x * cell + 4, y * cell + 3, cell - 10, 4); }
+    function drawCell(x, y, color, ghost) {
+      var px = padX + x * cell, py = padY + y * cell;
+      if (ghost) {
+        ctx.globalAlpha = 0.28; ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.strokeRect(px + 3, py + 3, cell - 6, cell - 6); ctx.globalAlpha = 1; return;
+      }
+      var g = ctx.createLinearGradient(px, py, px + cell, py + cell);
+      g.addColorStop(0, '#ffffff55'); g.addColorStop(0.22, color); g.addColorStop(1, '#00000055');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.roundRect(px + 1, py + 1, cell - 2, cell - 2, 7); ctx.fill();
+      ctx.strokeStyle = '#ffffff33'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#ffffff40'; ctx.fillRect(px + 5, py + 4, cell - 12, 4);
+      ctx.fillStyle = '#00000033'; ctx.fillRect(px + 5, py + cell - 8, cell - 12, 3);
+    }
+    function ghostY() {
+      var y = piece.y; while (!collide(piece.x, y + 1, piece.m)) y++; return y;
+    }
     function draw() {
-      ctx.fillStyle = '#07161c'; ctx.fillRect(0, 0, 320, 640);
-      for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) if (grid[y][x]) drawCell(x, y, colors[grid[y][x] - 1]);
-      if (piece) piece.m.forEach(function (row, r) { row.forEach(function (v, col) { if (v) drawCell(piece.x + col, piece.y + r, colors[piece.id]); }); });
+      var bg = ctx.createLinearGradient(0, 0, 0, 680);
+      bg.addColorStop(0, '#0d2a30'); bg.addColorStop(1, '#061218');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 360, 680);
+      ctx.fillStyle = '#08181d'; ctx.beginPath(); ctx.roundRect(padX - 4, padY - 4, W * cell + 8, H * cell + 8, 12); ctx.fill();
+      ctx.strokeStyle = '#ffffff10';
+      for (var i = 0; i <= W; i++) { ctx.beginPath(); ctx.moveTo(padX + i * cell, padY); ctx.lineTo(padX + i * cell, padY + H * cell); ctx.stroke(); }
+      for (var j = 0; j <= H; j++) { ctx.beginPath(); ctx.moveTo(padX, padY + j * cell); ctx.lineTo(padX + W * cell, padY + j * cell); ctx.stroke(); }
+      for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+        if (grid[y][x]) {
+          if (flashRows.indexOf(y) >= 0) {
+            ctx.fillStyle = '#fff8'; ctx.fillRect(padX + x * cell, padY + y * cell, cell, cell);
+          } else drawCell(x, y, colors[grid[y][x] - 1]);
+        }
+      }
+      if (piece && !flashRows.length) {
+        var gy = ghostY();
+        piece.m.forEach(function (row, r) { row.forEach(function (v, col) { if (v) drawCell(piece.x + col, gy + r, colors[piece.id], true); }); });
+        piece.m.forEach(function (row, r) { row.forEach(function (v, col) { if (v) drawCell(piece.x + col, piece.y + r, colors[piece.id]); }); });
+      }
+      fx.draw(ctx);
     }
     function loop(t) {
       if (over) return;
+      var dt = Math.min(0.033, (t - (loop._last || t)) / 1000 || 0); loop._last = t;
+      fx.update(dt);
+      if (flashRows.length) { draw(); c.raf(loop); return; }
       if (!drop) drop = t;
       if (t - drop >= step) { drop = t; soft(); }
-      if (keys.left) { keys.left = false; if (!collide(piece.x - 1, piece.y, piece.m)) piece.x--; }
-      if (keys.right) { keys.right = false; if (!collide(piece.x + 1, piece.y, piece.m)) piece.x++; }
-      if (keys.down) soft();
-      if (keys.up) { keys.up = false; rotate(); }
-      if (keys.space) { keys.space = false; hard(); }
+      if (held.left && t - (held._leftAt || 0) > 140) { held._leftAt = t; if (!collide(piece.x - 1, piece.y, piece.m)) piece.x--; }
+      if (held.right && t - (held._rightAt || 0) > 140) { held._rightAt = t; if (!collide(piece.x + 1, piece.y, piece.m)) piece.x++; }
+      if (held.down) {
+        if (!softDrop || t - softDrop >= 55) { softDrop = t; soft(); score += 1; hud('score', formatScore(score)); }
+      }
       draw(); c.raf(loop);
     }
     function key(e) {
       var map = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowDown: 'down', s: 'down', S: 'down', ArrowUp: 'up', w: 'up', W: 'up', ' ': 'space' };
-      if (map[e.key]) { e.preventDefault(); if (e.type === 'keydown') keys[map[e.key]] = true; }
+      var k = map[e.key]; if (!k) return;
+      e.preventDefault();
+      if (e.type === 'keyup') { held[k] = false; return; }
+      if (e.repeat && (k === 'up' || k === 'space')) return;
+      if (k === 'left') { held.left = true; held._leftAt = performance.now(); if (!collide(piece.x - 1, piece.y, piece.m)) piece.x--; }
+      else if (k === 'right') { held.right = true; held._rightAt = performance.now(); if (!collide(piece.x + 1, piece.y, piece.m)) piece.x++; }
+      else if (k === 'down') { held.down = true; softDrop = 0; }
+      else if (k === 'up') rotate();
+      else if (k === 'space') hard();
     }
     c.on(document, 'keydown', key); c.on(document, 'keyup', key);
     c.on(cv.canvas, 'click', function () { rotate(); });
     grid = empty(); spawn(); draw(); c.raf(loop);
-    actions(function () { startGame('tetris'); }, function () { return score; }, '←→ 이동 · ↑/클릭 회전 · ↓ 소프트 · Space 하드드롭');
+    actions(function () { startGame('tetris'); }, function () { return score; }, '←→ 이동 · ↑/클릭 회전 · ↓ 소프트드롭 · Space 하드드롭');
     return { id: 'tetris', destroy: c.destroy };
   };
 
   games.pong = function () {
-    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, ball, score = 0, lives = 3, running = true, last = 0;
+    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, ball, score = 0, lives = 3, running = true, last = 0, fx = makeFx(), speed = 1;
     setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('pong', name())), 'best']]);
-    function reset() { paddle = { x: 270, y: 385, w: 100, h: 12 }; ball = { x: 320, y: 210, vx: (Math.random() > .5 ? 1 : -1) * 240, vy: -210, r: 8 }; }
+    function reset() {
+      paddle = { x: 270, y: 385, w: 96, h: 12 };
+      var v = 230 * speed;
+      ball = { x: 320, y: 210, vx: (Math.random() > .5 ? 1 : -1) * v, vy: -v * 0.9, r: 8 };
+    }
     function draw() {
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 640, 420);
       ctx.strokeStyle = '#ffffff18'; ctx.setLineDash([8, 10]); ctx.beginPath(); ctx.moveTo(0, 210); ctx.lineTo(640, 210); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = '#e4c878'; ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7); ctx.fill();
-      ctx.fillStyle = '#fff4d0'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.025, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
       ball.x += ball.vx * dt; ball.y += ball.vy * dt;
-      if (ball.x < ball.r || ball.x > 640 - ball.r) ball.vx *= -1;
-      if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); score += 5; hud('score', score); }
+      if (ball.x < ball.r || ball.x > 640 - ball.r) { ball.vx *= -1; fx.spark(ball.x, ball.y); }
+      if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); score += 5; speed = Math.min(1.5, speed + 0.02); hud('score', score); fx.spark(ball.x, ball.y, '#9ad2a9'); }
       if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
         ball.y = paddle.y - ball.r; var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
-        ball.vx = hit * 320; ball.vy = -Math.abs(ball.vy) * 1.03; score += 10; hud('score', score);
+        ball.vx = hit * 330 * speed; ball.vy = -Math.abs(ball.vy) * 1.03; score += 10; hud('score', score); fx.burst(ball.x, ball.y, '#efd28a', 10, 160);
       }
       if (ball.y > 430) {
-        lives--; hud('lives', lives);
+        lives--; hud('lives', lives); shakeStage();
         if (!lives) { running = false; gameOver('랠리 종료', formatScore(score) + '점', function () { startGame('pong'); }, score); return; }
         reset();
       }
       draw(); c.raf(loop);
     }
-    function point(e) { var rect = cv.canvas.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * 640 / rect.width; paddle.x = Math.max(0, Math.min(540, x - 50)); }
+    function point(e) { var rect = cv.canvas.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * 640 / rect.width; paddle.x = Math.max(0, Math.min(640 - paddle.w, x - paddle.w / 2)); }
     c.on(cv.canvas, 'mousemove', point); c.on(cv.canvas, 'touchmove', function (e) { e.preventDefault(); point(e); }, { passive: false });
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('pong'); }, function () { return score; }, '마우스/손가락으로 패들을 움직여 공을 받아내세요.');
+    actions(function () { startGame('pong'); }, function () { return score; }, '마우스/손가락으로 패들을 움직여 공을 받아내세요. 랠리가 이어질수록 빨라집니다.');
     return { id: 'pong', destroy: c.destroy };
   };
 
   games.flappy = function () {
-    var c = controller(), cv = canvasBase(420, 640), ctx = cv.ctx, bird, pipes, score = 0, running = true, started = false, last = 0, grav = 1680;
+    var c = controller(), cv = canvasBase(420, 640), ctx = cv.ctx, bird, pipes, score = 0, running = true, started = false, last = 0, grav = 1720, fx = makeFx(), wing = 0;
     setHud([['점수', '0', 'score'], ['최고', formatScore(best('flappy', name())), 'best']]);
-    function setup() { bird = { x: 90, y: 280, vy: 0, r: 14 }; pipes = []; score = 0; started = false; running = true; }
-    function addPipe() { var gap = 150 + Math.random() * 30, top = 80 + Math.random() * 280; pipes.push({ x: 440, top: top, gap: gap, passed: false }); }
-    function flap() { if (!running) return; if (!started) { started = true; addPipe(); } bird.vy = -430; }
+    function setup() { bird = { x: 90, y: 280, vy: 0, r: 16 }; pipes = []; score = 0; started = false; running = true; }
+    function difficulty() {
+      return {
+        gap: Math.max(118, 158 - score * 2.2),
+        speed: 175 + Math.min(90, score * 4.5),
+        spacing: Math.max(170, 230 - score * 2)
+      };
+    }
+    function addPipe() {
+      var d = difficulty();
+      var top = 70 + Math.random() * (500 - d.gap);
+      pipes.push({ x: 440, top: top, gap: d.gap, passed: false });
+    }
+    function flap() { if (!running) return; if (!started) { started = true; addPipe(); } bird.vy = -450; fx.spark(bird.x, bird.y + 8, '#ffffff88'); }
+    function drawBellboy(x, y, ang) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+      // body
+      ctx.fillStyle = '#1f4f5a'; ctx.beginPath(); ctx.roundRect(-12, -2, 24, 22, 6); ctx.fill();
+      // gold buttons
+      ctx.fillStyle = '#efd28a'; ctx.beginPath(); ctx.arc(-2, 5, 2, 0, 7); ctx.arc(-2, 11, 2, 0, 7); ctx.fill();
+      // head
+      ctx.fillStyle = '#f3d7b0'; ctx.beginPath(); ctx.arc(0, -10, 11, 0, 7); ctx.fill();
+      // hat
+      ctx.fillStyle = '#163c39'; ctx.beginPath(); ctx.roundRect(-10, -22, 20, 10, 3); ctx.fill();
+      ctx.fillStyle = '#efd28a'; ctx.fillRect(-11, -14, 22, 3);
+      // eye
+      ctx.fillStyle = '#163c39'; ctx.beginPath(); ctx.arc(4, -11, 2.2, 0, 7); ctx.fill();
+      // wing
+      ctx.fillStyle = '#d6bc75'; ctx.beginPath();
+      ctx.ellipse(-14, 4, 8, 5 + Math.sin(wing) * 2, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    function drawPipe(p) {
+      var cap = 16;
+      var body = ctx.createLinearGradient(p.x, 0, p.x + 54, 0);
+      body.addColorStop(0, '#245a4f'); body.addColorStop(0.5, '#3f8a74'); body.addColorStop(1, '#1d463e');
+      ctx.fillStyle = body;
+      ctx.fillRect(p.x, 0, 54, p.top);
+      ctx.fillRect(p.x, p.top + p.gap, 54, 640 - p.top - p.gap);
+      ctx.fillStyle = '#d6bc75';
+      ctx.beginPath(); ctx.roundRect(p.x - 5, p.top - cap, 64, cap, 5); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(p.x - 5, p.top + p.gap, 64, cap, 5); ctx.fill();
+      ctx.fillStyle = '#ffffff22'; ctx.fillRect(p.x + 6, 8, 8, Math.max(0, p.top - 24));
+    }
     function draw() {
-      var g = ctx.createLinearGradient(0, 0, 0, 640); g.addColorStop(0, '#124043'); g.addColorStop(1, '#07151a'); ctx.fillStyle = g; ctx.fillRect(0, 0, 420, 640);
-      pipes.forEach(function (p) {
-        ctx.fillStyle = '#2f6b5c'; ctx.fillRect(p.x, 0, 54, p.top); ctx.fillRect(p.x, p.top + p.gap, 54, 640 - p.top - p.gap);
-        ctx.fillStyle = '#d6bc75'; ctx.fillRect(p.x - 4, p.top - 14, 62, 14); ctx.fillRect(p.x - 4, p.top + p.gap, 62, 14);
-      });
-      ctx.fillStyle = '#efd28a'; ctx.beginPath(); ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#163c39'; ctx.beginPath(); ctx.arc(bird.x + 5, bird.y - 3, 2.5, 0, 7); ctx.fill();
-      if (!started) { ctx.fillStyle = '#f5ecd5'; ctx.font = '16px Georgia'; ctx.textAlign = 'center'; ctx.fillText('탭 / Space 로 시작', 210, 320); }
+      var g = ctx.createLinearGradient(0, 0, 0, 640); g.addColorStop(0, '#1a5560'); g.addColorStop(0.55, '#0d3038'); g.addColorStop(1, '#07151a');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 420, 640);
+      ctx.fillStyle = '#ffffff14';
+      for (var i = 0; i < 18; i++) ctx.beginPath(), ctx.arc((i * 73 + score * 8) % 420, (i * 97) % 500, 1.5 + i % 2, 0, 7), ctx.fill();
+      pipes.forEach(drawPipe);
+      var ang = Math.max(-0.5, Math.min(0.7, bird.vy / 700));
+      drawBellboy(bird.x, bird.y, ang);
+      fx.draw(ctx);
+      if (!started) { ctx.fillStyle = '#f5ecd5'; ctx.font = '16px Georgia'; ctx.textAlign = 'center'; ctx.fillText('탭 / Space 로 시작', 210, 340); }
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.025, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; wing += dt * 12; fx.update(dt);
       if (started) {
+        var d = difficulty();
         bird.vy += grav * dt; bird.y += bird.vy * dt;
         pipes.forEach(function (p) {
-          p.x -= 170 * dt;
-          if (!p.passed && p.x + 54 < bird.x) { p.passed = true; score++; hud('score', score); }
+          p.x -= d.speed * dt;
+          if (!p.passed && p.x + 54 < bird.x) {
+            p.passed = true; score++; hud('score', score);
+            fx.burst(bird.x, bird.y, '#efd28a', 12, 170);
+          }
         });
         pipes = pipes.filter(function (p) { return p.x > -70; });
-        if (!pipes.length || pipes[pipes.length - 1].x < 220) addPipe();
+        if (!pipes.length || pipes[pipes.length - 1].x < d.spacing) addPipe();
         var hit = bird.y - bird.r < 0 || bird.y + bird.r > 640 || pipes.some(function (p) {
           return bird.x + bird.r > p.x && bird.x - bird.r < p.x + 54 && (bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap);
         });
-        if (hit) { running = false; gameOver('착지!', formatScore(score) + '개 통과', function () { startGame('flappy'); }, score); return; }
+        if (hit) { running = false; shakeStage(); fx.burst(bird.x, bird.y, '#ef5350', 18, 220); gameOver('착지!', formatScore(score) + '개 통과', function () { startGame('flappy'); }, score); return; }
       }
       draw(); c.raf(loop);
     }
     function key(e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } }
     c.on(document, 'keydown', key); c.on(cv.canvas, 'pointerdown', function (e) { e.preventDefault(); flap(); });
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('flappy'); }, function () { return score; }, '탭 또는 Space로 날아오르세요.');
+    actions(function () { startGame('flappy'); }, function () { return score; }, '탭 또는 Space로 날아오르세요. 점수에 따라 틈이 좁아집니다.');
     return { id: 'flappy', destroy: c.destroy };
   };
 
   games.mines = function () {
-    var c = controller(), SIZE = 8, MINES = 10, cells, opened = 0, flags = 0, alive = true, score = 0, started = Date.now(), seeded = false;
+    var c = controller(), SIZE = 8, MINES = 12, cells, opened = 0, flags = 0, alive = true, score = 0, started = Date.now(), seeded = false;
     refs.stage.innerHTML = '<div class="hkg-mines"></div>';
     var grid = refs.stage.firstChild;
     setHud([['남은 지뢰', String(MINES), 'left'], ['점수', '0', 'score'], ['시간', '0초', 'time']]);
@@ -683,20 +930,20 @@
       var placed = 0;
       while (placed < MINES) {
         var i = Math.floor(Math.random() * cells.length);
-        if (cells[i].mine || i === safe) continue;
+        if (cells[i].mine || i === safe || neighbors(safe).indexOf(i) >= 0) continue;
         cells[i].mine = true; placed++;
       }
       cells.forEach(function (cell, i) { if (!cell.mine) cell.n = neighbors(i).filter(function (j) { return cells[j].mine; }).length; });
       seeded = true; started = Date.now();
     }
-    function calc() { return Math.max(50, 1000 - Math.floor((Date.now() - started) / 1000) * 4 - flags * 5); }
+    function calc() { return Math.max(50, 1100 - Math.floor((Date.now() - started) / 1000) * 5 - flags * 5); }
     function draw() {
       grid.innerHTML = cells.map(function (cell, i) {
         var cls = 'hkg-mine' + (cell.open ? ' open' : '') + (cell.flag ? ' flag' : '') + (cell.open && cell.mine ? ' boom' : '');
         var label = cell.open ? (cell.mine ? '💣' : (cell.n || '')) : (cell.flag ? '🚩' : '');
         return '<button class="' + cls + '" data-i="' + i + '">' + label + '</button>';
       }).join('');
-      hud('left', Math.max(0, MINES - flags)); hud('score', formatScore(seeded ? calc() : 1000)); hud('time', Math.floor((Date.now() - started) / 1000) + '초');
+      hud('left', Math.max(0, MINES - flags)); hud('score', formatScore(seeded ? calc() : 1100)); hud('time', Math.floor((Date.now() - started) / 1000) + '초');
     }
     function reveal(i) {
       var cell = cells[i]; if (cell.open || cell.flag) return;
@@ -713,11 +960,11 @@
       }
       if (cells[i].flag) return;
       if (cells[i].mine) {
-        alive = false; cells.forEach(function (x) { if (x.mine) x.open = true; }); draw();
+        alive = false; cells.forEach(function (x) { if (x.mine) x.open = true; }); draw(); shakeStage();
         gameOver('지뢰 발견!', '안전 칸 ' + opened + '개', function () { startGame('mines'); }, Math.max(10, opened * 8)); return;
       }
       reveal(i); score = calc(); draw();
-      if (opened === SIZE * SIZE - MINES) { alive = false; score = calc() + 200; hud('score', formatScore(score)); gameOver('클리어!', formatScore(score) + '점', function () { startGame('mines'); }, score); }
+      if (opened === SIZE * SIZE - MINES) { alive = false; score = calc() + 220; hud('score', formatScore(score)); gameOver('클리어!', formatScore(score) + '점', function () { startGame('mines'); }, score); }
     }
     cells = Array.from({ length: SIZE * SIZE }, function () { return { mine: false, open: false, flag: false, n: 0 }; });
     draw();
@@ -729,27 +976,39 @@
   };
 
   games.reaction = function () {
-    var c = controller(), hits = 0, misses = 0, score = 0, left = 20, alive = true, bell, spawnAt = 0;
+    var c = controller(), hits = 0, misses = 0, score = 0, left = 20, round = 0, alive = true, bell = null, spawnAt = 0, hideTimer = 0;
     refs.stage.innerHTML = '<div class="hkg-reaction"></div>';
     var arena = refs.stage.firstChild;
     setHud([['남은 종', '20', 'left'], ['적중', '0', 'hits'], ['점수', '0', 'score']]);
-    function clearBell() { if (bell && bell.parentNode) bell.parentNode.removeChild(bell); bell = null; }
+    function clearBell() {
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
+      if (bell && bell.parentNode) bell.parentNode.removeChild(bell);
+      bell = null;
+    }
+    function windowMs() {
+      // 초반 여유 → 후반도 너무 빠르지 않게 바닥을 높게
+      return Math.max(1050, 1650 - round * 22);
+    }
     function spawn() {
-      if (!alive) return; clearBell();
+      if (!alive) return;
+      clearBell();
+      round++;
       bell = el('button', 'hkg-bell', '🔔');
-      bell.style.left = (12 + Math.random() * 76) + '%';
-      bell.style.top = (12 + Math.random() * 76) + '%';
+      bell.style.left = (14 + Math.random() * 72) + '%';
+      bell.style.top = (14 + Math.random() * 72) + '%';
       spawnAt = Date.now();
       arena.appendChild(bell);
-      c.timer(function () {
+      hideTimer = setTimeout(function () {
+        hideTimer = 0;
         if (!alive || !bell) return;
         clearBell(); misses++; left--; hud('left', left);
-        if (left <= 0) finish(); else spawn();
-      }, 1100 + Math.random() * 500);
+        if (left <= 0) finish();
+        else c.timer(spawn, 420 + Math.random() * 280);
+      }, windowMs());
     }
     function finish() {
       alive = false; clearBell();
-      score = Math.max(0, hits * 50 - misses * 15);
+      score = Math.max(0, hits * 55 - misses * 12);
       hud('score', formatScore(score));
       gameOver(hits >= 14 ? '빠른 손!' : '라운드 종료', '적중 ' + hits + ' · 미적중 ' + misses + ' · ' + formatScore(score) + '점', function () { startGame('reaction'); }, score);
     }
@@ -757,45 +1016,76 @@
       if (!alive) return;
       if (e.target === bell) {
         var ms = Date.now() - spawnAt;
-        hits++; left--; score += Math.max(10, 80 - Math.floor(ms / 12));
+        hits++; left--; score += Math.max(12, 90 - Math.floor(ms / 16));
         hud('hits', hits); hud('left', left); hud('score', formatScore(score));
+        floatScore(e.offsetX || arena.clientWidth / 2, e.offsetY || 40, 'HIT!', arena);
         clearBell();
-        if (left <= 0) finish(); else c.timer(spawn, 280 + Math.random() * 220);
+        if (left <= 0) finish();
+        else c.timer(spawn, 380 + Math.random() * 320);
       } else {
-        misses++; score = Math.max(0, score - 8); hud('score', formatScore(score));
+        misses++; score = Math.max(0, score - 6); hud('score', formatScore(score));
       }
     });
-    c.timer(spawn, 500);
-    actions(function () { startGame('reaction'); }, function () { return score; }, '나타나는 종을 빠르게 누르세요. 빈 곳 클릭은 감점됩니다.');
-    return { id: 'reaction', destroy: c.destroy };
+    c.timer(spawn, 600);
+    actions(function () { startGame('reaction'); }, function () { return score; }, '나타나는 종을 눌러보세요. 후반에도 여유 있게 맞춰집니다.');
+    return { id: 'reaction', destroy: function () { clearBell(); c.destroy(); } };
   };
 
   games.dodge = function () {
-    var c = controller(), cv = canvasBase(420, 640), ctx = cv.ctx, player, bags, score = 0, running = true, last = 0, keys = {}, touchX = null;
+    var c = controller(), cv = canvasBase(420, 640), ctx = cv.ctx, player, bags, score = 0, running = true, last = 0, keys = {}, touchX = null, fx = makeFx();
     setHud([['생존', '0', 'score'], ['최고', formatScore(best('dodge', name())), 'best']]);
-    function setup() { player = { x: 185, y: 560, w: 50, h: 28 }; bags = []; score = 0; running = true; }
+    function setup() { player = { x: 190, y: 530, w: 34, h: 56 }; bags = []; score = 0; running = true; }
+    function drawPlayer() {
+      var x = player.x, y = player.y, w = player.w, h = player.h;
+      // body (vertical rectangle)
+      var g = ctx.createLinearGradient(x, y, x + w, y + h);
+      g.addColorStop(0, '#f3e2b0'); g.addColorStop(1, '#c9a85a');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x, y + 14, w, h - 14, 8); ctx.fill();
+      // head
+      ctx.fillStyle = '#f3d7b0'; ctx.beginPath(); ctx.arc(x + w / 2, y + 12, 12, 0, 7); ctx.fill();
+      // hat
+      ctx.fillStyle = '#163c39'; ctx.beginPath(); ctx.roundRect(x + 4, y, w - 8, 9, 3); ctx.fill();
+      ctx.fillStyle = '#efd28a'; ctx.fillRect(x + 3, y + 8, w - 6, 2);
+      // eyes
+      ctx.fillStyle = '#163c39'; ctx.fillRect(x + 10, y + 11, 3, 3); ctx.fillRect(x + 20, y + 11, 3, 3);
+      // arms
+      ctx.fillStyle = '#d6bc75'; ctx.fillRect(x - 5, y + 24, 6, 16); ctx.fillRect(x + w - 1, y + 24, 6, 16);
+    }
     function draw() {
       var g = ctx.createLinearGradient(0, 0, 0, 640); g.addColorStop(0, '#12363c'); g.addColorStop(1, '#07151a'); ctx.fillStyle = g; ctx.fillRect(0, 0, 420, 640);
-      ctx.fillStyle = '#ffffff10'; for (var i = 0; i < 20; i++) ctx.fillRect(0, (i * 40 + (score / 4) % 40), 420, 2);
-      bags.forEach(function (b) { ctx.fillStyle = b.color; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 6); ctx.fill(); ctx.fillStyle = '#0003'; ctx.fillRect(b.x + 4, b.y + 4, b.w - 8, 4); });
-      ctx.fillStyle = '#efd28a'; ctx.beginPath(); ctx.roundRect(player.x, player.y, player.w, player.h, 8); ctx.fill();
-      ctx.fillStyle = '#163c39'; ctx.fillRect(player.x + 10, player.y + 8, 8, 8); ctx.fillRect(player.x + 32, player.y + 8, 8, 8);
+      ctx.fillStyle = '#ffffff10'; for (var i = 0; i < 20; i++) ctx.fillRect(0, (i * 40 + (score / 3) % 40), 420, 2);
+      bags.forEach(function (b) {
+        ctx.fillStyle = b.color; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 6); ctx.fill();
+        ctx.fillStyle = '#00000033'; ctx.fillRect(b.x + 4, b.y + 4, b.w - 8, 4);
+        ctx.fillStyle = '#ffffff22'; ctx.fillRect(b.x + 5, b.y + 6, b.w - 10, 2);
+      });
+      drawPlayer(); fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.025, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
       var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
       if (touchX != null) steer = touchX < player.x + player.w / 2 ? -1 : 1;
-      player.x = Math.max(0, Math.min(370, player.x + steer * 340 * dt));
-      if (Math.random() < 0.035 + Math.min(0.04, score / 8000)) {
-        bags.push({ x: Math.random() * 360, y: -40, w: 28 + Math.random() * 26, h: 22 + Math.random() * 14, vy: 180 + Math.random() * 160 + score / 25, color: ['#c97b55', '#55a9e8', '#b96d79', '#d6bc75'][Math.floor(Math.random() * 4)] });
+      player.x = Math.max(4, Math.min(420 - player.w - 4, player.x + steer * 360 * dt));
+      var spawnRate = 0.04 + Math.min(0.055, score / 7000);
+      var fall = 200 + Math.min(220, score / 18);
+      if (Math.random() < spawnRate) {
+        bags.push({
+          x: Math.random() * 360, y: -50,
+          w: 26 + Math.random() * 28, h: 20 + Math.random() * 16,
+          vy: fall + Math.random() * 120,
+          color: ['#c97b55', '#55a9e8', '#b96d79', '#d6bc75'][Math.floor(Math.random() * 4)]
+        });
       }
       bags.forEach(function (b) { b.y += b.vy * dt; });
-      bags = bags.filter(function (b) { return b.y < 700; });
-      score += Math.round(dt * 60); hud('score', formatScore(score));
-      var hit = bags.some(function (b) {
-        return b.x < player.x + player.w && b.x + b.w > player.x && b.y < player.y + player.h && b.y + b.h > player.y;
+      bags = bags.filter(function (b) {
+        if (b.y >= 700) { fx.spark(b.x + b.w / 2, 630, b.color); return false; }
+        return true;
       });
-      if (hit) { running = false; gameOver('짐에 맞았어요', '생존 ' + formatScore(score), function () { startGame('dodge'); }, score); return; }
+      score += Math.round(dt * 65); hud('score', formatScore(score));
+      var hit = bags.some(function (b) {
+        return b.x < player.x + player.w - 4 && b.x + b.w > player.x + 4 && b.y < player.y + player.h - 4 && b.y + b.h > player.y + 10;
+      });
+      if (hit) { running = false; shakeStage(); fx.burst(player.x + player.w / 2, player.y + 20, '#ef5350', 20, 220); gameOver('짐에 맞았어요', '생존 ' + formatScore(score), function () { startGame('dodge'); }, score); return; }
       draw(); c.raf(loop);
     }
     function key(e) { if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].indexOf(e.key) >= 0) { e.preventDefault(); keys[e.key.toLowerCase()] = e.type === 'keydown'; keys[e.key] = e.type === 'keydown'; } }
@@ -804,7 +1094,7 @@
     c.on(cv.canvas, 'touchmove', function (e) { var r = cv.canvas.getBoundingClientRect(); touchX = (e.touches[0].clientX - r.left) * 420 / r.width; }, { passive: true });
     c.on(cv.canvas, 'touchend', function () { touchX = null; }, { passive: true });
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('dodge'); }, function () { return score; }, '좌우로 움직여 떨어지는 짐을 피하세요.');
+    actions(function () { startGame('dodge'); }, function () { return score; }, '좌우로 움직여 떨어지는 짐을 피하세요. 시간이 갈수록 더 많이 떨어집니다.');
     return { id: 'dodge', destroy: c.destroy };
   };
 
