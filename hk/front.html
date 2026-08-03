@@ -7711,7 +7711,7 @@
 
     .request-desk-chat,
     .order-desk-chat {
-      flex: 0 0 auto;
+      flex: 1 1 100%;
       display: flex;
       flex-direction: column;
       border: 2px solid #334155;
@@ -7719,15 +7719,16 @@
       background: var(--surface-raised, #f7f8fa);
       resize: both;
       overflow: hidden;
+      overflow-x: hidden;
       box-sizing: border-box;
       height: 420px;
       min-height: 240px;
       max-height: min(80vh, 720px);
-      width: min(900px, 95vw);
-      min-width: 280px;
-      max-width: min(900px, 95vw);
+      width: 100%;
+      min-width: 0;
+      max-width: min(900px, 100%);
       margin-top: 0;
-      align-self: flex-start;
+      align-self: stretch;
     }
 
     .request-desk-chat__head,
@@ -7809,6 +7810,7 @@
     .request-desk-chat__messages {
       flex: 1 1 auto;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
@@ -7841,6 +7843,8 @@
       font-size: var(--desk-chat-msg-size, 0.8rem);
       white-space: pre-wrap;
       word-break: break-word;
+      overflow-wrap: anywhere;
+      max-width: 100%;
     }
 
     .request-desk-chat__msg.is-reactable,
@@ -7946,6 +7950,7 @@
     .order-desk-chat__messages {
       flex: 1 1 auto;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
@@ -7978,6 +7983,8 @@
       font-size: var(--desk-chat-msg-size, 0.8rem);
       white-space: pre-wrap;
       word-break: break-word;
+      overflow-wrap: anywhere;
+      max-width: 100%;
     }
 
     .request-desk-chat .order-chat__reactions,
@@ -12023,6 +12030,52 @@
             setDeskChatFontLevel(getDeskChatFontLevel() + delta);
           });
         });
+      }
+
+      function clampDeskChatWidths() {
+        DESK_CHAT_IDS.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          var parent = el.parentElement;
+          if (!parent) return;
+          var avail = parent.clientWidth;
+          if (!(avail > 0)) return;
+          var pageCap =
+            (window.visualViewport && window.visualViewport.width) ||
+            document.documentElement.clientWidth ||
+            window.innerWidth ||
+            avail;
+          var maxW = Math.max(120, Math.min(avail, pageCap - 8, 900));
+          el.style.maxWidth = maxW + "px";
+          if (el.offsetWidth > maxW + 1) {
+            el.style.width = maxW + "px";
+          }
+        });
+      }
+
+      function bindDeskChatResponsiveWidth() {
+        if (window.__hkDeskChatResizeBound) return;
+        window.__hkDeskChatResizeBound = true;
+        var timer = 0;
+        function schedule() {
+          clearTimeout(timer);
+          timer = setTimeout(clampDeskChatWidths, 50);
+        }
+        window.addEventListener("resize", schedule);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", schedule);
+          window.visualViewport.addEventListener("scroll", schedule);
+        }
+        DESK_CHAT_IDS.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el || typeof ResizeObserver === "undefined") return;
+          if (el.parentElement && !el.parentElement.__hkDeskParentObs) {
+            el.parentElement.__hkDeskParentObs = true;
+            var ro = new ResizeObserver(schedule);
+            ro.observe(el.parentElement);
+          }
+        });
+        clampDeskChatWidths();
       }
 
       function bindDeskChatReactionMount(mount) {
