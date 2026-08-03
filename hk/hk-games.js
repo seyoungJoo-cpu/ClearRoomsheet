@@ -292,7 +292,8 @@
     setHud([['점수', '0', 'score'], ['남은 시간', '1:00', 'time'], ['콤보', 'x1', 'combo']]);
     function fmt(sec) {
       sec = Math.max(0, Math.ceil(sec));
-      return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+      var s = Math.max(0, Math.ceil(sec) % 60);
+      return Math.floor(Math.max(0, Math.ceil(sec)) / 60) + ':' + (s < 10 ? '0' : '') + s;
     }
     function random() { return Math.floor(Math.random() * colorCount); }
     function seed() {
