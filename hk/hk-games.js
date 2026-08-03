@@ -596,7 +596,7 @@
       ball = { x: paddle.x + paddle.w / 2, y: 420, vx: (Math.random() > .5 ? 1 : -1) * base * 0.9, vy: -base, r: 8 };
     }
     function setup() {
-      paddle = { x: 310, y: 485, w: 96, h: 14 }; bricks = [];
+      paddle = { x: 300, y: 478, w: 118, h: 22 }; bricks = [];
       for (var r = 0; r < 5; r++) for (var col = 0; col < 10; col++) bricks.push({ x: 12 + col * 70, y: 50 + r * 32, w: 64, h: 22, color: ['#d1b566', '#4fa98b', '#d47756', '#5f99af', '#b96d79'][r] });
       resetBall();
     }
@@ -607,7 +607,7 @@
         ctx.fillStyle = '#ffffff30'; ctx.fillRect(b.x + 4, b.y + 3, b.w - 8, 3);
         ctx.fillStyle = '#00000022'; ctx.fillRect(b.x + 4, b.y + b.h - 5, b.w - 8, 3);
       });
-      ctx.fillStyle = '#e4c878'; ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7); ctx.fill();
+      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 11 });
       ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 16;
       ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
       fx.draw(ctx);
@@ -837,14 +837,14 @@
     var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, ball, score = 0, lives = 3, running = true, last = 0, fx = makeFx(), speed = 1;
     setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('pong', name())), 'best']]);
     function reset() {
-      paddle = { x: 270, y: 385, w: 96, h: 12 };
+      paddle = { x: 255, y: 378, w: 130, h: 22 };
       var v = 230 * speed;
       ball = { x: 320, y: 210, vx: (Math.random() > .5 ? 1 : -1) * v, vy: -v * 0.9, r: 8 };
     }
     function draw() {
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 640, 420);
       ctx.strokeStyle = '#ffffff18'; ctx.setLineDash([8, 10]); ctx.beginPath(); ctx.moveTo(0, 210); ctx.lineTo(640, 210); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = '#e4c878'; ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 7); ctx.fill();
+      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 11 });
       ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
       ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
       fx.draw(ctx);
