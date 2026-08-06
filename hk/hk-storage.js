@@ -502,6 +502,9 @@
         by: m.by != null ? String(m.by) : "",
         text: m.text != null ? String(m.text) : "",
       };
+      if (m.bold) row.bold = true;
+      var fl = m.fontLevel != null ? parseInt(m.fontLevel, 10) : 0;
+      if (fl >= 1 && fl <= 3) row.fontLevel = fl;
       if (m.reactions && typeof m.reactions === "object") {
         row.reactions = m.reactions;
       }

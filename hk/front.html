@@ -3159,6 +3159,109 @@
       background: var(--accent-dim);
     }
 
+    .facility-order-submit-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-order--facility-occ {
+      background: #b45309;
+    }
+
+    .btn-order--facility-occ:hover {
+      background: #92400e;
+    }
+
+    .btn-order--facility-vac {
+      background: #0f766e;
+    }
+
+    .btn-order--facility-vac:hover {
+      background: #0d9488;
+    }
+
+    .facility-stay-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+      align-items: start;
+      margin-top: 14px;
+    }
+
+    .facility-stay-col {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px 8px;
+      background: #fafbfc;
+    }
+
+    .facility-stay-col--occ {
+      border-top: 3px solid #b45309;
+    }
+
+    .facility-stay-col--vac {
+      border-top: 3px solid #0f766e;
+    }
+
+    .facility-stay-col__title {
+      margin: 0 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.9375rem;
+      font-weight: 800;
+    }
+
+    .facility-stay-col--occ .facility-stay-col__title {
+      color: #b45309;
+    }
+
+    .facility-stay-col--vac .facility-stay-col__title {
+      color: #0f766e;
+    }
+
+    .facility-stay-col .order-work-section {
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+
+    .facility-stay-col .order-work-section:first-of-type {
+      margin-top: 0;
+    }
+
+    .facility-stay-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.6875rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+
+    .facility-stay-badge--occupied {
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+    }
+
+    .facility-stay-badge--vacant {
+      background: #ccfbf1;
+      color: #115e59;
+      border: 1px solid #5eead4;
+    }
+
+    @media (max-width: 960px) {
+      .facility-stay-cols {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .order-work-section {
       margin-top: 14px;
       padding-top: 12px;
@@ -3242,7 +3345,8 @@
       grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
     }
 
-    #facilityAcceptedList {
+    #facilityOccAcceptedList,
+    #facilityVacAcceptedList {
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
 
@@ -6238,12 +6342,32 @@
       display: none;
     }
 
+    .front-chat-panel[data-front-chat-font="1"] {
+      --front-chat-msg-size: 0.75rem;
+      --front-chat-meta-size: 0.65rem;
+    }
+    .front-chat-panel[data-front-chat-font="2"] {
+      --front-chat-msg-size: 0.875rem;
+      --front-chat-meta-size: 0.75rem;
+    }
+    .front-chat-panel[data-front-chat-font="3"] {
+      --front-chat-msg-size: 1.05rem;
+      --front-chat-meta-size: 0.85rem;
+    }
+    .front-chat-panel .panel-head-row {
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .front-chat-panel .desk-chat-font-controls {
+      margin-left: auto;
+    }
+
     .front-chat__msg {
       padding: 6px 9px;
       border-radius: 10px;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
-      font-size: 0.75rem;
+      font-size: var(--front-chat-msg-size, 0.875rem);
       max-width: 78%;
       position: relative;
     }
@@ -6271,6 +6395,7 @@
     }
 
     .front-chat__msg--deleted .front-chat__msg-text {
+      font-size: var(--front-chat-msg-size, 0.875rem);
       color: #64748b !important;
       font-style: italic;
     }
@@ -6355,7 +6480,8 @@
       white-space: pre-wrap;
       word-break: break-word;
       line-height: 1.4;
-      font-size: 0.75rem;
+      font-size: var(--front-chat-msg-size, 0.875rem);
+      color: #111;
     }
 
     .front-chat__msg-time {
@@ -7853,6 +7979,62 @@
       cursor: pointer;
     }
 
+    .desk-chat-compose-tools {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .request-desk-chat__msg-text,
+    .order-desk-chat__msg-text {
+      color: #111 !important;
+    }
+    .desk-chat-bold-btn,
+    .desk-chat-write-font-btn {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card, #fff);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .desk-chat-bold-btn.is-on {
+      background: #1e293b;
+      color: #fff;
+      border-color: #1e293b;
+    }
+    .desk-chat-write-font-level {
+      min-width: 14px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .request-desk-chat__msg-text,
+    .order-desk-chat__msg-text {
+      color: #111 !important;
+    }
+    .request-desk-chat__msg-text.is-bold,
+    .order-desk-chat__msg-text.is-bold {
+      font-weight: 800;
+    }
+    .request-desk-chat__msg-text[data-write-font="1"],
+    .order-desk-chat__msg-text[data-write-font="1"] {
+      font-size: 0.8rem;
+    }
+    .request-desk-chat__msg-text[data-write-font="2"],
+    .order-desk-chat__msg-text[data-write-font="2"] {
+      font-size: 0.95rem;
+    }
+    .request-desk-chat__msg-text[data-write-font="3"],
+    .order-desk-chat__msg-text[data-write-font="3"] {
+      font-size: 1.15rem;
+    }
     .request-desk-chat__form,
     .order-desk-chat__form {
       flex-shrink: 0;
@@ -7860,6 +8042,8 @@
       gap: 6px;
       padding: 6px 8px;
       border-top: 2px solid #334155;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .request-desk-chat__form input,
@@ -8936,14 +9120,6 @@
             <button
               type="button"
               class="sidebar-nav__btn"
-              id="sidebarBtnChat"
-              aria-pressed="false"
-            >
-              채팅방
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn"
               id="sidebarBtnFront"
               aria-pressed="false"
               hidden
@@ -9029,9 +9205,14 @@
 
     <div class="layout-main-area">
     <main class="main">
-      <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle">
+      <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle" data-front-chat-font="2">
         <div class="panel-head-row">
           <h2 id="frontChatPanelTitle">채팅방</h2>
+          <div class="desk-chat-font-controls" role="group" aria-label="프론트 채팅 글씨 크기">
+            <button type="button" class="desk-chat-font-btn" data-front-chat-font-delta="-1" title="글씨 작게">A-</button>
+            <span class="desk-chat-font-level" data-front-chat-font-label>2</span>
+            <button type="button" class="desk-chat-font-btn" data-front-chat-font-delta="1" title="글씨 크게">A+</button>
+          </div>
           <button type="button" class="panel-alert-ack-btn" id="btnAckFrontChatPanel" hidden>확인</button>
         </div>
         <p class="front-chat-panel__hint" id="frontChatPanelHint">정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.</p>
@@ -9324,6 +9505,12 @@
             </div>
             <div class="order-desk-chat__messages" id="orderDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="orderDeskChatForm">
+              <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
+                <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
+                <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
+              </div>
               <input
                 type="text"
                 id="orderDeskChatInput"
@@ -9423,7 +9610,14 @@
               긴급
             </button>
           </div>
-          <button type="submit" class="btn-order">시설 오더</button>
+          <div class="facility-order-submit-btns">
+            <button type="button" class="btn-order btn-order--facility-occ" data-facility-stay="occupied" id="btnFacilityOrderOccupied">
+              재실오더
+            </button>
+            <button type="button" class="btn-order btn-order--facility-vac" data-facility-stay="vacant" id="btnFacilityOrderVacant">
+              공실오더
+            </button>
+          </div>
             </form>
           </div>
           <aside class="order-desk-chat" id="facilityDeskChat" aria-label="시설 관리 채팅">
@@ -9437,51 +9631,96 @@
             </div>
             <div class="order-desk-chat__messages" id="facilityDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="facilityDeskChatForm">
+              <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
+                <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
+                <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
+              </div>
               <input type="text" id="facilityDeskChatInput" placeholder="메시지 입력" autocomplete="off" maxlength="500" aria-label="시설 관리 채팅 입력" />
               <button type="submit">전송</button>
             </form>
           </aside>
         </div>
 
-        <section class="order-work-section order-work-section--issue" id="facilityIssueSection" hidden aria-labelledby="facilityIssueTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityIssueTitle" aria-expanded="true" aria-controls="facilityIssueList" data-order-section-toggle="facilityIssueSection">
-            문제 발생 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list order-work-list--issue" id="facilityIssueList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityIssueEmpty">문제 발생 건이 없습니다.</p>
-        </section>
-
-        <section class="order-work-section order-work-section--accepted" id="facilityAcceptedSection" aria-labelledby="facilityAcceptedTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityAcceptedTitle" aria-expanded="true" aria-controls="facilityAcceptedList" data-order-section-toggle="facilityAcceptedSection">
-            처리중 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list" id="facilityAcceptedList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityAcceptedEmpty">처리중 건이 없습니다.</p>
-        </section>
-
-        <section class="order-work-section order-work-section--deployed" id="facilityDeployedSection" aria-labelledby="facilityDeployedTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityDeployedTitle" aria-expanded="true" aria-controls="facilityDeployedList" data-order-section-toggle="facilityDeployedSection">
-            처리완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list order-work-list--deployed" id="facilityDeployedList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityDeployedEmpty">처리완료 건이 없습니다.</p>
-        </section>
-
-        <section class="order-work-section order-work-section--unavailable" id="facilityUnavailableSection" aria-labelledby="facilityUnavailableTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityUnavailableTitle" aria-expanded="true" aria-controls="facilityUnavailableList" data-order-section-toggle="facilityUnavailableSection">
-            입실불가 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list" id="facilityUnavailableList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityUnavailableEmpty">입실불가 건이 없습니다.</p>
-        </section>
-
-        <section class="order-work-section order-work-section--cancelled" id="facilityCancelledSection" aria-labelledby="facilityCancelledTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityCancelledTitle" aria-expanded="true" aria-controls="facilityCancelledList" data-order-section-toggle="facilityCancelledSection">
-            취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list" id="facilityCancelledList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="facilityCancelledEmpty">취소된 오더가 없습니다.</p>
-        </section>
+        <div class="facility-stay-cols">
+          <div class="facility-stay-col facility-stay-col--occ" aria-label="재실 오더">
+            <h3 class="facility-stay-col__title">재실</h3>
+            <section class="order-work-section order-work-section--issue" id="facilityOccIssueSection" hidden aria-labelledby="facilityOccIssueTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityOccIssueTitle" aria-expanded="true" aria-controls="facilityOccIssueList" data-order-section-toggle="facilityOccIssueSection">
+                문제 발생 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list order-work-list--issue" id="facilityOccIssueList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityOccIssueEmpty">문제 발생 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--accepted" id="facilityOccAcceptedSection" aria-labelledby="facilityOccAcceptedTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityOccAcceptedTitle" aria-expanded="true" aria-controls="facilityOccAcceptedList" data-order-section-toggle="facilityOccAcceptedSection">
+                처리중 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityOccAcceptedList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityOccAcceptedEmpty">처리중 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--deployed" id="facilityOccDeployedSection" aria-labelledby="facilityOccDeployedTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityOccDeployedTitle" aria-expanded="true" aria-controls="facilityOccDeployedList" data-order-section-toggle="facilityOccDeployedSection">
+                처리완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list order-work-list--deployed" id="facilityOccDeployedList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityOccDeployedEmpty">처리완료 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--unavailable" id="facilityOccUnavailableSection" aria-labelledby="facilityOccUnavailableTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityOccUnavailableTitle" aria-expanded="true" aria-controls="facilityOccUnavailableList" data-order-section-toggle="facilityOccUnavailableSection">
+                입실불가 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityOccUnavailableList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityOccUnavailableEmpty">입실불가 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--cancelled" id="facilityOccCancelledSection" aria-labelledby="facilityOccCancelledTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityOccCancelledTitle" aria-expanded="true" aria-controls="facilityOccCancelledList" data-order-section-toggle="facilityOccCancelledSection">
+                취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityOccCancelledList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityOccCancelledEmpty">취소된 오더가 없습니다.</p>
+            </section>
+          </div>
+          <div class="facility-stay-col facility-stay-col--vac" aria-label="공실 오더">
+            <h3 class="facility-stay-col__title">공실</h3>
+            <section class="order-work-section order-work-section--issue" id="facilityVacIssueSection" hidden aria-labelledby="facilityVacIssueTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityVacIssueTitle" aria-expanded="true" aria-controls="facilityVacIssueList" data-order-section-toggle="facilityVacIssueSection">
+                문제 발생 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list order-work-list--issue" id="facilityVacIssueList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityVacIssueEmpty">문제 발생 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--accepted" id="facilityVacAcceptedSection" aria-labelledby="facilityVacAcceptedTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityVacAcceptedTitle" aria-expanded="true" aria-controls="facilityVacAcceptedList" data-order-section-toggle="facilityVacAcceptedSection">
+                처리중 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityVacAcceptedList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityVacAcceptedEmpty">처리중 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--deployed" id="facilityVacDeployedSection" aria-labelledby="facilityVacDeployedTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityVacDeployedTitle" aria-expanded="true" aria-controls="facilityVacDeployedList" data-order-section-toggle="facilityVacDeployedSection">
+                처리완료 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list order-work-list--deployed" id="facilityVacDeployedList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityVacDeployedEmpty">처리완료 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--unavailable" id="facilityVacUnavailableSection" aria-labelledby="facilityVacUnavailableTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityVacUnavailableTitle" aria-expanded="true" aria-controls="facilityVacUnavailableList" data-order-section-toggle="facilityVacUnavailableSection">
+                입실불가 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityVacUnavailableList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityVacUnavailableEmpty">입실불가 건이 없습니다.</p>
+            </section>
+            <section class="order-work-section order-work-section--cancelled" id="facilityVacCancelledSection" aria-labelledby="facilityVacCancelledTitle">
+              <button type="button" class="order-work-section__title order-work-section__title-btn" id="facilityVacCancelledTitle" aria-expanded="true" aria-controls="facilityVacCancelledList" data-order-section-toggle="facilityVacCancelledSection">
+                취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+              </button>
+              <ul class="order-work-list" id="facilityVacCancelledList" aria-live="polite"></ul>
+              <p class="order-work-empty" id="facilityVacCancelledEmpty">취소된 오더가 없습니다.</p>
+            </section>
+          </div>
+        </div>
       </section>
 
       <section
@@ -9798,6 +10037,13 @@
             </div>
             <div class="order-desk-chat__messages" id="mbCheckDeskChatMessages" aria-live="polite"></div>
             <form class="order-desk-chat__form" id="mbCheckDeskChatForm">
+              <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
+                <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
+                <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
+              </div>
+
               <input
                 type="text"
                 id="mbCheckDeskChatInput"
@@ -9901,6 +10147,13 @@
             </div>
             <div class="request-desk-chat__messages" id="requestDeskChatMessages" aria-live="polite"></div>
             <form class="request-desk-chat__form" id="requestDeskChatForm">
+              <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
+                <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
+                <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
+                <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
+              </div>
+
               <input
                 type="text"
                 id="requestDeskChatInput"
@@ -10040,14 +10293,14 @@
         오더가 접수되면 이곳에 표시됩니다.
       </p>
     </aside>
-    <aside class="order-feedback" id="facilityFeedback" aria-label="시설 관리 알림" hidden>
+    <aside class="order-feedback" id="facilityFeedback" aria-label="시설 관리 알림 · 공실/재실" hidden>
       <div class="order-feedback__head">
-        <h2>시설 관리 알림</h2>
+        <h2>시설 관리 알림 · 공실/재실</h2>
         <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityFeedback" hidden>확인</button>
       </div>
       <ul class="order-feedback__list" id="facilityFeedbackList"></ul>
       <p class="order-feedback__empty" id="facilityFeedbackEmpty">
-        시설 오더가 접수되면 이곳에 표시됩니다.
+        시설 오더(공실/재실)가 접수되면 이곳에 표시됩니다.
       </p>
     </aside>
     <aside class="order-feedback" id="facilityMiscFeedback" aria-label="컴플레인·습득물 알림" hidden>
@@ -10977,10 +11230,14 @@
           return;
         }
         if (operatorNameModalMode === "initial") {
-          resetHkLocalSyncCaches();
+          // 인벤/인벤통보 데이터는 서버 동기화로 복구. UI 캐시만 가볍게 정리.
+          clearHkSessionUiCaches();
           setOperatorName(name);
           setOperatorSessionUnlocked();
           setModePickPending(true);
+          try {
+            sessionStorage.setItem("hk-keep-inven-chrome", "1");
+          } catch (eKeep) {}
           location.reload();
           return;
         }
@@ -11002,6 +11259,9 @@
           requireRoleAuth("maint", function () {
             maintenanceMode = true;
             applyMaintenanceModeUi();
+            // 정비 모드에서도 인벤통보 사이드바는 유지
+            var invenNav = document.getElementById("sidebarBtnInvenNotify");
+            if (invenNav) invenNav.hidden = false;
           });
         } else if (kind === "front") {
           requireRoleAuth("front", function () {
@@ -11994,13 +12254,13 @@
           level = parseInt(localStorage.getItem(DESK_CHAT_FONT_KEY), 10);
         } catch (e) {}
         if (!isFinite(level)) level = 1;
-        return Math.max(1, Math.min(5, level));
+        return Math.max(1, Math.min(3, level));
       }
 
       function applyDeskChatFontLevel(level) {
         var next = parseInt(level, 10);
         if (!isFinite(next)) next = getDeskChatFontLevel();
-        next = Math.max(1, Math.min(5, next));
+        next = Math.max(1, Math.min(3, next));
         DESK_CHAT_IDS.forEach(function (id) {
           var aside = document.getElementById(id);
           if (!aside) return;
@@ -12013,11 +12273,103 @@
       }
 
       function setDeskChatFontLevel(level) {
-        var next = Math.max(1, Math.min(5, parseInt(level, 10) || 1));
+        var next = Math.max(1, Math.min(3, parseInt(level, 10) || 1));
         try {
           localStorage.setItem(DESK_CHAT_FONT_KEY, String(next));
         } catch (e) {}
         applyDeskChatFontLevel(next);
+        return next;
+      }
+
+      var DESK_WRITE_FONT_KEY = "hk-desk-chat-write-font-v1";
+      var DESK_WRITE_BOLD_KEY = "hk-desk-chat-write-bold-v1";
+
+      function getDeskWriteFontLevel() {
+        var level = 2;
+        try {
+          level = parseInt(localStorage.getItem(DESK_WRITE_FONT_KEY), 10);
+        } catch (e) {}
+        if (!isFinite(level)) level = 2;
+        return Math.max(1, Math.min(3, level));
+      }
+
+      function getDeskWriteBold() {
+        try {
+          return localStorage.getItem(DESK_WRITE_BOLD_KEY) === "1";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function applyDeskWriteComposeUi() {
+        var level = getDeskWriteFontLevel();
+        var bold = getDeskWriteBold();
+        DESK_CHAT_IDS.forEach(function (id) {
+          var aside = document.getElementById(id);
+          if (!aside) return;
+          aside.querySelectorAll("[data-desk-write-font-label]").forEach(function (label) {
+            label.textContent = String(level);
+          });
+          aside.querySelectorAll(".desk-chat-bold-btn").forEach(function (btn) {
+            btn.classList.toggle("is-on", !!bold);
+            btn.setAttribute("aria-pressed", bold ? "true" : "false");
+          });
+          var inp = aside.querySelector("input[type='text']");
+          if (inp) {
+            inp.style.fontWeight = bold ? "800" : "";
+            inp.style.fontSize = level === 1 ? "0.8rem" : level === 3 ? "1.1rem" : "0.95rem";
+            inp.style.color = "#111";
+          }
+        });
+      }
+
+      function setDeskWriteFontLevel(level) {
+        var next = Math.max(1, Math.min(3, parseInt(level, 10) || 2));
+        try {
+          localStorage.setItem(DESK_WRITE_FONT_KEY, String(next));
+        } catch (e) {}
+        applyDeskWriteComposeUi();
+        return next;
+      }
+
+      function toggleDeskWriteBold() {
+        var next = !getDeskWriteBold();
+        try {
+          localStorage.setItem(DESK_WRITE_BOLD_KEY, next ? "1" : "0");
+        } catch (e) {}
+        applyDeskWriteComposeUi();
+        return next;
+      }
+
+      var FRONT_CHAT_FONT_KEY = "hk-front-chat-font-level-v1";
+
+      function getFrontChatFontLevel() {
+        var level = 2;
+        try {
+          level = parseInt(localStorage.getItem(FRONT_CHAT_FONT_KEY), 10);
+        } catch (e) {}
+        if (!isFinite(level)) level = 2;
+        return Math.max(1, Math.min(3, level));
+      }
+
+      function applyFrontChatFontLevel(level) {
+        var next = Math.max(1, Math.min(3, parseInt(level, 10) || getFrontChatFontLevel()));
+        var panel = document.getElementById("frontChatPanel");
+        if (panel) {
+          panel.setAttribute("data-front-chat-font", String(next));
+          panel.querySelectorAll("[data-front-chat-font-label]").forEach(function (label) {
+            label.textContent = String(next);
+          });
+        }
+        return next;
+      }
+
+      function setFrontChatFontLevel(level) {
+        var next = Math.max(1, Math.min(3, parseInt(level, 10) || 2));
+        try {
+          localStorage.setItem(FRONT_CHAT_FONT_KEY, String(next));
+        } catch (e) {}
+        applyFrontChatFontLevel(next);
         return next;
       }
 
@@ -12026,10 +12378,29 @@
           if (btn.__hkDeskFontBound) return;
           btn.__hkDeskFontBound = true;
           btn.addEventListener("click", function () {
+            if (btn.hasAttribute("data-front-chat-font-delta")) {
+              var fd = parseInt(btn.getAttribute("data-front-chat-font-delta"), 10) || 0;
+              setFrontChatFontLevel(getFrontChatFontLevel() + fd);
+              return;
+            }
+            if (btn.hasAttribute("data-desk-write-font-delta")) {
+              var wd = parseInt(btn.getAttribute("data-desk-write-font-delta"), 10) || 0;
+              setDeskWriteFontLevel(getDeskWriteFontLevel() + wd);
+              return;
+            }
             var delta = parseInt(btn.getAttribute("data-desk-font-delta"), 10) || 0;
             setDeskChatFontLevel(getDeskChatFontLevel() + delta);
           });
         });
+        document.querySelectorAll(".desk-chat-bold-btn").forEach(function (btn) {
+          if (btn.__hkDeskBoldBound) return;
+          btn.__hkDeskBoldBound = true;
+          btn.addEventListener("click", function () {
+            toggleDeskWriteBold();
+          });
+        });
+        applyDeskWriteComposeUi();
+        applyFrontChatFontLevel(getFrontChatFontLevel());
       }
 
       function clampDeskChatWidths() {
@@ -12084,6 +12455,24 @@
         mount.addEventListener("click", handleChatReactionClick);
       }
 
+
+      function styleDeskChatTextEl(textEl, msg) {
+        if (!textEl) return;
+        textEl.style.color = "#111";
+        var bold = !!(msg && msg.bold);
+        var fl = msg && msg.fontLevel != null ? parseInt(msg.fontLevel, 10) : 0;
+        if (!isFinite(fl) || fl < 1 || fl > 3) fl = 0;
+        textEl.classList.toggle("is-bold", bold);
+        if (bold) textEl.style.fontWeight = "800";
+        else textEl.style.fontWeight = "";
+        if (fl) {
+          textEl.setAttribute("data-write-font", String(fl));
+          textEl.style.fontSize = fl === 1 ? "0.8rem" : fl === 3 ? "1.15rem" : "0.95rem";
+        } else {
+          textEl.removeAttribute("data-write-font");
+        }
+      }
+
       function attachDeskChatMsgReactionUi(row, msg, kind) {
         attachChatMsgReactionUi(row, msg, kind, "");
       }
@@ -12128,6 +12517,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "request-desk-chat__msg-text");
+          styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
         });
@@ -12140,7 +12530,7 @@
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
-            mode: "initial",
+            mode: "shift",
             onSaved: function () {
               appendRequestDeskChatMessage(msg);
             },
@@ -12154,6 +12544,8 @@
           at: new Date().toISOString(),
           by: name,
           text: msg,
+          bold: getDeskWriteBold(),
+          fontLevel: getDeskWriteFontLevel(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.requestDeskChat = HKStorage.normalizeRequestDeskChat(data.requestDeskChat);
@@ -12222,6 +12614,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
         });
@@ -12234,7 +12627,7 @@
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
-            mode: "initial",
+            mode: "shift",
             onSaved: function () {
               appendOrderDeskChatMessage(msg);
             },
@@ -12248,6 +12641,8 @@
           at: new Date().toISOString(),
           by: name,
           text: msg,
+          bold: getDeskWriteBold(),
+          fontLevel: getDeskWriteFontLevel(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.orderDeskChat = HKStorage.normalizeRequestDeskChat(data.orderDeskChat);
@@ -12316,6 +12711,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
         });
@@ -12328,7 +12724,7 @@
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
-            mode: "initial",
+            mode: "shift",
             onSaved: function () {
               appendMbCheckDeskChatMessage(msg);
             },
@@ -12342,6 +12738,8 @@
           at: new Date().toISOString(),
           by: name,
           text: msg,
+          bold: getDeskWriteBold(),
+          fontLevel: getDeskWriteFontLevel(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(data.mbCheckDeskChat);
@@ -12410,6 +12808,7 @@
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
         });
@@ -12422,7 +12821,7 @@
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
-            mode: "initial",
+            mode: "shift",
             onSaved: function () {
               appendFacilityDeskChatMessage(msg);
             },
@@ -12436,6 +12835,8 @@
           at: new Date().toISOString(),
           by: name,
           text: msg,
+          bold: getDeskWriteBold(),
+          fontLevel: getDeskWriteFontLevel(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.facilityDeskChat = HKStorage.normalizeRequestDeskChat(data.facilityDeskChat);
@@ -15490,16 +15891,16 @@
       }
 
       function canUseTeamChat() {
-        return maintenanceMode || frontMode;
+        return false;
       }
 
       function syncTeamChatSidebarUi() {
         var section = document.getElementById("sidebarChatSection");
         var frontChatNav = document.getElementById("sidebarBtnFront");
-        var showSection = canUseTeamChat();
+        var showSection = !!frontMode;
         if (section) section.hidden = !showSection;
         if (frontChatNav) frontChatNav.hidden = !frontMode;
-        if (!canUseTeamChat() && sidebarMainView === "chat") {
+        if (sidebarMainView === "chat") {
           showSidebarRequestView();
         }
         if (!frontMode && sidebarMainView === "front") {
@@ -15518,8 +15919,9 @@
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var aiNav = document.getElementById("sidebarBtnAi");
         if (chatNav) {
-          chatNav.classList.toggle("is-active", sidebarMainView === "chat");
-          chatNav.setAttribute("aria-pressed", sidebarMainView === "chat" ? "true" : "false");
+          chatNav.classList.toggle("is-active", false);
+          chatNav.setAttribute("aria-pressed", "false");
+          chatNav.hidden = true;
         }
         if (req) {
           req.classList.toggle("is-active", sidebarMainView === "request");
@@ -18774,6 +19176,49 @@
         return li;
       }
 
+
+      function buildRobotOrderFeedbackItemLi(entry) {
+        var li = document.createElement("li");
+        li.className = "request-feedback__item order-feedback__item";
+        li.setAttribute("data-order-id", entry && entry.id != null ? String(entry.id) : "");
+        li.setAttribute("data-robot-order", "1");
+        var head = document.createElement("div");
+        head.className = "request-feedback__item-head";
+        var badge = document.createElement("span");
+        badge.className = "request-feedback__item-room";
+        badge.textContent = "RPA";
+        head.appendChild(badge);
+        var memo = document.createElement("p");
+        memo.className = "request-feedback__item-memo";
+        memo.textContent = entry && entry.memo != null ? String(entry.memo) : "";
+        var by = document.createElement("p");
+        by.className = "request-feedback__item-by";
+        by.textContent = entry && entry.by != null ? String(entry.by) : "도우미 로봇";
+        var acts = document.createElement("div");
+        acts.className = "order-feedback__maint-actions";
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "order-feedback__accept-btn";
+        btn.setAttribute("data-order-id", entry && entry.id != null ? String(entry.id) : "");
+        btn.textContent = "접수";
+        acts.appendChild(btn);
+        li.appendChild(head);
+        li.appendChild(memo);
+        li.appendChild(by);
+        li.appendChild(acts);
+        return li;
+      }
+
+      function getOpenRpaCheckOrders() {
+        return (orderLogEntries || []).filter(function (entry) {
+          return (
+            entry &&
+            entry.autoOrderKind === "rpa_check" &&
+            getOrderPhase(entry) === "alert"
+          );
+        });
+      }
+
       function renderRequestLogPanel(opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
@@ -18822,6 +19267,16 @@
             list.appendChild(li);
           }
         });
+        var rpaOrders = getOpenRpaCheckOrders();
+        rpaOrders.forEach(function (entry) {
+          var li = buildRobotOrderFeedbackItemLi(entry);
+          if (wingSplit) {
+            listMain.appendChild(li);
+            mainCount++;
+          } else {
+            list.appendChild(li);
+          }
+        });
         var filterRestricted = allPending.length > 0 && isSchedTypeFilterRestricted();
         var filterMsg = filterRestricted
           ? "선택한 TYPE에 해당하는 요청 알림이 없습니다."
@@ -18840,7 +19295,7 @@
             emptyAnnex.hidden = annexCount > 0;
           }
         } else if (empty) {
-          if (pending.length > 0) {
+          if (pending.length > 0 || (typeof rpaOrders !== "undefined" && rpaOrders.length > 0)) {
             empty.hidden = true;
           } else if (allPending.length > 0 && isSchedTypeFilterRestricted()) {
             empty.textContent = filterMsg;
@@ -19968,6 +20423,18 @@
           ub.setAttribute("aria-label", "긴급");
           r.appendChild(ub);
         }
+        if (isFacilityOrder(entry)) {
+          var stayKey = getFacilityStay(entry);
+          var stayLabel = getFacilityStayLabel(stayKey);
+          if (stayLabel) {
+            var stayBadge = document.createElement("span");
+            stayBadge.className =
+              "facility-stay-badge facility-stay-badge--" + (stayKey || "vacant");
+            stayBadge.textContent = stayLabel;
+            stayBadge.setAttribute("aria-label", stayLabel);
+            r.appendChild(stayBadge);
+          }
+        }
         row.appendChild(r);
         var s = document.createElement("span");
         s.className = "request-feedback__item-st";
@@ -20475,7 +20942,7 @@
           return;
         }
         if (frontMode) {
-          if (!entry.fromMaint) return;
+          if (!entry.fromMaint && !isFacilityOrder(entry)) return;
         } else if (maintenanceMode) {
           if (entry.fromMaint && !isFacilityOrder(entry)) return;
         } else {
@@ -20493,6 +20960,12 @@
         entry.phase = "accepted";
         entry.acceptedAt = new Date().toISOString();
         entry.acceptedBy = getOperatorName();
+        if (frontMode && isFacilityOrder(entry)) {
+          entry.acceptedByFront = true;
+          saveOrderLog();
+          renderOrderPanels();
+          return;
+        }
         if (frontMode && entry.fromMaint) {
           entry.acceptedByFront = true;
           openOrderIssueAfterAccept(orderId);
@@ -21158,6 +21631,29 @@
         return !!(entry && String(entry.category || "").trim() === "facility");
       }
 
+      function getFacilityStay(entry) {
+        if (!isFacilityOrder(entry)) return "";
+        var s = entry.facilityStay != null ? String(entry.facilityStay).trim() : "";
+        if (s === "occupied" || s === "vacant") return s;
+        return "vacant";
+      }
+
+      function getFacilityStayLabel(entryOrStay) {
+        var stay =
+          typeof entryOrStay === "string" ? entryOrStay : getFacilityStay(entryOrStay);
+        if (stay === "occupied") return "재실";
+        if (stay === "vacant") return "공실";
+        return "";
+      }
+
+      function isFacilityOccupiedOrder(entry) {
+        return isFacilityOrder(entry) && getFacilityStay(entry) === "occupied";
+      }
+
+      function isFacilityVacantOrder(entry) {
+        return isFacilityOrder(entry) && getFacilityStay(entry) === "vacant";
+      }
+
       function findFacilityOrderForRequest(reqId) {
         if (!reqId) return null;
         for (var i = 0; i < orderLogEntries.length; i++) {
@@ -21226,7 +21722,8 @@
       function renderOrderWorkPanels(opts) {
         opts = opts || {};
         renderOrderWorkPanelBundle("order", isRegularOrder, opts);
-        renderOrderWorkPanelBundle("facility", isFacilityOrder, opts);
+        renderOrderWorkPanelBundle("facilityOcc", isFacilityOccupiedOrder, opts);
+        renderOrderWorkPanelBundle("facilityVac", isFacilityVacantOrder, opts);
       }
 
       function captureOrderChatComposeDraft() {
@@ -21249,7 +21746,8 @@
         if (!opts.skipOrderChatDraftCapture) {
           captureOrderChatComposeDraft();
         }
-        var isFacilityPanel = prefix === "facility";
+        var isFacilityPanel =
+          prefix === "facility" || prefix === "facilityOcc" || prefix === "facilityVac";
         var issueList = document.getElementById(prefix + "IssueList");
         var issueEmpty = document.getElementById(prefix + "IssueEmpty");
         var acceptedList = document.getElementById(prefix + "AcceptedList");
@@ -21261,10 +21759,10 @@
         var deployedList = document.getElementById(prefix + "DeployedList");
         var deployedEmpty = document.getElementById(prefix + "DeployedEmpty");
         var unavailableList = isFacilityPanel
-          ? document.getElementById("facilityUnavailableList")
+          ? document.getElementById(prefix + "UnavailableList")
           : null;
         var unavailableEmpty = isFacilityPanel
-          ? document.getElementById("facilityUnavailableEmpty")
+          ? document.getElementById(prefix + "UnavailableEmpty")
           : null;
         if (!issueList || !acceptedList || !cancelledList || !deployedList) return;
 
@@ -21690,7 +22188,13 @@
 
           if (frontMode && isFacilityOrder(entry) && isFacilityAlertList) {
             var facFrontActs = document.createElement("div");
-            facFrontActs.className = "order-feedback__front-actions";
+            facFrontActs.className = "order-feedback__maint-actions";
+            var facFrontAcceptBtn = document.createElement("button");
+            facFrontAcceptBtn.type = "button";
+            facFrontAcceptBtn.className = "order-feedback__accept-btn";
+            facFrontAcceptBtn.setAttribute("data-order-id", entry.id || "");
+            facFrontAcceptBtn.textContent = "접수";
+            facFrontActs.appendChild(facFrontAcceptBtn);
             var memoStrFacFront = entry.memo != null ? String(entry.memo).trim() : "";
             var facilityMemoBtnFront = document.createElement("button");
             facilityMemoBtnFront.type = "button";
@@ -24396,6 +24900,13 @@
       var requestFeedbackEl = document.getElementById("requestFeedback");
       if (requestFeedbackEl) {
         requestFeedbackEl.addEventListener("click", function (e) {
+          var robotAccept = e.target.closest(".order-feedback__accept-btn");
+          if (robotAccept && robotAccept.closest("[data-robot-order=\"1\"]")) {
+            e.preventDefault();
+            var oid = robotAccept.getAttribute("data-order-id");
+            if (oid) acceptOrderEntry(oid);
+            return;
+          }
           var cancelReqB = e.target.closest(".request-feedback__cancel-btn");
           if (cancelReqB) {
             if (!frontMode && !maintenanceMode) return;
@@ -24931,6 +25442,7 @@
       loadFrontChat();
       bindDeskChatFontControls();
       applyDeskChatFontLevel(getDeskChatFontLevel());
+      bindDeskChatResponsiveWidth();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
@@ -24951,7 +25463,7 @@
               return;
             }
             showOperatorGate({
-              mode: "initial",
+              mode: "shift",
               onSaved: function () {
                 if (typeof cb === "function") cb();
               },
@@ -25328,11 +25840,20 @@
           fromMaint: extra.fromMaint != null ? !!extra.fromMaint : !!maintenanceMode,
           category: extra.category != null ? String(extra.category).trim() : "",
           sourceReqId: extra.sourceReqId != null ? String(extra.sourceReqId).trim() : "",
+          facilityStay: (function () {
+            var stay =
+              extra.facilityStay != null ? String(extra.facilityStay).trim() : "";
+            if (stay === "occupied" || stay === "vacant") return stay;
+            return "";
+          })(),
           at: new Date().toISOString(),
           by: getOperatorName(),
         });
         knownOrderAlertIds[id] = true;
         if (isFacilityOrder(orderLogEntries[0])) {
+          if (!orderLogEntries[0].facilityStay) {
+            orderLogEntries[0].facilityStay = "vacant";
+          }
           if (sidebarMainView !== "facility") pendingFacilityOrderAlert = true;
         } else if (sidebarMainView !== "order") {
           pendingOrderAlert = true;
@@ -25370,6 +25891,7 @@
           fromMaint: true,
           photoKey: "facilityOrderMemo",
           memo2: memo2,
+          facilityStay: "vacant",
         });
       }
 
@@ -25445,7 +25967,7 @@
         updateOrderFoDisplay();
       }
 
-      function processFacilityOrderFormSubmit() {
+      function processFacilityOrderFormSubmit(stayType) {
         var roomEl = document.getElementById("facilityOrderRoomNo");
         var memoEl = document.getElementById("facilityOrderMemo");
         var btnUrgentEl = document.getElementById("btnFacilityOrderUrgent");
@@ -25453,6 +25975,8 @@
         var memo = memoEl ? expandOrderMemoItemCodes(String(memoEl.value || "").trim()) : "";
         var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
         var memoImage = hkGetPhoto("facilityOrderMemo");
+        var facilityStay =
+          stayType === "occupied" || stayType === "vacant" ? stayType : "vacant";
         if (!room) {
           if (roomEl) roomEl.focus();
           return;
@@ -25461,7 +25985,7 @@
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
-              processFacilityOrderFormSubmit();
+              processFacilityOrderFormSubmit(facilityStay);
             },
           });
           return;
@@ -25470,6 +25994,7 @@
           category: "facility",
           fromMaint: true,
           photoKey: "facilityOrderMemo",
+          facilityStay: facilityStay,
         });
         if (roomEl) roomEl.value = "";
         if (memoEl) memoEl.value = "";
@@ -25673,7 +26198,12 @@
       if (facilityOrderForm) {
         facilityOrderForm.addEventListener("submit", function (e) {
           e.preventDefault();
-          processFacilityOrderFormSubmit();
+        });
+        facilityOrderForm.addEventListener("click", function (e) {
+          var stayBtn = e.target.closest("[data-facility-stay]");
+          if (!stayBtn || !facilityOrderForm.contains(stayBtn)) return;
+          e.preventDefault();
+          processFacilityOrderFormSubmit(stayBtn.getAttribute("data-facility-stay"));
         });
       }
 
@@ -25714,7 +26244,6 @@
           var acceptBtn = e.target.closest(".order-feedback__accept-btn");
           if (acceptBtn) {
             if (!maintenanceMode && !frontMode) return;
-            if (frontMode && feedbackEl.id === "facilityFeedback") return;
             e.preventDefault();
             e.stopPropagation();
             var orderId = acceptBtn.getAttribute("data-order-id");
@@ -25893,11 +26422,16 @@
           "orderAcceptedSection",
           "orderCancelledSection",
           "orderDeployedSection",
-          "facilityIssueSection",
-          "facilityAcceptedSection",
-          "facilityCancelledSection",
-          "facilityDeployedSection",
-          "facilityUnavailableSection",
+          "facilityOccIssueSection",
+          "facilityOccAcceptedSection",
+          "facilityOccCancelledSection",
+          "facilityOccDeployedSection",
+          "facilityOccUnavailableSection",
+          "facilityVacIssueSection",
+          "facilityVacAcceptedSection",
+          "facilityVacCancelledSection",
+          "facilityVacDeployedSection",
+          "facilityVacUnavailableSection",
         ];
         function storageKey(id) {
           return "lotte-hk-order-section-collapsed:" + id;

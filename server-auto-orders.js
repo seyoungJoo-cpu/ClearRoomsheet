@@ -6,7 +6,7 @@ const MSG_RPA_RUN = "프론트 근무자분들 정비 RPA 실행해주세요";
 const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
 const MSG_INS_AFTER_17 =
   "17시 이후 INS 오더로 오더해주세요";
-const STALE_XML_MINUTES = 15;
+const STALE_XML_MINUTES = 10;
 const QUIET_START_MIN = 1 * 60 + 30;
 const QUIET_END_MIN = 6 * 60 + 30;
 
@@ -53,7 +53,8 @@ function getRoomingUploadIso(payload) {
   return null;
 }
 
-function createRobotOrder(kind, memo) {
+function createRobotOrder(kind, memo, extras) {
+  extras = extras || {};
   return {
     id: "ord-auto-" + Date.now() + "-" + Math.floor(Math.random() * 1e9),
     room: "",
@@ -62,7 +63,7 @@ function createRobotOrder(kind, memo) {
     foStatus: "",
     phase: "alert",
     urgent: false,
-    fromMaint: false,
+    fromMaint: !!extras.fromMaint,
     autoRobot: true,
     acceptAny: true,
     autoOrderKind: kind,
@@ -107,7 +108,12 @@ function startAutoOrderScheduler(ctx) {
 
     const prevLog = getOrderLog().slice();
     const entry = createRobotOrder(kind, memo);
-    const nextLog = [entry].concat(prevLog);
+    let nextLog = [entry].concat(prevLog);
+    // RPA 멈춤: 정비→프론트 오더 채널에도 동일 내용 복제
+    if (kind === "rpa_check") {
+      const maintDup = createRobotOrder("rpa_check_maint", memo, { fromMaint: true });
+      nextLog = [maintDup].concat(nextLog);
+    }
     sharedState.payload.hkOrderLog = nextLog;
     sharedState.version += 1;
     sharedState.updatedAt = new Date().toISOString();

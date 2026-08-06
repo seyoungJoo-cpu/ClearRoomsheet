@@ -656,9 +656,22 @@
     loadRoomingXmlFromLocal();
   }
 
-  /** HK 오더·요청 등 로컬 캐시만 삭제 — opts.preserveRooming 시 루밍 XML 유지 */
+  /** HK 오더·요청 등 로컬 캐시만 삭제 — opts.preserveRooming 시 루밍 XML 유지.
+   * 인벤통보·DD/인벤/취향(frontEmbedStates)은 마감 전까지 로컬에서도 보존한다.
+   */
   function clearLocalCaches(opts) {
     opts = opts || {};
+    var preservedInvenNotify = null;
+    var preservedFrontEmbed = null;
+    try {
+      if (global.HKStorage && typeof global.HKStorage.load === "function") {
+        var snap = global.HKStorage.load();
+        if (snap && typeof snap === "object") {
+          if (snap.invenNotify != null) preservedInvenNotify = snap.invenNotify;
+          if (snap.frontEmbedStates != null) preservedFrontEmbed = snap.frontEmbedStates;
+        }
+      }
+    } catch (eSnap) {}
     LOCAL_CACHE_KEYS.forEach(function (key) {
       try {
         global.localStorage.removeItem(key);
@@ -669,6 +682,18 @@
         global.localStorage.removeItem(global.HKStorage.key);
       } catch (e) {}
     }
+    try {
+      if (
+        (preservedInvenNotify != null || preservedFrontEmbed != null) &&
+        global.HKStorage &&
+        typeof global.HKStorage.save === "function"
+      ) {
+        var restore = global.HKStorage.load() || {};
+        if (preservedInvenNotify != null) restore.invenNotify = preservedInvenNotify;
+        if (preservedFrontEmbed != null) restore.frontEmbedStates = preservedFrontEmbed;
+        global.HKStorage.save(restore, { skipSync: true });
+      }
+    } catch (eRest) {}
     syncVersion = 0;
     if (!opts.preserveRooming) {
       lastServerPayload = null;
