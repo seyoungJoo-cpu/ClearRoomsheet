@@ -3538,17 +3538,6 @@
       margin-bottom: 4px;
     }
 
-    .main.main--facility .order-work-item .request-feedback__item-time {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .main.main--facility .order-work-item .request-feedback__item-time .hk-time-em {
-      font-size: 1.1rem;
-      font-weight: 800;
-    }
-
     .main.main--order .order-work-item .request-feedback__item-room,
     .main.main--facility .order-work-item .request-feedback__item-room,
     .facility-log-panel .facility-log-card .request-feedback__item-room {
@@ -22078,6 +22067,15 @@
             depMeta.className = "hk-accepter-label";
             depMeta.textContent = (isFacilityPanel ? "처리완료 : " : "투입 : ") + deployedBy;
             li.appendChild(depMeta);
+          }
+          if (isFacilityPanel && isFacilityOrder(entry)) {
+            var dueShown = getFacilityOrderDueTime(entry);
+            if (dueShown) {
+              var dueMeta = document.createElement("div");
+              dueMeta.className = "order-work__facility-due-mini";
+              dueMeta.textContent = "시설시간 " + dueShown;
+              li.appendChild(dueMeta);
+            }
           }
           if (!chatOpen) {
             var chatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
