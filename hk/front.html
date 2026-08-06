@@ -21069,9 +21069,6 @@
         entry.deployedBy = auto
           ? getOperatorName() || "자동"
           : getOperatorName();
-        if (isFacilityOrder(entry) && !getFacilityOrderDueTime(entry) && entry.facilityDueTime) {
-          /* keep */
-        }
         if (isFacilityOrder(entry) && entry.sourceReqId) {
           var srcReq = findRequestEntry(entry.sourceReqId);
           if (srcReq) {
