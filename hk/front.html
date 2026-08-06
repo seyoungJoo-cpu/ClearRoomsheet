@@ -21205,7 +21205,8 @@
           acts.appendChild(unavailBtn);
         }
         li.appendChild(acts);
-        if (isFacilityOrder(entry) && entry.sourceReqId) {
+        // 시설 처리중: 정비→시설뿐 아니라 시설에서 직접 접수한 카드에도 시간 입력
+        if (isFacilityOrder(entry)) {
           var prefill = getFacilityOrderDueTime(entry);
           var editing = !!(entry.id && facilityTimeEditIds[entry.id]);
           if (prefill && !editing) {
@@ -21252,7 +21253,7 @@
 
       function applyFacilityAcceptedTime(orderId, rawTime) {
         var entry = findOrderEntry(orderId);
-        if (!entry || !isFacilityOrder(entry) || !entry.sourceReqId) return;
+        if (!entry || !isFacilityOrder(entry)) return;
         var phase = getOrderPhase(entry);
         if ((phase !== "accepted" && phase !== "unavailable") || isOrderIssueOpen(entry)) return;
         if (!maintenanceMode) return;
@@ -21270,24 +21271,27 @@
           });
           return;
         }
-        var srcReq = findRequestEntry(entry.sourceReqId);
-        if (!srcReq) return;
         entry.facilityDueTime = p.value;
-        srcReq.facilityOkTime = p.value;
-        delete srcReq.facilitySched;
-        delete srcReq.facilityUnavailable;
         entry.phase = "accepted";
         delete entry.unavailableAt;
         delete entry.unavailableBy;
-        markRequestEntrySavedLocally(srcReq);
+        if (entry.sourceReqId) {
+          var srcReq = findRequestEntry(entry.sourceReqId);
+          if (srcReq) {
+            srcReq.facilityOkTime = p.value;
+            delete srcReq.facilitySched;
+            delete srcReq.facilityUnavailable;
+            markRequestEntrySavedLocally(srcReq);
+            saveRequestLog();
+          }
+        }
         if (entry.id) delete facilityTimeEditIds[entry.id];
-        saveRequestLog();
         saveOrderLog();
         if (isFacilityTimeReached(p.value)) {
           completeOrderDeployment(orderId, { auto: true });
           return;
         }
-        renderRequestLogPanel({ force: true });
+        if (entry.sourceReqId) renderRequestLogPanel({ force: true });
         renderOrderPanels({ force: true });
       }
 
@@ -21316,6 +21320,8 @@
             markRequestEntrySavedLocally(srcReq);
             saveRequestLog();
           }
+        } else {
+          delete entry.facilityDueTime;
         }
         entry.phase = "unavailable";
         entry.unavailableAt = new Date().toISOString();
@@ -21328,13 +21334,14 @@
 
       function appendFacilityUnavailableActions(li, entry) {
         if (!maintenanceMode || !entry || !isFacilityOrder(entry)) return;
-        if (entry.sourceReqId) {
+        {
           var timeWrap = document.createElement("div");
           timeWrap.className = "order-work__facility-time-wrap";
           var timeInp = document.createElement("input");
           timeInp.type = "text";
           timeInp.className = "order-work__facility-time-input hk-time-em";
           timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
+          timeInp.value = getFacilityOrderDueTime(entry) || "";
           timeInp.setAttribute("data-order-id", entry.id || "");
           timeInp.setAttribute("aria-label", "시설시간");
           var timeBtn = document.createElement("button");

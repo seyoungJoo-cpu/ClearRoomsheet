@@ -4153,12 +4153,15 @@
           if (p === "cancelled") return false;
           if (p === "deployed") return false;
           if (p === "doorhandle") return false;
+          // 마감 시 입실불가 전부 초기화 (시설·일반 오더)
+          if (p === "unavailable") return false;
           // 마감 시 문제발생은 전부 초기화
           if (entry.issueOpen === true || p === "issue") return false;
           if (p === "accepted") return false;
           return true;
         });
       }
+
 
       function getResetStorageData(preservedFacility) {
         var prev = HKStorage.load();
