@@ -4016,6 +4016,15 @@
       white-space: nowrap;
     }
 
+    .main.main--facility .order-work__wan-btn {
+      padding: 10px 16px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border-radius: 8px;
+      border-width: 2px;
+      letter-spacing: -0.02em;
+    }
+
     .order-work__wan-btn:hover {
       background: #d1fae5;
     }
@@ -4047,36 +4056,47 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 6px;
-      margin-top: 8px;
+      gap: 8px;
+      margin-top: 10px;
       width: 100%;
     }
 
     .order-work__facility-time-display {
       width: 100%;
-      margin: 0;
-      font-size: 0.75rem;
-      font-weight: 700;
+      margin: 8px 0 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #ecfdf5;
+      border: 1px solid #99f6e4;
+      font-size: 1.05rem;
+      font-weight: 800;
       color: #0f766e;
-      line-height: 1.3;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      box-sizing: border-box;
     }
 
     .order-work__facility-time-display .hk-time-em {
-      font-size: 0.875rem;
-      margin-left: 4px;
+      font-size: 1.55rem;
+      font-weight: 900;
+      margin-left: 8px;
+      color: #134e4a;
+      letter-spacing: 0.02em;
     }
 
     .order-work__facility-time-input {
-      flex: 1 1 7rem;
+      flex: 1 1 8rem;
       min-width: 0;
-      height: 28px;
-      padding: 0 8px;
-      border: 1px solid #99f6e4;
-      border-radius: 4px;
+      height: 40px;
+      padding: 0 12px;
+      border: 2px solid #99f6e4;
+      border-radius: 8px;
       font: inherit;
-      font-size: 0.75rem;
+      font-size: 1.15rem;
+      font-weight: 800;
       box-sizing: border-box;
       background: #f0fdfa;
+      color: #134e4a;
     }
 
     .order-work__facility-time-input:focus {
@@ -4087,13 +4107,13 @@
 
     .order-work__facility-time-btn {
       flex: 0 0 auto;
-      padding: 4px 10px;
-      font-size: 0.6875rem;
-      font-weight: 700;
-      border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border-radius: 8px;
       cursor: pointer;
       font: inherit;
-      border: 1px solid #0f766e;
+      border: 2px solid #0f766e;
       background: #ccfbf1;
       color: #0f766e;
       line-height: 1.15;
@@ -21049,6 +21069,9 @@
         entry.deployedBy = auto
           ? getOperatorName() || "자동"
           : getOperatorName();
+        if (isFacilityOrder(entry) && !getFacilityOrderDueTime(entry) && entry.facilityDueTime) {
+          /* keep */
+        }
         if (isFacilityOrder(entry) && entry.sourceReqId) {
           var srcReq = findRequestEntry(entry.sourceReqId);
           if (srcReq) {
@@ -21086,10 +21109,25 @@
         if (/^ip$/i.test(s)) return -1;
         var parsed = parseRequestSchedInput(s);
         if (!parsed.ok || !parsed.value) return null;
-        if (/^ip$/i.test(parsed.value)) return -1;
-        var m = String(parsed.value).match(/^(\d{1,2}):(\d{2})$/);
+        var v = String(parsed.value).trim();
+        if (/^ip$/i.test(v)) return -1;
+        var m = v.match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) {
+          m = v.match(/(\d{1,2}):(\d{2})(?!.*\d{1,2}:\d{2})/);
+        }
+        if (!m) {
+          var d = v.match(/(?:^|\s)(\d{3,4})(?:\s|$)/);
+          if (d) {
+            var raw = d[1];
+            if (raw.length === 3) raw = "0" + raw;
+            m = [null, raw.slice(0, 2), raw.slice(2)];
+          }
+        }
         if (!m) return null;
-        return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+        var h = parseInt(m[1], 10);
+        var min = parseInt(m[2], 10);
+        if (!isFinite(h) || !isFinite(min) || h > 23 || min > 59) return null;
+        return h * 60 + min;
       }
 
       function isFacilityTimeReached(timeStr) {
@@ -21135,12 +21173,9 @@
           }
         });
         if (!deployed) return false;
-        if (isHkUserEditing()) {
-          renderOrderPanels();
-          if (needRequestRender) renderRequestLogPanel();
-        } else {
-          renderOrderPanels({ force: true });
-          if (needRequestRender) renderRequestLogPanel({ force: true });
+        renderOrderPanels({ force: !isHkUserEditing() });
+        if (needRequestRender) {
+          renderRequestLogPanel({ force: !isHkUserEditing() });
         }
         return true;
       }
@@ -21151,7 +21186,22 @@
         checkAndAutoDeployFacilityOrders();
         facilityAutoDeployTimer = setInterval(function () {
           checkAndAutoDeployFacilityOrders();
-        }, 15000);
+        }, 5000);
+      }
+
+      function appendFacilityDueTimeDisplay(li, entry) {
+        if (!li || !entry || !isFacilityOrder(entry)) return false;
+        var prefill = getFacilityOrderDueTime(entry);
+        if (!prefill) return false;
+        var timeDisp = document.createElement("div");
+        timeDisp.className = "order-work__facility-time-display";
+        timeDisp.appendChild(document.createTextNode("시설시간"));
+        var timeEm = document.createElement("span");
+        timeEm.className = "hk-time-em";
+        timeEm.textContent = prefill;
+        timeDisp.appendChild(timeEm);
+        li.appendChild(timeDisp);
+        return true;
       }
 
       function appendOrderAcceptedMaintActions(li, entry) {
@@ -21205,19 +21255,12 @@
           acts.appendChild(unavailBtn);
         }
         li.appendChild(acts);
-        // 시설 처리중: 정비→시설뿐 아니라 시설에서 직접 접수한 카드에도 시간 입력
+        // 시설 처리중: 정비→시설뿐 아니라 시설 직접 접수 카드에도 시간 표시·입력
         if (isFacilityOrder(entry)) {
           var prefill = getFacilityOrderDueTime(entry);
           var editing = !!(entry.id && facilityTimeEditIds[entry.id]);
           if (prefill && !editing) {
-            var timeDisp = document.createElement("div");
-            timeDisp.className = "order-work__facility-time-display";
-            timeDisp.appendChild(document.createTextNode("시설시간"));
-            var timeEm = document.createElement("span");
-            timeEm.className = "hk-time-em";
-            timeEm.textContent = prefill;
-            timeDisp.appendChild(timeEm);
-            li.appendChild(timeDisp);
+            appendFacilityDueTimeDisplay(li, entry);
             var editWrap = document.createElement("div");
             editWrap.className = "order-work__facility-time-wrap";
             var editBtn = document.createElement("button");
@@ -21225,7 +21268,7 @@
             editBtn.className = "order-work__facility-time-btn";
             editBtn.setAttribute("data-order-id", entry.id || "");
             editBtn.setAttribute("data-facility-time-action", "edit");
-            editBtn.textContent = "수정";
+            editBtn.textContent = "시간 수정";
             editWrap.appendChild(editBtn);
             li.appendChild(editWrap);
           } else {
@@ -21234,8 +21277,8 @@
             var timeInp = document.createElement("input");
             timeInp.type = "text";
             timeInp.className = "order-work__facility-time-input hk-time-em";
-            timeInp.placeholder = "1430 / 14:30 / IP / 202 14:00";
-            timeInp.value = prefill;
+            timeInp.placeholder = "1430 / 14:30 / IP";
+            timeInp.value = prefill || "";
             timeInp.setAttribute("data-order-id", entry.id || "");
             timeInp.setAttribute("aria-label", "시설시간");
             var timeBtn = document.createElement("button");
@@ -21272,6 +21315,7 @@
           return;
         }
         entry.facilityDueTime = p.value;
+        entry.facilityDueAt = new Date().toISOString();
         entry.phase = "accepted";
         delete entry.unavailableAt;
         delete entry.unavailableBy;
@@ -21879,6 +21923,9 @@
             accMeta.className = "hk-accepter-label";
             accMeta.textContent = "접수자 : " + acceptedBy;
             li.appendChild(accMeta);
+          }
+          if (isFacilityOrder(entry) && !maintenanceMode) {
+            appendFacilityDueTimeDisplay(li, entry);
           }
           appendOrderAcceptedMaintActions(li, entry);
           acceptedList.appendChild(li);
