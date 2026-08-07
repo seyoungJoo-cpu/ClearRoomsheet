@@ -396,6 +396,50 @@ function ensureTankAi(room) {
   });
 }
 
+function makeTankItems(W, H) {
+  const kinds = ["heal", "speed", "shield", "rapid"];
+  const spots = [
+    [W * 0.5, H * 0.5],
+    [W * 0.5 - 150, H * 0.5],
+    [W * 0.5 + 150, H * 0.5],
+    [W * 0.5, H * 0.5 - 130],
+    [W * 0.5, H * 0.5 + 130],
+    [W * 0.5 - 110, H * 0.5 - 110],
+    [W * 0.5 + 110, H * 0.5 - 110],
+    [W * 0.5 - 110, H * 0.5 + 110],
+    [W * 0.5 + 110, H * 0.5 + 110],
+  ];
+  return spots.map(function (p, i) {
+    return {
+      id: i + 1,
+      x: p[0],
+      y: p[1],
+      type: kinds[i % kinds.length],
+      taken: false,
+      respawnAt: 0,
+    };
+  });
+}
+
+function tankClearBuffs(t) {
+  t.boostUntil = 0;
+  t.rapidUntil = 0;
+  t.shield = 0;
+}
+
+function tankApplyItem(t, it) {
+  const now = Date.now();
+  if (it.type === "heal") {
+    t.hp = Math.min(t.maxHp || 5, (t.hp || 0) + 2);
+  } else if (it.type === "speed") {
+    t.boostUntil = now + 7000;
+  } else if (it.type === "shield") {
+    t.shield = Math.min(3, (t.shield || 0) + 2);
+  } else if (it.type === "rapid") {
+    t.rapidUntil = now + 7000;
+  }
+}
+
 function makeTankWalls(W, H) {
   const walls = [];
   // border blocks / cover fields
@@ -416,11 +460,14 @@ function makeTankWalls(W, H) {
   for (const [x, y, w, h] of blocks) {
     walls.push({ x, y, w, h, solid: true });
   }
-  // destructible crates
+  // destructible crates (avoid mid item plaza)
   for (let i = 0; i < 18; i++) {
+    const x = 200 + ((i * 317) % (W - 400));
+    const y = 180 + ((i * 521) % (H - 360));
+    if (Math.hypot(x + 27 - W * 0.5, y + 27 - H * 0.5) < 220) continue;
     walls.push({
-      x: 200 + ((i * 317) % (W - 400)),
-      y: 180 + ((i * 521) % (H - 360)),
+      x: x,
+      y: y,
       w: 54,
       h: 54,
       solid: false,
@@ -465,14 +512,17 @@ function initTank(room) {
       y: sp.y,
       spawn: { x: sp.x, y: sp.y, aim: sp.aim },
       aim: sp.aim,
-      hp: 3,
-      maxHp: 3,
+      hp: 5,
+      maxHp: 5,
       lives: 3,
       maxLives: 3,
       cd: 0,
       alive: true,
       eliminated: false,
       respawnAt: 0,
+      boostUntil: 0,
+      rapidUntil: 0,
+      shield: 0,
     };
   });
   return {
@@ -484,6 +534,7 @@ function initTank(room) {
     tanks,
     bullets: [],
     walls: makeTankWalls(W, H),
+    items: makeTankItems(W, H),
     roundOverAt: 0,
     winnerId: null,
   };
@@ -494,10 +545,11 @@ function tankRespawn(t) {
   t.x = sp.x;
   t.y = sp.y;
   t.aim = sp.aim;
-  t.hp = t.maxHp || 3;
+  t.hp = t.maxHp || 5;
   t.cd = 0.4;
   t.alive = true;
   t.respawnAt = 0;
+  tankClearBuffs(t);
 }
 
 function resetTankRound(state) {
@@ -524,17 +576,19 @@ function resetTankRound(state) {
     t.x = sp.x;
     t.y = sp.y;
     t.aim = sp.aim;
-    t.hp = 3;
-    t.maxHp = 3;
+    t.hp = 5;
+    t.maxHp = 5;
     t.lives = 3;
     t.maxLives = 3;
     t.cd = 0;
     t.alive = true;
     t.eliminated = false;
     t.respawnAt = 0;
+    tankClearBuffs(t);
   });
   state.bullets = [];
   state.walls = makeTankWalls(W, H);
+  state.items = makeTankItems(W, H);
   state.roundOverAt = 0;
   state.winnerId = null;
 }
@@ -610,8 +664,8 @@ function tickTank(room, dt) {
     }
   }
 
-  const R = 18,
-    spd = 170;
+  const R = 18;
+  const nowMs = Date.now();
   for (const t of s.tanks) {
     if (!t.alive || t.eliminated) continue;
     const p = room.players.find((pl) => pl.id === t.id);
@@ -626,6 +680,7 @@ function tickTank(room, dt) {
     if (inp.down) dy += 1;
     if (inp.left) dx -= 1;
     if (inp.right) dx += 1;
+    const spd = nowMs < (t.boostUntil || 0) ? 245 : 170;
     if (dx || dy) {
       const len = Math.hypot(dx, dy) || 1;
       let nx = t.x + (dx / len) * spd * dt;
@@ -647,8 +702,9 @@ function tickTank(room, dt) {
     }
     if (typeof inp.aim === "number") t.aim = inp.aim;
     if (t.cd > 0) t.cd -= dt * 1000;
+    const fireCd = nowMs < (t.rapidUntil || 0) ? 220 : 420;
     if (inp.fire && t.cd <= 0) {
-      t.cd = 420;
+      t.cd = fireCd;
       s.bullets.push({
         x: t.x + Math.cos(t.aim) * 22,
         y: t.y + Math.sin(t.aim) * 22,
@@ -658,6 +714,27 @@ function tickTank(room, dt) {
         team: t.team,
       });
       if (inp) inp.fire = false;
+    }
+  }
+
+  // mid-map items pickup / respawn
+  if (!Array.isArray(s.items)) s.items = makeTankItems(s.W || 2800, s.H || 2000);
+  for (const it of s.items) {
+    if (it.taken) {
+      if (it.respawnAt && nowMs >= it.respawnAt) {
+        it.taken = false;
+        it.respawnAt = 0;
+      }
+      continue;
+    }
+    for (const t of s.tanks) {
+      if (!t.alive || t.eliminated) continue;
+      if (Math.hypot(t.x - it.x, t.y - it.y) < 28) {
+        tankApplyItem(t, it);
+        it.taken = true;
+        it.respawnAt = nowMs + 12000;
+        break;
+      }
     }
   }
 
@@ -689,7 +766,12 @@ function tickTank(room, dt) {
       if (!t.alive || t.eliminated) continue;
       if (s.mode === "team" ? t.team === bul.team : t.slot === bul.owner) continue;
       if (Math.hypot(t.x - bul.x, t.y - bul.y) < R + 4) {
-        t.hp--;
+        // Softened TTK: 1 damage vs 5 HP (was 3). Shield absorbs hits first.
+        if ((t.shield || 0) > 0) {
+          t.shield -= 1;
+        } else {
+          t.hp = Math.max(0, (t.hp || 0) - 1);
+        }
         s.bullets.splice(b, 1);
         if (t.hp <= 0) tankKill(room, t);
         break;

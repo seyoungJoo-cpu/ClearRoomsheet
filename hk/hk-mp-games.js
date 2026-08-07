@@ -2,7 +2,7 @@
   'use strict';
 
   var META = {
-    tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 초대형 맵' },
+    tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 중앙 아이템 · HP5' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '1:1 / 2:2 / FFA · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '석기→미래 시대 진화 · 라인전' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
@@ -945,7 +945,7 @@
   }
   function helpText() {
     return {
-      tank: 'WASD · 마우스 조준/발사 · 목숨 3 · 사망 후 관전 카메라',
+      tank: 'WASD · 마우스 조준/발사 · HP5 · 중앙 아이템(회복/속도/실드/연사) · 목숨 3',
       rts: '좌클릭 배럭/본진 선택 후 유닛 생산 · 우클릭 이동/공격 · 정찰한 곳만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
@@ -1201,7 +1201,10 @@
         var ml = t.maxLives || 3;
         for (var hi = 0; hi < ml; hi++) hearts += hi < (t.lives != null ? t.lives : 0) ? '♥' : '♡';
         html += '<span class="hkmp-pill">목숨 <b style="color:#ff8a7a">' + hearts + '</b></span>';
-        html += '<span class="hkmp-pill">HP <b>' + (t.alive ? (t.hp != null ? t.hp : 3) : 0) + '/' + (t.maxHp || 3) + '</b></span>';
+        html += '<span class="hkmp-pill">HP <b>' + (t.alive ? (t.hp != null ? t.hp : 5) : 0) + '/' + (t.maxHp || 5) + '</b></span>';
+        if (t.shield) html += '<span class="hkmp-pill" style="color:#6ec8ff">실드 <b>' + t.shield + '</b></span>';
+        if (t.boostUntil && t.boostUntil > Date.now()) html += '<span class="hkmp-pill" style="color:#9ae6b4">부스트</span>';
+        if (t.rapidUntil && t.rapidUntil > Date.now()) html += '<span class="hkmp-pill" style="color:#f6ad55">연사</span>';
         if (t.eliminated) html += '<span class="hkmp-pill" style="color:#efd28a">탈락 · 관전</span>';
         else if (!t.alive) html += '<span class="hkmp-pill" style="color:#f6ad55">부활 대기</span>';
       }
@@ -1357,6 +1360,23 @@
         ctx.fillStyle = '#f6ad55'; ctx.fillRect(w.x, w.y - 6, w.w * (w.hp / 3), 3);
       }
     });
+    (st.items || []).forEach(function (it) {
+      if (!it || it.taken) return;
+      var col = it.type === 'heal' ? '#9ae6b4' : it.type === 'speed' ? '#6ec8ff' : it.type === 'shield' ? '#c4b5fd' : '#f6ad55';
+      var label = it.type === 'heal' ? '+' : it.type === 'speed' ? '≫' : it.type === 'shield' ? '◇' : '⚡';
+      ctx.save();
+      ctx.translate(it.x, it.y);
+      ctx.fillStyle = col + '33';
+      ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0a1a1f';
+      ctx.font = 'bold 11px Georgia,serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 0, 1);
+      ctx.restore();
+    });
     (st.bullets || []).forEach(function (b) {
       ctx.fillStyle = '#efd28a';
       ctx.beginPath(); ctx.arc(b.x, b.y, 3.5, 0, Math.PI * 2); ctx.fill();
@@ -1366,6 +1386,11 @@
       var col = COLORS[tk.slot != null ? tk.slot : i];
       ctx.save();
       ctx.translate(tk.x, tk.y);
+      if ((tk.shield || 0) > 0) {
+        ctx.strokeStyle = '#c4b5fdcc';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.stroke();
+      }
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
       ctx.rotate(tk.aim || 0);
@@ -1373,7 +1398,7 @@
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(24, 0); ctx.stroke();
       ctx.restore();
       ctx.fillStyle = '#0008'; ctx.fillRect(tk.x - 14, tk.y - 26, 28, 4);
-      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(tk.x - 14, tk.y - 26, 28 * Math.max(0, (tk.hp || 3) / (tk.maxHp || 3)), 4);
+      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(tk.x - 14, tk.y - 26, 28 * Math.max(0, (tk.hp || 5) / (tk.maxHp || 5)), 4);
       drawNameTag(ctx, (tk.name || ('P' + (i + 1))) + (tk.isAi ? ' ·AI' : ''), tk.x, tk.y - 34, COLORS[tk.slot != null ? tk.slot : i]);
       var lifeMarks = '';
       var mlv = tk.maxLives || 3;
