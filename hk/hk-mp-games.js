@@ -52,6 +52,7 @@
   var hockeySmooth = null;
   var hockeyRaf = 0;
   var hockeyLastScore = '';
+  var tankCam = { x: null, y: null, free: false };
 
   function isTypingTarget(el) {
     if (!el || !el.tagName) return false;
@@ -674,7 +675,57 @@
     if (gamePaused || view !== 'play' || !ws || ws.readyState !== 1) return;
     var payload = buildInput();
     if (payload) send({ type: 'input', payload: payload });
-    if (gameId === 'tank') { keys.fire = false; fireLatch = false; }
+    if (gameId === 'tank') {
+      keys.fire = false;
+      fireLatch = false;
+      // Dead: local free-cam still needs redraw between server ticks
+      if (lastState) {
+        var meTk = findMeTank(lastState);
+        if (!meTk || !meTk.alive) {
+          getTankCamera(lastState, 0.033);
+          drawFrame();
+        }
+      }
+    }
+  }
+
+  function getTankCamera(st, dt) {
+    var viewW = 900, viewH = 600;
+    var worldW = st.W || 2800, worldH = st.H || 2000;
+    var me = findMeTank(st);
+    var step = typeof dt === 'number' ? dt : 0.033;
+    var spd = 420;
+    if (me && me.alive) {
+      tankCam.free = false;
+      tankCam.x = me.x - viewW / 2;
+      tankCam.y = me.y - viewH / 2;
+    } else {
+      if (!tankCam.free) {
+        tankCam.free = true;
+        if (me) {
+          tankCam.x = me.x - viewW / 2;
+          tankCam.y = me.y - viewH / 2;
+        } else if (tankCam.x == null || tankCam.y == null) {
+          tankCam.x = worldW / 2 - viewW / 2;
+          tankCam.y = worldH / 2 - viewH / 2;
+        }
+      }
+      var dx = 0, dy = 0;
+      if (keys.w || keys.arrowup) dy -= 1;
+      if (keys.s || keys.arrowdown) dy += 1;
+      if (keys.a || keys.arrowleft) dx -= 1;
+      if (keys.d || keys.arrowright) dx += 1;
+      if (dx || dy) {
+        var len = Math.hypot(dx, dy) || 1;
+        tankCam.x += (dx / len) * spd * step;
+        tankCam.y += (dy / len) * spd * step;
+      }
+    }
+    if (tankCam.x == null) tankCam.x = 0;
+    if (tankCam.y == null) tankCam.y = 0;
+    tankCam.x = Math.max(0, Math.min(Math.max(0, worldW - viewW), tankCam.x));
+    tankCam.y = Math.max(0, Math.min(Math.max(0, worldH - viewH), tankCam.y));
+    return { camX: tankCam.x, camY: tankCam.y, viewW: viewW, viewH: viewH, worldW: worldW, worldH: worldH };
   }
 
   function canvasToWorld(cv, clientX, clientY) {
@@ -682,17 +733,11 @@
     var sx = ((clientX - r.left) / r.width) * canvasW;
     var sy = ((clientY - r.top) / r.height) * canvasH;
     if (gameId === 'tank' && lastState) {
-      var me = findMeTank(lastState);
-      var viewW = 900, viewH = 600;
-      var worldW = lastState.W || 2800, worldH = lastState.H || 2000;
-      var camX = me ? me.x - viewW / 2 : worldW / 2 - viewW / 2;
-      var camY = me ? me.y - viewH / 2 : worldH / 2 - viewH / 2;
-      camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
-      camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
-      var scale = Math.min(canvasW / viewW, canvasH / viewH) || 1;
-      var ox = (canvasW - viewW * scale) / 2;
-      var oy = (canvasH - viewH * scale) / 2;
-      return { x: (sx - ox) / scale + camX, y: (sy - oy) / scale + camY };
+      var cam = getTankCamera(lastState, 0);
+      var scale = Math.min(canvasW / cam.viewW, canvasH / cam.viewH) || 1;
+      var ox = (canvasW - cam.viewW * scale) / 2;
+      var oy = (canvasH - cam.viewH * scale) / 2;
+      return { x: (sx - ox) / scale + cam.camX, y: (sy - oy) / scale + cam.camY };
     }
     return { x: sx, y: sy };
   }
@@ -701,19 +746,23 @@
     if (gameId === 'tank') {
       var aim = 0;
       var me = lastState ? findMeTank(lastState) : null;
-      if (me) {
+      var dead = !!(me && !me.alive);
+      if (me && me.alive) {
         aim = Math.atan2(mouse.ay - me.y, mouse.ax - me.x);
         mouse.tx = me.x; mouse.ty = me.y;
       } else {
-        aim = Math.atan2(mouse.ay - canvasH / 2, mouse.ax - canvasW / 2);
+        var cam = lastState ? getTankCamera(lastState, 0) : null;
+        var cx = cam ? cam.camX + cam.viewW / 2 : canvasW / 2;
+        var cy = cam ? cam.camY + cam.viewH / 2 : canvasH / 2;
+        aim = Math.atan2(mouse.ay - cy, mouse.ax - cx);
       }
       return {
-        up: !!(keys.w || keys.arrowup),
-        down: !!(keys.s || keys.arrowdown),
-        left: !!(keys.a || keys.arrowleft),
-        right: !!(keys.d || keys.arrowright),
+        up: dead ? false : !!(keys.w || keys.arrowup),
+        down: dead ? false : !!(keys.s || keys.arrowdown),
+        left: dead ? false : !!(keys.a || keys.arrowleft),
+        right: dead ? false : !!(keys.d || keys.arrowright),
         aim: aim,
-        fire: !!(keys.fire || mouse.down || fireLatch)
+        fire: dead ? false : !!(keys.fire || mouse.down || fireLatch)
       };
     }
     if (gameId === 'snakes') {
@@ -894,7 +943,7 @@
   }
   function helpText() {
     return {
-      tank: 'WASD · 마우스 조준/발사 · 초대형 맵 카메라 추적',
+      tank: 'WASD · 마우스 조준/발사 · 사망 후 WASD 관전 카메라',
       rts: '좌드래그 선택 · 우클릭 이동/공격 · 모드별 본진 배치(1:1/2:2/FFA)',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
@@ -1167,12 +1216,10 @@
 
   function drawTank(ctx, st) {
     var me = findMeTank(st);
-    var viewW = 900, viewH = 600;
-    var worldW = st.W || 2800, worldH = st.H || 2000;
-    var camX = me ? me.x - viewW / 2 : worldW / 2 - viewW / 2;
-    var camY = me ? me.y - viewH / 2 : worldH / 2 - viewH / 2;
-    camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
-    camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
+    var cam = getTankCamera(st, 0);
+    var camX = cam.camX, camY = cam.camY;
+    var viewW = cam.viewW, viewH = cam.viewH;
+    var worldW = cam.worldW, worldH = cam.worldH;
     var scale = Math.min(canvasW / viewW, canvasH / viewH);
     ctx.save();
     ctx.translate((canvasW - viewW * scale) / 2, (canvasH - viewH * scale) / 2);
@@ -1229,6 +1276,15 @@
       ctx.fillStyle = COLORS[tk.slot != null ? tk.slot : i];
       ctx.fillRect(mmX + tk.x * sx - 2, mmY + tk.y * sy - 2, 4, 4);
     });
+
+    if (me && !me.alive) {
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(0, canvasH - 40, canvasW, 40);
+      ctx.fillStyle = '#efd28a';
+      ctx.font = 'bold 15px Georgia,serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('관전 중 · WASD로 시야 이동', canvasW / 2, canvasH - 15);
+    }
   }
 
   function drawAowUnit(ctx, u, col) {
