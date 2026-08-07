@@ -1436,7 +1436,8 @@
     function makePlayer() {
       return {
         x: 140, y: FLOOR - 44, w: 34, h: 44, vx: 0, vy: 0,
-        onGround: true, canWire: true, wired: false, hook: null, anim: 0
+        onGround: true, canWire: true, wired: false, hook: null, anim: 0,
+        ropeLen: null, omega: 0
       };
     }
     function addSegment(fromX) {
@@ -1515,13 +1516,32 @@
       player.wired = true;
       player.hook = hook;
       player.canWire = false;
+      var cx = player.x + player.w / 2, cy = player.y + 10;
+      player.ropeLen = Math.max(48, Math.min(210, Math.hypot(hook.x - cx, hook.y - cy)));
+      // start as pendulum: slight forward (right) swing from approach
+      var theta0 = Math.atan2(cx - hook.x, cy - hook.y);
+      player.omega = (cx < hook.x ? -1 : 1) * 2.4 - Math.min(2.5, Math.abs(player.vy) / 400);
+      if (theta0 > 0.2) player.omega = Math.min(player.omega, -1.2);
       fx.spark(hook.x, hook.y, '#6ec8ff');
     }
     function releaseWire() {
       if (!player.wired) return;
+      var hook = player.hook;
+      var L = player.ropeLen || 100;
+      var om = player.omega || 0;
+      if (hook) {
+        var cx = player.x + player.w / 2, cy = player.y + 10;
+        var theta = Math.atan2(cx - hook.x, cy - hook.y);
+        // tangential release boost along parabola swing
+        player.vy = -L * om * Math.sin(theta) * 0.85 - 90;
+        player.vy = Math.max(-720, Math.min(200, player.vy));
+      } else {
+        player.vy = Math.min(player.vy, -120);
+      }
       player.wired = false;
       player.hook = null;
-      player.vy = Math.min(player.vy, -120);
+      player.ropeLen = null;
+      player.omega = 0;
     }
     function die(reason) {
       if (!running) return;
@@ -1570,10 +1590,22 @@
         ctx.fillRect(b.x + 4, b.y + 6, b.w - 8, 4);
       });
       if (player.wired && player.hook) {
-        ctx.strokeStyle = '#9ae6b4cc'; ctx.lineWidth = 2.5;
+        var hx = player.hook.x, hy = player.hook.y;
+        var cx = player.x + player.w / 2, cy = player.y + 8;
+        var sag = Math.min(78, Math.hypot(hx - cx, hy - cy) * 0.32 + 18);
+        var mx = (cx + hx) * 0.5;
+        var my = Math.max(hy + 8, (cy + hy) * 0.5 + sag);
+        ctx.strokeStyle = '#9ae6b4dd'; ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(player.x + player.w / 2, player.y + 8);
-        ctx.lineTo(player.hook.x, player.hook.y);
+        ctx.moveTo(cx, cy);
+        ctx.quadraticCurveTo(mx, my, hx, hy);
+        ctx.stroke();
+        // soft second strand for depth
+        ctx.strokeStyle = '#6ec8ff55'; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.quadraticCurveTo(mx + 4, my + 6, hx, hy);
         ctx.stroke();
       }
       // luggage in hand
@@ -1589,7 +1621,7 @@
         ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 18px Georgia,serif'; ctx.textAlign = 'center';
         ctx.fillText('탭 / Space · 점프  ·  공중에서 다시 눌러 와이어', W / 2, 56);
         ctx.font = '13px Georgia,serif'; ctx.fillStyle = '#b1c1bd';
-        ctx.fillText('누르고 있으면 와이어를 당깁니다 · 놓으면 해제', W / 2, 80);
+        ctx.fillText('누르고 있으면 포물선으로 스윙 · 놓으면 튕기듯 해제', W / 2, 80);
       }
       fx.draw(ctx);
     }
@@ -1611,16 +1643,36 @@
         player.x = camX + 130;
         if (player.wired && player.hook && hold) {
           var hx = player.hook.x, hy = player.hook.y;
-          var cx = player.x + player.w / 2, cy = player.y + 10;
-          var ang = Math.atan2(hy - cy, hx - cx);
-          player.vx = Math.cos(ang) * 260;
-          player.vy = Math.sin(ang) * 260 - 40;
-          player.y += player.vy * dt;
-          // world moves with cam; vertical only for player relative
-          if (Math.hypot(hx - cx, hy - cy) < 28) {
-            player.y = hy + 18;
-            player.vy = 0;
+          var cx = player.x + player.w / 2;
+          var cy = player.y + 10;
+          if (player.ropeLen == null) {
+            player.ropeLen = Math.max(48, Math.hypot(hx - cx, hy - cy));
+            player.omega = -2.2;
           }
+          var L = player.ropeLen;
+          // θ = 0 when hanging straight down from hook
+          var theta = Math.atan2(cx - hx, cy - hy);
+          // pendulum: α = -(g/L) sin(θ)  + forward bias (runner moves right)
+          var gSwing = 22;
+          player.omega += (-(gSwing / Math.max(50, L)) * Math.sin(theta) * 55 + 2.6) * dt;
+          player.omega *= Math.pow(0.988, dt * 60);
+          player.omega = Math.max(-7.5, Math.min(7.5, player.omega));
+          theta += player.omega * dt;
+          // gentle reel so the parabola stays playful
+          L = Math.max(42, L - 28 * dt);
+          player.ropeLen = L;
+          var nx = hx + Math.sin(theta) * L;
+          var ny = hy + Math.cos(theta) * L;
+          // keep below hook a little
+          if (ny < hy + 16) {
+            ny = hy + 16;
+            L = Math.hypot(nx - hx, ny - hy);
+            player.ropeLen = Math.max(42, L);
+            player.omega *= 0.85;
+          }
+          player.y = ny - 10;
+          // store tangential vertical speed for feel / next free-fall step
+          player.vy = -L * player.omega * Math.sin(theta);
         } else {
           if (player.wired && !hold) releaseWire();
           player.vy += 1650 * dt;
@@ -1692,7 +1744,7 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, '자동으로 달립니다 · 탭/Space 점프 · 공중에서 다시 누르면 와이어 · 누르고 있으면 당김 · 팁(동전)을 모으세요');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, '자동 러닝 · 탭/Space 점프 · 공중에서 와이어로 포물선 스윙 · 팁(동전) 수집');
     return { id: 'mines', destroy: c.destroy };
   };
 
