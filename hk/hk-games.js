@@ -4,13 +4,13 @@
   var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var META = {
-    candy: { icon: '🍬', name: '캔디 스위트', desc: '20초 시작 · 깨면 시간 추가 · 타임어택' },
-    merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
-    snake: { icon: '🐍', name: '미드나잇 스네이크', desc: '벽을 피해 야식을 모아보세요' },
+    candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '20초 시작 · 깨면 시간 추가 · 타임어택' },
+    merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
+    snake: { icon: '🐍', name: '요리조리 컴플레인 피하기', desc: '벽을 피해 야식을 모아보세요' },
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
     breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '5단계 벽돌 격파 · 아이템 수집' },
-    jump: { icon: '🪽', name: '스카이 점프', desc: '2단 점프 · 서서히 올라가는 화면' },
-    tetris: { icon: '🟪', name: '타워 테트리스', desc: '클래식 10×20 · 급격한 난이도 상승' },
+    jump: { icon: '🪽', name: '시그니엘 올라가기', desc: '2단 점프 · 서서히 올라가는 화면' },
+    tetris: { icon: '🟪', name: '뷔페 접시 쌓기', desc: '클래식 10×20 · 급격한 난이도 상승' },
     pong: { icon: '🏓', name: '로비 핑퐁', desc: '빠른 공·짧은 패들로 고난도 랠리' },
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
     mines: { icon: '🛎️', name: '딜리버리하는 벨맨', desc: '점프·와이어로 배달하는 고군분투 러닝' },
