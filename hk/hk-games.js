@@ -1497,13 +1497,16 @@
       }
       return null;
     }
-    function nearestHook(maxD) {
-      var best = null, bd = maxD || 170;
+    function nearestHook() {
+      // Always try the closest unused hook — no max-distance fail
+      var best = null, bd = 1e12;
+      var px = player.x + player.w / 2, py = player.y + 10;
       for (var i = 0; i < hooks.length; i++) {
         var h = hooks[i];
         if (h.used) continue;
-        if (h.x < player.x - 30 || h.x > player.x + 240) continue;
-        var d = Math.hypot(h.x - (player.x + player.w / 2), h.y - player.y);
+        // Slightly prefer forward hooks, but still allow behind if closer
+        var d = Math.hypot(h.x - px, h.y - py);
+        if (h.x < player.x - 80) d *= 1.35;
         if (d < bd) { bd = d; best = h; }
       }
       return best;
@@ -1516,14 +1519,16 @@
       player.wireAge = 0;
       hook.used = true; // one ride per wire — no infinite cling / re-grab
       var cx = player.x + player.w / 2, cy = player.y + 10;
-      // Pull toward a short high arc under the hook
       var dist = Math.hypot(hook.x - cx, hook.y - cy);
-      player.ropeLen = Math.max(40, Math.min(155, dist * 0.72));
+      // Far hooks: keep long rope first, then reel upward
+      player.ropeLen = Math.max(48, Math.min(420, dist));
       var theta0 = Math.atan2(cx - hook.x, cy - hook.y);
       player.omega = (cx < hook.x ? -1 : 1) * 2.8 - Math.min(2.8, Math.abs(player.vy) / 380);
       if (theta0 > 0.2) player.omega = Math.min(player.omega, -1.4);
-      // Instant lift toward the hook
-      player.y = Math.min(player.y, hook.y + player.ropeLen - 8);
+      // If already reasonably close, snap a bit higher toward the hook
+      if (dist < 200) {
+        player.y = Math.min(player.y, hook.y + Math.min(player.ropeLen, 140) - 8);
+      }
       fx.spark(hook.x, hook.y, '#6ec8ff');
       return true;
     }
@@ -1546,7 +1551,7 @@
       if (player.wired) return;
       if (player.onGround) return;
       if (!player.canWire) return;
-      var hook = nearestHook(fromKey ? 240 : 195);
+      var hook = nearestHook();
       if (!hook) return;
       if (attachWire(hook) && fromKey) {
         keyWireLatch = true;
@@ -1680,7 +1685,7 @@
           var cy = player.y + 10;
           player.wireAge = (player.wireAge || 0) + dt;
           if (player.ropeLen == null) {
-            player.ropeLen = Math.max(40, Math.min(150, Math.hypot(hx - cx, hy - cy) * 0.7));
+            player.ropeLen = Math.max(48, Math.hypot(hx - cx, hy - cy));
             player.omega = -2.6;
           }
           var L = player.ropeLen;
@@ -1692,8 +1697,9 @@
           player.omega *= Math.pow(0.986, dt * 60);
           player.omega = Math.max(-8, Math.min(8, player.omega));
           theta += player.omega * dt;
-          // Stronger reel — climb higher toward the hook
-          L = Math.max(34, L - 58 * dt);
+          // Stronger reel for long grabs — climb up toward the hook
+          var reel = L > 180 ? 95 : 58;
+          L = Math.max(34, L - reel * dt);
           player.ropeLen = L;
           var nx = hx + Math.sin(theta) * L;
           var ny = hy + Math.cos(theta) * L;
