@@ -1056,15 +1056,21 @@
       if (gameId === 'tank') fireLatch = true;
       if (gameId === 'rts') {
         if (pendingBuild) {
-          if (pendingBuild.mode === 'build' && pendingBuild.buildType === 'turret') {
-            var nexus = null;
-            var ents = (lastState && lastState.entities) || [];
-            for (var ni = 0; ni < ents.length; ni++) {
-              if (ents[ni].type === 'nexus' && ents[ni].owner === mySlot()) { nexus = ents[ni]; break; }
-            }
-            if (nexus && Math.hypot(p.x - nexus.x, p.y - nexus.y) < 110) {
-              toast('본진 근처에는 포탑을 지을 수 없습니다');
+          if (pendingBuild.mode === 'build') {
+            if (!rtsClientExplored(lastState, p.x, p.y)) {
+              toast('정찰한 곳에만 건물을 지을 수 있습니다');
               return;
+            }
+            if (pendingBuild.buildType === 'turret') {
+              var nexus = null;
+              var ents = (lastState && lastState.entities) || [];
+              for (var ni = 0; ni < ents.length; ni++) {
+                if (ents[ni].type === 'nexus' && ents[ni].owner === mySlot()) { nexus = ents[ni]; break; }
+              }
+              if (nexus && Math.hypot(p.x - nexus.x, p.y - nexus.y) < 110) {
+                toast('본진 근처에는 포탑을 지을 수 없습니다');
+                return;
+              }
             }
           }
           var payload = { selectIds: selectIds.slice(), x: p.x, y: p.y, cmd: 'build' };
@@ -1599,9 +1605,56 @@
     ctx.fillRect(x - w / 2, y, w * ratio, 4);
   }
 
+  function rtsClientVisionR(e) {
+    if (!e) return 0;
+    if (e.type === 'nexus') return 340;
+    if (e.type === 'barracks') return 200;
+    if (e.type === 'turret') return 220;
+    if (e.type === 'worker') return 210;
+    if (e.type === 'ranged') return 240;
+    return 200;
+  }
+  function rtsClientExplored(st, x, y) {
+    if (!st || !st.fog || !st.fogTile) return true;
+    var c = Math.floor(x / st.fogTile);
+    var r = Math.floor(y / st.fogTile);
+    if (c < 0 || r < 0 || c >= st.fogCols || r >= st.fogRows) return false;
+    return !!st.fog[r * st.fogCols + c];
+  }
+  function rtsClientInVision(st, x, y) {
+    var me = mySlot();
+    var ents = (st && st.entities) || [];
+    for (var i = 0; i < ents.length; i++) {
+      var e = ents[i];
+      if (!e || e.fogGhost || e.hp <= 0) continue;
+      if (e.owner !== me && e.owner != me) continue;
+      if (Math.hypot((e.x || 0) - x, (e.y || 0) - y) <= rtsClientVisionR(e)) return true;
+    }
+    return false;
+  }
+  function drawRtsFog(ctx, st) {
+    if (!st || !st.fog || !st.fogTile || !st.fogCols || !st.fogRows) return;
+    var tile = st.fogTile;
+    var fog = st.fog;
+    for (var r = 0; r < st.fogRows; r++) {
+      for (var c = 0; c < st.fogCols; c++) {
+        var idx = r * st.fogCols + c;
+        var cx = c * tile + tile / 2;
+        var cy = r * tile + tile / 2;
+        if (!fog[idx]) {
+          ctx.fillStyle = '#02060bcc';
+          ctx.fillRect(c * tile, r * tile, tile + 1, tile + 1);
+        } else if (!rtsClientInVision(st, cx, cy)) {
+          ctx.fillStyle = '#04101899';
+          ctx.fillRect(c * tile, r * tile, tile + 1, tile + 1);
+        }
+      }
+    }
+  }
   function drawRts(ctx, st) {
     (st.obstacles || []).forEach(function (o) {
       if (o.kind === 'water') {
+        if (!rtsClientExplored(st, o.x, o.y)) return;
         ctx.fillStyle = '#1a4a6acc';
         ctx.strokeStyle = '#6ec8ff66';
         ctx.beginPath();
@@ -1609,6 +1662,7 @@
         else ctx.rect(o.x - o.w / 2, o.y - o.h / 2, o.w, o.h);
         ctx.fill(); ctx.stroke();
       } else if (o.kind === 'rock') {
+        if (!rtsClientExplored(st, o.x, o.y)) return;
         ctx.fillStyle = '#5a6670';
         ctx.beginPath();
         ctx.moveTo(o.x, o.y - (o.r || 28));
@@ -1627,9 +1681,11 @@
     });
     (st.entities || []).forEach(function (e) {
       var col = COLORS[e.owner != null ? e.owner : 0] || '#efd28a';
+      if (e.fogGhost) col = '#6a7a88';
       if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'turret') {
         var bw = e.w || 40, bh = e.h || 40;
         if (e.type === 'nexus') {
+          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
           ctx.fillStyle = col;
           ctx.beginPath();
           ctx.moveTo(e.x, e.y - bh / 2);
@@ -1639,34 +1695,41 @@
           ctx.closePath(); ctx.fill();
           ctx.strokeStyle = '#efd28acc'; ctx.lineWidth = 3; ctx.stroke();
           ctx.fillStyle = '#fff8'; ctx.beginPath(); ctx.arc(e.x, e.y, 8, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 11px Georgia,serif'; ctx.textAlign = 'center';
-          ctx.fillText('본진', e.x, e.y - bh / 2 - 14);
+          ctx.globalAlpha = 1;
+          drawNameTag(ctx, e.label || '본진', e.x, e.y - bh / 2 - 12, e.fogGhost ? '#9aa8b4' : '#f5f0df');
         } else if (e.type === 'barracks') {
+          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
           ctx.fillStyle = col;
           ctx.fillRect(e.x - bw / 2, e.y - bh / 2, bw, bh);
           ctx.fillStyle = '#0004';
           ctx.fillRect(e.x - bw / 2 + 6, e.y - 8, bw - 12, 16);
+          ctx.globalAlpha = 1;
         } else {
+          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
           ctx.fillStyle = col;
           ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(bw, bh) / 2, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = '#0006'; ctx.stroke();
+          ctx.globalAlpha = 1;
         }
-        drawRtsHpBar(ctx, e.x, e.y - bh / 2 - 8, Math.max(36, bw * 0.7), e.hp, e.maxHp);
-        if (e.queue && e.queue.length) {
-          var job = e.queue[0];
-          var need = (job && job.need) || 4;
-          var prog = Math.max(0, Math.min(1, (e.trainT || 0) / need));
-          var bw2 = Math.max(36, bw * 0.85);
-          ctx.fillStyle = '#0009';
-          ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2, 5);
-          ctx.fillStyle = '#6ec8ff';
-          ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2 * prog, 5);
-          ctx.fillStyle = '#efd28a';
-          ctx.font = '10px Georgia,serif';
-          ctx.textAlign = 'center';
-          ctx.fillText((job.type || '') + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''), e.x, e.y + bh / 2 + 18);
+        if (!e.fogGhost) {
+          drawRtsHpBar(ctx, e.x, e.y - bh / 2 - 8, Math.max(36, bw * 0.7), e.hp, e.maxHp);
+          if (e.queue && e.queue.length) {
+            var job = e.queue[0];
+            var need = (job && job.need) || 4;
+            var prog = Math.max(0, Math.min(1, (e.trainT || 0) / need));
+            var bw2 = Math.max(36, bw * 0.85);
+            ctx.fillStyle = '#0009';
+            ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2, 5);
+            ctx.fillStyle = '#6ec8ff';
+            ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2 * prog, 5);
+            ctx.fillStyle = '#efd28a';
+            ctx.font = '10px Georgia,serif';
+            ctx.textAlign = 'center';
+            ctx.fillText((job.type || '') + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''), e.x, e.y + bh / 2 + 18);
+          }
         }
       } else if (e.kind === 'unit') {
+        if (!isFinite(e.x) || !isFinite(e.y)) return;
         drawRtsUnitShape(ctx, e, col);
         if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
           ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, (e.r || 8) + 6, 0, Math.PI * 2); ctx.stroke();
@@ -1681,6 +1744,7 @@
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(b.x2, b.y2, 3, 0, Math.PI * 2); ctx.fill();
     });
+    drawRtsFog(ctx, st);
   }
 
   function drawNameTag(ctx, label, x, y, col) {

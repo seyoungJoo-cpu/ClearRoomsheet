@@ -55,6 +55,13 @@ function broadcastRoom(room) {
 
 function broadcastState(room) {
   if (!room.state) return;
+  if (room.game === "rts") {
+    for (const p of room.players) {
+      if (!p.ws) continue;
+      send(p.ws, { type: "state", status: room.status, state: publicRtsState(room, p) });
+    }
+    return;
+  }
   const msg = { type: "state", status: room.status, state: publicState(room) };
   for (const p of room.players) send(p.ws, msg);
 }
@@ -62,8 +69,125 @@ function broadcastState(room) {
 function publicState(room) {
   const s = room.state;
   if (!s) return null;
-  // Strip internal-only fields if any; state objects are already public-friendly.
   return s;
+}
+
+function rtsVisionRadius(e) {
+  if (!e) return 0;
+  if (e.type === "nexus") return 340;
+  if (e.type === "barracks") return 200;
+  if (e.type === "turret") return 220;
+  if (e.type === "worker") return 210;
+  if (e.type === "ranged") return 240;
+  return 200;
+}
+
+function rtsFogIndex(s, x, y) {
+  const c = Math.floor(x / s.fogTile);
+  const r = Math.floor(y / s.fogTile);
+  if (c < 0 || r < 0 || c >= s.fogCols || r >= s.fogRows) return -1;
+  return r * s.fogCols + c;
+}
+
+function rtsRevealFog(s, owner, x, y, radius) {
+  if (!s.explored || !s.explored[owner]) return;
+  const mask = s.explored[owner];
+  const tile = s.fogTile || 48;
+  const c0 = Math.floor(x / tile);
+  const r0 = Math.floor(y / tile);
+  const rad = Math.ceil(radius / tile);
+  for (let dy = -rad; dy <= rad; dy++) {
+    for (let dx = -rad; dx <= rad; dx++) {
+      if (dx * dx + dy * dy > rad * rad + 1) continue;
+      const c = c0 + dx,
+        r = r0 + dy;
+      if (c < 0 || r < 0 || c >= s.fogCols || r >= s.fogRows) continue;
+      mask[r * s.fogCols + c] = 1;
+    }
+  }
+}
+
+function rtsIsExplored(s, owner, x, y) {
+  if (!s.explored || !s.explored[owner]) return true;
+  const idx = rtsFogIndex(s, x, y);
+  if (idx < 0) return false;
+  return !!s.explored[owner][idx];
+}
+
+function rtsInVision(s, owner, x, y) {
+  for (const e of s.entities) {
+    if ((e.owner !== owner && e.owner != owner) || e.hp <= 0) continue;
+    if (Math.hypot((e.x || 0) - x, (e.y || 0) - y) <= rtsVisionRadius(e)) return true;
+  }
+  return false;
+}
+
+function rtsUpdateFog(room) {
+  const s = room.state;
+  if (!s || !s.explored) return;
+  for (const p of room.players) {
+    const owner = p.slot != null ? p.slot : 0;
+    if (!s.explored[owner]) {
+      s.explored[owner] = new Array(s.fogCols * s.fogRows).fill(0);
+    }
+    for (const e of s.entities) {
+      if ((e.owner !== owner && e.owner != owner) || e.hp <= 0) continue;
+      rtsRevealFog(s, owner, e.x, e.y, rtsVisionRadius(e));
+    }
+  }
+}
+
+function publicRtsState(room, viewer) {
+  const s = room.state;
+  if (!s) return null;
+  const owner = viewer && viewer.slot != null ? viewer.slot : 0;
+  const fog = s.explored && s.explored[owner] ? s.explored[owner] : null;
+  const ents = [];
+  for (const e of s.entities || []) {
+    if (!e || !(e.hp > 0)) continue;
+    const mine = e.owner === owner || e.owner == owner;
+    if (mine || rtsInVision(s, owner, e.x, e.y)) {
+      ents.push(e);
+    } else if (e.kind === "building" && rtsIsExplored(s, owner, e.x, e.y)) {
+      // Explored enemy buildings stay as last-known silhouette
+      ents.push({
+        id: e.id,
+        kind: "building",
+        type: e.type,
+        owner: e.owner,
+        team: e.team,
+        x: e.x,
+        y: e.y,
+        w: e.w,
+        h: e.h,
+        hp: e.hp,
+        maxHp: e.maxHp,
+        label: e.label,
+        fogGhost: true,
+      });
+    }
+  }
+  const minerals = (s.minerals || []).filter((m) => rtsIsExplored(s, owner, m.x, m.y) || rtsInVision(s, owner, m.x, m.y));
+  const beams = (s.beams || []).filter((b) => {
+    if (b.owner === owner || b.owner == owner) return true;
+    return rtsInVision(s, owner, b.x2, b.y2);
+  });
+  return {
+    W: s.W,
+    H: s.H,
+    mode: s.mode,
+    gold: s.gold,
+    entities: ents,
+    minerals: minerals,
+    obstacles: s.obstacles,
+    beams: beams,
+    tickNo: s.tickNo,
+    fogTile: s.fogTile,
+    fogCols: s.fogCols,
+    fogRows: s.fogRows,
+    fog: fog,
+    viewOwner: owner,
+  };
 }
 
 function error(ws, message) {
@@ -616,12 +740,12 @@ function checkTankRoundEnd(room) {
 
 /* ===================== RTS ===================== */
 const RTS_UNITS = {
-  worker: { cost: 50, hp: 40, dps: 4, range: 18, speed: 70, range: 28, train: 3.5 },
-  melee: { cost: 80, hp: 90, dps: 14, range: 20, speed: 85, range: 28, train: 5 },
-  ranged: { cost: 100, hp: 55, dps: 12, range: 22, speed: 75, range: 120, train: 5.5 },
-  bomber: { cost: 140, hp: 45, dps: 40, range: 18, speed: 95, range: 35, train: 7 },
-  tanker: { cost: 160, hp: 200, dps: 10, range: 28, speed: 50, range: 32, train: 8 },
-  duck: { cost: 30, hp: 18, dps: 8, range: 12, speed: 110, range: 24, train: 2.5 },
+  worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5 },
+  melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5 },
+  ranged: { cost: 100, hp: 55, dps: 12, r: 14, speed: 75, range: 120, train: 5.5 },
+  bomber: { cost: 140, hp: 45, dps: 40, r: 14, speed: 95, range: 35, train: 7 },
+  tanker: { cost: 160, hp: 200, dps: 10, r: 22, speed: 50, range: 32, train: 8 },
+  duck: { cost: 30, hp: 18, dps: 8, r: 12, speed: 110, range: 24, train: 2.5 },
 };
 const RTS_BUILD = {
   nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 10 },
@@ -674,23 +798,37 @@ function rtsCircleHitsObstacles(s, x, y, r) {
 }
 
 function rtsClampPos(s, x, y, r) {
-  let nx = Math.max(r + 4, Math.min(s.W - r - 4, x));
-  let ny = Math.max(r + 4, Math.min(s.H - r - 4, y));
+  r = r == null || isNaN(r) ? 8 : r;
+  x = Number(x);
+  y = Number(y);
+  if (!isFinite(x) || !isFinite(y)) {
+    return { x: (s.W || 800) / 2, y: (s.H || 600) / 2 };
+  }
+  const W = s.W || 800,
+    H = s.H || 600;
+  let nx = Math.max(r + 4, Math.min(W - r - 4, x));
+  let ny = Math.max(r + 4, Math.min(H - r - 4, y));
   if (!rtsCircleHitsObstacles(s, nx, ny, r)) return { x: nx, y: ny };
-  // slide attempts
   for (const [ax, ay] of [
     [nx, y],
     [x, ny],
     [x, y],
+    [nx + 40, ny],
+    [nx - 40, ny],
+    [nx, ny + 40],
+    [nx, ny - 40],
   ]) {
-    const cx = Math.max(r + 4, Math.min(s.W - r - 4, ax));
-    const cy = Math.max(r + 4, Math.min(s.H - r - 4, ay));
+    const cx = Math.max(r + 4, Math.min(W - r - 4, ax));
+    const cy = Math.max(r + 4, Math.min(H - r - 4, ay));
     if (!rtsCircleHitsObstacles(s, cx, cy, r)) return { x: cx, y: cy };
   }
-  return { x: eSafe(x, s.W, r), y: eSafe(y, s.H, r) };
+  return { x: eSafe(x, W, r), y: eSafe(y, H, r) };
 }
 
 function eSafe(v, max, r) {
+  r = r == null || isNaN(r) ? 8 : r;
+  v = Number(v);
+  if (!isFinite(v)) return max / 2;
   return Math.max(r + 4, Math.min(max - r - 4, v));
 }
 
@@ -814,6 +952,7 @@ function ensureRtsBases(room) {
       const side = rtsMkSide(uidRef, owner, base, mode, W, H);
       side.nexus.queue = [];
       side.nexus.trainT = 0;
+      side.nexus.label = (room.players[i] && room.players[i].name) || ("P" + (i + 1));
       s.entities.push(side.nexus);
       for (let w = 0; w < side.workers.length; w++) s.entities.push(side.workers[w]);
       // Minerals only if this owner has none nearby
@@ -839,6 +978,9 @@ function ensureRtsBases(room) {
     nexus.maxHp = RTS_BUILD.nexus.maxHp || RTS_BUILD.nexus.hp;
     if (!(nexus.hp > 0)) nexus.hp = nexus.maxHp;
     if (nexus.atkCd == null) nexus.atkCd = 0;
+    nexus.label = (room.players[i] && room.players[i].name) || ("P" + (i + 1));
+    if (!Array.isArray(nexus.queue)) nexus.queue = [];
+    if (nexus.trainT == null) nexus.trainT = 0;
 
     let workers = s.entities.filter(function (e) {
       return e && e.kind === "unit" && e.type === "worker" && e.owner === owner && e.hp > 0;
@@ -869,6 +1011,13 @@ function ensureRtsBases(room) {
     }
   }
   s.nextId = Math.max(s.nextId, uidRef.v);
+  if (!s.fogTile) s.fogTile = 48;
+  if (!s.fogCols) s.fogCols = Math.ceil(W / s.fogTile);
+  if (!s.fogRows) s.fogRows = Math.ceil(H / s.fogTile);
+  if (!Array.isArray(s.explored)) s.explored = [];
+  while (s.explored.length < room.players.length) {
+    s.explored.push(new Array(s.fogCols * s.fogRows).fill(0));
+  }
   return repaired;
 }
 
@@ -890,6 +1039,7 @@ function initRts(room) {
     const side = rtsMkSide(uidRef, i, layout[i % layout.length], mode, W, H);
     side.nexus.queue = [];
     side.nexus.trainT = 0;
+    side.nexus.label = (room.players[i] && room.players[i].name) || ("P" + (i + 1));
     entities.push(side.nexus);
     for (let w = 0; w < side.workers.length; w++) entities.push(side.workers[w]);
     for (let m = 0; m < side.minerals.length; m++) minerals.push(side.minerals[m]);
@@ -932,6 +1082,13 @@ function initRts(room) {
     { kind: "water", x: 900, y: 220, w: 140, h: 80 },
     { kind: "water", x: 860, y: 980, w: 180, h: 90 },
   ];
+  const fogTile = 48;
+  const fogCols = Math.ceil(W / fogTile);
+  const fogRows = Math.ceil(H / fogTile);
+  const explored = [];
+  for (let i = 0; i < room.players.length; i++) {
+    explored.push(new Array(fogCols * fogRows).fill(0));
+  }
   const state = {
     W: W,
     H: H,
@@ -944,9 +1101,14 @@ function initRts(room) {
     beams: [],
     spawnQ: [],
     tickNo: 0,
+    fogTile: fogTile,
+    fogCols: fogCols,
+    fogRows: fogRows,
+    explored: explored,
   };
   room.state = state;
   ensureRtsBases(room);
+  rtsUpdateFog(room);
   return room.state;
 }
 
@@ -981,6 +1143,8 @@ function rtsBuildAllowed(s, owner, bt, x, y) {
   if (!def) return false;
   const r = Math.max(def.w || 40, def.h || 40) / 2;
   if (rtsCircleHitsObstacles(s, x, y, r * 0.7)) return false;
+  // StarCraft-like: only build on explored (scouted) ground
+  if (!rtsIsExplored(s, owner, x, y)) return false;
   const ownNexus = s.entities.filter((e) => e.type === "nexus" && e.owner === owner && e.hp > 0);
   if (bt === "nexus") {
     const nearWorker = s.entities.some(
@@ -1020,12 +1184,39 @@ function rtsEnqueueTrain(s, owner, ut) {
 
 function rtsSpawnUnit(s, from, ut, mode) {
   const udef = RTS_UNITS[ut];
-  if (!udef || !from) return;
+  if (!udef || !from) return null;
   const owner = from.owner;
   const prefer = rtsNearestOwn(s, owner, "nexus", from.x, from.y) || from;
-  const outX = prefer.x < s.W / 2 ? 52 : -52;
-  const spawn = rtsClampPos(s, from.x + outX, from.y + (Math.random() - 0.5) * 56, udef.r);
-  s.entities.push({
+  const dir = (prefer.x || 0) < (s.W || 0) / 2 ? 1 : -1;
+  const rad = udef.r || 12;
+  const tries = [
+    [56 * dir, 0],
+    [56 * dir, 36],
+    [56 * dir, -36],
+    [72 * dir, 18],
+    [40 * dir, -48],
+    [0, 56],
+    [0, -56],
+    [-56 * dir, 0],
+  ];
+  let spawn = null;
+  for (let i = 0; i < tries.length; i++) {
+    const sx = (from.x || prefer.x || 100) + tries[i][0];
+    const sy = (from.y || prefer.y || 100) + tries[i][1];
+    const p = rtsClampPos(s, sx, sy, rad);
+    if (isFinite(p.x) && isFinite(p.y)) {
+      spawn = p;
+      if (!rtsCircleHitsObstacles(s, p.x, p.y, rad)) break;
+    }
+  }
+  if (!spawn || !isFinite(spawn.x) || !isFinite(spawn.y)) {
+    spawn = {
+      x: Math.max(30, Math.min((s.W || 800) - 30, (from.x || 100) + 50 * dir)),
+      y: Math.max(30, Math.min((s.H || 600) - 30, from.y || 100)),
+    };
+  }
+  if (!s.nextId) s.nextId = 1;
+  const unit = {
     id: s.nextId++,
     kind: "unit",
     type: ut,
@@ -1035,14 +1226,16 @@ function rtsSpawnUnit(s, from, ut, mode) {
     y: spawn.y,
     hp: udef.hp,
     maxHp: udef.hp,
-    r: udef.r,
+    r: rad,
     tx: null,
     ty: null,
     targetId: null,
     order: null,
     carry: 0,
     atkCd: 0,
-  });
+  };
+  s.entities.push(unit);
+  return unit;
 }
 
 function rtsProcessQueues(s, mode, dt) {
@@ -1117,7 +1310,7 @@ function tickRts(room, dt) {
         const y = Math.max(40, Math.min(s.H - 40, Number(inp.y) || 0));
         if (rtsBuildAllowed(s, owner, bt, x, y)) {
           s.gold[owner] -= def.cost;
-          s.entities.push({
+          const bld = {
             id: s.nextId++,
             kind: "building",
             type: bt,
@@ -1132,7 +1325,12 @@ function tickRts(room, dt) {
             atkCd: 0,
             queue: [],
             trainT: 0,
-          });
+          };
+          if (bt === "nexus") {
+            const pl = room.players.find((pp) => pp.slot === owner);
+            bld.label = (pl && pl.name) || ("P" + (owner + 1));
+          }
+          s.entities.push(bld);
         }
       }
     }
@@ -1140,6 +1338,7 @@ function tickRts(room, dt) {
   }
 
   rtsProcessQueues(s, mode, dt);
+  rtsUpdateFog(room);
 
   // workers auto-harvest (idle only)
   for (const e of s.entities) {
