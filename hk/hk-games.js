@@ -422,7 +422,7 @@
     var c = controller(), board = [], selected = -1, score = 0, busy = false, alive = true;
     var colors = ['#ef5350', '#ffca45', '#4bc6a6', '#55a9e8', '#d86bd7', '#f08b43'];
     var left = 20, lastTickAt = Date.now(), colorCount = 5, elapsed = 0;
-    var TIME_PER_CANDY = 0.85;
+    var TIME_PER_CANDY = 0.5;
     refs.stage.innerHTML = '<div class="hkg-candy"></div>';
     var grid = refs.stage.firstChild;
     setHud([['점수', '0', 'score'], ['남은 시간', '0:20', 'time'], ['콤보', 'x1', 'combo']]);
