@@ -13,7 +13,7 @@
     tetris: { icon: '🟪', name: '타워 테트리스', desc: '클래식 10×20 · 급격한 난이도 상승' },
     pong: { icon: '🏓', name: '로비 핑퐁', desc: '빠른 공·짧은 패들로 고난도 랠리' },
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
-    mines: { icon: '💣', name: '스위트 마인', desc: '지뢰를 피해 안전한 칸을 열기' },
+    mines: { icon: '🛎️', name: '딜리버리하는 벨맨', desc: '점프·와이어로 배달하는 고군분투 러닝' },
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
     dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/팀전 · 초대형 맵' },
@@ -1426,65 +1426,273 @@
   };
 
   games.mines = function () {
-    var c = controller(), SIZE = 8, MINES = 12, cells, opened = 0, flags = 0, alive = true, score = 0, started = Date.now(), seeded = false;
-    refs.stage.innerHTML = '<div class="hkg-mines"></div>';
-    var grid = refs.stage.firstChild;
-    setHud([['남은 지뢰', String(MINES), 'left'], ['점수', '0', 'score'], ['시간', '0초', 'time']]);
-    function neighbors(i) {
-      var x = i % SIZE, y = Math.floor(i / SIZE), out = [];
-      for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
-        if (!dx && !dy) continue; var nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) out.push(ny * SIZE + nx);
+    // 딜리버리하는 벨맨 — 고군분투(횡스크롤 점프·와이어) inspired runner
+    var W = 720, H = 420, FLOOR = 352;
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var player, camX = 0, platforms = [], hooks = [], coins = [], bags = [], nextX = 0;
+    var score = 0, tips = 0, running = true, started = false, last = 0, hold = false, deadMsg = '';
+    setHud([['점수', '0', 'score'], ['팁', '0', 'tips'], ['거리', '0m', 'dist'], ['최고', formatScore(best('mines', name())), 'best']]);
+
+    function makePlayer() {
+      return {
+        x: 140, y: FLOOR - 44, w: 34, h: 44, vx: 0, vy: 0,
+        onGround: true, canWire: true, wired: false, hook: null, anim: 0
+      };
+    }
+    function addSegment(fromX) {
+      var x = fromX;
+      while (x < fromX + 900) {
+        var kind = Math.random();
+        if (kind < 0.55) {
+          var len = 160 + Math.random() * 220;
+          platforms.push({ x: x, y: FLOOR, w: len, h: 40 });
+          if (Math.random() < 0.55) {
+            hooks.push({ x: x + len * (0.35 + Math.random() * 0.3), y: 70 + Math.random() * 50 });
+          }
+          if (Math.random() < 0.7) {
+            for (var i = 0; i < 2 + (Math.random() * 3) | 0; i++) {
+              coins.push({ x: x + 40 + i * 46 + Math.random() * 10, y: FLOOR - 70 - Math.random() * 40, r: 9, taken: false });
+            }
+          }
+          if (Math.random() < 0.35) {
+            bags.push({ x: x + 50 + Math.random() * (len - 80), y: FLOOR - 28, w: 28, h: 28 });
+          }
+          x += len;
+        } else if (kind < 0.78) {
+          // short roof ledge
+          var ly = FLOOR - 90 - Math.random() * 70;
+          var lw = 90 + Math.random() * 100;
+          platforms.push({ x: x + 20, y: ly, w: lw, h: 18 });
+          hooks.push({ x: x + 40 + lw * 0.4, y: Math.max(40, ly - 70) });
+          coins.push({ x: x + 40 + lw * 0.5, y: ly - 28, r: 9, taken: false });
+          x += 130 + Math.random() * 80;
+        } else {
+          // gap
+          x += 90 + Math.random() * 110 + Math.min(80, score / 40);
+        }
       }
-      return out;
+      nextX = x;
     }
-    function seed(safe) {
-      cells = Array.from({ length: SIZE * SIZE }, function () { return { mine: false, open: false, flag: false, n: 0 }; });
-      var placed = 0;
-      while (placed < MINES) {
-        var i = Math.floor(Math.random() * cells.length);
-        if (cells[i].mine || i === safe || neighbors(safe).indexOf(i) >= 0) continue;
-        cells[i].mine = true; placed++;
+    function reset() {
+      player = makePlayer();
+      camX = 0; platforms = []; hooks = []; coins = []; bags = [];
+      nextX = 0; score = 0; tips = 0; started = false; running = true; deadMsg = '';
+      platforms.push({ x: -40, y: FLOOR, w: 420, h: 40 });
+      addSegment(380);
+      hud('score', '0'); hud('tips', '0'); hud('dist', '0m');
+    }
+    function solidAt(px, py, pw, ph) {
+      for (var i = 0; i < platforms.length; i++) {
+        var p = platforms[i];
+        if (px + pw > p.x && px < p.x + p.w && py + ph > p.y && py < p.y + p.h) return p;
       }
-      cells.forEach(function (cell, i) { if (!cell.mine) cell.n = neighbors(i).filter(function (j) { return cells[j].mine; }).length; });
-      seeded = true; started = Date.now();
+      return null;
     }
-    function calc() { return Math.max(50, 1100 - Math.floor((Date.now() - started) / 1000) * 5 - flags * 5); }
-    function draw() {
-      grid.innerHTML = cells.map(function (cell, i) {
-        var cls = 'hkg-mine' + (cell.open ? ' open' : '') + (cell.flag ? ' flag' : '') + (cell.open && cell.mine ? ' boom' : '');
-        var label = cell.open ? (cell.mine ? '💣' : (cell.n || '')) : (cell.flag ? '🚩' : '');
-        return '<button class="' + cls + '" data-i="' + i + '">' + label + '</button>';
-      }).join('');
-      hud('left', Math.max(0, MINES - flags)); hud('score', formatScore(seeded ? calc() : 1100)); hud('time', Math.floor((Date.now() - started) / 1000) + '초');
+    function nearestHook(maxD) {
+      var best = null, bd = maxD || 170;
+      for (var i = 0; i < hooks.length; i++) {
+        var h = hooks[i];
+        if (h.x < player.x - 20 || h.x > player.x + 210) continue;
+        var d = Math.hypot(h.x - (player.x + player.w / 2), h.y - player.y);
+        if (d < bd) { bd = d; best = h; }
+      }
+      return best;
     }
-    function reveal(i) {
-      var cell = cells[i]; if (cell.open || cell.flag) return;
-      cell.open = true; opened++;
-      if (!cell.mine && !cell.n) neighbors(i).forEach(reveal);
-    }
-    function click(e) {
-      var node = e.target.closest('[data-i]'); if (!node || !alive) return;
-      var i = Number(node.dataset.i);
-      if (!seeded) seed(i);
-      if (e.shiftKey || e.type === 'contextmenu') {
-        if (!cells[i].open) { cells[i].flag = !cells[i].flag; flags += cells[i].flag ? 1 : -1; draw(); }
+    function tryJumpOrWire() {
+      if (!running) return;
+      if (!started) { started = true; }
+      if (player.onGround) {
+        player.vy = -560;
+        player.onGround = false;
+        player.canWire = true;
+        fx.spark(player.x + player.w / 2, player.y + player.h, '#efd28a');
         return;
       }
-      if (cells[i].flag) return;
-      if (cells[i].mine) {
-        alive = false; cells.forEach(function (x) { if (x.mine) x.open = true; }); draw(); shakeStage();
-        gameOver('지뢰 발견!', '안전 칸 ' + opened + '개', function () { startGame('mines'); }, Math.max(10, opened * 8)); return;
-      }
-      reveal(i); score = calc(); draw();
-      if (opened === SIZE * SIZE - MINES) { alive = false; score = calc() + 220; hud('score', formatScore(score)); gameOver('클리어!', formatScore(score) + '점', function () { startGame('mines'); }, score); }
+      if (player.wired) return;
+      if (!player.canWire) return;
+      var hook = nearestHook(185);
+      if (!hook) return;
+      player.wired = true;
+      player.hook = hook;
+      player.canWire = false;
+      fx.spark(hook.x, hook.y, '#6ec8ff');
     }
-    cells = Array.from({ length: SIZE * SIZE }, function () { return { mine: false, open: false, flag: false, n: 0 }; });
-    draw();
-    c.on(grid, 'click', click); c.on(grid, 'contextmenu', function (e) { e.preventDefault(); click(e); });
-    var tick = setInterval(function () { if (alive && !gamePaused) hud('time', Math.floor((Date.now() - started) / 1000) + '초'); }, 500);
-    var od = c.destroy; c.destroy = function () { clearInterval(tick); od(); };
-    actions(function () { startGame('mines'); }, function () { return score || (seeded ? calc() : 0); }, '좌클릭 열기 · 우클릭/Shift+클릭 깃발');
+    function releaseWire() {
+      if (!player.wired) return;
+      player.wired = false;
+      player.hook = null;
+      player.vy = Math.min(player.vy, -120);
+    }
+    function die(reason) {
+      if (!running) return;
+      running = false;
+      deadMsg = reason || '배달 실패';
+      shakeStage();
+      fx.burst(player.x + player.w / 2, player.y + player.h / 2, '#ff8a7a', 18, 220);
+      var finalScore = Math.max(0, Math.round(score));
+      gameOver(deadMsg, '거리 ' + Math.floor(camX / 18) + 'm · 팁 ' + tips + ' · ' + formatScore(finalScore) + '점', function () { startGame('mines'); }, finalScore);
+    }
+    function draw() {
+      var g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#183a42'); g.addColorStop(0.55, '#0d242c'); g.addColorStop(1, '#07151a');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // parallax windows
+      ctx.fillStyle = '#ffffff08';
+      for (var i = 0; i < 8; i++) {
+        var wx = ((i * 140 - camX * 0.35) % (W + 140) + W + 140) % (W + 140) - 40;
+        ctx.fillRect(wx, 40 + (i % 3) * 28, 54, 36);
+      }
+      ctx.save();
+      ctx.translate(-camX, 0);
+      platforms.forEach(function (p) {
+        ctx.fillStyle = p.h > 20 ? '#2a4a46' : '#3d5f58';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#d6bc7544';
+        ctx.fillRect(p.x, p.y, p.w, 4);
+      });
+      hooks.forEach(function (h) {
+        ctx.strokeStyle = '#88a09a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(h.x, 0); ctx.lineTo(h.x, h.y); ctx.stroke();
+        ctx.fillStyle = '#6ec8ff';
+        ctx.beginPath(); ctx.arc(h.x, h.y, 6, 0, Math.PI * 2); ctx.fill();
+      });
+      coins.forEach(function (c0) {
+        if (c0.taken) return;
+        ctx.fillStyle = '#efd28a';
+        ctx.beginPath(); ctx.arc(c0.x, c0.y, c0.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff6';
+        ctx.beginPath(); ctx.arc(c0.x - 2, c0.y - 2, 3, 0, Math.PI * 2); ctx.fill();
+      });
+      bags.forEach(function (b) {
+        ctx.fillStyle = '#8b5a3c';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillStyle = '#cbb270';
+        ctx.fillRect(b.x + 4, b.y + 6, b.w - 8, 4);
+      });
+      if (player.wired && player.hook) {
+        ctx.strokeStyle = '#9ae6b4cc'; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(player.x + player.w / 2, player.y + 8);
+        ctx.lineTo(player.hook.x, player.hook.y);
+        ctx.stroke();
+      }
+      // luggage in hand
+      drawHeroShape(ctx, player.x, player.y, player.w, player.h, { radius: 10, font: 11 });
+      ctx.fillStyle = '#c9a227';
+      ctx.fillRect(player.x + player.w - 4, player.y + 16, 14, 16);
+      ctx.restore();
+
+      // ground fog / death line hint
+      ctx.fillStyle = '#ff8a7a22';
+      ctx.fillRect(0, H - 18, W, 18);
+      if (!started) {
+        ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 18px Georgia,serif'; ctx.textAlign = 'center';
+        ctx.fillText('탭 / Space · 점프  ·  공중에서 다시 눌러 와이어', W / 2, 56);
+        ctx.font = '13px Georgia,serif'; ctx.fillStyle = '#b1c1bd';
+        ctx.fillText('누르고 있으면 와이어를 당깁니다 · 놓으면 해제', W / 2, 80);
+      }
+      fx.draw(ctx);
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = Math.min(0.033, (t - last) / 1000 || 0); last = t;
+      fx.update(dt);
+      player.anim += dt;
+      if (started && !gamePaused) {
+        var speed = 210 + Math.min(220, camX / 40);
+        camX += speed * dt;
+        // prune
+        platforms = platforms.filter(function (p) { return p.x + p.w > camX - 80; });
+        hooks = hooks.filter(function (h) { return h.x > camX - 80; });
+        coins = coins.filter(function (c0) { return !c0.taken && c0.x > camX - 80; });
+        bags = bags.filter(function (b) { return b.x + b.w > camX - 80; });
+        if (nextX < camX + W + 500) addSegment(nextX);
+
+        player.x = camX + 130;
+        if (player.wired && player.hook && hold) {
+          var hx = player.hook.x, hy = player.hook.y;
+          var cx = player.x + player.w / 2, cy = player.y + 10;
+          var ang = Math.atan2(hy - cy, hx - cx);
+          player.vx = Math.cos(ang) * 260;
+          player.vy = Math.sin(ang) * 260 - 40;
+          player.y += player.vy * dt;
+          // world moves with cam; vertical only for player relative
+          if (Math.hypot(hx - cx, hy - cy) < 28) {
+            player.y = hy + 18;
+            player.vy = 0;
+          }
+        } else {
+          if (player.wired && !hold) releaseWire();
+          player.vy += 1650 * dt;
+          player.y += player.vy * dt;
+        }
+
+        // platform land
+        player.onGround = false;
+        if (player.vy >= 0 && !player.wired) {
+          var foot = player.y + player.h;
+          for (var i = 0; i < platforms.length; i++) {
+            var p = platforms[i];
+            if (player.x + player.w > p.x + 4 && player.x < p.x + p.w - 4) {
+              if (foot >= p.y && foot <= p.y + Math.max(16, player.vy * dt + 10) && player.y < p.y) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.onGround = true;
+                player.canWire = true;
+              }
+            }
+          }
+        }
+
+        // coins
+        coins.forEach(function (c0) {
+          if (c0.taken) return;
+          if (Math.hypot(c0.x - (player.x + player.w / 2), c0.y - (player.y + player.h / 2)) < 22) {
+            c0.taken = true;
+            tips += 1;
+            score += 15;
+            fx.spark(c0.x, c0.y, '#efd28a');
+          }
+        });
+        // bags
+        bags.forEach(function (b) {
+          if (player.x + player.w > b.x + 4 && player.x < b.x + b.w - 4 && player.y + player.h > b.y + 4 && player.y < b.y + b.h) {
+            die('캐리어에 걸려 넘어졌어요');
+          }
+        });
+
+        score += dt * (8 + speed / 80);
+        hud('score', formatScore(Math.floor(score)));
+        hud('tips', tips);
+        hud('dist', Math.floor(camX / 18) + 'm');
+
+        if (player.y > H + 40) die('낭떠러지로 낙하!');
+      }
+      draw();
+      c.raf(loop);
+    }
+    function down(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      hold = true;
+      tryJumpOrWire();
+    }
+    function up() {
+      hold = false;
+      if (player && player.wired) releaseWire();
+    }
+    function key(e) {
+      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        if (e.type === 'keydown' && !e.repeat) { hold = true; tryJumpOrWire(); }
+        if (e.type === 'keyup') up();
+      }
+    }
+    c.on(document, 'keydown', key);
+    c.on(document, 'keyup', key);
+    c.on(cv.canvas, 'pointerdown', down);
+    c.on(window, 'pointerup', up);
+    reset(); draw(); c.raf(loop);
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, '자동으로 달립니다 · 탭/Space 점프 · 공중에서 다시 누르면 와이어 · 누르고 있으면 당김 · 팁(동전)을 모으세요');
     return { id: 'mines', destroy: c.destroy };
   };
 
