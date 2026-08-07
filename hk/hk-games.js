@@ -7,11 +7,11 @@
     candy: { icon: '🍬', name: '캔디 스위트', desc: '1분 안에 보석을 맞추는 타임어택' },
     merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
     snake: { icon: '🐍', name: '미드나잇 스네이크', desc: '벽을 피해 야식을 모아보세요' },
-    memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 8쌍을 빠르게 찾기' },
-    breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '키보드로 패들을 움직여 벽돌 격파' },
+    memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
+    breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '5단계 벽돌 격파 · 아이템 수집' },
     jump: { icon: '🪽', name: '스카이 점프', desc: '발판을 밟고 끝없이 높이 오르기' },
     tetris: { icon: '🟪', name: '타워 테트리스', desc: '블록을 쌓아 라인을 지우는 클래식' },
-    pong: { icon: '🏓', name: '로비 핑퐁', desc: '패들로 공을 받아내며 랠리 이어가기' },
+    pong: { icon: '🏓', name: '로비 핑퐁', desc: '빠른 공·짧은 패들로 고난도 랠리' },
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
     mines: { icon: '💣', name: '스위트 마인', desc: '지뢰를 피해 안전한 칸을 열기' },
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
@@ -119,7 +119,7 @@
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
       '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .22s,box-shadow .2s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.8)}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
-      '.hkg-memory{width:min(100%,560px);display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
+      '.hkg-memory{width:min(100%,640px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
       '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:min(100%,620px);height:auto;max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
@@ -651,11 +651,11 @@
   };
 
   games.memory = function () {
-    var c = controller(), icons = ['🛏️', '🔑', '🛎️', '⭐', '☕', '🧖', '🍷', '🧳'], cards, first = -1, locked = false, moves = 0, matched = 0, started = Date.now(), seconds = 0, timer;
+    var c = controller(), icons = ['🛏️', '🔑', '🛎️', '⭐', '☕', '🧖', '🍷', '🧳', '🧹', '📜', '🫧', '🧸'], cards, first = -1, locked = false, moves = 0, matched = 0, started = Date.now(), seconds = 0, timer;
     refs.stage.innerHTML = '<div class="hkg-memory"></div>';
     var grid = refs.stage.firstChild;
-    setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', '1,000', 'score']]);
-    function calc() { return Math.max(80, 1000 - moves * 12 - seconds * 3); }
+    setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', '1,400', 'score']]);
+    function calc() { return Math.max(100, 1400 - moves * 10 - seconds * 2); }
     function draw() {
       grid.innerHTML = cards.map(function (x, i) {
         var show = x.open || x.done;
@@ -671,9 +671,9 @@
       if (cards[first].icon === cards[i].icon) {
         cards[first].done = cards[i].done = true; matched += 2; first = -1; draw();
         floatScore(grid.offsetWidth / 2, 40, 'MATCH!', refs.stage);
-        if (matched === 16) { clearInterval(timer); var score = calc(); hud('score', formatScore(score)); gameOver('모든 짝을 찾았어요!', moves + '번 이동 · ' + seconds + '초 · ' + score + '점', function () { startGame('memory'); }, score); }
+        if (matched === 24) { clearInterval(timer); var score = calc(); hud('score', formatScore(score)); gameOver('모든 짝을 찾았어요!', moves + '번 이동 · ' + seconds + '초 · ' + score + '점', function () { startGame('memory'); }, score); }
       } else {
-        locked = true; c.timer(function () { cards[first].open = cards[i].open = false; first = -1; locked = false; draw(); }, 520);
+        locked = true; c.timer(function () { cards[first].open = cards[i].open = false; first = -1; locked = false; draw(); }, 480);
       }
       hud('score', formatScore(calc()));
     }
@@ -684,60 +684,216 @@
     c.on(grid, 'selectstart', function (e) { e.preventDefault(); });
     timer = setInterval(function () { if (gamePaused) return; seconds = Math.floor((Date.now() - started) / 1000); hud('time', seconds + '초'); hud('score', formatScore(calc())); }, 500);
     var originalDestroy = c.destroy; c.destroy = function () { clearInterval(timer); originalDestroy(); };
-    actions(function () { startGame('memory'); }, calc, '카드 두 장을 차례로 눌러 같은 호텔 아이콘을 찾으세요.');
+    actions(function () { startGame('memory'); }, calc, '24장(12쌍) 카드를 맞춰 보세요. 이동·시간이 적을수록 고득점입니다.');
     return { id: 'memory', destroy: c.destroy };
   };
 
   games.breakout = function () {
-    var c = controller(), cv = canvasBase(720, 520), ctx = cv.ctx, paddle, ball, bricks, score = 0, lives = 3, running = true, last = 0, keys = {}, fx = makeFx(), speedMul = 1;
-    setHud([['점수', '0', 'score'], ['공', '3', 'lives'], ['벽돌', '50', 'bricks']]);
-    function resetBall() {
-      var base = 250 * speedMul;
-      ball = { x: paddle.x + paddle.w / 2, y: 420, vx: (Math.random() > .5 ? 1 : -1) * base * 0.9, vy: -base, r: 8 };
+    var c = controller(), cv = canvasBase(720, 520), ctx = cv.ctx;
+    var paddle, ball, bricks, items = [], score = 0, lives = 3, stage = 1, running = true, last = 0, keys = {}, fx = makeFx();
+    var baseSpeed = 1, paddleTimer = 0, ballTimer = 0, stuckGuard = 0;
+    var ITEM_META = {
+      wide: { label: 'WIDE', color: '#9ae6b4' },
+      narrow: { label: 'SLIM', color: '#fc8181' },
+      slow: { label: 'SLOW', color: '#90cdf4' },
+      fast: { label: 'FAST', color: '#f6ad55' },
+      life: { label: '1UP', color: '#efd28a' }
+    };
+    setHud([['점수', '0', 'score'], ['공', '3', 'lives'], ['단계', '1/5', 'stage'], ['벽돌', '0', 'bricks']]);
+    function stageCfg(n) {
+      var rows = [4, 5, 6, 6, 7][n - 1];
+      var cols = [10, 10, 10, 11, 11][n - 1];
+      var padW = [112, 104, 96, 88, 80][n - 1];
+      var spd = [300, 340, 380, 430, 480][n - 1];
+      var drop = [0.28, 0.3, 0.32, 0.34, 0.36][n - 1];
+      return { rows: rows, cols: cols, padW: padW, spd: spd, drop: drop };
     }
-    function setup() {
-      paddle = { x: 300, y: 478, w: 118, h: 22 }; bricks = [];
-      for (var r = 0; r < 5; r++) for (var col = 0; col < 10; col++) bricks.push({ x: 12 + col * 70, y: 50 + r * 32, w: 64, h: 22, color: ['#d1b566', '#4fa98b', '#d47756', '#5f99af', '#b96d79'][r] });
+    function normalizeBallSpeed() {
+      var cfg = stageCfg(stage);
+      var target = cfg.spd * baseSpeed * (ballTimer > 0 ? (ballTimerType === 'slow' ? 0.72 : 1.22) : 1);
+      var mag = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) || 1;
+      var minV = target * 0.92, maxV = target * 1.35;
+      var next = Math.max(minV, Math.min(maxV, mag));
+      ball.vx = (ball.vx / mag) * next;
+      ball.vy = (ball.vy / mag) * next;
+      if (Math.abs(ball.vy) < target * 0.35) ball.vy = (ball.vy < 0 ? -1 : 1) * target * 0.55;
+    }
+    var ballTimerType = '';
+    function resetBall() {
+      var cfg = stageCfg(stage);
+      var v = cfg.spd * baseSpeed;
+      ball = { x: paddle.x + paddle.w / 2, y: paddle.y - 14, vx: (Math.random() > .5 ? 1 : -1) * v * 0.78, vy: -v, r: 7 };
+      normalizeBallSpeed();
+    }
+    function setupStage(keepScore) {
+      var cfg = stageCfg(stage);
+      if (!keepScore) score = 0;
+      items = [];
+      paddle = { x: (720 - cfg.padW) / 2, y: 478, w: cfg.padW, h: 18, baseW: cfg.padW };
+      bricks = [];
+      var colors = ['#d1b566', '#4fa98b', '#d47756', '#5f99af', '#b96d79', '#9b7ed8', '#e07a5f'];
+      var gapX = 6, gapY = 6;
+      var bw = (720 - 24 - (cfg.cols - 1) * gapX) / cfg.cols;
+      var bh = 20;
+      for (var r = 0; r < cfg.rows; r++) {
+        for (var col = 0; col < cfg.cols; col++) {
+          bricks.push({
+            x: 12 + col * (bw + gapX),
+            y: 42 + r * (bh + gapY),
+            w: bw,
+            h: bh,
+            color: colors[r % colors.length],
+            hp: stage >= 4 && r < 2 ? 2 : 1
+          });
+        }
+      }
+      paddleTimer = 0; ballTimer = 0; ballTimerType = ''; baseSpeed = 1 + (stage - 1) * 0.04;
       resetBall();
+      hud('stage', stage + '/5');
+      hud('bricks', bricks.length);
+      hud('lives', lives);
+      hud('score', score);
+    }
+    function spawnItem(x, y) {
+      if (Math.random() > stageCfg(stage).drop) return;
+      var kinds = ['wide', 'narrow', 'slow', 'fast', 'life'];
+      var kind = kinds[Math.floor(Math.random() * kinds.length)];
+      items.push({ x: x, y: y, kind: kind, w: 46, h: 18, vy: 120 + stage * 12 });
+    }
+    function applyItem(kind) {
+      var meta = ITEM_META[kind];
+      if (meta) floatScore(paddle.x + paddle.w / 2, paddle.y - 20, meta.label, refs.stage);
+      if (kind === 'wide') {
+        paddle.w = Math.min(168, paddle.baseW + 42);
+        paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x - 21));
+        paddleTimer = 9;
+      } else if (kind === 'narrow') {
+        paddle.w = Math.max(54, paddle.baseW - 28);
+        paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x + 14));
+        paddleTimer = 8;
+      } else if (kind === 'slow') {
+        ballTimerType = 'slow'; ballTimer = 7; normalizeBallSpeed();
+      } else if (kind === 'fast') {
+        ballTimerType = 'fast'; ballTimer = 6; normalizeBallSpeed();
+      } else if (kind === 'life') {
+        lives = Math.min(6, lives + 1); hud('lives', lives);
+      }
+    }
+    function nextStageOrClear() {
+      if (stage < 5) {
+        stage++;
+        fx.burst(360, 200, '#efd28a', 28, 260);
+        floatScore(360, 180, 'STAGE ' + stage, refs.stage);
+        setupStage(true);
+        score += 80 * (stage - 1);
+        hud('score', score);
+        return;
+      }
+      running = false;
+      fx.burst(360, 200, '#efd28a', 40, 300);
+      gameOver('5단계 클리어!', '최종 ' + formatScore(score) + '점', function () { startGame('breakout'); }, score);
     }
     function draw() {
       var g = ctx.createLinearGradient(0, 0, 0, 520); g.addColorStop(0, '#0b2529'); g.addColorStop(1, '#061318'); ctx.fillStyle = g; ctx.fillRect(0, 0, 720, 520);
       bricks.forEach(function (b) {
-        ctx.fillStyle = b.color; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 5); ctx.fill();
+        ctx.globalAlpha = b.hp > 1 ? 1 : 0.95;
+        ctx.fillStyle = b.color; ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(b.x, b.y, b.w, b.h, 5); else ctx.rect(b.x, b.y, b.w, b.h);
+        ctx.fill();
         ctx.fillStyle = '#ffffff30'; ctx.fillRect(b.x + 4, b.y + 3, b.w - 8, 3);
-        ctx.fillStyle = '#00000022'; ctx.fillRect(b.x + 4, b.y + b.h - 5, b.w - 8, 3);
+        if (b.hp > 1) {
+          ctx.strokeStyle = '#fff8'; ctx.lineWidth = 1.5;
+          ctx.strokeRect(b.x + 2, b.y + 2, b.w - 4, b.h - 4);
+        }
+        ctx.globalAlpha = 1;
       });
-      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 11 });
-      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 16;
+      items.forEach(function (it) {
+        var m = ITEM_META[it.kind] || { label: '?', color: '#fff' };
+        ctx.fillStyle = m.color; ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(it.x - it.w / 2, it.y - it.h / 2, it.w, it.h, 6); else ctx.rect(it.x - it.w / 2, it.y - it.h / 2, it.w, it.h);
+        ctx.fill();
+        ctx.fillStyle = '#122421'; ctx.font = 'bold 10px Georgia,serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(m.label, it.x, it.y + 0.5);
+      });
+      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 10 });
+      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 14;
       ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
       fx.draw(ctx);
     }
     function loop(t) {
       if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t;
       fx.update(dt);
+      if (paddleTimer > 0) {
+        paddleTimer -= dt;
+        if (paddleTimer <= 0) {
+          paddle.w = paddle.baseW;
+          paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x));
+        }
+      }
+      if (ballTimer > 0) {
+        ballTimer -= dt;
+        if (ballTimer <= 0) { ballTimerType = ''; normalizeBallSpeed(); }
+      }
       var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
-      paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x + steer * 520 * dt));
+      paddle.x = Math.max(0, Math.min(720 - paddle.w, paddle.x + steer * (540 + stage * 18) * dt));
       ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+      stuckGuard += dt;
+      if (stuckGuard > 4) { normalizeBallSpeed(); stuckGuard = 0; }
       if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); fx.spark(ball.x, ball.y, '#9ad2a9'); }
       if (ball.x > 720 - ball.r) { ball.x = 720 - ball.r; ball.vx = -Math.abs(ball.vx); fx.spark(ball.x, ball.y, '#9ad2a9'); }
       if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); fx.spark(ball.x, ball.y, '#9ad2a9'); }
       if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.y < paddle.y + paddle.h && ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
-        ball.y = paddle.y - ball.r; var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
-        ball.vx = hit * 340 * speedMul; ball.vy = -Math.abs(ball.vy) * 1.03; fx.spark(ball.x, ball.y, '#efd28a');
+        ball.y = paddle.y - ball.r;
+        var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+        var cfg = stageCfg(stage);
+        ball.vx = hit * (360 + stage * 18) * baseSpeed;
+        ball.vy = -Math.abs(Math.max(cfg.spd * 0.85, Math.abs(ball.vy))) * 1.035;
+        normalizeBallSpeed();
+        stuckGuard = 0;
+        fx.spark(ball.x, ball.y, '#efd28a');
       }
       for (var i = bricks.length - 1; i >= 0; i--) {
         var b = bricks[i];
         if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w && ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
-          bricks.splice(i, 1); ball.vy *= -1; score += 12; speedMul = Math.min(1.45, 1 + (50 - bricks.length) * 0.009);
+          var overlapL = ball.x + ball.r - b.x;
+          var overlapR = b.x + b.w - (ball.x - ball.r);
+          var overlapT = ball.y + ball.r - b.y;
+          var overlapB = b.y + b.h - (ball.y - ball.r);
+          var minX = Math.min(overlapL, overlapR);
+          var minY = Math.min(overlapT, overlapB);
+          if (minX < minY) ball.vx *= -1; else ball.vy *= -1;
+          b.hp -= 1;
+          if (b.hp <= 0) {
+            bricks.splice(i, 1);
+            score += 10 + stage * 4;
+            spawnItem(b.x + b.w / 2, b.y + b.h / 2);
+            fx.burst(b.x + b.w / 2, b.y + b.h / 2, b.color, 14, 200);
+          } else {
+            score += 4;
+            fx.spark(ball.x, ball.y, b.color);
+          }
+          baseSpeed = Math.min(1.55, baseSpeed + 0.008);
+          normalizeBallSpeed();
           hud('score', score); hud('bricks', bricks.length);
-          fx.burst(b.x + b.w / 2, b.y + b.h / 2, b.color, 14, 200);
           break;
         }
       }
-      if (!bricks.length) { running = false; fx.burst(360, 200, '#efd28a', 30, 260); gameOver('클리어!', '모든 벽돌을 격파했습니다 · ' + score + '점', function () { startGame('breakout'); }, score); return; }
+      for (var j = items.length - 1; j >= 0; j--) {
+        var it = items[j];
+        it.y += it.vy * dt;
+        if (it.y - it.h / 2 > 530) { items.splice(j, 1); continue; }
+        if (it.y + it.h / 2 >= paddle.y && it.y - it.h / 2 <= paddle.y + paddle.h &&
+            it.x + it.w / 2 >= paddle.x && it.x - it.w / 2 <= paddle.x + paddle.w) {
+          applyItem(it.kind);
+          items.splice(j, 1);
+          fx.burst(it.x, it.y, (ITEM_META[it.kind] || {}).color || '#efd28a', 12, 160);
+        }
+      }
+      if (!bricks.length) { nextStageOrClear(); if (!running) return; }
       if (ball.y > 540) {
-        lives--; hud('lives', lives); shakeStage();
-        if (!lives) { running = false; gameOver('공을 모두 사용했어요', '격파 점수 ' + score, function () { startGame('breakout'); }, score); return; }
+        lives--; hud('lives', lives); shakeStage(); items = [];
+        if (!lives) { running = false; gameOver('공을 놓쳤어요', '단계 ' + stage + ' · ' + formatScore(score) + '점', function () { startGame('breakout'); }, score); return; }
+        paddle.w = paddle.baseW; paddleTimer = 0; ballTimer = 0; ballTimerType = '';
         resetBall();
       }
       draw(); c.raf(loop);
@@ -749,8 +905,8 @@
       keys[e.key] = e.type === 'keydown';
     }
     c.on(document, 'keydown', key); c.on(document, 'keyup', key);
-    setup(); draw(); c.raf(loop);
-    actions(function () { startGame('breakout'); }, function () { return score; }, '←→ / A·D 키로 패들을 움직이세요. 벽돌을 깰수록 공이 빨라집니다.');
+    setupStage(false); draw(); c.raf(loop);
+    actions(function () { startGame('breakout'); }, function () { return score; }, '←→ / A·D · 벽돌을 깨면 아이템 · 5단계 클리어에 도전하세요. 공은 1개입니다.');
     return { id: 'breakout', destroy: c.destroy };
   };
 
@@ -934,41 +1090,67 @@
   };
 
   games.pong = function () {
-    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, ball, score = 0, lives = 3, running = true, last = 0, fx = makeFx(), speed = 1;
-    setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('pong', name())), 'best']]);
+    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, ball, score = 0, lives = 2, running = true, last = 0, fx = makeFx(), speed = 1.15, rally = 0;
+    setHud([['점수', '0', 'score'], ['목숨', '2', 'lives'], ['최고', formatScore(best('pong', name())), 'best']]);
     function reset() {
-      paddle = { x: 255, y: 378, w: 130, h: 22 };
-      var v = 230 * speed;
-      ball = { x: 320, y: 210, vx: (Math.random() > .5 ? 1 : -1) * v, vy: -v * 0.9, r: 8 };
+      paddle = { x: 275, y: 378, w: 78, h: 16 };
+      var v = 340 * speed;
+      var ang = (Math.random() * 0.7 + 0.35) * (Math.random() > .5 ? 1 : -1);
+      ball = { x: 320, y: 200, vx: Math.sin(ang) * v, vy: -Math.abs(Math.cos(ang)) * v, r: 7 };
     }
     function draw() {
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 640, 420);
       ctx.strokeStyle = '#ffffff18'; ctx.setLineDash([8, 10]); ctx.beginPath(); ctx.moveTo(0, 210); ctx.lineTo(640, 210); ctx.stroke(); ctx.setLineDash([]);
-      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 11 });
+      drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 7, font: 10 });
       ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
       ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
       fx.draw(ctx);
     }
+    function clampBall() {
+      var mag = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) || 1;
+      var minV = 300 * speed, maxV = 620 * speed;
+      var next = Math.max(minV, Math.min(maxV, mag));
+      ball.vx = (ball.vx / mag) * next;
+      ball.vy = (ball.vy / mag) * next;
+      if (Math.abs(ball.vy) < minV * 0.4) ball.vy = (ball.vy < 0 ? -1 : 1) * minV * 0.55;
+    }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
+      if (!running) return; var dt = Math.min(.02, (t - last) / 1000 || 0); last = t; fx.update(dt);
       ball.x += ball.vx * dt; ball.y += ball.vy * dt;
-      if (ball.x < ball.r || ball.x > 640 - ball.r) { ball.vx *= -1; fx.spark(ball.x, ball.y); }
-      if (ball.y < ball.r) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); score += 5; speed = Math.min(1.5, speed + 0.02); hud('score', score); fx.spark(ball.x, ball.y, '#9ad2a9'); }
-      if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
-        ball.y = paddle.y - ball.r; var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
-        ball.vx = hit * 330 * speed; ball.vy = -Math.abs(ball.vy) * 1.03; score += 10; hud('score', score); fx.burst(ball.x, ball.y, '#efd28a', 10, 160);
+      if (ball.x < ball.r || ball.x > 640 - ball.r) {
+        ball.vx *= -1;
+        ball.x = Math.max(ball.r, Math.min(640 - ball.r, ball.x));
+        fx.spark(ball.x, ball.y);
+      }
+      if (ball.y < ball.r) {
+        ball.y = ball.r; ball.vy = Math.abs(ball.vy);
+        score += 8; rally++; speed = Math.min(2.85, speed + 0.045 + rally * 0.004);
+        hud('score', score); clampBall(); fx.spark(ball.x, ball.y, '#9ad2a9');
+      }
+      if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.x >= paddle.x - 4 && ball.x <= paddle.x + paddle.w + 4) {
+        ball.y = paddle.y - ball.r;
+        var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+        hit = Math.max(-1, Math.min(1, hit));
+        ball.vx = hit * (380 + speed * 90) + (Math.random() - 0.5) * 40;
+        ball.vy = -Math.abs(ball.vy) * 1.06;
+        score += 12; rally++; speed = Math.min(2.85, speed + 0.05);
+        hud('score', score); clampBall(); fx.burst(ball.x, ball.y, '#efd28a', 10, 160);
       }
       if (ball.y > 430) {
-        lives--; hud('lives', lives); shakeStage();
+        lives--; hud('lives', lives); shakeStage(); rally = Math.max(0, rally - 3);
         if (!lives) { running = false; gameOver('랠리 종료', formatScore(score) + '점', function () { startGame('pong'); }, score); return; }
+        speed = Math.max(1.15, speed * 0.92);
         reset();
       }
       draw(); c.raf(loop);
     }
-    function point(e) { var rect = cv.canvas.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * 640 / rect.width; paddle.x = Math.max(0, Math.min(640 - paddle.w, x - paddle.w / 2)); }
+    function point(e) {
+      var rect = cv.canvas.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * 640 / rect.width;
+      paddle.x = Math.max(0, Math.min(640 - paddle.w, x - paddle.w / 2));
+    }
     c.on(cv.canvas, 'mousemove', point); c.on(cv.canvas, 'touchmove', function (e) { e.preventDefault(); point(e); }, { passive: false });
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('pong'); }, function () { return score; }, '마우스/손가락으로 패들을 움직여 공을 받아내세요. 랠리가 이어질수록 빨라집니다.');
+    actions(function () { startGame('pong'); }, function () { return score; }, '짧은 패들 · 빠른 가속. 목숨 2로 최대한 오래 버텨보세요.');
     return { id: 'pong', destroy: c.destroy };
   };
 

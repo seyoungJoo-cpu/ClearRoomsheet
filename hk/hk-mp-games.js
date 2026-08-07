@@ -15,6 +15,11 @@
   var root, refs = {}, toastTimer = 0;
   var ws = null, gameId = '', room = null, selfId = '', lastState = null, endedInfo = null;
   var listTimer = 0, inputTimer = 0, reconnecting = false, intentionalClose = false;
+  var connectWaiters = [];
+  var connecting = false;
+  var connectRetry = 0;
+  var pendingCreate = false;
+  var createWatchTimer = 0;
   var view = 'browse'; // browse | room | play | ended
   var lastBrowseRooms = [];
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
@@ -154,6 +159,8 @@
 
   function closeOverlay() {
     intentionalClose = true;
+    pendingCreate = false;
+    if (createWatchTimer) clearTimeout(createWatchTimer);
     stopInput();
     stopList();
     disconnect();
@@ -182,23 +189,49 @@
     else toast('근무자 이름을 먼저 선택해주세요');
   }
 
+  function flushConnectWaiters() {
+    var list = connectWaiters.splice(0, connectWaiters.length);
+    for (var i = 0; i < list.length; i++) {
+      try { list[i](); } catch (err) { if (window.console) console.error(err); }
+    }
+  }
+  function clearConnectWaiters(reason) {
+    connectWaiters = [];
+    if (reason) toast(reason);
+  }
   function ensureConnected(cb) {
-    if (ws && ws.readyState === 1) { if (cb) cb(); return; }
+    if (typeof cb === 'function') connectWaiters.push(cb);
+    if (ws && ws.readyState === 1) {
+      flushConnectWaiters();
+      return;
+    }
+    // Already opening — keep waiters, do not tear down the socket
+    if (connecting || (ws && ws.readyState === 0)) return;
+    openSocket();
+  }
+  function openSocket() {
     intentionalClose = false;
+    connecting = true;
     reconnecting = !!ws;
-    disconnect(true);
+    if (ws) {
+      try { ws.onclose = null; ws.onerror = null; ws.onopen = null; ws.onmessage = null; ws.close(); } catch (_) {}
+      ws = null;
+    }
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     try {
       ws = new WebSocket(proto + '//' + location.host + '/hk-game-ws');
     } catch (err) {
-      toast('멀티플레이 연결 실패');
+      connecting = false;
+      clearConnectWaiters('멀티플레이 연결 실패');
       if (window.console) console.error(err);
       return;
     }
     ws.onopen = function () {
+      connecting = false;
       reconnecting = false;
+      connectRetry = 0;
       send({ type: 'hello', name: name() || 'Guest' });
-      if (cb) cb();
+      flushConnectWaiters();
     };
     ws.onmessage = function (ev) {
       var msg;
@@ -206,23 +239,74 @@
       handleMessage(msg);
     };
     ws.onerror = function () {
-      toast(reconnecting ? '재연결 실패' : '멀티플레이 연결 오류');
+      // onclose usually follows; avoid double toasts when retrying
     };
     ws.onclose = function () {
+      var wasIntentional = intentionalClose;
+      connecting = false;
       ws = null;
       stopInput();
-      if (!intentionalClose) toast('서버 연결이 끊어졌습니다');
+      if (wasIntentional) {
+        connectWaiters = [];
+        return;
+      }
+      if (connectWaiters.length && connectRetry < 3) {
+        connectRetry += 1;
+        toast('재연결 중… (' + connectRetry + '/3)');
+        setTimeout(function () {
+          if (!intentionalClose) openSocket();
+        }, 450 * connectRetry);
+        return;
+      }
+      if (connectWaiters.length) {
+        clearConnectWaiters(reconnecting ? '재연결 실패' : '멀티플레이 연결 오류');
+        pendingCreate = false;
+      } else if (!intentionalClose) {
+        toast('서버 연결이 끊어졌습니다');
+      }
     };
   }
   function disconnect(quiet) {
+    intentionalClose = true;
+    connecting = false;
+    connectWaiters = [];
     if (!ws) return;
-    try { ws.onclose = null; ws.onerror = null; ws.close(); } catch (_) {}
+    try { ws.onclose = null; ws.onerror = null; ws.onopen = null; ws.onmessage = null; ws.close(); } catch (_) {}
     ws = null;
     if (!quiet) { /* noop */ }
   }
   function send(msg) {
-    if (!ws || ws.readyState !== 1) return;
-    try { ws.send(JSON.stringify(msg)); } catch (_) {}
+    if (!ws || ws.readyState !== 1) return false;
+    try { ws.send(JSON.stringify(msg)); return true; } catch (_) { return false; }
+  }
+  function requestCreateRoom() {
+    pendingCreate = true;
+    if (createWatchTimer) clearTimeout(createWatchTimer);
+    ensureConnected(function () {
+      var ok = send({ type: 'create', game: gameId, name: name() || 'Guest' });
+      if (!ok) {
+        pendingCreate = false;
+        toast('방 생성 전송 실패 — 다시 눌러주세요');
+        return;
+      }
+      toast('방 생성 중…');
+      createWatchTimer = setTimeout(function () {
+        if (!pendingCreate) return;
+        if (view === 'room' && room && room.code) { pendingCreate = false; return; }
+        pendingCreate = false;
+        toast('방 생성 응답이 없습니다. 다시 시도해주세요');
+      }, 4000);
+    });
+  }
+  function requestJoinRoom(code) {
+    ensureConnected(function () {
+      var ok = send({ type: 'join', code: code, name: name() || 'Guest' });
+      if (!ok) {
+        toast('참가 전송 실패 — 다시 눌러주세요');
+        return;
+      }
+      toast('방에 참가 중…');
+    });
   }
 
   function handleMessage(msg) {
@@ -245,6 +329,7 @@
     if (msg.type === 'room') {
       if (msg.status === 'left' || msg.code == null) {
         room = null; lastState = null; endedInfo = null; stopInput();
+        pendingCreate = false;
         view = 'browse'; render(); requestList();
         return;
       }
@@ -256,6 +341,11 @@
         max: msg.max
       };
       if (msg.playerId != null) selfId = msg.playerId;
+      if (pendingCreate) {
+        pendingCreate = false;
+        if (createWatchTimer) clearTimeout(createWatchTimer);
+        toast('방이 만들어졌습니다');
+      }
       endedInfo = null;
       if (room.status === 'playing') {
         view = 'play';
@@ -476,19 +566,14 @@
       }).join('');
     }
     refs.body.querySelector('[data-act="create"]').onclick = function () {
-      ensureConnected(function () {
-        send({ type: 'create', game: gameId, name: name() || 'Guest' });
-        toast('방을 만들었습니다');
-      });
+      if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
+      requestCreateRoom();
     };
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-join]'), function (btn) {
       btn.onclick = function () {
         if (btn.disabled) return;
         var code = btn.getAttribute('data-join');
-        ensureConnected(function () {
-          send({ type: 'join', code: code, name: name() || 'Guest' });
-          toast('방에 참가 중…');
-        });
+        requestJoinRoom(code);
       };
     });
   }
