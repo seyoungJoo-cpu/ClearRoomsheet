@@ -808,7 +808,7 @@
       var rows = [4, 5, 6, 6, 7][n - 1];
       var cols = [10, 10, 10, 11, 11][n - 1];
       var padW = [112, 104, 96, 88, 80][n - 1];
-      var spd = [300, 340, 380, 430, 480][n - 1];
+      var spd = [390, 450, 520, 600, 690][n - 1];
       var drop = [0.28, 0.3, 0.32, 0.34, 0.36][n - 1];
       return { rows: rows, cols: cols, padW: padW, spd: spd, drop: drop };
     }
@@ -950,8 +950,8 @@
         ball.y = paddle.y - ball.r;
         var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
         var cfg = stageCfg(stage);
-        ball.vx = hit * (360 + stage * 18) * baseSpeed;
-        ball.vy = -Math.abs(Math.max(cfg.spd * 0.85, Math.abs(ball.vy))) * 1.035;
+        ball.vx = hit * (420 + stage * 24) * baseSpeed;
+        ball.vy = -Math.abs(Math.max(cfg.spd * 0.9, Math.abs(ball.vy))) * 1.045;
         normalizeBallSpeed();
         stuckGuard = 0;
         fx.spark(ball.x, ball.y, '#efd28a');
@@ -976,7 +976,7 @@
             score += 4;
             fx.spark(ball.x, ball.y, b.color);
           }
-          baseSpeed = Math.min(1.55, baseSpeed + 0.008);
+          baseSpeed = Math.min(1.75, baseSpeed + 0.012);
           normalizeBallSpeed();
           hud('score', score); hud('bricks', bricks.length);
           break;
