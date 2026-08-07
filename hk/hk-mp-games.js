@@ -577,6 +577,7 @@
 
   function startInput() {
     stopInput();
+    tankCam = { x: null, y: null, free: false };
     bindPlayKeys(true);
     inputTimer = setInterval(tickInput, gameId === 'airhockey' ? 16 : 33);
     if (gameId === 'airhockey') startHockeySmooth();
