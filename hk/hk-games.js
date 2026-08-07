@@ -1431,6 +1431,7 @@
     var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
     var player, camX = 0, platforms = [], hooks = [], coins = [], bags = [], nextX = 0;
     var score = 0, tips = 0, running = true, started = false, last = 0, hold = false, deadMsg = '';
+    var keyWireLatch = false; // Space: tap to wire, tap again to release
     setHud([['점수', '0', 'score'], ['팁', '0', 'tips'], ['거리', '0m', 'dist'], ['최고', formatScore(best('mines', name())), 'best']]);
 
     function makePlayer() {
@@ -1493,46 +1494,59 @@
       var best = null, bd = maxD || 170;
       for (var i = 0; i < hooks.length; i++) {
         var h = hooks[i];
-        if (h.x < player.x - 20 || h.x > player.x + 210) continue;
+        if (h.x < player.x - 30 || h.x > player.x + 240) continue;
         var d = Math.hypot(h.x - (player.x + player.w / 2), h.y - player.y);
         if (d < bd) { bd = d; best = h; }
       }
       return best;
     }
-    function tryJumpOrWire() {
+    function attachWire(hook) {
+      if (!hook || player.wired) return false;
+      player.wired = true;
+      player.hook = hook;
+      player.canWire = false;
+      var cx = player.x + player.w / 2, cy = player.y + 10;
+      player.ropeLen = Math.max(48, Math.min(210, Math.hypot(hook.x - cx, hook.y - cy)));
+      var theta0 = Math.atan2(cx - hook.x, cy - hook.y);
+      player.omega = (cx < hook.x ? -1 : 1) * 2.4 - Math.min(2.5, Math.abs(player.vy) / 400);
+      if (theta0 > 0.2) player.omega = Math.min(player.omega, -1.2);
+      fx.spark(hook.x, hook.y, '#6ec8ff');
+      return true;
+    }
+    function tryJumpOrWire(fromKey) {
       if (!running) return;
       if (!started) { started = true; }
       if (player.onGround) {
         player.vy = -560;
         player.onGround = false;
         player.canWire = true;
+        keyWireLatch = false;
         fx.spark(player.x + player.w / 2, player.y + player.h, '#efd28a');
+        return;
+      }
+      // Space again while wired → release
+      if (player.wired && fromKey) {
+        releaseWire();
         return;
       }
       if (player.wired) return;
       if (!player.canWire) return;
-      var hook = nearestHook(185);
+      var hook = nearestHook(fromKey ? 220 : 185);
       if (!hook) return;
-      player.wired = true;
-      player.hook = hook;
-      player.canWire = false;
-      var cx = player.x + player.w / 2, cy = player.y + 10;
-      player.ropeLen = Math.max(48, Math.min(210, Math.hypot(hook.x - cx, hook.y - cy)));
-      // start as pendulum: slight forward (right) swing from approach
-      var theta0 = Math.atan2(cx - hook.x, cy - hook.y);
-      player.omega = (cx < hook.x ? -1 : 1) * 2.4 - Math.min(2.5, Math.abs(player.vy) / 400);
-      if (theta0 > 0.2) player.omega = Math.min(player.omega, -1.2);
-      fx.spark(hook.x, hook.y, '#6ec8ff');
+      if (attachWire(hook) && fromKey) {
+        // Space: stay wired without holding the key
+        keyWireLatch = true;
+        hold = true;
+      }
     }
     function releaseWire() {
-      if (!player.wired) return;
+      if (!player.wired) { keyWireLatch = false; return; }
       var hook = player.hook;
       var L = player.ropeLen || 100;
       var om = player.omega || 0;
       if (hook) {
         var cx = player.x + player.w / 2, cy = player.y + 10;
         var theta = Math.atan2(cx - hook.x, cy - hook.y);
-        // tangential release boost along parabola swing
         player.vy = -L * om * Math.sin(theta) * 0.85 - 90;
         player.vy = Math.max(-720, Math.min(200, player.vy));
       } else {
@@ -1542,6 +1556,8 @@
       player.hook = null;
       player.ropeLen = null;
       player.omega = 0;
+      keyWireLatch = false;
+      hold = false;
     }
     function die(reason) {
       if (!running) return;
@@ -1619,9 +1635,9 @@
       ctx.fillRect(0, H - 18, W, 18);
       if (!started) {
         ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 18px Georgia,serif'; ctx.textAlign = 'center';
-        ctx.fillText('탭 / Space · 점프  ·  공중에서 다시 눌러 와이어', W / 2, 56);
+        ctx.fillText('Space · 점프  /  공중에서 Space · 와이어', W / 2, 56);
         ctx.font = '13px Georgia,serif'; ctx.fillStyle = '#b1c1bd';
-        ctx.fillText('누르고 있으면 포물선으로 스윙 · 놓으면 튕기듯 해제', W / 2, 80);
+        ctx.fillText('Space 한 번 더 누르면 해제 · 마우스는 누르고 있으면 스윙', W / 2, 80);
       }
       fx.draw(ctx);
     }
@@ -1641,7 +1657,7 @@
         if (nextX < camX + W + 500) addSegment(nextX);
 
         player.x = camX + 130;
-        if (player.wired && player.hook && hold) {
+        if (player.wired && player.hook && (hold || keyWireLatch)) {
           var hx = player.hook.x, hy = player.hook.y;
           var cx = player.x + player.w / 2;
           var cy = player.y + 10;
@@ -1674,7 +1690,7 @@
           // store tangential vertical speed for feel / next free-fall step
           player.vy = -L * player.omega * Math.sin(theta);
         } else {
-          if (player.wired && !hold) releaseWire();
+          if (player.wired && !hold && !keyWireLatch) releaseWire();
           player.vy += 1650 * dt;
           player.y += player.vy * dt;
         }
@@ -1725,18 +1741,32 @@
     }
     function down(e) {
       if (e && e.preventDefault) e.preventDefault();
+      keyWireLatch = false;
       hold = true;
-      tryJumpOrWire();
+      tryJumpOrWire(false);
     }
     function up() {
+      // Mouse/touch release ends swing; Space latch keeps swinging
+      if (keyWireLatch) {
+        hold = false;
+        return;
+      }
       hold = false;
       if (player && player.wired) releaseWire();
     }
+    function isWireKey(e) {
+      return e.code === 'Space' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' ||
+        e.code === 'ArrowUp' || e.code === 'KeyW';
+    }
     function key(e) {
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-        e.preventDefault();
-        if (e.type === 'keydown' && !e.repeat) { hold = true; tryJumpOrWire(); }
-        if (e.type === 'keyup') up();
+      if (!isWireKey(e)) return;
+      e.preventDefault();
+      if (e.type === 'keydown' && !e.repeat) {
+        tryJumpOrWire(true);
+      }
+      // keyup ignored while Space-latch wire is active (second Space releases)
+      if (e.type === 'keyup' && !keyWireLatch) {
+        hold = false;
       }
     }
     c.on(document, 'keydown', key);
@@ -1744,7 +1774,7 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, '자동 러닝 · 탭/Space 점프 · 공중에서 와이어로 포물선 스윙 · 팁(동전) 수집');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · 공중에서 Space로 바로 와이어(다시 누르면 해제) · 마우스도 가능 · 팁 수집');
     return { id: 'mines', destroy: c.destroy };
   };
 
