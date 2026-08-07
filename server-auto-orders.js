@@ -3,7 +3,6 @@
 const ROBOT_NAME = "도우미 로봇";
 const MSG_RPA_CHECK = "정비 RPA 멈춤";
 const MSG_RPA_RUN = "프론트 근무자분들 정비 RPA 실행해주세요";
-const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
 const MSG_INS_AFTER_17 =
   "17시 이후 INS 오더로 오더해주세요";
 const STALE_XML_MINUTES = 10;
@@ -142,13 +141,6 @@ function startAutoOrderScheduler(ctx) {
       if (isRobotQuietWindow(kst)) return;
 
       const st = getAutoOrderState();
-
-      // 휴무 직전(18:50)에 마감 저장 안내
-      if (kst.hour === 18 && kst.minute === 50 && st.closeSaveDate !== kst.dateKey) {
-        if (appendAutoOrder("close_save", MSG_CLOSE_SAVE)) {
-          st.closeSaveDate = kst.dateKey;
-        }
-      }
 
       // 휴무 종료 시각(06:40)에 RPA 실행 안내
       if (kst.hour === 6 && kst.minute === 40 && st.rpaRunDate !== kst.dateKey) {
