@@ -1,7 +1,8 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'towerdefense', 'snakes', 'airhockey'];
+  var MP_IDS = ['tank', 'rts', 'towerdefense', 'snakes', 'airhockey'];
   var META = {
     candy: { icon: '🍬', name: '캔디 스위트', desc: '1분 안에 보석을 맞추는 타임어택' },
     merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
@@ -14,7 +15,12 @@
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
     mines: { icon: '💣', name: '스위트 마인', desc: '지뢰를 피해 안전한 칸을 열기' },
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
-    dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' }
+    dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' },
+    tank: { icon: '🛡️', name: '탱크대전', desc: '1:1 실시간 탱크 멀티 · 방 만들기' },
+    rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
+    towerdefense: { icon: '🗼', name: '타워 디펜스', desc: '서로에게 몬스터 보내기 · 멀티 방' },
+    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '최대 8인 슬리더 대전 · 방' },
+    airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' }
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;
@@ -53,6 +59,7 @@
     toastTimer = setTimeout(function () { refs.toast.classList.remove('show'); }, 2400);
   }
   function save(id, score) {
+    if (MP_IDS.indexOf(id) >= 0) return;
     score = Math.max(0, Math.round(Number(score) || 0));
     var who = name();
     if (!score || !who || !config.saveScore) return;
@@ -179,6 +186,15 @@
     renderHub();
   }
   function startGame(id) {
+    if (MP_IDS.indexOf(id) >= 0) {
+      cleanup();
+      refs.hub.style.display = '';
+      refs.game.classList.remove('show');
+      renderHub();
+      if (window.HKMpGames) HKMpGames.openLobby(id);
+      else toast('멀티플레이 모듈 없음');
+      return;
+    }
     cleanup();
     refs.hub.style.display = 'none';
     refs.game.classList.add('show');

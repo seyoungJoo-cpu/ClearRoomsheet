@@ -2,6 +2,7 @@
 
 const { startAutoOrderScheduler } = require("./server-auto-orders");
 
+const http = require("http");
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -1932,7 +1933,13 @@ app.use(
   })
 );
 
-app.listen(PORT, "0.0.0.0", function () {
+const httpServer = http.createServer(app);
+try {
+  require("./server-game-rooms").attachGameRooms(httpServer);
+} catch (e) {
+  console.warn("game rooms:", e);
+}
+httpServer.listen(PORT, "0.0.0.0", function () {
   console.log("makeroom listening on port " + PORT);
   startAutoOrderScheduler({
     sharedState: sharedState,
