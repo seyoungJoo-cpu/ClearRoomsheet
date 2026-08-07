@@ -32,6 +32,9 @@
   var connectRetry = 0;
   var pendingCreate = false;
   var createWatchTimer = 0;
+  var idleCloseTimer = 0;
+  var helloOkWait = false;
+  var lastBrowseSig = '';
   var view = 'browse'; // browse | room | play | ended
   var lastBrowseRooms = [];
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
@@ -174,28 +177,51 @@
   }
 
   function closeOverlay() {
-    intentionalClose = true;
     pendingCreate = false;
     if (createWatchTimer) clearTimeout(createWatchTimer);
     stopInput();
     stopList();
-    disconnect();
+    // Keep the socket warm so room create/list feels instant next time
+    if (view === 'play' || view === 'room') {
+      send({ type: 'leave' });
+    }
     room = null; lastState = null; endedInfo = null; gameId = ''; view = 'browse';
+    lastBrowseSig = '';
     setGamePaused(false);
     if (root) root.classList.remove('open');
+    scheduleIdleDisconnect();
+  }
+
+  function clearIdleDisconnect() {
+    if (idleCloseTimer) { clearTimeout(idleCloseTimer); idleCloseTimer = 0; }
+  }
+  function scheduleIdleDisconnect() {
+    clearIdleDisconnect();
+    // Drop idle lobby sockets after 3 minutes to free Render connections
+    idleCloseTimer = setTimeout(function () {
+      idleCloseTimer = 0;
+      if (root && root.classList.contains('open')) return;
+      if (room) return;
+      disconnect(true);
+    }, 180000);
   }
 
   function openLobby(id) {
     if (!META[id]) { toast('알 수 없는 멀티 게임'); return; }
     inject();
     var launch = function () {
+      clearIdleDisconnect();
       gameId = id;
       room = null; lastState = null; endedInfo = null; view = 'browse';
       selectIds = []; pendingBuild = null;
+      lastBrowseSig = '';
+      lastBrowseRooms = [];
       refs.title.textContent = meta(id).icon + ' ' + meta(id).name;
       root.classList.add('open');
       render();
       ensureConnected(function () {
+        // subscribe + refresh list immediately
+        send({ type: 'watch', game: gameId });
         requestList();
         startList();
       });
@@ -229,6 +255,7 @@
     intentionalClose = false;
     connecting = true;
     reconnecting = !!ws;
+    helloOkWait = true;
     if (ws) {
       try { ws.onclose = null; ws.onerror = null; ws.onopen = null; ws.onmessage = null; ws.close(); } catch (_) {}
       ws = null;
@@ -238,6 +265,7 @@
       ws = new WebSocket(proto + '//' + location.host + '/hk-game-ws');
     } catch (err) {
       connecting = false;
+      helloOkWait = false;
       clearConnectWaiters('멀티플레이 연결 실패');
       if (window.console) console.error(err);
       return;
@@ -247,7 +275,13 @@
       reconnecting = false;
       connectRetry = 0;
       send({ type: 'hello', name: name() || 'Guest' });
-      flushConnectWaiters();
+      // Flush after hello; if hello_ok is slow, don't block forever
+      setTimeout(function () {
+        if (helloOkWait) {
+          helloOkWait = false;
+          flushConnectWaiters();
+        }
+      }, 120);
     };
     ws.onmessage = function (ev) {
       var msg;
@@ -260,6 +294,7 @@
     ws.onclose = function () {
       var wasIntentional = intentionalClose;
       connecting = false;
+      helloOkWait = false;
       ws = null;
       stopInput();
       if (wasIntentional) {
@@ -271,13 +306,13 @@
         toast('재연결 중… (' + connectRetry + '/3)');
         setTimeout(function () {
           if (!intentionalClose) openSocket();
-        }, 450 * connectRetry);
+        }, 280 * connectRetry);
         return;
       }
       if (connectWaiters.length) {
         clearConnectWaiters(reconnecting ? '재연결 실패' : '멀티플레이 연결 오류');
         pendingCreate = false;
-      } else if (!intentionalClose) {
+      } else if (!intentionalClose && root && root.classList.contains('open')) {
         toast('서버 연결이 끊어졌습니다');
       }
     };
@@ -333,14 +368,20 @@
       if (msg.playerId != null) selfId = msg.playerId;
       else if (msg.id != null) selfId = msg.id;
       else if (msg.selfId != null) selfId = msg.selfId;
+      if (helloOkWait) {
+        helloOkWait = false;
+        flushConnectWaiters();
+      }
       return;
     }
     if (msg.type === 'error') {
       toast(translateErr(msg.message || msg.error) || '오류가 발생했습니다');
+      if (pendingCreate) pendingCreate = false;
       return;
     }
     if (msg.type === 'lobby_list') {
       if (msg.game && msg.game !== gameId) return;
+      if (view !== 'browse') return;
       renderBrowse(msg.rooms || []);
       return;
     }
@@ -426,15 +467,23 @@
     return map[code] || code;
   }
 
+  function roomsSig(rooms) {
+    try {
+      return JSON.stringify((rooms || []).map(function (r) {
+        return [r.code || r.roomCode, r.players, r.max, r.mode, r.host, r.names];
+      }));
+    } catch (_) { return String(Date.now()); }
+  }
   function requestList() {
     if (!gameId) return;
     send({ type: 'list', game: gameId });
   }
   function startList() {
     stopList();
+    // push(notifyLobby) is primary; light poll only as fallback
     listTimer = setInterval(function () {
       if (view === 'browse') requestList();
-    }, 1200);
+    }, 2800);
   }
   function stopList() {
     if (listTimer) clearInterval(listTimer);
@@ -627,8 +676,17 @@
 
   function renderBrowse(rooms) {
     if (view !== 'browse') return;
-    if (rooms) lastBrowseRooms = rooms;
-    else rooms = lastBrowseRooms || [];
+    if (rooms) {
+      var sig = roomsSig(rooms);
+      if (sig === lastBrowseSig && refs.body && refs.body.querySelector('[data-list]')) {
+        lastBrowseRooms = rooms;
+        return;
+      }
+      lastBrowseSig = sig;
+      lastBrowseRooms = rooms;
+    } else {
+      rooms = lastBrowseRooms || [];
+    }
     var m = meta(gameId);
     var max = MAX_PLAYERS[gameId] || 2;
     var modeRow = '';
@@ -638,9 +696,11 @@
         '<button type="button" class="hkmp-btn' + (tankCreateMode === 'team' ? ' primary' : '') + '" data-mode="team">2vs2 팀전</button>' +
         '<span class="hkmp-note">팀전 3명이면 AI 1명 자동</span></div>';
     }
+    var creating = pendingCreate;
     refs.body.innerHTML =
       '<div class="hkmp-create-wrap">' + modeRow +
-      '<button type="button" class="hkmp-btn primary" data-act="create" style="align-self:flex-start;font-size:15px;padding:12px 18px">방 만들기</button>' +
+      '<button type="button" class="hkmp-btn primary" data-act="create" style="align-self:flex-start;font-size:15px;padding:12px 18px"' +
+      (creating ? ' disabled' : '') + '>' + (creating ? '방 생성 중…' : '방 만들기') + '</button>' +
       '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + max + '명 · 아래 방을 눌러 참가</div></div>' +
       '<h3 style="margin:8px 0 10px;color:#ecd18b;font-family:Georgia,serif">대기 중인 방</h3>' +
       '<div class="hkmp-list" data-list></div>';
@@ -666,12 +726,15 @@
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-mode]'), function (btn) {
       btn.onclick = function () {
         tankCreateMode = btn.getAttribute('data-mode') === 'team' ? 'team' : 'ffa';
+        lastBrowseSig = '';
         renderBrowse();
       };
     });
     refs.body.querySelector('[data-act="create"]').onclick = function () {
       if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
       requestCreateRoom();
+      lastBrowseSig = '';
+      renderBrowse();
     };
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-join]'), function (btn) {
       btn.onclick = function () {
@@ -1374,7 +1437,17 @@
   }
 
   window.HKMpGames = {
-    init: function (options) { config = options || {}; inject(); return this; },
+    init: function (options) {
+      config = options || {};
+      inject();
+      // Warm WS early so first create/list is not waiting on cold connect
+      setTimeout(function () {
+        if (ws || connecting) return;
+        if (!name()) return;
+        ensureConnected(function () { scheduleIdleDisconnect(); });
+      }, 600);
+      return this;
+    },
     openLobby: openLobby,
     close: closeOverlay
   };

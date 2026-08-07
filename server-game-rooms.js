@@ -1682,7 +1682,10 @@ function notifyLobby(game) {
   if (!gameWss || !GAMES[game]) return;
   const payload = { type: "lobby_list", game, rooms: lobbyList(game) };
   gameWss.clients.forEach(function (client) {
-    if (client.readyState === 1) send(client, payload);
+    if (client.readyState !== 1) return;
+    // Prefer clients watching this game; fall back to everyone for compatibility
+    if (client._watchGame && client._watchGame !== game) return;
+    send(client, payload);
   });
 }
 
@@ -1721,15 +1724,27 @@ function attachGameRooms(httpServer) {
         return send(ws, { type: "hello_ok", name: ws._name });
       }
 
+      if (type === "watch") {
+        const game = String(msg.game || "");
+        if (game && GAMES[game]) ws._watchGame = game;
+        else ws._watchGame = null;
+        if (ws._watchGame) {
+          return send(ws, { type: "lobby_list", game: ws._watchGame, rooms: lobbyList(ws._watchGame) });
+        }
+        return;
+      }
+
       if (type === "list") {
         const game = String(msg.game || "");
         if (!GAMES[game]) return error(ws, "unknown_game");
+        ws._watchGame = game;
         return send(ws, { type: "lobby_list", game, rooms: lobbyList(game) });
       }
 
       if (type === "create") {
         const game = String(msg.game || "");
         if (!GAMES[game]) return error(ws, "unknown_game");
+        ws._watchGame = game;
         const existing = findPlayerByWs(ws);
         if (existing) removePlayer(existing.room, existing.player);
         const name = String(msg.name || ws._name || "Player").slice(0, 24);
@@ -1784,6 +1799,7 @@ function attachGameRooms(httpServer) {
           roomCode: code,
         };
         room.players.push(player);
+        ws._watchGame = room.game;
         send(ws, { type: "hello_ok", name, playerId: player.id });
         broadcastRoom(room);
         return notifyLobby(room.game);
