@@ -1421,6 +1421,11 @@
     ctx.fillStyle = '#0d2429'; ctx.fillRect(mmX, mmY, mmW, mmH);
     var sx = mmW / worldW, sy = mmH / worldH;
     ctx.strokeStyle = '#efd28a88'; ctx.strokeRect(mmX + camX * sx, mmY + camY * sy, viewW * sx, viewH * sy);
+    (st.items || []).forEach(function (it) {
+      if (!it || it.taken) return;
+      ctx.fillStyle = it.type === 'heal' ? '#9ae6b4' : it.type === 'speed' ? '#6ec8ff' : it.type === 'shield' ? '#c4b5fd' : '#f6ad55';
+      ctx.fillRect(mmX + it.x * sx - 1.5, mmY + it.y * sy - 1.5, 3, 3);
+    });
     (st.tanks || []).forEach(function (tk, i) {
       if (!tk.alive) return;
       ctx.fillStyle = COLORS[tk.slot != null ? tk.slot : i];
