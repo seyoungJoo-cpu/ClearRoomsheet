@@ -394,7 +394,13 @@
       room_full: '방이 가득 찼습니다',
       not_in_room: '방에 들어와 있지 않습니다',
       unknown_game: '알 수 없는 게임',
-      not_ended: '아직 종료되지 않았습니다'
+      not_ended: '아직 종료되지 않았습니다',
+      nexus: '상대 본진을 파괴했습니다',
+      opponent_left: '상대가 나갔습니다',
+      match: '경기 종료',
+      last_alive: '최후 생존',
+      life: '라이프 전멸',
+      score: '목표 점수 달성'
     };
     return map[code] || code;
   }
@@ -629,7 +635,7 @@
   }
 
   function defaultSize() {
-    if (gameId === 'rts') return { w: 900, h: 600 };
+    if (gameId === 'rts') return { w: 1200, h: 800 };
     if (gameId === 'towerdefense') return { w: 900, h: 500 };
     if (gameId === 'snakes') return { w: 1400, h: 900 };
     if (gameId === 'airhockey') return { w: 700, h: 400 };
@@ -638,7 +644,7 @@
   function helpText() {
     return {
       tank: 'WASD 이동 · 마우스 조준 · 클릭/스페이스 발사 · P 일시정지 · Ctrl+Q 오더',
-      rts: '좌드래그 선택 · 우클릭 이동/공격 · 버튼/숫자키로 생산·건설 후 맵 클릭',
+      rts: '좌드래그 선택 · 우클릭 이동(공격 중에도 이동) · 적 우클릭 공격 · 본진 자동 레이저',
       towerdefense: '타워/유닛 선택 후 내 라인 슬롯 클릭',
       snakes: '마우스 방향 또는 화살표/WASD',
       airhockey: '마우스/터치로 패들 이동'
@@ -649,9 +655,9 @@
     if (!refs.tools) return;
     if (gameId === 'rts') {
       refs.tools.innerHTML = [
-        ['build:nexus', '본진'], ['build:barracks', '병영'], ['build:turret', '포탑'],
-        ['train:worker', '일꾼(1)'], ['train:melee', '전사(2)'], ['train:ranged', '사수(3)'],
-        ['train:bomber', '폭탄(4)'], ['train:tanker', '탱커(5)'], ['train:duck', '오리(6)']
+        ['build:barracks', '배럭 ·150'], ['build:turret', '포탑 ·120 (본진 근처 불가)'],
+        ['train:worker', '일꾼(1) ·50'], ['train:melee', '전사(2) ·80'], ['train:ranged', '사수(3) ·100'],
+        ['train:bomber', '폭탄(4) ·140'], ['train:tanker', '탱커(5) ·160'], ['train:duck', '오리(6) ·40']
       ].map(function (x) {
         return '<button type="button" class="hkmp-btn" data-tool="' + x[0] + '">' + x[1] + '</button>';
       }).join('');
@@ -721,7 +727,13 @@
       mouse.ax = p.x; mouse.ay = p.y;
       if (e.button === 2) {
         if (gameId === 'rts') {
-          send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'attack', x: p.x, y: p.y } });
+          var hit = findRtsEntityAt(p.x, p.y);
+          var my = mySlot();
+          if (hit && hit.owner !== my && hit.hp > 0) {
+            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
+          } else {
+            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'move', x: p.x, y: p.y } });
+          }
         }
         return;
       }
@@ -730,6 +742,17 @@
       if (gameId === 'tank') fireLatch = true;
       if (gameId === 'rts') {
         if (pendingBuild) {
+          if (pendingBuild.mode === 'build' && pendingBuild.buildType === 'turret') {
+            var nexus = null;
+            var ents = (lastState && lastState.entities) || [];
+            for (var ni = 0; ni < ents.length; ni++) {
+              if (ents[ni].type === 'nexus' && ents[ni].owner === mySlot()) { nexus = ents[ni]; break; }
+            }
+            if (nexus && Math.hypot(p.x - nexus.x, p.y - nexus.y) < 110) {
+              toast('본진 근처에는 포탑을 지을 수 없습니다');
+              return;
+            }
+          }
           var payload = { selectIds: selectIds.slice(), x: p.x, y: p.y, cmd: 'build' };
           if (pendingBuild.mode === 'build') payload.buildType = pendingBuild.buildType;
           else payload.unitType = pendingBuild.unitType;
@@ -905,27 +928,142 @@
     });
   }
 
+  function findRtsEntityAt(x, y) {
+    var st = lastState;
+    if (!st || !st.entities) return null;
+    var best = null, bd = 22;
+    for (var i = 0; i < st.entities.length; i++) {
+      var e = st.entities[i];
+      if (!e || e.hp <= 0) continue;
+      var rad = e.kind === 'building' ? Math.max(e.w || 40, e.h || 40) / 2 : (e.r || 8) + 4;
+      var d = Math.hypot((e.x || 0) - x, (e.y || 0) - y);
+      if (d < rad && d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
+  function drawRtsUnitShape(ctx, e, col) {
+    var r = e.r || 8;
+    ctx.fillStyle = col;
+    ctx.strokeStyle = '#0008';
+    ctx.lineWidth = 1.5;
+    if (e.type === 'worker') {
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y - r);
+      ctx.lineTo(e.x + r * 0.9, e.y + r * 0.7);
+      ctx.lineTo(e.x - r * 0.9, e.y + r * 0.7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'melee') {
+      ctx.beginPath();
+      ctx.moveTo(e.x - r, e.y - r * 0.6);
+      ctx.lineTo(e.x + r, e.y - r * 0.6);
+      ctx.lineTo(e.x + r * 0.7, e.y + r);
+      ctx.lineTo(e.x - r * 0.7, e.y + r);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'ranged') {
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y - r);
+      ctx.lineTo(e.x + r, e.y);
+      ctx.lineTo(e.x, e.y + r);
+      ctx.lineTo(e.x - r, e.y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'bomber') {
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#122421';
+      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
+    } else if (e.type === 'tanker') {
+      var w = r * 1.8, h = r * 1.5;
+      ctx.fillRect(e.x - w / 2, e.y - h / 2, w, h);
+      ctx.strokeRect(e.x - w / 2, e.y - h / 2, w, h);
+    } else if (e.type === 'duck') {
+      ctx.beginPath();
+      ctx.ellipse(e.x, e.y + 1, r * 1.1, r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(e.x + r * 0.55, e.y - r * 0.35, r * 0.45, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f6ad55';
+      ctx.beginPath();
+      ctx.moveTo(e.x + r * 0.85, e.y - r * 0.35);
+      ctx.lineTo(e.x + r * 1.45, e.y - r * 0.2);
+      ctx.lineTo(e.x + r * 0.85, e.y - r * 0.05);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawRtsHpBar(ctx, x, y, w, hp, maxHp) {
+    if (maxHp == null || maxHp <= 0) return;
+    var ratio = Math.max(0, Math.min(1, hp / maxHp));
+    ctx.fillStyle = '#0009'; ctx.fillRect(x - w / 2, y, w, 4);
+    ctx.fillStyle = ratio > 0.45 ? '#9ae6b4' : ratio > 0.2 ? '#f6ad55' : '#fc8181';
+    ctx.fillRect(x - w / 2, y, w * ratio, 4);
+  }
+
   function drawRts(ctx, st) {
+    (st.obstacles || []).forEach(function (o) {
+      if (o.kind === 'water') {
+        ctx.fillStyle = '#1a4a6acc';
+        ctx.strokeStyle = '#6ec8ff66';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(o.x - o.w / 2, o.y - o.h / 2, o.w, o.h, 16);
+        else ctx.rect(o.x - o.w / 2, o.y - o.h / 2, o.w, o.h);
+        ctx.fill(); ctx.stroke();
+      } else if (o.kind === 'rock') {
+        ctx.fillStyle = '#5a6670';
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y - (o.r || 28));
+        ctx.lineTo(o.x + (o.r || 28) * 0.9, o.y - (o.r || 28) * 0.2);
+        ctx.lineTo(o.x + (o.r || 28) * 0.55, o.y + (o.r || 28) * 0.85);
+        ctx.lineTo(o.x - (o.r || 28) * 0.6, o.y + (o.r || 28) * 0.75);
+        ctx.lineTo(o.x - (o.r || 28) * 0.95, o.y - (o.r || 28) * 0.15);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff22';
+        ctx.beginPath(); ctx.arc(o.x - 6, o.y - 8, 5, 0, Math.PI * 2); ctx.fill();
+      }
+    });
     (st.minerals || []).forEach(function (m) {
       ctx.fillStyle = '#6ec8ff'; ctx.beginPath(); ctx.arc(m.x, m.y, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#d9f3ff'; ctx.beginPath(); ctx.arc(m.x - 3, m.y - 3, 4, 0, Math.PI * 2); ctx.fill();
     });
     (st.entities || []).forEach(function (e) {
       var col = COLORS[e.owner != null ? e.owner : 0];
       if (e.kind === 'building') {
-        ctx.fillStyle = col;
-        ctx.fillRect(e.x - (e.w || 40) / 2, e.y - (e.h || 40) / 2, e.w || 40, e.h || 40);
-        ctx.strokeStyle = '#0006'; ctx.strokeRect(e.x - (e.w || 40) / 2, e.y - (e.h || 40) / 2, e.w || 40, e.h || 40);
-        if (e.hp != null && e.maxHp) {
-          ctx.fillStyle = '#0008'; ctx.fillRect(e.x - 20, e.y - (e.h || 40) / 2 - 6, 40, 3);
-          ctx.fillStyle = '#9ae6b4'; ctx.fillRect(e.x - 20, e.y - (e.h || 40) / 2 - 6, 40 * e.hp / e.maxHp, 3);
+        var bw = e.w || 40, bh = e.h || 40;
+        if (e.type === 'nexus') {
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.moveTo(e.x, e.y - bh / 2);
+          ctx.lineTo(e.x + bw / 2, e.y);
+          ctx.lineTo(e.x, e.y + bh / 2);
+          ctx.lineTo(e.x - bw / 2, e.y);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#efd28aaa'; ctx.lineWidth = 2; ctx.stroke();
+          ctx.fillStyle = '#fff6'; ctx.beginPath(); ctx.arc(e.x, e.y, 8, 0, Math.PI * 2); ctx.fill();
+        } else if (e.type === 'barracks') {
+          ctx.fillStyle = col;
+          ctx.fillRect(e.x - bw / 2, e.y - bh / 2, bw, bh);
+          ctx.fillStyle = '#0004';
+          ctx.fillRect(e.x - bw / 2 + 6, e.y - 8, bw - 12, 16);
+        } else {
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(bw, bh) / 2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#0006'; ctx.stroke();
         }
+        drawRtsHpBar(ctx, e.x, e.y - bh / 2 - 8, Math.max(36, bw * 0.7), e.hp, e.maxHp);
       } else if (e.kind === 'unit') {
-        ctx.fillStyle = col;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.type === 'tanker' ? 10 : (e.r || 6), 0, Math.PI * 2); ctx.fill();
+        drawRtsUnitShape(ctx, e, col);
         if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
-          ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, (e.r || 8) + 6, 0, Math.PI * 2); ctx.stroke();
         }
+        drawRtsHpBar(ctx, e.x, e.y - (e.r || 8) - 8, 22, e.hp, e.maxHp);
       }
+    });
+    (st.beams || []).forEach(function (b) {
+      ctx.strokeStyle = b.owner === 0 ? '#efd28acc' : '#6ec8ffcc';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(b.x2, b.y2, 3, 0, Math.PI * 2); ctx.fill();
     });
   }
 
@@ -1002,17 +1140,23 @@
   function renderEnded() {
     var winner = '알 수 없음';
     var wid = endedInfo && endedInfo.winnerId;
+    var iWon = wid != null && wid === selfId;
     if (wid != null && room && room.players) {
       for (var i = 0; i < room.players.length; i++) {
         if (room.players[i].id === wid) { winner = room.players[i].name; break; }
       }
     }
     if (endedInfo && (endedInfo.winnerName || endedInfo.winner)) winner = endedInfo.winnerName || endedInfo.winner;
-    if (wid === selfId) winner = (winner && winner !== '알 수 없음' ? winner + ' (당신)' : '당신');
+    if (iWon) winner = (winner && winner !== '알 수 없음' ? winner + ' (당신)' : '당신');
+    var title = iWon ? '승리!' : (wid != null ? '패배' : '경기 종료');
+    var reasonText = endedInfo && endedInfo.reason ? translateErr(endedInfo.reason) : '';
+    if (gameId === 'rts' && endedInfo && endedInfo.reason === 'nexus') {
+      reasonText = iWon ? '상대 본진을 파괴했습니다!' : '본진이 파괴되었습니다';
+    }
     refs.body.innerHTML =
-      '<div class="hkmp-ended"><h2>경기 종료</h2>' +
+      '<div class="hkmp-ended"><h2 style="font-size:' + (iWon ? '42px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' + title + '</h2>' +
       '<p style="color:#b1c1bd">승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b></p>' +
-      (endedInfo && endedInfo.reason ? '<p class="hkmp-note">' + esc(endedInfo.reason) + '</p>' : '') +
+      (reasonText ? '<p class="hkmp-note">' + esc(reasonText) + '</p>' : '') +
       (room && room.code ? '<p class="hkmp-note">방 ' + esc(room.code) + '</p>' : '') +
       '<div class="hkmp-row" style="justify-content:center;margin-top:18px">' +
       '<button type="button" class="hkmp-btn primary" data-act="rematch">Rematch</button>' +

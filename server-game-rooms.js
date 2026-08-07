@@ -334,64 +334,119 @@ const RTS_UNITS = {
   ranged: { cost: 100, hp: 55, dps: 12, range: 22, speed: 75, range: 120 },
   bomber: { cost: 140, hp: 45, dps: 40, range: 18, speed: 95, range: 35 },
   tanker: { cost: 160, hp: 200, dps: 10, range: 28, speed: 50, range: 32 },
-  duck: { cost: 40, hp: 30, dps: 8, range: 14, speed: 110, range: 24 },
+  duck: { cost: 40, hp: 18, dps: 8, range: 12, speed: 110, range: 24 },
 };
 const RTS_BUILD = {
-  nexus: { cost: 0, hp: 800, w: 56, h: 56 },
+  nexus: { cost: 0, hp: 900, w: 64, h: 64, range: 240, dps: 55 },
   barracks: { cost: 150, hp: 300, w: 48, h: 48 },
   turret: { cost: 120, hp: 220, w: 36, h: 36, range: 160, dps: 18 },
 };
+const RTS_NEXUS_TURRET_BAN_R = 110;
+
+function rtsCircleHitsObstacles(s, x, y, r) {
+  for (const o of s.obstacles || []) {
+    if (o.kind === "rock") {
+      if (Math.hypot(o.x - x, o.y - y) < (o.r || 28) + r) return true;
+    } else if (o.kind === "water") {
+      const dx = Math.max(Math.abs(x - o.x) - o.w / 2, 0);
+      const dy = Math.max(Math.abs(y - o.y) - o.h / 2, 0);
+      if (Math.hypot(dx, dy) < r) return true;
+    }
+  }
+  return false;
+}
+
+function rtsClampPos(s, x, y, r) {
+  let nx = Math.max(r + 4, Math.min(s.W - r - 4, x));
+  let ny = Math.max(r + 4, Math.min(s.H - r - 4, y));
+  if (!rtsCircleHitsObstacles(s, nx, ny, r)) return { x: nx, y: ny };
+  // slide attempts
+  for (const [ax, ay] of [
+    [nx, y],
+    [x, ny],
+    [x, y],
+  ]) {
+    const cx = Math.max(r + 4, Math.min(s.W - r - 4, ax));
+    const cy = Math.max(r + 4, Math.min(s.H - r - 4, ay));
+    if (!rtsCircleHitsObstacles(s, cx, cy, r)) return { x: cx, y: cy };
+  }
+  return { x: eSafe(x, s.W, r), y: eSafe(y, s.H, r) };
+}
+
+function eSafe(v, max, r) {
+  return Math.max(r + 4, Math.min(max - r - 4, v));
+}
 
 function initRts(room) {
-  const W = 900,
-    H = 600;
+  const W = 1200,
+    H = 800;
   let uid = 1;
-  const mkSide = (owner, baseX) => {
+  const mkSide = (owner, baseX, baseY) => {
     const nexus = {
       id: uid++,
       kind: "building",
       type: "nexus",
       owner,
       x: baseX,
-      y: H / 2,
+      y: baseY,
       hp: RTS_BUILD.nexus.hp,
       maxHp: RTS_BUILD.nexus.hp,
-      w: 56,
-      h: 56,
+      w: RTS_BUILD.nexus.w,
+      h: RTS_BUILD.nexus.h,
+      atkCd: 0,
     };
+    // minerals face the nearby outer walls
     const minerals = [];
-    for (let i = 0; i < 3; i++) {
-      minerals.push({
-        id: uid++,
-        kind: "mineral",
-        x: baseX + (owner === 0 ? 90 : -90),
-        y: H / 2 - 80 + i * 80,
-        amount: 9999,
-      });
+    if (owner === 0) {
+      minerals.push(
+        { id: uid++, kind: "mineral", x: 42, y: 48, amount: 9999 },
+        { id: uid++, kind: "mineral", x: 42, y: 118, amount: 9999 },
+        { id: uid++, kind: "mineral", x: 110, y: 42, amount: 9999 }
+      );
+    } else {
+      minerals.push(
+        { id: uid++, kind: "mineral", x: W - 42, y: H - 48, amount: 9999 },
+        { id: uid++, kind: "mineral", x: W - 42, y: H - 118, amount: 9999 },
+        { id: uid++, kind: "mineral", x: W - 110, y: H - 42, amount: 9999 }
+      );
     }
     const workers = [];
     for (let i = 0; i < 3; i++) {
+      const ox = owner === 0 ? 36 : -36;
+      const oy = (i - 1) * 34;
       workers.push({
         id: uid++,
         kind: "unit",
         type: "worker",
         owner,
-        x: baseX + (owner === 0 ? 40 : -40),
-        y: H / 2 - 40 + i * 40,
+        x: baseX + ox,
+        y: baseY + oy,
         hp: RTS_UNITS.worker.hp,
         maxHp: RTS_UNITS.worker.hp,
         r: RTS_UNITS.worker.r,
         tx: null,
         ty: null,
         targetId: null,
+        order: null,
         carry: 0,
         atkCd: 0,
       });
     }
     return { nexus, minerals, workers };
   };
-  const a = mkSide(0, 100);
-  const b = mkSide(1, W - 100);
+  const a = mkSide(0, 150, 150);
+  const b = mkSide(1, W - 150, H - 150);
+  const obstacles = [
+    { kind: "rock", x: 520, y: 260, r: 36 },
+    { kind: "rock", x: 700, y: 520, r: 42 },
+    { kind: "rock", x: 380, y: 540, r: 30 },
+    { kind: "rock", x: 860, y: 280, r: 34 },
+    { kind: "rock", x: 600, y: 400, r: 26 },
+    { kind: "water", x: 300, y: 360, w: 140, h: 90 },
+    { kind: "water", x: 920, y: 460, w: 150, h: 100 },
+    { kind: "water", x: 620, y: 150, w: 120, h: 70 },
+    { kind: "water", x: 560, y: 680, w: 160, h: 80 },
+  ];
   return {
     W,
     H,
@@ -399,6 +454,8 @@ function initRts(room) {
     gold: [200, 200],
     entities: [...a.workers, ...b.workers, a.nexus, b.nexus],
     minerals: [...a.minerals, ...b.minerals],
+    obstacles,
+    beams: [],
     spawnQ: [],
   };
 }
@@ -407,9 +464,28 @@ function rtsFind(s, id) {
   return s.entities.find((e) => e.id === id);
 }
 
+function rtsBuildAllowed(s, owner, bt, x, y) {
+  const def = RTS_BUILD[bt];
+  if (!def || bt === "nexus") return false;
+  const r = Math.max(def.w, def.h) / 2;
+  if (rtsCircleHitsObstacles(s, x, y, r * 0.7)) return false;
+  const nexus = s.entities.find((e) => e.type === "nexus" && e.owner === owner);
+  if (!nexus) return false;
+  if (bt === "turret") {
+    const d = Math.hypot(x - nexus.x, y - nexus.y);
+    if (d < RTS_NEXUS_TURRET_BAN_R) return false;
+  }
+  return true;
+}
+
 function tickRts(room, dt) {
   const s = room.state;
-  // apply one command per player per tick
+  if (!s.beams) s.beams = [];
+  s.beams = s.beams.filter((b) => {
+    b.life -= dt;
+    return b.life > 0;
+  });
+
   for (const p of room.players) {
     const inp = p.input;
     if (!inp || !inp.cmd) continue;
@@ -422,31 +498,35 @@ function tickRts(room, dt) {
           e.tx = inp.x;
           e.ty = inp.y;
           e.targetId = null;
+          e.order = "move";
         }
       }
     } else if (inp.cmd === "attack") {
       for (const id of sels) {
         const e = rtsFind(s, id);
         if (e && e.kind === "unit" && e.owner === owner) {
-          e.targetId = inp.targetId || null;
+          e.targetId = inp.targetId != null ? inp.targetId : null;
           e.tx = inp.x;
           e.ty = inp.y;
+          e.order = e.targetId != null ? "attack" : "move";
+          if (e.order === "move") e.targetId = null;
         }
       }
     } else if (inp.cmd === "build") {
       const bt = inp.buildType;
       const def = RTS_BUILD[bt];
       if (def && bt !== "nexus" && s.gold[owner] >= def.cost) {
-        const nearNexus = s.entities.find((e) => e.type === "nexus" && e.owner === owner);
-        if (nearNexus) {
+        const x = Math.max(30, Math.min(s.W - 30, inp.x));
+        const y = Math.max(30, Math.min(s.H - 30, inp.y));
+        if (rtsBuildAllowed(s, owner, bt, x, y)) {
           s.gold[owner] -= def.cost;
           s.entities.push({
             id: s.nextId++,
             kind: "building",
             type: bt,
             owner,
-            x: Math.max(30, Math.min(s.W - 30, inp.x)),
-            y: Math.max(30, Math.min(s.H - 30, inp.y)),
+            x,
+            y,
             hp: def.hp,
             maxHp: def.hp,
             w: def.w,
@@ -455,7 +535,6 @@ function tickRts(room, dt) {
           });
         }
       } else if (inp.unitType && RTS_UNITS[inp.unitType]) {
-        // spawn from barracks/nexus
         const ut = inp.unitType;
         const udef = RTS_UNITS[ut];
         const from =
@@ -464,19 +543,26 @@ function tickRts(room, dt) {
             : s.entities.find((e) => e.type === "barracks" && e.owner === owner);
         if (from && s.gold[owner] >= udef.cost) {
           s.gold[owner] -= udef.cost;
+          const spawn = rtsClampPos(
+            s,
+            from.x + (owner === 0 ? 48 : -48),
+            from.y + (Math.random() - 0.5) * 50,
+            udef.r
+          );
           s.entities.push({
             id: s.nextId++,
             kind: "unit",
             type: ut,
             owner,
-            x: from.x + (owner === 0 ? 40 : -40),
-            y: from.y + (Math.random() - 0.5) * 40,
+            x: spawn.x,
+            y: spawn.y,
             hp: udef.hp,
             maxHp: udef.hp,
             r: udef.r,
             tx: null,
             ty: null,
             targetId: null,
+            order: null,
             carry: 0,
             atkCd: 0,
           });
@@ -486,15 +572,16 @@ function tickRts(room, dt) {
     inp.cmd = null;
   }
 
-  // workers auto-harvest
+  // workers auto-harvest (idle only)
   for (const e of s.entities) {
     if (e.kind !== "unit" || e.type !== "worker" || e.hp <= 0) continue;
+    if (e.order === "move" || e.order === "attack") continue;
     if (e.tx != null) continue;
     if (e.carry >= 10) {
       const nexus = s.entities.find((n) => n.type === "nexus" && n.owner === e.owner);
       if (nexus) {
         const d = Math.hypot(nexus.x - e.x, nexus.y - e.y);
-        if (d < 40) {
+        if (d < 48) {
           s.gold[e.owner] += e.carry;
           e.carry = 0;
         } else {
@@ -530,41 +617,51 @@ function tickRts(room, dt) {
     if (e.kind !== "unit" || e.hp <= 0) continue;
     const def = RTS_UNITS[e.type] || RTS_UNITS.melee;
     if (e.atkCd > 0) e.atkCd -= dt;
-    // acquire target
-    let target = e.targetId != null ? rtsFind(s, e.targetId) : null;
-    if (target && target.hp <= 0) target = null;
-    if (!target) {
-      let bd = def.range + 40,
-        best = null;
-      for (const o of s.entities) {
-        if (o.owner === e.owner || o.hp <= 0) continue;
-        if (o.kind !== "unit" && o.kind !== "building") continue;
-        const d = Math.hypot(o.x - e.x, o.y - e.y);
-        if (d < bd) {
-          bd = d;
-          best = o;
-        }
+
+    if (e.order === "move") {
+      if (e.tx == null) e.order = null;
+    } else {
+      let target = e.targetId != null ? rtsFind(s, e.targetId) : null;
+      if (target && target.hp <= 0) {
+        target = null;
+        e.targetId = null;
       }
-      if (best && bd <= def.range + 20) target = best;
-    }
-    if (target) {
-      const d = Math.hypot(target.x - e.x, target.y - e.y);
-      if (d <= def.range) {
-        e.tx = null;
-        e.ty = null;
-        if (e.atkCd <= 0) {
-          target.hp -= def.dps * 0.5;
-          e.atkCd = 0.5;
-          if (e.type === "bomber") {
-            target.hp -= 25;
-            e.hp = 0;
+      if (!target && e.order !== "move") {
+        let bd = def.range + 40,
+          best = null;
+        for (const o of s.entities) {
+          if (o.owner === e.owner || o.hp <= 0) continue;
+          if (o.kind !== "unit" && o.kind !== "building") continue;
+          const d = Math.hypot(o.x - e.x, o.y - e.y);
+          if (d < bd) {
+            bd = d;
+            best = o;
           }
         }
-      } else {
-        e.tx = target.x;
-        e.ty = target.y;
+        if (best && bd <= def.range + 20) target = best;
+      }
+      if (target) {
+        const d = Math.hypot(target.x - e.x, target.y - e.y);
+        if (d <= def.range) {
+          if (e.order !== "move") {
+            e.tx = null;
+            e.ty = null;
+          }
+          if (e.atkCd <= 0) {
+            target.hp -= def.dps * 0.5;
+            e.atkCd = 0.5;
+            if (e.type === "bomber") {
+              target.hp -= 25;
+              e.hp = 0;
+            }
+          }
+        } else if (e.order !== "move") {
+          e.tx = target.x;
+          e.ty = target.y;
+        }
       }
     }
+
     if (e.tx != null) {
       const dx = e.tx - e.x,
         dy = e.ty - e.y;
@@ -572,10 +669,46 @@ function tickRts(room, dt) {
       if (dist < 4) {
         e.tx = null;
         e.ty = null;
+        if (e.order === "move") e.order = null;
       } else {
-        e.x += (dx / dist) * def.speed * dt;
-        e.y += (dy / dist) * def.speed * dt;
+        const step = def.speed * dt;
+        const nx = e.x + (dx / dist) * step;
+        const ny = e.y + (dy / dist) * step;
+        const pos = rtsClampPos(s, nx, ny, e.r || 8);
+        e.x = pos.x;
+        e.y = pos.y;
       }
+    }
+  }
+
+  // nexus laser — auto protect workers / base
+  for (const e of s.entities) {
+    if (e.type !== "nexus" || e.hp <= 0) continue;
+    if (e.atkCd > 0) e.atkCd -= dt;
+    const range = RTS_BUILD.nexus.range;
+    let best = null,
+      bd = range;
+    for (const o of s.entities) {
+      if (o.owner === e.owner || o.hp <= 0) continue;
+      if (o.kind !== "unit" && o.kind !== "building") continue;
+      if (o.type === "nexus") continue;
+      const d = Math.hypot(o.x - e.x, o.y - e.y);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    if (best && e.atkCd <= 0) {
+      best.hp -= RTS_BUILD.nexus.dps * 0.45;
+      e.atkCd = 0.35;
+      s.beams.push({
+        x1: e.x,
+        y1: e.y,
+        x2: best.x,
+        y2: best.y,
+        life: 0.18,
+        owner: e.owner,
+      });
     }
   }
 
@@ -597,6 +730,14 @@ function tickRts(room, dt) {
     if (best && e.atkCd <= 0) {
       best.hp -= RTS_BUILD.turret.dps * 0.4;
       e.atkCd = 0.4;
+      s.beams.push({
+        x1: e.x,
+        y1: e.y,
+        x2: best.x,
+        y2: best.y,
+        life: 0.12,
+        owner: e.owner,
+      });
     }
   }
 
