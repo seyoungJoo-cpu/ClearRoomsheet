@@ -106,12 +106,14 @@ function endGame(room, reason, winnerId) {
 }
 
 function removePlayer(room, player) {
+  const game = room.game;
   const idx = room.players.indexOf(player);
   if (idx >= 0) room.players.splice(idx, 1);
   player.roomCode = null;
   if (!room.players.length) {
     clearTick(room);
     rooms.delete(room.code);
+    notifyLobby(game);
     return;
   }
   if (room.status === "playing") {
@@ -130,6 +132,7 @@ function removePlayer(room, player) {
   } else {
     for (const p of room.players) p.ready = false;
     broadcastRoom(room);
+    notifyLobby(game);
   }
 }
 
@@ -137,6 +140,7 @@ function tryStart(room) {
   if (room.status !== "lobby") return;
   if (!allReady(room)) return;
   room.status = "playing";
+  notifyLobby(room.game);
   for (const p of room.players) {
     p.input = defaultInput(room.game);
     p.ready = false;
@@ -1002,9 +1006,21 @@ function lobbyList(game) {
       players: room.players.length,
       max: GAMES[game].max,
       names: room.players.map((p) => p.name),
+      host: room.players[0] ? room.players[0].name : "",
     });
   }
   return list;
+}
+
+/** @type {import("ws").WebSocketServer | null} */
+let gameWss = null;
+
+function notifyLobby(game) {
+  if (!gameWss || !GAMES[game]) return;
+  const payload = { type: "lobby_list", game, rooms: lobbyList(game) };
+  gameWss.clients.forEach(function (client) {
+    if (client.readyState === 1) send(client, payload);
+  });
 }
 
 function findPlayerByWs(ws) {
@@ -1018,6 +1034,7 @@ function findPlayerByWs(ws) {
 
 function attachGameRooms(httpServer) {
   const wss = new WebSocketServer({ server: httpServer, path: "/hk-game-ws" });
+  gameWss = wss;
 
   wss.on("connection", (ws) => {
     ws._name = "Player";
@@ -1074,7 +1091,8 @@ function attachGameRooms(httpServer) {
         room.players.push(player);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
-        return broadcastRoom(room);
+        broadcastRoom(room);
+        return notifyLobby(game);
       }
 
       if (type === "join") {
@@ -1103,7 +1121,8 @@ function attachGameRooms(httpServer) {
         };
         room.players.push(player);
         send(ws, { type: "hello_ok", name, playerId: player.id });
-        return broadcastRoom(room);
+        broadcastRoom(room);
+        return notifyLobby(room.game);
       }
 
       const found = findPlayerByWs(ws);

@@ -16,6 +16,7 @@
   var ws = null, gameId = '', room = null, selfId = '', lastState = null, endedInfo = null;
   var listTimer = 0, inputTimer = 0, reconnecting = false, intentionalClose = false;
   var view = 'browse'; // browse | room | play | ended
+  var lastBrowseRooms = [];
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
   var selectIds = [], drag = null, pendingBuild = null, pendingTd = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
@@ -54,9 +55,11 @@
       '.hkmp-btn{appearance:none;border:1px solid #8f7b4f;background:#122a2d;color:#f4e8c9;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}.hkmp-btn:hover{border-color:#d5bd80;background:#18383a}.hkmp-btn.primary{color:#15211f;background:linear-gradient(135deg,#f0d796,#bea15e);border:0}.hkmp-btn:disabled{opacity:.45;cursor:default}',
       '.hkmp-panel{border:1px solid rgba(220,194,126,.26);border-radius:20px;background:linear-gradient(115deg,rgba(13,52,49,.88),rgba(8,25,32,.92));box-shadow:0 20px 55px #0007;padding:20px}',
       '.hkmp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}',
-      '.hkmp-input{flex:1;min-width:120px;border:1px solid #8f7b4f88;background:#0d2429;color:#f5f0df;border-radius:12px;padding:10px 12px;font:inherit;letter-spacing:.12em;text-transform:uppercase}',
-      '.hkmp-list{display:grid;gap:8px;margin-top:8px}.hkmp-room{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #ffffff14;border-radius:14px;background:#0d242988}',
-      '.hkmp-room b{color:#efd28a;letter-spacing:.14em}.hkmp-room span{flex:1;color:#aebfba;font-size:13px}',
+      '.hkmp-list{display:grid;gap:10px;margin-top:10px;min-height:120px}.hkmp-room{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #ffffff18;border-radius:14px;background:#0d242988;cursor:pointer;transition:.15s;text-align:left;width:100%;font:inherit;color:inherit}',
+      '.hkmp-room:hover{border-color:#cbb270aa;background:#12343acc;transform:translateY(-1px)}.hkmp-room:disabled{opacity:.5;cursor:default;transform:none}',
+      '.hkmp-room b{color:#efd28a;font-size:15px}.hkmp-room span{flex:1;color:#aebfba;font-size:13px;text-align:left}',
+      '.hkmp-room .hkmp-join-hint{flex:0 0 auto;color:#15211f;background:linear-gradient(135deg,#f0d796,#bea15e);border-radius:10px;padding:8px 12px;font-weight:800;font-size:12px}',
+      '.hkmp-create-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}',
       '.hkmp-players{display:grid;gap:8px;margin:12px 0}.hkmp-player{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#091a21cc;border:1px solid #ffffff12}',
       '.hkmp-player.me{border-color:#cbb27088;color:#efd28a}.hkmp-dot{width:10px;height:10px;border-radius:50%;background:#88a09a}.hkmp-dot.on{background:#9ae6b4}',
       '.hkmp-note{color:#88a09a;font-size:12px;margin-top:8px}.hkmp-hud{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}',
@@ -265,7 +268,7 @@
     stopList();
     listTimer = setInterval(function () {
       if (view === 'browse') requestList();
-    }, 3000);
+    }, 1200);
   }
   function stopList() {
     if (listTimer) clearInterval(listTimer);
@@ -386,7 +389,7 @@
 
   function render() {
     if (!refs.body) return;
-    if (view === 'browse') { renderBrowse([]); return; }
+    if (view === 'browse') { renderBrowse(); return; }
     if (view === 'room') { renderRoom(); return; }
     if (view === 'ended') { renderEnded(); return; }
     if (view === 'play') { renderPlay(); return; }
@@ -394,51 +397,47 @@
 
   function renderBrowse(rooms) {
     if (view !== 'browse') return;
-    var prevCode = '';
-    var codeEl = refs.body && refs.body.querySelector('[data-code]');
-    if (codeEl) prevCode = codeEl.value || '';
+    if (rooms) lastBrowseRooms = rooms;
+    else rooms = lastBrowseRooms || [];
     var m = meta(gameId);
+    var max = MAX_PLAYERS[gameId] || 2;
     refs.body.innerHTML =
-      '<div class="hkmp-row">' +
-      '<button type="button" class="hkmp-btn primary" data-act="create">방 만들기</button>' +
-      '<input class="hkmp-input" data-code maxlength="6" placeholder="방 코드" autocomplete="off" />' +
-      '<button type="button" class="hkmp-btn" data-act="join">참가</button></div>' +
-      '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + (MAX_PLAYERS[gameId] || 2) + '명</div>' +
-      '<h3 style="margin:16px 0 8px;color:#ecd18b;font-family:Georgia,serif">열린 방</h3>' +
+      '<div class="hkmp-create-wrap">' +
+      '<button type="button" class="hkmp-btn primary" data-act="create" style="align-self:flex-start;font-size:15px;padding:12px 18px">방 만들기</button>' +
+      '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + max + '명 · 아래 방을 눌러 참가</div></div>' +
+      '<h3 style="margin:8px 0 10px;color:#ecd18b;font-family:Georgia,serif">대기 중인 방</h3>' +
       '<div class="hkmp-list" data-list></div>';
     var list = refs.body.querySelector('[data-list]');
-    var input = refs.body.querySelector('[data-code]');
-    if (prevCode) input.value = prevCode;
-    if (!rooms || !rooms.length) {
-      list.innerHTML = '<div class="hkmp-note">열린 방이 없습니다. 방을 만들어보세요.</div>';
+    if (!rooms.length) {
+      list.innerHTML = '<div class="hkmp-note">아직 열린 방이 없습니다. 위에서 방을 만들어 주세요.</div>';
     } else {
       list.innerHTML = rooms.map(function (r) {
         var code = r.code || r.roomCode || '';
         var cnt = typeof r.players === 'number' ? r.players : (r.count != null ? r.count : (r.players && r.players.length) || r.n || 0);
-        var max = r.max || MAX_PLAYERS[gameId] || 2;
-        var st = r.status || 'lobby';
-        var names = Array.isArray(r.names) ? r.names.join(', ') : '';
-        return '<div class="hkmp-room"><b>' + esc(code) + '</b><span>' + cnt + '/' + max + (names ? ' · ' + esc(names) : '') + '</span>' +
-          '<button type="button" class="hkmp-btn" data-join="' + esc(code) + '">참가</button></div>';
+        var roomMax = r.max || max;
+        var names = Array.isArray(r.names) ? r.names.filter(Boolean).join(', ') : '';
+        var host = (r.host && String(r.host)) || names || ('대기방');
+        var full = cnt >= roomMax;
+        return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
+          '<b>' + esc(host) + '</b>' +
+          '<span>' + cnt + '/' + roomMax + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
+          (full ? '' : '<span class="hkmp-join-hint">참가</span>') +
+          '</button>';
       }).join('');
     }
     refs.body.querySelector('[data-act="create"]').onclick = function () {
       ensureConnected(function () {
         send({ type: 'create', game: gameId, name: name() || 'Guest' });
-      });
-    };
-    refs.body.querySelector('[data-act="join"]').onclick = function () {
-      var code = (refs.body.querySelector('[data-code]').value || '').trim().toUpperCase();
-      if (!code) { toast('방 코드를 입력하세요'); return; }
-      ensureConnected(function () {
-        send({ type: 'join', code: code, name: name() || 'Guest' });
+        toast('방을 만들었습니다');
       });
     };
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-join]'), function (btn) {
       btn.onclick = function () {
+        if (btn.disabled) return;
         var code = btn.getAttribute('data-join');
         ensureConnected(function () {
           send({ type: 'join', code: code, name: name() || 'Guest' });
+          toast('방에 참가 중…');
         });
       };
     });
@@ -451,8 +450,7 @@
     var allReady = players.length >= 2 && players.every(function (p) { return p.ready; });
     var need = gameId === 'snakes' ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">방 코드 <b>' + esc(room.code) + '</b></span>' +
-      '<button type="button" class="hkmp-btn" data-act="copy">코드 복사</button>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + need + '명</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave">나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
         var ready = !!p.ready;
@@ -465,25 +463,12 @@
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (me && me.ready ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
       '<div class="hkmp-note">' + (allReady && players.length >= need ? '모두 준비됨 — 곧 시작합니다' :
-        (players.length < need ? '최소 인원을 기다리는 중… (' + players.length + '/' + need + ')' : '모두 Ready하면 서버가 자동 시작합니다')) + '</div>';
-    refs.body.querySelector('[data-act="copy"]').onclick = function () {
-      var code = room.code || '';
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(code).then(function () { toast('코드 복사됨: ' + code); }, function () { fallbackCopy(code); });
-      } else fallbackCopy(code);
-    };
+        (players.length < need ? '상대를 기다리는 중… (' + players.length + '/' + need + ')' : '모두 Ready하면 자동 시작')) + '</div>';
     refs.body.querySelector('[data-act="leave"]').onclick = function () {
       send({ type: 'leave' });
       room = null; view = 'browse'; render(); requestList();
     };
     refs.body.querySelector('[data-act="ready"]').onclick = function () { send({ type: 'ready' }); };
-  }
-
-  function fallbackCopy(code) {
-    try {
-      var ta = el('textarea'); ta.value = code; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta); toast('코드 복사됨: ' + code);
-    } catch (_) { toast('코드: ' + code); }
   }
 
   function renderPlay() {
