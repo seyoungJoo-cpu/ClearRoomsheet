@@ -207,7 +207,24 @@ function tryStart(room) {
     p.ready = false;
   }
   if (room.game === "tank") ensureTankAi(room);
-  room.state = initState(room);
+  try {
+    room.state = initState(room);
+  } catch (err) {
+    console.warn("initState failed", room.game, err);
+    room.status = "lobby";
+    room.state = null;
+    for (const p of room.players) p.ready = false;
+    broadcastRoom(room);
+    return;
+  }
+  if (room.game === "rts") {
+    ensureRtsBases(room);
+    const nx = (room.state.entities || []).filter((e) => e.type === "nexus" && e.hp > 0);
+    if (nx.length < room.players.length) {
+      console.warn("RTS nexus shortfall after init", nx.length, room.players.length);
+      ensureRtsBases(room);
+    }
+  }
   broadcastRoom(room);
   broadcastState(room);
   const hz = GAMES[room.game].hz;
@@ -659,64 +676,161 @@ function eSafe(v, max, r) {
   return Math.max(r + 4, Math.min(max - r - 4, v));
 }
 
-function initRts(room) {
-  const W = 1200,
-    H = 800;
-  let uid = 1;
-  const mode = parseRtsMode(room.mode);
-  room.mode = mode;
-  const bases = [
+function rtsBaseLayout(mode, W, H) {
+  if (rtsIsTeam(mode)) {
+    // Left team slots 0,1 · Right team slots 2,3
+    return [
+      { x: 150, y: 180, sx: 1, sy: 1 },
+      { x: 150, y: H - 180, sx: 1, sy: -1 },
+      { x: W - 150, y: 180, sx: -1, sy: 1 },
+      { x: W - 150, y: H - 180, sx: -1, sy: -1 },
+    ];
+  }
+  // FFA / 1v1: corners
+  return [
     { x: 150, y: 150, sx: 1, sy: 1 },
     { x: W - 150, y: 150, sx: -1, sy: 1 },
     { x: 150, y: H - 150, sx: 1, sy: -1 },
     { x: W - 150, y: H - 150, sx: -1, sy: -1 },
   ];
-  // 2v2: teammates share same vertical side (left vs right)
-  const teamBases = [
-    { x: 150, y: 180, sx: 1, sy: 1 },
-    { x: 150, y: H - 180, sx: 1, sy: -1 },
-    { x: W - 150, y: 180, sx: -1, sy: 1 },
-    { x: W - 150, y: H - 180, sx: -1, sy: -1 },
-  ];
-  const layout = rtsIsTeam(mode) ? teamBases : bases;
-  const mkSide = (owner, base) => {
-    const { x: baseX, y: baseY, sx, sy } = base;
-    const team = rtsTeamOf(owner, mode);
-    const nexus = {
-      id: uid++,
-      kind: "building",
-      type: "nexus",
-      owner,
-      team,
-      x: baseX,
-      y: baseY,
-      hp: RTS_BUILD.nexus.hp,
-      maxHp: RTS_BUILD.nexus.hp,
-      w: RTS_BUILD.nexus.w,
-      h: RTS_BUILD.nexus.h,
-      atkCd: 0,
-    };
-    const minerals = [
-      { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 102, amount: 9999 },
-      { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 32, amount: 9999 },
-      { id: uid++, kind: "mineral", x: baseX - sx * 40, y: baseY - sy * 108, amount: 9999 },
-    ].map((m) => ({
-      id: m.id,
-      kind: m.kind,
-      amount: m.amount,
+}
+
+const RTS_START_WORKERS = 3;
+const RTS_START_GOLD = 200;
+const RTS_GRACE_TICKS = 45; // ~2.25s at 20hz
+
+function rtsMkSide(uidRef, owner, base, mode, W, H) {
+  const { x: baseX, y: baseY, sx, sy } = base;
+  const team = rtsTeamOf(owner, mode);
+  const nexus = {
+    id: uidRef.v++,
+    kind: "building",
+    type: "nexus",
+    owner: owner,
+    team: team,
+    x: baseX,
+    y: baseY,
+    hp: RTS_BUILD.nexus.hp,
+    maxHp: RTS_BUILD.nexus.hp,
+    w: RTS_BUILD.nexus.w,
+    h: RTS_BUILD.nexus.h,
+    atkCd: 0,
+  };
+  const minerals = [
+    { x: baseX - sx * 108, y: baseY - sy * 102 },
+    { x: baseX - sx * 108, y: baseY - sy * 32 },
+    { x: baseX - sx * 40, y: baseY - sy * 108 },
+  ].map(function (m) {
+    return {
+      id: uidRef.v++,
+      kind: "mineral",
+      amount: 9999,
       x: Math.max(28, Math.min(W - 28, m.x)),
       y: Math.max(28, Math.min(H - 28, m.y)),
-    }));
-    const workers = [];
-    for (let i = 0; i < 3; i++) {
-      workers.push({
-        id: uid++,
+    };
+  });
+  const workers = [];
+  for (let i = 0; i < RTS_START_WORKERS; i++) {
+    workers.push({
+      id: uidRef.v++,
+      kind: "unit",
+      type: "worker",
+      owner: owner,
+      team: team,
+      x: baseX + sx * (42 + i * 6),
+      y: baseY + sy * (i - 1) * 36,
+      hp: RTS_UNITS.worker.hp,
+      maxHp: RTS_UNITS.worker.hp,
+      r: RTS_UNITS.worker.r,
+      tx: null,
+      ty: null,
+      targetId: null,
+      order: null,
+      carry: 0,
+      atkCd: 0,
+    });
+  }
+  return { nexus: nexus, minerals: minerals, workers: workers };
+}
+
+/** Always one nexus + starter workers per seated player. Safe to call mid-match to repair missing starters. */
+function ensureRtsBases(room) {
+  const s = room.state;
+  if (!s || room.game !== "rts") return false;
+  const W = s.W || 1200;
+  const H = s.H || 800;
+  const mode = parseRtsMode(s.mode || room.mode);
+  s.mode = mode;
+  room.mode = mode;
+  if (!Array.isArray(s.entities)) s.entities = [];
+  if (!Array.isArray(s.minerals)) s.minerals = [];
+  if (!Array.isArray(s.gold)) s.gold = [];
+  if (!s.nextId) s.nextId = 1;
+
+  // Contiguous seats — ownership / gold index must match
+  room.players.forEach(function (p, i) {
+    p.slot = i;
+    p.team = rtsTeamOf(i, mode);
+  });
+
+  while (s.gold.length < room.players.length) s.gold.push(RTS_START_GOLD);
+  s.gold.length = room.players.length;
+
+  const layout = rtsBaseLayout(mode, W, H);
+  const uidRef = { v: s.nextId };
+  let repaired = false;
+
+  for (let i = 0; i < room.players.length; i++) {
+    const owner = i;
+    const base = layout[i % layout.length];
+    let nexus = s.entities.find(function (e) {
+      return e && e.type === "nexus" && e.owner === owner && e.hp > 0;
+    });
+    if (!nexus) {
+      // Drop any dead/corrupt nexus for this owner first
+      s.entities = s.entities.filter(function (e) {
+        return !(e && e.type === "nexus" && e.owner === owner);
+      });
+      const side = rtsMkSide(uidRef, owner, base, mode, W, H);
+      s.entities.push(side.nexus);
+      for (let w = 0; w < side.workers.length; w++) s.entities.push(side.workers[w]);
+      // Minerals only if this owner has none nearby
+      const hasMin = s.minerals.some(function (m) {
+        return Math.hypot(m.x - base.x, m.y - base.y) < 160;
+      });
+      if (!hasMin) {
+        for (let m = 0; m < side.minerals.length; m++) s.minerals.push(side.minerals[m]);
+      }
+      if (s.gold[owner] == null || s.gold[owner] < 50) s.gold[owner] = RTS_START_GOLD;
+      repaired = true;
+      continue;
+    }
+    // Force legal coordinates / hp
+    nexus.kind = "building";
+    nexus.type = "nexus";
+    nexus.owner = owner;
+    nexus.team = rtsTeamOf(owner, mode);
+    nexus.x = base.x;
+    nexus.y = base.y;
+    nexus.w = RTS_BUILD.nexus.w;
+    nexus.h = RTS_BUILD.nexus.h;
+    nexus.maxHp = RTS_BUILD.nexus.maxHp || RTS_BUILD.nexus.hp;
+    if (!(nexus.hp > 0)) nexus.hp = nexus.maxHp;
+    if (nexus.atkCd == null) nexus.atkCd = 0;
+
+    let workers = s.entities.filter(function (e) {
+      return e && e.kind === "unit" && e.type === "worker" && e.owner === owner && e.hp > 0;
+    });
+    while (workers.length < RTS_START_WORKERS && (s.tickNo || 0) < RTS_GRACE_TICKS) {
+      const idx = workers.length;
+      const w = {
+        id: uidRef.v++,
         kind: "unit",
         type: "worker",
-        owner,
-        team,
-        x: baseX + sx * 36,
-        y: baseY + (i - 1) * 34,
+        owner: owner,
+        team: rtsTeamOf(owner, mode),
+        x: base.x + base.sx * (42 + idx * 6),
+        y: base.y + base.sy * (idx - 1) * 36,
         hp: RTS_UNITS.worker.hp,
         maxHp: RTS_UNITS.worker.hp,
         r: RTS_UNITS.worker.r,
@@ -726,24 +840,37 @@ function initRts(room) {
         order: null,
         carry: 0,
         atkCd: 0,
-      });
+      };
+      s.entities.push(w);
+      workers.push(w);
+      repaired = true;
     }
-    return { nexus: nexus, minerals: minerals, workers: workers };
-  };
-  room.players.forEach((p, i) => {
+  }
+  s.nextId = Math.max(s.nextId, uidRef.v);
+  return repaired;
+}
+
+function initRts(room) {
+  const W = 1200,
+    H = 800;
+  const mode = parseRtsMode(room.mode);
+  room.mode = mode;
+  room.players.forEach(function (p, i) {
     p.slot = i;
     p.team = rtsTeamOf(i, mode);
   });
+  const layout = rtsBaseLayout(mode, W, H);
+  const uidRef = { v: 1 };
   const entities = [];
   const minerals = [];
   const gold = [];
-  room.players.forEach((p, i) => {
-    const side = mkSide(p.slot, layout[i % layout.length]);
+  for (let i = 0; i < room.players.length; i++) {
+    const side = rtsMkSide(uidRef, i, layout[i % layout.length], mode, W, H);
     entities.push(side.nexus);
     for (let w = 0; w < side.workers.length; w++) entities.push(side.workers[w]);
     for (let m = 0; m < side.minerals.length; m++) minerals.push(side.minerals[m]);
-    gold.push(200);
-  });
+    gold.push(RTS_START_GOLD);
+  }
   const obstacles = [
     { kind: "rock", x: 520, y: 260, r: 36 },
     { kind: "rock", x: 700, y: 520, r: 42 },
@@ -755,11 +882,11 @@ function initRts(room) {
     { kind: "water", x: 620, y: 150, w: 120, h: 70 },
     { kind: "water", x: 560, y: 680, w: 160, h: 80 },
   ];
-  return {
+  const state = {
     W: W,
     H: H,
     mode: mode,
-    nextId: uid,
+    nextId: uidRef.v,
     gold: gold,
     entities: entities,
     minerals: minerals,
@@ -768,6 +895,9 @@ function initRts(room) {
     spawnQ: [],
     tickNo: 0,
   };
+  room.state = state;
+  ensureRtsBases(room);
+  return room.state;
 }
 
 function rtsFind(s, id) {
@@ -1062,16 +1192,21 @@ function tickRts(room, dt) {
   }
 
   s.entities = s.entities.filter((e) => e.hp != null && e.hp > 0);
-  // grace period so spawn always settles before end checks
-  if ((s.tickNo || 0) < 20) return;
-  const aliveNexus = s.entities.filter((e) => e.type === "nexus");
+
+  // Grace: force every player to have nexus + starter workers, skip win checks
+  if ((s.tickNo || 0) <= RTS_GRACE_TICKS) {
+    ensureRtsBases(room);
+    return;
+  }
+
+  const aliveNexus = s.entities.filter((e) => e.type === "nexus" && e.hp > 0);
   if (!aliveNexus.length && room.players.length >= 2) {
     endGame(room, "nexus", null);
     return;
   }
   if (rtsIsTeam(mode)) {
     const teamsLeft = [...new Set(aliveNexus.map((e) => (e.team != null ? e.team : rtsTeamOf(e.owner, mode))))];
-    if (teamsLeft.length <= 1) {
+    if (teamsLeft.length <= 1 && aliveNexus.length > 0) {
       const winTeam = teamsLeft[0];
       const w = room.players.find((p) => rtsTeamOf(p.slot, mode) === winTeam);
       endGame(room, "nexus", w ? w.id : null);

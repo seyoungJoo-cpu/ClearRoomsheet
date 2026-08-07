@@ -1473,8 +1473,8 @@
       ctx.fillStyle = '#d9f3ff'; ctx.beginPath(); ctx.arc(m.x - 3, m.y - 3, 4, 0, Math.PI * 2); ctx.fill();
     });
     (st.entities || []).forEach(function (e) {
-      var col = COLORS[e.owner != null ? e.owner : 0];
-      if (e.kind === 'building') {
+      var col = COLORS[e.owner != null ? e.owner : 0] || '#efd28a';
+      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'turret') {
         var bw = e.w || 40, bh = e.h || 40;
         if (e.type === 'nexus') {
           ctx.fillStyle = col;
@@ -1484,8 +1484,10 @@
           ctx.lineTo(e.x, e.y + bh / 2);
           ctx.lineTo(e.x - bw / 2, e.y);
           ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = '#efd28aaa'; ctx.lineWidth = 2; ctx.stroke();
-          ctx.fillStyle = '#fff6'; ctx.beginPath(); ctx.arc(e.x, e.y, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#efd28acc'; ctx.lineWidth = 3; ctx.stroke();
+          ctx.fillStyle = '#fff8'; ctx.beginPath(); ctx.arc(e.x, e.y, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 11px Georgia,serif'; ctx.textAlign = 'center';
+          ctx.fillText('본진', e.x, e.y - bh / 2 - 14);
         } else if (e.type === 'barracks') {
           ctx.fillStyle = col;
           ctx.fillRect(e.x - bw / 2, e.y - bh / 2, bw, bh);
