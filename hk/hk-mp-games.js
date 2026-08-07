@@ -661,7 +661,8 @@
     if (gameId === 'tank' && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); keys.fire = true; }
     if (gameId === 'rts' && e.key >= '1' && e.key <= '6') {
       var map = { '1': 'worker', '2': 'melee', '3': 'ranged', '4': 'bomber', '5': 'tanker', '6': 'duck' };
-      send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'build', unitType: map[e.key] } });
+      send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'train', unitType: map[e.key] } });
+      toast(map[e.key] + ' 대기열에 추가');
       pendingBuild = null;
       renderToolbarHighlight();
     }
@@ -935,7 +936,7 @@
   }
 
   function defaultSize() {
-    if (gameId === 'rts') return { w: 1200, h: 800 };
+    if (gameId === 'rts') return { w: 1800, h: 1200 };
     if (gameId === 'ageofwar') return { w: 1100, h: 420 };
     if (gameId === 'tank') return { w: 960, h: 640 };
     if (gameId === 'snakes') return { w: 1152, h: 768 };
@@ -945,7 +946,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · 목숨 3 · 사망 후 관전 카메라',
-      rts: '좌드래그 선택 · 우클릭 이동/공격 · 모드별 본진 배치(1:1/2:2/FFA)',
+      rts: '좌드래그 선택 · 우클릭 이동/공격 · 중앙 자원·확장 본진 · 생산 대기열',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -956,9 +957,9 @@
     if (!refs.tools) return;
     if (gameId === 'rts') {
       refs.tools.innerHTML = [
-        ['build:barracks', '배럭 ·150'], ['build:turret', '포탑 ·120 (본진 근처 불가)'],
-        ['train:worker', '일꾼(1) ·50'], ['train:melee', '전사(2) ·80'], ['train:ranged', '사수(3) ·100'],
-        ['train:bomber', '폭탄(4) ·140'], ['train:tanker', '탱커(5) ·160'], ['train:duck', '오리(6) ·40']
+        ['build:nexus', '확장본진 ·400'], ['build:barracks', '배럭 ·150'], ['build:turret', '포탑 ·120'],
+        ['train:worker', '일꾼(1) ·50 ·3.5s'], ['train:melee', '전사(2) ·80 ·5s'], ['train:ranged', '사수(3) ·100 ·5.5s'],
+        ['train:bomber', '폭탄(4) ·140 ·7s'], ['train:tanker', '탱커(5) ·160 ·8s'], ['train:duck', '오리(6) ·30 ·2.5s']
       ].map(function (x) {
         return '<button type="button" class="hkmp-btn" data-tool="' + x[0] + '">' + x[1] + '</button>';
       }).join('');
@@ -967,12 +968,13 @@
           var t = btn.getAttribute('data-tool').split(':');
           if (t[0] === 'build') {
             pendingBuild = { mode: 'build', buildType: t[1] };
+            toast(t[1] === 'nexus' ? '일꾼 옆에 확장 본진 위치를 클릭' : '건설 위치를 클릭');
             renderToolbarHighlight();
           } else {
-            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'build', unitType: t[1] } });
+            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'train', unitType: t[1] } });
             pendingBuild = null;
             renderToolbarHighlight();
-            toast(t[1] + ' 생산 요청');
+            toast(t[1] + ' 대기열에 추가');
           }
         };
       });
@@ -1140,6 +1142,18 @@
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
       if (st.mode === '2v2') html += '<span class="hkmp-pill">팀 <b>' + (mySlot() < 2 ? 'A' : 'B') + '</b></span>';
+      var qParts = [];
+      var meSlot = mySlot();
+      (st.entities || []).forEach(function (e) {
+        if (e.owner !== meSlot || e.kind !== 'building' || !e.queue || !e.queue.length) return;
+        var job = e.queue[0];
+        var need = (job && job.need) || 4;
+        var left = Math.max(0, need - (e.trainT || 0));
+        var label = e.type === 'nexus' ? '본진' : (e.type === 'barracks' ? '배럭' : e.type);
+        qParts.push(label + ':' + (job.type || '?') + ' ' + left.toFixed(1) + 's' + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''));
+      });
+      if (qParts.length) html += '<span class="hkmp-pill" style="color:#efd28a">생산 <b>' + qParts.join(' · ') + '</b></span>';
+      else html += '<span class="hkmp-pill">생산 <b>대기 없음</b></span>';
     } else if (gameId === 'ageofwar') {
       var gold = st.gold || [];
       var xp = st.xp || [];
@@ -1638,6 +1652,20 @@
           ctx.strokeStyle = '#0006'; ctx.stroke();
         }
         drawRtsHpBar(ctx, e.x, e.y - bh / 2 - 8, Math.max(36, bw * 0.7), e.hp, e.maxHp);
+        if (e.queue && e.queue.length) {
+          var job = e.queue[0];
+          var need = (job && job.need) || 4;
+          var prog = Math.max(0, Math.min(1, (e.trainT || 0) / need));
+          var bw2 = Math.max(36, bw * 0.85);
+          ctx.fillStyle = '#0009';
+          ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2, 5);
+          ctx.fillStyle = '#6ec8ff';
+          ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2 * prog, 5);
+          ctx.fillStyle = '#efd28a';
+          ctx.font = '10px Georgia,serif';
+          ctx.textAlign = 'center';
+          ctx.fillText((job.type || '') + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''), e.x, e.y + bh / 2 + 18);
+        }
       } else if (e.kind === 'unit') {
         drawRtsUnitShape(ctx, e, col);
         if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
