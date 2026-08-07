@@ -4,7 +4,7 @@
   var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var META = {
-    candy: { icon: '🍬', name: '캔디 스위트', desc: '1분 안에 보석을 맞추는 타임어택' },
+    candy: { icon: '🍬', name: '캔디 스위트', desc: '20초 시작 · 깨면 시간 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
     snake: { icon: '🐍', name: '미드나잇 스네이크', desc: '벽을 피해 야식을 모아보세요' },
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
@@ -117,7 +117,7 @@
       '.hkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.hkg-card{position:relative;text-align:left;min-height:225px;padding:22px;border:1px solid #ffffff18;border-radius:20px;color:inherit;background:linear-gradient(145deg,#123034dd,#0b1c25ee);box-shadow:0 14px 35px #0004;cursor:pointer;overflow:hidden;transition:.22s}.hkg-card:hover{transform:translateY(-4px);border-color:#cbb27088}.hkg-card:after{content:"";position:absolute;width:90px;height:90px;right:-25px;top:-25px;border-radius:50%;background:#d5bb7020}.hkg-card-icon{font-size:35px}.hkg-card h2{font-family:Georgia,serif;margin:10px 0 5px;font-size:22px}.hkg-card-desc{font-size:13px;color:#9fb2ad;min-height:38px}.hkg-best{margin:14px 0 9px;color:#ebd28f;font-weight:800}.hkg-mini{font-size:12px;color:#b9c8c3;line-height:1.65}.hkg-mini b{display:inline-block;width:18px;color:#d9bd78}',
       '.hkg-game{display:none}.hkg-game.show{display:block}.hkg-game-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}.hkg-game-head h1{font-family:Georgia,serif;margin:0;font-size:clamp(25px,4vw,40px);flex:1}.hkg-hud{display:flex;gap:10px;flex-wrap:wrap}.hkg-pill{padding:8px 12px;border:1px solid #ffffff1c;background:#0d2429;border-radius:12px;font-size:13px}.hkg-pill b{color:#efd58f;margin-left:5px}',
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
-      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .22s,box-shadow .2s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.8)}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
+      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;position:relative;z-index:1;transition:transform .24s cubic-bezier(.22,.82,.2,1),opacity .22s,box-shadow .2s;will-change:transform}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.8)}.hkg-gem.swap{z-index:4;box-shadow:0 8px 18px #0007;transition:transform .26s cubic-bezier(.2,.85,.2,1)}.hkg-gem.fall{z-index:3;transition:transform .28s cubic-bezier(.2,.9,.2,1)}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory{width:min(100%,640px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
@@ -421,14 +421,15 @@
   games.candy = function () {
     var c = controller(), board = [], selected = -1, score = 0, busy = false, alive = true;
     var colors = ['#ef5350', '#ffca45', '#4bc6a6', '#55a9e8', '#d86bd7', '#f08b43'];
-    var TIME = 60, left = TIME, started = Date.now(), colorCount = 5;
+    var left = 20, lastTickAt = Date.now(), colorCount = 5, elapsed = 0;
+    var TIME_PER_CANDY = 0.85;
     refs.stage.innerHTML = '<div class="hkg-candy"></div>';
     var grid = refs.stage.firstChild;
-    setHud([['점수', '0', 'score'], ['남은 시간', '1:00', 'time'], ['콤보', 'x1', 'combo']]);
+    setHud([['점수', '0', 'score'], ['남은 시간', '0:20', 'time'], ['콤보', 'x1', 'combo']]);
     function fmt(sec) {
       sec = Math.max(0, Math.ceil(sec));
-      var s = Math.max(0, Math.ceil(sec) % 60);
-      return Math.floor(Math.max(0, Math.ceil(sec)) / 60) + ':' + (s < 10 ? '0' : '') + s;
+      var s = sec % 60;
+      return Math.floor(sec / 60) + ':' + (s < 10 ? '0' : '') + s;
     }
     function random() { return Math.floor(Math.random() * colorCount); }
     function seed() {
@@ -444,6 +445,43 @@
       grid.innerHTML = board.map(function (v, i) {
         return '<button class="hkg-gem ' + (i === selected ? 'sel ' : '') + (pop && pop[i] ? 'pop' : '') + '" data-i="' + i + '" style="--gem:radial-gradient(circle at 30% 25%,#fff,' + colors[v] + ' 28%, ' + colors[v] + ' 62%,#152a30)"></button>';
       }).join('');
+    }
+    function gemAt(i) { return grid.querySelector('.hkg-gem[data-i="' + i + '"]'); }
+    function animateSwap(a, b, revert, done) {
+      busy = true;
+      selected = -1;
+      draw();
+      var elA = gemAt(a), elB = gemAt(b);
+      if (!elA || !elB) {
+        if (!revert) {
+          var t0 = board[a]; board[a] = board[b]; board[b] = t0;
+          draw();
+        }
+        busy = false;
+        if (done) done(!revert);
+        return;
+      }
+      var ra = elA.getBoundingClientRect(), rb = elB.getBoundingClientRect();
+      var dx = rb.left - ra.left, dy = rb.top - ra.top;
+      elA.classList.add('swap'); elB.classList.add('swap');
+      void elA.offsetWidth;
+      elA.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+      elB.style.transform = 'translate(' + (-dx) + 'px,' + (-dy) + 'px)';
+      c.timer(function () {
+        if (revert) {
+          elA.style.transform = 'translate(0px,0px)';
+          elB.style.transform = 'translate(0px,0px)';
+          c.timer(function () {
+            draw();
+            busy = false;
+            if (done) done(false);
+          }, 220);
+          return;
+        }
+        var temp = board[a]; board[a] = board[b]; board[b] = temp;
+        draw();
+        if (done) done(true);
+      }, 260);
     }
     function matches() {
       var found = {}, r, col, i, start, length;
@@ -469,53 +507,118 @@
       }
       return found;
     }
+    function animateFall(moves, done) {
+      draw();
+      if (!moves.length) { if (done) done(); return; }
+      var gap = 5;
+      var sample = gemAt(moves[0].to) || gemAt(0);
+      var cellH = sample ? sample.getBoundingClientRect().height : 40;
+      moves.forEach(function (m) {
+        var el = gemAt(m.to);
+        if (!el) return;
+        var dy = (m.fromRow - m.toRow) * (cellH + gap);
+        if (!dy) return;
+        el.classList.add('fall');
+        el.style.transform = 'translateY(' + dy + 'px)';
+      });
+      void grid.offsetWidth;
+      moves.forEach(function (m) {
+        var el = gemAt(m.to);
+        if (!el) return;
+        el.style.transform = 'translateY(0)';
+      });
+      c.timer(function () {
+        moves.forEach(function (m) {
+          var el = gemAt(m.to);
+          if (!el) return;
+          el.classList.remove('fall');
+          el.style.transform = '';
+        });
+        if (done) done();
+      }, 300);
+    }
     function settle(combo, done) {
       var hit = matches(), keys = Object.keys(hit);
       if (!keys.length) { busy = false; hud('combo', 'x1'); if (done) done(); return; }
       busy = true;
       var gain = keys.length * 12 * combo;
       score += gain; hud('score', formatScore(score)); hud('combo', 'x' + combo);
+      var bonus = keys.length * TIME_PER_CANDY;
+      left += bonus;
+      hud('time', fmt(left));
       draw(hit);
       shakeStage();
       var rect = grid.getBoundingClientRect(), hostRect = refs.stage.getBoundingClientRect();
       floatScore(rect.left - hostRect.left + rect.width / 2, rect.top - hostRect.top + 20, '+' + gain, refs.stage);
+      floatScore(rect.left - hostRect.left + rect.width / 2, rect.top - hostRect.top + 48, '+' + (Math.round(bonus * 10) / 10) + '초', refs.stage);
       c.timer(function () {
+        var moves = [];
+        var next = board.slice();
         for (var col = 0; col < 8; col++) {
-          var keep = [];
-          for (var row = 7; row >= 0; row--) if (!hit[col + row * 8]) keep.push(board[col + row * 8]);
-          for (row = 7; row >= 0; row--) board[col + row * 8] = keep[7 - row] == null ? random() : keep[7 - row];
+          var stack = [];
+          for (var row = 7; row >= 0; row--) {
+            var idx = col + row * 8;
+            if (!hit[idx]) stack.push({ fromRow: row, v: board[idx] });
+          }
+          for (row = 7; row >= 0; row--) {
+            idx = col + row * 8;
+            if (stack.length) {
+              var g = stack.shift();
+              next[idx] = g.v;
+              if (g.fromRow !== row) moves.push({ fromRow: g.fromRow, toRow: row, to: idx });
+            } else {
+              next[idx] = random();
+              moves.push({ fromRow: -1 - (7 - row), toRow: row, to: idx });
+            }
+          }
         }
-        draw(); c.timer(function () { settle(combo + 1, done); }, 160);
-      }, 190);
+        board = next;
+        animateFall(moves, function () {
+          c.timer(function () { settle(combo + 1, done); }, 70);
+        });
+      }, 200);
     }
     function tick() {
       if (!alive) return;
-      left = TIME - (Date.now() - started) / 1000;
+      var now = Date.now();
+      if (!gamePaused) {
+        var dt = (now - lastTickAt) / 1000;
+        left -= dt;
+        elapsed += dt;
+      }
+      lastTickAt = now;
       hud('time', fmt(left));
-      if (left <= 40 && colorCount < 6) { colorCount = 6; toast('색이 늘어났어요!'); }
-      if (left <= 20 && colorCount < 6) colorCount = 6;
+      if (elapsed >= 12 && colorCount < 6) { colorCount = 6; toast('색이 늘어났어요!'); }
       if (left <= 0) {
         alive = false; left = 0; hud('time', '0:00');
         gameOver('타임 오버!', '최종 점수 ' + formatScore(score), function () { startGame('candy'); }, score);
         return;
       }
-      c.timer(tick, 200);
+      c.timer(tick, 100);
     }
     function click(e) {
       var node = e.target.closest('.hkg-gem');
       if (!node || busy || !alive) return;
       var i = Number(node.getAttribute('data-i'));
       if (selected < 0) { selected = i; draw(); return; }
-      var a = selected; selected = -1;
+      var a = selected;
       var adjacent = Math.abs(a - i) === 8 || (Math.floor(a / 8) === Math.floor(i / 8) && Math.abs(a - i) === 1);
       if (!adjacent) { selected = i; draw(); return; }
+      // Preview swap validity on data then animate
       var temp = board[a]; board[a] = board[i]; board[i] = temp;
-      if (!Object.keys(matches()).length) { temp = board[a]; board[a] = board[i]; board[i] = temp; draw(); toast('매치가 만들어지는 두 캔디를 바꿔보세요'); return; }
-      draw(); settle(1, function () {});
+      var ok = Object.keys(matches()).length > 0;
+      temp = board[a]; board[a] = board[i]; board[i] = temp;
+      animateSwap(a, i, !ok, function (success) {
+        if (!success) {
+          toast('매치가 만들어지는 두 캔디를 바꿔보세요');
+          return;
+        }
+        settle(1, function () {});
+      });
     }
     c.on(grid, 'click', click);
     seed(); tick();
-    actions(function () { startGame('candy'); }, function () { return score; }, '1분 안에 인접한 캔디를 바꿔 맞추세요. 시간이 지날수록 색이 늘어납니다.');
+    actions(function () { startGame('candy'); }, function () { return score; }, '20초로 시작 · 캔디 1개 깰 때마다 시간 추가 · 인접한 캔디를 바꿔 맞추세요.');
     return { id: 'candy', destroy: c.destroy };
   };
 
