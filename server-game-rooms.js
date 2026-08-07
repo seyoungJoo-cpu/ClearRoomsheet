@@ -44,7 +44,7 @@ function roomSnapshot(room) {
       slot: p.slot,
       ready: !!p.ready,
     })),
-    max: GAMES[room.game].max,
+    max: room.max || GAMES[room.game].max,
   };
 }
 
@@ -75,11 +75,15 @@ function seatedCount(room) {
 }
 
 function allReady(room) {
-  const max = GAMES[room.game].max;
+  const max = room.max || GAMES[room.game].max;
   const humans = room.players.filter((p) => !p.isAi);
   const readyOk = room.players.every((p) => p.ready || p.isAi);
-  if (room.game === "snakes" || room.game === "tank" || room.game === "rts") {
+  if (room.game === "snakes" || room.game === "tank") {
     return humans.length >= 2 && humans.length <= max && readyOk;
+  }
+  if (room.game === "rts") {
+    const need = rtsModeNeed(room.mode);
+    return humans.length === need && readyOk;
   }
   if (room.game === "ageofwar") {
     return humans.length === 2 && readyOk;
@@ -591,6 +595,35 @@ const RTS_BUILD = {
   turret: { cost: 120, hp: 220, w: 36, h: 36, range: 160, dps: 18 },
 };
 const RTS_NEXUS_TURRET_BAN_R = 110;
+const RTS_MODES = {
+  "1v1": { max: 2, need: 2, team: false, label: "1:1" },
+  ffa3: { max: 3, need: 3, team: false, label: "1:1:1" },
+  ffa4: { max: 4, need: 4, team: false, label: "1:1:1:1" },
+  "2v2": { max: 4, need: 4, team: true, label: "2:2" },
+};
+
+function parseRtsMode(raw) {
+  const m = String(raw || "1v1");
+  return RTS_MODES[m] ? m : "1v1";
+}
+function rtsModeNeed(mode) {
+  return (RTS_MODES[mode] || RTS_MODES["1v1"]).need;
+}
+function rtsModeMax(mode) {
+  return (RTS_MODES[mode] || RTS_MODES["1v1"]).max;
+}
+function rtsIsTeam(mode) {
+  return !!(RTS_MODES[mode] && RTS_MODES[mode].team);
+}
+function rtsTeamOf(slot, mode) {
+  if (rtsIsTeam(mode)) return slot < 2 ? 0 : 1;
+  return slot;
+}
+function rtsAllied(ownerA, ownerB, mode) {
+  if (ownerA === ownerB) return true;
+  if (!rtsIsTeam(mode)) return false;
+  return rtsTeamOf(ownerA, mode) === rtsTeamOf(ownerB, mode);
+}
 
 function rtsCircleHitsObstacles(s, x, y, r) {
   for (const o of s.obstacles || []) {
@@ -630,19 +663,31 @@ function initRts(room) {
   const W = 1200,
     H = 800;
   let uid = 1;
+  const mode = parseRtsMode(room.mode);
+  room.mode = mode;
   const bases = [
     { x: 150, y: 150, sx: 1, sy: 1 },
     { x: W - 150, y: 150, sx: -1, sy: 1 },
     { x: 150, y: H - 150, sx: 1, sy: -1 },
     { x: W - 150, y: H - 150, sx: -1, sy: -1 },
   ];
+  // 2v2: teammates share same vertical side (left vs right)
+  const teamBases = [
+    { x: 150, y: 180, sx: 1, sy: 1 },
+    { x: 150, y: H - 180, sx: 1, sy: -1 },
+    { x: W - 150, y: 180, sx: -1, sy: 1 },
+    { x: W - 150, y: H - 180, sx: -1, sy: -1 },
+  ];
+  const layout = rtsIsTeam(mode) ? teamBases : bases;
   const mkSide = (owner, base) => {
     const { x: baseX, y: baseY, sx, sy } = base;
+    const team = rtsTeamOf(owner, mode);
     const nexus = {
       id: uid++,
       kind: "building",
       type: "nexus",
       owner,
+      team,
       x: baseX,
       y: baseY,
       hp: RTS_BUILD.nexus.hp,
@@ -651,13 +696,14 @@ function initRts(room) {
       h: RTS_BUILD.nexus.h,
       atkCd: 0,
     };
-    // minerals toward nearby outer walls
     const minerals = [
       { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 102, amount: 9999 },
       { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 32, amount: 9999 },
       { id: uid++, kind: "mineral", x: baseX - sx * 40, y: baseY - sy * 108, amount: 9999 },
     ].map((m) => ({
-      ...m,
+      id: m.id,
+      kind: m.kind,
+      amount: m.amount,
       x: Math.max(28, Math.min(W - 28, m.x)),
       y: Math.max(28, Math.min(H - 28, m.y)),
     }));
@@ -668,6 +714,7 @@ function initRts(room) {
         kind: "unit",
         type: "worker",
         owner,
+        team,
         x: baseX + sx * 36,
         y: baseY + (i - 1) * 34,
         hp: RTS_UNITS.worker.hp,
@@ -681,12 +728,22 @@ function initRts(room) {
         atkCd: 0,
       });
     }
-    return { nexus, minerals, workers };
+    return { nexus: nexus, minerals: minerals, workers: workers };
   };
   room.players.forEach((p, i) => {
     p.slot = i;
+    p.team = rtsTeamOf(i, mode);
   });
-  const sides = room.players.map((p, i) => mkSide(p.slot, bases[i % bases.length]));
+  const entities = [];
+  const minerals = [];
+  const gold = [];
+  room.players.forEach((p, i) => {
+    const side = mkSide(p.slot, layout[i % layout.length]);
+    entities.push(side.nexus);
+    for (let w = 0; w < side.workers.length; w++) entities.push(side.workers[w]);
+    for (let m = 0; m < side.minerals.length; m++) minerals.push(side.minerals[m]);
+    gold.push(200);
+  });
   const obstacles = [
     { kind: "rock", x: 520, y: 260, r: 36 },
     { kind: "rock", x: 700, y: 520, r: 42 },
@@ -699,15 +756,17 @@ function initRts(room) {
     { kind: "water", x: 560, y: 680, w: 160, h: 80 },
   ];
   return {
-    W,
-    H,
+    W: W,
+    H: H,
+    mode: mode,
     nextId: uid,
-    gold: room.players.map(() => 200),
-    entities: sides.flatMap((s) => [...s.workers, s.nexus]),
-    minerals: sides.flatMap((s) => s.minerals),
-    obstacles,
+    gold: gold,
+    entities: entities,
+    minerals: minerals,
+    obstacles: obstacles,
     beams: [],
     spawnQ: [],
+    tickNo: 0,
   };
 }
 
@@ -731,6 +790,12 @@ function rtsBuildAllowed(s, owner, bt, x, y) {
 
 function tickRts(room, dt) {
   const s = room.state;
+  if (!s) return;
+  const mode = parseRtsMode(s.mode || room.mode);
+  s.mode = mode;
+  s.tickNo = (s.tickNo || 0) + 1;
+  if (!Array.isArray(s.entities)) s.entities = [];
+  if (!Array.isArray(s.gold)) s.gold = room.players.map(() => 200);
   if (!s.beams) s.beams = [];
   s.beams = s.beams.filter((b) => {
     b.life -= dt;
@@ -776,6 +841,7 @@ function tickRts(room, dt) {
             kind: "building",
             type: bt,
             owner,
+            team: rtsTeamOf(owner, mode),
             x,
             y,
             hp: def.hp,
@@ -807,6 +873,7 @@ function tickRts(room, dt) {
             kind: "unit",
             type: ut,
             owner,
+            team: rtsTeamOf(owner, mode),
             x: spawn.x,
             y: spawn.y,
             hp: udef.hp,
@@ -883,7 +950,7 @@ function tickRts(room, dt) {
         let bd = def.range + 40,
           best = null;
         for (const o of s.entities) {
-          if (o.owner === e.owner || o.hp <= 0) continue;
+          if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
           if (o.kind !== "unit" && o.kind !== "building") continue;
           const d = Math.hypot(o.x - e.x, o.y - e.y);
           if (d < bd) {
@@ -942,7 +1009,7 @@ function tickRts(room, dt) {
     let best = null,
       bd = range;
     for (const o of s.entities) {
-      if (o.owner === e.owner || o.hp <= 0) continue;
+      if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
       if (o.kind !== "unit" && o.kind !== "building") continue;
       if (o.type === "nexus") continue;
       const d = Math.hypot(o.x - e.x, o.y - e.y);
@@ -973,7 +1040,7 @@ function tickRts(room, dt) {
     let best = null,
       bd = range;
     for (const o of s.entities) {
-      if (o.owner === e.owner || o.hp <= 0 || o.kind !== "unit") continue;
+      if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0 || o.kind !== "unit") continue;
       const d = Math.hypot(o.x - e.x, o.y - e.y);
       if (d < bd) {
         bd = d;
@@ -994,13 +1061,28 @@ function tickRts(room, dt) {
     }
   }
 
-  s.entities = s.entities.filter((e) => e.hp > 0);
+  s.entities = s.entities.filter((e) => e.hp != null && e.hp > 0);
+  // grace period so spawn always settles before end checks
+  if ((s.tickNo || 0) < 20) return;
   const aliveNexus = s.entities.filter((e) => e.type === "nexus");
-  const ownersLeft = [...new Set(aliveNexus.map((e) => e.owner))];
-  if (ownersLeft.length <= 1 && room.players.length >= 2) {
-    const winnerSlot = ownersLeft[0];
-    const w = winnerSlot != null ? room.players.find((p) => p.slot === winnerSlot) : null;
-    endGame(room, "nexus", w ? w.id : null);
+  if (!aliveNexus.length && room.players.length >= 2) {
+    endGame(room, "nexus", null);
+    return;
+  }
+  if (rtsIsTeam(mode)) {
+    const teamsLeft = [...new Set(aliveNexus.map((e) => (e.team != null ? e.team : rtsTeamOf(e.owner, mode))))];
+    if (teamsLeft.length <= 1) {
+      const winTeam = teamsLeft[0];
+      const w = room.players.find((p) => rtsTeamOf(p.slot, mode) === winTeam);
+      endGame(room, "nexus", w ? w.id : null);
+    }
+  } else {
+    const ownersLeft = [...new Set(aliveNexus.map((e) => e.owner))];
+    if (ownersLeft.length <= 1 && room.players.length >= 2) {
+      const winnerSlot = ownersLeft[0];
+      const w = winnerSlot != null ? room.players.find((p) => p.slot === winnerSlot) : null;
+      endGame(room, "nexus", w ? w.id : null);
+    }
   }
 }
 
@@ -1666,7 +1748,7 @@ function lobbyList(game) {
     list.push({
       code: room.code,
       players: room.players.filter((p) => !p.isAi).length,
-      max: GAMES[game].max,
+      max: room.max || GAMES[game].max,
       names: room.players.filter((p) => !p.isAi).map((p) => p.name),
       host: room.players[0] ? room.players[0].name : "",
       mode: room.mode || null,
@@ -1752,7 +1834,15 @@ function attachGameRooms(httpServer) {
         const room = {
           code,
           game,
-          mode: game === "tank" && String(msg.mode || "") === "team" ? "team" : game === "tank" ? "ffa" : null,
+          mode:
+            game === "tank"
+              ? String(msg.mode || "") === "team"
+                ? "team"
+                : "ffa"
+              : game === "rts"
+                ? parseRtsMode(msg.mode)
+                : null,
+          max: game === "rts" ? rtsModeMax(parseRtsMode(msg.mode)) : GAMES[game].max,
           players: [],
           status: "lobby",
           state: null,
@@ -1782,7 +1872,8 @@ function attachGameRooms(httpServer) {
         const room = rooms.get(code);
         if (!room) return error(ws, "room_not_found");
         if (room.status !== "lobby") return error(ws, "room_not_joinable");
-        if (room.players.length >= GAMES[room.game].max) return error(ws, "room_full");
+        const joinMax = room.max || GAMES[room.game].max;
+        if (room.players.length >= joinMax) return error(ws, "room_full");
         const existing = findPlayerByWs(ws);
         if (existing) removePlayer(existing.room, existing.player);
         const name = String(msg.name || ws._name || "Player").slice(0, 24);

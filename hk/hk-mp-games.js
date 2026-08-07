@@ -3,13 +3,20 @@
 
   var META = {
     tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 초대형 맵' },
-    rts: { icon: '🏰', name: '미니 RTS', desc: '최대 4인 · 본진 파괴 FFA' },
+    rts: { icon: '🏰', name: '미니 RTS', desc: '1:1 / 2:2 / FFA · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '석기→미래 시대 진화 · 라인전' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' }
   };
   var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2 };
   var tankCreateMode = 'ffa';
+  var rtsCreateMode = '1v1';
+  var RTS_MODE_META = {
+    '1v1': { label: '1:1', max: 2 },
+    ffa3: { label: '1:1:1', max: 3 },
+    ffa4: { label: '1:1:1:1', max: 4 },
+    '2v2': { label: '2:2', max: 4 }
+  };
   var aowAgeNames = ['석기', '중세', '화약', '현대', '미래'];
   var aowUnitNames = [
     ['곤봉병', '투석병', '공룡기수'],
@@ -336,6 +343,7 @@
     ensureConnected(function () {
       var payload = { type: 'create', game: gameId, name: name() || 'Guest' };
       if (gameId === 'tank') payload.mode = tankCreateMode;
+      if (gameId === 'rts') payload.mode = rtsCreateMode;
       var ok = send(payload);
       if (!ok) {
         pendingCreate = false;
@@ -689,12 +697,20 @@
     }
     var m = meta(gameId);
     var max = MAX_PLAYERS[gameId] || 2;
+    if (gameId === 'rts') max = (RTS_MODE_META[rtsCreateMode] || RTS_MODE_META['1v1']).max;
     var modeRow = '';
     if (gameId === 'tank') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
         '<button type="button" class="hkmp-btn' + (tankCreateMode === 'ffa' ? ' primary' : '') + '" data-mode="ffa">자유대전 FFA</button>' +
         '<button type="button" class="hkmp-btn' + (tankCreateMode === 'team' ? ' primary' : '') + '" data-mode="team">2vs2 팀전</button>' +
         '<span class="hkmp-note">팀전 3명이면 AI 1명 자동</span></div>';
+    }
+    if (gameId === 'rts') {
+      modeRow = '<div class="hkmp-row" style="margin:0">' +
+        [['1v1', '1:1'], ['ffa3', '1:1:1'], ['ffa4', '1:1:1:1'], ['2v2', '2:2']].map(function (m) {
+          return '<button type="button" class="hkmp-btn' + (rtsCreateMode === m[0] ? ' primary' : '') + '" data-rts-mode="' + m[0] + '">' + m[1] + '</button>';
+        }).join('') +
+        '<span class="hkmp-note">인원 맞춰 Ready 시 시작</span></div>';
     }
     var creating = pendingCreate;
     refs.body.innerHTML =
@@ -715,7 +731,9 @@
         var names = Array.isArray(r.names) ? r.names.filter(Boolean).join(', ') : '';
         var host = (r.host && String(r.host)) || names || ('대기방');
         var full = cnt >= roomMax;
-        var modeTag = (gameId === 'tank' && r.mode) ? (' · ' + (r.mode === 'team' ? '팀전' : 'FFA')) : '';
+        var modeTag = '';
+        if (gameId === 'tank' && r.mode) modeTag = ' · ' + (r.mode === 'team' ? '팀전' : 'FFA');
+        if (gameId === 'rts' && r.mode) modeTag = ' · ' + ((RTS_MODE_META[r.mode] && RTS_MODE_META[r.mode].label) || r.mode);
         return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
           '<b>' + esc(host) + '</b>' +
           '<span>' + cnt + '/' + roomMax + modeTag + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
@@ -726,6 +744,14 @@
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-mode]'), function (btn) {
       btn.onclick = function () {
         tankCreateMode = btn.getAttribute('data-mode') === 'team' ? 'team' : 'ffa';
+        lastBrowseSig = '';
+        renderBrowse();
+      };
+    });
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-rts-mode]'), function (btn) {
+      btn.onclick = function () {
+        var m = btn.getAttribute('data-rts-mode');
+        if (RTS_MODE_META[m]) rtsCreateMode = m;
         lastBrowseSig = '';
         renderBrowse();
       };
@@ -749,27 +775,30 @@
     if (!room) { view = 'browse'; render(); return; }
     var players = room.players || [];
     var me = myPlayer();
-    var minNeed = (gameId === 'snakes' || gameId === 'tank' || gameId === 'rts') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
+    var minNeed = (gameId === 'snakes' || gameId === 'tank') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
+    if (gameId === 'rts') minNeed = room.max || ((RTS_MODE_META[room.mode] && RTS_MODE_META[room.mode].max) || 2);
     var maxP = room.max || MAX_PLAYERS[gameId] || 2;
     var allReady = players.length >= minNeed && players.every(function (p) { return p.ready; });
+    var rtsLabel = (gameId === 'rts' && room.mode && RTS_MODE_META[room.mode]) ? RTS_MODE_META[room.mode].label : '';
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + maxP + '명</span>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + maxP + '명' + (rtsLabel ? ' · ' + rtsLabel : '') + '</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave">나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
         var ready = !!p.ready;
         var isMe = p.id === selfId;
+        var teamTag = (gameId === 'rts' && room.mode === '2v2') ? (' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B')) : '';
         return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' +
           '<strong>' + esc(p.name || ('P' + (i + 1))) + '</strong>' +
-          '<span style="flex:1;color:#88a09a;font-size:12px">' + (ready ? 'Ready' : '대기') + (isMe ? ' · 나' : '') + '</span></div>';
+          '<span style="flex:1;color:#88a09a;font-size:12px">' + (ready ? 'Ready' : '대기') + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
       }).join('') + '</div>' +
       '<div class="hkmp-row">' +
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (me && me.ready ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
       '<div class="hkmp-note">' +
         (gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
-        (gameId === 'rts' ? '최대 4인 FFA · ' : '') +
+        (gameId === 'rts' ? ((rtsLabel || 'RTS') + ' · 본진·일꾼 자동 배치 · ') : '') +
         (allReady && players.length >= minNeed ? '모두 준비됨 — 곧 시작합니다' :
-        (players.length < minNeed ? '대기 중… (' + players.length + '명, 최소 ' + minNeed + '명)' : '모두 Ready하면 자동 시작')) +
+        (players.length < minNeed ? '대기 중… (' + players.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작')) +
         (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : '') + '</div>';
     refs.body.querySelector('[data-act="leave"]').onclick = function () {
       send({ type: 'leave' });
@@ -812,7 +841,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · 초대형 맵 카메라 추적',
-      rts: '좌드래그 선택 · 우클릭 이동/공격 · 본진 레이저 · 최대 4인',
+      rts: '좌드래그 선택 · 우클릭 이동/공격 · 모드별 본진 배치(1:1/2:2/FFA)',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -901,7 +930,15 @@
           var hit = findRtsEntityAt(p.x, p.y);
           var my = mySlot();
           if (hit && hit.owner !== my && hit.hp > 0) {
-            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
+            var ally = false;
+            if (lastState && lastState.mode === '2v2') {
+              ally = (hit.owner < 2) === (my < 2);
+            }
+            if (!ally) {
+              send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
+            } else {
+              send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'move', x: p.x, y: p.y } });
+            }
           } else {
             send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'move', x: p.x, y: p.y } });
           }
@@ -989,8 +1026,10 @@
       if (t) html += '<span class="hkmp-pill">HP <b>' + (t.hp != null ? t.hp : 3) + '</b></span>';
     } else if (gameId === 'rts') {
       var golds = st.gold || [];
+      html += '<span class="hkmp-pill">' + ((st.mode && RTS_MODE_META[st.mode]) ? RTS_MODE_META[st.mode].label : 'RTS') + '</span>';
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
+      if (st.mode === '2v2') html += '<span class="hkmp-pill">팀 <b>' + (mySlot() < 2 ? 'A' : 'B') + '</b></span>';
     } else if (gameId === 'ageofwar') {
       var gold = st.gold || [];
       var xp = st.xp || [];
