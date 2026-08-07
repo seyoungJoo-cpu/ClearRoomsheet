@@ -20,6 +20,35 @@
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
   var selectIds = [], drag = null, pendingBuild = null, pendingTd = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
+  var gamePaused = false;
+
+  function isTypingTarget(el) {
+    if (!el || !el.tagName) return false;
+    var tag = String(el.tagName).toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+  function setGamePaused(on) {
+    gamePaused = !!on;
+    if (refs.pause) {
+      refs.pause.classList.toggle('show', gamePaused);
+      refs.pause.setAttribute('aria-hidden', gamePaused ? 'false' : 'true');
+    }
+  }
+  function togglePause() {
+    if (view !== 'play') return;
+    setGamePaused(!gamePaused);
+    toast(gamePaused ? '일시정지 (P로 계속 · 로컬)' : '게임 재개');
+    if (!gamePaused) drawFrame();
+  }
+  function exitToOrders() {
+    closeOverlay();
+    if (window.HKGames && typeof HKGames.close === 'function') {
+      try { HKGames.close(); } catch (_) {}
+    }
+    if (typeof config.onExitToOrders === 'function') {
+      try { config.onExitToOrders(); } catch (_) {}
+    }
+  }
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -65,6 +94,7 @@
       '.hkmp-note{color:#88a09a;font-size:12px;margin-top:8px}.hkmp-hud{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}',
       '.hkmp-pill{padding:7px 11px;border:1px solid #ffffff1c;background:#0d2429;border-radius:12px;font-size:13px}.hkmp-pill b{color:#efd58f;margin-left:5px}',
       '.hkmp-stage{position:relative;border-radius:16px;overflow:hidden;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}',
+      '.hkmp-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkmp-pause.show{display:grid}.hkmp-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkmp-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkmp-pause-box span{color:#b1c1bd;font-size:13px}',
       '.hkmp-stage canvas{display:block;width:100%;height:auto;max-height:72vh;cursor:crosshair}',
       '.hkmp-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}',
       '.hkmp-toolbar .hkmp-btn{padding:8px 11px;font-size:12px}.hkmp-toolbar .hkmp-btn.active{box-shadow:0 0 0 2px #efd28a}',
@@ -87,9 +117,27 @@
   }
 
   function onGlobalKey(e) {
-    if (!root || !root.classList.contains('open') || e.key !== 'Escape') return;
-    e.preventDefault();
-    onBack();
+    if (!root || !root.classList.contains('open')) return;
+    if (isTypingTarget(e.target)) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'q' || e.key === 'Q' || e.code === 'KeyQ')) {
+      e.preventDefault();
+      e.stopPropagation();
+      exitToOrders();
+      return;
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP')) {
+      if (view === 'play') {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePause();
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (gamePaused) { setGamePaused(false); return; }
+      onBack();
+    }
   }
   function onBack() {
     if (view === 'play' || view === 'room' || view === 'ended') {
@@ -110,6 +158,7 @@
     stopList();
     disconnect();
     room = null; lastState = null; endedInfo = null; gameId = ''; view = 'browse';
+    setGamePaused(false);
     if (root) root.classList.remove('open');
   }
 
@@ -301,7 +350,8 @@
     }
   }
   function onKeyDown(e) {
-    if (view !== 'play') return;
+    if (view !== 'play' || gamePaused) return;
+    if (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') return;
     keys[e.key.toLowerCase()] = true;
     if (gameId === 'tank' && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); keys.fire = true; }
     if (gameId === 'rts' && e.key >= '1' && e.key <= '6') {
@@ -318,7 +368,7 @@
   }
 
   function tickInput() {
-    if (view !== 'play' || !ws || ws.readyState !== 1) return;
+    if (gamePaused || view !== 'play' || !ws || ws.readyState !== 1) return;
     var payload = buildInput();
     if (payload) send({ type: 'input', payload: payload });
     if (gameId === 'tank') { keys.fire = false; fireLatch = false; }
@@ -474,13 +524,16 @@
   function renderPlay() {
     canvasW = (lastState && (lastState.W || lastState.w || lastState.width)) || defaultSize().w;
     canvasH = (lastState && (lastState.H || lastState.h || lastState.height)) || defaultSize().h;
+    setGamePaused(false);
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
       (gameId === 'rts' || gameId === 'towerdefense' ? '<div class="hkmp-toolbar" data-tools></div>' : '') +
-      '<div class="hkmp-stage"><canvas width="' + canvasW + '" height="' + canvasH + '"></canvas></div>' +
+      '<div class="hkmp-stage"><canvas width="' + canvasW + '" height="' + canvasH + '"></canvas>' +
+      '<div class="hkmp-pause" aria-hidden="true"><div class="hkmp-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div></div>' +
       '<div class="hkmp-note" data-help></div>';
     refs.hud = refs.body.querySelector('[data-hud]');
     refs.canvas = refs.body.querySelector('canvas');
+    refs.pause = refs.body.querySelector('.hkmp-pause');
     refs.help = refs.body.querySelector('[data-help]');
     refs.tools = refs.body.querySelector('[data-tools]');
     refs.help.textContent = helpText();
@@ -499,7 +552,7 @@
   }
   function helpText() {
     return {
-      tank: 'WASD 이동 · 마우스 조준 · 클릭/스페이스 발사',
+      tank: 'WASD 이동 · 마우스 조준 · 클릭/스페이스 발사 · P 일시정지 · Ctrl+Q 오더',
       rts: '좌드래그 선택 · 우클릭 이동/공격 · 버튼/숫자키로 생산·건설 후 맵 클릭',
       towerdefense: '타워/유닛 선택 후 내 라인 슬롯 클릭',
       snakes: '마우스 방향 또는 화살표/WASD',
@@ -704,7 +757,7 @@
 
   function drawFrame() {
     var cv = refs.canvas;
-    if (!cv) return;
+    if (!cv || gamePaused) return;
     var st = lastState;
     if (st) {
       canvasW = st.W || st.w || st.width || canvasW;
@@ -890,6 +943,7 @@
 
   window.HKMpGames = {
     init: function (options) { config = options || {}; inject(); return this; },
-    openLobby: openLobby
+    openLobby: openLobby,
+    close: closeOverlay
   };
 })(window, document);

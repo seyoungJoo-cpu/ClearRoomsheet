@@ -24,7 +24,34 @@
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;
+  var gamePaused = false;
 
+  function isTypingTarget(el) {
+    if (!el || !el.tagName) return false;
+    var tag = String(el.tagName).toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+  function setGamePaused(on) {
+    gamePaused = !!on;
+    if (refs.pause) {
+      refs.pause.classList.toggle('show', gamePaused);
+      refs.pause.setAttribute('aria-hidden', gamePaused ? 'false' : 'true');
+    }
+  }
+  function togglePause() {
+    if (!active || !refs.game || !refs.game.classList.contains('show')) return;
+    setGamePaused(!gamePaused);
+    toast(gamePaused ? '일시정지 (P로 계속)' : '게임 재개');
+  }
+  function exitToOrders() {
+    close();
+    if (window.HKMpGames && typeof HKMpGames.close === 'function') {
+      try { HKMpGames.close(); } catch (_) {}
+    }
+    if (typeof config.onExitToOrders === 'function') {
+      try { config.onExitToOrders(); } catch (_) {}
+    }
+  }
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -94,7 +121,7 @@
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory{width:min(100%,560px);display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
-      '.hkg-canvas{display:block;width:min(100%,620px);height:auto;max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
+      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:min(100%,620px);height:auto;max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
     document.head.appendChild(style);
@@ -102,7 +129,7 @@
     root.innerHTML =
       '<div class="hkg-shell"><header class="hkg-top"><div class="hkg-brand"><button type="button" class="hkg-mark" title="랭킹 초기화" aria-label="랭킹 초기화">L</button><div><span class="hkg-eyebrow">Front Lounge</span><strong>Lotte Break</strong></div></div><button class="hkg-btn icon hkg-close" aria-label="닫기">✕</button></header>' +
       '<main class="hkg-hub"><section class="hkg-hero"><span class="hkg-eyebrow">A moment for yourself</span><h1>Lotte Break</h1><p>잠깐의 휴식, 가볍게 즐기고 동료들과 기록을 나눠보세요.</p><div class="hkg-who"></div></section><section class="hkg-grid"></section></main>' +
-      '<main class="hkg-game"><header class="hkg-game-head"><button class="hkg-btn hkg-back">← 라운지</button><h1></h1><div class="hkg-hud"></div></header><div class="hkg-layout"><section class="hkg-stage"><div class="hkg-stage-inner"></div><div class="hkg-message"><div class="hkg-message-box"></div></div></section><aside class="hkg-ranking"></aside></div></main></div><div class="hkg-toast" role="status"></div>';
+      '<main class="hkg-game"><header class="hkg-game-head"><button class="hkg-btn hkg-back">← 라운지</button><h1></h1><div class="hkg-hud"></div></header><div class="hkg-layout"><section class="hkg-stage"><div class="hkg-stage-inner"></div><div class="hkg-pause" aria-hidden="true"><div class="hkg-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div><div class="hkg-message"><div class="hkg-message-box"></div></div></section><aside class="hkg-ranking"></aside></div></main></div><div class="hkg-toast" role="status"></div>';
     document.body.appendChild(root);
     refs.hub = root.querySelector('.hkg-hub');
     refs.grid = root.querySelector('.hkg-grid');
@@ -111,6 +138,7 @@
     refs.hud = root.querySelector('.hkg-hud');
     refs.stage = root.querySelector('.hkg-stage-inner');
     refs.message = root.querySelector('.hkg-message');
+    refs.pause = root.querySelector('.hkg-pause');
     refs.ranking = root.querySelector('.hkg-ranking');
     refs.toast = root.querySelector('.hkg-toast');
     root.querySelector('.hkg-close').addEventListener('click', close);
@@ -138,27 +166,47 @@
     }
   }
   function globalKey(e) {
-    if (!root || !root.classList.contains('open') || e.key !== 'Escape') return;
-    e.preventDefault();
-    if (active) showHub(); else close();
+    if (!root || !root.classList.contains('open')) return;
+    if (isTypingTarget(e.target)) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'q' || e.key === 'Q' || e.code === 'KeyQ')) {
+      e.preventDefault();
+      e.stopPropagation();
+      exitToOrders();
+      return;
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP')) {
+      if (active && refs.game && refs.game.classList.contains('show')) {
+        e.preventDefault();
+        togglePause();
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (gamePaused) { setGamePaused(false); return; }
+      if (active) showHub(); else close();
+    }
   }
   function open() {
     inject();
     root.classList.add('open');
     document.body.style.overflow = 'hidden';
+    setGamePaused(false);
     showHub();
   }
   function close() {
     if (!root) return;
     cleanup();
+    setGamePaused(false);
     root.classList.remove('open');
     document.body.style.overflow = '';
   }
   function cleanup() {
     if (active && active.destroy) active.destroy();
     active = null;
-    refs.message.classList.remove('show');
-    refs.stage.innerHTML = '';
+    setGamePaused(false);
+    if (refs.message) refs.message.classList.remove('show');
+    if (refs.stage) refs.stage.innerHTML = '';
   }
   function renderHub() {
     var data = ranks(), who = name();
@@ -202,6 +250,7 @@
     refs.stage.innerHTML = '';
     refs.hud.innerHTML = '';
     refs.message.classList.remove('show');
+    setGamePaused(false);
     renderRanking(id);
     active = games[id]();
   }
@@ -214,13 +263,40 @@
       }).join('') : '<div class="hkg-empty">첫 기록의 주인공이 되어보세요.</div>');
   }
   function controller() {
-    var removers = [], frames = [], timers = [];
+    var removers = [], frames = [], timers = [], alive = true;
+    removers.push(function () { alive = false; });
     return {
       on: function (node, type, fn, opts) { node.addEventListener(type, fn, opts); removers.push(function () { node.removeEventListener(type, fn, opts); }); },
-      raf: function (fn) { var id = requestAnimationFrame(fn); frames.push(id); return id; },
-      timer: function (fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; },
+      raf: function (fn) {
+        function tick(t) {
+          if (!alive || !active) return;
+          if (gamePaused) {
+            var waitId = requestAnimationFrame(tick);
+            frames.push(waitId);
+            return;
+          }
+          fn(t);
+        }
+        var id = requestAnimationFrame(tick);
+        frames.push(id);
+        return id;
+      },
+      timer: function (fn, ms) {
+        function fire() {
+          if (!alive) return;
+          if (gamePaused) {
+            var again = setTimeout(fire, 100);
+            timers.push(again);
+            return;
+          }
+          fn();
+        }
+        var id = setTimeout(fire, ms);
+        timers.push(id);
+        return id;
+      },
       clearTimers: function () { timers.forEach(clearTimeout); timers = []; },
-      destroy: function () { removers.forEach(function (x) { x(); }); frames.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); removers = []; frames = []; timers = []; }
+      destroy: function () { alive = false; removers.forEach(function (x) { x(); }); frames.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); removers = []; frames = []; timers = []; }
     };
   }
   function setHud(items) {
@@ -606,7 +682,7 @@
     c.on(grid, 'click', click);
     c.on(grid, 'dragstart', function (e) { e.preventDefault(); });
     c.on(grid, 'selectstart', function (e) { e.preventDefault(); });
-    timer = setInterval(function () { seconds = Math.floor((Date.now() - started) / 1000); hud('time', seconds + '초'); hud('score', formatScore(calc())); }, 500);
+    timer = setInterval(function () { if (gamePaused) return; seconds = Math.floor((Date.now() - started) / 1000); hud('time', seconds + '초'); hud('score', formatScore(calc())); }, 500);
     var originalDestroy = c.destroy; c.destroy = function () { clearInterval(timer); originalDestroy(); };
     actions(function () { startGame('memory'); }, calc, '카드 두 장을 차례로 눌러 같은 호텔 아이콘을 찾으세요.');
     return { id: 'memory', destroy: c.destroy };
@@ -1040,7 +1116,7 @@
     cells = Array.from({ length: SIZE * SIZE }, function () { return { mine: false, open: false, flag: false, n: 0 }; });
     draw();
     c.on(grid, 'click', click); c.on(grid, 'contextmenu', function (e) { e.preventDefault(); click(e); });
-    var tick = setInterval(function () { if (alive) hud('time', Math.floor((Date.now() - started) / 1000) + '초'); }, 500);
+    var tick = setInterval(function () { if (alive && !gamePaused) hud('time', Math.floor((Date.now() - started) / 1000) + '초'); }, 500);
     var od = c.destroy; c.destroy = function () { clearInterval(tick); od(); };
     actions(function () { startGame('mines'); }, function () { return score || (seeded ? calc() : 0); }, '좌클릭 열기 · 우클릭/Shift+클릭 깃발');
     return { id: 'mines', destroy: c.destroy };
@@ -1164,6 +1240,7 @@
 
   window.HKGames = {
     init: function (options) { config = options || {}; inject(); return this; },
-    open: open
+    open: open,
+    close: close
   };
 })(window, document);

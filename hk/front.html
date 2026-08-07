@@ -10558,8 +10558,8 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-1"></script>
-  <script src="hk-mp-games.js?v=mp-2"></script>
+  <script src="hk-games.js?v=lounge-2"></script>
+  <script src="hk-mp-games.js?v=mp-3"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -25550,6 +25550,9 @@
         HKGames.init({
           getOperatorName: hkGamesOperatorHooks.getOperatorName,
           requireOperator: hkGamesOperatorHooks.requireOperator,
+          onExitToOrders: function () {
+            showSidebarOrderView();
+          },
           loadRanks: function () {
             var data = typeof HKStorage !== "undefined" ? HKStorage.load() : {};
             if (typeof HKStorage !== "undefined" && HKStorage.normalizeGameRanks) {
@@ -25618,6 +25621,9 @@
           HKMpGames.init({
             getOperatorName: hkGamesOperatorHooks.getOperatorName,
             requireOperator: hkGamesOperatorHooks.requireOperator,
+            onExitToOrders: function () {
+              showSidebarOrderView();
+            },
           });
         }
         var brandBtn = document.getElementById("brandGamesBtn");
