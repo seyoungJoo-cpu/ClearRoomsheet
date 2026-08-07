@@ -17,9 +17,9 @@
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
     dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/팀전 · 초대형 맵' },
-    rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
+    rts: { icon: '🏰', name: '미니 RTS', desc: '최대 4인 · 본진 파괴 FFA' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '시대 진화 라인 워 · 기지 파괴' },
-    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '최대 8인 슬리더 대전 · 방' },
+    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' }
   };
   var config = {};

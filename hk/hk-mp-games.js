@@ -3,12 +3,12 @@
 
   var META = {
     tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 초대형 맵' },
-    rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
+    rts: { icon: '🏰', name: '미니 RTS', desc: '최대 4인 · 본진 파괴 FFA' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '석기→미래 시대 진화 · 라인전' },
-    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '대형 격자 스네이크 · 최대 8인 · 방' },
+    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' }
   };
-  var MAX_PLAYERS = { tank: 4, rts: 2, ageofwar: 2, snakes: 8, airhockey: 2 };
+  var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2 };
   var tankCreateMode = 'ffa';
   var aowAgeNames = ['석기', '중세', '화약', '현대', '미래'];
   var aowUnitNames = [
@@ -686,10 +686,11 @@
     if (!room) { view = 'browse'; render(); return; }
     var players = room.players || [];
     var me = myPlayer();
-    var allReady = players.length >= 2 && players.every(function (p) { return p.ready; });
-    var need = (gameId === 'snakes' || gameId === 'tank') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
+    var minNeed = (gameId === 'snakes' || gameId === 'tank' || gameId === 'rts') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
+    var maxP = room.max || MAX_PLAYERS[gameId] || 2;
+    var allReady = players.length >= minNeed && players.every(function (p) { return p.ready; });
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + need + '명</span>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + maxP + '명</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave">나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
         var ready = !!p.ready;
@@ -703,8 +704,9 @@
       '</div>' +
       '<div class="hkmp-note">' +
         (gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
-        (allReady && players.length >= need ? '모두 준비됨 — 곧 시작합니다' :
-        (players.length < need ? '대기 중… (' + players.length + '명, 최소 ' + need + '명)' : '모두 Ready하면 자동 시작')) +
+        (gameId === 'rts' ? '최대 4인 FFA · ' : '') +
+        (allReady && players.length >= minNeed ? '모두 준비됨 — 곧 시작합니다' :
+        (players.length < minNeed ? '대기 중… (' + players.length + '명, 최소 ' + minNeed + '명)' : '모두 Ready하면 자동 시작')) +
         (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : '') + '</div>';
     refs.body.querySelector('[data-act="leave"]').onclick = function () {
       send({ type: 'leave' });
@@ -747,9 +749,9 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · 초대형 맵 카메라 추적',
-      rts: '좌드래그 선택 · 우클릭 이동(공격 중에도 이동) · 적 우클릭 공격 · 본진 자동 레이저',
+      rts: '좌드래그 선택 · 우클릭 이동/공격 · 본진 레이저 · 최대 4인',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
-      snakes: '방향키/WASD · 벽·몸(상대 포함)에 머리 충돌 시 탈락',
+      snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
     }[gameId] || '';
   }
@@ -941,13 +943,17 @@
       html += '<span class="hkmp-pill">특수 <b>' + (scd > 0 ? (scd.toFixed(0) + 's') : 'READY') + '</b></span>';
     } else if (gameId === 'snakes') {
       var snakes = st.snakes || [];
-      var alive = snakes.filter(function (s) { return s.alive !== false; }).length;
+      var alive = snakes.filter(function (s) { return !s.eliminated && s.alive !== false; }).length;
       html += '<span class="hkmp-pill">생존 <b>' + alive + '</b></span>';
       var mine = snakes.filter(function (s) { return s.id === selfId || s.id == selfId; })[0];
       if (mine) {
+        var hearts = '';
+        var ml = mine.maxLives || 3;
+        for (var hi = 0; hi < ml; hi++) hearts += hi < (mine.lives != null ? mine.lives : 0) ? '♥' : '♡';
+        html += '<span class="hkmp-pill">목숨 <b style="color:#ff8a7a">' + hearts + '</b></span>';
         html += '<span class="hkmp-pill">길이 <b>' + ((mine.body && mine.body.length) || 0) + '</b></span>';
         html += '<span class="hkmp-pill">점수 <b>' + (mine.score || 0) + '</b></span>';
-        if (mine.alive === false) html += '<span class="hkmp-pill">상태 <b>탈락</b></span>';
+        if (mine.eliminated) html += '<span class="hkmp-pill" style="color:#efd28a">관전 중</span>';
       }
     } else if (gameId === 'airhockey') {
       var sc = st.score || st.scores || [0, 0];
@@ -1049,8 +1055,7 @@
       ctx.restore();
       ctx.fillStyle = '#0008'; ctx.fillRect(tk.x - 14, tk.y - 26, 28, 4);
       ctx.fillStyle = '#9ae6b4'; ctx.fillRect(tk.x - 14, tk.y - 26, 28 * Math.max(0, (tk.hp || 3) / (tk.maxHp || 3)), 4);
-      ctx.fillStyle = '#f5f0df'; ctx.font = '11px Georgia,serif'; ctx.textAlign = 'center';
-      ctx.fillText((tk.name || ('P' + (i + 1))) + (tk.isAi ? ' ·AI' : ''), tk.x, tk.y - 30);
+      drawNameTag(ctx, (tk.name || ('P' + (i + 1))) + (tk.isAi ? ' ·AI' : ''), tk.x, tk.y - 34, COLORS[tk.slot != null ? tk.slot : i]);
       if (st.mode === 'team') {
         ctx.fillStyle = tk.team === 0 ? '#6ec8ff' : '#ff8a7a';
         ctx.fillRect(tk.x - 10, tk.y + 20, 20, 3);
@@ -1184,12 +1189,27 @@
       }
     });
     (st.beams || []).forEach(function (b) {
-      ctx.strokeStyle = b.owner === 0 ? '#efd28acc' : '#6ec8ffcc';
+      ctx.strokeStyle = (COLORS[b.owner != null ? b.owner : 0] || '#efd28a') + 'cc';
       ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(b.x2, b.y2, 3, 0, Math.PI * 2); ctx.fill();
     });
+  }
+
+  function drawNameTag(ctx, label, x, y, col) {
+    var text = String(label || '');
+    if (!text) return;
+    ctx.save();
+    ctx.font = 'bold 13px Georgia,"Noto Sans KR",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#051015cc';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = col || '#f5f0df';
+    ctx.fillText(text, x, y);
+    ctx.restore();
   }
 
   function drawSnakes(ctx, st) {
@@ -1222,8 +1242,10 @@
       ctx.beginPath(); ctx.arc(fx, fy, cell * 0.32, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
     });
+    var meEliminated = false;
     (st.snakes || []).forEach(function (s, i) {
-      if (s.alive === false) return;
+      if (s.id === selfId || s.id == selfId) meEliminated = !!s.eliminated;
+      if (s.alive === false || s.eliminated) return;
       var body = s.body || [];
       var col = COLORS[s.slot != null ? s.slot : i];
       body.forEach(function (p, j) {
@@ -1255,13 +1277,30 @@
           ctx.globalAlpha = 1;
         }
       });
-      if (body[0] && (s.name || s.slot != null)) {
-        ctx.fillStyle = '#f5f0df';
+      if (body[0]) {
+        var hx = ox + body[0].x * cell + cell / 2;
+        var hy = oy + body[0].y * cell - 2;
+        var nm = s.name || ('P' + ((s.slot != null ? s.slot : i) + 1));
+        var lifeMarks = '';
+        var ml = s.maxLives || 3;
+        for (var li = 0; li < ml; li++) lifeMarks += li < (s.lives != null ? s.lives : 0) ? '♥' : '♡';
+        drawNameTag(ctx, nm, hx, hy - 12, col);
+        ctx.save();
         ctx.font = '11px Georgia,serif';
         ctx.textAlign = 'center';
-        ctx.fillText(String(s.name || ('P' + ((s.slot || 0) + 1))), ox + body[0].x * cell + cell / 2, oy + body[0].y * cell - 4);
+        ctx.fillStyle = '#ff8a7a';
+        ctx.fillText(lifeMarks, hx, hy);
+        ctx.restore();
       }
     });
+    if (meEliminated) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, canvasH - 42, canvasW, 42);
+      ctx.fillStyle = '#efd28a';
+      ctx.font = 'bold 16px Georgia,serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('탈락 · 관전 중', canvasW / 2, canvasH - 16);
+    }
   }
 
   function drawHockey(ctx, st) {
@@ -1290,15 +1329,22 @@
   function renderEnded() {
     var winner = '알 수 없음';
     var wid = endedInfo && endedInfo.winnerId;
-    var iWon = wid != null && wid === selfId;
+    var iWon = wid != null && (wid === selfId || wid == selfId);
     if (wid != null && room && room.players) {
       for (var i = 0; i < room.players.length; i++) {
-        if (room.players[i].id === wid) { winner = room.players[i].name; break; }
+        if (room.players[i].id === wid || room.players[i].id == wid) { winner = room.players[i].name; break; }
       }
     }
     if (endedInfo && (endedInfo.winnerName || endedInfo.winner)) winner = endedInfo.winnerName || endedInfo.winner;
-    if (iWon) winner = (winner && winner !== '알 수 없음' ? winner + ' (당신)' : '당신');
-    var title = iWon ? '승리!' : (wid != null ? '패배' : '경기 종료');
+    var title;
+    if (gameId === 'snakes' && wid != null) {
+      title = esc(String(winner || '근무자')) + ' 근무자 승리';
+    } else if (iWon) {
+      title = '승리!';
+      winner = (winner && winner !== '알 수 없음' ? winner + ' (당신)' : '당신');
+    } else {
+      title = wid != null ? '패배' : '경기 종료';
+    }
     var reasonText = endedInfo && endedInfo.reason ? translateErr(endedInfo.reason) : '';
     if (gameId === 'rts' && endedInfo && endedInfo.reason === 'nexus') {
       reasonText = iWon ? '상대 본진을 파괴했습니다!' : '본진이 파괴되었습니다';
@@ -1306,9 +1352,13 @@
     if (gameId === 'ageofwar' && endedInfo && endedInfo.reason === 'base') {
       reasonText = iWon ? '상대 기지를 파괴했습니다!' : '기지가 파괴되었습니다';
     }
+    if (gameId === 'snakes' && endedInfo && endedInfo.reason === 'last_alive') {
+      reasonText = '최후의 생존자';
+    }
     refs.body.innerHTML =
-      '<div class="hkmp-ended"><h2 style="font-size:' + (iWon ? '42px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' + title + '</h2>' +
-      '<p style="color:#b1c1bd">승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b></p>' +
+      '<div class="hkmp-ended"><h2 style="font-size:' + ((iWon || gameId === 'snakes') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' +
+      (gameId === 'snakes' ? title : esc(title)) + '</h2>' +
+      (gameId === 'snakes' ? '' : '<p style="color:#b1c1bd">승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b></p>') +
       (reasonText ? '<p class="hkmp-note">' + esc(reasonText) + '</p>' : '') +
       (room && room.code ? '<p class="hkmp-note">방 ' + esc(room.code) + '</p>' : '') +
       '<div class="hkmp-row" style="justify-content:center;margin-top:18px">' +

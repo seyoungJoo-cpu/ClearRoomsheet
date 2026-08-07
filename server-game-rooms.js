@@ -4,7 +4,7 @@ const { WebSocketServer } = require("ws");
 
 const GAMES = {
   tank: { max: 4, hz: 20 },
-  rts: { max: 2, hz: 10 },
+  rts: { max: 4, hz: 10 },
   ageofwar: { max: 2, hz: 20 },
   snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 45 },
@@ -78,10 +78,7 @@ function allReady(room) {
   const max = GAMES[room.game].max;
   const humans = room.players.filter((p) => !p.isAi);
   const readyOk = room.players.every((p) => p.ready || p.isAi);
-  if (room.game === "snakes") {
-    return humans.length >= 2 && readyOk;
-  }
-  if (room.game === "tank") {
+  if (room.game === "snakes" || room.game === "tank" || room.game === "rts") {
     return humans.length >= 2 && humans.length <= max && readyOk;
   }
   if (room.game === "ageofwar") {
@@ -100,10 +97,23 @@ function clearTick(room) {
 function endGame(room, reason, winnerId) {
   clearTick(room);
   room.status = "ended";
+  let winnerName = null;
+  if (winnerId != null) {
+    const wp = room.players.find((p) => p.id === winnerId);
+    if (wp) winnerName = wp.name;
+    else if (room.state && room.state.snakes) {
+      const sn = room.state.snakes.find((s) => s.id === winnerId);
+      if (sn) winnerName = sn.name;
+    } else if (room.state && room.state.tanks) {
+      const tk = room.state.tanks.find((t) => t.id === winnerId);
+      if (tk) winnerName = tk.name;
+    }
+  }
   const ended = {
     type: "ended",
     reason: reason || "ended",
     winnerId: winnerId != null ? winnerId : null,
+    winnerName: winnerName || null,
     state: publicState(room),
   };
   for (const p of room.players) {
@@ -129,7 +139,13 @@ function removePlayer(room, player) {
     if (room.game === "snakes") {
       if (room.state && room.state.snakes) {
         const sn = room.state.snakes.find((s) => s.id === player.id);
-        if (sn) sn.alive = false;
+        if (sn) {
+          sn.alive = false;
+          sn.eliminated = true;
+          sn.lives = 0;
+          sn.body = [];
+          sn.pendingRespawn = false;
+        }
       }
       broadcastRoom(room);
       checkSnakesEnd(room);
@@ -143,6 +159,22 @@ function removePlayer(room, player) {
       }
       broadcastRoom(room);
       checkTankRoundEnd(room);
+    } else if (room.game === "rts") {
+      if (room.state && room.state.entities) {
+        const slot = player.slot;
+        room.state.entities = room.state.entities.filter((e) => e.owner !== slot);
+        const aliveNexus = room.state.entities.filter((e) => e.type === "nexus");
+        const ownersLeft = [...new Set(aliveNexus.map((e) => e.owner))];
+        if (ownersLeft.length <= 1) {
+          const w = ownersLeft[0] != null ? room.players.find((p) => p.slot === ownersLeft[0]) : null;
+          endGame(room, "opponent_left", w ? w.id : null);
+        } else {
+          broadcastRoom(room);
+          broadcastState(room);
+        }
+      } else {
+        broadcastRoom(room);
+      }
     } else if (room.game === "ageofwar") {
       const winner = room.players.find((p) => p.id !== player.id && !p.isAi);
       endGame(room, "opponent_left", winner ? winner.id : null);
@@ -598,7 +630,14 @@ function initRts(room) {
   const W = 1200,
     H = 800;
   let uid = 1;
-  const mkSide = (owner, baseX, baseY) => {
+  const bases = [
+    { x: 150, y: 150, sx: 1, sy: 1 },
+    { x: W - 150, y: 150, sx: -1, sy: 1 },
+    { x: 150, y: H - 150, sx: 1, sy: -1 },
+    { x: W - 150, y: H - 150, sx: -1, sy: -1 },
+  ];
+  const mkSide = (owner, base) => {
+    const { x: baseX, y: baseY, sx, sy } = base;
     const nexus = {
       id: uid++,
       kind: "building",
@@ -612,32 +651,25 @@ function initRts(room) {
       h: RTS_BUILD.nexus.h,
       atkCd: 0,
     };
-    // minerals face the nearby outer walls
-    const minerals = [];
-    if (owner === 0) {
-      minerals.push(
-        { id: uid++, kind: "mineral", x: 42, y: 48, amount: 9999 },
-        { id: uid++, kind: "mineral", x: 42, y: 118, amount: 9999 },
-        { id: uid++, kind: "mineral", x: 110, y: 42, amount: 9999 }
-      );
-    } else {
-      minerals.push(
-        { id: uid++, kind: "mineral", x: W - 42, y: H - 48, amount: 9999 },
-        { id: uid++, kind: "mineral", x: W - 42, y: H - 118, amount: 9999 },
-        { id: uid++, kind: "mineral", x: W - 110, y: H - 42, amount: 9999 }
-      );
-    }
+    // minerals toward nearby outer walls
+    const minerals = [
+      { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 102, amount: 9999 },
+      { id: uid++, kind: "mineral", x: baseX - sx * 108, y: baseY - sy * 32, amount: 9999 },
+      { id: uid++, kind: "mineral", x: baseX - sx * 40, y: baseY - sy * 108, amount: 9999 },
+    ].map((m) => ({
+      ...m,
+      x: Math.max(28, Math.min(W - 28, m.x)),
+      y: Math.max(28, Math.min(H - 28, m.y)),
+    }));
     const workers = [];
     for (let i = 0; i < 3; i++) {
-      const ox = owner === 0 ? 36 : -36;
-      const oy = (i - 1) * 34;
       workers.push({
         id: uid++,
         kind: "unit",
         type: "worker",
         owner,
-        x: baseX + ox,
-        y: baseY + oy,
+        x: baseX + sx * 36,
+        y: baseY + (i - 1) * 34,
         hp: RTS_UNITS.worker.hp,
         maxHp: RTS_UNITS.worker.hp,
         r: RTS_UNITS.worker.r,
@@ -651,8 +683,10 @@ function initRts(room) {
     }
     return { nexus, minerals, workers };
   };
-  const a = mkSide(0, 150, 150);
-  const b = mkSide(1, W - 150, H - 150);
+  room.players.forEach((p, i) => {
+    p.slot = i;
+  });
+  const sides = room.players.map((p, i) => mkSide(p.slot, bases[i % bases.length]));
   const obstacles = [
     { kind: "rock", x: 520, y: 260, r: 36 },
     { kind: "rock", x: 700, y: 520, r: 42 },
@@ -668,9 +702,9 @@ function initRts(room) {
     W,
     H,
     nextId: uid,
-    gold: [200, 200],
-    entities: [...a.workers, ...b.workers, a.nexus, b.nexus],
-    minerals: [...a.minerals, ...b.minerals],
+    gold: room.players.map(() => 200),
+    entities: sides.flatMap((s) => [...s.workers, s.nexus]),
+    minerals: sides.flatMap((s) => s.minerals),
     obstacles,
     beams: [],
     spawnQ: [],
@@ -760,9 +794,11 @@ function tickRts(room, dt) {
             : s.entities.find((e) => e.type === "barracks" && e.owner === owner);
         if (from && s.gold[owner] >= udef.cost) {
           s.gold[owner] -= udef.cost;
+          const nexus = s.entities.find((e) => e.type === "nexus" && e.owner === owner);
+          const outX = nexus ? (from.x < s.W / 2 ? 48 : -48) : owner % 2 === 0 ? 48 : -48;
           const spawn = rtsClampPos(
             s,
-            from.x + (owner === 0 ? 48 : -48),
+            from.x + outX,
             from.y + (Math.random() - 0.5) * 50,
             udef.r
           );
@@ -959,11 +995,11 @@ function tickRts(room, dt) {
   }
 
   s.entities = s.entities.filter((e) => e.hp > 0);
-  const n0 = s.entities.find((e) => e.type === "nexus" && e.owner === 0);
-  const n1 = s.entities.find((e) => e.type === "nexus" && e.owner === 1);
-  if (!n0 || !n1) {
-    const winnerSlot = n0 ? 0 : 1;
-    const w = room.players.find((p) => p.slot === winnerSlot);
+  const aliveNexus = s.entities.filter((e) => e.type === "nexus");
+  const ownersLeft = [...new Set(aliveNexus.map((e) => e.owner))];
+  if (ownersLeft.length <= 1 && room.players.length >= 2) {
+    const winnerSlot = ownersLeft[0];
+    const w = winnerSlot != null ? room.players.find((p) => p.slot === winnerSlot) : null;
     endGame(room, "nexus", w ? w.id : null);
   }
 }
@@ -1226,14 +1262,19 @@ function initSnakes(room) {
     return {
       id: p.id,
       slot: p.slot,
-      name: p.name,
+      name: p.name || ("P" + (i + 1)),
       alive: true,
+      eliminated: false,
+      lives: 3,
+      maxLives: 3,
       body,
+      spawn: { x: sp.x, y: sp.y, dx: sp.dx, dy: sp.dy },
       dirX: sp.dx,
       dirY: sp.dy,
       nextDirX: sp.dx,
       nextDirY: sp.dy,
       score: 0,
+      pendingRespawn: false,
       color: null,
     };
   });
@@ -1254,27 +1295,55 @@ function initSnakes(room) {
   return state;
 }
 
+function snakeRespawn(sn) {
+  const sp = sn.spawn || { x: 8, y: 8, dx: 1, dy: 0 };
+  sn.body = [];
+  for (let k = 0; k < 4; k++) {
+    sn.body.push({ x: sp.x - sp.dx * k, y: sp.y - sp.dy * k });
+  }
+  sn.dirX = sp.dx;
+  sn.dirY = sp.dy;
+  sn.nextDirX = sp.dx;
+  sn.nextDirY = sp.dy;
+  sn.alive = true;
+  sn.pendingRespawn = false;
+}
+
+function snakeDie(sn) {
+  if (!sn.alive || sn.eliminated || sn.pendingRespawn) return;
+  sn.alive = false;
+  sn.lives = Math.max(0, (sn.lives != null ? sn.lives : 3) - 1);
+  if (sn.lives <= 0) {
+    sn.eliminated = true;
+    sn.body = [];
+    sn.pendingRespawn = false;
+  } else {
+    sn.pendingRespawn = true;
+  }
+}
+
 function checkSnakesEnd(room) {
   const s = room.state;
   if (!s) return;
-  const alive = s.snakes.filter((sn) => sn.alive);
+  const contenders = s.snakes.filter((sn) => !sn.eliminated);
   const timedOut = Date.now() - s.startedAt >= s.duration;
-  if (alive.length <= 1 || timedOut) {
+  if (contenders.length <= 1 || timedOut) {
     let winner = null;
-    if (alive.length === 1) winner = alive[0].id;
-    else {
+    if (contenders.length === 1) {
+      winner = contenders[0].id;
+    } else {
       let best = null,
         bl = -1;
       for (const sn of s.snakes) {
-        const len = sn.body.length + (sn.score || 0);
+        const len = ((sn.body && sn.body.length) || 0) + (sn.score || 0) + (sn.lives || 0) * 100;
         if (len > bl) {
           bl = len;
-          best = sn.id;
+          best = sn;
         }
       }
-      winner = best;
+      if (best) winner = best.id;
     }
-    endGame(room, alive.length <= 1 ? "last_alive" : "time", winner);
+    endGame(room, contenders.length <= 1 ? "last_alive" : "time", winner);
   }
 }
 
@@ -1325,7 +1394,7 @@ function snakesStep(room) {
   for (const pr of proposals) {
     const { sn, nh } = pr;
     if (nh.x < 0 || nh.y < 0 || nh.x >= s.cols || nh.y >= s.rows) {
-      sn.alive = false;
+      snakeDie(sn);
     }
   }
 
@@ -1356,32 +1425,23 @@ function snakesStep(room) {
     // head crashes into another head
     const heads = headMap.get(k) || [];
     if (heads.length > 1) {
-      sn.alive = false;
+      snakeDie(sn);
       continue;
     }
 
-    // head into any body (including own body/tail — classic snake death)
-    // Allow moving into own tail cell if that snake is not growing this tick:
-    // we resolve food after move; treat body[1..] as lethal always, body[last]
-    // is lethal unless it will pop (no food). Simpler classic rule: any body hit dies,
-    // except ignore own index 0 head. Tail cell still lethal (strict) — midnight style.
     const hit = bodyOcc.get(k);
     if (hit) {
-      // own current head cell: ignore
-      // own tail tip: allow (cell vacates if not growing)
-      // any other body segment (own neck or opponent body): die
       if (hit.id === sn.id) {
         if (hit.i === 0) {
           /* head cell */
         } else if (hit.i === sn.body.length - 1) {
           /* own tip — sliding forward */
         } else {
-          sn.alive = false;
+          snakeDie(sn);
           continue;
         }
       } else {
-        // head into opponent body (including their tail)
-        sn.alive = false;
+        snakeDie(sn);
         continue;
       }
     }
@@ -1405,6 +1465,11 @@ function snakesStep(room) {
     }
     if (!ate) sn.body.pop();
     else snakesSpawnFood(s, 1);
+  }
+
+  // respawn players who still have lives
+  for (const sn of s.snakes) {
+    if (sn.pendingRespawn) snakeRespawn(sn);
   }
 
   checkSnakesEnd(room);
