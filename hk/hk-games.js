@@ -1438,7 +1438,7 @@
       return {
         x: 140, y: FLOOR - 44, w: 34, h: 44, vx: 0, vy: 0,
         onGround: true, canWire: true, wired: false, hook: null, anim: 0,
-        ropeLen: null, omega: 0
+        ropeLen: null, omega: 0, wireAge: 0
       };
     }
     function addSegment(fromX) {
@@ -1449,7 +1449,7 @@
           var len = 160 + Math.random() * 220;
           platforms.push({ x: x, y: FLOOR, w: len, h: 40 });
           if (Math.random() < 0.55) {
-            hooks.push({ x: x + len * (0.35 + Math.random() * 0.3), y: 70 + Math.random() * 50 });
+            hooks.push({ x: x + len * (0.35 + Math.random() * 0.3), y: 70 + Math.random() * 50, used: false });
           }
           if (Math.random() < 0.7) {
             for (var i = 0; i < 2 + (Math.random() * 3) | 0; i++) {
@@ -1465,12 +1465,18 @@
           var ly = FLOOR - 90 - Math.random() * 70;
           var lw = 90 + Math.random() * 100;
           platforms.push({ x: x + 20, y: ly, w: lw, h: 18 });
-          hooks.push({ x: x + 40 + lw * 0.4, y: Math.max(40, ly - 70) });
+          hooks.push({ x: x + 40 + lw * 0.4, y: Math.max(40, ly - 70), used: false });
           coins.push({ x: x + 40 + lw * 0.5, y: ly - 28, r: 9, taken: false });
           x += 130 + Math.random() * 80;
         } else {
-          // gap
-          x += 90 + Math.random() * 110 + Math.min(80, score / 40);
+          // cliff / gap — always a wire above the precipice
+          var gap = 100 + Math.random() * 100 + Math.min(90, score / 35);
+          var mid = x + gap * 0.52;
+          hooks.push({ x: mid, y: 52 + Math.random() * 42, used: false, gapWire: true });
+          if (Math.random() < 0.55) {
+            coins.push({ x: mid, y: FLOOR - 120 - Math.random() * 30, r: 9, taken: false });
+          }
+          x += gap;
         }
       }
       nextX = x;
@@ -1494,6 +1500,7 @@
       var best = null, bd = maxD || 170;
       for (var i = 0; i < hooks.length; i++) {
         var h = hooks[i];
+        if (h.used) continue;
         if (h.x < player.x - 30 || h.x > player.x + 240) continue;
         var d = Math.hypot(h.x - (player.x + player.w / 2), h.y - player.y);
         if (d < bd) { bd = d; best = h; }
@@ -1501,10 +1508,12 @@
       return best;
     }
     function attachWire(hook) {
-      if (!hook || player.wired) return false;
+      if (!hook || player.wired || hook.used) return false;
       player.wired = true;
       player.hook = hook;
       player.canWire = false;
+      player.wireAge = 0;
+      hook.used = true; // one ride per wire — no infinite cling / re-grab
       var cx = player.x + player.w / 2, cy = player.y + 10;
       player.ropeLen = Math.max(48, Math.min(210, Math.hypot(hook.x - cx, hook.y - cy)));
       var theta0 = Math.atan2(cx - hook.x, cy - hook.y);
@@ -1556,6 +1565,7 @@
       player.hook = null;
       player.ropeLen = null;
       player.omega = 0;
+      player.wireAge = 0;
       keyWireLatch = false;
       hold = false;
     }
@@ -1587,10 +1597,11 @@
         ctx.fillRect(p.x, p.y, p.w, 4);
       });
       hooks.forEach(function (h) {
-        ctx.strokeStyle = '#88a09a'; ctx.lineWidth = 2;
+        ctx.strokeStyle = h.used ? '#4a5a56' : (h.gapWire ? '#a8d4c8' : '#88a09a');
+        ctx.lineWidth = h.gapWire ? 2.4 : 2;
         ctx.beginPath(); ctx.moveTo(h.x, 0); ctx.lineTo(h.x, h.y); ctx.stroke();
-        ctx.fillStyle = '#6ec8ff';
-        ctx.beginPath(); ctx.arc(h.x, h.y, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = h.used ? '#5a7070' : '#6ec8ff';
+        ctx.beginPath(); ctx.arc(h.x, h.y, h.gapWire ? 7 : 6, 0, Math.PI * 2); ctx.fill();
       });
       coins.forEach(function (c0) {
         if (c0.taken) return;
@@ -1661,6 +1672,7 @@
           var hx = player.hook.x, hy = player.hook.y;
           var cx = player.x + player.w / 2;
           var cy = player.y + 10;
+          player.wireAge = (player.wireAge || 0) + dt;
           if (player.ropeLen == null) {
             player.ropeLen = Math.max(48, Math.hypot(hx - cx, hy - cy));
             player.omega = -2.2;
@@ -1689,6 +1701,13 @@
           player.y = ny - 10;
           // store tangential vertical speed for feel / next free-fall step
           player.vy = -L * player.omega * Math.sin(theta);
+          // End swing after crossing the hook (or max ride time) — no infinite hang
+          var pastHook = cx > hx + 24 && theta > 0.35;
+          var timedOut = player.wireAge > 1.15;
+          var swungFar = theta > 1.05;
+          if (pastHook || timedOut || swungFar) {
+            releaseWire();
+          }
         } else {
           if (player.wired && !hold && !keyWireLatch) releaseWire();
           player.vy += 1650 * dt;
@@ -1774,7 +1793,7 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · 공중에서 Space로 바로 와이어(다시 누르면 해제) · 마우스도 가능 · 팁 수집');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · 공중에서 Space로 와이어(다시 누르거나 훅을 지나면 해제) · 낭떠러지 위엔 항상 와이어 · 팁 수집');
     return { id: 'mines', destroy: c.destroy };
   };
 
