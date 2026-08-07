@@ -925,8 +925,8 @@
     }
     function gapScale() { return Math.max(0.78, 1 - score / 22000); }
     function riseSpeed() {
-      // very slow camera rise — starts tiny, creeps up gently with height
-      return 5.5 + Math.min(9, score / 9000);
+      // Noticeably rising floor — still climbable with double-jump
+      return 14 + Math.min(22, score / 4500);
     }
     function addPlatforms() {
       var top = Math.min.apply(null, platforms.map(function (p) { return p.y; }));
