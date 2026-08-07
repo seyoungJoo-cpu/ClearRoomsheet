@@ -10,7 +10,7 @@
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
     breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '5단계 벽돌 격파 · 아이템 수집' },
     jump: { icon: '🪽', name: '스카이 점프', desc: '2단 점프 · 서서히 올라가는 화면' },
-    tetris: { icon: '🟪', name: '타워 테트리스', desc: '블록을 쌓아 라인을 지우는 클래식' },
+    tetris: { icon: '🟪', name: '타워 테트리스', desc: '클래식 10×20 · 급격한 난이도 상승' },
     pong: { icon: '🏓', name: '로비 핑퐁', desc: '빠른 공·짧은 패들로 고난도 랠리' },
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
     mines: { icon: '💣', name: '스위트 마인', desc: '지뢰를 피해 안전한 칸을 열기' },
@@ -121,7 +121,7 @@
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory{width:min(100%,640px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
-      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:min(100%,620px);height:auto;max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
+      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
     document.head.appendChild(style);
@@ -587,8 +587,9 @@
     return { id: 'merge2048', destroy: c.destroy };
   };
 
-  function canvasBase(width, height) {
-    var canvas = el('canvas', 'hkg-canvas'); canvas.width = width; canvas.height = height; refs.stage.appendChild(canvas);
+  function canvasBase(width, height, extraClass) {
+    var canvas = el('canvas', 'hkg-canvas' + (extraClass ? ' ' + extraClass : ''));
+    canvas.width = width; canvas.height = height; refs.stage.appendChild(canvas);
     return { canvas: canvas, ctx: canvas.getContext('2d') };
   }
 
@@ -1025,13 +1026,30 @@
   };
 
   games.tetris = function () {
-    var c = controller(), cv = canvasBase(360, 680), ctx = cv.ctx, W = 10, H = 20, cell = 34, padX = 10, padY = 10;
+    // Classic 10×20 playfield (portrait). Drop speed ramps hard with lines.
+    var CW = 320, CH = 640, W = 10, H = 20, cell = 30, padX = 10, padY = 20;
+    var c = controller(), cv = canvasBase(CW, CH, 'hkg-canvas-tetris'), ctx = cv.ctx;
     var shapes = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
     var colors = ['#55c2c8', '#efd28a', '#d86bd7', '#55a9e8', '#f08b43', '#4bc6a6', '#ef5350'];
-    var grid, piece, nextId, score = 0, lines = 0, drop = 0, softDrop = 0, step = 620, over = false, held = {}, fx = makeFx(), flashRows = [];
+    var grid, piece, nextId, score = 0, lines = 0, drop = 0, softDrop = 0, step = 520, over = false, held = {}, fx = makeFx(), flashRows = [];
     setHud([['점수', '0', 'score'], ['라인', '0', 'lines'], ['레벨', '1', 'level']]);
     function empty() { return Array.from({ length: H }, function () { return Array(W).fill(0); }); }
-    function level() { return 1 + Math.floor(lines / 8); }
+    function level() { return 1 + Math.floor(lines / 4); }
+    function dropMs(lv) {
+      // Steep curve: ~520 → 48ms within ~10 levels
+      return Math.max(48, Math.round(520 * Math.pow(0.76, Math.max(0, lv - 1))));
+    }
+    function dasMs(lv) {
+      return Math.max(55, 130 - (lv - 1) * 8);
+    }
+    function softMs(lv) {
+      return Math.max(22, 55 - (lv - 1) * 3);
+    }
+    function syncSpeed() {
+      var lv = level();
+      step = dropMs(lv);
+      hud('level', lv);
+    }
     function spawn() {
       nextId = nextId == null ? Math.floor(Math.random() * shapes.length) : nextId;
       var id = nextId; nextId = Math.floor(Math.random() * shapes.length);
@@ -1061,11 +1079,11 @@
           });
           flashRows = [];
           lines += cleared.length;
-          score += [0, 120, 300, 520, 900][cleared.length] * level();
-          step = Math.max(110, 620 - (level() - 1) * 48);
-          hud('score', formatScore(score)); hud('lines', lines); hud('level', level());
+          score += [0, 140, 360, 640, 1100][cleared.length] * level();
+          syncSpeed();
+          hud('score', formatScore(score)); hud('lines', lines);
           spawn();
-        }, 120);
+        }, 90);
       } else spawn();
     }
     function rotate() {
@@ -1073,6 +1091,8 @@
       if (!collide(piece.x, piece.y, rotated)) piece.m = rotated;
       else if (!collide(piece.x - 1, piece.y, rotated)) { piece.x--; piece.m = rotated; }
       else if (!collide(piece.x + 1, piece.y, rotated)) { piece.x++; piece.m = rotated; }
+      else if (!collide(piece.x - 2, piece.y, rotated)) { piece.x -= 2; piece.m = rotated; }
+      else if (!collide(piece.x + 2, piece.y, rotated)) { piece.x += 2; piece.m = rotated; }
     }
     function soft() { if (!collide(piece.x, piece.y + 1, piece.m)) piece.y++; else merge(); }
     function hard() { while (!collide(piece.x, piece.y + 1, piece.m)) { piece.y++; score += 2; } hud('score', formatScore(score)); merge(); }
@@ -1085,19 +1105,19 @@
       var g = ctx.createLinearGradient(px, py, px + cell, py + cell);
       g.addColorStop(0, '#ffffff55'); g.addColorStop(0.22, color); g.addColorStop(1, '#00000055');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.roundRect(px + 1, py + 1, cell - 2, cell - 2, 7); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(px + 1, py + 1, cell - 2, cell - 2, 6); ctx.fill();
       ctx.strokeStyle = '#ffffff33'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#ffffff40'; ctx.fillRect(px + 5, py + 4, cell - 12, 4);
-      ctx.fillStyle = '#00000033'; ctx.fillRect(px + 5, py + cell - 8, cell - 12, 3);
+      ctx.fillStyle = '#ffffff40'; ctx.fillRect(px + 4, py + 3, cell - 10, 3);
+      ctx.fillStyle = '#00000033'; ctx.fillRect(px + 4, py + cell - 7, cell - 10, 3);
     }
     function ghostY() {
       var y = piece.y; while (!collide(piece.x, y + 1, piece.m)) y++; return y;
     }
     function draw() {
-      var bg = ctx.createLinearGradient(0, 0, 0, 680);
+      var bg = ctx.createLinearGradient(0, 0, 0, CH);
       bg.addColorStop(0, '#0d2a30'); bg.addColorStop(1, '#061218');
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, 360, 680);
-      ctx.fillStyle = '#08181d'; ctx.beginPath(); ctx.roundRect(padX - 4, padY - 4, W * cell + 8, H * cell + 8, 12); ctx.fill();
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
+      ctx.fillStyle = '#08181d'; ctx.beginPath(); ctx.roundRect(padX - 4, padY - 4, W * cell + 8, H * cell + 8, 10); ctx.fill();
       ctx.strokeStyle = '#ffffff10';
       for (var i = 0; i <= W; i++) { ctx.beginPath(); ctx.moveTo(padX + i * cell, padY); ctx.lineTo(padX + i * cell, padY + H * cell); ctx.stroke(); }
       for (var j = 0; j <= H; j++) { ctx.beginPath(); ctx.moveTo(padX, padY + j * cell); ctx.lineTo(padX + W * cell, padY + j * cell); ctx.stroke(); }
@@ -1122,10 +1142,12 @@
       if (flashRows.length) { draw(); c.raf(loop); return; }
       if (!drop) drop = t;
       if (t - drop >= step) { drop = t; soft(); }
-      if (held.left && t - (held._leftAt || 0) > 140) { held._leftAt = t; if (!collide(piece.x - 1, piece.y, piece.m)) piece.x--; }
-      if (held.right && t - (held._rightAt || 0) > 140) { held._rightAt = t; if (!collide(piece.x + 1, piece.y, piece.m)) piece.x++; }
+      var lv = level();
+      var das = dasMs(lv);
+      if (held.left && t - (held._leftAt || 0) > das) { held._leftAt = t; if (!collide(piece.x - 1, piece.y, piece.m)) piece.x--; }
+      if (held.right && t - (held._rightAt || 0) > das) { held._rightAt = t; if (!collide(piece.x + 1, piece.y, piece.m)) piece.x++; }
       if (held.down) {
-        if (!softDrop || t - softDrop >= 55) { softDrop = t; soft(); score += 1; hud('score', formatScore(score)); }
+        if (!softDrop || t - softDrop >= softMs(lv)) { softDrop = t; soft(); score += 1; hud('score', formatScore(score)); }
       }
       draw(); c.raf(loop);
     }
@@ -1143,8 +1165,8 @@
     }
     c.on(document, 'keydown', key); c.on(document, 'keyup', key);
     c.on(cv.canvas, 'click', function () { rotate(); });
-    grid = empty(); spawn(); draw(); c.raf(loop);
-    actions(function () { startGame('tetris'); }, function () { return score; }, '←→ 이동 · ↑/클릭 회전 · ↓ 소프트드롭 · Space 하드드롭');
+    grid = empty(); spawn(); syncSpeed(); draw(); c.raf(loop);
+    actions(function () { startGame('tetris'); }, function () { return score; }, '클래식 10×20 · 4라인마다 레벨↑ · 낙하 속도가 급격히 빨라집니다 · ←→이동 · ↑회전 · ↓소프트 · Space하드');
     return { id: 'tetris', destroy: c.destroy };
   };
 
