@@ -4,7 +4,7 @@
   var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var META = {
-    candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '20초 시작 · 깨면 시간 추가 · 타임어택' },
+    candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
     snake: { icon: '🐍', name: '요리조리 컴플레인 피하기', desc: '벽을 피해 야식을 모아보세요' },
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
@@ -421,11 +421,11 @@
   games.candy = function () {
     var c = controller(), board = [], selected = -1, score = 0, busy = false, alive = true;
     var colors = ['#ef5350', '#ffca45', '#4bc6a6', '#55a9e8', '#d86bd7', '#f08b43'];
-    var left = 20, lastTickAt = Date.now(), colorCount = 5, elapsed = 0;
-    var TIME_PER_CANDY = 0.5;
+    var left = 10, lastTickAt = Date.now(), colorCount = 6, elapsed = 0;
+    var TIME_PER_CANDY = 0.28;
     refs.stage.innerHTML = '<div class="hkg-candy"></div>';
     var grid = refs.stage.firstChild;
-    setHud([['점수', '0', 'score'], ['남은 시간', '0:20', 'time'], ['콤보', 'x1', 'combo']]);
+    setHud([['점수', '0', 'score'], ['남은 시간', '0:10', 'time'], ['콤보', 'x1', 'combo']]);
     function fmt(sec) {
       sec = Math.max(0, Math.ceil(sec));
       var s = sec % 60;
@@ -588,7 +588,6 @@
       }
       lastTickAt = now;
       hud('time', fmt(left));
-      if (elapsed >= 12 && colorCount < 6) { colorCount = 6; toast('색이 늘어났어요!'); }
       if (left <= 0) {
         alive = false; left = 0; hud('time', '0:00');
         gameOver('타임 오버!', '최종 점수 ' + formatScore(score), function () { startGame('candy'); }, score);
@@ -610,7 +609,9 @@
       temp = board[a]; board[a] = board[i]; board[i] = temp;
       animateSwap(a, i, !ok, function (success) {
         if (!success) {
-          toast('매치가 만들어지는 두 캔디를 바꿔보세요');
+          left = Math.max(0, left - 0.6);
+          hud('time', fmt(left));
+          toast('미스! -0.6초 · 매치가 되는 조합만');
           return;
         }
         settle(1, function () {});
@@ -618,7 +619,7 @@
     }
     c.on(grid, 'click', click);
     seed(); tick();
-    actions(function () { startGame('candy'); }, function () { return score; }, '20초로 시작 · 캔디 1개 깰 때마다 시간 추가 · 인접한 캔디를 바꿔 맞추세요.');
+    actions(function () { startGame('candy'); }, function () { return score; }, '10초로 시작 · 캔디를 깨면 살짝 시간 추가 · 틀린 교환은 -0.6초 · 인접한 캔디를 바꿔 맞추세요.');
     return { id: 'candy', destroy: c.destroy };
   };
 
