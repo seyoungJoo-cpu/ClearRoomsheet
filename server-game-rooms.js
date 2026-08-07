@@ -7,7 +7,7 @@ const GAMES = {
   rts: { max: 2, hz: 10 },
   towerdefense: { max: 2, hz: 10 },
   snakes: { max: 8, hz: 15 },
-  airhockey: { max: 2, hz: 20 },
+  airhockey: { max: 2, hz: 45 },
 };
 
 const CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -1161,8 +1161,8 @@ function initAirhockey(room) {
     H,
     score: [0, 0],
     paddles: [
-      { id: room.players[0].id, slot: 0, x: 80, y: H / 2, r: 28 },
-      { id: room.players[1].id, slot: 1, x: W - 80, y: H / 2, r: 28 },
+      { id: room.players[0].id, slot: 0, x: 80, y: H / 2, r: 28, px: 80, py: H / 2 },
+      { id: room.players[1].id, slot: 1, x: W - 80, y: H / 2, r: 28, px: W - 80, py: H / 2 },
     ],
     puck: { x: W / 2, y: H / 2, vx: 0, vy: 0, r: 14 },
     goalHalf: 70,
@@ -1172,22 +1172,36 @@ function initAirhockey(room) {
 function resetPuck(s, toLeft) {
   s.puck.x = s.W / 2;
   s.puck.y = s.H / 2;
-  s.puck.vx = (toLeft ? -1 : 1) * 220;
-  s.puck.vy = (Math.random() - 0.5) * 120;
+  s.puck.vx = (toLeft ? -1 : 1) * 240;
+  s.puck.vy = (Math.random() - 0.5) * 140;
+}
+
+function boostPuckSpeed(puck, mul, add) {
+  let sp = Math.hypot(puck.vx, puck.vy);
+  if (sp < 1) {
+    puck.vx = 200;
+    puck.vy = (Math.random() - 0.5) * 80;
+    sp = Math.hypot(puck.vx, puck.vy);
+  }
+  const next = Math.min(1100, sp * (mul || 1.08) + (add != null ? add : 18));
+  puck.vx = (puck.vx / sp) * next;
+  puck.vy = (puck.vy / sp) * next;
 }
 
 function tickAirhockey(room, dt) {
   const s = room.state;
   for (let i = 0; i < 2; i++) {
     const pad = s.paddles[i];
+    pad.px = pad.x;
+    pad.py = pad.y;
     const p = room.players.find((pl) => pl.id === pad.id);
     const inp = (p && p.input) || {};
     const tx = typeof inp.x === "number" ? inp.x : pad.x;
     const ty = typeof inp.y === "number" ? inp.y : pad.y;
     const maxX0 = s.W * 0.45,
       minX1 = s.W * 0.55;
-    let nx = pad.x + (tx - pad.x) * Math.min(1, 12 * dt);
-    let ny = pad.y + (ty - pad.y) * Math.min(1, 12 * dt);
+    let nx = pad.x + (tx - pad.x) * Math.min(1, 18 * dt);
+    let ny = pad.y + (ty - pad.y) * Math.min(1, 18 * dt);
     ny = Math.max(pad.r, Math.min(s.H - pad.r, ny));
     if (i === 0) nx = Math.max(pad.r, Math.min(maxX0, nx));
     else nx = Math.max(minX1, Math.min(s.W - pad.r, nx));
@@ -1200,11 +1214,13 @@ function tickAirhockey(room, dt) {
   puck.y += puck.vy * dt;
   if (puck.y < puck.r) {
     puck.y = puck.r;
-    puck.vy *= -1;
+    puck.vy = Math.abs(puck.vy);
+    boostPuckSpeed(puck, 1.1, 22);
   }
   if (puck.y > s.H - puck.r) {
     puck.y = s.H - puck.r;
-    puck.vy *= -1;
+    puck.vy = -Math.abs(puck.vy);
+    boostPuckSpeed(puck, 1.1, 22);
   }
   // goals
   const gh = s.goalHalf;
@@ -1218,7 +1234,8 @@ function tickAirhockey(room, dt) {
       resetPuck(s, false);
     } else {
       puck.x = puck.r;
-      puck.vx *= -1;
+      puck.vx = Math.abs(puck.vx);
+      boostPuckSpeed(puck, 1.1, 22);
     }
   }
   if (puck.x > s.W + puck.r) {
@@ -1231,7 +1248,8 @@ function tickAirhockey(room, dt) {
       resetPuck(s, true);
     } else {
       puck.x = s.W - puck.r;
-      puck.vx *= -1;
+      puck.vx = -Math.abs(puck.vx);
+      boostPuckSpeed(puck, 1.1, 22);
     }
   }
   for (const pad of s.paddles) {
@@ -1244,19 +1262,15 @@ function tickAirhockey(room, dt) {
         ny = dy / d;
       puck.x = pad.x + nx * minD;
       puck.y = pad.y + ny * minD;
+      const pvx = (pad.x - (pad.px != null ? pad.px : pad.x)) / Math.max(dt, 0.001);
+      const pvy = (pad.y - (pad.py != null ? pad.py : pad.y)) / Math.max(dt, 0.001);
       const dot = puck.vx * nx + puck.vy * ny;
-      puck.vx = (puck.vx - 1.8 * dot * nx) + nx * 80;
-      puck.vy = (puck.vy - 1.8 * dot * ny) + ny * 80;
-      const sp = Math.hypot(puck.vx, puck.vy);
-      const maxSp = 520;
-      if (sp > maxSp) {
-        puck.vx = (puck.vx / sp) * maxSp;
-        puck.vy = (puck.vy / sp) * maxSp;
-      }
+      puck.vx = puck.vx - 2.05 * dot * nx + nx * 90 + pvx * 0.35;
+      puck.vy = puck.vy - 2.05 * dot * ny + ny * 90 + pvy * 0.35;
+      // 패들에 닿을 때마다 반드시 가속
+      boostPuckSpeed(puck, 1.12, 28);
     }
   }
-  puck.vx *= 0.999;
-  puck.vy *= 0.999;
 }
 
 /* ===================== dispatch ===================== */

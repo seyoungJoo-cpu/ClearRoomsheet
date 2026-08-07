@@ -27,6 +27,9 @@
   var selectIds = [], drag = null, pendingBuild = null, pendingTd = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
   var gamePaused = false;
+  var hockeySmooth = null;
+  var hockeyRaf = 0;
+  var hockeyLastScore = '';
 
   function isTypingTarget(el) {
     if (!el || !el.tagName) return false;
@@ -425,7 +428,8 @@
   function startInput() {
     stopInput();
     bindPlayKeys(true);
-    inputTimer = setInterval(tickInput, 33);
+    inputTimer = setInterval(tickInput, gameId === 'airhockey' ? 16 : 33);
+    if (gameId === 'airhockey') startHockeySmooth();
   }
   function stopInput() {
     if (inputTimer) clearInterval(inputTimer);
@@ -433,6 +437,58 @@
     bindPlayKeys(false);
     keys = {};
     fireLatch = false;
+    stopHockeySmooth();
+  }
+
+  function stopHockeySmooth() {
+    if (hockeyRaf) {
+      try { cancelAnimationFrame(hockeyRaf); } catch (_) {}
+      hockeyRaf = 0;
+    }
+    hockeySmooth = null;
+  }
+  function startHockeySmooth() {
+    stopHockeySmooth();
+    hockeySmooth = null;
+    hockeyLastScore = '';
+    var lastT = 0;
+    function frame(t) {
+      if (gameId !== 'airhockey' || view !== 'play' || !root || !root.classList.contains('open')) {
+        hockeyRaf = 0;
+        return;
+      }
+      var dt = Math.min(0.033, ((t - (lastT || t)) / 1000) || 0.016);
+      lastT = t;
+      var st = lastState;
+      if (st && st.puck) {
+        var scoreKey = (st.score || []).join(':');
+        if (!hockeySmooth || scoreKey !== hockeyLastScore) {
+          hockeySmooth = {
+            x: st.puck.x,
+            y: st.puck.y,
+            vx: st.puck.vx || 0,
+            vy: st.puck.vy || 0
+          };
+          hockeyLastScore = scoreKey;
+        } else {
+          var jump = Math.hypot(st.puck.x - hockeySmooth.x, st.puck.y - hockeySmooth.y);
+          if (jump > 90) {
+            hockeySmooth.x = st.puck.x;
+            hockeySmooth.y = st.puck.y;
+          } else {
+            hockeySmooth.vx = st.puck.vx || 0;
+            hockeySmooth.vy = st.puck.vy || 0;
+            hockeySmooth.x += hockeySmooth.vx * dt;
+            hockeySmooth.y += hockeySmooth.vy * dt;
+            hockeySmooth.x += (st.puck.x - hockeySmooth.x) * 0.28;
+            hockeySmooth.y += (st.puck.y - hockeySmooth.y) * 0.28;
+          }
+        }
+      }
+      drawFrame();
+      hockeyRaf = requestAnimationFrame(frame);
+    }
+    hockeyRaf = requestAnimationFrame(frame);
   }
 
   var playBound = false;
@@ -647,7 +703,7 @@
       rts: '좌드래그 선택 · 우클릭 이동(공격 중에도 이동) · 적 우클릭 공격 · 본진 자동 레이저',
       towerdefense: '타워/유닛 선택 후 내 라인 슬롯 클릭',
       snakes: '방향키/WASD · 벽·몸(상대 포함)에 머리 충돌 시 탈락',
-      airhockey: '마우스/터치로 패들 이동'
+      airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
     }[gameId] || '';
   }
 
@@ -1184,8 +1240,13 @@
     });
     var puck = st.puck;
     if (puck) {
+      var px = puck.x, py = puck.y;
+      if (hockeySmooth) { px = hockeySmooth.x; py = hockeySmooth.y; }
       ctx.fillStyle = '#f5f0df';
-      ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r || 10, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = '#efd68588';
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(px, py, puck.r || 10, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
     }
   }
 
