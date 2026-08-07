@@ -1033,21 +1033,25 @@
       mouse.ax = p.x; mouse.ay = p.y;
       if (e.button === 2) {
         if (gameId === 'rts') {
+          var ids = rtsSelectedUnitIds();
+          if (!ids.length) {
+            toast('먼저 유닛을 선택하세요');
+            return;
+          }
           var hit = findRtsEntityAt(p.x, p.y);
           var my = mySlot();
-          if (hit && hit.owner !== my && hit.hp > 0) {
+          if (hit && hit.owner !== my && hit.hp > 0 && !hit.fogGhost) {
             var ally = false;
             if (lastState && lastState.mode === '2v2') {
               ally = (hit.owner < 2) === (my < 2);
             }
             if (!ally) {
-              send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
-            } else {
-              send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'move', x: p.x, y: p.y } });
+              send({ type: 'input', payload: { selectIds: ids, cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
+              return;
             }
-          } else {
-            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'move', x: p.x, y: p.y } });
           }
+          // Ground / ally click → force move (interrupts attack)
+          send({ type: 'input', payload: { selectIds: ids, cmd: 'move', x: p.x, y: p.y } });
         }
         return;
       }
@@ -1104,6 +1108,39 @@
     cv.addEventListener('touchend', function () { mouse.down = false; }, { passive: true });
   }
 
+  function findRtsEntityAt(x, y) {
+    var ents = (lastState && lastState.entities) || [];
+    var best = null, bd = 1e9;
+    for (var i = 0; i < ents.length; i++) {
+      var e = ents[i];
+      if (!e || e.hp <= 0 || e.fogGhost) continue;
+      var hitR;
+      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'turret') {
+        hitR = Math.max(e.w || 40, e.h || 40) * 0.55;
+      } else {
+        hitR = (e.r || 12) + 6;
+      }
+      var d = Math.hypot((e.x || 0) - x, (e.y || 0) - y);
+      if (d <= hitR && d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+  function rtsSelectedUnitIds() {
+    var ents = (lastState && lastState.entities) || [];
+    var slot = mySlot();
+    var out = [];
+    for (var i = 0; i < selectIds.length; i++) {
+      for (var j = 0; j < ents.length; j++) {
+        var e = ents[j];
+        if (!e || e.id != selectIds[i]) continue;
+        if (e.kind === 'unit' && e.owner === slot && e.hp > 0 && !e.fogGhost) out.push(e.id);
+      }
+    }
+    return out;
+  }
   function finishSelect() {
     if (!lastState || !drag) return;
     var x1 = Math.min(drag.x1, drag.x2), x2 = Math.max(drag.x1, drag.x2);
@@ -1120,30 +1157,31 @@
     function inRect(e) {
       return (e.x || 0) >= x1 && (e.x || 0) <= x2 && (e.y || 0) >= y1 && (e.y || 0) <= y2;
     }
-    // Prefer buildings on click so barracks/nexus can be chosen for train
     if (tiny) {
-      var bld = null;
+      // Prefer units under cursor; buildings only if no unit
+      var unitHit = null, bldHit = null;
       for (var i = 0; i < ents.length; i++) {
         var e = ents[i];
         if (!e || e.owner !== slot || e.hp <= 0 || e.fogGhost) continue;
-        if (e.type !== 'nexus' && e.type !== 'barracks') continue;
-        if (hitBox(e, 6)) { bld = e; break; }
+        if (e.kind === 'unit') {
+          if (Math.hypot((e.x || 0) - drag.x1, (e.y || 0) - drag.y1) < 20) {
+            if (!unitHit) unitHit = e;
+          }
+        } else if (e.type === 'nexus' || e.type === 'barracks') {
+          if (hitBox(e, 4)) {
+            if (!bldHit) bldHit = e;
+          }
+        }
       }
-      if (bld) {
-        selectIds = [bld.id];
-        send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
-        return;
-      }
+      if (unitHit) selectIds = [unitHit.id];
+      else if (bldHit) selectIds = [bldHit.id];
+      send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
+      return;
     }
     ents.forEach(function (u) {
       if (!u || u.owner !== slot || u.hp <= 0 || u.fogGhost) return;
-      if (u.kind === 'unit') {
-        if (tiny) {
-          if (Math.hypot((u.x || 0) - drag.x1, (u.y || 0) - drag.y1) < 18) selectIds.push(u.id);
-        } else if (inRect(u)) selectIds.push(u.id);
-      } else if (!tiny && (u.type === 'nexus' || u.type === 'barracks') && inRect(u)) {
-        selectIds.push(u.id);
-      }
+      if (u.kind === 'unit' && inRect(u)) selectIds.push(u.id);
+      else if ((u.type === 'nexus' || u.type === 'barracks') && inRect(u)) selectIds.push(u.id);
     });
     send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
   }

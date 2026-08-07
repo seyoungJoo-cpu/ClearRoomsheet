@@ -1113,7 +1113,79 @@ function initRts(room) {
 }
 
 function rtsFind(s, id) {
-  return s.entities.find((e) => e.id === id);
+  const nid = Number(id);
+  return s.entities.find((e) => e && (e.id === id || e.id === nid || e.id == id));
+}
+
+function rtsApplyInput(room, s, owner, inp, mode) {
+  if (!inp || !inp.cmd) return;
+  let ids = Array.isArray(inp.selectIds) ? inp.selectIds.map(Number).filter((n) => isFinite(n)) : [];
+  if (!ids.length) {
+    const pl = room.players.find((pp) => (pp.slot != null ? pp.slot : room.players.indexOf(pp)) === owner);
+    if (pl && Array.isArray(pl.rtsSelectIds)) ids = pl.rtsSelectIds.map(Number).filter((n) => isFinite(n));
+  }
+
+  if (inp.cmd === "move") {
+    const tx = Number(inp.x);
+    const ty = Number(inp.y);
+    if (!isFinite(tx) || !isFinite(ty)) return;
+    for (const id of ids) {
+      const e = rtsFind(s, id);
+      if (e && e.kind === "unit" && e.owner === owner && e.hp > 0) {
+        // Force move — interrupts attack / chase / harvest
+        e.tx = tx;
+        e.ty = ty;
+        e.targetId = null;
+        e.order = "move";
+      }
+    }
+  } else if (inp.cmd === "attack") {
+    for (const id of ids) {
+      const e = rtsFind(s, id);
+      if (e && e.kind === "unit" && e.owner === owner && e.hp > 0) {
+        e.targetId = inp.targetId != null ? Number(inp.targetId) : null;
+        e.tx = Number(inp.x);
+        e.ty = Number(inp.y);
+        if (!isFinite(e.tx)) e.tx = null;
+        if (!isFinite(e.ty)) e.ty = null;
+        e.order = e.targetId != null ? "attack" : "move";
+        if (e.order === "move") e.targetId = null;
+      }
+    }
+  } else if (inp.cmd === "train" || (inp.cmd === "build" && inp.unitType && RTS_UNITS[inp.unitType])) {
+    rtsEnqueueTrain(s, owner, String(inp.unitType || ""), ids);
+  } else if (inp.cmd === "build") {
+    const bt = inp.buildType;
+    const def = RTS_BUILD[bt];
+    if (def && s.gold[owner] >= def.cost) {
+      const x = Math.max(40, Math.min(s.W - 40, Number(inp.x) || 0));
+      const y = Math.max(40, Math.min(s.H - 40, Number(inp.y) || 0));
+      if (rtsBuildAllowed(s, owner, bt, x, y)) {
+        s.gold[owner] -= def.cost;
+        const bld = {
+          id: s.nextId++,
+          kind: "building",
+          type: bt,
+          owner: owner,
+          team: rtsTeamOf(owner, mode),
+          x: x,
+          y: y,
+          hp: def.hp,
+          maxHp: def.hp,
+          w: def.w,
+          h: def.h,
+          atkCd: 0,
+          queue: [],
+          trainT: 0,
+        };
+        if (bt === "nexus") {
+          const pl = room.players.find((pp) => pp.slot === owner);
+          bld.label = (pl && pl.name) || ("P" + (owner + 1));
+        }
+        s.entities.push(bld);
+      }
+    }
+  }
 }
 
 function rtsOwnerGold(s, owner) {
@@ -1285,68 +1357,18 @@ function tickRts(room, dt) {
   });
 
   for (const p of room.players) {
-    const inp = p.input;
-    if (!inp || !inp.cmd) continue;
     const owner = p.slot != null ? p.slot : room.players.indexOf(p);
     if (s.gold[owner] == null) s.gold[owner] = RTS_START_GOLD;
-    const sels = (inp.selectIds || []).map(Number);
-
-    if (inp.cmd === "move") {
-      for (const id of sels) {
-        const e = rtsFind(s, id);
-        if (e && e.kind === "unit" && e.owner === owner) {
-          e.tx = inp.x;
-          e.ty = inp.y;
-          e.targetId = null;
-          e.order = "move";
-        }
+    const q = Array.isArray(p.inputQ) ? p.inputQ : [];
+    if (q.length) {
+      for (let qi = 0; qi < q.length; qi++) {
+        rtsApplyInput(room, s, owner, q[qi], mode);
       }
-    } else if (inp.cmd === "attack") {
-      for (const id of sels) {
-        const e = rtsFind(s, id);
-        if (e && e.kind === "unit" && e.owner === owner) {
-          e.targetId = inp.targetId != null ? inp.targetId : null;
-          e.tx = inp.x;
-          e.ty = inp.y;
-          e.order = e.targetId != null ? "attack" : "move";
-          if (e.order === "move") e.targetId = null;
-        }
-      }
-    } else if (inp.cmd === "train" || (inp.cmd === "build" && inp.unitType && RTS_UNITS[inp.unitType])) {
-      rtsEnqueueTrain(s, owner, String(inp.unitType || ""), sels);
-    } else if (inp.cmd === "build") {
-      const bt = inp.buildType;
-      const def = RTS_BUILD[bt];
-      if (def && s.gold[owner] >= def.cost) {
-        const x = Math.max(40, Math.min(s.W - 40, Number(inp.x) || 0));
-        const y = Math.max(40, Math.min(s.H - 40, Number(inp.y) || 0));
-        if (rtsBuildAllowed(s, owner, bt, x, y)) {
-          s.gold[owner] -= def.cost;
-          const bld = {
-            id: s.nextId++,
-            kind: "building",
-            type: bt,
-            owner: owner,
-            team: rtsTeamOf(owner, mode),
-            x: x,
-            y: y,
-            hp: def.hp,
-            maxHp: def.hp,
-            w: def.w,
-            h: def.h,
-            atkCd: 0,
-            queue: [],
-            trainT: 0,
-          };
-          if (bt === "nexus") {
-            const pl = room.players.find((pp) => pp.slot === owner);
-            bld.label = (pl && pl.name) || ("P" + (owner + 1));
-          }
-          s.entities.push(bld);
-        }
-      }
+      p.inputQ = [];
+    } else if (p.input && p.input.cmd) {
+      rtsApplyInput(room, s, owner, p.input, mode);
     }
-    inp.cmd = null;
+    if (p.input) p.input.cmd = null;
   }
 
   rtsProcessQueues(s, mode, dt);
@@ -1400,7 +1422,9 @@ function tickRts(room, dt) {
     if (e.atkCd > 0) e.atkCd -= dt;
 
     if (e.order === "move") {
-      if (e.tx == null) e.order = null;
+      // Explicit move order: never auto-chase / stick to attack destination
+      if (e.tx == null || e.ty == null) e.order = null;
+      e.targetId = null;
     } else {
       let target = e.targetId != null ? rtsFind(s, e.targetId) : null;
       if (target && target.hp <= 0) {
@@ -2483,15 +2507,26 @@ function attachGameRooms(httpServer) {
             fire: !!payload.fire || !!base.fire,
           };
         } else if (room.game === "rts") {
-          player.input = {
-            selectIds: Array.isArray(payload.selectIds) ? payload.selectIds : base.selectIds,
-            cmd: payload.cmd || null,
-            x: Number(payload.x) || 0,
-            y: Number(payload.y) || 0,
+          if (!Array.isArray(player.inputQ)) player.inputQ = [];
+          const cmd = payload.cmd != null && payload.cmd !== "" ? payload.cmd : null;
+          const packed = {
+            selectIds: Array.isArray(payload.selectIds) ? payload.selectIds.map(Number) : (player.rtsSelectIds || []),
+            cmd: cmd,
+            x: Number(payload.x),
+            y: Number(payload.y),
             buildType: payload.buildType || null,
             unitType: payload.unitType || null,
-            targetId: payload.targetId,
+            targetId: payload.targetId != null ? Number(payload.targetId) : null,
           };
+          if (Array.isArray(payload.selectIds)) {
+            player.rtsSelectIds = packed.selectIds.slice();
+          }
+          // Always queue actionable cmds so select/move in the same tick never drop
+          if (cmd) {
+            player.inputQ.push(packed);
+            if (player.inputQ.length > 24) player.inputQ.shift();
+          }
+          player.input = packed;
         } else if (room.game === "ageofwar") {
           player.input = {
             action: payload.action || null,
