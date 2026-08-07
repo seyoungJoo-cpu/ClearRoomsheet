@@ -2,13 +2,25 @@
   'use strict';
 
   var META = {
-    tank: { icon: '🛡️', name: '탱크대전', desc: '1:1 실시간 탱크 대전 · 방 만들기' },
+    tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
-    towerdefense: { icon: '🗼', name: '타워 디펜스', desc: '서로에게 몬스터 보내기 · 방' },
+    ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '석기→미래 시대 진화 · 라인전' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '대형 격자 스네이크 · 최대 8인 · 방' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' }
   };
-  var MAX_PLAYERS = { tank: 2, rts: 2, towerdefense: 2, snakes: 8, airhockey: 2 };
+  var MAX_PLAYERS = { tank: 4, rts: 2, ageofwar: 2, snakes: 8, airhockey: 2 };
+  var tankCreateMode = 'ffa';
+  var aowAgeNames = ['석기', '중세', '화약', '현대', '미래'];
+  var aowUnitNames = [
+    ['곤봉병', '투석병', '공룡기수'],
+    ['검사', '궁수', '기사'],
+    ['결투사', '머스킷', '대포병'],
+    ['돌격병', '소총병', '전차'],
+    ['광선검사', '블래스터', '워머신']
+  ];
+  var aowCosts = [
+    [15, 25, 100], [50, 75, 220], [120, 180, 420], [260, 340, 900], [500, 620, 1600]
+  ];
   var COLORS = ['#efd28a', '#6ec8ff', '#ff8a7a', '#9ae6b4', '#d6a2ff', '#f6ad55', '#90cdf4', '#fc8181'];
 
   var config = {};
@@ -24,7 +36,7 @@
   var lastBrowseRooms = [];
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
   var lastSnakeDir = { dirX: 1, dirY: 0 };
-  var selectIds = [], drag = null, pendingBuild = null, pendingTd = null;
+  var selectIds = [], drag = null, pendingBuild = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
   var gamePaused = false;
   var hockeySmooth = null;
@@ -179,7 +191,7 @@
     var launch = function () {
       gameId = id;
       room = null; lastState = null; endedInfo = null; view = 'browse';
-      selectIds = []; pendingBuild = null; pendingTd = null;
+      selectIds = []; pendingBuild = null;
       refs.title.textContent = meta(id).icon + ' ' + meta(id).name;
       root.classList.add('open');
       render();
@@ -287,7 +299,9 @@
     pendingCreate = true;
     if (createWatchTimer) clearTimeout(createWatchTimer);
     ensureConnected(function () {
-      var ok = send({ type: 'create', game: gameId, name: name() || 'Guest' });
+      var payload = { type: 'create', game: gameId, name: name() || 'Guest' };
+      if (gameId === 'tank') payload.mode = tankCreateMode;
+      var ok = send(payload);
       if (!ok) {
         pendingCreate = false;
         toast('방 생성 전송 실패 — 다시 눌러주세요');
@@ -340,6 +354,7 @@
       room = {
         code: msg.code,
         game: msg.game || gameId,
+        mode: msg.mode || null,
         status: msg.status,
         players: msg.players || [],
         max: msg.max
@@ -400,6 +415,7 @@
       unknown_game: '알 수 없는 게임',
       not_ended: '아직 종료되지 않았습니다',
       nexus: '상대 본진을 파괴했습니다',
+      base: '상대 기지를 파괴했습니다',
       opponent_left: '상대가 나갔습니다',
       match: '경기 종료',
       last_alive: '최후의 생존자',
@@ -530,9 +546,22 @@
 
   function canvasToWorld(cv, clientX, clientY) {
     var r = cv.getBoundingClientRect();
-    var sx = (clientX - r.left) / r.width;
-    var sy = (clientY - r.top) / r.height;
-    return { x: sx * canvasW, y: sy * canvasH };
+    var sx = ((clientX - r.left) / r.width) * canvasW;
+    var sy = ((clientY - r.top) / r.height) * canvasH;
+    if (gameId === 'tank' && lastState) {
+      var me = findMeTank(lastState);
+      var viewW = 900, viewH = 600;
+      var worldW = lastState.W || 2800, worldH = lastState.H || 2000;
+      var camX = me ? me.x - viewW / 2 : worldW / 2 - viewW / 2;
+      var camY = me ? me.y - viewH / 2 : worldH / 2 - viewH / 2;
+      camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
+      camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
+      var scale = Math.min(canvasW / viewW, canvasH / viewH) || 1;
+      var ox = (canvasW - viewW * scale) / 2;
+      var oy = (canvasH - viewH * scale) / 2;
+      return { x: (sx - ox) / scale + camX, y: (sy - oy) / scale + camY };
+    }
+    return { x: sx, y: sy };
   }
 
   function buildInput() {
@@ -564,7 +593,7 @@
     if (gameId === 'airhockey') {
       return { x: mouse.ax, y: mouse.ay };
     }
-    // rts / towerdefense: event-driven only
+    // rts / ageofwar: event-driven only
     return null;
   }
 
@@ -602,8 +631,15 @@
     else rooms = lastBrowseRooms || [];
     var m = meta(gameId);
     var max = MAX_PLAYERS[gameId] || 2;
+    var modeRow = '';
+    if (gameId === 'tank') {
+      modeRow = '<div class="hkmp-row" style="margin:0">' +
+        '<button type="button" class="hkmp-btn' + (tankCreateMode === 'ffa' ? ' primary' : '') + '" data-mode="ffa">자유대전 FFA</button>' +
+        '<button type="button" class="hkmp-btn' + (tankCreateMode === 'team' ? ' primary' : '') + '" data-mode="team">2vs2 팀전</button>' +
+        '<span class="hkmp-note">팀전 3명이면 AI 1명 자동</span></div>';
+    }
     refs.body.innerHTML =
-      '<div class="hkmp-create-wrap">' +
+      '<div class="hkmp-create-wrap">' + modeRow +
       '<button type="button" class="hkmp-btn primary" data-act="create" style="align-self:flex-start;font-size:15px;padding:12px 18px">방 만들기</button>' +
       '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + max + '명 · 아래 방을 눌러 참가</div></div>' +
       '<h3 style="margin:8px 0 10px;color:#ecd18b;font-family:Georgia,serif">대기 중인 방</h3>' +
@@ -619,13 +655,20 @@
         var names = Array.isArray(r.names) ? r.names.filter(Boolean).join(', ') : '';
         var host = (r.host && String(r.host)) || names || ('대기방');
         var full = cnt >= roomMax;
+        var modeTag = (gameId === 'tank' && r.mode) ? (' · ' + (r.mode === 'team' ? '팀전' : 'FFA')) : '';
         return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
           '<b>' + esc(host) + '</b>' +
-          '<span>' + cnt + '/' + roomMax + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
+          '<span>' + cnt + '/' + roomMax + modeTag + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
           (full ? '' : '<span class="hkmp-join-hint">참가</span>') +
           '</button>';
       }).join('');
     }
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-mode]'), function (btn) {
+      btn.onclick = function () {
+        tankCreateMode = btn.getAttribute('data-mode') === 'team' ? 'team' : 'ffa';
+        renderBrowse();
+      };
+    });
     refs.body.querySelector('[data-act="create"]').onclick = function () {
       if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
       requestCreateRoom();
@@ -644,7 +687,7 @@
     var players = room.players || [];
     var me = myPlayer();
     var allReady = players.length >= 2 && players.every(function (p) { return p.ready; });
-    var need = gameId === 'snakes' ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
+    var need = (gameId === 'snakes' || gameId === 'tank') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
     refs.body.innerHTML =
       '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + need + '명</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave">나가기</button></div>' +
@@ -658,8 +701,11 @@
       '<div class="hkmp-row">' +
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (me && me.ready ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
-      '<div class="hkmp-note">' + (allReady && players.length >= need ? '모두 준비됨 — 곧 시작합니다' :
-        (players.length < need ? '상대를 기다리는 중… (' + players.length + '/' + need + ')' : '모두 Ready하면 자동 시작')) + '</div>';
+      '<div class="hkmp-note">' +
+        (gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
+        (allReady && players.length >= need ? '모두 준비됨 — 곧 시작합니다' :
+        (players.length < need ? '대기 중… (' + players.length + '명, 최소 ' + need + '명)' : '모두 Ready하면 자동 시작')) +
+        (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : '') + '</div>';
     refs.body.querySelector('[data-act="leave"]').onclick = function () {
       send({ type: 'leave' });
       room = null; view = 'browse'; render(); requestList();
@@ -674,7 +720,7 @@
     if (gameId === 'snakes') lastSnakeDir = { dirX: 1, dirY: 0 };
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
-      (gameId === 'rts' || gameId === 'towerdefense' ? '<div class="hkmp-toolbar" data-tools></div>' : '') +
+      (gameId === 'rts' || gameId === 'ageofwar' ? '<div class="hkmp-toolbar" data-tools></div>' : '') +
       '<div class="hkmp-stage"><canvas width="' + canvasW + '" height="' + canvasH + '"></canvas>' +
       '<div class="hkmp-pause" aria-hidden="true"><div class="hkmp-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div></div>' +
       '<div class="hkmp-note" data-help></div>';
@@ -692,16 +738,17 @@
 
   function defaultSize() {
     if (gameId === 'rts') return { w: 1200, h: 800 };
-    if (gameId === 'towerdefense') return { w: 900, h: 500 };
+    if (gameId === 'ageofwar') return { w: 1100, h: 420 };
+    if (gameId === 'tank') return { w: 960, h: 640 };
     if (gameId === 'snakes') return { w: 1152, h: 768 };
     if (gameId === 'airhockey') return { w: 700, h: 400 };
     return { w: 800, h: 600 };
   }
   function helpText() {
     return {
-      tank: 'WASD 이동 · 마우스 조준 · 클릭/스페이스 발사 · P 일시정지 · Ctrl+Q 오더',
+      tank: 'WASD · 마우스 조준/발사 · 초대형 맵 카메라 추적',
       rts: '좌드래그 선택 · 우클릭 이동(공격 중에도 이동) · 적 우클릭 공격 · 본진 자동 레이저',
-      towerdefense: '타워/유닛 선택 후 내 라인 슬롯 클릭',
+      ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 벽·몸(상대 포함)에 머리 충돌 시 탈락',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
     }[gameId] || '';
@@ -731,18 +778,24 @@
           }
         };
       });
-    } else if (gameId === 'towerdefense') {
-      refs.tools.innerHTML = [
-        ['tower:single', '타워·단일'], ['tower:aoe', '타워·범위'], ['tower:slow', '타워·슬로우'],
-        ['send:fast', '유닛·빠름'], ['send:tank', '유닛·탱커'], ['send:swarm', '유닛·다수']
-      ].map(function (x) {
-        return '<button type="button" class="hkmp-btn" data-tool="' + x[0] + '">' + x[1] + '</button>';
-      }).join('');
-      Array.prototype.forEach.call(refs.tools.querySelectorAll('[data-tool]'), function (btn) {
+    } else if (gameId === 'ageofwar') {
+      var stAge = lastState || {};
+      var age = (stAge.age && stAge.age[mySlot()] != null) ? stAge.age[mySlot()] : 0;
+      var names = aowUnitNames[age] || aowUnitNames[0];
+      var costs = aowCosts[age] || aowCosts[0];
+      var htmlA = '';
+      for (var ui = 0; ui < 3; ui++) {
+        htmlA += '<button type="button" class="hkmp-btn" data-aow="spawn:' + ui + '">' + names[ui] + ' ·' + costs[ui] + '</button>';
+      }
+      htmlA += '<button type="button" class="hkmp-btn primary" data-aow="evolve">시대 진화</button>';
+      htmlA += '<button type="button" class="hkmp-btn" data-aow="special">특수공격</button>';
+      refs.tools.innerHTML = htmlA;
+      Array.prototype.forEach.call(refs.tools.querySelectorAll('[data-aow]'), function (btn) {
         btn.onclick = function () {
-          var t = btn.getAttribute('data-tool').split(':');
-          pendingTd = { action: t[0], kind: t[1] };
-          renderToolbarHighlight();
+          var a = btn.getAttribute('data-aow');
+          if (a.indexOf('spawn:') === 0) send({ type: 'input', payload: { action: 'spawn', unitIndex: Number(a.split(':')[1]) } });
+          else if (a === 'evolve') send({ type: 'input', payload: { action: 'evolve' } });
+          else if (a === 'special') send({ type: 'input', payload: { action: 'special' } });
         };
       });
     }
@@ -756,9 +809,6 @@
       if (gameId === 'rts' && pendingBuild) {
         on = (pendingBuild.mode === 'build' && t === 'build:' + pendingBuild.buildType) ||
           (pendingBuild.mode === 'train' && t === 'train:' + pendingBuild.unitType);
-      }
-      if (gameId === 'towerdefense' && pendingTd) {
-        on = t === pendingTd.action + ':' + pendingTd.kind;
       }
       btn.classList.toggle('active', on);
     });
@@ -818,13 +868,6 @@
         }
         drag = { mode: 'select', x1: p.x, y1: p.y, x2: p.x, y2: p.y };
       }
-      if (gameId === 'towerdefense' && pendingTd) {
-        if (pendingTd.action === 'send') {
-          send({ type: 'input', payload: { action: 'send', kind: pendingTd.kind, slotIndex: -1 } });
-        } else {
-          send({ type: 'input', payload: { action: 'tower', kind: pendingTd.kind, slotIndex: pickTdSlot(p.x, p.y) } });
-        }
-      }
     });
     cv.addEventListener('mouseup', function (e) {
       mouse.down = false;
@@ -839,13 +882,6 @@
       e.preventDefault();
       var p = pos(e); mouse.ax = p.x; mouse.ay = p.y; mouse.down = true;
       if (gameId === 'tank') fireLatch = true;
-      if (gameId === 'towerdefense' && pendingTd) {
-        if (pendingTd.action === 'send') {
-          send({ type: 'input', payload: { action: 'send', kind: pendingTd.kind, slotIndex: -1 } });
-        } else {
-          send({ type: 'input', payload: { action: 'tower', kind: pendingTd.kind, slotIndex: pickTdSlot(p.x, p.y) } });
-        }
-      }
     }, { passive: false });
     cv.addEventListener('touchmove', function (e) {
       e.preventDefault();
@@ -873,19 +909,6 @@
     send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
   }
 
-  function pickTdSlot(x, y) {
-    var st = lastState || {};
-    var mine = (st.slots && st.slots[mySlot()]) || [];
-    if (!mine.length) return 0;
-    var best = 0, bestD = 1e9;
-    for (var i = 0; i < mine.length; i++) {
-      var s = mine[i];
-      var d = Math.hypot((s.x || 0) - x, (s.y || 0) - y);
-      if (d < bestD) { bestD = d; best = i; }
-    }
-    return best;
-  }
-
   function updateHud() {
     if (!refs.hud) return;
     var st = lastState || {};
@@ -893,19 +916,29 @@
     if (room && room.code) html += '<span class="hkmp-pill">방 <b>' + esc(room.code) + '</b></span>';
     if (gameId === 'tank') {
       var wins = st.wins || [];
+      html += '<span class="hkmp-pill">' + (st.mode === 'team' ? '팀전' : 'FFA') + '</span>';
       html += '<span class="hkmp-pill">라운드 <b>' + (st.round || 1) + '</b></span>';
-      html += '<span class="hkmp-pill">스코어 <b>' + (wins[0] || 0) + ' : ' + (wins[1] || 0) + '</b></span>';
+      if (st.mode === 'team') html += '<span class="hkmp-pill">스코어 <b>' + (wins[0] || 0) + ' : ' + (wins[1] || 0) + '</b></span>';
+      else html += '<span class="hkmp-pill">생존 <b>' + ((st.tanks || []).filter(function (x) { return x.alive; }).length) + '</b></span>';
       var t = findMeTank(st);
       if (t) html += '<span class="hkmp-pill">HP <b>' + (t.hp != null ? t.hp : 3) + '</b></span>';
     } else if (gameId === 'rts') {
       var golds = st.gold || [];
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
-    } else if (gameId === 'towerdefense') {
-      var lives = st.life || st.lives || [];
+    } else if (gameId === 'ageofwar') {
       var gold = st.gold || [];
-      html += '<span class="hkmp-pill">라이프 <b>' + (lives[mySlot()] != null ? lives[mySlot()] : '?') + '</b></span>';
-      html += '<span class="hkmp-pill">골드 <b>' + (gold[mySlot()] != null ? gold[mySlot()] : 0) + '</b></span>';
+      var xp = st.xp || [];
+      var age = st.age || [];
+      var hp = st.baseHp || [];
+      var maxHp = st.baseMax || [];
+      var me = mySlot();
+      html += '<span class="hkmp-pill">시대 <b>' + (aowAgeNames[age[me]] || '?') + '</b></span>';
+      html += '<span class="hkmp-pill">골드 <b>' + (gold[me] != null ? gold[me] : 0) + '</b></span>';
+      html += '<span class="hkmp-pill">XP <b>' + (xp[me] != null ? xp[me] : 0) + '</b></span>';
+      html += '<span class="hkmp-pill">기지 <b>' + Math.max(0, Math.round(hp[me] || 0)) + '/' + Math.round(maxHp[me] || 0) + '</b></span>';
+      var scd = (st.specialCd && st.specialCd[me]) || 0;
+      html += '<span class="hkmp-pill">특수 <b>' + (scd > 0 ? (scd.toFixed(0) + 's') : 'READY') + '</b></span>';
     } else if (gameId === 'snakes') {
       var snakes = st.snakes || [];
       var alive = snakes.filter(function (s) { return s.alive !== false; }).length;
@@ -921,6 +954,13 @@
       html += '<span class="hkmp-pill">점수 <b>' + (sc[0] || 0) + ' : ' + (sc[1] || 0) + '</b></span>';
     }
     refs.hud.innerHTML = html;
+    if (gameId === 'ageofwar' && refs.tools && view === 'play') {
+      var ageNow = (st.age && st.age[mySlot()] != null) ? st.age[mySlot()] : 0;
+      if (refs.tools.getAttribute('data-age') !== String(ageNow)) {
+        refs.tools.setAttribute('data-age', String(ageNow));
+        buildToolbar();
+      }
+    }
   }
 
   function drawFrame() {
@@ -928,8 +968,13 @@
     if (!cv || gamePaused) return;
     var st = lastState;
     if (st) {
-      canvasW = st.W || st.w || st.width || canvasW;
-      canvasH = st.H || st.h || st.height || canvasH;
+      if (gameId === 'tank') {
+        var ds = defaultSize();
+        canvasW = ds.w; canvasH = ds.h;
+      } else {
+        canvasW = st.W || st.w || st.width || canvasW;
+        canvasH = st.H || st.h || st.height || canvasH;
+      }
       if (cv.width !== canvasW) cv.width = canvasW;
       if (cv.height !== canvasH) cv.height = canvasH;
     }
@@ -943,7 +988,7 @@
     }
     if (gameId === 'tank') drawTank(ctx, st);
     else if (gameId === 'rts') drawRts(ctx, st);
-    else if (gameId === 'towerdefense') drawTd(ctx, st);
+    else if (gameId === 'ageofwar') drawAgeOfWar(ctx, st);
     else if (gameId === 'snakes') drawSnakes(ctx, st);
     else if (gameId === 'airhockey') drawHockey(ctx, st);
     if (drag && drag.mode === 'select') {
@@ -959,105 +1004,125 @@
   }
 
   function drawTank(ctx, st) {
+    var me = findMeTank(st);
+    var viewW = 900, viewH = 600;
+    var worldW = st.W || 2800, worldH = st.H || 2000;
+    var camX = me ? me.x - viewW / 2 : worldW / 2 - viewW / 2;
+    var camY = me ? me.y - viewH / 2 : worldH / 2 - viewH / 2;
+    camX = Math.max(0, Math.min(Math.max(0, worldW - viewW), camX));
+    camY = Math.max(0, Math.min(Math.max(0, worldH - viewH), camY));
+    var scale = Math.min(canvasW / viewW, canvasH / viewH);
+    ctx.save();
+    ctx.translate((canvasW - viewW * scale) / 2, (canvasH - viewH * scale) / 2);
+    ctx.scale(scale, scale);
+    ctx.translate(-camX, -camY);
+
+    ctx.fillStyle = '#0a1a1f';
+    ctx.fillRect(0, 0, worldW, worldH);
+    ctx.strokeStyle = '#ffffff0c';
+    for (var gx = 0; gx < worldW; gx += 120) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, worldH); ctx.stroke(); }
+    for (var gy = 0; gy < worldH; gy += 120) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(worldW, gy); ctx.stroke(); }
+
     (st.walls || []).forEach(function (w) {
       if (w.hp != null && w.hp <= 0) return;
       ctx.fillStyle = w.solid ? '#2a4a4e' : '#5a3a2a';
       ctx.fillRect(w.x, w.y, w.w, w.h);
-      if (w.hp != null && !w.solid) {
-        ctx.fillStyle = '#efd28a55';
-        ctx.fillRect(w.x, w.y, w.w * Math.max(0, w.hp) / 3, 3);
+      if (!w.solid && w.hp != null) {
+        ctx.fillStyle = '#0008'; ctx.fillRect(w.x, w.y - 6, w.w, 3);
+        ctx.fillStyle = '#f6ad55'; ctx.fillRect(w.x, w.y - 6, w.w * (w.hp / 3), 3);
       }
     });
     (st.bullets || []).forEach(function (b) {
-      ctx.fillStyle = '#fff6dc'; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#efd28a';
+      ctx.beginPath(); ctx.arc(b.x, b.y, 3.5, 0, Math.PI * 2); ctx.fill();
     });
-    (st.tanks || []).forEach(function (t, i) {
-      if (!t.alive) return;
-      var col = COLORS[t.slot != null ? t.slot : i];
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(t.x, t.y, 16, 0, Math.PI * 2); ctx.fill();
+    (st.tanks || []).forEach(function (tk, i) {
+      if (!tk.alive) return;
+      var col = COLORS[tk.slot != null ? tk.slot : i];
       ctx.save();
-      ctx.translate(t.x, t.y);
-      ctx.rotate(t.aim || 0);
-      ctx.strokeStyle = '#f5f0df'; ctx.lineWidth = 4;
+      ctx.translate(tk.x, tk.y);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.rotate(tk.aim || 0);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(24, 0); ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = '#0008'; ctx.fillRect(t.x - 14, t.y - 26, 28, 4);
-      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(t.x - 14, t.y - 26, 28 * Math.max(0, (t.hp || 3) / 3), 4);
-      if (t.id === selfId) { mouse.tx = t.x; mouse.ty = t.y; }
+      ctx.fillStyle = '#0008'; ctx.fillRect(tk.x - 14, tk.y - 26, 28, 4);
+      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(tk.x - 14, tk.y - 26, 28 * Math.max(0, (tk.hp || 3) / (tk.maxHp || 3)), 4);
+      ctx.fillStyle = '#f5f0df'; ctx.font = '11px Georgia,serif'; ctx.textAlign = 'center';
+      ctx.fillText((tk.name || ('P' + (i + 1))) + (tk.isAi ? ' ·AI' : ''), tk.x, tk.y - 30);
+      if (st.mode === 'team') {
+        ctx.fillStyle = tk.team === 0 ? '#6ec8ff' : '#ff8a7a';
+        ctx.fillRect(tk.x - 10, tk.y + 20, 20, 3);
+      }
+    });
+    ctx.restore();
+
+    var mmW = 168, mmH = 118, mmX = canvasW - mmW - 12, mmY = 12;
+    ctx.fillStyle = '#000a'; ctx.fillRect(mmX - 2, mmY - 2, mmW + 4, mmH + 4);
+    ctx.fillStyle = '#0d2429'; ctx.fillRect(mmX, mmY, mmW, mmH);
+    var sx = mmW / worldW, sy = mmH / worldH;
+    ctx.strokeStyle = '#efd28a88'; ctx.strokeRect(mmX + camX * sx, mmY + camY * sy, viewW * sx, viewH * sy);
+    (st.tanks || []).forEach(function (tk, i) {
+      if (!tk.alive) return;
+      ctx.fillStyle = COLORS[tk.slot != null ? tk.slot : i];
+      ctx.fillRect(mmX + tk.x * sx - 2, mmY + tk.y * sy - 2, 4, 4);
     });
   }
 
-  function findRtsEntityAt(x, y) {
-    var st = lastState;
-    if (!st || !st.entities) return null;
-    var best = null, bd = 22;
-    for (var i = 0; i < st.entities.length; i++) {
-      var e = st.entities[i];
-      if (!e || e.hp <= 0) continue;
-      var rad = e.kind === 'building' ? Math.max(e.w || 40, e.h || 40) / 2 : (e.r || 8) + 4;
-      var d = Math.hypot((e.x || 0) - x, (e.y || 0) - y);
-      if (d < rad && d < bd) { bd = d; best = e; }
+  function drawAgeOfWar(ctx, st) {
+    var w = canvasW, h = canvasH;
+    var ages = st.age || [0, 0];
+    var sk = ['#1a1510', '#152018', '#1a2030', '#101820', '#0b1020'][Math.max(ages[0] || 0, ages[1] || 0)] || '#122022';
+    ctx.fillStyle = sk; ctx.fillRect(0, 0, w, h);
+    var gy = st.groundY || 320;
+    ctx.fillStyle = '#2a3a2a'; ctx.fillRect(0, gy, w, h - gy);
+    ctx.fillStyle = '#3d5238'; ctx.fillRect(0, gy, w, 8);
+
+    function drawBase(x, owner) {
+      var hp = (st.baseHp && st.baseHp[owner]) || 0;
+      var mx = (st.baseMax && st.baseMax[owner]) || 1;
+      ctx.fillStyle = COLORS[owner];
+      ctx.fillRect(x - 36, gy - 90, 72, 90);
+      ctx.fillStyle = '#0006'; ctx.fillRect(x - 28, gy - 70, 56, 40);
+      ctx.fillStyle = '#0008'; ctx.fillRect(x - 34, gy - 100, 68, 5);
+      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(x - 34, gy - 100, 68 * Math.max(0, hp / mx), 5);
+      ctx.fillStyle = '#f5f0df'; ctx.font = '12px Georgia,serif'; ctx.textAlign = 'center';
+      ctx.fillText(aowAgeNames[ages[owner] || 0] || '', x, gy - 108);
     }
-    return best;
+    drawBase(70, 0);
+    drawBase(w - 70, 1);
+
+    (st.units || []).forEach(function (u) {
+      if (u.hp <= 0) return;
+      ctx.fillStyle = COLORS[u.owner || 0];
+      ctx.beginPath(); ctx.arc(u.x, u.y - (u.r || 12), u.r || 12, 0, Math.PI * 2); ctx.fill();
+      if ((u.range || 0) > 80) {
+        ctx.strokeStyle = '#fff8'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(u.x, u.y - (u.r || 12));
+        ctx.lineTo(u.x + (u.owner === 0 ? 16 : -16), u.y - (u.r || 12) - 6);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#0008'; ctx.fillRect(u.x - 14, u.y - (u.r || 12) - 16, 28, 3);
+      ctx.fillStyle = '#9ae6b4'; ctx.fillRect(u.x - 14, u.y - (u.r || 12) - 16, 28 * Math.max(0, u.hp / (u.maxHp || 1)), 3);
+    });
+
+    (st.fx || []).forEach(function (f) {
+      if (f.kind === 'special') {
+        ctx.fillStyle = 'rgba(239,210,138,0.18)';
+        ctx.fillRect(0, gy - 120, w, 120);
+      }
+      if (f.kind === 'evolve') {
+        ctx.fillStyle = COLORS[f.owner || 0];
+        ctx.globalAlpha = Math.min(1, f.life);
+        ctx.font = 'bold 28px Georgia,serif'; ctx.textAlign = 'center';
+        ctx.fillText('EVOLVE!', f.owner === 0 ? 160 : w - 160, gy - 140);
+        ctx.globalAlpha = 1;
+      }
+    });
   }
 
-  function drawRtsUnitShape(ctx, e, col) {
-    var r = e.r || 8;
-    ctx.fillStyle = col;
-    ctx.strokeStyle = '#0008';
-    ctx.lineWidth = 1.5;
-    if (e.type === 'worker') {
-      ctx.beginPath();
-      ctx.moveTo(e.x, e.y - r);
-      ctx.lineTo(e.x + r * 0.9, e.y + r * 0.7);
-      ctx.lineTo(e.x - r * 0.9, e.y + r * 0.7);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'melee') {
-      ctx.beginPath();
-      ctx.moveTo(e.x - r, e.y - r * 0.6);
-      ctx.lineTo(e.x + r, e.y - r * 0.6);
-      ctx.lineTo(e.x + r * 0.7, e.y + r);
-      ctx.lineTo(e.x - r * 0.7, e.y + r);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'ranged') {
-      ctx.beginPath();
-      ctx.moveTo(e.x, e.y - r);
-      ctx.lineTo(e.x + r, e.y);
-      ctx.lineTo(e.x, e.y + r);
-      ctx.lineTo(e.x - r, e.y);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'bomber') {
-      ctx.beginPath();
-      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#122421';
-      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
-    } else if (e.type === 'tanker') {
-      var w = r * 1.8, h = r * 1.5;
-      ctx.fillRect(e.x - w / 2, e.y - h / 2, w, h);
-      ctx.strokeRect(e.x - w / 2, e.y - h / 2, w, h);
-    } else if (e.type === 'duck') {
-      ctx.beginPath();
-      ctx.ellipse(e.x, e.y + 1, r * 1.1, r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(e.x + r * 0.55, e.y - r * 0.35, r * 0.45, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f6ad55';
-      ctx.beginPath();
-      ctx.moveTo(e.x + r * 0.85, e.y - r * 0.35);
-      ctx.lineTo(e.x + r * 1.45, e.y - r * 0.2);
-      ctx.lineTo(e.x + r * 0.85, e.y - r * 0.05);
-      ctx.closePath(); ctx.fill();
-    } else {
-      ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-
-  function drawRtsHpBar(ctx, x, y, w, hp, maxHp) {
-    if (maxHp == null || maxHp <= 0) return;
-    var ratio = Math.max(0, Math.min(1, hp / maxHp));
-    ctx.fillStyle = '#0009'; ctx.fillRect(x - w / 2, y, w, 4);
-    ctx.fillStyle = ratio > 0.45 ? '#9ae6b4' : ratio > 0.2 ? '#f6ad55' : '#fc8181';
-    ctx.fillRect(x - w / 2, y, w * ratio, 4);
-  }
 
   function drawRts(ctx, st) {
     (st.obstacles || []).forEach(function (o) {
@@ -1125,34 +1190,6 @@
       ctx.fillStyle = '#fff';
       ctx.beginPath(); ctx.arc(b.x2, b.y2, 3, 0, Math.PI * 2); ctx.fill();
     });
-  }
-
-  function drawTd(ctx, st) {
-    var h = canvasH;
-    ctx.fillStyle = '#0c2228';
-    ctx.fillRect(160, 0, 120, h); ctx.fillRect(620, 0, 120, h);
-    var lanes = st.slots || [];
-    lanes.forEach(function (laneSlots) {
-      (laneSlots || []).forEach(function (s) {
-        ctx.strokeStyle = '#cbb27055'; ctx.strokeRect(s.x - 14, s.y - 14, 28, 28);
-        if (s.tower) {
-          ctx.fillStyle = s.tower.kind === 'aoe' ? '#d6a2ff' : s.tower.kind === 'slow' ? '#6ec8ff' : '#efd28a';
-          ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI * 2); ctx.fill();
-        }
-      });
-    });
-    (st.creeps || []).forEach(function (c) {
-      ctx.fillStyle = c.kind === 'tank' ? '#ff8a7a' : c.kind === 'swarm' ? '#9ae6b4' : '#f6ad55';
-      ctx.beginPath(); ctx.arc(c.x, c.y, c.r || 6, 0, Math.PI * 2); ctx.fill();
-      if (c.hp != null && c.maxHp) {
-        ctx.fillStyle = '#0008'; ctx.fillRect(c.x - 8, c.y - 14, 16, 3);
-        ctx.fillStyle = '#9ae6b4'; ctx.fillRect(c.x - 8, c.y - 14, 16 * c.hp / c.maxHp, 3);
-      }
-    });
-    var life = st.life || [];
-    ctx.fillStyle = '#88a09a'; ctx.font = '12px Georgia,serif';
-    ctx.fillText('P1 ♥ ' + (life[0] != null ? life[0] : ''), 180, 18);
-    ctx.fillText('P2 ♥ ' + (life[1] != null ? life[1] : ''), 640, 18);
   }
 
   function drawSnakes(ctx, st) {
@@ -1265,6 +1302,9 @@
     var reasonText = endedInfo && endedInfo.reason ? translateErr(endedInfo.reason) : '';
     if (gameId === 'rts' && endedInfo && endedInfo.reason === 'nexus') {
       reasonText = iWon ? '상대 본진을 파괴했습니다!' : '본진이 파괴되었습니다';
+    }
+    if (gameId === 'ageofwar' && endedInfo && endedInfo.reason === 'base') {
+      reasonText = iWon ? '상대 기지를 파괴했습니다!' : '기지가 파괴되었습니다';
     }
     refs.body.innerHTML =
       '<div class="hkmp-ended"><h2 style="font-size:' + (iWon ? '42px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' + title + '</h2>' +

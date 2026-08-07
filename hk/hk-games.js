@@ -1,8 +1,8 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'towerdefense', 'snakes', 'airhockey'];
-  var MP_IDS = ['tank', 'rts', 'towerdefense', 'snakes', 'airhockey'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
+  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
   var META = {
     candy: { icon: '🍬', name: '캔디 스위트', desc: '1분 안에 보석을 맞추는 타임어택' },
     merge2048: { icon: '🔢', name: '2048 라운지', desc: '같은 숫자를 합쳐 2048에 도전' },
@@ -16,9 +16,9 @@
     mines: { icon: '💣', name: '스위트 마인', desc: '지뢰를 피해 안전한 칸을 열기' },
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
     dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' },
-    tank: { icon: '🛡️', name: '탱크대전', desc: '1:1 실시간 탱크 멀티 · 방 만들기' },
+    tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/팀전 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
-    towerdefense: { icon: '🗼', name: '타워 디펜스', desc: '서로에게 몬스터 보내기 · 멀티 방' },
+    ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '시대 진화 라인 워 · 기지 파괴' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '최대 8인 슬리더 대전 · 방' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' }
   };

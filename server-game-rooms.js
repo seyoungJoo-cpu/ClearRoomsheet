@@ -3,9 +3,9 @@
 const { WebSocketServer } = require("ws");
 
 const GAMES = {
-  tank: { max: 2, hz: 20 },
+  tank: { max: 4, hz: 20 },
   rts: { max: 2, hz: 10 },
-  towerdefense: { max: 2, hz: 10 },
+  ageofwar: { max: 2, hz: 20 },
   snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 45 },
 };
@@ -36,6 +36,7 @@ function roomSnapshot(room) {
     type: "room",
     code: room.code,
     game: room.game,
+    mode: room.mode || null,
     status: room.status,
     players: room.players.map((p) => ({
       id: p.id,
@@ -75,10 +76,18 @@ function seatedCount(room) {
 
 function allReady(room) {
   const max = GAMES[room.game].max;
+  const humans = room.players.filter((p) => !p.isAi);
+  const readyOk = room.players.every((p) => p.ready || p.isAi);
   if (room.game === "snakes") {
-    return room.players.length >= 2 && room.players.every((p) => p.ready);
+    return humans.length >= 2 && readyOk;
   }
-  return room.players.length === max && room.players.every((p) => p.ready);
+  if (room.game === "tank") {
+    return humans.length >= 2 && humans.length <= max && readyOk;
+  }
+  if (room.game === "ageofwar") {
+    return humans.length === 2 && readyOk;
+  }
+  return room.players.length === max && readyOk;
 }
 
 function clearTick(room) {
@@ -118,18 +127,34 @@ function removePlayer(room, player) {
   }
   if (room.status === "playing") {
     if (room.game === "snakes") {
-      // mark dead / continue
       if (room.state && room.state.snakes) {
         const sn = room.state.snakes.find((s) => s.id === player.id);
         if (sn) sn.alive = false;
       }
       broadcastRoom(room);
       checkSnakesEnd(room);
+    } else if (room.game === "tank") {
+      if (room.state && room.state.tanks) {
+        const tk = room.state.tanks.find((t) => t.id === player.id);
+        if (tk) {
+          tk.alive = false;
+          tk.hp = 0;
+        }
+      }
+      broadcastRoom(room);
+      checkTankRoundEnd(room);
+    } else if (room.game === "ageofwar") {
+      const winner = room.players.find((p) => p.id !== player.id && !p.isAi);
+      endGame(room, "opponent_left", winner ? winner.id : null);
     } else {
       const winner = room.players.find((p) => p.id !== player.id);
       endGame(room, "opponent_left", winner ? winner.id : null);
     }
   } else {
+    // drop AI fillers when lobby composition changes
+    for (let i = room.players.length - 1; i >= 0; i--) {
+      if (room.players[i].isAi) room.players.splice(i, 1);
+    }
     for (const p of room.players) p.ready = false;
     broadcastRoom(room);
     notifyLobby(game);
@@ -145,6 +170,7 @@ function tryStart(room) {
     p.input = defaultInput(room.game);
     p.ready = false;
   }
+  if (room.game === "tank") ensureTankAi(room);
   room.state = initState(room);
   broadcastRoom(room);
   broadcastState(room);
@@ -161,60 +187,156 @@ function tryStart(room) {
 function defaultInput(game) {
   if (game === "tank") return { up: false, down: false, left: false, right: false, aim: 0, fire: false };
   if (game === "rts") return { selectIds: [], cmd: null, x: 0, y: 0, buildType: null, unitType: null };
-  if (game === "towerdefense") return { action: null, kind: null, slotIndex: -1 };
+  if (game === "ageofwar") return { action: null, unitIndex: 0 };
   if (game === "snakes") return { dirX: 1, dirY: 0 };
   if (game === "airhockey") return { x: 175, y: 200 };
   return {};
 }
 
-/* ===================== TANK ===================== */
-function initTank(room) {
-  const W = 800,
-    H = 600;
-  const walls = [
-    { x: 350, y: 120, w: 100, h: 40, solid: true },
-    { x: 350, y: 440, w: 100, h: 40, solid: true },
-    { x: 180, y: 270, w: 60, h: 60, solid: false, hp: 3 },
-    { x: 560, y: 270, w: 60, h: 60, solid: false, hp: 3 },
-    { x: 370, y: 280, w: 60, h: 40, solid: false, hp: 2 },
+/* ===================== TANK (4p · 초대형 맵 · FFA/팀) ===================== */
+function tankTeamOf(slot, mode) {
+  if (mode === "team") return slot < 2 ? 0 : 1;
+  return slot; // ffa: each alone
+}
+
+function ensureTankAi(room) {
+  if (room.mode !== "team") return;
+  if (room.players.length !== 3) return;
+  if (room.players.some((p) => p.isAi)) return;
+  const used = new Set(room.players.map((p) => p.slot));
+  let slot = 0;
+  while (used.has(slot)) slot++;
+  room.players.push({
+    id: nextPlayerId++,
+    name: "AI Bot",
+    ws: null,
+    slot,
+    ready: true,
+    input: defaultInput("tank"),
+    isAi: true,
+    roomCode: room.code,
+  });
+}
+
+function makeTankWalls(W, H) {
+  const walls = [];
+  // border blocks / cover fields
+  const blocks = [
+    [W * 0.22, H * 0.2, 120, 50],
+    [W * 0.22, H * 0.75, 120, 50],
+    [W * 0.78, H * 0.2, 120, 50],
+    [W * 0.78, H * 0.75, 120, 50],
+    [W * 0.5 - 80, H * 0.35, 160, 40],
+    [W * 0.5 - 80, H * 0.62, 160, 40],
+    [W * 0.35, H * 0.48, 50, 140],
+    [W * 0.62, H * 0.48, 50, 140],
+    [W * 0.12, H * 0.48, 70, 70],
+    [W * 0.88 - 70, H * 0.48, 70, 70],
+    [W * 0.4, H * 0.15, 80, 80],
+    [W * 0.55, H * 0.78, 80, 80],
   ];
+  for (const [x, y, w, h] of blocks) {
+    walls.push({ x, y, w, h, solid: true });
+  }
+  // destructible crates
+  for (let i = 0; i < 18; i++) {
+    walls.push({
+      x: 200 + ((i * 317) % (W - 400)),
+      y: 180 + ((i * 521) % (H - 360)),
+      w: 54,
+      h: 54,
+      solid: false,
+      hp: 3,
+    });
+  }
+  return walls;
+}
+
+function initTank(room) {
+  const mode = room.mode === "team" ? "team" : "ffa";
+  ensureTankAi(room);
+  // normalize slots 0..n-1 contiguous for team seating
+  room.players.forEach((p, i) => {
+    p.slot = i;
+  });
+  const W = 2800,
+    H = 2000;
+  const spawns =
+    mode === "team"
+      ? [
+          { x: 160, y: H * 0.32, aim: 0.1 },
+          { x: 160, y: H * 0.68, aim: -0.1 },
+          { x: W - 160, y: H * 0.32, aim: Math.PI - 0.1 },
+          { x: W - 160, y: H * 0.68, aim: Math.PI + 0.1 },
+        ]
+      : [
+          { x: 180, y: 180, aim: 0.5 },
+          { x: W - 180, y: 180, aim: Math.PI - 0.5 },
+          { x: 180, y: H - 180, aim: -0.5 },
+          { x: W - 180, y: H - 180, aim: Math.PI + 0.5 },
+        ];
+  const tanks = room.players.map((p, i) => {
+    const sp = spawns[i % spawns.length];
+    return {
+      id: p.id,
+      slot: p.slot,
+      team: tankTeamOf(p.slot, mode),
+      name: p.name || (p.isAi ? "AI" : "P" + (i + 1)),
+      isAi: !!p.isAi,
+      x: sp.x,
+      y: sp.y,
+      aim: sp.aim,
+      hp: 3,
+      maxHp: 3,
+      cd: 0,
+      alive: true,
+    };
+  });
   return {
     W,
     H,
+    mode,
     round: 1,
-    wins: [0, 0],
-    tanks: [
-      { id: room.players[0].id, slot: 0, x: 80, y: 80, aim: 0.4, hp: 3, cd: 0, alive: true },
-      { id: room.players[1].id, slot: 1, x: W - 80, y: H - 80, aim: Math.PI + 0.4, hp: 3, cd: 0, alive: true },
-    ],
+    wins: mode === "team" ? [0, 0] : tanks.map(() => 0),
+    tanks,
     bullets: [],
-    walls,
+    walls: makeTankWalls(W, H),
     roundOverAt: 0,
+    winnerId: null,
   };
 }
 
 function resetTankRound(state) {
-  state.tanks[0].x = 80;
-  state.tanks[0].y = 80;
-  state.tanks[0].aim = 0.4;
-  state.tanks[0].hp = 3;
-  state.tanks[0].cd = 0;
-  state.tanks[0].alive = true;
-  state.tanks[1].x = state.W - 80;
-  state.tanks[1].y = state.H - 80;
-  state.tanks[1].aim = Math.PI + 0.4;
-  state.tanks[1].hp = 3;
-  state.tanks[1].cd = 0;
-  state.tanks[1].alive = true;
+  const mode = state.mode;
+  const W = state.W,
+    H = state.H;
+  const spawns =
+    mode === "team"
+      ? [
+          { x: 160, y: H * 0.32, aim: 0.1 },
+          { x: 160, y: H * 0.68, aim: -0.1 },
+          { x: W - 160, y: H * 0.32, aim: Math.PI - 0.1 },
+          { x: W - 160, y: H * 0.68, aim: Math.PI + 0.1 },
+        ]
+      : [
+          { x: 180, y: 180, aim: 0.5 },
+          { x: W - 180, y: 180, aim: Math.PI - 0.5 },
+          { x: 180, y: H - 180, aim: -0.5 },
+          { x: W - 180, y: H - 180, aim: Math.PI + 0.5 },
+        ];
+  state.tanks.forEach((t, i) => {
+    const sp = spawns[i % spawns.length];
+    t.x = sp.x;
+    t.y = sp.y;
+    t.aim = sp.aim;
+    t.hp = 3;
+    t.cd = 0;
+    t.alive = true;
+  });
   state.bullets = [];
-  state.walls = [
-    { x: 350, y: 120, w: 100, h: 40, solid: true },
-    { x: 350, y: 440, w: 100, h: 40, solid: true },
-    { x: 180, y: 270, w: 60, h: 60, solid: false, hp: 3 },
-    { x: 560, y: 270, w: 60, h: 60, solid: false, hp: 3 },
-    { x: 370, y: 280, w: 60, h: 40, solid: false, hp: 2 },
-  ];
+  state.walls = makeTankWalls(W, H);
   state.roundOverAt = 0;
+  state.winnerId = null;
 }
 
 function rectHit(cx, cy, r, wx, wy, ww, wh) {
@@ -225,27 +347,88 @@ function rectHit(cx, cy, r, wx, wy, ww, wh) {
   return dx * dx + dy * dy < r * r;
 }
 
+function tankSameSide(a, b, mode) {
+  if (!a || !b) return false;
+  if (mode === "team") return a.team === b.team;
+  return a.slot === b.slot;
+}
+
+function tankAiThink(s, t, dt) {
+  // chase nearest enemy, shoot when roughly aimed
+  let best = null,
+    bd = 1e9;
+  for (const o of s.tanks) {
+    if (!o.alive || tankSameSide(t, o, s.mode)) continue;
+    const d = Math.hypot(o.x - t.x, o.y - t.y);
+    if (d < bd) {
+      bd = d;
+      best = o;
+    }
+  }
+  const inp = { up: false, down: false, left: false, right: false, aim: t.aim, fire: false };
+  if (!best) return inp;
+  const ang = Math.atan2(best.y - t.y, best.x - t.x);
+  t.aim = ang;
+  inp.aim = ang;
+  const dx = best.x - t.x,
+    dy = best.y - t.y;
+  if (Math.abs(dx) > 40) {
+    if (dx > 0) inp.right = true;
+    else inp.left = true;
+  }
+  if (Math.abs(dy) > 40) {
+    if (dy > 0) inp.down = true;
+    else inp.up = true;
+  }
+  // keep some distance
+  if (bd < 180) {
+    inp.up = !inp.up && dy < 0;
+    inp.down = !inp.down && dy > 0;
+    inp.left = dx > 0;
+    inp.right = dx < 0;
+  }
+  if (bd < 520 && Math.abs(Math.atan2(Math.sin(ang - t.aim), Math.cos(ang - t.aim))) < 0.35) {
+    inp.fire = Math.random() < Math.min(1, dt * 4);
+  }
+  return inp;
+}
+
 function tickTank(room, dt) {
   const s = room.state;
   if (s.roundOverAt) {
     if (Date.now() >= s.roundOverAt) {
-      if (s.wins[0] >= 2 || s.wins[1] >= 2) {
-        const winner = s.wins[0] >= 2 ? s.tanks[0].id : s.tanks[1].id;
-        endGame(room, "match", winner);
-        return;
+      if (s.mode === "team") {
+        if ((s.wins[0] || 0) >= 2 || (s.wins[1] || 0) >= 2) {
+          const winTeam = (s.wins[0] || 0) >= 2 ? 0 : 1;
+          const w = s.tanks.find((t) => t.team === winTeam);
+          endGame(room, "match", w ? w.id : null);
+          return;
+        }
+      } else {
+        // FFA: last-alive already ended match; round wins optional
+        const topped = s.wins.findIndex((w) => w >= 2);
+        if (topped >= 0) {
+          const w = s.tanks.find((t) => t.slot === topped);
+          endGame(room, "match", w ? w.id : s.winnerId);
+          return;
+        }
       }
       s.round++;
       resetTankRound(s);
     }
     return;
   }
+
   const R = 18,
-    spd = 160;
-  for (let i = 0; i < 2; i++) {
-    const t = s.tanks[i];
+    spd = 170;
+  for (const t of s.tanks) {
     if (!t.alive) continue;
     const p = room.players.find((pl) => pl.id === t.id);
-    const inp = (p && p.input) || {};
+    let inp = (p && p.input) || {};
+    if (t.isAi || (p && p.isAi)) {
+      inp = tankAiThink(s, t, dt);
+      if (p) p.input = inp;
+    }
     let dx = 0,
       dy = 0;
     if (inp.up) dy -= 1;
@@ -274,17 +457,19 @@ function tickTank(room, dt) {
     if (typeof inp.aim === "number") t.aim = inp.aim;
     if (t.cd > 0) t.cd -= dt * 1000;
     if (inp.fire && t.cd <= 0) {
-      t.cd = 500;
+      t.cd = 420;
       s.bullets.push({
         x: t.x + Math.cos(t.aim) * 22,
         y: t.y + Math.sin(t.aim) * 22,
-        vx: Math.cos(t.aim) * 420,
-        vy: Math.sin(t.aim) * 420,
+        vx: Math.cos(t.aim) * 460,
+        vy: Math.sin(t.aim) * 460,
         owner: t.slot,
+        team: t.team,
       });
-      inp.fire = false;
+      if (inp) inp.fire = false;
     }
   }
+
   for (let b = s.bullets.length - 1; b >= 0; b--) {
     const bul = s.bullets[b];
     bul.x += bul.vx * dt;
@@ -297,9 +482,8 @@ function tickTank(room, dt) {
     for (const w of s.walls) {
       if (w.hp != null && w.hp <= 0) continue;
       if (rectHit(bul.x, bul.y, 4, w.x, w.y, w.w, w.h)) {
-        if (w.solid) {
-          hitWall = true;
-        } else {
+        if (w.solid) hitWall = true;
+        else {
           w.hp--;
           hitWall = true;
         }
@@ -311,21 +495,54 @@ function tickTank(room, dt) {
       continue;
     }
     for (const t of s.tanks) {
-      if (!t.alive || t.slot === bul.owner) continue;
+      if (!t.alive) continue;
+      if (s.mode === "team" ? t.team === bul.team : t.slot === bul.owner) continue;
       if (Math.hypot(t.x - bul.x, t.y - bul.y) < R + 4) {
         t.hp--;
         s.bullets.splice(b, 1);
         if (t.hp <= 0) {
           t.alive = false;
-          const winnerSlot = 1 - t.slot;
-          s.wins[winnerSlot]++;
-          s.roundOverAt = Date.now() + 1500;
+          checkTankRoundEnd(room);
         }
         break;
       }
     }
   }
 }
+
+function checkTankRoundEnd(room) {
+  const s = room.state;
+  if (s.roundOverAt) return;
+  const alive = s.tanks.filter((t) => t.alive);
+  if (s.mode === "team") {
+    const a = alive.filter((t) => t.team === 0);
+    const b = alive.filter((t) => t.team === 1);
+    if (a.length === 0 || b.length === 0) {
+      const winTeam = a.length ? 0 : 1;
+      s.wins[winTeam] = (s.wins[winTeam] || 0) + 1;
+      s.winnerId = (alive[0] && alive[0].id) || null;
+      s.roundOverAt = Date.now() + 1800;
+      if ((s.wins[winTeam] || 0) >= 2) {
+        // finalize shortly via tick
+      }
+    }
+  } else {
+    if (alive.length <= 1) {
+      if (alive[0]) {
+        s.wins[alive[0].slot] = (s.wins[alive[0].slot] || 0) + 1;
+        s.winnerId = alive[0].id;
+      }
+      s.roundOverAt = Date.now() + 1800;
+      // FFA first to 1 or end match if only last alive - win match immediately at 1
+      if (alive[0]) {
+        s.roundOverAt = Date.now() + 1200;
+        // mark for match end: set wins high
+        s.wins[alive[0].slot] = 2;
+      }
+    }
+  }
+}
+
 
 /* ===================== RTS ===================== */
 const RTS_UNITS = {
@@ -751,141 +968,202 @@ function tickRts(room, dt) {
   }
 }
 
-/* ===================== TOWER DEFENSE ===================== */
-const TD_TOWERS = {
-  single: { cost: 50, dmg: 18, range: 90, rate: 0.7, aoe: 0, slow: 0 },
-  aoe: { cost: 80, dmg: 10, range: 70, rate: 1.0, aoe: 50, slow: 0 },
-  slow: { cost: 60, dmg: 6, range: 85, rate: 0.8, aoe: 0, slow: 0.45 },
-};
-const TD_UNITS = {
-  fast: { cost: 30, hp: 40, speed: 110, r: 10, gold: 8 },
-  tank: { cost: 60, hp: 160, speed: 45, r: 14, gold: 18 },
-  swarm: { cost: 25, hp: 22, speed: 90, r: 8, gold: 6, count: 3 },
-};
+/* ===================== AGE OF WAR (전쟁시대) ===================== */
+const AOW_AGES = [
+  {
+    name: "석기",
+    units: [
+      { id: "club", name: "곤봉병", cost: 15, hp: 45, dps: 9, r: 14, speed: 58, range: 26 },
+      { id: "sling", name: "투석병", cost: 25, hp: 28, dps: 8, r: 12, speed: 52, range: 120 },
+      { id: "dino", name: "공룡기수", cost: 100, hp: 170, dps: 24, r: 22, speed: 48, range: 34 },
+    ],
+  },
+  {
+    name: "중세",
+    units: [
+      { id: "sword", name: "검사", cost: 50, hp: 80, dps: 14, r: 14, speed: 60, range: 28 },
+      { id: "archer", name: "궁수", cost: 75, hp: 40, dps: 12, r: 12, speed: 55, range: 140 },
+      { id: "knight", name: "기사", cost: 220, hp: 220, dps: 28, r: 20, speed: 62, range: 32 },
+    ],
+  },
+  {
+    name: "화약",
+    units: [
+      { id: "duel", name: "결투사", cost: 120, hp: 110, dps: 18, r: 14, speed: 64, range: 30 },
+      { id: "musket", name: "머스킷", cost: 180, hp: 55, dps: 20, r: 12, speed: 50, range: 160 },
+      { id: "cannon", name: "대포병", cost: 420, hp: 160, dps: 40, r: 18, speed: 40, range: 170 },
+    ],
+  },
+  {
+    name: "현대",
+    units: [
+      { id: "meleeInf", name: "돌격병", cost: 260, hp: 160, dps: 26, r: 14, speed: 68, range: 30 },
+      { id: "infantry", name: "소총병", cost: 340, hp: 90, dps: 28, r: 12, speed: 58, range: 170 },
+      { id: "tankU", name: "전차", cost: 900, hp: 420, dps: 48, r: 24, speed: 46, range: 40 },
+    ],
+  },
+  {
+    name: "미래",
+    units: [
+      { id: "blade", name: "광선검사", cost: 500, hp: 210, dps: 36, r: 14, speed: 72, range: 32 },
+      { id: "blaster", name: "블래스터", cost: 620, hp: 120, dps: 40, r: 12, speed: 60, range: 180 },
+      { id: "war", name: "워머신", cost: 1600, hp: 560, dps: 70, r: 26, speed: 50, range: 46 },
+    ],
+  },
+];
+// XP required to evolve FROM age index -> next
+const AOW_EVOLVE_XP = [700, 1800, 4000, 9000];
 
-function initTd(room) {
-  const slots0 = [],
-    slots1 = [];
-  for (let i = 0; i < 8; i++) {
-    slots0.push({ x: 220, y: 60 + i * 50, tower: null });
-    slots1.push({ x: 680, y: 60 + i * 50, tower: null });
-  }
+function initAgeOfWar(room) {
+  const W = 1100,
+    H = 420;
+  const baseHp = 650;
   return {
-    W: 900,
-    H: 500,
-    gold: [100, 100],
-    life: [20, 20],
+    W,
+    H,
+    groundY: 320,
+    gold: [175, 175],
+    xp: [0, 0],
+    age: [0, 0],
+    baseHp: [baseHp, baseHp],
+    baseMax: [baseHp, baseHp],
+    specialCd: [0, 0],
     incomeT: 0,
-    slots: [slots0, slots1],
-    creeps: [],
+    units: [],
+    fx: [],
     nextId: 1,
   };
 }
 
-function tickTd(room, dt) {
+function aowUnitDefs(age) {
+  return AOW_AGES[Math.max(0, Math.min(AOW_AGES.length - 1, age))].units;
+}
+
+function tickAgeOfWar(room, dt) {
   const s = room.state;
   s.incomeT += dt;
-  if (s.incomeT >= 1) {
-    s.incomeT -= 1;
-    s.gold[0]++;
-    s.gold[1]++;
+  while (s.incomeT >= 0.35) {
+    s.incomeT -= 0.35;
+    s.gold[0] += 3;
+    s.gold[1] += 3;
   }
+  for (let i = 0; i < 2; i++) {
+    if (s.specialCd[i] > 0) s.specialCd[i] -= dt;
+  }
+  if (!s.fx) s.fx = [];
+  s.fx = s.fx.filter((f) => {
+    f.life -= dt;
+    return f.life > 0;
+  });
+
   for (const p of room.players) {
     const inp = p.input;
     if (!inp || !inp.action) continue;
     const owner = p.slot;
-    if (inp.action === "tower") {
-      const def = TD_TOWERS[inp.kind];
-      const si = inp.slotIndex | 0;
-      const slot = s.slots[owner][si];
-      if (def && slot && !slot.tower && s.gold[owner] >= def.cost) {
-        s.gold[owner] -= def.cost;
-        slot.tower = { kind: inp.kind, cd: 0 };
-      }
-    } else if (inp.action === "send") {
-      const def = TD_UNITS[inp.kind];
+    if (owner !== 0 && owner !== 1) {
+      inp.action = null;
+      continue;
+    }
+    if (inp.action === "spawn") {
+      const defs = aowUnitDefs(s.age[owner]);
+      const ui = Math.max(0, Math.min(2, inp.unitIndex | 0));
+      const def = defs[ui];
       if (def && s.gold[owner] >= def.cost) {
         s.gold[owner] -= def.cost;
-        const lane = 1 - owner; // send to opponent lane
-        const n = def.count || 1;
-        for (let i = 0; i < n; i++) {
-          s.creeps.push({
-            id: s.nextId++,
-            owner, // who sent
-            lane,
-            kind: inp.kind,
-            x: s.slots[lane][0].x,
-            y: -10 - i * 16,
-            hp: def.hp,
-            maxHp: def.hp,
-            speed: def.speed,
-            r: def.r,
-            gold: def.gold,
-            slowT: 0,
-          });
+        const dir = owner === 0 ? 1 : -1;
+        s.units.push({
+          id: s.nextId++,
+          owner,
+          type: def.id,
+          name: def.name,
+          x: owner === 0 ? 110 : s.W - 110,
+          y: s.groundY,
+          hp: def.hp,
+          maxHp: def.hp,
+          dps: def.dps,
+          r: def.r,
+          speed: def.speed * dir,
+          range: def.range,
+          atkCd: 0,
+        });
+      }
+    } else if (inp.action === "evolve") {
+      const age = s.age[owner];
+      if (age < 4) {
+        const need = AOW_EVOLVE_XP[age];
+        if (s.xp[owner] >= need) {
+          s.xp[owner] -= need;
+          s.age[owner]++;
+          s.baseMax[owner] += 280;
+          s.baseHp[owner] = Math.min(s.baseMax[owner], s.baseHp[owner] + 280);
+          s.fx.push({ kind: "evolve", owner, life: 1.2 });
         }
+      }
+    } else if (inp.action === "special") {
+      if (s.specialCd[owner] <= 0) {
+        s.specialCd[owner] = 38;
+        for (const u of s.units) {
+          if (u.owner !== owner) u.hp -= 55 + s.age[owner] * 18;
+        }
+        s.fx.push({ kind: "special", owner, life: 0.8 });
       }
     }
     inp.action = null;
   }
 
-  // towers attack
-  for (let lane = 0; lane < 2; lane++) {
-    for (const slot of s.slots[lane]) {
-      if (!slot.tower) continue;
-      const def = TD_TOWERS[slot.tower.kind];
-      slot.tower.cd -= dt;
-      if (slot.tower.cd > 0) continue;
-      const foes = s.creeps.filter((c) => c.lane === lane && c.hp > 0);
-      let best = null,
-        bd = def.range;
-      for (const c of foes) {
-        const d = Math.hypot(c.x - slot.x, c.y - slot.y);
-        if (d < bd) {
-          bd = d;
-          best = c;
-        }
+  // move / combat
+  for (const u of s.units) {
+    if (u.hp <= 0) continue;
+    if (u.atkCd > 0) u.atkCd -= dt;
+    let target = null;
+    let td = u.range + 8;
+    for (const o of s.units) {
+      if (o.owner === u.owner || o.hp <= 0) continue;
+      const d = Math.abs(o.x - u.x);
+      if (d < td) {
+        td = d;
+        target = o;
       }
-      if (best) {
-        slot.tower.cd = def.rate;
-        if (def.aoe > 0) {
-          for (const c of foes) {
-            if (Math.hypot(c.x - best.x, c.y - best.y) <= def.aoe) c.hp -= def.dmg;
-          }
-        } else {
-          best.hp -= def.dmg;
-          if (def.slow) best.slowT = Math.max(best.slowT, 1.2);
-        }
+    }
+    // base target
+    const enemyBaseX = u.owner === 0 ? s.W - 70 : 70;
+    const baseDist = Math.abs(enemyBaseX - u.x);
+    const canHitBase = baseDist <= u.range + 20;
+
+    if (target && td <= u.range) {
+      if (u.atkCd <= 0) {
+        target.hp -= u.dps * 0.55;
+        u.atkCd = 0.45;
       }
+    } else if (!target && canHitBase) {
+      if (u.atkCd <= 0) {
+        const foe = 1 - u.owner;
+        s.baseHp[foe] -= u.dps * 0.4;
+        u.atkCd = 0.5;
+      }
+    } else {
+      u.x += u.speed * dt;
     }
   }
 
-  for (let i = s.creeps.length - 1; i >= 0; i--) {
-    const c = s.creeps[i];
-    if (c.hp <= 0) {
-      const defender = c.lane;
-      s.gold[defender] += c.gold;
-      s.creeps.splice(i, 1);
-      continue;
-    }
-    let spd = c.speed;
-    if (c.slowT > 0) {
-      c.slowT -= dt;
-      spd *= 0.55;
-    }
-    c.y += spd * dt;
-    if (c.y > s.H) {
-      s.life[c.lane]--;
-      s.creeps.splice(i, 1);
-    }
+  // rewards for kills
+  for (let i = s.units.length - 1; i >= 0; i--) {
+    const u = s.units[i];
+    if (u.hp > 0) continue;
+    const killer = 1 - u.owner;
+    s.gold[killer] += 12 + s.age[u.owner] * 6;
+    s.xp[killer] += 35 + s.age[u.owner] * 20;
+    s.xp[u.owner] += 8; // small xp when your unit dies (classic)
+    s.units.splice(i, 1);
   }
 
-  if (s.life[0] <= 0 || s.life[1] <= 0) {
-    const winnerSlot = s.life[0] <= 0 ? 1 : 0;
-    const w = room.players.find((p) => p.slot === winnerSlot);
-    endGame(room, "life", w ? w.id : null);
+  if (s.baseHp[0] <= 0 || s.baseHp[1] <= 0) {
+    const winSlot = s.baseHp[0] <= 0 ? 1 : 0;
+    const w = room.players.find((p) => p.slot === winSlot);
+    endGame(room, "base", w ? w.id : null);
   }
 }
+
 
 /* ===================== SNAKES (grid classic · midnight-style) ===================== */
 const SNAKE_COLS = 72;
@@ -1280,8 +1558,8 @@ function initState(room) {
       return initTank(room);
     case "rts":
       return initRts(room);
-    case "towerdefense":
-      return initTd(room);
+    case "ageofwar":
+      return initAgeOfWar(room);
     case "snakes":
       return initSnakes(room);
     case "airhockey":
@@ -1300,8 +1578,8 @@ function tick(room, dt) {
       case "rts":
         tickRts(room, dt);
         break;
-      case "towerdefense":
-        tickTd(room, dt);
+      case "ageofwar":
+        tickAgeOfWar(room, dt);
         break;
       case "snakes":
         tickSnakes(room, dt);
@@ -1322,10 +1600,11 @@ function lobbyList(game) {
     if (room.status !== "lobby") continue;
     list.push({
       code: room.code,
-      players: room.players.length,
+      players: room.players.filter((p) => !p.isAi).length,
       max: GAMES[game].max,
-      names: room.players.map((p) => p.name),
+      names: room.players.filter((p) => !p.isAi).map((p) => p.name),
       host: room.players[0] ? room.players[0].name : "",
+      mode: room.mode || null,
     });
   }
   return list;
@@ -1393,6 +1672,7 @@ function attachGameRooms(httpServer) {
         const room = {
           code,
           game,
+          mode: game === "tank" && String(msg.mode || "") === "team" ? "team" : game === "tank" ? "ffa" : null,
           players: [],
           status: "lobby",
           state: null,
@@ -1484,11 +1764,10 @@ function attachGameRooms(httpServer) {
             unitType: payload.unitType || null,
             targetId: payload.targetId,
           };
-        } else if (room.game === "towerdefense") {
+        } else if (room.game === "ageofwar") {
           player.input = {
             action: payload.action || null,
-            kind: payload.kind || null,
-            slotIndex: payload.slotIndex != null ? payload.slotIndex : -1,
+            unitIndex: payload.unitIndex != null ? payload.unitIndex | 0 : 0,
           };
         } else if (room.game === "snakes") {
           player.input = {
