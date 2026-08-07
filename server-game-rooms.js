@@ -1813,18 +1813,18 @@ function initAirhockey(room) {
 function resetPuck(s, toLeft) {
   s.puck.x = s.W / 2;
   s.puck.y = s.H / 2;
-  s.puck.vx = (toLeft ? -1 : 1) * 240;
-  s.puck.vy = (Math.random() - 0.5) * 140;
+  s.puck.vx = (toLeft ? -1 : 1) * 185;
+  s.puck.vy = (Math.random() - 0.5) * 110;
 }
 
 function boostPuckSpeed(puck, mul, add) {
   let sp = Math.hypot(puck.vx, puck.vy);
   if (sp < 1) {
-    puck.vx = 200;
-    puck.vy = (Math.random() - 0.5) * 80;
+    puck.vx = 160;
+    puck.vy = (Math.random() - 0.5) * 60;
     sp = Math.hypot(puck.vx, puck.vy);
   }
-  const next = Math.min(1100, sp * (mul || 1.08) + (add != null ? add : 18));
+  const next = Math.min(780, sp * (mul || 1.05) + (add != null ? add : 12));
   puck.vx = (puck.vx / sp) * next;
   puck.vy = (puck.vy / sp) * next;
 }
@@ -1851,17 +1851,20 @@ function tickAirhockey(room, dt) {
   }
   const puck = s.puck;
   if (puck.vx === 0 && puck.vy === 0) resetPuck(s, Math.random() < 0.5);
+  // light drag so speed doesn't runaway
+  puck.vx *= Math.pow(0.992, dt * 45);
+  puck.vy *= Math.pow(0.992, dt * 45);
   puck.x += puck.vx * dt;
   puck.y += puck.vy * dt;
   if (puck.y < puck.r) {
     puck.y = puck.r;
     puck.vy = Math.abs(puck.vy);
-    boostPuckSpeed(puck, 1.1, 22);
+    boostPuckSpeed(puck, 1.04, 10);
   }
   if (puck.y > s.H - puck.r) {
     puck.y = s.H - puck.r;
     puck.vy = -Math.abs(puck.vy);
-    boostPuckSpeed(puck, 1.1, 22);
+    boostPuckSpeed(puck, 1.04, 10);
   }
   // goals
   const gh = s.goalHalf;
@@ -1876,7 +1879,7 @@ function tickAirhockey(room, dt) {
     } else {
       puck.x = puck.r;
       puck.vx = Math.abs(puck.vx);
-      boostPuckSpeed(puck, 1.1, 22);
+      boostPuckSpeed(puck, 1.04, 10);
     }
   }
   if (puck.x > s.W + puck.r) {
@@ -1890,7 +1893,7 @@ function tickAirhockey(room, dt) {
     } else {
       puck.x = s.W - puck.r;
       puck.vx = -Math.abs(puck.vx);
-      boostPuckSpeed(puck, 1.1, 22);
+      boostPuckSpeed(puck, 1.04, 10);
     }
   }
   for (const pad of s.paddles) {
@@ -1906,10 +1909,9 @@ function tickAirhockey(room, dt) {
       const pvx = (pad.x - (pad.px != null ? pad.px : pad.x)) / Math.max(dt, 0.001);
       const pvy = (pad.y - (pad.py != null ? pad.py : pad.y)) / Math.max(dt, 0.001);
       const dot = puck.vx * nx + puck.vy * ny;
-      puck.vx = puck.vx - 2.05 * dot * nx + nx * 90 + pvx * 0.35;
-      puck.vy = puck.vy - 2.05 * dot * ny + ny * 90 + pvy * 0.35;
-      // 패들에 닿을 때마다 반드시 가속
-      boostPuckSpeed(puck, 1.12, 28);
+      puck.vx = puck.vx - 2.0 * dot * nx + nx * 55 + pvx * 0.28;
+      puck.vy = puck.vy - 2.0 * dot * ny + ny * 55 + pvy * 0.28;
+      boostPuckSpeed(puck, 1.05, 12);
     }
   }
 }
