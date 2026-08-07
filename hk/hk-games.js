@@ -9,7 +9,7 @@
     snake: { icon: '🐍', name: '미드나잇 스네이크', desc: '벽을 피해 야식을 모아보세요' },
     memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
     breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '5단계 벽돌 격파 · 아이템 수집' },
-    jump: { icon: '🪽', name: '스카이 점프', desc: '발판을 밟고 끝없이 높이 오르기' },
+    jump: { icon: '🪽', name: '스카이 점프', desc: '2단 점프 · 서서히 올라가는 화면' },
     tetris: { icon: '🟪', name: '타워 테트리스', desc: '블록을 쌓아 라인을 지우는 클래식' },
     pong: { icon: '🏓', name: '로비 핑퐁', desc: '빠른 공·짧은 패들로 고난도 랠리' },
     flappy: { icon: '🕊️', name: '벨보이 플라이', desc: '탭으로 날아 기둥 사이를 통과' },
@@ -912,27 +912,61 @@
 
   games.jump = function () {
     var c = controller(), cv = canvasBase(520, 700), ctx = cv.ctx, player, platforms, keys = {}, score = 0, running = true, last = 0, touchX = null, fx = makeFx();
+    var canDouble = false, spaceLatch = false;
     setHud([['높이', '0', 'score'], ['최고', formatScore(best('jump', name())), 'best']]);
     function setup() {
       player = { x: 238, y: 580, w: 46, h: 40, vx: 0, vy: -650 };
       platforms = [{ x: 200, y: 640, w: 120 }];
-      for (var y = 550; y > -100; y -= 78 + Math.random() * 28) platforms.push({ x: 20 + Math.random() * 390, y: y, w: 78 + Math.random() * 34 });
+      for (var y = 550; y > -100; y -= 70 + Math.random() * 24) platforms.push({ x: 20 + Math.random() * 390, y: y, w: 82 + Math.random() * 36 });
+      canDouble = true;
+      spaceLatch = false;
+      score = 0;
     }
-    function gapScale() { return Math.max(0.72, 1 - score / 18000); }
+    function gapScale() { return Math.max(0.78, 1 - score / 22000); }
+    function riseSpeed() {
+      // very slow camera rise — starts tiny, creeps up gently with height
+      return 5.5 + Math.min(9, score / 9000);
+    }
     function addPlatforms() {
       var top = Math.min.apply(null, platforms.map(function (p) { return p.y; }));
       var g = gapScale();
       while (top > -120) {
-        top -= (72 + Math.random() * 40) / g;
-        platforms.push({ x: 15 + Math.random() * 400, y: top, w: (70 + Math.random() * 40) * g });
+        top -= (64 + Math.random() * 34) / g;
+        platforms.push({ x: 15 + Math.random() * 400, y: top, w: (78 + Math.random() * 42) * g });
       }
+    }
+    function doDoubleJump() {
+      if (!running || !canDouble) return;
+      canDouble = false;
+      player.vy = Math.min(player.vy, 0) - 620;
+      fx.spark(player.x + player.w / 2, player.y + player.h * 0.6, '#9ae6b4');
+      fx.spark(player.x + player.w / 2, player.y + player.h, '#efd28a');
     }
     function draw() {
       var g = ctx.createLinearGradient(0, 0, 0, 700); g.addColorStop(0, '#123e42'); g.addColorStop(1, '#07161c'); ctx.fillStyle = g; ctx.fillRect(0, 0, 520, 700);
       ctx.fillStyle = '#ffffff12'; for (var i = 0; i < 35; i++) { ctx.beginPath(); ctx.arc((i * 83) % 520, (i * 137 + score * 0.02) % 700, i % 3 + 1, 0, 7); ctx.fill(); }
+      // rising death floor hint
+      var fg = ctx.createLinearGradient(0, 660, 0, 700);
+      fg.addColorStop(0, '#0000'); fg.addColorStop(1, '#ff8a7a33');
+      ctx.fillStyle = fg; ctx.fillRect(0, 655, 520, 45);
+      ctx.fillStyle = '#ff8a7a55'; ctx.fillRect(0, 692, 520, 8);
       platforms.forEach(function (p) { ctx.fillStyle = '#d6bc75'; ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, 11, 6); ctx.fill(); ctx.fillStyle = '#719b7a'; ctx.fillRect(p.x + 7, p.y + 10, p.w - 14, 4); });
       drawHeroShape(ctx, player.x, player.y, player.w, player.h, { radius: 12, font: 11 });
+      // double-jump charge indicator
+      if (canDouble && player.vy > -40) {
+        ctx.fillStyle = '#9ae6b488';
+        ctx.beginPath(); ctx.arc(player.x + player.w / 2, player.y - 8, 4, 0, 7); ctx.fill();
+      }
       fx.draw(ctx);
+    }
+    function scrollWorld(shift) {
+      if (shift <= 0) return;
+      player.y += shift;
+      platforms.forEach(function (p) { p.y += shift; });
+      score += Math.round(shift);
+      hud('score', formatScore(score));
+      platforms = platforms.filter(function (p) { return p.y < 740; });
+      addPlatforms();
     }
     function loop(t) {
       if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
@@ -942,26 +976,51 @@
       player.x += player.vx * dt; player.vy += 1480 * dt; var oldBottom = player.y + player.h; player.y += player.vy * dt;
       if (player.x < -player.w) player.x = 520; if (player.x > 520) player.x = -player.w;
       if (player.vy > 0) platforms.some(function (p) {
-        if (oldBottom <= p.y && player.y + player.h >= p.y && player.x + player.w > p.x && player.x < p.x + p.w) {
-          player.y = p.y - player.h; player.vy = -690; fx.spark(player.x + player.w / 2, player.y + player.h, '#d6bc75'); return true;
+        if (oldBottom <= p.y && player.y + player.h >= p.y && player.x + player.w > p.x + 4 && player.x < p.x + p.w - 4) {
+          player.y = p.y - player.h; player.vy = -690; canDouble = true;
+          fx.spark(player.x + player.w / 2, player.y + player.h, '#d6bc75'); return true;
         }
         return false;
       });
-      if (player.y < 270) {
-        var shift = 270 - player.y; player.y = 270; platforms.forEach(function (p) { p.y += shift; });
-        score += Math.round(shift); hud('score', formatScore(score));
-        platforms = platforms.filter(function (p) { return p.y < 730; }); addPlatforms();
+      // follow player upward
+      if (player.y < 270) scrollWorld(270 - player.y);
+      // very slow auto camera rise (world sinks / floor rises)
+      scrollWorld(riseSpeed() * dt);
+      if (player.y + player.h >= 700) {
+        running = false; shakeStage();
+        gameOver('바닥에 닿았어요', '오른 높이 ' + formatScore(score), function () { startGame('jump'); }, score);
+        return;
       }
-      if (player.y > 730) { running = false; shakeStage(); gameOver('아래로 떨어졌어요', '오른 높이 ' + formatScore(score), function () { startGame('jump'); }, score); return; }
       draw(); c.raf(loop);
     }
-    function key(e) { if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].indexOf(e.key) >= 0) { e.preventDefault(); keys[e.key.toLowerCase()] = e.type === 'keydown'; keys[e.key] = e.type === 'keydown'; } }
+    function key(e) {
+      var k = e.key;
+      if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].indexOf(k) >= 0) {
+        e.preventDefault(); keys[k.toLowerCase()] = e.type === 'keydown'; keys[k] = e.type === 'keydown';
+      }
+      if (k === ' ' || k === 'Spacebar' || k === 'Space') {
+        e.preventDefault();
+        if (e.type === 'keydown' && !e.repeat && !spaceLatch) {
+          spaceLatch = true;
+          doDoubleJump();
+        }
+        if (e.type === 'keyup') spaceLatch = false;
+      }
+    }
     c.on(document, 'keydown', key); c.on(document, 'keyup', key);
-    c.on(cv.canvas, 'touchstart', function (e) { e.preventDefault(); var r = cv.canvas.getBoundingClientRect(); touchX = (e.touches[0].clientX - r.left) * 520 / r.width; }, { passive: false });
+    c.on(cv.canvas, 'touchstart', function (e) {
+      e.preventDefault();
+      var r = cv.canvas.getBoundingClientRect();
+      var tx = (e.touches[0].clientX - r.left) * 520 / r.width;
+      var ty = (e.touches[0].clientY - r.top) * 700 / r.height;
+      touchX = tx;
+      // tap upper area for double jump
+      if (ty < 320) doDoubleJump();
+    }, { passive: false });
     c.on(cv.canvas, 'touchmove', function (e) { var r = cv.canvas.getBoundingClientRect(); touchX = (e.touches[0].clientX - r.left) * 520 / r.width; }, { passive: true });
     c.on(cv.canvas, 'touchend', function () { touchX = null; }, { passive: true });
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 방향키/A·D 또는 화면 좌우를 눌러 이동하세요. 높이 오를수록 발판이 좁아집니다.');
+    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 이동 · SPACE(또는 화면 상단 탭)로 2단 점프 · 화면이 아주 천천히 올라가며 바닥에 닿으면 탈락합니다.');
     return { id: 'jump', destroy: c.destroy };
   };
 
