@@ -1165,14 +1165,26 @@ function rtsBuildAllowed(s, owner, bt, x, y) {
   return true;
 }
 
-function rtsEnqueueTrain(s, owner, ut) {
+function rtsEnqueueTrain(s, owner, ut, preferIds) {
   const udef = RTS_UNITS[ut];
   if (!udef) return false;
   if (rtsOwnerGold(s, owner) < udef.cost) return false;
-  const from =
-    ut === "worker"
-      ? s.entities.find((e) => e.type === "nexus" && e.owner === owner && e.hp > 0)
-      : s.entities.find((e) => e.type === "barracks" && e.owner === owner && e.hp > 0);
+  const needType = ut === "worker" ? "nexus" : "barracks";
+  const ids = Array.isArray(preferIds) ? preferIds.map(Number) : [];
+  let from = null;
+  for (const id of ids) {
+    const e = rtsFind(s, id);
+    if (e && e.type === needType && e.owner === owner && e.hp > 0) {
+      from = e;
+      break;
+    }
+  }
+  if (!from) {
+    // Fallback: shortest queue among matching buildings
+    const cands = s.entities.filter((e) => e.type === needType && e.owner === owner && e.hp > 0);
+    cands.sort((a, b) => (a.queue || []).length - (b.queue || []).length || (a.trainT || 0) - (b.trainT || 0));
+    from = cands[0] || null;
+  }
   if (!from) return false;
   if (!Array.isArray(from.queue)) from.queue = [];
   if (from.queue.length >= RTS_MAX_QUEUE) return false;
@@ -1301,7 +1313,7 @@ function tickRts(room, dt) {
         }
       }
     } else if (inp.cmd === "train" || (inp.cmd === "build" && inp.unitType && RTS_UNITS[inp.unitType])) {
-      rtsEnqueueTrain(s, owner, String(inp.unitType || ""));
+      rtsEnqueueTrain(s, owner, String(inp.unitType || ""), sels);
     } else if (inp.cmd === "build") {
       const bt = inp.buildType;
       const def = RTS_BUILD[bt];

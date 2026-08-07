@@ -946,7 +946,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · 목숨 3 · 사망 후 관전 카메라',
-      rts: '좌드래그 선택 · 우클릭 이동/공격 · 중앙 자원·확장 본진 · 생산 대기열',
+      rts: '좌클릭 배럭/본진 선택 후 유닛 생산 · 우클릭 이동/공격 · 정찰한 곳만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -1108,15 +1108,40 @@
     if (!lastState || !drag) return;
     var x1 = Math.min(drag.x1, drag.x2), x2 = Math.max(drag.x1, drag.x2);
     var y1 = Math.min(drag.y1, drag.y2), y2 = Math.max(drag.y1, drag.y2);
-    var units = (lastState.entities || []).filter(function (u) { return u.kind === 'unit'; });
+    var ents = lastState.entities || [];
     var slot = mySlot();
     var tiny = Math.abs(drag.x2 - drag.x1) < 6 && Math.abs(drag.y2 - drag.y1) < 6;
     selectIds = [];
-    units.forEach(function (u) {
-      if (u.owner !== slot) return;
-      if (tiny) {
-        if (Math.hypot((u.x || 0) - drag.x1, (u.y || 0) - drag.y1) < 18) selectIds.push(u.id);
-      } else if ((u.x || 0) >= x1 && (u.x || 0) <= x2 && (u.y || 0) >= y1 && (u.y || 0) <= y2) {
+    function hitBox(e, pad) {
+      var hw = (e.w || (e.r || 12) * 2) / 2 + (pad || 0);
+      var hh = (e.h || (e.r || 12) * 2) / 2 + (pad || 0);
+      return Math.abs((e.x || 0) - drag.x1) <= hw && Math.abs((e.y || 0) - drag.y1) <= hh;
+    }
+    function inRect(e) {
+      return (e.x || 0) >= x1 && (e.x || 0) <= x2 && (e.y || 0) >= y1 && (e.y || 0) <= y2;
+    }
+    // Prefer buildings on click so barracks/nexus can be chosen for train
+    if (tiny) {
+      var bld = null;
+      for (var i = 0; i < ents.length; i++) {
+        var e = ents[i];
+        if (!e || e.owner !== slot || e.hp <= 0 || e.fogGhost) continue;
+        if (e.type !== 'nexus' && e.type !== 'barracks') continue;
+        if (hitBox(e, 6)) { bld = e; break; }
+      }
+      if (bld) {
+        selectIds = [bld.id];
+        send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
+        return;
+      }
+    }
+    ents.forEach(function (u) {
+      if (!u || u.owner !== slot || u.hp <= 0 || u.fogGhost) return;
+      if (u.kind === 'unit') {
+        if (tiny) {
+          if (Math.hypot((u.x || 0) - drag.x1, (u.y || 0) - drag.y1) < 18) selectIds.push(u.id);
+        } else if (inRect(u)) selectIds.push(u.id);
+      } else if (!tiny && (u.type === 'nexus' || u.type === 'barracks') && inRect(u)) {
         selectIds.push(u.id);
       }
     });
@@ -1147,6 +1172,24 @@
       html += '<span class="hkmp-pill">' + ((st.mode && RTS_MODE_META[st.mode]) ? RTS_MODE_META[st.mode].label : 'RTS') + '</span>';
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
+      (function () {
+        var ents = st.entities || [];
+        var slotNow = mySlot();
+        for (var si = 0; si < selectIds.length; si++) {
+          for (var ei = 0; ei < ents.length; ei++) {
+            var se = ents[ei];
+            if (!se || se.id != selectIds[si] || se.owner !== slotNow) continue;
+            if (se.type === 'barracks') {
+              html += '<span class="hkmp-pill" style="color:#9ae6b4">생산지 <b>배럭</b></span>';
+              return;
+            }
+            if (se.type === 'nexus') {
+              html += '<span class="hkmp-pill" style="color:#9ae6b4">생산지 <b>' + esc(se.label || '본진') + '</b></span>';
+              return;
+            }
+          }
+        }
+      })();
       if (st.mode === '2v2') html += '<span class="hkmp-pill">팀 <b>' + (mySlot() < 2 ? 'A' : 'B') + '</b></span>';
       var qParts = [];
       var meSlot = mySlot();
@@ -1713,6 +1756,11 @@
         }
         if (!e.fogGhost) {
           drawRtsHpBar(ctx, e.x, e.y - bh / 2 - 8, Math.max(36, bw * 0.7), e.hp, e.maxHp);
+          if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
+            ctx.strokeStyle = '#efd28a';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(e.x - bw / 2 - 4, e.y - bh / 2 - 4, bw + 8, bh + 8);
+          }
           if (e.queue && e.queue.length) {
             var job = e.queue[0];
             var need = (job && job.need) || 4;
