@@ -1157,6 +1157,38 @@ function aowUnitDefs(age) {
   return AOW_AGES[Math.max(0, Math.min(AOW_AGES.length - 1, age))].units;
 }
 
+function aowIsRanged(u) {
+  return (u.range || 0) >= 100;
+}
+
+function aowSpacing(a, b) {
+  const ra = a.r || 12;
+  const rb = b.r || 12;
+  const base = ra + rb + 6;
+  if (aowIsRanged(a) && aowIsRanged(b)) return Math.max(base, 38);
+  if (aowIsRanged(a) || aowIsRanged(b)) return Math.max(base, 30);
+  return Math.max(base * 0.8, 18);
+}
+
+function aowSeparateAllies(s) {
+  for (let owner = 0; owner < 2; owner++) {
+    const allies = s.units.filter((u) => u.owner === owner && u.hp > 0);
+    if (allies.length < 2) continue;
+    // Frontmost first: P0 faces +x, P1 faces -x
+    allies.sort((a, b) => (owner === 0 ? b.x - a.x : a.x - b.x));
+    for (let i = 1; i < allies.length; i++) {
+      const front = allies[i - 1];
+      const back = allies[i];
+      const need = aowSpacing(front, back);
+      const gap = Math.abs(front.x - back.x);
+      if (gap >= need) continue;
+      if (owner === 0) back.x = front.x - need;
+      else back.x = front.x + need;
+      back.x = Math.max(55, Math.min(s.W - 55, back.x));
+    }
+  }
+}
+
 function tickAgeOfWar(room, dt) {
   const s = room.state;
   s.incomeT += dt;
@@ -1189,12 +1221,19 @@ function tickAgeOfWar(room, dt) {
       if (def && s.gold[owner] >= def.cost) {
         s.gold[owner] -= def.cost;
         const dir = owner === 0 ? 1 : -1;
+        let spawnX = owner === 0 ? 110 : s.W - 110;
+        let near = 0;
+        for (const o of s.units) {
+          if (o.owner !== owner || o.hp <= 0) continue;
+          if (Math.abs(o.x - spawnX) < 90) near++;
+        }
+        spawnX -= dir * near * 16;
         s.units.push({
           id: s.nextId++,
           owner,
           type: def.id,
           name: def.name,
-          x: owner === 0 ? 110 : s.W - 110,
+          x: spawnX,
           y: s.groundY,
           hp: def.hp,
           maxHp: def.hp,
@@ -1247,22 +1286,64 @@ function tickAgeOfWar(room, dt) {
     const enemyBaseX = u.owner === 0 ? s.W - 70 : 70;
     const baseDist = Math.abs(enemyBaseX - u.x);
     const canHitBase = baseDist <= u.range + 20;
+    const dir = Math.sign(u.speed) || (u.owner === 0 ? 1 : -1);
 
     if (target && td <= u.range) {
       if (u.atkCd <= 0) {
         target.hp -= u.dps * 0.55;
-        u.atkCd = 0.45;
+        u.atkCd = aowIsRanged(u) ? 0.55 : 0.45;
+        if (aowIsRanged(u)) {
+          s.fx.push({
+            kind: "shot",
+            x1: u.x,
+            y1: u.y - (u.r || 12),
+            x2: target.x,
+            y2: target.y - (target.r || 12),
+            owner: u.owner,
+            life: 0.18,
+          });
+        }
+      }
+      // Ranged: hold preferred distance; don't edge forward into ally pile
+      if (aowIsRanged(u) && td < u.range * 0.55) {
+        u.x -= dir * Math.min(40, u.range * 0.15) * dt;
       }
     } else if (!target && canHitBase) {
       if (u.atkCd <= 0) {
         const foe = 1 - u.owner;
         s.baseHp[foe] -= u.dps * 0.4;
         u.atkCd = 0.5;
+        if (aowIsRanged(u)) {
+          s.fx.push({
+            kind: "shot",
+            x1: u.x,
+            y1: u.y - (u.r || 12),
+            x2: enemyBaseX,
+            y2: s.groundY - 50,
+            owner: u.owner,
+            life: 0.18,
+          });
+        }
       }
     } else {
-      u.x += u.speed * dt;
+      let move = Math.abs(u.speed) * dt;
+      for (const o of s.units) {
+        if (o === u || o.owner !== u.owner || o.hp <= 0) continue;
+        const ahead = (o.x - u.x) * dir > 0;
+        if (!ahead) continue;
+        const dist = Math.abs(o.x - u.x);
+        const need = aowSpacing(u, o);
+        if (dist <= need) {
+          move = 0;
+          break;
+        }
+        move = Math.min(move, dist - need);
+      }
+      u.x += dir * move;
     }
   }
+
+  aowSeparateAllies(s);
 
   // rewards for kills
   for (let i = s.units.length - 1; i >= 0; i--) {
