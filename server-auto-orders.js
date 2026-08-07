@@ -7,8 +7,9 @@ const MSG_CLOSE_SAVE = "프론트 근무자분들 마감 저장해주세요";
 const MSG_INS_AFTER_17 =
   "17시 이후 INS 오더로 오더해주세요";
 const STALE_XML_MINUTES = 10;
-const QUIET_START_MIN = 1 * 60 + 30;
-const QUIET_END_MIN = 6 * 60 + 30;
+/** 도우미 로봇 휴무: 19:00 ~ 06:40 (KST) — 이 구간은 오더를 내지 않음 */
+const QUIET_START_MIN = 19 * 60;
+const QUIET_END_MIN = 6 * 60 + 40;
 
 function getKstParts(date) {
   const d = date || new Date();
@@ -35,8 +36,10 @@ function getKstParts(date) {
   };
 }
 
-function isRpaCheckQuietWindow(kst) {
-  return kst.minutesOfDay >= QUIET_START_MIN && kst.minutesOfDay < QUIET_END_MIN;
+/** 19:00 이상 또는 06:40 미만이면 휴무 */
+function isRobotQuietWindow(kst) {
+  var m = kst.minutesOfDay;
+  return m >= QUIET_START_MIN || m < QUIET_END_MIN;
 }
 
 function minutesSinceIso(iso) {
@@ -135,15 +138,20 @@ function startAutoOrderScheduler(ctx) {
   function tick() {
     try {
       const kst = getKstParts(new Date());
+      // 19:00~06:40 KST 휴무 — 예약·감시 오더 전부 중단
+      if (isRobotQuietWindow(kst)) return;
+
       const st = getAutoOrderState();
 
-      if (kst.hour === 1 && kst.minute === 30 && st.closeSaveDate !== kst.dateKey) {
+      // 휴무 직전(18:50)에 마감 저장 안내
+      if (kst.hour === 18 && kst.minute === 50 && st.closeSaveDate !== kst.dateKey) {
         if (appendAutoOrder("close_save", MSG_CLOSE_SAVE)) {
           st.closeSaveDate = kst.dateKey;
         }
       }
 
-      if (kst.hour === 6 && kst.minute === 30 && st.rpaRunDate !== kst.dateKey) {
+      // 휴무 종료 시각(06:40)에 RPA 실행 안내
+      if (kst.hour === 6 && kst.minute === 40 && st.rpaRunDate !== kst.dateKey) {
         if (appendAutoOrder("rpa_run", MSG_RPA_RUN)) {
           st.rpaRunDate = kst.dateKey;
         }
@@ -155,19 +163,17 @@ function startAutoOrderScheduler(ctx) {
         }
       }
 
-      if (!isRpaCheckQuietWindow(kst)) {
-        const payload = sharedState.payload || {};
-        const hasRoomingData =
-          (Array.isArray(payload.vacRows) && payload.vacRows.length > 0) ||
-          !!payload.roomingUploadedAt;
-        if (hasRoomingData) {
-          const uploadIso = getRoomingUploadIso(payload);
-          // 업로드 시각이 없으면 stale 판정하지 않음 (Infinity → 오발송 방지)
-          if (uploadIso) {
-            const staleMin = minutesSinceIso(uploadIso);
-            if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
-              appendAutoOrder("rpa_check", MSG_RPA_CHECK);
-            }
+      const payload = sharedState.payload || {};
+      const hasRoomingData =
+        (Array.isArray(payload.vacRows) && payload.vacRows.length > 0) ||
+        !!payload.roomingUploadedAt;
+      if (hasRoomingData) {
+        const uploadIso = getRoomingUploadIso(payload);
+        // 업로드 시각이 없으면 stale 판정하지 않음 (Infinity → 오발송 방지)
+        if (uploadIso) {
+          const staleMin = minutesSinceIso(uploadIso);
+          if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
+            appendAutoOrder("rpa_check", MSG_RPA_CHECK);
           }
         }
       }
@@ -178,7 +184,7 @@ function startAutoOrderScheduler(ctx) {
 
   setInterval(tick, 60 * 1000);
   setTimeout(tick, 8000);
-  console.log("Auto order scheduler started (KST)");
+  console.log("Auto order scheduler started (KST, quiet 19:00–06:40)");
 }
 
 module.exports = {
