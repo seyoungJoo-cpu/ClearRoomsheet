@@ -6946,12 +6946,46 @@
       background: var(--bg-card);
     }
 
+    .hk-room-board-frame {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      vertical-align: top;
+    }
+
     .hk-room-board-panel .sheet-outer {
       overflow-x: auto;
       border-radius: 10px;
       border: 1px solid var(--border);
       padding: 0.5rem;
       background: #f3f4f6;
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    .hk-room-board-resize-handle {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      background:
+        linear-gradient(135deg, transparent 0 42%, #64748b 42% 48%, transparent 48% 58%, #64748b 58% 64%, transparent 64%),
+        #e2e8f0;
+      cursor: nwse-resize;
+      z-index: 6;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+      touch-action: none;
+    }
+
+    .hk-room-board-resize-handle:hover,
+    .hk-room-board-resize-handle:focus-visible {
+      background-color: #cbd5e1;
+      border-color: var(--accent);
+      outline: none;
     }
 
     .hk-room-board-panel .sheet-triple-row {
@@ -7012,7 +7046,7 @@
 
     .hk-room-board-panel .floor-col {
       flex: 1 1 0;
-      min-width: 48px;
+      min-width: 64px;
       border-right: 1px solid #d1d5db;
       display: flex;
       flex-direction: column;
@@ -7024,9 +7058,9 @@
 
     .hk-room-board-panel .floor-head {
       text-align: center;
-      font-size: 0.68rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      padding: 0.28rem 0.15rem;
+      padding: 0.32rem 0.15rem;
       background: #f9fafb;
       border-bottom: 1px solid #9ca3af;
       color: #111827;
@@ -7045,10 +7079,10 @@
     .hk-room-board-panel .pair-row,
     .hk-room-board-panel .villa-list-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.15fr 0.85fr;
       border: 1px solid #bfc5ce;
-      font-size: 0.68rem;
-      line-height: 1.15;
+      font-size: 0.82rem;
+      line-height: 1.2;
       color: #111827;
       background: #fff;
       font-weight: 600;
@@ -7056,9 +7090,17 @@
 
     .hk-room-board-panel .pair-row .cell,
     .hk-room-board-panel .villa-list-row .cell {
-      padding: 2px 3px;
+      padding: 4px 5px;
       text-align: center;
       border-right: 1px solid #e5e7eb;
+    }
+
+    .hk-room-board-panel .pair-row .cell.room-num,
+    .hk-room-board-panel .villa-list-row .cell.room-num {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
     }
 
     .hk-room-board-panel .pair-row .cell:last-child,
@@ -7068,34 +7110,39 @@
 
     .hk-room-board-panel .pair-row.st-ip,
     .hk-room-board-panel .villa-list-row.st-ip {
-      background: #00ff00;
-      color: #111827;
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
     }
 
     .hk-room-board-panel .pair-row.st-cl,
     .hk-room-board-panel .villa-list-row.st-cl {
-      background: #00ffff;
-      color: #111827;
+      background: #dbeafe;
+      color: #1e3a8a;
+      border-color: #93c5fd;
     }
 
     .hk-room-board-panel .pair-row.st-di,
     .hk-room-board-panel .villa-list-row.st-di {
-      background: #ff0000;
-      color: #ffffff;
+      background: #fecaca;
+      color: #7f1d1d;
+      border-color: #fca5a5;
     }
 
     .hk-room-board-panel .pair-row.st-pu,
     .hk-room-board-panel .villa-list-row.st-pu {
-      background: #ffff00;
-      color: #111827;
+      background: #fef9c3;
+      color: #713f12;
+      border-color: #fde047;
     }
 
     .hk-room-board-panel .pair-row.st-oo,
     .hk-room-board-panel .villa-list-row.st-oo,
     .hk-room-board-panel .pair-row.st-os,
     .hk-room-board-panel .villa-list-row.st-os {
-      background: #9ca3af;
-      color: #111827;
+      background: #e5e7eb;
+      color: #374151;
+      border-color: #9ca3af;
     }
 
     .hk-room-board-panel .pair-row.st-neutral,
@@ -7106,7 +7153,7 @@
 
     .hk-room-board-panel .pair-row .cell.sched-time,
     .hk-room-board-panel .villa-list-row .cell.sched-time {
-      font-size: 0.5rem;
+      font-size: 0.68rem;
       line-height: 1.15;
       word-break: break-word;
     }
@@ -10657,8 +10704,10 @@
       var facilityTimeEditIds = {};
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
+      var requestRoomBoardScale = 1;
       var requestSchedTypeViewOpen = false;
       var zoneRoomBoardOpen = false;
+      var zoneRoomBoardScale = 1;
       var HK_BOARD_ANNEX_TAIL_MIN = 51;
       var HK_BOARD_DROP_ROOMS = { "0012": true, "0023": true };
       var HK_BOARD_MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
@@ -15527,13 +15576,71 @@
       function toggleRequestRoomBoardView() {
         requestRoomBoardOpen = !requestRoomBoardOpen;
         if (requestRoomBoardOpen) requestSchedTypeViewOpen = false;
+        else requestRoomBoardScale = 1;
         syncRequestRoomBoardUi();
       }
 
       function toggleRequestSchedTypeView() {
         requestSchedTypeViewOpen = !requestSchedTypeViewOpen;
-        if (requestSchedTypeViewOpen) requestRoomBoardOpen = false;
+        if (requestSchedTypeViewOpen) {
+          requestRoomBoardOpen = false;
+          requestRoomBoardScale = 1;
+        }
         syncRequestRoomBoardUi();
+      }
+
+      function hkBoardMountResizableSheet(mount, triple, scaleState) {
+        var frame = document.createElement("div");
+        frame.className = "hk-room-board-frame";
+        var outer = document.createElement("div");
+        outer.className = "sheet-outer";
+        outer.appendChild(triple);
+        var handle = document.createElement("button");
+        handle.type = "button";
+        handle.className = "hk-room-board-resize-handle";
+        handle.title = "모서리를 드래그하여 크기 조절";
+        handle.setAttribute("aria-label", "층별보기 크기 조절");
+        frame.appendChild(outer);
+        frame.appendChild(handle);
+        mount.appendChild(frame);
+
+        function applyScale(next) {
+          var s = Math.max(0.65, Math.min(2.5, Number(next) || 1));
+          scaleState.value = s;
+          outer.style.transform = "scale(" + s + ")";
+          var baseW = outer.offsetWidth;
+          var baseH = outer.offsetHeight;
+          outer.style.marginRight = Math.max(0, Math.ceil(baseW * (s - 1))) + "px";
+          outer.style.marginBottom = Math.max(0, Math.ceil(baseH * (s - 1)) + 18) + "px";
+        }
+        applyScale(scaleState.value || 1);
+
+        var dragging = false;
+        var startX = 0;
+        var startY = 0;
+        var startScale = 1;
+        handle.addEventListener("pointerdown", function (e) {
+          if (e.button != null && e.button !== 0) return;
+          e.preventDefault();
+          dragging = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          startScale = scaleState.value || 1;
+          try {
+            handle.setPointerCapture(e.pointerId);
+          } catch (_) {}
+        });
+        handle.addEventListener("pointermove", function (e) {
+          if (!dragging) return;
+          var delta = (e.clientX - startX + (e.clientY - startY)) / 240;
+          applyScale(startScale + delta);
+        });
+        function endDrag() {
+          dragging = false;
+        }
+        handle.addEventListener("pointerup", endDrag);
+        handle.addEventListener("pointercancel", endDrag);
+        return frame;
       }
 
       function renderRequestRoomBoard() {
@@ -15562,8 +15669,6 @@
         }
         var schedMap = hkBoardBuildSchedTimeMap();
         var buckets = hkBoardBuildBuckets(boardRows, schedMap);
-        var outer = document.createElement("div");
-        outer.className = "sheet-outer";
         var triple = document.createElement("div");
         triple.className = "sheet-triple-row";
         triple.appendChild(hkBoardRenderVillaPanel(buckets));
@@ -15589,8 +15694,14 @@
             "wing-panel-annex"
           )
         );
-        outer.appendChild(triple);
-        mount.appendChild(outer);
+        hkBoardMountResizableSheet(mount, triple, {
+          get value() {
+            return requestRoomBoardScale;
+          },
+          set value(v) {
+            requestRoomBoardScale = v;
+          },
+        });
       }
 
       function buildZoneRoomBoardRows(zone) {
@@ -15640,6 +15751,7 @@
 
       function toggleZoneRoomBoardView() {
         zoneRoomBoardOpen = !zoneRoomBoardOpen;
+        if (!zoneRoomBoardOpen) zoneRoomBoardScale = 1;
         syncZoneRoomBoardUi();
         if (!zoneRoomBoardOpen) {
           var zone = getActiveZone();
@@ -15675,8 +15787,6 @@
           hkBoardBuildZoneTimeMap(zone)
         );
         var buckets = hkBoardBuildBuckets(boardRows, schedMap);
-        var outer = document.createElement("div");
-        outer.className = "sheet-outer";
         var triple = document.createElement("div");
         triple.className = "sheet-triple-row";
         triple.appendChild(hkBoardRenderVillaPanel(buckets));
@@ -15702,8 +15812,14 @@
             "wing-panel-annex"
           )
         );
-        outer.appendChild(triple);
-        mount.appendChild(outer);
+        hkBoardMountResizableSheet(mount, triple, {
+          get value() {
+            return zoneRoomBoardScale;
+          },
+          set value(v) {
+            zoneRoomBoardScale = v;
+          },
+        });
       }
 
       function findRequestEntry(id) {
