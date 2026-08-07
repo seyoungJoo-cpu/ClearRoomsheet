@@ -5,7 +5,7 @@
     tank: { icon: '🛡️', name: '탱크대전', desc: '1:1 실시간 탱크 대전 · 방 만들기' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '본진 파괴 멀티 RTS · 방' },
     towerdefense: { icon: '🗼', name: '타워 디펜스', desc: '서로에게 몬스터 보내기 · 방' },
-    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '최대 8인 슬리더 대전 · 방' },
+    snakes: { icon: '🪱', name: '멀티 스네이크', desc: '대형 격자 스네이크 · 최대 8인 · 방' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' }
   };
   var MAX_PLAYERS = { tank: 2, rts: 2, towerdefense: 2, snakes: 8, airhockey: 2 };
@@ -23,6 +23,7 @@
   var view = 'browse'; // browse | room | play | ended
   var lastBrowseRooms = [];
   var keys = {}, mouse = { x: 0, y: 0, down: false, right: false, ax: 0, ay: 0 };
+  var lastSnakeDir = { dirX: 1, dirY: 0 };
   var selectIds = [], drag = null, pendingBuild = null, pendingTd = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
   var gamePaused = false;
@@ -398,7 +399,8 @@
       nexus: '상대 본진을 파괴했습니다',
       opponent_left: '상대가 나갔습니다',
       match: '경기 종료',
-      last_alive: '최후 생존',
+      last_alive: '최후의 생존자',
+      time: '시간 종료 · 길이/점수 우승',
       life: '라이프 전멸',
       score: '목표 점수 달성'
     };
@@ -497,14 +499,11 @@
       };
     }
     if (gameId === 'snakes') {
-      var sx = mouse.sx != null ? mouse.sx : canvasW / 2;
-      var sy = mouse.sy != null ? mouse.sy : canvasH / 2;
-      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || keys.w || keys.a || keys.s || keys.d) {
-        var dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
-        var dy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-        if (dx || dy) return { dx: dx, dy: dy, angle: Math.atan2(dy, dx) };
-      }
-      return { angle: Math.atan2(mouse.ay - sy, mouse.ax - sx), dx: mouse.ax - sx, dy: mouse.ay - sy };
+      var dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+      var dy = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+      if (dx && dy) dy = 0;
+      if (dx || dy) lastSnakeDir = { dirX: dx, dirY: dy };
+      return { dirX: lastSnakeDir.dirX, dirY: lastSnakeDir.dirY, dx: lastSnakeDir.dirX, dy: lastSnakeDir.dirY };
     }
     if (gameId === 'airhockey') {
       return { x: mouse.ax, y: mouse.ay };
@@ -616,6 +615,7 @@
     canvasW = (lastState && (lastState.W || lastState.w || lastState.width)) || defaultSize().w;
     canvasH = (lastState && (lastState.H || lastState.h || lastState.height)) || defaultSize().h;
     setGamePaused(false);
+    if (gameId === 'snakes') lastSnakeDir = { dirX: 1, dirY: 0 };
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
       (gameId === 'rts' || gameId === 'towerdefense' ? '<div class="hkmp-toolbar" data-tools></div>' : '') +
@@ -637,7 +637,7 @@
   function defaultSize() {
     if (gameId === 'rts') return { w: 1200, h: 800 };
     if (gameId === 'towerdefense') return { w: 900, h: 500 };
-    if (gameId === 'snakes') return { w: 1400, h: 900 };
+    if (gameId === 'snakes') return { w: 1152, h: 768 };
     if (gameId === 'airhockey') return { w: 700, h: 400 };
     return { w: 800, h: 600 };
   }
@@ -646,7 +646,7 @@
       tank: 'WASD 이동 · 마우스 조준 · 클릭/스페이스 발사 · P 일시정지 · Ctrl+Q 오더',
       rts: '좌드래그 선택 · 우클릭 이동(공격 중에도 이동) · 적 우클릭 공격 · 본진 자동 레이저',
       towerdefense: '타워/유닛 선택 후 내 라인 슬롯 클릭',
-      snakes: '마우스 방향 또는 화살표/WASD',
+      snakes: '방향키/WASD · 벽·몸(상대 포함)에 머리 충돌 시 탈락',
       airhockey: '마우스/터치로 패들 이동'
     }[gameId] || '';
   }
@@ -854,8 +854,12 @@
       var snakes = st.snakes || [];
       var alive = snakes.filter(function (s) { return s.alive !== false; }).length;
       html += '<span class="hkmp-pill">생존 <b>' + alive + '</b></span>';
-      var mine = snakes.filter(function (s) { return s.id === selfId; })[0];
-      if (mine) html += '<span class="hkmp-pill">길이 <b>' + ((mine.body && mine.body.length) || 0) + '</b></span>';
+      var mine = snakes.filter(function (s) { return s.id === selfId || s.id == selfId; })[0];
+      if (mine) {
+        html += '<span class="hkmp-pill">길이 <b>' + ((mine.body && mine.body.length) || 0) + '</b></span>';
+        html += '<span class="hkmp-pill">점수 <b>' + (mine.score || 0) + '</b></span>';
+        if (mine.alive === false) html += '<span class="hkmp-pill">상태 <b>탈락</b></span>';
+      }
     } else if (gameId === 'airhockey') {
       var sc = st.score || st.scores || [0, 0];
       html += '<span class="hkmp-pill">점수 <b>' + (sc[0] || 0) + ' : ' + (sc[1] || 0) + '</b></span>';
@@ -1096,25 +1100,73 @@
   }
 
   function drawSnakes(ctx, st) {
-    (st.food || st.orbs || []).forEach(function (f) {
-      ctx.fillStyle = '#efd28a'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r || 4, 0, Math.PI * 2); ctx.fill();
+    var cols = st.cols || 72;
+    var rows = st.rows || 48;
+    var cell = st.cell || Math.floor(Math.min(canvasW / cols, canvasH / rows)) || 16;
+    var w = cols * cell;
+    var h = rows * cell;
+    // midnight-like board
+    ctx.fillStyle = '#07171c';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    var ox = Math.floor((canvasW - w) / 2);
+    var oy = Math.floor((canvasH - h) / 2);
+    ctx.fillStyle = '#0a1c22';
+    ctx.fillRect(ox, oy, w, h);
+    ctx.strokeStyle = '#0e292c';
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx <= cols; gx++) {
+      ctx.beginPath(); ctx.moveTo(ox + gx * cell, oy); ctx.lineTo(ox + gx * cell, oy + h); ctx.stroke();
+    }
+    for (var gy = 0; gy <= rows; gy++) {
+      ctx.beginPath(); ctx.moveTo(ox, oy + gy * cell); ctx.lineTo(ox + w, oy + gy * cell); ctx.stroke();
+    }
+    (st.food || []).forEach(function (f) {
+      var fx = ox + f.x * cell + cell / 2;
+      var fy = oy + f.y * cell + cell / 2;
+      ctx.fillStyle = '#e2bd64';
+      ctx.shadowColor = '#efd685';
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(fx, fy, cell * 0.32, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
     });
     (st.snakes || []).forEach(function (s, i) {
       if (s.alive === false) return;
-      var body = s.body || s.segments || [];
-      var col = s.color || COLORS[s.slot != null ? s.slot : i];
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 6; ctx.lineCap = 'round';
-      if (body.length) {
-        ctx.beginPath();
-        body.forEach(function (p, j) {
-          if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
-        });
-        ctx.stroke();
-        var head = body[0];
-        ctx.beginPath(); ctx.arc(head.x, head.y, 5, 0, Math.PI * 2); ctx.fill();
-        if (s.id === selfId || s.playerId === selfId) { mouse.sx = head.x; mouse.sy = head.y; }
-      } else if (s.x != null) {
-        ctx.beginPath(); ctx.arc(s.x, s.y, 5, 0, Math.PI * 2); ctx.fill();
+      var body = s.body || [];
+      var col = COLORS[s.slot != null ? s.slot : i];
+      body.forEach(function (p, j) {
+        var x = ox + p.x * cell + 1;
+        var y = oy + p.y * cell + 1;
+        var sz = cell - 2;
+        if (j === 0) {
+          ctx.fillStyle = col;
+          if (ctx.roundRect) {
+            ctx.beginPath(); ctx.roundRect(x - 1, y - 1, sz + 2, sz + 2, 5); ctx.fill();
+          } else {
+            ctx.fillRect(x - 1, y - 1, sz + 2, sz + 2);
+          }
+          ctx.fillStyle = '#fff8';
+          ctx.fillRect(x + 3, y + 3, Math.max(2, sz * 0.25), Math.max(2, sz * 0.25));
+          if (s.id === selfId || s.id == selfId) {
+            ctx.strokeStyle = '#efd28a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 2, y - 2, sz + 4, sz + 4);
+          }
+        } else {
+          ctx.fillStyle = col;
+          ctx.globalAlpha = 0.88;
+          if (ctx.roundRect) {
+            ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 4); ctx.fill();
+          } else {
+            ctx.fillRect(x, y, sz, sz);
+          }
+          ctx.globalAlpha = 1;
+        }
+      });
+      if (body[0] && (s.name || s.slot != null)) {
+        ctx.fillStyle = '#f5f0df';
+        ctx.font = '11px Georgia,serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(s.name || ('P' + ((s.slot || 0) + 1))), ox + body[0].x * cell + cell / 2, oy + body[0].y * cell - 4);
       }
     });
   }

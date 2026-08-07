@@ -6,7 +6,7 @@ const GAMES = {
   tank: { max: 2, hz: 20 },
   rts: { max: 2, hz: 10 },
   towerdefense: { max: 2, hz: 10 },
-  snakes: { max: 8, hz: 20 },
+  snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 20 },
 };
 
@@ -162,7 +162,7 @@ function defaultInput(game) {
   if (game === "tank") return { up: false, down: false, left: false, right: false, aim: 0, fire: false };
   if (game === "rts") return { selectIds: [], cmd: null, x: 0, y: 0, buildType: null, unitType: null };
   if (game === "towerdefense") return { action: null, kind: null, slotIndex: -1 };
-  if (game === "snakes") return { angle: 0, dx: 0, dy: 0 };
+  if (game === "snakes") return { dirX: 1, dirY: 0 };
   if (game === "airhockey") return { x: 175, y: 200 };
   return {};
 }
@@ -887,44 +887,110 @@ function tickTd(room, dt) {
   }
 }
 
-/* ===================== SNAKES ===================== */
+/* ===================== SNAKES (grid classic · midnight-style) ===================== */
+const SNAKE_COLS = 72;
+const SNAKE_ROWS = 48;
+const SNAKE_CELL = 16; // => 1152 x 768
+
+function snakesOccupied(s) {
+  const map = new Map();
+  for (const sn of s.snakes) {
+    if (!sn.alive) continue;
+    for (let i = 0; i < sn.body.length; i++) {
+      const p = sn.body[i];
+      map.set(p.x + "," + p.y, { sn, i });
+    }
+  }
+  return map;
+}
+
+function snakesSpawnFood(s, n) {
+  const occ = snakesOccupied(s);
+  for (const f of s.food) occ.set(f.x + "," + f.y, true);
+  let guard = 0;
+  while (n > 0 && guard < 5000) {
+    guard++;
+    const x = Math.floor(Math.random() * s.cols);
+    const y = Math.floor(Math.random() * s.rows);
+    const k = x + "," + y;
+    if (occ.has(k)) continue;
+    s.food.push({ x, y });
+    occ.set(k, true);
+    n--;
+  }
+}
+
 function initSnakes(room) {
-  const W = 1400,
-    H = 900;
+  const cols = SNAKE_COLS;
+  const rows = SNAKE_ROWS;
+  const cell = SNAKE_CELL;
+  const W = cols * cell;
+  const H = rows * cell;
+  const spawns = [
+    { x: 8, y: 8, dx: 1, dy: 0 },
+    { x: cols - 9, y: rows - 9, dx: -1, dy: 0 },
+    { x: cols - 9, y: 8, dx: -1, dy: 0 },
+    { x: 8, y: rows - 9, dx: 1, dy: 0 },
+    { x: Math.floor(cols / 2), y: 6, dx: 0, dy: 1 },
+    { x: Math.floor(cols / 2), y: rows - 7, dx: 0, dy: -1 },
+    { x: 6, y: Math.floor(rows / 2), dx: 1, dy: 0 },
+    { x: cols - 7, y: Math.floor(rows / 2), dx: -1, dy: 0 },
+  ];
   const snakes = room.players.map((p, i) => {
-    const ang = (i / Math.max(1, room.players.length)) * Math.PI * 2;
-    const cx = W / 2 + Math.cos(ang) * 200;
-    const cy = H / 2 + Math.sin(ang) * 160;
+    const sp = spawns[i % spawns.length];
     const body = [];
-    for (let k = 0; k < 12; k++) body.push({ x: cx - Math.cos(ang) * k * 10, y: cy - Math.sin(ang) * k * 10 });
+    for (let k = 0; k < 4; k++) {
+      body.push({
+        x: sp.x - sp.dx * k,
+        y: sp.y - sp.dy * k,
+      });
+    }
     return {
       id: p.id,
       slot: p.slot,
       name: p.name,
-      angle: ang,
       alive: true,
       body,
-      boost: 0,
+      dirX: sp.dx,
+      dirY: sp.dy,
+      nextDirX: sp.dx,
+      nextDirY: sp.dy,
+      score: 0,
+      color: null,
     };
   });
-  const food = [];
-  for (let i = 0; i < 40; i++) food.push({ x: Math.random() * W, y: Math.random() * H, r: 5 + Math.random() * 4 });
-  return { W, H, snakes, food, startedAt: Date.now(), duration: 180000 };
+  const state = {
+    W,
+    H,
+    cols,
+    rows,
+    cell,
+    snakes,
+    food: [],
+    stepAcc: 0,
+    stepMs: 120,
+    startedAt: Date.now(),
+    duration: 180000,
+  };
+  snakesSpawnFood(state, 28);
+  return state;
 }
 
 function checkSnakesEnd(room) {
   const s = room.state;
   if (!s) return;
   const alive = s.snakes.filter((sn) => sn.alive);
-  if (alive.length <= 1 || Date.now() - s.startedAt >= s.duration) {
+  const timedOut = Date.now() - s.startedAt >= s.duration;
+  if (alive.length <= 1 || timedOut) {
     let winner = null;
     if (alive.length === 1) winner = alive[0].id;
     else {
       let best = null,
         bl = -1;
       for (const sn of s.snakes) {
-        if (sn.body.length > bl) {
-          bl = sn.body.length;
+        const len = sn.body.length + (sn.score || 0);
+        if (len > bl) {
+          bl = len;
           best = sn.id;
         }
       }
@@ -934,58 +1000,156 @@ function checkSnakesEnd(room) {
   }
 }
 
-function tickSnakes(room, dt) {
+function snakesApplyDirInput(sn, inp) {
+  if (!inp) return;
+  let dx = 0,
+    dy = 0;
+  if (typeof inp.dirX === "number" && typeof inp.dirY === "number" && (inp.dirX || inp.dirY)) {
+    dx = Math.sign(inp.dirX);
+    dy = Math.sign(inp.dirY);
+  } else if (inp.dx || inp.dy) {
+    dx = Math.sign(Number(inp.dx) || 0);
+    dy = Math.sign(Number(inp.dy) || 0);
+  }
+  if (dx && dy) {
+    // prefer the larger magnitude if both pressed
+    if (Math.abs(Number(inp.dirX) || Number(inp.dx) || 0) >= Math.abs(Number(inp.dirY) || Number(inp.dy) || 0)) dy = 0;
+    else dx = 0;
+  }
+  if (!dx && !dy) return;
+  // no 180° reverse into own neck
+  if (dx + sn.dirX === 0 && dy + sn.dirY === 0) return;
+  sn.nextDirX = dx;
+  sn.nextDirY = dy;
+}
+
+function snakesStep(room) {
   const s = room.state;
-  const spd = 140;
   for (const sn of s.snakes) {
     if (!sn.alive) continue;
     const p = room.players.find((pl) => pl.id === sn.id);
-    const inp = (p && p.input) || {};
-    if (typeof inp.angle === "number") sn.angle = inp.angle;
-    else if (inp.dx || inp.dy) sn.angle = Math.atan2(inp.dy || 0, inp.dx || 0);
-    const head = sn.body[0];
-    const nx = head.x + Math.cos(sn.angle) * spd * dt;
-    const ny = head.y + Math.sin(sn.angle) * spd * dt;
-    // wall kill
-    if (nx < 0 || ny < 0 || nx > s.W || ny > s.H) {
-      sn.alive = false;
-      continue;
-    }
-    sn.body.unshift({ x: nx, y: ny });
-    // food
-    let grew = false;
-    for (let i = s.food.length - 1; i >= 0; i--) {
-      const f = s.food[i];
-      if (Math.hypot(f.x - nx, f.y - ny) < 12 + f.r) {
-        s.food.splice(i, 1);
-        grew = true;
-        s.food.push({ x: Math.random() * s.W, y: Math.random() * s.H, r: 5 + Math.random() * 4 });
-        break;
-      }
-    }
-    if (!grew) sn.body.pop();
-    else {
-      sn.body.push(sn.body[sn.body.length - 1]);
-    }
+    snakesApplyDirInput(sn, p && p.input);
+    sn.dirX = sn.nextDirX;
+    sn.dirY = sn.nextDirY;
   }
-  // collisions
+
+  const proposals = [];
   for (const sn of s.snakes) {
     if (!sn.alive) continue;
     const head = sn.body[0];
-    for (const other of s.snakes) {
-      if (!other.alive) continue;
-      const start = other === sn ? 4 : 0;
-      for (let i = start; i < other.body.length; i++) {
-        const seg = other.body[i];
-        if (Math.hypot(seg.x - head.x, seg.y - head.y) < 8) {
-          sn.alive = false;
-          break;
-        }
-      }
-      if (!sn.alive) break;
+    proposals.push({
+      sn,
+      nh: { x: head.x + sn.dirX, y: head.y + sn.dirY },
+    });
+  }
+
+  // wall deaths
+  for (const pr of proposals) {
+    const { sn, nh } = pr;
+    if (nh.x < 0 || nh.y < 0 || nh.x >= s.cols || nh.y >= s.rows) {
+      sn.alive = false;
     }
   }
+
+  // occupancy of current bodies (all segments)
+  const bodyOcc = new Map();
+  for (const sn of s.snakes) {
+    if (!sn.alive) continue;
+    for (let i = 0; i < sn.body.length; i++) {
+      const p = sn.body[i];
+      bodyOcc.set(p.x + "," + p.y, { id: sn.id, i });
+    }
+  }
+
+  // head-on map
+  const headMap = new Map();
+  for (const pr of proposals) {
+    if (!pr.sn.alive) continue;
+    const k = pr.nh.x + "," + pr.nh.y;
+    if (!headMap.has(k)) headMap.set(k, []);
+    headMap.get(k).push(pr.sn);
+  }
+
+  for (const pr of proposals) {
+    const sn = pr.sn;
+    if (!sn.alive) continue;
+    const k = pr.nh.x + "," + pr.nh.y;
+
+    // head crashes into another head
+    const heads = headMap.get(k) || [];
+    if (heads.length > 1) {
+      sn.alive = false;
+      continue;
+    }
+
+    // head into any body (including own body/tail — classic snake death)
+    // Allow moving into own tail cell if that snake is not growing this tick:
+    // we resolve food after move; treat body[1..] as lethal always, body[last]
+    // is lethal unless it will pop (no food). Simpler classic rule: any body hit dies,
+    // except ignore own index 0 head. Tail cell still lethal (strict) — midnight style.
+    const hit = bodyOcc.get(k);
+    if (hit) {
+      // own current head cell: ignore
+      // own tail tip: allow (cell vacates if not growing)
+      // any other body segment (own neck or opponent body): die
+      if (hit.id === sn.id) {
+        if (hit.i === 0) {
+          /* head cell */
+        } else if (hit.i === sn.body.length - 1) {
+          /* own tip — sliding forward */
+        } else {
+          sn.alive = false;
+          continue;
+        }
+      } else {
+        // head into opponent body (including their tail)
+        sn.alive = false;
+        continue;
+      }
+    }
+  }
+
+  // apply moves for survivors
+  for (const pr of proposals) {
+    const sn = pr.sn;
+    if (!sn.alive) continue;
+    const nh = pr.nh;
+    sn.body.unshift({ x: nh.x, y: nh.y });
+    let ate = false;
+    for (let i = s.food.length - 1; i >= 0; i--) {
+      const f = s.food[i];
+      if (f.x === nh.x && f.y === nh.y) {
+        s.food.splice(i, 1);
+        ate = true;
+        sn.score = (sn.score || 0) + 10;
+        break;
+      }
+    }
+    if (!ate) sn.body.pop();
+    else snakesSpawnFood(s, 1);
+  }
+
   checkSnakesEnd(room);
+}
+
+function tickSnakes(room, dt) {
+  const s = room.state;
+  if (!s) return;
+  // keep applying direction every frame so inputs feel responsive before step
+  for (const sn of s.snakes) {
+    if (!sn.alive) continue;
+    const p = room.players.find((pl) => pl.id === sn.id);
+    snakesApplyDirInput(sn, p && p.input);
+  }
+  s.stepAcc = (s.stepAcc || 0) + dt;
+  const step = (s.stepMs || 120) / 1000;
+  let guard = 0;
+  while (s.stepAcc >= step && guard < 3) {
+    s.stepAcc -= step;
+    snakesStep(room);
+    guard++;
+    if (!room.state || room.status !== "playing") return;
+  }
 }
 
 /* ===================== AIR HOCKEY ===================== */
@@ -1314,7 +1478,8 @@ function attachGameRooms(httpServer) {
           };
         } else if (room.game === "snakes") {
           player.input = {
-            angle: typeof payload.angle === "number" ? payload.angle : base.angle,
+            dirX: typeof payload.dirX === "number" ? payload.dirX : Number(payload.dx) || 0,
+            dirY: typeof payload.dirY === "number" ? payload.dirY : Number(payload.dy) || 0,
             dx: Number(payload.dx) || 0,
             dy: Number(payload.dy) || 0,
           };
