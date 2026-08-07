@@ -1806,6 +1806,10 @@ function attachGameRooms(httpServer) {
         return send(ws, { type: "hello_ok", name: ws._name });
       }
 
+      if (type === "ping") {
+        return send(ws, { type: "pong", t: msg.t || Date.now() });
+      }
+
       if (type === "watch") {
         const game = String(msg.game || "");
         if (game && GAMES[game]) ws._watchGame = game;
@@ -1860,8 +1864,10 @@ function attachGameRooms(httpServer) {
         room.players.push(player);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
-        broadcastRoom(room);
-        return notifyLobby(game);
+        // Host gets room first; lobby fan-out deferred off the hot path
+        send(ws, roomSnapshot(room));
+        setImmediate(function () { notifyLobby(game); });
+        return;
       }
 
       if (type === "join") {
@@ -1893,7 +1899,8 @@ function attachGameRooms(httpServer) {
         ws._watchGame = room.game;
         send(ws, { type: "hello_ok", name, playerId: player.id });
         broadcastRoom(room);
-        return notifyLobby(room.game);
+        setImmediate(function () { notifyLobby(room.game); });
+        return;
       }
 
       const found = findPlayerByWs(ws);

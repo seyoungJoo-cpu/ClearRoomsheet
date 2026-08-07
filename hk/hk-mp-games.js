@@ -204,13 +204,13 @@
   }
   function scheduleIdleDisconnect() {
     clearIdleDisconnect();
-    // Drop idle lobby sockets after 3 minutes to free Render connections
+    // Keep warm longer so lobby reopen / create stays instant
     idleCloseTimer = setTimeout(function () {
       idleCloseTimer = 0;
       if (root && root.classList.contains('open')) return;
       if (room) return;
       disconnect(true);
-    }, 180000);
+    }, 600000);
   }
 
   function openLobby(id) {
@@ -226,10 +226,14 @@
       refs.title.textContent = meta(id).icon + ' ' + meta(id).name;
       root.classList.add('open');
       render();
-      ensureConnected(function () {
-        // subscribe + refresh list immediately
+      // Warm path: already open → watch immediately (watch also returns lobby list)
+      if (ws && ws.readyState === 1) {
         send({ type: 'watch', game: gameId });
-        requestList();
+        startList();
+        return;
+      }
+      ensureConnected(function () {
+        send({ type: 'watch', game: gameId });
         startList();
       });
     };
@@ -254,7 +258,6 @@
       flushConnectWaiters();
       return;
     }
-    // Already opening — keep waiters, do not tear down the socket
     if (connecting || (ws && ws.readyState === 0)) return;
     openSocket();
   }
@@ -262,7 +265,7 @@
     intentionalClose = false;
     connecting = true;
     reconnecting = !!ws;
-    helloOkWait = true;
+    helloOkWait = false;
     if (ws) {
       try { ws.onclose = null; ws.onerror = null; ws.onopen = null; ws.onmessage = null; ws.close(); } catch (_) {}
       ws = null;
@@ -272,7 +275,6 @@
       ws = new WebSocket(proto + '//' + location.host + '/hk-game-ws');
     } catch (err) {
       connecting = false;
-      helloOkWait = false;
       clearConnectWaiters('멀티플레이 연결 실패');
       if (window.console) console.error(err);
       return;
@@ -281,28 +283,22 @@
       connecting = false;
       reconnecting = false;
       connectRetry = 0;
+      // Don't block create/list on hello round-trip
       send({ type: 'hello', name: name() || 'Guest' });
-      // Flush after hello; if hello_ok is slow, don't block forever
-      setTimeout(function () {
-        if (helloOkWait) {
-          helloOkWait = false;
-          flushConnectWaiters();
-        }
-      }, 120);
+      flushConnectWaiters();
+      startPing();
     };
     ws.onmessage = function (ev) {
       var msg;
       try { msg = JSON.parse(ev.data); } catch (_) { return; }
       handleMessage(msg);
     };
-    ws.onerror = function () {
-      // onclose usually follows; avoid double toasts when retrying
-    };
+    ws.onerror = function () {};
     ws.onclose = function () {
       var wasIntentional = intentionalClose;
       connecting = false;
-      helloOkWait = false;
       ws = null;
+      stopPing();
       stopInput();
       if (wasIntentional) {
         connectWaiters = [];
@@ -313,21 +309,35 @@
         toast('재연결 중… (' + connectRetry + '/3)');
         setTimeout(function () {
           if (!intentionalClose) openSocket();
-        }, 280 * connectRetry);
+        }, 180 * connectRetry);
         return;
       }
       if (connectWaiters.length) {
         clearConnectWaiters(reconnecting ? '재연결 실패' : '멀티플레이 연결 오류');
         pendingCreate = false;
       } else if (!intentionalClose && root && root.classList.contains('open')) {
-        toast('서버 연결이 끊어졌습니다');
+        toast('서버 연결이 끊어졌습니다 — 재연결 중…');
+        connectRetry = 0;
+        setTimeout(function () { if (!intentionalClose) openSocket(); }, 400);
       }
     };
+  }
+  var pingTimer = 0;
+  function startPing() {
+    stopPing();
+    pingTimer = setInterval(function () {
+      if (!ws || ws.readyState !== 1) return;
+      send({ type: 'ping', t: Date.now() });
+    }, 20000);
+  }
+  function stopPing() {
+    if (pingTimer) { clearInterval(pingTimer); pingTimer = 0; }
   }
   function disconnect(quiet) {
     intentionalClose = true;
     connecting = false;
     connectWaiters = [];
+    stopPing();
     if (!ws) return;
     try { ws.onclose = null; ws.onerror = null; ws.onopen = null; ws.onmessage = null; ws.close(); } catch (_) {}
     ws = null;
@@ -338,26 +348,46 @@
     try { ws.send(JSON.stringify(msg)); return true; } catch (_) { return false; }
   }
   function requestCreateRoom() {
+    if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
     pendingCreate = true;
     if (createWatchTimer) clearTimeout(createWatchTimer);
-    ensureConnected(function () {
+    // Optimistic waiting UI — feels instant
+    var maxGuess = MAX_PLAYERS[gameId] || 2;
+    if (gameId === 'rts') maxGuess = (RTS_MODE_META[rtsCreateMode] && RTS_MODE_META[rtsCreateMode].max) || 2;
+    room = {
+      code: '····',
+      game: gameId,
+      mode: gameId === 'tank' ? tankCreateMode : (gameId === 'rts' ? rtsCreateMode : null),
+      status: 'lobby',
+      players: [{ id: selfId || 'me', name: name() || 'Guest', ready: false, slot: 0 }],
+      max: maxGuess,
+      _pending: true
+    };
+    view = 'room';
+    render();
+    toast('방 생성 중…');
+
+    function doCreate() {
       var payload = { type: 'create', game: gameId, name: name() || 'Guest' };
       if (gameId === 'tank') payload.mode = tankCreateMode;
       if (gameId === 'rts') payload.mode = rtsCreateMode;
       var ok = send(payload);
       if (!ok) {
         pendingCreate = false;
+        room = null; view = 'browse'; render();
         toast('방 생성 전송 실패 — 다시 눌러주세요');
         return;
       }
-      toast('방 생성 중…');
       createWatchTimer = setTimeout(function () {
         if (!pendingCreate) return;
-        if (view === 'room' && room && room.code) { pendingCreate = false; return; }
+        if (view === 'room' && room && room.code && room.code !== '····') { pendingCreate = false; return; }
         pendingCreate = false;
+        room = null; view = 'browse'; render();
         toast('방 생성 응답이 없습니다. 다시 시도해주세요');
-      }, 4000);
-    });
+      }, 5000);
+    }
+    if (ws && ws.readyState === 1) doCreate();
+    else ensureConnected(doCreate);
   }
   function requestJoinRoom(code) {
     ensureConnected(function () {
@@ -376,21 +406,21 @@
       if (msg.playerId != null) selfId = msg.playerId;
       else if (msg.id != null) selfId = msg.id;
       else if (msg.selfId != null) selfId = msg.selfId;
-      if (helloOkWait) {
-        helloOkWait = false;
-        flushConnectWaiters();
-      }
       return;
     }
+    if (msg.type === 'pong' || msg.type === 'ping') return;
     if (msg.type === 'error') {
       toast(translateErr(msg.message || msg.error) || '오류가 발생했습니다');
-      if (pendingCreate) pendingCreate = false;
+      if (pendingCreate) {
+        pendingCreate = false;
+        if (room && room._pending) { room = null; view = 'browse'; render(); }
+      }
       return;
     }
     if (msg.type === 'lobby_list') {
       if (msg.game && msg.game !== gameId) return;
       if (view !== 'browse') return;
-      renderBrowse(msg.rooms || []);
+      updateBrowseList(msg.rooms || []);
       return;
     }
     if (msg.type === 'room') {
@@ -488,14 +518,60 @@
   }
   function startList() {
     stopList();
-    // push(notifyLobby) is primary; light poll only as fallback
+    // push is primary; slow poll only as safety net
     listTimer = setInterval(function () {
-      if (view === 'browse') requestList();
-    }, 2800);
+      if (view === 'browse' && ws && ws.readyState === 1) requestList();
+    }, 5000);
   }
   function stopList() {
     if (listTimer) clearInterval(listTimer);
     listTimer = 0;
+  }
+  function browseListHtml(rooms, max) {
+    if (!rooms.length) {
+      return '<div class="hkmp-note">아직 열린 방이 없습니다. 위에서 방을 만들어 주세요.</div>';
+    }
+    return rooms.map(function (r) {
+      var code = r.code || r.roomCode || '';
+      var cnt = typeof r.players === 'number' ? r.players : (r.count != null ? r.count : (r.players && r.players.length) || r.n || 0);
+      var roomMax = r.max || max;
+      var names = Array.isArray(r.names) ? r.names.filter(Boolean).join(', ') : '';
+      var host = (r.host && String(r.host)) || names || ('대기방');
+      var full = cnt >= roomMax;
+      var modeTag = '';
+      if (gameId === 'tank' && r.mode) modeTag = ' · ' + (r.mode === 'team' ? '팀전' : 'FFA');
+      if (gameId === 'rts' && r.mode) modeTag = ' · ' + ((RTS_MODE_META[r.mode] && RTS_MODE_META[r.mode].label) || r.mode);
+      return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
+        '<b>' + esc(host) + '</b>' +
+        '<span>' + cnt + '/' + roomMax + modeTag + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
+        (full ? '' : '<span class="hkmp-join-hint">참가</span>') +
+        '</button>';
+    }).join('');
+  }
+  function bindBrowseListClicks(listEl) {
+    if (!listEl) return;
+    Array.prototype.forEach.call(listEl.querySelectorAll('[data-join]'), function (btn) {
+      btn.onclick = function () {
+        if (btn.disabled) return;
+        requestJoinRoom(btn.getAttribute('data-join'));
+      };
+    });
+  }
+  function updateBrowseList(rooms) {
+    if (view !== 'browse') return;
+    var sig = roomsSig(rooms);
+    if (sig === lastBrowseSig) return;
+    lastBrowseSig = sig;
+    lastBrowseRooms = rooms || [];
+    var list = refs.body && refs.body.querySelector('[data-list]');
+    if (!list) {
+      renderBrowse(rooms);
+      return;
+    }
+    var max = MAX_PLAYERS[gameId] || 2;
+    if (gameId === 'rts') max = (RTS_MODE_META[rtsCreateMode] || RTS_MODE_META['1v1']).max;
+    list.innerHTML = browseListHtml(lastBrowseRooms, max);
+    bindBrowseListClicks(list);
   }
 
   function startInput() {
@@ -685,12 +761,7 @@
   function renderBrowse(rooms) {
     if (view !== 'browse') return;
     if (rooms) {
-      var sig = roomsSig(rooms);
-      if (sig === lastBrowseSig && refs.body && refs.body.querySelector('[data-list]')) {
-        lastBrowseRooms = rooms;
-        return;
-      }
-      lastBrowseSig = sig;
+      lastBrowseSig = roomsSig(rooms);
       lastBrowseRooms = rooms;
     } else {
       rooms = lastBrowseRooms || [];
@@ -707,40 +778,23 @@
     }
     if (gameId === 'rts') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
-        [['1v1', '1:1'], ['ffa3', '1:1:1'], ['ffa4', '1:1:1:1'], ['2v2', '2:2']].map(function (m) {
-          return '<button type="button" class="hkmp-btn' + (rtsCreateMode === m[0] ? ' primary' : '') + '" data-rts-mode="' + m[0] + '">' + m[1] + '</button>';
+        [['1v1', '1:1'], ['ffa3', '1:1:1'], ['ffa4', '1:1:1:1'], ['2v2', '2:2']].map(function (mm) {
+          return '<button type="button" class="hkmp-btn' + (rtsCreateMode === mm[0] ? ' primary' : '') + '" data-rts-mode="' + mm[0] + '">' + mm[1] + '</button>';
         }).join('') +
         '<span class="hkmp-note">인원 맞춰 Ready 시 시작</span></div>';
     }
     var creating = pendingCreate;
+    var connected = !!(ws && ws.readyState === 1);
     refs.body.innerHTML =
       '<div class="hkmp-create-wrap">' + modeRow +
       '<button type="button" class="hkmp-btn primary" data-act="create" style="align-self:flex-start;font-size:15px;padding:12px 18px"' +
       (creating ? ' disabled' : '') + '>' + (creating ? '방 생성 중…' : '방 만들기') + '</button>' +
-      '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + max + '명 · 아래 방을 눌러 참가</div></div>' +
+      '<div class="hkmp-note">' + esc(m.desc) + ' · 최대 ' + max + '명 · ' +
+      (connected ? '<span style="color:#9ae6b4">연결됨</span>' : '<span style="color:#f6ad55">연결 중…</span>') +
+      ' · 아래 방을 눌러 참가</div></div>' +
       '<h3 style="margin:8px 0 10px;color:#ecd18b;font-family:Georgia,serif">대기 중인 방</h3>' +
-      '<div class="hkmp-list" data-list></div>';
-    var list = refs.body.querySelector('[data-list]');
-    if (!rooms.length) {
-      list.innerHTML = '<div class="hkmp-note">아직 열린 방이 없습니다. 위에서 방을 만들어 주세요.</div>';
-    } else {
-      list.innerHTML = rooms.map(function (r) {
-        var code = r.code || r.roomCode || '';
-        var cnt = typeof r.players === 'number' ? r.players : (r.count != null ? r.count : (r.players && r.players.length) || r.n || 0);
-        var roomMax = r.max || max;
-        var names = Array.isArray(r.names) ? r.names.filter(Boolean).join(', ') : '';
-        var host = (r.host && String(r.host)) || names || ('대기방');
-        var full = cnt >= roomMax;
-        var modeTag = '';
-        if (gameId === 'tank' && r.mode) modeTag = ' · ' + (r.mode === 'team' ? '팀전' : 'FFA');
-        if (gameId === 'rts' && r.mode) modeTag = ' · ' + ((RTS_MODE_META[r.mode] && RTS_MODE_META[r.mode].label) || r.mode);
-        return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
-          '<b>' + esc(host) + '</b>' +
-          '<span>' + cnt + '/' + roomMax + modeTag + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
-          (full ? '' : '<span class="hkmp-join-hint">참가</span>') +
-          '</button>';
-      }).join('');
-    }
+      '<div class="hkmp-list" data-list>' + browseListHtml(rooms, max) + '</div>';
+    bindBrowseListClicks(refs.body.querySelector('[data-list]'));
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-mode]'), function (btn) {
       btn.onclick = function () {
         tankCreateMode = btn.getAttribute('data-mode') === 'team' ? 'team' : 'ffa';
@@ -750,8 +804,8 @@
     });
     Array.prototype.forEach.call(refs.body.querySelectorAll('[data-rts-mode]'), function (btn) {
       btn.onclick = function () {
-        var m = btn.getAttribute('data-rts-mode');
-        if (RTS_MODE_META[m]) rtsCreateMode = m;
+        var rm = btn.getAttribute('data-rts-mode');
+        if (RTS_MODE_META[rm]) rtsCreateMode = rm;
         lastBrowseSig = '';
         renderBrowse();
       };
@@ -759,16 +813,7 @@
     refs.body.querySelector('[data-act="create"]').onclick = function () {
       if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
       requestCreateRoom();
-      lastBrowseSig = '';
-      renderBrowse();
     };
-    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-join]'), function (btn) {
-      btn.onclick = function () {
-        if (btn.disabled) return;
-        var code = btn.getAttribute('data-join');
-        requestJoinRoom(code);
-      };
-    });
   }
 
   function renderRoom() {
@@ -778,33 +823,42 @@
     var minNeed = (gameId === 'snakes' || gameId === 'tank') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
     if (gameId === 'rts') minNeed = room.max || ((RTS_MODE_META[room.mode] && RTS_MODE_META[room.mode].max) || 2);
     var maxP = room.max || MAX_PLAYERS[gameId] || 2;
-    var allReady = players.length >= minNeed && players.every(function (p) { return p.ready; });
+    var pendingRoom = !!room._pending;
+    var allReady = !pendingRoom && players.length >= minNeed && players.every(function (p) { return p.ready; });
     var rtsLabel = (gameId === 'rts' && room.mode && RTS_MODE_META[room.mode]) ? RTS_MODE_META[room.mode].label : '';
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">대기실 · ' + players.length + '/' + maxP + '명' + (rtsLabel ? ' · ' + rtsLabel : '') + '</span>' +
-      '<button type="button" class="hkmp-btn" data-act="leave">나가기</button></div>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">' + (pendingRoom ? '방 생성 중…' : ('대기실 · ' + players.length + '/' + maxP + '명')) + (rtsLabel ? ' · ' + rtsLabel : '') + '</span>' +
+      '<button type="button" class="hkmp-btn" data-act="leave"' + (pendingRoom ? ' disabled' : '') + '>나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
         var ready = !!p.ready;
-        var isMe = p.id === selfId;
+        var isMe = p.id === selfId || p.id === 'me';
         var teamTag = (gameId === 'rts' && room.mode === '2v2') ? (' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B')) : '';
         return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' +
           '<strong>' + esc(p.name || ('P' + (i + 1))) + '</strong>' +
-          '<span style="flex:1;color:#88a09a;font-size:12px">' + (ready ? 'Ready' : '대기') + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
+          '<span style="flex:1;color:#88a09a;font-size:12px">' + (pendingRoom ? '생성 중' : (ready ? 'Ready' : '대기')) + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
       }).join('') + '</div>' +
       '<div class="hkmp-row">' +
-      '<button type="button" class="hkmp-btn primary" data-act="ready"' + (me && me.ready ? ' disabled' : '') + '>Ready</button>' +
+      '<button type="button" class="hkmp-btn primary" data-act="ready"' + (pendingRoom || (me && me.ready) ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
       '<div class="hkmp-note">' +
-        (gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
+        (pendingRoom ? '서버 응답을 기다리는 중…' :
+        ((gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
         (gameId === 'rts' ? ((rtsLabel || 'RTS') + ' · 본진·일꾼 자동 배치 · ') : '') +
         (allReady && players.length >= minNeed ? '모두 준비됨 — 곧 시작합니다' :
         (players.length < minNeed ? '대기 중… (' + players.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작')) +
-        (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : '') + '</div>';
-    refs.body.querySelector('[data-act="leave"]').onclick = function () {
-      send({ type: 'leave' });
-      room = null; view = 'browse'; render(); requestList();
-    };
-    refs.body.querySelector('[data-act="ready"]').onclick = function () { send({ type: 'ready' }); };
+        (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : ''))) + '</div>';
+    var leaveBtn = refs.body.querySelector('[data-act="leave"]');
+    var readyBtn = refs.body.querySelector('[data-act="ready"]');
+    if (!pendingRoom && leaveBtn) {
+      leaveBtn.onclick = function () {
+        send({ type: 'leave' });
+        room = null; view = 'browse'; render();
+        if (ws && ws.readyState === 1) send({ type: 'watch', game: gameId });
+      };
+    }
+    if (!pendingRoom && readyBtn) {
+      readyBtn.onclick = function () { send({ type: 'ready' }); };
+    }
   }
 
   function renderPlay() {
@@ -1479,12 +1533,13 @@
     init: function (options) {
       config = options || {};
       inject();
-      // Warm WS early so first create/list is not waiting on cold connect
-      setTimeout(function () {
+      function warm() {
         if (ws || connecting) return;
-        if (!name()) return;
         ensureConnected(function () { scheduleIdleDisconnect(); });
-      }, 600);
+      }
+      // Warm ASAP (and again shortly after operator name is usually ready)
+      setTimeout(warm, 0);
+      setTimeout(warm, 1200);
       return this;
     },
     openLobby: openLobby,
