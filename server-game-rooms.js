@@ -83,7 +83,8 @@ function allReady(room) {
   }
   if (room.game === "rts") {
     const need = rtsModeNeed(room.mode);
-    return humans.length === need && readyOk;
+    const max = rtsModeMax(room.mode) || need;
+    return humans.length >= Math.min(2, need) && humans.length <= max && humans.length >= 2 && readyOk;
   }
   if (room.game === "ageofwar") {
     return humans.length === 2 && readyOk;
@@ -338,11 +339,16 @@ function initTank(room) {
       isAi: !!p.isAi,
       x: sp.x,
       y: sp.y,
+      spawn: { x: sp.x, y: sp.y, aim: sp.aim },
       aim: sp.aim,
       hp: 3,
       maxHp: 3,
+      lives: 3,
+      maxLives: 3,
       cd: 0,
       alive: true,
+      eliminated: false,
+      respawnAt: 0,
     };
   });
   return {
@@ -357,6 +363,17 @@ function initTank(room) {
     roundOverAt: 0,
     winnerId: null,
   };
+}
+
+function tankRespawn(t) {
+  const sp = t.spawn || { x: t.x, y: t.y, aim: t.aim || 0 };
+  t.x = sp.x;
+  t.y = sp.y;
+  t.aim = sp.aim;
+  t.hp = t.maxHp || 3;
+  t.cd = 0.4;
+  t.alive = true;
+  t.respawnAt = 0;
 }
 
 function resetTankRound(state) {
@@ -379,12 +396,18 @@ function resetTankRound(state) {
         ];
   state.tanks.forEach((t, i) => {
     const sp = spawns[i % spawns.length];
+    t.spawn = { x: sp.x, y: sp.y, aim: sp.aim };
     t.x = sp.x;
     t.y = sp.y;
     t.aim = sp.aim;
     t.hp = 3;
+    t.maxHp = 3;
+    t.lives = 3;
+    t.maxLives = 3;
     t.cd = 0;
     t.alive = true;
+    t.eliminated = false;
+    t.respawnAt = 0;
   });
   state.bullets = [];
   state.walls = makeTankWalls(W, H);
@@ -450,32 +473,23 @@ function tickTank(room, dt) {
   const s = room.state;
   if (s.roundOverAt) {
     if (Date.now() >= s.roundOverAt) {
-      if (s.mode === "team") {
-        if ((s.wins[0] || 0) >= 2 || (s.wins[1] || 0) >= 2) {
-          const winTeam = (s.wins[0] || 0) >= 2 ? 0 : 1;
-          const w = s.tanks.find((t) => t.team === winTeam);
-          endGame(room, "match", w ? w.id : null);
-          return;
-        }
-      } else {
-        // FFA: last-alive already ended match; round wins optional
-        const topped = s.wins.findIndex((w) => w >= 2);
-        if (topped >= 0) {
-          const w = s.tanks.find((t) => t.slot === topped);
-          endGame(room, "match", w ? w.id : s.winnerId);
-          return;
-        }
-      }
-      s.round++;
-      resetTankRound(s);
+      endGame(room, "match", s.winnerId);
     }
     return;
+  }
+
+  const now = Date.now();
+  for (const t of s.tanks) {
+    if (t.eliminated) continue;
+    if (!t.alive && t.respawnAt && now >= t.respawnAt) {
+      tankRespawn(t);
+    }
   }
 
   const R = 18,
     spd = 170;
   for (const t of s.tanks) {
-    if (!t.alive) continue;
+    if (!t.alive || t.eliminated) continue;
     const p = room.players.find((pl) => pl.id === t.id);
     let inp = (p && p.input) || {};
     if (t.isAi || (p && p.isAi)) {
@@ -548,51 +562,54 @@ function tickTank(room, dt) {
       continue;
     }
     for (const t of s.tanks) {
-      if (!t.alive) continue;
+      if (!t.alive || t.eliminated) continue;
       if (s.mode === "team" ? t.team === bul.team : t.slot === bul.owner) continue;
       if (Math.hypot(t.x - bul.x, t.y - bul.y) < R + 4) {
         t.hp--;
         s.bullets.splice(b, 1);
-        if (t.hp <= 0) {
-          t.alive = false;
-          checkTankRoundEnd(room);
-        }
+        if (t.hp <= 0) tankKill(room, t);
         break;
       }
     }
   }
 }
 
+function tankKill(room, t) {
+  if (!t.alive || t.eliminated) return;
+  t.alive = false;
+  t.hp = 0;
+  t.lives = Math.max(0, (t.lives != null ? t.lives : 3) - 1);
+  if (t.lives <= 0) {
+    t.eliminated = true;
+    t.respawnAt = 0;
+  } else {
+    t.respawnAt = Date.now() + 1600;
+  }
+  checkTankRoundEnd(room);
+}
+
 function checkTankRoundEnd(room) {
   const s = room.state;
   if (s.roundOverAt) return;
-  const alive = s.tanks.filter((t) => t.alive);
+  const contenders = s.tanks.filter((t) => !t.eliminated);
   if (s.mode === "team") {
-    const a = alive.filter((t) => t.team === 0);
-    const b = alive.filter((t) => t.team === 1);
+    const a = contenders.filter((t) => t.team === 0);
+    const b = contenders.filter((t) => t.team === 1);
     if (a.length === 0 || b.length === 0) {
       const winTeam = a.length ? 0 : 1;
-      s.wins[winTeam] = (s.wins[winTeam] || 0) + 1;
-      s.winnerId = (alive[0] && alive[0].id) || null;
-      s.roundOverAt = Date.now() + 1800;
-      if ((s.wins[winTeam] || 0) >= 2) {
-        // finalize shortly via tick
-      }
+      const w =
+        s.tanks.find((t) => t.team === winTeam && !t.eliminated) ||
+        s.tanks.find((t) => t.team === winTeam);
+      s.winnerId = w ? w.id : null;
+      s.wins[winTeam] = 2;
+      s.roundOverAt = Date.now() + 1500;
     }
-  } else {
-    if (alive.length <= 1) {
-      if (alive[0]) {
-        s.wins[alive[0].slot] = (s.wins[alive[0].slot] || 0) + 1;
-        s.winnerId = alive[0].id;
-      }
-      s.roundOverAt = Date.now() + 1800;
-      // FFA first to 1 or end match if only last alive - win match immediately at 1
-      if (alive[0]) {
-        s.roundOverAt = Date.now() + 1200;
-        // mark for match end: set wins high
-        s.wins[alive[0].slot] = 2;
-      }
+  } else if (contenders.length <= 1) {
+    if (contenders[0]) {
+      s.winnerId = contenders[0].id;
+      s.wins[contenders[0].slot] = 2;
     }
+    s.roundOverAt = Date.now() + 1500;
   }
 }
 

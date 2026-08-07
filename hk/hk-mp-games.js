@@ -682,7 +682,7 @@
       // Dead: local free-cam still needs redraw between server ticks
       if (lastState) {
         var meTk = findMeTank(lastState);
-        if (!meTk || !meTk.alive) {
+        if (!meTk || !meTk.alive || meTk.eliminated) {
           getTankCamera(lastState, 0.033);
           drawFrame();
         }
@@ -747,7 +747,7 @@
     if (gameId === 'tank') {
       var aim = 0;
       var me = lastState ? findMeTank(lastState) : null;
-      var dead = !!(me && !me.alive);
+      var dead = !!(me && (!me.alive || me.eliminated));
       if (me && me.alive) {
         aim = Math.atan2(mouse.ay - me.y, mouse.ax - me.x);
         mouse.tx = me.x; mouse.ty = me.y;
@@ -944,7 +944,7 @@
   }
   function helpText() {
     return {
-      tank: 'WASD · 마우스 조준/발사 · 사망 후 WASD 관전 카메라',
+      tank: 'WASD · 마우스 조준/발사 · 목숨 3 · 사망 후 관전 카메라',
       rts: '좌드래그 선택 · 우클릭 이동/공격 · 모드별 본진 배치(1:1/2:2/FFA)',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
@@ -1123,11 +1123,17 @@
     if (gameId === 'tank') {
       var wins = st.wins || [];
       html += '<span class="hkmp-pill">' + (st.mode === 'team' ? '팀전' : 'FFA') + '</span>';
-      html += '<span class="hkmp-pill">라운드 <b>' + (st.round || 1) + '</b></span>';
-      if (st.mode === 'team') html += '<span class="hkmp-pill">스코어 <b>' + (wins[0] || 0) + ' : ' + (wins[1] || 0) + '</b></span>';
-      else html += '<span class="hkmp-pill">생존 <b>' + ((st.tanks || []).filter(function (x) { return x.alive; }).length) + '</b></span>';
+      html += '<span class="hkmp-pill">생존 <b>' + ((st.tanks || []).filter(function (x) { return !x.eliminated; }).length) + '</b></span>';
       var t = findMeTank(st);
-      if (t) html += '<span class="hkmp-pill">HP <b>' + (t.hp != null ? t.hp : 3) + '</b></span>';
+      if (t) {
+        var hearts = '';
+        var ml = t.maxLives || 3;
+        for (var hi = 0; hi < ml; hi++) hearts += hi < (t.lives != null ? t.lives : 0) ? '♥' : '♡';
+        html += '<span class="hkmp-pill">목숨 <b style="color:#ff8a7a">' + hearts + '</b></span>';
+        html += '<span class="hkmp-pill">HP <b>' + (t.alive ? (t.hp != null ? t.hp : 3) : 0) + '/' + (t.maxHp || 3) + '</b></span>';
+        if (t.eliminated) html += '<span class="hkmp-pill" style="color:#efd28a">탈락 · 관전</span>';
+        else if (!t.alive) html += '<span class="hkmp-pill" style="color:#f6ad55">부활 대기</span>';
+      }
     } else if (gameId === 'rts') {
       var golds = st.gold || [];
       html += '<span class="hkmp-pill">' + ((st.mode && RTS_MODE_META[st.mode]) ? RTS_MODE_META[st.mode].label : 'RTS') + '</span>';
@@ -1198,11 +1204,19 @@
       ctx.fillText('상태 동기화 중…', cv.width / 2, cv.height / 2);
       return;
     }
-    if (gameId === 'tank') drawTank(ctx, st);
-    else if (gameId === 'rts') drawRts(ctx, st);
-    else if (gameId === 'ageofwar') drawAgeOfWar(ctx, st);
-    else if (gameId === 'snakes') drawSnakes(ctx, st);
-    else if (gameId === 'airhockey') drawHockey(ctx, st);
+    try {
+      if (gameId === 'tank') drawTank(ctx, st);
+      else if (gameId === 'rts') drawRts(ctx, st);
+      else if (gameId === 'ageofwar') drawAgeOfWar(ctx, st);
+      else if (gameId === 'snakes') drawSnakes(ctx, st);
+      else if (gameId === 'airhockey') drawHockey(ctx, st);
+    } catch (err) {
+      if (window.console) console.error('draw', gameId, err);
+      ctx.fillStyle = '#ff8a7a';
+      ctx.font = '14px Georgia,serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('화면 오류 — 새로고침 해주세요', canvasW / 2, canvasH / 2);
+    }
     if (drag && drag.mode === 'select') {
       ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 1;
       ctx.strokeRect(Math.min(drag.x1, drag.x2), Math.min(drag.y1, drag.y2), Math.abs(drag.x2 - drag.x1), Math.abs(drag.y2 - drag.y1));
@@ -1260,6 +1274,15 @@
       ctx.fillStyle = '#0008'; ctx.fillRect(tk.x - 14, tk.y - 26, 28, 4);
       ctx.fillStyle = '#9ae6b4'; ctx.fillRect(tk.x - 14, tk.y - 26, 28 * Math.max(0, (tk.hp || 3) / (tk.maxHp || 3)), 4);
       drawNameTag(ctx, (tk.name || ('P' + (i + 1))) + (tk.isAi ? ' ·AI' : ''), tk.x, tk.y - 34, COLORS[tk.slot != null ? tk.slot : i]);
+      var lifeMarks = '';
+      var mlv = tk.maxLives || 3;
+      for (var li = 0; li < mlv; li++) lifeMarks += li < (tk.lives != null ? tk.lives : 0) ? '♥' : '♡';
+      ctx.save();
+      ctx.font = '11px Georgia,serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff8a7a';
+      ctx.fillText(lifeMarks, tk.x, tk.y - 46);
+      ctx.restore();
       if (st.mode === 'team') {
         ctx.fillStyle = tk.team === 0 ? '#6ec8ff' : '#ff8a7a';
         ctx.fillRect(tk.x - 10, tk.y + 20, 20, 3);
@@ -1278,13 +1301,13 @@
       ctx.fillRect(mmX + tk.x * sx - 2, mmY + tk.y * sy - 2, 4, 4);
     });
 
-    if (me && !me.alive) {
+    if (me && (!me.alive || me.eliminated)) {
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.fillRect(0, canvasH - 40, canvasW, 40);
       ctx.fillStyle = '#efd28a';
       ctx.font = 'bold 15px Georgia,serif';
       ctx.textAlign = 'center';
-      ctx.fillText('관전 중 · WASD로 시야 이동', canvasW / 2, canvasH - 15);
+      ctx.fillText(me.eliminated ? '탈락 · WASD로 시야 이동' : '부활 대기 · WASD로 시야 이동', canvasW / 2, canvasH - 15);
     }
   }
 
@@ -1502,6 +1525,65 @@
     });
   }
 
+
+  function drawRtsUnitShape(ctx, e, col) {
+    var r = e.r || 8;
+    ctx.fillStyle = col;
+    ctx.strokeStyle = '#0008';
+    ctx.lineWidth = 1.5;
+    if (e.type === 'worker') {
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y - r);
+      ctx.lineTo(e.x + r * 0.9, e.y + r * 0.7);
+      ctx.lineTo(e.x - r * 0.9, e.y + r * 0.7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'melee') {
+      ctx.beginPath();
+      ctx.moveTo(e.x - r, e.y - r * 0.6);
+      ctx.lineTo(e.x + r, e.y - r * 0.6);
+      ctx.lineTo(e.x + r * 0.7, e.y + r);
+      ctx.lineTo(e.x - r * 0.7, e.y + r);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'ranged') {
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y - r);
+      ctx.lineTo(e.x + r, e.y);
+      ctx.lineTo(e.x, e.y + r);
+      ctx.lineTo(e.x - r, e.y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (e.type === 'bomber') {
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#122421';
+      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
+    } else if (e.type === 'tanker') {
+      var w = r * 1.8, h = r * 1.5;
+      ctx.fillRect(e.x - w / 2, e.y - h / 2, w, h);
+      ctx.strokeRect(e.x - w / 2, e.y - h / 2, w, h);
+    } else if (e.type === 'duck') {
+      ctx.beginPath();
+      if (ctx.ellipse) ctx.ellipse(e.x, e.y + 1, r * 1.1, r * 0.75, 0, 0, Math.PI * 2);
+      else ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath(); ctx.arc(e.x + r * 0.55, e.y - r * 0.35, r * 0.45, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f6ad55';
+      ctx.beginPath();
+      ctx.moveTo(e.x + r * 0.85, e.y - r * 0.35);
+      ctx.lineTo(e.x + r * 1.45, e.y - r * 0.2);
+      ctx.lineTo(e.x + r * 0.85, e.y - r * 0.05);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawRtsHpBar(ctx, x, y, w, hp, maxHp) {
+    if (maxHp == null || maxHp <= 0) return;
+    var ratio = Math.max(0, Math.min(1, hp / maxHp));
+    ctx.fillStyle = '#0009'; ctx.fillRect(x - w / 2, y, w, 4);
+    ctx.fillStyle = ratio > 0.45 ? '#9ae6b4' : ratio > 0.2 ? '#f6ad55' : '#fc8181';
+    ctx.fillRect(x - w / 2, y, w * ratio, 4);
+  }
 
   function drawRts(ctx, st) {
     (st.obstacles || []).forEach(function (o) {
