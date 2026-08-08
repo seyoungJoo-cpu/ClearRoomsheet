@@ -2178,22 +2178,26 @@
       color: var(--accent);
     }
 
-    .zone-block__collapse {
+    .zone-block__reset {
       padding: 6px 12px;
       font: inherit;
       font-size: 0.8125rem;
-      font-weight: 600;
-      color: var(--accent);
-      background: var(--surface-raised);
-      border: 1px solid var(--border);
+      font-weight: 700;
+      color: #991b1b;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
       border-radius: 8px;
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .zone-block__collapse:hover {
-      border-color: var(--accent);
-      background: var(--surface-raised);
+    .zone-block__reset:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .zone-block__reset[hidden] {
+      display: none !important;
     }
 
     .zone-block__toolbar-actions {
@@ -5949,36 +5953,8 @@
       border-bottom: none;
     }
 
-    .sidebar-section--zones.is-collapsed .sidebar-nav--zones,
-    .sidebar-section--zones.is-collapsed .sidebar-zones-actions {
+    .sidebar-section--zones.is-collapsed .sidebar-nav--zones {
       display: none;
-    }
-
-    .sidebar-zones-actions {
-      display: flex;
-      padding: 0 8px 10px;
-    }
-
-    .sidebar-zones-actions[hidden] {
-      display: none !important;
-    }
-
-    .sidebar-zones-reset {
-      width: 100%;
-      padding: 6px 10px;
-      font: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #991b1b;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .sidebar-zones-reset:hover {
-      background: #fee2e2;
-      border-color: #f87171;
     }
 
     .sidebar-section__toggle {
@@ -9340,7 +9316,7 @@
         text-align: left;
       }
 
-      .zone-block__collapse {
+      .zone-block__reset {
         min-height: 44px;
         padding: 8px 14px;
       }
@@ -9910,16 +9886,6 @@
           </button>
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
-          <div class="sidebar-zones-actions" id="sidebarZoneActions" hidden>
-            <button
-              type="button"
-              class="sidebar-zones-reset"
-              id="btnResetActiveZoneRooms"
-              title="선택한 특이객실 구역 객실을 비웁니다"
-            >
-              초기화
-            </button>
-          </div>
         </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
           <div class="sidebar-title">프론트</div>
@@ -10106,12 +10072,12 @@
             </button>
             <button
               type="button"
-              class="zone-block__collapse"
-              id="zoneCollapseBtn"
-              aria-expanded="false"
-              aria-controls="zoneBlockBody"
+              class="zone-block__reset"
+              id="btnResetActiveZoneRooms"
+              hidden
+              title="선택한 특이객실 구역 객실을 비웁니다"
             >
-              펼치기
+              초기화
             </button>
           </div>
         </div>
@@ -14281,7 +14247,7 @@
           currentZone = activeZone;
           expandSidebarZonesSection();
         } else syncSidebarZonesCollapseUi();
-        syncSidebarZoneResetUi();
+        syncZoneResetUi();
       }
 
       var zoneRoomManageOpen = false;
@@ -14887,16 +14853,15 @@
         btn.hidden = !show;
         btn.classList.toggle("is-open", zoneRoomManageOpen);
         btn.setAttribute("aria-expanded", zoneRoomManageOpen ? "true" : "false");
-        syncSidebarZoneResetUi();
+        syncZoneResetUi();
       }
 
-      function syncSidebarZoneResetUi() {
-        var wrap = document.getElementById("sidebarZoneActions");
+      function syncZoneResetUi() {
         var btn = document.getElementById("btnResetActiveZoneRooms");
-        if (!wrap || !btn) return;
+        if (!btn) return;
         var zone = currentZone || getActiveZone();
         var show = frontMode && !!zone;
-        wrap.hidden = !show;
+        btn.hidden = !show;
         if (zone) {
           var zLabel = zoneLabels[zone] || zone;
           btn.title = zLabel + " 객실 목록을 비웁니다";
@@ -14940,7 +14905,7 @@
         showHkActionToast(zLabel + " 초기화됨");
       }
 
-      function bindSidebarZoneResetUi() {
+      function bindZoneResetUi() {
         var btn = document.getElementById("btnResetActiveZoneRooms");
         if (!btn || btn.__hkZoneResetBound) return;
         btn.__hkZoneResetBound = true;
@@ -15573,24 +15538,14 @@
 
       function collapseZoneBlock() {
         var block = document.getElementById("zoneBlock");
-        var btn = document.getElementById("zoneCollapseBtn");
         if (!block) return;
         block.classList.add("is-collapsed");
-        if (btn) {
-          btn.setAttribute("aria-expanded", "false");
-          btn.textContent = "펼치기";
-        }
       }
 
       function expandZoneBlock() {
         var block = document.getElementById("zoneBlock");
-        var btn = document.getElementById("zoneCollapseBtn");
         if (!block) return;
         block.classList.remove("is-collapsed");
-        if (btn) {
-          btn.setAttribute("aria-expanded", "true");
-          btn.textContent = "접기";
-        }
       }
 
       function clearZoneTabSelection() {
@@ -26992,7 +26947,6 @@
       })();
 
       var zoneBlock = document.getElementById("zoneBlock");
-      var zoneCollapseBtn = document.getElementById("zoneCollapseBtn");
       var zoneAddRoomBtn = document.getElementById("zoneAddRoomBtn");
       if (zoneAddRoomBtn) {
         zoneAddRoomBtn.addEventListener("click", function () {
@@ -27002,13 +26956,6 @@
       var zoneRoomManagePanel = document.getElementById("zoneRoomManagePanel");
       if (zoneRoomManagePanel) {
         zoneRoomManagePanel.addEventListener("click", handleZoneRoomManageClick);
-      }
-      if (zoneBlock && zoneCollapseBtn) {
-        zoneCollapseBtn.addEventListener("click", function () {
-          var collapsed = zoneBlock.classList.toggle("is-collapsed");
-          zoneCollapseBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-          zoneCollapseBtn.textContent = collapsed ? "펼치기" : "접기";
-        });
       }
 
       var sidebarZoneNav = document.getElementById("sidebarZoneNav");
@@ -27144,7 +27091,7 @@
       bindDeskChatResponsiveWidth();
       bindDeskChatSizeHandles();
       bindMinibarXmlUploadUi();
-      bindSidebarZoneResetUi();
+      bindZoneResetUi();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
