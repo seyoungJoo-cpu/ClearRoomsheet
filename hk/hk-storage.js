@@ -6,13 +6,14 @@
  */
 (function (global) {
   var STORAGE_KEY = "lotte-hk-v1";
-  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ"];
+  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR"];
   var STANDARD_ZONE_LABELS = {
     VIP: "VIP",
     RC: "R/C",
     CASINO: "CASINO",
     MOBILE_CI: "모바일체크인",
     AJ: "AJ객실",
+    MINIBAR: "미니바",
   };
 
   function defaultRoom() {
@@ -27,6 +28,8 @@
       trayUpdatedAt: "",
       createdAt: "",
       updatedAt: "",
+      mbProductId: "",
+      mbGroup: "",
     };
   }
 
@@ -770,6 +773,7 @@
         CASINO: [],
         MOBILE_CI: [],
         AJ: [],
+        MINIBAR: [],
       },
     };
   }
@@ -944,6 +948,8 @@
         x.trayUpdatedAt != null ? String(x.trayUpdatedAt).trim() : "";
       d.createdAt = x.createdAt != null ? String(x.createdAt).trim() : "";
       d.updatedAt = x.updatedAt != null ? String(x.updatedAt).trim() : "";
+      d.mbProductId = x.mbProductId != null ? String(x.mbProductId).trim() : "";
+      d.mbGroup = x.mbGroup != null ? String(x.mbGroup).trim() : "";
     }
     return d;
   }

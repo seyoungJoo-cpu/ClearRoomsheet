@@ -2545,6 +2545,77 @@
       text-align: center;
     }
 
+    .minibar-xml-upload {
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid #cbb27088;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #fffbeb, #f8fafc);
+    }
+
+    .minibar-xml-upload[hidden] {
+      display: none !important;
+    }
+
+    .minibar-xml-upload__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .minibar-xml-upload__copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 220px;
+      flex: 1 1 240px;
+    }
+
+    .minibar-xml-upload__copy strong {
+      font-size: 0.9rem;
+      color: #92400e;
+    }
+
+    .minibar-xml-upload__copy span {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .minibar-xml-upload__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .minibar-xml-upload__actions input[type="file"] {
+      max-width: min(100%, 260px);
+      font-size: 0.78rem;
+    }
+
+    .minibar-xml-upload__status {
+      margin: 8px 0 0;
+      font-size: 0.8rem;
+      color: #0f766e;
+      font-weight: 700;
+    }
+
+    .room-list-main .minibar-group-head {
+      grid-column: 1 / -1;
+      list-style: none;
+      margin: 6px 0 2px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #0f766e14;
+      border: 1px solid #0f766e44;
+      color: #115e59;
+      font-size: 0.86rem;
+      font-weight: 800;
+    }
+
     .room-list-main {
       list-style: none;
       margin: 0;
@@ -9633,7 +9704,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 / AJ객실 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 / AJ객실 / 미니바 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -9651,6 +9722,24 @@
                 aria-label="객실 상태 필터"
               ></div>
             </div>
+            <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="미니바 XML 업로드">
+              <div class="minibar-xml-upload__row">
+                <div class="minibar-xml-upload__copy">
+                  <strong>pkgforecast XML 업로드</strong>
+                  <span>ROOM · PRODUCT_ID1 기준으로 미니바 객실을 등록합니다. 업로드 시 기존 미니바 목록을 교체합니다.</span>
+                </div>
+                <div class="minibar-xml-upload__actions">
+                  <input
+                    type="file"
+                    id="minibarXmlFile"
+                    accept=".xml,text/xml,application/xml"
+                    aria-label="미니바 pkgforecast XML 파일"
+                  />
+                  <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
+                </div>
+              </div>
+              <p class="minibar-xml-upload__status" id="minibarXmlStatus" hidden></p>
+            </section>
             <div class="request-type-filters zone-type-filters" id="zoneTypeFilters" aria-label="특이객실 TYPE 필터">
               <div class="request-type-filters__actions">
                 <button
@@ -10809,6 +10898,7 @@
         CASINO: "CASINO",
         MOBILE_CI: "모바일체크인",
         AJ: "AJ객실",
+        MINIBAR: "미니바",
       };
       var currentZone = null;
       var maintenanceMode = false;
@@ -24324,6 +24414,8 @@
           prevRow && prevRow.trayUpdatedAt != null ? String(prevRow.trayUpdatedAt) : "";
         next.createdAt =
           prevRow && prevRow.createdAt != null ? String(prevRow.createdAt) : "";
+        if (prevRow && prevRow.mbProductId != null) next.mbProductId = String(prevRow.mbProductId);
+        if (prevRow && prevRow.mbGroup != null) next.mbGroup = String(prevRow.mbGroup);
         stampRoomRow(next);
         var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
         if (!changeEntry) {
@@ -24853,6 +24945,207 @@
         renderZoneVipMemoBoard(getActiveZone());
       }
 
+      function syncMinibarUploadUi(zone) {
+        var panel = document.getElementById("minibarXmlUpload");
+        if (!panel) return;
+        panel.hidden = zone !== "MINIBAR";
+      }
+
+      var MINIBAR_PRODUCT_GROUP = {
+        MB0008: "B2D1S1",
+        MB0009: "B2D1S1",
+        MB0010: "B2D1S1",
+        MB0020: "B2D1S1",
+        MBFAMO: "B2D2S1",
+        MB0012: "B3D1S1",
+        MB0018: "B3D2S2",
+        MB0013: "B4D4S2",
+        MB0019: "B4D2S2",
+        MB0014: "KIDS",
+        MB0011: "PARK_B2",
+        MB0017: "PARK_B4",
+      };
+
+      var MINIBAR_GROUP_ORDER = [
+        "B2D1S1",
+        "B2D2S1",
+        "B3D1S1",
+        "B3D2S2",
+        "B4D4S2",
+        "B4D2S2",
+        "KIDS",
+        "PARK_B2",
+        "PARK_B4",
+        "OTHER",
+      ];
+
+      var MINIBAR_GROUP_LABELS = {
+        B2D1S1: "MB0008·MB0009·MB0010·MB0020 (맥주2+음료1+스낵1)",
+        B2D2S1: "MBFAMO (맥주2+음료2+스낵1)",
+        B3D1S1: "MB0012 (맥주3+음료1+스낵1)",
+        B3D2S2: "MB0018 (맥주3+음료2+스낵2)",
+        B4D4S2: "MB0013 (맥주4+음료4+스낵2)",
+        B4D2S2: "MB0019 (맥주4+음료2+스낵2)",
+        KIDS: "MB0014 (키즈음료3+스낵2)",
+        PARK_B2: "MB0011 (박당) (맥주2+음료1+스낵1)",
+        PARK_B4: "MB0017 (박당) (맥주4+음료2+스낵2)",
+        OTHER: "기타",
+      };
+
+      function getMinibarGroupId(productId) {
+        var id = String(productId || "")
+          .trim()
+          .toUpperCase();
+        return MINIBAR_PRODUCT_GROUP[id] || "OTHER";
+      }
+
+      function getMinibarGroupLabel(groupId) {
+        return MINIBAR_GROUP_LABELS[groupId] || MINIBAR_GROUP_LABELS.OTHER;
+      }
+
+      function parseMinibarPkgForecastXml(xmlText) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(String(xmlText || ""), "text/xml");
+        if (doc.querySelector("parsererror")) {
+          throw new Error("XML 형식을 읽을 수 없습니다.");
+        }
+        var byRoom = {};
+        var groups = doc.querySelectorAll("G_PRODUCT_GROUP");
+        groups.forEach(function (groupEl) {
+          var pidEl = groupEl.querySelector("PRODUCT_ID1");
+          var productId = pidEl ? String(pidEl.textContent || "").trim().toUpperCase() : "";
+          if (!productId) return;
+          var groupId = getMinibarGroupId(productId);
+          groupEl.querySelectorAll("G_RESV_DETAILS").forEach(function (rowEl) {
+            var roomEl = rowEl.querySelector("ROOM");
+            var rawRoom = roomEl ? String(roomEl.textContent || "").trim() : "";
+            if (!rawRoom) return;
+            var roomNo = normalizeRoomDigits(rawRoom) || rawRoom;
+            if (!roomNo) return;
+            var guestEl = rowEl.querySelector("DISPLAY_NAME") || rowEl.querySelector("GUEST_NAME");
+            var guest = guestEl ? String(guestEl.textContent || "").trim() : "";
+            byRoom[roomNo] = {
+              number: roomNo,
+              productId: productId,
+              groupId: groupId,
+              guest: guest,
+            };
+          });
+        });
+        return Object.keys(byRoom)
+          .map(function (k) {
+            return byRoom[k];
+          })
+          .sort(function (a, b) {
+            var ga = MINIBAR_GROUP_ORDER.indexOf(a.groupId);
+            var gb = MINIBAR_GROUP_ORDER.indexOf(b.groupId);
+            if (ga < 0) ga = 999;
+            if (gb < 0) gb = 999;
+            if (ga !== gb) return ga - gb;
+            return String(a.number).localeCompare(String(b.number), undefined, {
+              numeric: true,
+            });
+          });
+      }
+
+      function applyMinibarXmlRooms(rows) {
+        var data = HKStorage.load();
+        if (!data.rooms || typeof data.rooms !== "object") data.rooms = {};
+        var nextRooms = [];
+        var stamp = new Date().toISOString();
+        (rows || []).forEach(function (row) {
+          if (!row || !row.number) return;
+          if (typeof HKStorage.unmarkRoomDeleted === "function") {
+            HKStorage.unmarkRoomDeleted(data, "MINIBAR", row.number);
+          }
+          var room = {
+            number: row.number,
+            status: lookupRoomStatusFromXml(row.number),
+            memo1: "",
+            memo2: "",
+            time: "",
+            mbProductId: row.productId || "",
+            mbGroup: row.groupId || getMinibarGroupId(row.productId),
+          };
+          stampRoomRow(room);
+          room.createdAt = stamp;
+          room.updatedAt = stamp;
+          nextRooms.push(room);
+        });
+        data.rooms.MINIBAR = nextRooms;
+        HKStorage.save(data);
+        return nextRooms.length;
+      }
+
+      function setMinibarUploadStatus(msg, isError) {
+        var el = document.getElementById("minibarXmlStatus");
+        if (!el) return;
+        if (!msg) {
+          el.hidden = true;
+          el.textContent = "";
+          return;
+        }
+        el.hidden = false;
+        el.textContent = msg;
+        el.style.color = isError ? "#b91c1c" : "#0f766e";
+      }
+
+      function handleMinibarXmlUpload() {
+        var input = document.getElementById("minibarXmlFile");
+        if (!input || !input.files || !input.files[0]) {
+          setMinibarUploadStatus("XML 파일을 선택하세요.", true);
+          return;
+        }
+        if (!frontMode) {
+          setMinibarUploadStatus("프론트 모드에서 업로드할 수 있습니다.", true);
+          return;
+        }
+        var file = input.files[0];
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var rows = parseMinibarPkgForecastXml(String(reader.result || ""));
+            if (!rows.length) {
+              setMinibarUploadStatus("ROOM 객실을 찾지 못했습니다.", true);
+              return;
+            }
+            var count = applyMinibarXmlRooms(rows);
+            currentZone = "MINIBAR";
+            setZonePanelOpen(true);
+            expandZoneBlock();
+            renderSidebarZoneTabs();
+            renderRoomsForZone("MINIBAR", { force: true });
+            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+              HKSync.pushStorageNow();
+            }
+            setMinibarUploadStatus(
+              "업로드 완료 · 객실 " + count + "개 등록 (PRODUCT_ID1 분류)",
+              false
+            );
+            showHkActionToast("미니바 XML 업로드 · " + count + "개 객실 등록");
+            input.value = "";
+          } catch (err) {
+            setMinibarUploadStatus(
+              err && err.message ? err.message : "업로드에 실패했습니다.",
+              true
+            );
+          }
+        };
+        reader.onerror = function () {
+          setMinibarUploadStatus("파일을 읽을 수 없습니다.", true);
+        };
+        reader.readAsText(file);
+      }
+
+      function bindMinibarXmlUploadUi() {
+        var btn = document.getElementById("btnMinibarXmlUpload");
+        if (!btn || btn.__hkMinibarBound) return;
+        btn.__hkMinibarBound = true;
+        btn.addEventListener("click", function () {
+          handleMinibarXmlUpload();
+        });
+      }
+
       function renderRoomsForZone(zone, opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
@@ -24860,6 +25153,7 @@
         closeMemo1Editor();
         closeMemo2Editor();
         closeTimeEditor();
+        syncMinibarUploadUi(zone);
         if (!zone) {
           roomList.innerHTML = "";
           roomEmpty.hidden = true;
@@ -24870,26 +25164,59 @@
           return;
         }
         var data = HKStorage.load();
-        var rooms = (data.rooms && data.rooms[zone]) || [];
+        var rooms = ((data.rooms && data.rooms[zone]) || []).slice();
+        if (zone === "MINIBAR") {
+          rooms.sort(function (a, b) {
+            var ga = MINIBAR_GROUP_ORDER.indexOf(a && a.mbGroup);
+            var gb = MINIBAR_GROUP_ORDER.indexOf(b && b.mbGroup);
+            if (ga < 0) ga = 999;
+            if (gb < 0) gb = 999;
+            if (ga !== gb) return ga - gb;
+            return String((a && a.number) || "").localeCompare(
+              String((b && b.number) || ""),
+              undefined,
+              { numeric: true }
+            );
+          });
+        }
         label.textContent = zoneLabels[zone] || zone;
         updateZoneBlockTitle(zone);
         roomList.innerHTML = "";
         if (rooms.length === 0) {
           roomEmpty.hidden = false;
-          roomEmpty.textContent = frontMode
-            ? "등록된 객실이 없습니다. 상단 + 버튼으로 추가하세요."
-            : "등록된 객실이 없습니다. 프론트 모드에서 + 버튼으로 추가하세요.";
+          roomEmpty.textContent =
+            zone === "MINIBAR"
+              ? frontMode
+                ? "등록된 객실이 없습니다. pkgforecast XML을 업로드하세요."
+                : "등록된 객실이 없습니다. 프론트 모드에서 XML을 업로드하세요."
+              : frontMode
+                ? "등록된 객실이 없습니다. 상단 + 버튼으로 추가하세요."
+                : "등록된 객실이 없습니다. 프론트 모드에서 + 버튼으로 추가하세요.";
         } else {
           var shownCount = 0;
           var statusPassCount = 0;
+          var lastGroup = null;
           rooms.forEach(function (room, idx) {
             if (getRoomTray(room)) return;
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
             statusPassCount += 1;
             if (!roomPassesSchedTypeFilter(room.number)) return;
+            if (zone === "MINIBAR") {
+              var groupId = room.mbGroup || getMinibarGroupId(room.mbProductId);
+              if (groupId !== lastGroup) {
+                lastGroup = groupId;
+                var head = document.createElement("li");
+                head.className = "minibar-group-head";
+                head.textContent = getMinibarGroupLabel(groupId);
+                roomList.appendChild(head);
+              }
+            }
             shownCount += 1;
-            var li = buildZoneRoomCardLi(zone, room, idx, {
+            // MINIBAR rooms array was sorted copy — resolve original index for editors
+            var srcIdx = ((data.rooms && data.rooms[zone]) || []).indexOf(room);
+            if (srcIdx < 0) srcIdx = idx;
+            var li = buildZoneRoomCardLi(zone, room, srcIdx, {
               showCheckIn: true,
             });
             roomList.appendChild(li);
@@ -26020,6 +26347,7 @@
       applyDeskChatFontLevel(getDeskChatFontLevel());
       bindDeskChatResponsiveWidth();
       bindDeskChatSizeHandles();
+      bindMinibarXmlUploadUi();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
