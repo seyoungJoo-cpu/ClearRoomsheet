@@ -149,10 +149,10 @@
       '.hkmp-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}',
       '.hkmp-toolbar .hkmp-btn{padding:8px 11px;font-size:12px}.hkmp-toolbar .hkmp-btn.active{box-shadow:0 0 0 2px #efd28a}',
       '.hkmp-ended{text-align:center;padding:28px 12px}.hkmp-ended h2{font-family:Georgia,serif;color:#efd28a;font-size:30px;margin:0 0 8px}',
-      '.hkmp-memory-wrap{width:min(100%,820px);margin:0 auto;padding:8px 0}',
-      '.hkmp-memory{display:grid;gap:6px;perspective:800px;-webkit-user-select:none;user-select:none}',
+      '.hkmp-memory-wrap{width:min(100%,420px);height:min(52vh,420px);margin:0 auto;padding:0;display:flex;align-items:center;justify-content:center}',
+      '.hkmp-memory{width:100%;height:100%;display:grid;gap:4px;perspective:800px;-webkit-user-select:none;user-select:none;box-sizing:border-box}',
       '.hkmp-memory.wave .hkmp-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}',
-      '.hkmp-memory-card{aspect-ratio:1;border:0;border-radius:12px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(16px,3.6vw,34px);cursor:pointer;transition:.22s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none}',
+      '.hkmp-memory-card{min-width:0;min-height:0;width:100%;height:100%;border:0;border-radius:8px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(11px,2.2vw,22px);cursor:pointer;transition:.22s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none}',
       '.hkmp-memory-card.open,.hkmp-memory-card.done{background:#e8d39d;color:#18302e;transform:rotateY(180deg)}.hkmp-memory-card.done{background:#a9d0b9;opacity:.72;cursor:default}',
       '.hkmp-memory-card.mine{box-shadow:inset 0 0 0 2px #efd28a,0 0 0 1px #efd28a55}.hkmp-memory-card:disabled{cursor:default;opacity:.85}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
@@ -1077,7 +1077,8 @@
     memoryBoardSig = 'wave:' + key;
     stopMemoryWave();
     refs.memGrid.classList.add('wave');
-    refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
+    refs.memGrid.style.gridTemplateRows = 'repeat(' + (st.rows || Math.ceil(cards.length / cols) || 6) + ',minmax(0,1fr))';
     var icons = cards.map(function (c) { return c.icon || ''; });
     refs.memGrid.innerHTML = cards.map(function (c, i) {
       return '<button type="button" class="hkmp-memory-card" data-i="' + i + '" disabled></button>';
@@ -1129,7 +1130,8 @@
     }
     memoryBoardSig = sig;
     refs.memGrid.classList.toggle('wave', previewing);
-    refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
+    refs.memGrid.style.gridTemplateRows = 'repeat(' + (st.rows || Math.ceil(cards.length / cols) || 6) + ',minmax(0,1fr))';
     refs.memGrid.innerHTML = cards.map(function (c, i) {
       var show = c.open || c.done;
       var cls = 'hkmp-memory-card' + (c.open ? ' open' : '') + (c.done ? ' done' : '') + (myTurn && !locked && !c.open && !c.done ? ' mine' : '');
