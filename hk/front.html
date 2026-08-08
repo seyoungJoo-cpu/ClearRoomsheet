@@ -4536,7 +4536,8 @@
     }
 
     .sidebar .sidebar-nav__btn#sidebarBtnFront.is-active,
-    .sidebar .sidebar-nav__btn#sidebarBtnFrontEmbed.is-active {
+    .sidebar .sidebar-nav__btn#sidebarBtnFrontEmbed.is-active,
+    .sidebar .sidebar-nav__btn#sidebarBtnComplaint.is-active {
       background: #0f766e;
       border-color: #0f766e;
       color: #fff;
@@ -8494,36 +8495,6 @@
       margin-bottom: 6px;
     }
 
-    .order-panel__head-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .btn-complaint-open {
-      height: 28px;
-      padding: 0 10px;
-      border: 1px solid #0f766e55;
-      border-radius: 6px;
-      background: #f0fdfa;
-      color: #0f766e;
-      font: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-complaint-open:hover {
-      background: #ccfbf1;
-      border-color: #0f766e;
-    }
-
-    .btn-complaint-open[hidden] {
-      display: none !important;
-    }
-
     .complaint-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -8822,19 +8793,6 @@
     .complaint-stats-foot th {
       font-weight: 800;
       background: #f1f5f9;
-    }
-
-    .btn-complaint-back {
-      height: 28px;
-      padding: 0 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface-raised);
-      color: var(--accent);
-      font: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      cursor: pointer;
     }
 
     .order-panel__body .order-row {
@@ -9898,6 +9856,15 @@
             >
               DD·인벤·취향
             </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--multiline"
+              id="sidebarBtnComplaint"
+              aria-pressed="false"
+              title="고객불편사항 유형분석"
+            >
+              고객불편사항 유형분석
+            </button>
           </div>
         </nav>
         <nav class="sidebar-section sidebar-section--ai" aria-label="AI 모드">
@@ -10185,18 +10152,7 @@
           <div class="order-panel__main">
             <div class="panel-head-row">
               <h2 id="orderPanelTitle">오더 관리</h2>
-              <div class="order-panel__head-actions">
-                <button
-                  type="button"
-                  class="btn-complaint-open"
-                  id="btnOpenComplaintAnalysis"
-                  hidden
-                  title="고객불편사항 유형분석"
-                >
-                  불편관리
-                </button>
-                <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
-              </div>
+              <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
             </div>
             <form class="order-row" id="orderForm">
               <div class="field field--room-no">
@@ -10313,28 +10269,25 @@
       <section class="complaint-panel" id="complaintPanel" hidden aria-labelledby="complaintPanelTitle">
         <div class="panel-head-row">
           <h2 id="complaintPanelTitle">고객불편사항 유형분석</h2>
-          <div class="order-panel__head-actions">
-            <div class="complaint-panel__tabs" role="tablist" aria-label="불편관리 페이지">
-              <button
-                type="button"
-                class="complaint-panel__tab is-active"
-                data-complaint-page="1"
-                role="tab"
-                aria-selected="true"
-              >
-                1.등록
-              </button>
-              <button
-                type="button"
-                class="complaint-panel__tab"
-                data-complaint-page="2"
-                role="tab"
-                aria-selected="false"
-              >
-                2.유형별 현황
-              </button>
-            </div>
-            <button type="button" class="btn-complaint-back" id="btnComplaintBackOrder">오더로</button>
+          <div class="complaint-panel__tabs" role="tablist" aria-label="불편관리 페이지">
+            <button
+              type="button"
+              class="complaint-panel__tab is-active"
+              data-complaint-page="1"
+              role="tab"
+              aria-selected="true"
+            >
+              1.등록
+            </button>
+            <button
+              type="button"
+              class="complaint-panel__tab"
+              data-complaint-page="2"
+              role="tab"
+              aria-selected="false"
+            >
+              2.유형별 현황
+            </button>
           </div>
         </div>
         <p class="complaint-panel__hint" id="complaintFrontOnlyHint" hidden>
@@ -11377,7 +11330,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js"></script>
-  <script src="hk-complaint-analysis.js?v=1"></script>
+  <script src="hk-complaint-analysis.js?v=2"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-20"></script>
   <script src="hk-mp-games.js?v=mp-21"></script>
@@ -17067,6 +17020,7 @@
         var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
+        var complaintNav = document.getElementById("sidebarBtnComplaint");
         var aiNav = document.getElementById("sidebarBtnAi");
         if (chatNav) {
           chatNav.classList.toggle("is-active", false);
@@ -17078,14 +17032,8 @@
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
         }
         if (ord) {
-          ord.classList.toggle(
-            "is-active",
-            sidebarMainView === "order" || sidebarMainView === "complaint"
-          );
-          ord.setAttribute(
-            "aria-pressed",
-            sidebarMainView === "order" || sidebarMainView === "complaint" ? "true" : "false"
-          );
+          ord.classList.toggle("is-active", sidebarMainView === "order");
+          ord.setAttribute("aria-pressed", sidebarMainView === "order" ? "true" : "false");
         }
         var fac = document.getElementById("sidebarBtnFacility");
         if (fac) {
@@ -17132,6 +17080,13 @@
           frontEmbedNav.setAttribute(
             "aria-pressed",
             sidebarMainView === "frontEmbed" ? "true" : "false"
+          );
+        }
+        if (complaintNav) {
+          complaintNav.classList.toggle("is-active", sidebarMainView === "complaint");
+          complaintNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "complaint" ? "true" : "false"
           );
         }
         if (aiNav) {
@@ -26097,7 +26052,7 @@
         if (canUseTeamChat() || frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
-        if (typeof HKComplaintAnalysis !== "undefined" && HKComplaintAnalysis.onFrontModeChanged) {
+        if (typeof HKComplaintAnalysis !== "undefined") {
           HKComplaintAnalysis.onFrontModeChanged();
         }
         if (typeof HKFacilityLogs !== "undefined") {
@@ -27338,12 +27293,6 @@
             return frontMode;
           },
           toast: showHkActionToast,
-          onOpen: function () {
-            showSidebarComplaintView();
-          },
-          onBackToOrder: function () {
-            showSidebarOrderView();
-          },
         });
       }
       if (typeof HKAdminInquiry !== "undefined") {
@@ -28396,6 +28345,14 @@
             if (!frontMode) return;
             if (sidebarMainView === "frontEmbed") return;
             showSidebarFrontEmbedView();
+          });
+        }
+        var bComplaint = document.getElementById("sidebarBtnComplaint");
+        if (bComplaint) {
+          bComplaint.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "complaint") return;
+            showSidebarComplaintView();
           });
         }
         document.querySelectorAll("#frontEmbedTabs .facility-log-tab").forEach(function (btn) {

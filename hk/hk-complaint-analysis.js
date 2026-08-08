@@ -26,7 +26,7 @@
       return false;
     },
     toast: function () {},
-    onBackToOrder: function () {},
+    onLeaveWhenLocked: function () {},
   };
 
   var activePage = 1;
@@ -397,8 +397,7 @@
     var hint = document.getElementById("complaintFrontOnlyHint");
     var editable = canEdit();
     if (form) {
-      form.querySelectorAll("input, button").forEach(function (el) {
-        if (el.id === "btnComplaintBackOrder") return;
+      form.querySelectorAll("input, button, select").forEach(function (el) {
         if (el.hasAttribute("data-complaint-page")) return;
         el.disabled = !editable;
       });
@@ -414,13 +413,6 @@
     updateEntryControls();
     if (activePage === 1) renderTable();
     else renderStats();
-    syncOpenButton();
-  }
-
-  function syncOpenButton() {
-    var btn = document.getElementById("btnOpenComplaintAnalysis");
-    if (!btn) return;
-    btn.hidden = !canEdit();
   }
 
   function addRecord() {
@@ -554,24 +546,6 @@
       });
     });
 
-    var back = document.getElementById("btnComplaintBackOrder");
-    if (back) {
-      back.addEventListener("click", function () {
-        if (typeof opts.onBackToOrder === "function") opts.onBackToOrder();
-      });
-    }
-
-    var openBtn = document.getElementById("btnOpenComplaintAnalysis");
-    if (openBtn) {
-      openBtn.addEventListener("click", function () {
-        if (!canEdit()) {
-          opts.toast("프론트 모드에서만 열 수 있습니다.");
-          return;
-        }
-        if (typeof opts.onOpen === "function") opts.onOpen();
-      });
-    }
-
     var yearSel = document.getElementById("complaintStatsYear");
     if (yearSel) {
       yearSel.addEventListener("change", function () {
@@ -620,7 +594,6 @@
     opts = Object.assign({}, opts, userOpts || {});
     bindUi();
     resetForm();
-    syncOpenButton();
   }
 
   function onViewActivated() {
@@ -628,11 +601,10 @@
   }
 
   function onFrontModeChanged() {
-    syncOpenButton();
     if (!canEdit()) {
       var panel = document.getElementById("complaintPanel");
-      if (panel && !panel.hidden && typeof opts.onBackToOrder === "function") {
-        opts.onBackToOrder();
+      if (panel && !panel.hidden && typeof opts.onLeaveWhenLocked === "function") {
+        opts.onLeaveWhenLocked();
         return;
       }
     }
