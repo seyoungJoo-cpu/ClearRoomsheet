@@ -1,13 +1,13 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
-  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp'];
+  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
     snake: { icon: '🐍', name: '요리조리 컴플레인 피하기', desc: '벽을 피해 야식을 모아보세요' },
-    memory: { icon: '🛎️', name: '호텔 메모리', desc: '호텔 아이콘 12쌍을 빠르게 찾기' },
+    memory: { icon: '🛎️', name: '호텔 메모리', desc: '카드 수 선택 · 호텔 아이콘 짝 맞추기' },
     breakout: { icon: '🧱', name: '루프탑 브레이크', desc: '5단계 벽돌 격파 · 아이템 수집' },
     jump: { icon: '🪽', name: '시그니엘 올라가기', desc: '2단 점프 · 서서히 올라가는 화면' },
     tetris: { icon: '🟪', name: '뷔페 접시 쌓기', desc: '클래식 10×20 · 급격한 난이도 상승' },
@@ -20,7 +20,8 @@
     rts: { icon: '🏰', name: '미니 RTS', desc: '1:1 · 2:2 · FFA 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '시대 진화 라인 워 · 기지 파괴' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
-    airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' }
+    airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' },
+    memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '1:1 · 1:1:1 · 2:2 · 카드수 선택' }
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;
@@ -119,7 +120,7 @@
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
       '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;position:relative;z-index:1;transition:transform .2s ease,opacity .18s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 5px 6px #fff5,inset 0 -6px 8px #0003,0 3px 5px #0005;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0}.hkg-gem.swap{z-index:4;transition:transform .22s ease}.hkg-gem.fall{z-index:3;transition:transform .24s ease}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
-      '.hkg-memory{width:min(100%,640px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
+      '.hkg-memory{width:min(100%,720px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(18px,4.5vw,42px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}.hkg-memory-setup{width:min(100%,520px);margin:auto;text-align:center}.hkg-memory-setup h3{font-family:Georgia,serif;color:#efd28a;margin:0 0 12px;font-size:22px}.hkg-memory-sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
       '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
@@ -798,18 +799,39 @@
   };
 
   games.memory = function () {
-    var c = controller(), icons = ['🛏️', '🔑', '🛎️', '⭐', '☕', '🧖', '🍷', '🧳', '🧹', '📜', '🫧', '🧸'], cards, first = -1, locked = false, moves = 0, matched = 0, started = Date.now(), seconds = 0, timer;
-    refs.stage.innerHTML = '<div class="hkg-memory"></div>';
-    var grid = refs.stage.firstChild;
-    setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', '1,400', 'score']]);
-    function calc() { return Math.max(100, 1400 - moves * 10 - seconds * 2); }
+    var c = controller();
+    var MEMORY_ICONS = [
+      '🛏️', '🔑', '🛎️', '⭐', '☕', '🧖', '🍷', '🧳',
+      '🧹', '📜', '🫧', '🧸', '🏨', '🍽️', '🥂', '🧴',
+      '🪞', '🧺', '🧯', '🪴', '📺', '☎️', '🚪', '🪟',
+      '🛋️', '🕰️', '🧁', '🕯️', '🚿', '🛁', '🎩', '💎'
+    ];
+    var SIZES = [
+      { pairs: 12, cols: 4, rows: 6, label: '12쌍 · 4×6' },
+      { pairs: 18, cols: 6, rows: 6, label: '18쌍 · 6×6' },
+      { pairs: 24, cols: 6, rows: 8, label: '24쌍 · 6×8' },
+      { pairs: 28, cols: 7, rows: 8, label: '28쌍 · 7×8' },
+      { pairs: 32, cols: 8, rows: 8, label: '32쌍 · 8×8' }
+    ];
+    var chosen = 18, cards, first = -1, locked = false, moves = 0, matched = 0, started = 0, seconds = 0, timer = 0, totalCards = 0, grid, playing = false;
+    setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', '—', 'score']]);
+    function sizeOf(pairs) {
+      for (var i = 0; i < SIZES.length; i++) if (SIZES[i].pairs === pairs) return SIZES[i];
+      return SIZES[1];
+    }
+    function calc() {
+      var base = Math.round(1400 * (chosen / 12));
+      return Math.max(100, base - moves * 10 - seconds * 2);
+    }
     function draw() {
+      if (!grid) return;
       grid.innerHTML = cards.map(function (x, i) {
         var show = x.open || x.done;
         return '<button type="button" class="hkg-memory-card ' + (x.open ? 'open ' : '') + (x.done ? 'done' : '') + '" data-i="' + i + '" draggable="false">' + (show ? x.icon : '') + '</button>';
       }).join('');
     }
     function click(e) {
+      if (!playing) return;
       var node = e.target.closest('[data-i]'); if (!node || locked) return;
       var i = Number(node.dataset.i); if (cards[i].open || cards[i].done) return;
       cards[i].open = true; draw();
@@ -818,20 +840,66 @@
       if (cards[first].icon === cards[i].icon) {
         cards[first].done = cards[i].done = true; matched += 2; first = -1; draw();
         floatScore(grid.offsetWidth / 2, 40, 'MATCH!', refs.stage);
-        if (matched === 24) { clearInterval(timer); var score = calc(); hud('score', formatScore(score)); gameOver('모든 짝을 찾았어요!', moves + '번 이동 · ' + seconds + '초 · ' + score + '점', function () { startGame('memory'); }, score); }
+        if (matched === totalCards) {
+          clearInterval(timer); var score = calc(); hud('score', formatScore(score));
+          gameOver('모든 짝을 찾았어요!', moves + '번 이동 · ' + seconds + '초 · ' + score + '점', function () { startGame('memory'); }, score);
+        }
       } else {
         locked = true; c.timer(function () { cards[first].open = cards[i].open = false; first = -1; locked = false; draw(); }, 480);
       }
       hud('score', formatScore(calc()));
     }
-    cards = icons.concat(icons).sort(function () { return Math.random() - .5; }).map(function (icon) { return { icon: icon, open: false, done: false }; });
-    draw();
-    c.on(grid, 'click', click);
-    c.on(grid, 'dragstart', function (e) { e.preventDefault(); });
-    c.on(grid, 'selectstart', function (e) { e.preventDefault(); });
-    timer = setInterval(function () { if (gamePaused) return; seconds = Math.floor((Date.now() - started) / 1000); hud('time', seconds + '초'); hud('score', formatScore(calc())); }, 500);
-    var originalDestroy = c.destroy; c.destroy = function () { clearInterval(timer); originalDestroy(); };
-    actions(function () { startGame('memory'); }, calc, '24장(12쌍) 카드를 맞춰 보세요. 이동·시간이 적을수록 고득점입니다.');
+    function begin(pairs) {
+      chosen = pairs || 18;
+      var sz = sizeOf(chosen);
+      totalCards = chosen * 2;
+      first = -1; locked = false; moves = 0; matched = 0; seconds = 0; playing = true;
+      started = Date.now();
+      refs.stage.innerHTML = '<div class="hkg-memory"></div>';
+      grid = refs.stage.firstChild;
+      grid.style.gridTemplateColumns = 'repeat(' + sz.cols + ',1fr)';
+      if (chosen >= 28) grid.style.width = 'min(100%,760px)';
+      var icons = MEMORY_ICONS.slice(0, chosen);
+      cards = icons.concat(icons).sort(function () { return Math.random() - .5; }).map(function (icon) { return { icon: icon, open: false, done: false }; });
+      setHud([['이동', '0', 'moves'], ['시간', '0초', 'time'], ['점수', formatScore(calc()), 'score']]);
+      draw();
+      c.on(grid, 'click', click);
+      c.on(grid, 'dragstart', function (e) { e.preventDefault(); });
+      c.on(grid, 'selectstart', function (e) { e.preventDefault(); });
+      if (timer) clearInterval(timer);
+      timer = setInterval(function () {
+        if (gamePaused || !playing) return;
+        seconds = Math.floor((Date.now() - started) / 1000);
+        hud('time', seconds + '초');
+        hud('score', formatScore(calc()));
+      }, 500);
+      actions(function () { startGame('memory'); }, calc, chosen + '쌍(' + totalCards + '장) · ' + sz.cols + '×' + sz.rows + ' · 이동·시간이 적을수록 고득점');
+    }
+    function showSetup() {
+      playing = false;
+      refs.stage.innerHTML =
+        '<div class="hkg-memory-setup">' +
+        '<h3>카드 수 선택</h3>' +
+        '<p class="hkg-note" style="margin:0">기본 18쌍(6×6). 원하는 보드를 고른 뒤 시작하세요.</p>' +
+        '<div class="hkg-memory-sizes">' +
+        SIZES.map(function (sz) {
+          return '<button type="button" class="hkg-btn' + (sz.pairs === chosen ? ' primary' : '') + '" data-pairs="' + sz.pairs + '">' + sz.label + '</button>';
+        }).join('') +
+        '</div>' +
+        '<button type="button" class="hkg-btn primary" data-act="start">게임 시작</button>' +
+        '</div>';
+      Array.prototype.forEach.call(refs.stage.querySelectorAll('[data-pairs]'), function (btn) {
+        btn.onclick = function () {
+          chosen = Number(btn.getAttribute('data-pairs')) || 18;
+          showSetup();
+        };
+      });
+      refs.stage.querySelector('[data-act="start"]').onclick = function () { begin(chosen); };
+      actions(function () { startGame('memory'); }, function () { return 0; }, '카드 수를 선택한 뒤 게임을 시작하세요.');
+    }
+    showSetup();
+    var originalDestroy = c.destroy;
+    c.destroy = function () { if (timer) clearInterval(timer); originalDestroy(); };
     return { id: 'memory', destroy: c.destroy };
   };
 

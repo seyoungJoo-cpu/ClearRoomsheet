@@ -8,7 +8,29 @@ const GAMES = {
   ageofwar: { max: 2, hz: 20 },
   snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 45 },
+  memorymp: { max: 4, hz: 8 },
 };
+
+const MEMORY_MODES = {
+  "1v1": { label: "1:1", need: 2, max: 2, team: false },
+  ffa3: { label: "1:1:1", need: 3, max: 3, team: false },
+  "2v2": { label: "2:2", need: 4, max: 4, team: true },
+};
+
+const MEMORY_SIZES = {
+  12: { cols: 4, rows: 6 },
+  18: { cols: 6, rows: 6 },
+  24: { cols: 6, rows: 8 },
+  28: { cols: 7, rows: 8 },
+  32: { cols: 8, rows: 8 },
+};
+
+const MEMORY_ICONS = [
+  "🛏️", "🔑", "🛎️", "⭐", "☕", "🧖", "🍷", "🧳",
+  "🧹", "📜", "🫧", "🧸", "🏨", "🍽️", "🥂", "🧴",
+  "🪞", "🧺", "🧯", "🪴", "📺", "☎️", "🚪", "🪟",
+  "🛋️", "🕰️", "🧁", "🕯️", "🚿", "🛁", "🎩", "💎",
+];
 
 const CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const rooms = new Map();
@@ -37,6 +59,7 @@ function roomSnapshot(room) {
     code: room.code,
     game: room.game,
     mode: room.mode || null,
+    pairs: room.pairs != null ? room.pairs : null,
     status: room.status,
     players: room.players.map((p) => ({
       id: p.id,
@@ -69,6 +92,7 @@ function broadcastState(room) {
 function publicState(room) {
   const s = room.state;
   if (!s) return null;
+  if (room.game === "memorymp") return publicMemoryState(s);
   return s;
 }
 
@@ -213,6 +237,11 @@ function allReady(room) {
   if (room.game === "ageofwar") {
     return humans.length === 2 && readyOk;
   }
+  if (room.game === "memorymp") {
+    const need = memoryModeNeed(room.mode);
+    const mmax = memoryModeMax(room.mode) || need;
+    return humans.length === need && humans.length <= mmax && readyOk;
+  }
   return room.players.length === max && readyOk;
 }
 
@@ -236,6 +265,9 @@ function endGame(room, reason, winnerId) {
     } else if (room.state && room.state.tanks) {
       const tk = room.state.tanks.find((t) => t.id === winnerId);
       if (tk) winnerName = tk.name;
+    } else if (room.state && room.state.playerMeta) {
+      const pm = room.state.playerMeta.find((p) => p.id === winnerId);
+      if (pm) winnerName = pm.name;
     }
   }
   const ended = {
@@ -368,7 +400,229 @@ function defaultInput(game) {
   if (game === "ageofwar") return { action: null, unitIndex: 0 };
   if (game === "snakes") return { dirX: 1, dirY: 0 };
   if (game === "airhockey") return { x: 175, y: 200 };
+  if (game === "memorymp") return { flip: -1 };
   return {};
+}
+
+/* ===================== MEMORY MULTIPLAYER ===================== */
+function parseMemoryMode(raw) {
+  const m = String(raw || "1v1");
+  if (MEMORY_MODES[m]) return m;
+  if (m === "ffa" || m === "1v1v1") return "ffa3";
+  if (m === "team") return "2v2";
+  return "1v1";
+}
+function memoryModeNeed(mode) {
+  return (MEMORY_MODES[mode] || MEMORY_MODES["1v1"]).need;
+}
+function memoryModeMax(mode) {
+  return (MEMORY_MODES[mode] || MEMORY_MODES["1v1"]).max;
+}
+function memoryIsTeam(mode) {
+  return !!(MEMORY_MODES[mode] && MEMORY_MODES[mode].team);
+}
+function parseMemoryPairs(raw) {
+  const n = Number(raw);
+  if (MEMORY_SIZES[n]) return n;
+  return 18;
+}
+function memoryTeamOf(slot, mode) {
+  if (memoryIsTeam(mode)) return slot < 2 ? 0 : 1;
+  return slot;
+}
+function shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    const t = arr[i];
+    arr[i] = arr[j];
+    arr[j] = t;
+  }
+  return arr;
+}
+function publicMemoryState(s) {
+  return {
+    mode: s.mode,
+    pairs: s.pairs,
+    cols: s.cols,
+    rows: s.rows,
+    cards: s.cards.map((c) => ({
+      open: !!c.open,
+      done: !!c.done,
+      icon: c.open || c.done ? c.icon : null,
+    })),
+    scores: s.scores.slice(),
+    turnSlot: s.turnSlot,
+    turnTeam: s.turnTeam,
+    pickPhase: s.pickPhase,
+    currentPickerId: s.currentPickerId,
+    lockUntil: s.lockUntil || 0,
+    matched: s.matched,
+    playerMeta: s.playerMeta,
+    totalPairs: s.pairs,
+  };
+}
+function memoryTeamSlots(room, team) {
+  return room.players
+    .filter((p) => memoryTeamOf(p.slot, room.mode || room.state.mode) === team)
+    .sort((a, b) => a.slot - b.slot);
+}
+function memorySetPicker(room, s) {
+  if (memoryIsTeam(s.mode)) {
+    const mates = memoryTeamSlots(room, s.turnTeam);
+    const who = mates[s.pickPhase % Math.max(1, mates.length)];
+    s.currentPickerId = who ? who.id : null;
+    s.turnSlot = who ? who.slot : 0;
+  } else {
+    const p = room.players.find((x) => x.slot === s.turnSlot) || room.players[s.turnSlot];
+    s.currentPickerId = p ? p.id : null;
+  }
+}
+function initMemory(room) {
+  const mode = parseMemoryMode(room.mode);
+  room.mode = mode;
+  const pairs = parseMemoryPairs(room.pairs != null ? room.pairs : 18);
+  room.pairs = pairs;
+  const size = MEMORY_SIZES[pairs] || MEMORY_SIZES[18];
+  const icons = MEMORY_ICONS.slice(0, pairs);
+  const deck = shuffleArr(icons.concat(icons).slice());
+  const players = room.players.slice().sort((a, b) => a.slot - b.slot);
+  players.forEach((p, i) => {
+    p.slot = i;
+    p.team = memoryTeamOf(i, mode);
+  });
+  const scoreLen = memoryIsTeam(mode) ? 2 : players.length;
+  const s = {
+    mode,
+    pairs,
+    cols: size.cols,
+    rows: size.rows,
+    cards: deck.map((icon) => ({ icon, open: false, done: false })),
+    scores: Array(scoreLen).fill(0),
+    turnSlot: 0,
+    turnTeam: 0,
+    pickPhase: 0,
+    openIdx: [],
+    lockUntil: 0,
+    matched: 0,
+    currentPickerId: null,
+    playerMeta: players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slot: p.slot,
+      team: memoryTeamOf(p.slot, mode),
+    })),
+  };
+  memorySetPicker(room, s);
+  return s;
+}
+function memoryAdvanceTurn(room, s) {
+  s.openIdx = [];
+  s.lockUntil = 0;
+  if (memoryIsTeam(s.mode)) {
+    s.turnTeam = s.turnTeam === 0 ? 1 : 0;
+    s.pickPhase = 0;
+  } else {
+    const n = room.players.length;
+    s.turnSlot = (s.turnSlot + 1) % n;
+  }
+  memorySetPicker(room, s);
+}
+function memoryStayTurn(room, s) {
+  s.openIdx = [];
+  s.lockUntil = 0;
+  if (memoryIsTeam(s.mode)) {
+    s.pickPhase = 0;
+  }
+  memorySetPicker(room, s);
+}
+function memoryResolveOpen(room, s) {
+  if (s.openIdx.length < 2) return;
+  const a = s.openIdx[0];
+  const b = s.openIdx[1];
+  const ca = s.cards[a];
+  const cb = s.cards[b];
+  if (!ca || !cb) {
+    s.openIdx = [];
+    return;
+  }
+  if (ca.icon === cb.icon) {
+    ca.done = cb.done = true;
+    ca.open = cb.open = true;
+    s.matched += 1;
+    if (memoryIsTeam(s.mode)) {
+      s.scores[s.turnTeam] = (s.scores[s.turnTeam] || 0) + 1;
+    } else {
+      s.scores[s.turnSlot] = (s.scores[s.turnSlot] || 0) + 1;
+    }
+    memoryStayTurn(room, s);
+    if (s.matched >= s.pairs) memoryFinish(room, s);
+  } else {
+    s.lockUntil = Date.now() + 700;
+  }
+}
+function memoryFinish(room, s) {
+  let winnerId = null;
+  let best = -1;
+  let ties = 0;
+  for (let i = 0; i < s.scores.length; i++) {
+    const sc = s.scores[i] || 0;
+    if (sc > best) {
+      best = sc;
+      ties = 1;
+      if (memoryIsTeam(s.mode)) {
+        const mates = memoryTeamSlots(room, i);
+        winnerId = mates[0] ? mates[0].id : null;
+      } else {
+        const p = room.players.find((x) => x.slot === i);
+        winnerId = p ? p.id : null;
+      }
+    } else if (sc === best) {
+      ties++;
+    }
+  }
+  if (ties > 1) winnerId = null;
+  endGame(room, ties > 1 ? "draw" : "memory_complete", winnerId);
+}
+function applyMemoryInput(room, player, payload) {
+  const s = room.state;
+  if (!s || room.status !== "playing") return;
+  if (s.lockUntil && Date.now() < s.lockUntil) return;
+  if (s.matched >= s.pairs) return;
+  const idx = payload.flip != null ? Number(payload.flip) : Number(payload.index);
+  if (!Number.isFinite(idx) || idx < 0 || idx >= s.cards.length) return;
+  if (player.id !== s.currentPickerId) return;
+  const card = s.cards[idx];
+  if (!card || card.open || card.done) return;
+  if (s.openIdx.indexOf(idx) >= 0) return;
+
+  if (memoryIsTeam(s.mode)) {
+    // each teammate picks exactly one card per phase
+    if (s.openIdx.length >= 2) return;
+    card.open = true;
+    s.openIdx.push(idx);
+    if (s.openIdx.length === 1) {
+      s.pickPhase = 1;
+      memorySetPicker(room, s);
+    } else {
+      memoryResolveOpen(room, s);
+    }
+  } else {
+    // classical: same player flips two
+    if (s.openIdx.length >= 2) return;
+    card.open = true;
+    s.openIdx.push(idx);
+    if (s.openIdx.length >= 2) memoryResolveOpen(room, s);
+  }
+}
+function tickMemory(room) {
+  const s = room.state;
+  if (!s || !s.lockUntil) return;
+  if (Date.now() < s.lockUntil) return;
+  for (const i of s.openIdx) {
+    const c = s.cards[i];
+    if (c && !c.done) c.open = false;
+  }
+  memoryAdvanceTurn(room, s);
 }
 
 /* ===================== TANK (4p · 초대형 맵 · FFA/팀) ===================== */
@@ -2366,6 +2620,8 @@ function initState(room) {
       return initSnakes(room);
     case "airhockey":
       return initAirhockey(room);
+    case "memorymp":
+      return initMemory(room);
     default:
       return {};
   }
@@ -2389,6 +2645,9 @@ function tick(room, dt) {
       case "airhockey":
         tickAirhockey(room, dt);
         break;
+      case "memorymp":
+        tickMemory(room);
+        break;
     }
   } catch (e) {
     console.warn("game tick:", room.game, e);
@@ -2407,6 +2666,7 @@ function lobbyList(game) {
       names: room.players.filter((p) => !p.isAi).map((p) => p.name),
       host: room.players[0] ? room.players[0].name : "",
       mode: room.mode || null,
+      pairs: room.pairs != null ? room.pairs : null,
     });
   }
   return list;
@@ -2500,8 +2760,16 @@ function attachGameRooms(httpServer) {
                 : "ffa"
               : game === "rts"
                 ? parseRtsMode(msg.mode)
-                : null,
-          max: game === "rts" ? rtsModeMax(parseRtsMode(msg.mode)) : GAMES[game].max,
+                : game === "memorymp"
+                  ? parseMemoryMode(msg.mode)
+                  : null,
+          pairs: game === "memorymp" ? parseMemoryPairs(msg.pairs) : null,
+          max:
+            game === "rts"
+              ? rtsModeMax(parseRtsMode(msg.mode))
+              : game === "memorymp"
+                ? memoryModeMax(parseMemoryMode(msg.mode))
+                : GAMES[game].max,
           players: [],
           status: "lobby",
           state: null,
@@ -2626,6 +2894,9 @@ function attachGameRooms(httpServer) {
             x: typeof payload.x === "number" ? payload.x : base.x,
             y: typeof payload.y === "number" ? payload.y : base.y,
           };
+        } else if (room.game === "memorymp") {
+          applyMemoryInput(room, player, payload);
+          if (room.status === "playing") broadcastState(room);
         } else {
           player.input = Object.assign({}, base, payload);
         }
