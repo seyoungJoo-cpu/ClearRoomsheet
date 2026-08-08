@@ -5917,8 +5917,36 @@
       border-bottom: none;
     }
 
-    .sidebar-section--zones.is-collapsed .sidebar-nav--zones {
+    .sidebar-section--zones.is-collapsed .sidebar-nav--zones,
+    .sidebar-section--zones.is-collapsed .sidebar-zones-actions {
       display: none;
+    }
+
+    .sidebar-zones-actions {
+      display: flex;
+      padding: 0 8px 10px;
+    }
+
+    .sidebar-zones-actions[hidden] {
+      display: none !important;
+    }
+
+    .sidebar-zones-reset {
+      width: 100%;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #991b1b;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .sidebar-zones-reset:hover {
+      background: #fee2e2;
+      border-color: #f87171;
     }
 
     .sidebar-section__toggle {
@@ -9507,6 +9535,16 @@
           </button>
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
+          <div class="sidebar-zones-actions" id="sidebarZoneActions" hidden>
+            <button
+              type="button"
+              class="sidebar-zones-reset"
+              id="btnResetActiveZoneRooms"
+              title="선택한 특이객실 구역 객실을 비웁니다"
+            >
+              초기화
+            </button>
+          </div>
         </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
           <div class="sidebar-title">프론트</div>
@@ -9726,7 +9764,7 @@
               <div class="minibar-xml-upload__row">
                 <div class="minibar-xml-upload__copy">
                   <strong>pkgforecast XML 업로드</strong>
-                  <span>ROOM · PRODUCT_ID1 기준으로 미니바 객실을 등록합니다. 업로드 시 기존 미니바 목록을 교체합니다.</span>
+                  <span>ROOM · PRODUCT_ID1 기준으로 미니바 객실을 미리보기합니다. 저장을 눌러야 서버에 반영됩니다.</span>
                 </div>
                 <div class="minibar-xml-upload__actions">
                   <input
@@ -9736,6 +9774,7 @@
                     aria-label="미니바 pkgforecast XML 파일"
                   />
                   <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
+                  <button type="button" class="btn-order" id="btnMinibarXmlSave" disabled>저장</button>
                 </div>
               </div>
               <p class="minibar-xml-upload__status" id="minibarXmlStatus" hidden></p>
@@ -13744,6 +13783,7 @@
           currentZone = activeZone;
           expandSidebarZonesSection();
         } else syncSidebarZonesCollapseUi();
+        syncSidebarZoneResetUi();
       }
 
       var zoneRoomManageOpen = false;
@@ -14345,10 +14385,70 @@
         var btn = document.getElementById("zoneAddRoomBtn");
         var zone = getActiveZone();
         if (!btn) return;
-        var show = frontMode && !!zone;
+        var show = frontMode && !!zone && !(zone === "MINIBAR" && pendingMinibarRooms);
         btn.hidden = !show;
         btn.classList.toggle("is-open", zoneRoomManageOpen);
         btn.setAttribute("aria-expanded", zoneRoomManageOpen ? "true" : "false");
+        syncSidebarZoneResetUi();
+      }
+
+      function syncSidebarZoneResetUi() {
+        var wrap = document.getElementById("sidebarZoneActions");
+        var btn = document.getElementById("btnResetActiveZoneRooms");
+        if (!wrap || !btn) return;
+        var zone = currentZone || getActiveZone();
+        var show = frontMode && !!zone;
+        wrap.hidden = !show;
+        if (zone) {
+          var zLabel = zoneLabels[zone] || zone;
+          btn.title = zLabel + " 객실 목록을 비웁니다";
+        }
+      }
+
+      function clearActiveZoneRooms() {
+        var zone = currentZone || getActiveZone();
+        if (!zone) {
+          showHkActionToast("초기화할 구역을 선택하세요.");
+          return;
+        }
+        if (!frontMode) {
+          showHkActionToast("프론트 모드에서 초기화할 수 있습니다.");
+          return;
+        }
+        if (!confirm("초기화 하시겠습니까?")) return;
+        var data = HKStorage.load();
+        if (!data.rooms || typeof data.rooms !== "object") data.rooms = {};
+        var list = Array.isArray(data.rooms[zone]) ? data.rooms[zone] : [];
+        list.forEach(function (row) {
+          if (!row || !row.number) return;
+          if (typeof HKStorage.markRoomDeleted === "function") {
+            HKStorage.markRoomDeleted(data, zone, row.number);
+          }
+        });
+        data.rooms[zone] = [];
+        if (zone === "MINIBAR") {
+          pendingMinibarRooms = null;
+          syncMinibarSaveUi();
+          setMinibarUploadStatus("", false);
+        }
+        HKStorage.save(data);
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        closeZoneRoomManagePanel();
+        renderRoomsForZone(zone, { force: true });
+        renderZoneRoomManagePanel(zone, { force: true });
+        var zLabel = zoneLabels[zone] || zone;
+        showHkActionToast(zLabel + " 초기화됨");
+      }
+
+      function bindSidebarZoneResetUi() {
+        var btn = document.getElementById("btnResetActiveZoneRooms");
+        if (!btn || btn.__hkZoneResetBound) return;
+        btn.__hkZoneResetBound = true;
+        btn.addEventListener("click", function () {
+          clearActiveZoneRooms();
+        });
       }
 
       function closeZoneRoomManagePanel() {
@@ -14360,6 +14460,10 @@
 
       function openZoneRoomManagePanel() {
         if (!frontMode || !getActiveZone()) return;
+        if (getActiveZone() === "MINIBAR" && pendingMinibarRooms) {
+          showHkActionToast("미니바 미리보기 중입니다. 저장 후 수정하세요.");
+          return;
+        }
         if (!getOperatorName()) {
           alert("이름을 입력하세요.");
           return;
@@ -24949,7 +25053,10 @@
         var panel = document.getElementById("minibarXmlUpload");
         if (!panel) return;
         panel.hidden = zone !== "MINIBAR";
+        syncMinibarSaveUi();
       }
+
+      var pendingMinibarRooms = null;
 
       var MINIBAR_PRODUCT_GROUP = {
         MB0008: "B2D1S1",
@@ -25003,6 +25110,41 @@
         return MINIBAR_GROUP_LABELS[groupId] || MINIBAR_GROUP_LABELS.OTHER;
       }
 
+      function syncMinibarSaveUi() {
+        var btn = document.getElementById("btnMinibarXmlSave");
+        if (!btn) return;
+        btn.disabled = !(frontMode && pendingMinibarRooms && pendingMinibarRooms.length);
+      }
+
+      function buildMinibarRoomsFromRows(rows) {
+        var nextRooms = [];
+        var stamp = new Date().toISOString();
+        (rows || []).forEach(function (row) {
+          if (!row || !row.number) return;
+          var room = {
+            number: row.number,
+            status: lookupRoomStatusFromXml(row.number),
+            memo1: "",
+            memo2: "",
+            time: "",
+            mbProductId: row.productId || "",
+            mbGroup: row.groupId || getMinibarGroupId(row.productId),
+          };
+          stampRoomRow(room);
+          room.createdAt = stamp;
+          room.updatedAt = stamp;
+          nextRooms.push(room);
+        });
+        return nextRooms;
+      }
+
+      function getMinibarDisplayRooms(data) {
+        if (pendingMinibarRooms && pendingMinibarRooms.length) {
+          return pendingMinibarRooms.slice();
+        }
+        return ((data && data.rooms && data.rooms.MINIBAR) || []).slice();
+      }
+
       function parseMinibarPkgForecastXml(xmlText) {
         var parser = new DOMParser();
         var doc = parser.parseFromString(String(xmlText || ""), "text/xml");
@@ -25048,33 +25190,25 @@
           });
       }
 
-      function applyMinibarXmlRooms(rows) {
+      function commitPendingMinibarRooms() {
+        if (!pendingMinibarRooms || !pendingMinibarRooms.length) return 0;
         var data = HKStorage.load();
         if (!data.rooms || typeof data.rooms !== "object") data.rooms = {};
-        var nextRooms = [];
-        var stamp = new Date().toISOString();
-        (rows || []).forEach(function (row) {
+        pendingMinibarRooms.forEach(function (row) {
           if (!row || !row.number) return;
           if (typeof HKStorage.unmarkRoomDeleted === "function") {
             HKStorage.unmarkRoomDeleted(data, "MINIBAR", row.number);
           }
-          var room = {
-            number: row.number,
-            status: lookupRoomStatusFromXml(row.number),
-            memo1: "",
-            memo2: "",
-            time: "",
-            mbProductId: row.productId || "",
-            mbGroup: row.groupId || getMinibarGroupId(row.productId),
-          };
-          stampRoomRow(room);
-          room.createdAt = stamp;
-          room.updatedAt = stamp;
-          nextRooms.push(room);
         });
-        data.rooms.MINIBAR = nextRooms;
+        var count = pendingMinibarRooms.length;
+        data.rooms.MINIBAR = pendingMinibarRooms.slice();
+        pendingMinibarRooms = null;
         HKStorage.save(data);
-        return nextRooms.length;
+        syncMinibarSaveUi();
+        if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+          HKSync.pushStorageNow();
+        }
+        return count;
       }
 
       function setMinibarUploadStatus(msg, isError) {
@@ -25109,20 +25243,24 @@
               setMinibarUploadStatus("ROOM 객실을 찾지 못했습니다.", true);
               return;
             }
-            var count = applyMinibarXmlRooms(rows);
+            pendingMinibarRooms = buildMinibarRoomsFromRows(rows);
+            syncMinibarSaveUi();
+            closeZoneRoomManagePanel();
             currentZone = "MINIBAR";
             setZonePanelOpen(true);
             expandZoneBlock();
             renderSidebarZoneTabs();
+            updateZoneAddRoomBtnUi();
             renderRoomsForZone("MINIBAR", { force: true });
-            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
-              HKSync.pushStorageNow();
-            }
             setMinibarUploadStatus(
-              "업로드 완료 · 객실 " + count + "개 등록 (PRODUCT_ID1 분류)",
+              "미리보기 · 객실 " +
+                pendingMinibarRooms.length +
+                "개 · 저장을 누르면 서버에 반영됩니다",
               false
             );
-            showHkActionToast("미니바 XML 업로드 · " + count + "개 객실 등록");
+            showHkActionToast(
+              "미니바 미리보기 · " + pendingMinibarRooms.length + "개 · 저장 필요"
+            );
             input.value = "";
           } catch (err) {
             setMinibarUploadStatus(
@@ -25137,13 +25275,45 @@
         reader.readAsText(file);
       }
 
+      function handleMinibarXmlSave() {
+        if (!frontMode) {
+          setMinibarUploadStatus("프론트 모드에서 저장할 수 있습니다.", true);
+          return;
+        }
+        if (!pendingMinibarRooms || !pendingMinibarRooms.length) {
+          setMinibarUploadStatus("먼저 XML을 업로드하세요.", true);
+          return;
+        }
+        var count = commitPendingMinibarRooms();
+        currentZone = "MINIBAR";
+        setZonePanelOpen(true);
+        expandZoneBlock();
+        renderSidebarZoneTabs();
+        updateZoneAddRoomBtnUi();
+        renderRoomsForZone("MINIBAR", { force: true });
+        setMinibarUploadStatus(
+          "저장 완료 · 객실 " + count + "개 서버 동기화됨 (PRODUCT_ID1 분류)",
+          false
+        );
+        showHkActionToast("미니바 저장 · " + count + "개 객실 동기화");
+      }
+
       function bindMinibarXmlUploadUi() {
         var btn = document.getElementById("btnMinibarXmlUpload");
-        if (!btn || btn.__hkMinibarBound) return;
-        btn.__hkMinibarBound = true;
-        btn.addEventListener("click", function () {
-          handleMinibarXmlUpload();
-        });
+        if (btn && !btn.__hkMinibarBound) {
+          btn.__hkMinibarBound = true;
+          btn.addEventListener("click", function () {
+            handleMinibarXmlUpload();
+          });
+        }
+        var saveBtn = document.getElementById("btnMinibarXmlSave");
+        if (saveBtn && !saveBtn.__hkMinibarSaveBound) {
+          saveBtn.__hkMinibarSaveBound = true;
+          saveBtn.addEventListener("click", function () {
+            handleMinibarXmlSave();
+          });
+        }
+        syncMinibarSaveUi();
       }
 
       function renderRoomsForZone(zone, opts) {
@@ -25164,7 +25334,10 @@
           return;
         }
         var data = HKStorage.load();
-        var rooms = ((data.rooms && data.rooms[zone]) || []).slice();
+        var rooms =
+          zone === "MINIBAR"
+            ? getMinibarDisplayRooms(data)
+            : ((data.rooms && data.rooms[zone]) || []).slice();
         if (zone === "MINIBAR") {
           rooms.sort(function (a, b) {
             var ga = MINIBAR_GROUP_ORDER.indexOf(a && a.mbGroup);
@@ -25187,7 +25360,7 @@
           roomEmpty.textContent =
             zone === "MINIBAR"
               ? frontMode
-                ? "등록된 객실이 없습니다. pkgforecast XML을 업로드하세요."
+                ? "등록된 객실이 없습니다. pkgforecast XML을 업로드한 뒤 저장하세요."
                 : "등록된 객실이 없습니다. 프론트 모드에서 XML을 업로드하세요."
               : frontMode
                 ? "등록된 객실이 없습니다. 상단 + 버튼으로 추가하세요."
@@ -25214,7 +25387,11 @@
             }
             shownCount += 1;
             // MINIBAR rooms array was sorted copy — resolve original index for editors
-            var srcIdx = ((data.rooms && data.rooms[zone]) || []).indexOf(room);
+            var srcList =
+              zone === "MINIBAR" && pendingMinibarRooms
+                ? pendingMinibarRooms
+                : (data.rooms && data.rooms[zone]) || [];
+            var srcIdx = srcList.indexOf(room);
             if (srcIdx < 0) srcIdx = idx;
             var li = buildZoneRoomCardLi(zone, room, srcIdx, {
               showCheckIn: true,
@@ -26348,6 +26525,7 @@
       bindDeskChatResponsiveWidth();
       bindDeskChatSizeHandles();
       bindMinibarXmlUploadUi();
+      bindSidebarZoneResetUi();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
