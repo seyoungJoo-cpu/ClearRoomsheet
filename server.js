@@ -1038,9 +1038,17 @@ function mergeHkStorage(prev, incoming) {
       staleOut.hotelInfo = prev.hotelInfo;
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")) {
-      staleOut.complaintTypeAnalysis = incoming.complaintTypeAnalysis;
+      staleOut.complaintTypeAnalysis = mergeComplaintTypeAnalysisForServer(
+        prev.complaintTypeAnalysis,
+        incoming.complaintTypeAnalysis,
+        true
+      );
     } else if (prev.complaintTypeAnalysis) {
-      staleOut.complaintTypeAnalysis = prev.complaintTypeAnalysis;
+      staleOut.complaintTypeAnalysis = mergeComplaintTypeAnalysisForServer(
+        prev.complaintTypeAnalysis,
+        null,
+        false
+      );
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "gameRanks")) {
       staleOut.gameRanks = mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks);
@@ -1299,75 +1307,11 @@ function mergeHkStorage(prev, incoming) {
       }
       return prev.hotelInfo || { text: "", urls: [], pages: [], updatedAt: "" };
     })(),
-    complaintTypeAnalysis: (function () {
-      function norm(raw) {
-        if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
-        var seen = {};
-        var records = [];
-        (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
-          if (!row || typeof row !== "object") return;
-          var id = row.id != null ? String(row.id).trim() : "";
-          if (!id || seen[id]) return;
-          seen[id] = true;
-          var typeId = row.typeId != null ? String(row.typeId).trim() : "";
-          var roomChange = false;
-          if (row.roomChange === true || row.roomChange === 1 || row.roomChange === "1") {
-            roomChange = true;
-          } else if (typeof row.roomChange === "string") {
-            var rc = row.roomChange.trim().toUpperCase();
-            roomChange = rc === "O" || rc === "Y" || rc === "TRUE";
-          }
-          records.push({
-            id: id,
-            createdAt: row.createdAt != null ? String(row.createdAt) : "",
-            updatedAt: row.updatedAt != null ? String(row.updatedAt) : "",
-            reservationNo: row.reservationNo != null ? String(row.reservationNo) : "",
-            guestName: row.guestName != null ? String(row.guestName) : "",
-            roomNo: row.roomNo != null ? String(row.roomNo) : "",
-            typeId: typeId,
-            roomChange: roomChange,
-          });
-        });
-        return {
-          updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
-          records: records,
-        };
-      }
-      var base = norm(prev.complaintTypeAnalysis);
-      if (!Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")) {
-        return base;
-      }
-      var inc = norm(incoming.complaintTypeAnalysis);
-      var map = {};
-      base.records.forEach(function (r) {
-        map[r.id] = r;
-      });
-      inc.records.forEach(function (r) {
-        var p = map[r.id];
-        if (!p) {
-          map[r.id] = r;
-          return;
-        }
-        var pa = p.updatedAt || p.createdAt || "";
-        var ia = r.updatedAt || r.createdAt || "";
-        if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
-      });
-      var ba = base.updatedAt || "";
-      var ia2 = inc.updatedAt || "";
-      return {
-        updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
-        records: Object.keys(map)
-          .map(function (k) {
-            return map[k];
-          })
-          .sort(function (a, b) {
-            var ta = a.createdAt || "";
-            var tb = b.createdAt || "";
-            if (ta !== tb) return String(ta).localeCompare(String(tb));
-            return String(a.id).localeCompare(String(b.id));
-          }),
-      };
-    })(),
+    complaintTypeAnalysis: mergeComplaintTypeAnalysisForServer(
+      prev.complaintTypeAnalysis,
+      incoming.complaintTypeAnalysis,
+      Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")
+    ),
     gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
   };
 
@@ -1594,6 +1538,105 @@ function mergeOrderLogs(prev, incoming) {
     .sort(function (a, b) {
       return new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime();
     });
+}
+
+/** 마감 이후에도 남기는 오더(알림용)만 허용. 접수/투입/취소/문제 등은 마감 이전이면 폐기 */
+function hkOrderSurvivesCloseDay(entry, closeDayAt) {
+  if (!entry) return false;
+  if (!closeDayAt) return true;
+  var at = entry.updatedAt || entry.at || entry.createdAt || "";
+  var ms = new Date(at).getTime();
+  var closeMs = new Date(closeDayAt).getTime();
+  if (!isNaN(ms) && !isNaN(closeMs) && ms >= closeMs) return true;
+  var p = entry.phase != null ? String(entry.phase).trim() : "";
+  if (
+    p === "cancelled" ||
+    p === "deployed" ||
+    p === "doorhandle" ||
+    p === "unavailable" ||
+    p === "issue" ||
+    p === "accepted"
+  ) {
+    return false;
+  }
+  if (entry.issueOpen === true) return false;
+  return true;
+}
+
+function hkFilterOrdersAfterCloseDay(arr, closeDayAt) {
+  if (!Array.isArray(arr)) return [];
+  if (!closeDayAt) return arr.slice();
+  return arr.filter(function (entry) {
+    return hkOrderSurvivesCloseDay(entry, closeDayAt);
+  });
+}
+
+function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) {
+  function norm(raw) {
+    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
+    var seen = {};
+    var records = [];
+    (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
+      if (!row || typeof row !== "object") return;
+      var id = row.id != null ? String(row.id).trim() : "";
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      var typeId = row.typeId != null ? String(row.typeId).trim() : "";
+      var roomChange = false;
+      if (row.roomChange === true || row.roomChange === 1 || row.roomChange === "1") {
+        roomChange = true;
+      } else if (typeof row.roomChange === "string") {
+        var rc = row.roomChange.trim().toUpperCase();
+        roomChange = rc === "O" || rc === "Y" || rc === "TRUE";
+      }
+      records.push({
+        id: id,
+        createdAt: row.createdAt != null ? String(row.createdAt) : "",
+        updatedAt: row.updatedAt != null ? String(row.updatedAt) : "",
+        reservationNo: row.reservationNo != null ? String(row.reservationNo) : "",
+        guestName: row.guestName != null ? String(row.guestName) : "",
+        roomNo: row.roomNo != null ? String(row.roomNo) : "",
+        typeId: typeId,
+        roomChange: roomChange,
+      });
+    });
+    return {
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+      records: records,
+    };
+  }
+  var base = norm(prevRaw);
+  if (!hasIncoming) return base;
+  var inc = norm(incomingRaw);
+  var map = {};
+  base.records.forEach(function (r) {
+    map[r.id] = r;
+  });
+  inc.records.forEach(function (r) {
+    var p = map[r.id];
+    if (!p) {
+      map[r.id] = r;
+      return;
+    }
+    var pa = p.updatedAt || p.createdAt || "";
+    var ia = r.updatedAt || r.createdAt || "";
+    if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
+  });
+  var ba = base.updatedAt || "";
+  var ia2 = inc.updatedAt || "";
+  return {
+    updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
+    records: Object.keys(map)
+      .map(function (k) {
+        return map[k];
+      })
+      .sort(function (a, b) {
+        var ta = a.createdAt || "";
+        var tb = b.createdAt || "";
+        if (ta !== tb) return String(ta).localeCompare(String(tb));
+        return String(a.id).localeCompare(String(b.id));
+      }),
+  };
 }
 
 function adminInquiryHasReply(entry) {
@@ -1826,6 +1869,10 @@ function mergeSyncPayload(prev, incoming) {
       // 마감 전 객실만 걸러내도록 항상 병합한다.
       out.hkStorage = mergeHkStorage(prev.hkStorage, incoming.hkStorage);
     }
+  } else if (incoming.hkCloseDayReset !== true) {
+    // hkStorage 없는 일반 sync에서도 마감 플래그가 디스크에 남아
+    // 이후 poll마다 강제 교체되는 걸 막는다.
+    delete out.hkCloseDayReset;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) {
     // 마감 초기화([])는 병합하지 않고 교체 — 병합하면 옛 정비등록이 되살아남
@@ -1891,7 +1938,7 @@ function mergeSyncPayload(prev, incoming) {
     out.hkClearLocalCaches = incoming.hkClearLocalCaches === true;
   } else if (incoming.hkCloseDayReset === true) {
     out.hkClearLocalCaches = true;
-  } else if (out.hkCloseDayReset !== true) {
+  } else {
     delete out.hkClearLocalCaches;
   }
 
@@ -1940,6 +1987,16 @@ function mergeSyncPayload(prev, incoming) {
     if (Array.isArray(out.hkChangeLog)) {
       out.hkChangeLog = hkFilterLogAfterCloseDay(out.hkChangeLog, closeAtFilter);
     }
+    if (Array.isArray(out.hkOrderLog)) {
+      out.hkOrderLog = hkFilterOrdersAfterCloseDay(out.hkOrderLog, closeAtFilter);
+    }
+  }
+
+  // 마감 리셋 POST가 끝난 뒤에도 플래그가 남으면 이후 poll이 계속 강제 교체하므로
+  // 저장 직전 한 번만 쓰고 제거한다 (클라이언트는 hkCloseDayAt으로 새 마감을 감지).
+  if (incoming.hkCloseDayReset === true) {
+    delete out.hkCloseDayReset;
+    delete out.hkClearLocalCaches;
   }
 
   return out;

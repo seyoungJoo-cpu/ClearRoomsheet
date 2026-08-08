@@ -298,52 +298,21 @@
     });
   }
 
-  function renderStats() {
-    var yearSel = document.getElementById("complaintStatsYear");
-    var tableWrap = document.getElementById("complaintStatsTableWrap");
-    var empty = document.getElementById("complaintStatsEmpty");
-    if (!tableWrap) return;
-    var pack = loadPack();
-    var records = pack.records || [];
+  function buildStatsGrid(records, yearFilter) {
     var years = {};
     var monthsAll = {};
-    records.forEach(function (r) {
+    (records || []).forEach(function (r) {
       var mk = monthKeyFromIso(r.createdAt);
       if (!mk) return;
       monthsAll[mk] = true;
       years[mk.slice(0, 4)] = true;
     });
     var yearList = Object.keys(years).sort();
-    if (yearSel) {
-      var prev = statsYear;
-      yearSel.innerHTML = "";
-      var optAll = document.createElement("option");
-      optAll.value = "all";
-      optAll.textContent = "전체 연도";
-      yearSel.appendChild(optAll);
-      yearList.forEach(function (y) {
-        var o = document.createElement("option");
-        o.value = y;
-        o.textContent = y + "년";
-        yearSel.appendChild(o);
-      });
-      if (prev !== "all" && yearList.indexOf(prev) < 0) statsYear = "all";
-      yearSel.value = statsYear;
-    }
-
     var months = Object.keys(monthsAll)
       .filter(function (m) {
-        return statsYear === "all" || m.indexOf(statsYear + "-") === 0;
+        return yearFilter === "all" || m.indexOf(yearFilter + "-") === 0;
       })
       .sort();
-
-    if (!records.length || !months.length) {
-      tableWrap.innerHTML = "";
-      if (empty) empty.hidden = false;
-      return;
-    }
-    if (empty) empty.hidden = true;
-
     var counts = {};
     TYPE_OPTIONS.forEach(function (t) {
       counts[t.id] = {};
@@ -351,14 +320,53 @@
         counts[t.id][m] = 0;
       });
     });
-    records.forEach(function (r) {
+    (records || []).forEach(function (r) {
       var mk = monthKeyFromIso(r.createdAt);
       if (!mk || months.indexOf(mk) < 0) return;
       var tid = r.typeId && counts[r.typeId] ? r.typeId : null;
       if (!tid) return;
       counts[tid][mk] += 1;
     });
+    return { yearList: yearList, months: months, counts: counts };
+  }
 
+  function renderStats() {
+    var yearSel = document.getElementById("complaintStatsYear");
+    var tableWrap = document.getElementById("complaintStatsTableWrap");
+    var empty = document.getElementById("complaintStatsEmpty");
+    if (!tableWrap) return;
+    var pack = loadPack();
+    var records = pack.records || [];
+    var grid = buildStatsGrid(records, statsYear);
+    if (yearSel) {
+      var prev = statsYear;
+      yearSel.innerHTML = "";
+      var optAll = document.createElement("option");
+      optAll.value = "all";
+      optAll.textContent = "전체 연도";
+      yearSel.appendChild(optAll);
+      grid.yearList.forEach(function (y) {
+        var o = document.createElement("option");
+        o.value = y;
+        o.textContent = y + "년";
+        yearSel.appendChild(o);
+      });
+      if (prev !== "all" && grid.yearList.indexOf(prev) < 0) statsYear = "all";
+      yearSel.value = statsYear;
+      if (statsYear !== prev) {
+        grid = buildStatsGrid(records, statsYear);
+      }
+    }
+
+    if (!records.length || !grid.months.length) {
+      tableWrap.innerHTML = "";
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+
+    var months = grid.months;
+    var counts = grid.counts;
     var html = [
       '<table class="complaint-stats-table" aria-label="유형별 월별 현황">',
       "<thead><tr><th>유형</th>",
@@ -390,6 +398,70 @@
     html.push("<td class=\"is-total\">" + grand + "</td></tr>");
     html.push("</tbody></table>");
     tableWrap.innerHTML = html.join("");
+  }
+
+  function downloadStatsExcel() {
+    var pack = loadPack();
+    var records = pack.records || [];
+    var grid = buildStatsGrid(records, statsYear);
+    if (!records.length || !grid.months.length) {
+      opts.toast("다운로드할 집계 데이터가 없습니다.");
+      return;
+    }
+    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    var aoa = [];
+    var header = ["유형"].concat(grid.months).concat(["합계"]);
+    aoa.push(header);
+    TYPE_OPTIONS.forEach(function (t) {
+      var row = [t.label];
+      var rowTotal = 0;
+      grid.months.forEach(function (m) {
+        var n = (grid.counts[t.id] && grid.counts[t.id][m]) || 0;
+        rowTotal += n;
+        row.push(n || 0);
+      });
+      row.push(rowTotal);
+      aoa.push(row);
+    });
+    var foot = ["합계"];
+    var grand = 0;
+    grid.months.forEach(function (m) {
+      var col = 0;
+      TYPE_OPTIONS.forEach(function (t) {
+        col += (grid.counts[t.id] && grid.counts[t.id][m]) || 0;
+      });
+      grand += col;
+      foot.push(col);
+    });
+    foot.push(grand);
+    aoa.push(foot);
+
+    var wb = global.XLSX.utils.book_new();
+    var ws = global.XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 28 }].concat(
+      grid.months.map(function () {
+        return { wch: 10 };
+      }),
+      [{ wch: 8 }]
+    );
+    global.XLSX.utils.book_append_sheet(wb, ws, "유형별현황");
+    var now = new Date();
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    var stamp =
+      now.getFullYear() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      "_" +
+      pad(now.getHours()) +
+      pad(now.getMinutes());
+    var yearPart = statsYear === "all" ? "전체" : String(statsYear);
+    global.XLSX.writeFile(wb, "고객불편사항_유형별현황_" + yearPart + "_" + stamp + ".xlsx");
+    opts.toast("엑셀 다운로드 · " + yearPart);
   }
 
   function updateEntryControls() {
@@ -551,6 +623,14 @@
       yearSel.addEventListener("change", function () {
         statsYear = yearSel.value || "all";
         renderStats();
+      });
+    }
+
+    var excelBtn = document.getElementById("btnComplaintStatsExcel");
+    if (excelBtn && !excelBtn.__hkComplaintExcelBound) {
+      excelBtn.__hkComplaintExcelBound = true;
+      excelBtn.addEventListener("click", function () {
+        downloadStatsExcel();
       });
     }
 

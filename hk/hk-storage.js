@@ -1110,7 +1110,7 @@
           : [];
     });
 
-    // 스탬프가 있고 마감 이전이면 제외. 스탬프 없는 행은 유지(배포 중 기존 데이터)
+    // 스탬프가 마감 이전이거나 없으면 제외 (마감 후 되살림 방지)
     if (d.closeDayAt) {
       var zoneIds = STANDARD_ZONE_IDS.concat(
         customZones.map(function (z) {
@@ -1122,7 +1122,7 @@
         d.rooms[zone] = list.filter(function (room) {
           if (!room || !room.number) return false;
           var at = roomActivityAt(room);
-          if (!at) return true;
+          if (!at) return false;
           return isRoomAfterCloseDay(room, d.closeDayAt);
         });
       });

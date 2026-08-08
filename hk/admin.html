@@ -2149,6 +2149,19 @@
           ["입실 트레이", String(trayCounts.in) + "건"],
           ["삭제·수정 트레이", String(trayCounts.deleted) + "건"],
           ["특이객실 구역", zoneLabels.join(", ") || "—"],
+          [
+            "고객불편사항 유형분석",
+            (function () {
+              var pack =
+                typeof HKStorage.normalizeComplaintTypeAnalysis === "function"
+                  ? HKStorage.normalizeComplaintTypeAnalysis(
+                      snapshot.data.complaintTypeAnalysis
+                    )
+                  : snapshot.data.complaintTypeAnalysis || {};
+              var n = pack && Array.isArray(pack.records) ? pack.records.length : 0;
+              return n ? n + "건 (마감 후 유지)" : "없음 (마감 후 유지)";
+            })(),
+          ],
           ["요청 알림", String((snapshot.requestLog || []).length) + "건"],
           ["오더", String((snapshot.orderLog || []).length) + "건"],
           ["MB & 인벤 변경", String((snapshot.mbInvLog || []).length) + "건"],
@@ -2284,6 +2297,58 @@
                 ]);
               });
               return rows;
+            })(),
+          },
+          {
+            title: "고객불편사항 유형분석",
+            headers: ["날짜", "예약번호", "이름", "객실번호", "유형", "룸체인지"],
+            rows: (function () {
+              var pack =
+                typeof HKStorage.normalizeComplaintTypeAnalysis === "function"
+                  ? HKStorage.normalizeComplaintTypeAnalysis(
+                      snapshot.data.complaintTypeAnalysis
+                    )
+                  : snapshot.data.complaintTypeAnalysis || { records: [] };
+              var typeLabels = {
+                "1": "1.고객응대, 업무처리",
+                "2": "2.담배냄새",
+                "3": "3.객실냄새",
+                "4": "4.객실용품 및 대여용품",
+                "5": "5.정비관련",
+                "6": "6.해충(벌레)",
+                "7": "7.시설관련",
+                "8": "8.부대시설",
+                "9": "9.소음",
+                "10": "10.기타",
+              };
+              return (pack.records || []).map(function (r) {
+                var d = "";
+                if (r && r.createdAt) {
+                  var dt = new Date(r.createdAt);
+                  if (!isNaN(dt.getTime())) {
+                    var mm = dt.getMonth() + 1;
+                    var dd = dt.getDate();
+                    d =
+                      dt.getFullYear() +
+                      "-" +
+                      (mm < 10 ? "0" : "") +
+                      mm +
+                      "-" +
+                      (dd < 10 ? "0" : "") +
+                      dd;
+                  } else {
+                    d = String(r.createdAt).slice(0, 10);
+                  }
+                }
+                return [
+                  d,
+                  (r && r.reservationNo) || "",
+                  (r && r.guestName) || "",
+                  (r && r.roomNo) || "",
+                  typeLabels[(r && r.typeId) || ""] || (r && r.typeId) || "",
+                  r && r.roomChange ? "O" : "X",
+                ];
+              });
             })(),
           },
           {
@@ -4395,7 +4460,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편사항 유지 · 연박 초기화)");
           });
           return;
         }
@@ -4414,13 +4479,13 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편사항 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편사항 유형분석 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편사항 유형분석은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
