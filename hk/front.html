@@ -8158,74 +8158,57 @@
       height: 420px;
       min-height: 200px;
       max-height: min(85vh, 900px);
-      width: min(100%, 520px);
+      width: 100%;
       min-width: 220px;
-      max-width: min(900px, 100%);
+      max-width: min(1800px, 100%);
       margin-top: 0;
-      align-self: flex-start;
-      padding-right: 12px;
+      align-self: stretch;
+      padding-left: 12px;
       padding-bottom: 12px;
     }
 
     .desk-chat-resize-handle {
       position: absolute;
       padding: 0;
-      border: 1px solid #94a3b8;
-      border-radius: 5px;
-      background: #e2e8f0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
       z-index: 5;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+      box-shadow: none;
       touch-action: none;
+      opacity: 0;
     }
 
-    .desk-chat-resize-handle--right {
-      top: 10px;
-      right: 0;
-      bottom: 16px;
-      width: 10px;
+    .desk-chat-resize-handle--left {
+      top: 0;
+      left: 0;
+      bottom: 14px;
+      width: 12px;
       cursor: ew-resize;
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0 3px,
-          #94a3b8 3px 5px,
-          transparent 5px 8px
-        ),
-        #e2e8f0;
     }
 
     .desk-chat-resize-handle--bottom {
-      left: 10px;
-      right: 16px;
+      left: 14px;
+      right: 0;
       bottom: 0;
-      height: 10px;
+      height: 12px;
       cursor: ns-resize;
-      background:
-        repeating-linear-gradient(
-          to right,
-          transparent 0 3px,
-          #94a3b8 3px 5px,
-          transparent 5px 8px
-        ),
-        #e2e8f0;
     }
 
     .desk-chat-resize-handle--corner {
-      right: 0;
+      left: 0;
       bottom: 0;
-      width: 14px;
-      height: 14px;
-      cursor: nwse-resize;
-      background:
-        linear-gradient(135deg, transparent 0 42%, #64748b 42% 48%, transparent 48% 58%, #64748b 58% 64%, transparent 64%),
-        #e2e8f0;
+      width: 16px;
+      height: 16px;
+      cursor: nesw-resize;
     }
 
     .desk-chat-resize-handle:hover,
     .desk-chat-resize-handle:focus-visible {
-      background-color: #cbd5e1;
-      border-color: var(--accent);
+      background: transparent;
+      border: none;
       outline: none;
+      opacity: 0;
     }
 
     .request-desk-chat__head,
@@ -13246,21 +13229,29 @@
         applyFrontChatFontLevel(getFrontChatFontLevel());
       }
 
+      var DESK_CHAT_MAX_WIDTH = 1800;
+
+      function getDeskChatMaxWidth(el) {
+        var parent = el && el.parentElement;
+        var avail = parent && parent.clientWidth > 0 ? parent.clientWidth : window.innerWidth || DESK_CHAT_MAX_WIDTH;
+        var pageCap =
+          (window.visualViewport && window.visualViewport.width) ||
+          document.documentElement.clientWidth ||
+          window.innerWidth ||
+          avail;
+        return Math.max(220, Math.min(avail, pageCap - 8, DESK_CHAT_MAX_WIDTH));
+      }
+
       function clampDeskChatWidths() {
         DESK_CHAT_IDS.forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
-          var parent = el.parentElement;
-          if (!parent) return;
-          var avail = parent.clientWidth;
-          if (!(avail > 0)) return;
-          var pageCap =
-            (window.visualViewport && window.visualViewport.width) ||
-            document.documentElement.clientWidth ||
-            window.innerWidth ||
-            avail;
-          var maxW = Math.max(120, Math.min(avail, pageCap - 8, 900));
+          var maxW = getDeskChatMaxWidth(el);
           el.style.maxWidth = maxW + "px";
+          if (!el.style.width || el.getAttribute("data-desk-width-user") !== "1") {
+            el.style.width = maxW + "px";
+            return;
+          }
           if (el.offsetWidth > maxW + 1) {
             el.style.width = maxW + "px";
           }
@@ -13304,7 +13295,7 @@
             handle.type = "button";
             handle.className = "desk-chat-resize-handle desk-chat-resize-handle--" + axis;
             handle.title =
-              axis === "right"
+              axis === "left"
                 ? "좌우로 드래그하여 가로 크기 조절"
                 : axis === "bottom"
                   ? "위아래로 드래그하여 세로 크기 조절"
@@ -13312,10 +13303,10 @@
             handle.setAttribute("aria-label", label);
             return handle;
           }
-          var handleRight = makeHandle("right", "채팅 가로 크기 조절");
+          var handleLeft = makeHandle("left", "채팅 가로 크기 조절");
           var handleBottom = makeHandle("bottom", "채팅 세로 크기 조절");
           var handleCorner = makeHandle("corner", "채팅 가로·세로 크기 조절");
-          el.appendChild(handleRight);
+          el.appendChild(handleLeft);
           el.appendChild(handleBottom);
           el.appendChild(handleCorner);
 
@@ -13340,19 +13331,14 @@
             });
             handle.addEventListener("pointermove", function (e) {
               if (!dragging) return;
-              var parentCap =
-                (el.parentElement && el.parentElement.clientWidth) ||
-                window.innerWidth ||
-                900;
-              var maxW = Math.max(220, Math.min(parentCap - 8, 900));
-              var maxH = Math.min(
-                window.innerHeight * 0.85 || 900,
-                900
-              );
+              var maxW = getDeskChatMaxWidth(el);
+              var maxH = Math.min(window.innerHeight * 0.85 || 900, 900);
               if (mode === "x" || mode === "both") {
-                var nextW = Math.max(220, Math.min(maxW, startW + (e.clientX - startX)));
+                // 왼쪽 핸들: 왼쪽으로 끌면 넓어짐
+                var nextW = Math.max(220, Math.min(maxW, startW + (startX - e.clientX)));
                 el.style.width = nextW + "px";
                 el.style.maxWidth = maxW + "px";
+                el.setAttribute("data-desk-width-user", "1");
               }
               if (mode === "y" || mode === "both") {
                 var nextH = Math.max(200, Math.min(maxH, startH + (e.clientY - startY)));
@@ -13366,7 +13352,7 @@
             handle.addEventListener("pointerup", endDrag);
             handle.addEventListener("pointercancel", endDrag);
           }
-          bindHandle(handleRight, "x");
+          bindHandle(handleLeft, "x");
           bindHandle(handleBottom, "y");
           bindHandle(handleCorner, "both");
         });
