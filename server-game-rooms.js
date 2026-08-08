@@ -8,7 +8,7 @@ const GAMES = {
   ageofwar: { max: 2, hz: 20 },
   snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 45 },
-  memorymp: { max: 4, hz: 8 },
+  memorymp: { max: 4, hz: 30 },
 };
 
 const MEMORY_MODES = {
@@ -440,25 +440,44 @@ function shuffleArr(arr) {
   return arr;
 }
 function publicMemoryState(s) {
+  const now = Date.now();
+  const previewing = !!(s.previewEnds && now < s.previewEnds);
+  const step = s.previewStep || 22;
+  const hold = s.previewHold || 90;
+  const start = s.previewStart || 0;
   return {
     mode: s.mode,
     pairs: s.pairs,
     cols: s.cols,
     rows: s.rows,
-    cards: s.cards.map((c) => ({
-      open: !!c.open,
-      done: !!c.done,
-      icon: c.open || c.done ? c.icon : null,
-    })),
+    cards: s.cards.map((c, i) => {
+      let wave = false;
+      if (previewing && start) {
+        const t = now - start;
+        const openAt = i * step;
+        wave = t >= openAt && t < openAt + hold;
+      }
+      return {
+        open: !!(c.open || wave),
+        done: !!c.done,
+        icon: c.open || c.done || wave || previewing ? c.icon : null,
+        wave: !!wave,
+      };
+    }),
     scores: s.scores.slice(),
     turnSlot: s.turnSlot,
     turnTeam: s.turnTeam,
     pickPhase: s.pickPhase,
-    currentPickerId: s.currentPickerId,
+    currentPickerId: previewing ? null : s.currentPickerId,
     lockUntil: s.lockUntil || 0,
     matched: s.matched,
     playerMeta: s.playerMeta,
     totalPairs: s.pairs,
+    previewing: previewing,
+    previewStart: s.previewStart || 0,
+    previewEnds: s.previewEnds || 0,
+    previewStep: step,
+    previewHold: hold,
   };
 }
 function memoryTeamSlots(room, team) {
@@ -491,6 +510,11 @@ function initMemory(room) {
     p.team = memoryTeamOf(i, mode);
   });
   const scoreLen = memoryIsTeam(mode) ? 2 : players.length;
+  const nCards = deck.length;
+  const previewStep = 22;
+  const previewHold = 90;
+  const previewStart = Date.now();
+  const previewEnds = previewStart + Math.max(0, nCards - 1) * previewStep + previewHold + 140;
   const s = {
     mode,
     pairs,
@@ -505,6 +529,10 @@ function initMemory(room) {
     lockUntil: 0,
     matched: 0,
     currentPickerId: null,
+    previewStart,
+    previewEnds,
+    previewStep,
+    previewHold,
     playerMeta: players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -586,6 +614,7 @@ function memoryFinish(room, s) {
 function applyMemoryInput(room, player, payload) {
   const s = room.state;
   if (!s || room.status !== "playing") return;
+  if (s.previewEnds && Date.now() < s.previewEnds) return;
   if (s.lockUntil && Date.now() < s.lockUntil) return;
   if (s.matched >= s.pairs) return;
   const idx = payload.flip != null ? Number(payload.flip) : Number(payload.index);

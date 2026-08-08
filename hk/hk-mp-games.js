@@ -33,6 +33,8 @@
     { pairs: 32, label: '32쌍 · 8×8' }
   ];
   var memoryBoardSig = '';
+  var memoryWaveRaf = 0;
+  var memoryWaveKey = '';
   var aowAgeNames = ['석기', '중세', '화약', '현대', '미래'];
   var aowUnitNames = [
     ['곤봉병', '투석병', '공룡기수'],
@@ -149,6 +151,7 @@
       '.hkmp-ended{text-align:center;padding:28px 12px}.hkmp-ended h2{font-family:Georgia,serif;color:#efd28a;font-size:30px;margin:0 0 8px}',
       '.hkmp-memory-wrap{width:min(100%,820px);margin:0 auto;padding:8px 0}',
       '.hkmp-memory{display:grid;gap:6px;perspective:800px;-webkit-user-select:none;user-select:none}',
+      '.hkmp-memory.wave .hkmp-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}',
       '.hkmp-memory-card{aspect-ratio:1;border:0;border-radius:12px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(16px,3.6vw,34px);cursor:pointer;transition:.22s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none}',
       '.hkmp-memory-card.open,.hkmp-memory-card.done{background:#e8d39d;color:#18302e;transform:rotateY(180deg)}.hkmp-memory-card.done{background:#a9d0b9;opacity:.72;cursor:default}',
       '.hkmp-memory-card.mine{box-shadow:inset 0 0 0 2px #efd28a,0 0 0 1px #efd28a55}.hkmp-memory-card:disabled{cursor:default;opacity:.85}',
@@ -627,6 +630,7 @@
     keys = {};
     fireLatch = false;
     stopHockeySmooth();
+    stopMemoryWave();
   }
 
   function stopHockeySmooth() {
@@ -1017,6 +1021,12 @@
 
   function renderPlayMemory() {
     setGamePaused(false);
+    if (memoryWaveRaf) {
+      try { cancelAnimationFrame(memoryWaveRaf); } catch (_) {}
+      memoryWaveRaf = 0;
+    }
+    memoryWaveKey = '';
+    memoryBoardSig = '';
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
       '<div class="hkmp-memory-wrap"><div class="hkmp-memory" data-mem-grid></div></div>' +
@@ -1032,15 +1042,83 @@
     updateHud();
   }
 
+  function stopMemoryWave() {
+    if (memoryWaveRaf) {
+      try { cancelAnimationFrame(memoryWaveRaf); } catch (_) {}
+      memoryWaveRaf = 0;
+    }
+    if (refs.memGrid) refs.memGrid.classList.remove('wave');
+  }
+
+  function paintMemoryWaveLocal(icons, openFlags) {
+    if (!refs.memGrid) return;
+    var nodes = refs.memGrid.querySelectorAll('[data-i]');
+    for (var i = 0; i < nodes.length; i++) {
+      var on = !!openFlags[i];
+      nodes[i].classList.toggle('open', on);
+      nodes[i].classList.remove('mine');
+      nodes[i].disabled = true;
+      nodes[i].textContent = on && icons[i] ? icons[i] : '';
+    }
+  }
+
+  function ensureMemoryWave(st) {
+    if (!refs.memGrid || !st) return false;
+    var now = Date.now();
+    if (!(st.previewEnds && now < st.previewEnds)) {
+      if (memoryWaveRaf) stopMemoryWave();
+      return false;
+    }
+    var cards = st.cards || [];
+    var cols = st.cols || 6;
+    var key = String(st.previewStart) + ':' + cards.length + ':' + cols;
+    if (memoryWaveKey === key && memoryWaveRaf) return true;
+    memoryWaveKey = key;
+    memoryBoardSig = 'wave:' + key;
+    stopMemoryWave();
+    refs.memGrid.classList.add('wave');
+    refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    var icons = cards.map(function (c) { return c.icon || ''; });
+    refs.memGrid.innerHTML = cards.map(function (c, i) {
+      return '<button type="button" class="hkmp-memory-card" data-i="' + i + '" disabled></button>';
+    }).join('');
+    var step = st.previewStep || 22;
+    var hold = st.previewHold || 90;
+    var start = st.previewStart || now;
+    function tick() {
+      if (!refs.memGrid || gameId !== 'memorymp') { memoryWaveRaf = 0; return; }
+      var elapsed = Date.now() - start;
+      var flags = [];
+      for (var i = 0; i < cards.length; i++) {
+        var openAt = i * step;
+        flags[i] = elapsed >= openAt && elapsed < openAt + hold;
+      }
+      paintMemoryWaveLocal(icons, flags);
+      if (Date.now() < (st.previewEnds || 0)) {
+        memoryWaveRaf = requestAnimationFrame(tick);
+      } else {
+        memoryWaveRaf = 0;
+        if (refs.memGrid) refs.memGrid.classList.remove('wave');
+        memoryBoardSig = '';
+        updateMemoryBoard();
+        updateHud();
+      }
+    }
+    memoryWaveRaf = requestAnimationFrame(tick);
+    return true;
+  }
+
   function updateMemoryBoard() {
     if (gameId !== 'memorymp' || !refs.memGrid) return;
     var st = lastState || {};
+    if (ensureMemoryWave(st)) return;
     var cards = st.cards || [];
     var cols = st.cols || 6;
-    var myTurn = st.currentPickerId != null && (st.currentPickerId === selfId || st.currentPickerId == selfId);
-    var locked = !!(st.lockUntil && st.lockUntil > Date.now());
+    var previewing = !!(st.previewing || (st.previewEnds && st.previewEnds > Date.now()));
+    var myTurn = !previewing && st.currentPickerId != null && (st.currentPickerId === selfId || st.currentPickerId == selfId);
+    var locked = previewing || !!(st.lockUntil && st.lockUntil > Date.now());
     var sig = cols + '|' + cards.map(function (c) {
-      return (c.done ? 'd' : (c.open ? 'o' : 'c')) + (c.icon || '');
+      return (c.done ? 'd' : (c.open ? 'o' : 'c')) + (c.icon || '') + (c.wave ? 'w' : '');
     }).join('') + '|' + st.currentPickerId + '|' + (locked ? 'L' : '');
     if (sig === memoryBoardSig && refs.memGrid.children.length === cards.length) {
       Array.prototype.forEach.call(refs.memGrid.querySelectorAll('[data-i]'), function (btn) {
@@ -1050,6 +1128,7 @@
       return;
     }
     memoryBoardSig = sig;
+    refs.memGrid.classList.toggle('wave', previewing);
     refs.memGrid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
     refs.memGrid.innerHTML = cards.map(function (c, i) {
       var show = c.open || c.done;
@@ -1081,7 +1160,7 @@
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
-      memorymp: '내 차례에 카드 선택 · 2:2는 팀원이 한 장씩 · 짝을 맞추면 연속 턴',
+      memorymp: '시작 시 파도 미리보기 · 내 차례에 카드 선택 · 2:2는 팀원이 한 장씩',
     }[gameId] || '';
   }
 
@@ -1409,24 +1488,29 @@
     } else if (gameId === 'memorymp') {
       var scores = st.scores || [];
       var label = (MEMORY_MODE_META[st.mode] && MEMORY_MODE_META[st.mode].label) || st.mode || '';
+      var previewingHud = !!(st.previewing || (st.previewEnds && st.previewEnds > Date.now()));
       html += '<span class="hkmp-pill">' + esc(label) + (st.pairs ? ' · ' + st.pairs + '쌍' : '') + '</span>';
       html += '<span class="hkmp-pill">매치 <b>' + (st.matched || 0) + '/' + (st.pairs || 0) + '</b></span>';
       if (st.mode === '2v2') {
         html += '<span class="hkmp-pill">점수 <b>팀A ' + (scores[0] || 0) + ' : 팀B ' + (scores[1] || 0) + '</b></span>';
-        html += '<span class="hkmp-pill">턴 <b>팀' + ((st.turnTeam === 1) ? 'B' : 'A') + '</b></span>';
+        if (!previewingHud) html += '<span class="hkmp-pill">턴 <b>팀' + ((st.turnTeam === 1) ? 'B' : 'A') + '</b></span>';
       } else {
         var scoreBits = (st.playerMeta || []).map(function (pm, i) {
           return esc(pm.name || ('P' + (i + 1))) + ' ' + (scores[pm.slot != null ? pm.slot : i] || 0);
         });
         if (scoreBits.length) html += '<span class="hkmp-pill">점수 <b>' + scoreBits.join(' · ') + '</b></span>';
       }
-      var pickerName = '';
-      (st.playerMeta || []).forEach(function (pm) {
-        if (pm.id === st.currentPickerId || pm.id == st.currentPickerId) pickerName = pm.name;
-      });
-      var myTurnHud = st.currentPickerId != null && (st.currentPickerId === selfId || st.currentPickerId == selfId);
-      html += '<span class="hkmp-pill" style="color:' + (myTurnHud ? '#9ae6b4' : '#efd28a') + '">' +
-        (myTurnHud ? '내 차례' : ('차례 · ' + esc(pickerName || '?'))) + '</span>';
+      if (previewingHud) {
+        html += '<span class="hkmp-pill" style="color:#9ae6b4">미리보기</span>';
+      } else {
+        var pickerName = '';
+        (st.playerMeta || []).forEach(function (pm) {
+          if (pm.id === st.currentPickerId || pm.id == st.currentPickerId) pickerName = pm.name;
+        });
+        var myTurnHud = st.currentPickerId != null && (st.currentPickerId === selfId || st.currentPickerId == selfId);
+        html += '<span class="hkmp-pill" style="color:' + (myTurnHud ? '#9ae6b4' : '#efd28a') + '">' +
+          (myTurnHud ? '내 차례' : ('차례 · ' + esc(pickerName || '?'))) + '</span>';
+      }
     }
     refs.hud.innerHTML = html;
     if (gameId === 'ageofwar' && refs.tools && view === 'play') {
