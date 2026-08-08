@@ -3115,7 +3115,8 @@
     .main.main--facility-daily-found #facilityDailyFoundPanel,
     .main.main--mb-inv #mbInvPanel,
     .main.main--mb-check #mbCheckPanel,
-    .main.main--inven-notify #invenNotifyPanel {
+    .main.main--inven-notify #invenNotifyPanel,
+    .main.main--complaint #complaintPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -8486,6 +8487,349 @@
       margin-bottom: 6px;
     }
 
+    .order-panel__head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-complaint-open {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #0f766e55;
+      border-radius: 6px;
+      background: #f0fdfa;
+      color: #0f766e;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-complaint-open:hover {
+      background: #ccfbf1;
+      border-color: #0f766e;
+    }
+
+    .btn-complaint-open[hidden] {
+      display: none !important;
+    }
+
+    .complaint-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .complaint-panel__tabs {
+      display: inline-flex;
+      gap: 4px;
+      padding: 2px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+    }
+
+    .complaint-panel__tab {
+      height: 28px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .complaint-panel__tab.is-active {
+      background: #fff;
+      color: var(--accent);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .complaint-panel__hint {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .complaint-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #99f6e4;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f0fdfa, #f8fafc);
+    }
+
+    .complaint-form__fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      align-items: flex-end;
+    }
+
+    .complaint-form__fields .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .complaint-form__fields .field label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .complaint-form__fields input[type="text"] {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      min-width: 7rem;
+    }
+
+    .complaint-type-block,
+    .complaint-ox-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .complaint-type-block > span,
+    .complaint-ox-block > span {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .complaint-type-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .complaint-type-chip {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: #fff;
+      color: #334155;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .complaint-type-chip:hover {
+      border-color: #0f766e;
+      color: #0f766e;
+    }
+
+    .complaint-type-chip.is-selected {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .complaint-ox-row {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .complaint-ox-btn {
+      width: 36px;
+      height: 32px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .complaint-ox-btn.is-selected.is-x,
+    .complaint-ox-btn.is-x.is-selected,
+    #complaintRoomChangeX.is-selected {
+      background: #f1f5f9;
+      border-color: #64748b;
+      color: #334155;
+    }
+
+    .complaint-ox-btn.is-selected.is-o,
+    #complaintRoomChangeO.is-selected,
+    .complaint-ox-btn.is-o {
+      background: #ecfdf5;
+      border-color: #059669;
+      color: #047857;
+    }
+
+    .complaint-table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: min(55vh, 520px);
+    }
+
+    .complaint-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 720px;
+    }
+
+    .complaint-table th,
+    .complaint-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .complaint-table thead th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      font-weight: 800;
+      color: #0f766e;
+      z-index: 1;
+    }
+
+    .complaint-cell-input,
+    .complaint-cell-select {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      padding: 0 6px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      font: inherit;
+      font-size: 0.78rem;
+    }
+
+    .complaint-cell-input:focus,
+    .complaint-cell-select:focus {
+      outline: none;
+      border-color: #0f766e88;
+      background: #fff;
+    }
+
+    .complaint-td-roomchange,
+    .complaint-td-actions {
+      width: 64px;
+      text-align: center;
+    }
+
+    .complaint-row-del {
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .complaint-table-empty,
+    .complaint-stats-empty {
+      margin: 8px 0 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .complaint-stats-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .complaint-stats-toolbar label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .complaint-stats-toolbar select {
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 8px;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+
+    .complaint-stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 560px;
+    }
+
+    .complaint-stats-table th,
+    .complaint-stats-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .complaint-stats-table th[scope="row"] {
+      text-align: left;
+      background: #f8fafc;
+      white-space: nowrap;
+    }
+
+    .complaint-stats-table thead th {
+      background: #ecfdf5;
+      color: #0f766e;
+      font-weight: 800;
+    }
+
+    .complaint-stats-table .is-total,
+    .complaint-stats-foot td,
+    .complaint-stats-foot th {
+      font-weight: 800;
+      background: #f1f5f9;
+    }
+
+    .btn-complaint-back {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-raised);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     .order-panel__body .order-row {
       flex: 1 1 auto;
       min-width: 0;
@@ -9841,7 +10185,18 @@
           <div class="order-panel__main">
             <div class="panel-head-row">
               <h2 id="orderPanelTitle">오더 관리</h2>
-              <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
+              <div class="order-panel__head-actions">
+                <button
+                  type="button"
+                  class="btn-complaint-open"
+                  id="btnOpenComplaintAnalysis"
+                  hidden
+                  title="고객불편사항 유형분석"
+                >
+                  불편관리
+                </button>
+                <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
+              </div>
             </div>
             <form class="order-row" id="orderForm">
               <div class="field field--room-no">
@@ -9953,6 +10308,108 @@
           <ul class="order-work-list order-work-list--deployed" id="orderDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
         </section>
+      </section>
+
+      <section class="complaint-panel" id="complaintPanel" hidden aria-labelledby="complaintPanelTitle">
+        <div class="panel-head-row">
+          <h2 id="complaintPanelTitle">고객불편사항 유형분석</h2>
+          <div class="order-panel__head-actions">
+            <div class="complaint-panel__tabs" role="tablist" aria-label="불편관리 페이지">
+              <button
+                type="button"
+                class="complaint-panel__tab is-active"
+                data-complaint-page="1"
+                role="tab"
+                aria-selected="true"
+              >
+                1.등록
+              </button>
+              <button
+                type="button"
+                class="complaint-panel__tab"
+                data-complaint-page="2"
+                role="tab"
+                aria-selected="false"
+              >
+                2.유형별 현황
+              </button>
+            </div>
+            <button type="button" class="btn-complaint-back" id="btnComplaintBackOrder">오더로</button>
+          </div>
+        </div>
+        <p class="complaint-panel__hint" id="complaintFrontOnlyHint" hidden>
+          등록·수정은 프론트 모드에서만 가능합니다.
+        </p>
+
+        <div id="complaintPage1" role="tabpanel">
+          <form class="complaint-form" id="complaintForm">
+            <div class="complaint-form__fields">
+              <div class="field">
+                <label for="complaintReservationNo">예약번호</label>
+                <input type="text" id="complaintReservationNo" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="complaintGuestName">이름</label>
+                <input type="text" id="complaintGuestName" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="complaintRoomNo">객실번호</label>
+                <input type="text" id="complaintRoomNo" autocomplete="off" />
+              </div>
+              <div class="complaint-ox-block">
+                <span>룸체인지</span>
+                <div class="complaint-ox-row" role="group" aria-label="룸체인지 여부">
+                  <button type="button" class="complaint-ox-btn" id="complaintRoomChangeO" aria-pressed="false">
+                    O
+                  </button>
+                  <button
+                    type="button"
+                    class="complaint-ox-btn is-selected"
+                    id="complaintRoomChangeX"
+                    aria-pressed="true"
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
+              <button type="submit" class="btn-order">등록</button>
+            </div>
+            <div class="complaint-type-block">
+              <span>유형</span>
+              <div class="complaint-type-chips" id="complaintTypeChips" role="group" aria-label="불편 유형"></div>
+            </div>
+          </form>
+
+          <div class="complaint-table-wrap">
+            <table class="complaint-table" aria-label="불편사항 등록 목록">
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>예약번호</th>
+                  <th>이름</th>
+                  <th>객실번호</th>
+                  <th>유형</th>
+                  <th>룸체인지</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="complaintTableBody"></tbody>
+            </table>
+          </div>
+          <p class="complaint-table-empty" id="complaintTableEmpty">등록된 불편사항이 없습니다.</p>
+        </div>
+
+        <div id="complaintPage2" role="tabpanel" hidden>
+          <div class="complaint-stats-toolbar">
+            <label>
+              연도
+              <select id="complaintStatsYear" aria-label="집계 연도"></select>
+            </label>
+            <span class="complaint-panel__hint">등록날짜 기준 · 유형(행) × 월(열)</span>
+          </div>
+          <div class="complaint-table-wrap" id="complaintStatsTableWrap"></div>
+          <p class="complaint-stats-empty" id="complaintStatsEmpty" hidden>집계할 데이터가 없습니다.</p>
+        </div>
       </section>
 
       <section class="order-panel facility-panel" id="facilityPanel" hidden aria-labelledby="facilityPanelTitle">
@@ -10920,6 +11377,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js"></script>
+  <script src="hk-complaint-analysis.js?v=1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-20"></script>
   <script src="hk-mp-games.js?v=mp-21"></script>
@@ -13483,6 +13941,12 @@
             }
             if (typeof HKFacilityLogs !== "undefined") {
               HKFacilityLogs.refreshFromRemote();
+            }
+            if (
+              typeof HKComplaintAnalysis !== "undefined" &&
+              sidebarMainView === "complaint"
+            ) {
+              HKComplaintAnalysis.render();
             }
           }
           applyFrontEmbedStatesFromStorage({ force: true });
@@ -16625,8 +17089,14 @@
           req.setAttribute("aria-pressed", sidebarMainView === "request" ? "true" : "false");
         }
         if (ord) {
-          ord.classList.toggle("is-active", sidebarMainView === "order");
-          ord.setAttribute("aria-pressed", sidebarMainView === "order" ? "true" : "false");
+          ord.classList.toggle(
+            "is-active",
+            sidebarMainView === "order" || sidebarMainView === "complaint"
+          );
+          ord.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "order" || sidebarMainView === "complaint" ? "true" : "false"
+          );
         }
         var fac = document.getElementById("sidebarBtnFacility");
         if (fac) {
@@ -16702,6 +17172,7 @@
         var showFrontEmbed = view === "frontEmbed";
         var showAi = view === "ai";
         var showZone = view === "zone";
+        var showComplaint = view === "complaint";
         if (!showRequest) {
           var deskInp = document.getElementById("requestDeskChatInput");
           if (deskInp && document.activeElement === deskInp) {
@@ -16730,6 +17201,7 @@
         var requestStack = document.getElementById("requestMainStack");
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
+        var complaintPanel = document.getElementById("complaintPanel");
         var facilityPanel = document.getElementById("facilityPanel");
         var facilityMiscPanel = document.getElementById("facilityMiscPanel");
         var facilityDailyFoundPanel = document.getElementById("facilityDailyFoundPanel");
@@ -16745,6 +17217,7 @@
         if (reqPanel) reqPanel.hidden = !showRequest;
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
+        if (complaintPanel) complaintPanel.hidden = !showComplaint;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
         if (facilityMiscPanel) facilityMiscPanel.hidden = !showFacilityMisc;
         if (facilityDailyFoundPanel) facilityDailyFoundPanel.hidden = !showFacilityDailyFound;
@@ -16764,6 +17237,7 @@
         if (mainEl) {
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
+          mainEl.classList.toggle("main--complaint", showComplaint);
           mainEl.classList.toggle("main--facility", showFacility);
           mainEl.classList.toggle("main--facility-misc", showFacilityMisc);
           mainEl.classList.toggle("main--facility-daily-found", showFacilityDailyFound);
@@ -19276,6 +19750,15 @@
         applySidebarMainView("order");
         renderOrderPanels({ force: true });
         renderOrderDeskChat({ force: true });
+      }
+
+      function showSidebarComplaintView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("complaint");
+        if (typeof HKComplaintAnalysis !== "undefined" && HKComplaintAnalysis.onViewActivated) {
+          HKComplaintAnalysis.onViewActivated();
+        }
       }
 
       function showSidebarFacilityView() {
@@ -25509,7 +25992,9 @@
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
-        if (
+        if (!frontMode && sidebarMainView === "complaint") {
+          showSidebarOrderView();
+        } else if (
           !frontMode &&
           (sidebarMainView === "front" || sidebarMainView === "frontEmbed")
         ) {
@@ -25526,6 +26011,9 @@
         if (canUseTeamChat() || frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
         renderOrderPanels();
+        if (typeof HKComplaintAnalysis !== "undefined" && HKComplaintAnalysis.onFrontModeChanged) {
+          HKComplaintAnalysis.onFrontModeChanged();
+        }
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
         }
@@ -26764,6 +27252,20 @@
           onDailyLogChanged: detectFacilityDailyChange,
           openCancelConfirmModal: openCancelConfirmModal,
           appendCancelNameLog: appendCancelNameLog,
+        });
+      }
+      if (typeof HKComplaintAnalysis !== "undefined") {
+        HKComplaintAnalysis.init({
+          isFrontMode: function () {
+            return frontMode;
+          },
+          toast: showHkActionToast,
+          onOpen: function () {
+            showSidebarComplaintView();
+          },
+          onBackToOrder: function () {
+            showSidebarOrderView();
+          },
         });
       }
       if (typeof HKAdminInquiry !== "undefined") {

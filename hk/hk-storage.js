@@ -765,6 +765,7 @@
       facilityDeskChat: [],
       hotelInfo: defaultHotelInfo(),
       gameRanks: defaultGameRanks(),
+      complaintTypeAnalysis: defaultComplaintTypeAnalysis(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -776,6 +777,94 @@
         MINIBAR: [],
       },
     };
+  }
+
+  var COMPLAINT_TYPE_IDS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+
+  function defaultComplaintTypeAnalysis() {
+    return { updatedAt: "", records: [] };
+  }
+
+  function normalizeComplaintTypeRecord(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    if (!id) return null;
+    var typeId = raw.typeId != null ? String(raw.typeId).trim() : "";
+    if (COMPLAINT_TYPE_IDS.indexOf(typeId) < 0) typeId = "";
+    var roomChange = false;
+    if (raw.roomChange === true || raw.roomChange === 1 || raw.roomChange === "1") {
+      roomChange = true;
+    } else if (typeof raw.roomChange === "string") {
+      var rc = raw.roomChange.trim().toUpperCase();
+      roomChange = rc === "O" || rc === "Y" || rc === "TRUE";
+    }
+    return {
+      id: id,
+      createdAt: raw.createdAt != null ? String(raw.createdAt).trim() : "",
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt).trim() : "",
+      reservationNo: raw.reservationNo != null ? String(raw.reservationNo).trim() : "",
+      guestName: raw.guestName != null ? String(raw.guestName).trim() : "",
+      roomNo: raw.roomNo != null ? String(raw.roomNo).trim() : "",
+      typeId: typeId,
+      roomChange: roomChange,
+    };
+  }
+
+  function normalizeComplaintTypeAnalysis(raw) {
+    var d = defaultComplaintTypeAnalysis();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    var list = [];
+    var seen = {};
+    (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
+      var n = normalizeComplaintTypeRecord(row);
+      if (!n || seen[n.id]) return;
+      seen[n.id] = true;
+      list.push(n);
+    });
+    list.sort(function (a, b) {
+      var ta = a.createdAt || "";
+      var tb = b.createdAt || "";
+      if (ta !== tb) return String(ta).localeCompare(String(tb));
+      return String(a.id).localeCompare(String(b.id));
+    });
+    d.records = list;
+    return d;
+  }
+
+  function mergeComplaintTypeAnalysis(baseRaw, incRaw) {
+    var base = normalizeComplaintTypeAnalysis(baseRaw);
+    var inc = normalizeComplaintTypeAnalysis(incRaw);
+    var map = {};
+    base.records.forEach(function (r) {
+      map[r.id] = r;
+    });
+    inc.records.forEach(function (r) {
+      var prev = map[r.id];
+      if (!prev) {
+        map[r.id] = r;
+        return;
+      }
+      var pa = prev.updatedAt || prev.createdAt || "";
+      var ia = r.updatedAt || r.createdAt || "";
+      if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
+    });
+    var ba = base.updatedAt || "";
+    var ia2 = inc.updatedAt || "";
+    return normalizeComplaintTypeAnalysis({
+      updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
+      records: Object.keys(map).map(function (k) {
+        return map[k];
+      }),
+    });
+  }
+
+  function pickComplaintTypeAnalysis(baseObj, incObj) {
+    var baseInfo = normalizeComplaintTypeAnalysis(baseObj && baseObj.complaintTypeAnalysis);
+    if (!Object.prototype.hasOwnProperty.call(incObj || {}, "complaintTypeAnalysis")) {
+      return baseInfo;
+    }
+    return mergeComplaintTypeAnalysis(baseInfo, incObj.complaintTypeAnalysis);
   }
 
   function defaultHotelInfo() {
@@ -1006,6 +1095,7 @@
     d.facilityDeskChat = normalizeRequestDeskChat(data.facilityDeskChat);
     d.hotelInfo = normalizeHotelInfo(data.hotelInfo);
     d.gameRanks = normalizeGameRanks(data.gameRanks);
+    d.complaintTypeAnalysis = normalizeComplaintTypeAnalysis(data.complaintTypeAnalysis);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -1385,6 +1475,7 @@
     } else {
       merged.gameRanks = normalizeGameRanks(base.gameRanks);
     }
+    merged.complaintTypeAnalysis = pickComplaintTypeAnalysis(base, incoming);
     return normalize(merged);
   }
 
@@ -1444,5 +1535,9 @@
     defaultGameRanks: defaultGameRanks,
     mergeGameRanks: mergeGameRanks,
     GAME_RANK_IDS: GAME_RANK_IDS,
+    normalizeComplaintTypeAnalysis: normalizeComplaintTypeAnalysis,
+    defaultComplaintTypeAnalysis: defaultComplaintTypeAnalysis,
+    mergeComplaintTypeAnalysis: mergeComplaintTypeAnalysis,
+    COMPLAINT_TYPE_IDS: COMPLAINT_TYPE_IDS,
   };
 })(typeof window !== "undefined" ? window : this);

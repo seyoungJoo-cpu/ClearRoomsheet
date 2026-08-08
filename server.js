@@ -1037,6 +1037,11 @@ function mergeHkStorage(prev, incoming) {
     } else if (prev.hotelInfo) {
       staleOut.hotelInfo = prev.hotelInfo;
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")) {
+      staleOut.complaintTypeAnalysis = incoming.complaintTypeAnalysis;
+    } else if (prev.complaintTypeAnalysis) {
+      staleOut.complaintTypeAnalysis = prev.complaintTypeAnalysis;
+    }
     if (Object.prototype.hasOwnProperty.call(incoming, "gameRanks")) {
       staleOut.gameRanks = mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks);
     } else if (prev.gameRanks) {
@@ -1293,6 +1298,75 @@ function mergeHkStorage(prev, incoming) {
         return incoming.hotelInfo;
       }
       return prev.hotelInfo || { text: "", urls: [], pages: [], updatedAt: "" };
+    })(),
+    complaintTypeAnalysis: (function () {
+      function norm(raw) {
+        if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
+        var seen = {};
+        var records = [];
+        (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
+          if (!row || typeof row !== "object") return;
+          var id = row.id != null ? String(row.id).trim() : "";
+          if (!id || seen[id]) return;
+          seen[id] = true;
+          var typeId = row.typeId != null ? String(row.typeId).trim() : "";
+          var roomChange = false;
+          if (row.roomChange === true || row.roomChange === 1 || row.roomChange === "1") {
+            roomChange = true;
+          } else if (typeof row.roomChange === "string") {
+            var rc = row.roomChange.trim().toUpperCase();
+            roomChange = rc === "O" || rc === "Y" || rc === "TRUE";
+          }
+          records.push({
+            id: id,
+            createdAt: row.createdAt != null ? String(row.createdAt) : "",
+            updatedAt: row.updatedAt != null ? String(row.updatedAt) : "",
+            reservationNo: row.reservationNo != null ? String(row.reservationNo) : "",
+            guestName: row.guestName != null ? String(row.guestName) : "",
+            roomNo: row.roomNo != null ? String(row.roomNo) : "",
+            typeId: typeId,
+            roomChange: roomChange,
+          });
+        });
+        return {
+          updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+          records: records,
+        };
+      }
+      var base = norm(prev.complaintTypeAnalysis);
+      if (!Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")) {
+        return base;
+      }
+      var inc = norm(incoming.complaintTypeAnalysis);
+      var map = {};
+      base.records.forEach(function (r) {
+        map[r.id] = r;
+      });
+      inc.records.forEach(function (r) {
+        var p = map[r.id];
+        if (!p) {
+          map[r.id] = r;
+          return;
+        }
+        var pa = p.updatedAt || p.createdAt || "";
+        var ia = r.updatedAt || r.createdAt || "";
+        if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
+      });
+      var ba = base.updatedAt || "";
+      var ia2 = inc.updatedAt || "";
+      return {
+        updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
+        records: Object.keys(map)
+          .map(function (k) {
+            return map[k];
+          })
+          .sort(function (a, b) {
+            var ta = a.createdAt || "";
+            var tb = b.createdAt || "";
+            if (ta !== tb) return String(ta).localeCompare(String(tb));
+            return String(a.id).localeCompare(String(b.id));
+          }),
+      };
     })(),
     gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
   };

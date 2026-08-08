@@ -987,6 +987,7 @@
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
+        <strong>고객불편사항 유형분석</strong>도 마감해도 유지됩니다.
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
       <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 읽기모드 저장 + 초기화)</button>
@@ -4268,7 +4269,7 @@
             reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
           }
         }
-        // 인포등록(호텔 인포·홈페이지) · 게임 랭킹은 마감해도 절대 초기화하지 않음
+        // 인포등록(호텔 인포·홈페이지) · 게임 랭킹 · 고객불편사항 유형분석은 마감해도 절대 초기화하지 않음
         reset.hotelInfo =
           typeof HKStorage.normalizeHotelInfo === "function"
             ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
@@ -4281,6 +4282,12 @@
             : prev.gameRanks && typeof prev.gameRanks === "object"
               ? prev.gameRanks
               : reset.gameRanks;
+        reset.complaintTypeAnalysis =
+          typeof HKStorage.normalizeComplaintTypeAnalysis === "function"
+            ? HKStorage.normalizeComplaintTypeAnalysis(prev.complaintTypeAnalysis)
+            : prev.complaintTypeAnalysis && typeof prev.complaintTypeAnalysis === "object"
+              ? prev.complaintTypeAnalysis
+              : reset.complaintTypeAnalysis;
         return reset;
       }
 
