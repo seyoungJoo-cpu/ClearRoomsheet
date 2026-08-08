@@ -2551,6 +2551,13 @@
       border: 1px solid #cbb27088;
       border-radius: 10px;
       background: linear-gradient(135deg, #fffbeb, #f8fafc);
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .minibar-xml-upload.is-dragover {
+      border-color: #0f766e;
+      background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+      box-shadow: inset 0 0 0 1px #0f766e55;
     }
 
     .minibar-xml-upload[hidden] {
@@ -2582,6 +2589,30 @@
       font-size: 0.78rem;
       color: var(--text-muted);
       line-height: 1.4;
+    }
+
+    .minibar-xml-upload__drop {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      min-width: min(100%, 280px);
+      padding: 10px 12px;
+      border: 1.5px dashed #cbb270aa;
+      border-radius: 10px;
+      background: #fffdf7;
+      color: #92400e;
+      font-size: 0.78rem;
+      font-weight: 650;
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    .minibar-xml-upload.is-dragover .minibar-xml-upload__drop {
+      border-color: #0f766e;
+      background: #fff;
+      color: #0f766e;
     }
 
     .minibar-xml-upload__actions {
@@ -10111,6 +10142,9 @@
                   <span>ROOM · PRODUCT_ID1 기준으로 미니바 객실을 미리보기합니다. 저장을 눌러야 서버에 반영됩니다.</span>
                 </div>
                 <div class="minibar-xml-upload__actions">
+                  <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
+                    XML을 여기로 드래그하거나 아래에서 선택
+                  </div>
                   <input
                     type="file"
                     id="minibarXmlFile"
@@ -25707,6 +25741,44 @@
         el.style.color = isError ? "#b91c1c" : "#0f766e";
       }
 
+      function assignMinibarXmlFile(file) {
+        var input = document.getElementById("minibarXmlFile");
+        var dropHint = document.getElementById("minibarXmlDrop");
+        if (!file) {
+          setMinibarUploadStatus("XML 파일을 선택하세요.", true);
+          return false;
+        }
+        var name = String(file.name || "");
+        var type = String(file.type || "").toLowerCase();
+        var looksXml =
+          /\.xml$/i.test(name) ||
+          type.indexOf("xml") >= 0 ||
+          type === "text/plain" ||
+          !type;
+        if (!looksXml) {
+          setMinibarUploadStatus("XML 파일만 선택할 수 있습니다.", true);
+          return false;
+        }
+        if (input) {
+          try {
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+          } catch (errAssign) {
+            setMinibarUploadStatus(
+              "이 브라우저에서는 드래그 선택이 지원되지 않습니다. 파일 선택 버튼을 사용하세요.",
+              true
+            );
+            return false;
+          }
+        }
+        if (dropHint) {
+          dropHint.textContent = "선택됨 · " + name + " · 업로드를 누르세요";
+        }
+        setMinibarUploadStatus("파일 선택됨 · " + name + " · 업로드를 누르세요", false);
+        return true;
+      }
+
       function handleMinibarXmlUpload() {
         var input = document.getElementById("minibarXmlFile");
         if (!input || !input.files || !input.files[0]) {
@@ -25745,6 +25817,10 @@
               "미니바 미리보기 · " + pendingMinibarRooms.length + "개 · 저장 필요"
             );
             input.value = "";
+            var dropHint = document.getElementById("minibarXmlDrop");
+            if (dropHint) {
+              dropHint.textContent = "XML을 여기로 드래그하거나 아래에서 선택";
+            }
           } catch (err) {
             setMinibarUploadStatus(
               err && err.message ? err.message : "업로드에 실패했습니다.",
@@ -25794,6 +25870,61 @@
           saveBtn.__hkMinibarSaveBound = true;
           saveBtn.addEventListener("click", function () {
             handleMinibarXmlSave();
+          });
+        }
+        var panel = document.getElementById("minibarXmlUpload");
+        var input = document.getElementById("minibarXmlFile");
+        if (panel && !panel.__hkMinibarDropBound) {
+          panel.__hkMinibarDropBound = true;
+          var dragDepth = 0;
+          function hasFiles(e) {
+            var types = e.dataTransfer && e.dataTransfer.types;
+            if (!types) return false;
+            for (var i = 0; i < types.length; i++) {
+              if (types[i] === "Files") return true;
+            }
+            return false;
+          }
+          panel.addEventListener("dragenter", function (e) {
+            if (!hasFiles(e)) return;
+            e.preventDefault();
+            dragDepth += 1;
+            panel.classList.add("is-dragover");
+          });
+          panel.addEventListener("dragover", function (e) {
+            if (!hasFiles(e)) return;
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+            panel.classList.add("is-dragover");
+          });
+          panel.addEventListener("dragleave", function (e) {
+            if (!hasFiles(e)) return;
+            e.preventDefault();
+            dragDepth = Math.max(0, dragDepth - 1);
+            if (dragDepth === 0) panel.classList.remove("is-dragover");
+          });
+          panel.addEventListener("drop", function (e) {
+            e.preventDefault();
+            dragDepth = 0;
+            panel.classList.remove("is-dragover");
+            if (!frontMode) {
+              setMinibarUploadStatus("프론트 모드에서 업로드할 수 있습니다.", true);
+              return;
+            }
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (!files || !files.length) {
+              setMinibarUploadStatus("XML 파일을 드롭하세요.", true);
+              return;
+            }
+            assignMinibarXmlFile(files[0]);
+          });
+        }
+        if (input && !input.__hkMinibarChangeBound) {
+          input.__hkMinibarChangeBound = true;
+          input.addEventListener("change", function () {
+            if (input.files && input.files[0]) {
+              assignMinibarXmlFile(input.files[0]);
+            }
           });
         }
         syncMinibarSaveUi();
