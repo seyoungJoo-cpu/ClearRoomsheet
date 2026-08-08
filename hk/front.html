@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -3166,6 +3166,70 @@
       align-items: center;
     }
 
+    .facility-occ-guest-pick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      margin-top: 2px;
+      padding: 8px;
+      border: 1px dashed #d97706;
+      border-radius: 8px;
+      background: #fffbeb;
+    }
+
+    .facility-occ-guest-pick[hidden] {
+      display: none !important;
+    }
+
+    .facility-occ-guest-pick__label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #92400e;
+      margin-right: 4px;
+    }
+
+    .btn-order--guest-present {
+      background: #c2410c;
+    }
+
+    .btn-order--guest-present:hover {
+      background: #9a3412;
+    }
+
+    .btn-order--guest-away {
+      background: #0369a1;
+    }
+
+    .btn-order--guest-away:hover {
+      background: #075985;
+    }
+
+    .facility-guest-badge {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      line-height: 1.35;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .facility-guest-badge--present {
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+    }
+
+    .facility-guest-badge--away {
+      background: #e0f2fe;
+      color: #075985;
+      border: 1px solid #7dd3fc;
+    }
+
     .btn-order--facility-occ {
       background: #b45309;
     }
@@ -3351,14 +3415,15 @@
     }
 
     .order-work-list--issue {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
       gap: 10px;
+      align-items: start;
     }
 
     .order-work-list--issue .order-work-item {
       width: 100%;
-      max-width: 260px;
+      max-width: 200px;
     }
 
     .order-work-list--deployed {
@@ -6951,6 +7016,8 @@
       display: inline-block;
       max-width: 100%;
       vertical-align: top;
+      padding-right: 14px;
+      padding-bottom: 14px;
     }
 
     .hk-room-board-panel .sheet-outer {
@@ -6965,20 +7032,58 @@
 
     .hk-room-board-resize-handle {
       position: absolute;
-      right: 2px;
-      bottom: 2px;
-      width: 22px;
-      height: 22px;
       padding: 0;
       border: 1px solid #94a3b8;
-      border-radius: 6px;
+      border-radius: 5px;
+      background: #e2e8f0;
+      z-index: 6;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+      touch-action: none;
+    }
+
+    .hk-room-board-resize-handle--corner {
+      right: 0;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
       background:
         linear-gradient(135deg, transparent 0 42%, #64748b 42% 48%, transparent 48% 58%, #64748b 58% 64%, transparent 64%),
         #e2e8f0;
       cursor: nwse-resize;
-      z-index: 6;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
-      touch-action: none;
+    }
+
+    .hk-room-board-resize-handle--right {
+      top: 8px;
+      right: 0;
+      bottom: 18px;
+      width: 10px;
+      cursor: ew-resize;
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0 3px,
+          #94a3b8 3px 5px,
+          transparent 5px 8px
+        ),
+        #e2e8f0;
+    }
+
+    .hk-room-board-resize-handle--bottom {
+      left: 8px;
+      right: 18px;
+      bottom: 0;
+      height: 10px;
+      cursor: ns-resize;
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(
+          to right,
+          transparent 0 3px,
+          #94a3b8 3px 5px,
+          transparent 5px 8px
+        ),
+        #e2e8f0;
     }
 
     .hk-room-board-resize-handle:hover,
@@ -7046,7 +7151,7 @@
 
     .hk-room-board-panel .floor-col {
       flex: 1 1 0;
-      min-width: 64px;
+      min-width: 78px;
       border-right: 1px solid #d1d5db;
       display: flex;
       flex-direction: column;
@@ -7079,7 +7184,7 @@
     .hk-room-board-panel .pair-row,
     .hk-room-board-panel .villa-list-row {
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
+      grid-template-columns: minmax(2.6em, 1.05fr) minmax(3.6em, 0.95fr);
       border: 1px solid #bfc5ce;
       font-size: 0.82rem;
       line-height: 1.2;
@@ -7153,15 +7258,26 @@
 
     .hk-room-board-panel .pair-row .cell.sched-time,
     .hk-room-board-panel .villa-list-row .cell.sched-time {
-      font-size: 0.68rem;
+      font-size: 0.78rem;
       line-height: 1.15;
-      word-break: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      writing-mode: horizontal-tb;
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+      padding-left: 3px;
+      padding-right: 3px;
     }
 
     .hk-room-board-panel .pair-row .cell.sched-time .hk-time-em,
     .hk-room-board-panel .villa-list-row .cell.sched-time .hk-time-em {
+      display: inline-block;
       font-size: 1em;
-      font-weight: 700;
+      font-weight: 800;
+      white-space: nowrap;
+      writing-mode: horizontal-tb;
+      letter-spacing: 0.02em;
     }
 
     .hk-room-board-panel .villa-list-body {
@@ -7920,24 +8036,87 @@
 
     .request-desk-chat,
     .order-desk-chat {
-      flex: 1 1 100%;
+      position: relative;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
       border: 2px solid #334155;
       border-radius: 8px;
       background: var(--surface-raised, #f7f8fa);
-      resize: both;
       overflow: hidden;
       overflow-x: hidden;
       box-sizing: border-box;
       height: 420px;
-      min-height: 240px;
-      max-height: min(80vh, 720px);
-      width: 100%;
-      min-width: 0;
+      min-height: 200px;
+      max-height: min(85vh, 900px);
+      width: min(100%, 520px);
+      min-width: 220px;
       max-width: min(900px, 100%);
       margin-top: 0;
-      align-self: stretch;
+      align-self: flex-start;
+      padding-right: 12px;
+      padding-bottom: 12px;
+    }
+
+    .desk-chat-resize-handle {
+      position: absolute;
+      padding: 0;
+      border: 1px solid #94a3b8;
+      border-radius: 5px;
+      background: #e2e8f0;
+      z-index: 5;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+      touch-action: none;
+    }
+
+    .desk-chat-resize-handle--right {
+      top: 10px;
+      right: 0;
+      bottom: 16px;
+      width: 10px;
+      cursor: ew-resize;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0 3px,
+          #94a3b8 3px 5px,
+          transparent 5px 8px
+        ),
+        #e2e8f0;
+    }
+
+    .desk-chat-resize-handle--bottom {
+      left: 10px;
+      right: 16px;
+      bottom: 0;
+      height: 10px;
+      cursor: ns-resize;
+      background:
+        repeating-linear-gradient(
+          to right,
+          transparent 0 3px,
+          #94a3b8 3px 5px,
+          transparent 5px 8px
+        ),
+        #e2e8f0;
+    }
+
+    .desk-chat-resize-handle--corner {
+      right: 0;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      cursor: nwse-resize;
+      background:
+        linear-gradient(135deg, transparent 0 42%, #64748b 42% 48%, transparent 48% 58%, #64748b 58% 64%, transparent 64%),
+        #e2e8f0;
+    }
+
+    .desk-chat-resize-handle:hover,
+    .desk-chat-resize-handle:focus-visible {
+      background-color: #cbd5e1;
+      border-color: var(--accent);
+      outline: none;
     }
 
     .request-desk-chat__head,
@@ -9694,12 +9873,21 @@
             </button>
           </div>
           <div class="facility-order-submit-btns">
-            <button type="button" class="btn-order btn-order--facility-occ" data-facility-stay="occupied" id="btnFacilityOrderOccupied">
+            <button type="button" class="btn-order btn-order--facility-occ" id="btnFacilityOrderOccupied">
               재실오더
             </button>
             <button type="button" class="btn-order btn-order--facility-vac" data-facility-stay="vacant" id="btnFacilityOrderVacant">
               공실오더
             </button>
+            <div class="facility-occ-guest-pick" id="facilityOccGuestPick" hidden>
+              <span class="facility-occ-guest-pick__label">고객 상태</span>
+              <button type="button" class="btn-order btn-order--guest-present" data-facility-stay="occupied" data-guest-presence="present">
+                계심
+              </button>
+              <button type="button" class="btn-order btn-order--guest-away" data-facility-stay="occupied" data-guest-presence="away">
+                외출
+              </button>
+            </div>
           </div>
             </form>
           </div>
@@ -10704,10 +10892,10 @@
       var facilityTimeEditIds = {};
       var cachedVacBoardRows = [];
       var requestRoomBoardOpen = false;
-      var requestRoomBoardScale = 1;
+      var requestRoomBoardScale = { x: 1, y: 1 };
       var requestSchedTypeViewOpen = false;
       var zoneRoomBoardOpen = false;
-      var zoneRoomBoardScale = 1;
+      var zoneRoomBoardScale = { x: 1, y: 1 };
       var HK_BOARD_ANNEX_TAIL_MIN = 51;
       var HK_BOARD_DROP_ROOMS = { "0012": true, "0023": true };
       var HK_BOARD_MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
@@ -12196,17 +12384,36 @@
           requestLogEntries = [];
           return;
         }
+        var closeAt =
+          (typeof HKSync.getCloseDayAt === "function" && HKSync.getCloseDayAt()) ||
+          (function () {
+            try {
+              var d = HKStorage.load();
+              return (d && d.closeDayAt) || "";
+            } catch (e) {
+              return "";
+            }
+          })();
+        function dropPreClose(arr) {
+          if (
+            typeof HKStorage !== "undefined" &&
+            typeof HKStorage.filterLogEntriesAfterCloseDay === "function"
+          ) {
+            return HKStorage.filterLogEntriesAfterCloseDay(arr, closeAt);
+          }
+          return arr;
+        }
         // 마감 등으로 서버가 빈 배열이면 로컬도 비움 (병합으로 되살리지 않음)
         if (
           opts.replace ||
           opts.allowEmptyReplace ||
           (remote.length === 0 && !opts.keepLocalWhenRemoteEmpty)
         ) {
-          requestLogEntries = remote.slice();
+          requestLogEntries = dropPreClose(remote.slice());
           return;
         }
         if (!requestLogEntries || !requestLogEntries.length) {
-          requestLogEntries = remote.slice();
+          requestLogEntries = dropPreClose(remote.slice());
           return;
         }
         var byId = {};
@@ -12244,9 +12451,11 @@
         }
         requestLogEntries.forEach(consider);
         remote.forEach(consider);
-        requestLogEntries = Object.keys(byId).map(function (id) {
-          return byId[id];
-        });
+        requestLogEntries = dropPreClose(
+          Object.keys(byId).map(function (id) {
+            return byId[id];
+          })
+        );
       }
 
       function syncOrderLogFromServer() {
@@ -12533,6 +12742,86 @@
           }
         });
         clampDeskChatWidths();
+      }
+
+      function bindDeskChatSizeHandles() {
+        if (window.__hkDeskChatSizeHandlesBound) return;
+        window.__hkDeskChatSizeHandlesBound = true;
+        DESK_CHAT_IDS.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el || el.__hkDeskSizeHandles) return;
+          el.__hkDeskSizeHandles = true;
+          function makeHandle(axis, label) {
+            var handle = document.createElement("button");
+            handle.type = "button";
+            handle.className = "desk-chat-resize-handle desk-chat-resize-handle--" + axis;
+            handle.title =
+              axis === "right"
+                ? "좌우로 드래그하여 가로 크기 조절"
+                : axis === "bottom"
+                  ? "위아래로 드래그하여 세로 크기 조절"
+                  : "모서리를 드래그하여 가로·세로 크기 조절";
+            handle.setAttribute("aria-label", label);
+            return handle;
+          }
+          var handleRight = makeHandle("right", "채팅 가로 크기 조절");
+          var handleBottom = makeHandle("bottom", "채팅 세로 크기 조절");
+          var handleCorner = makeHandle("corner", "채팅 가로·세로 크기 조절");
+          el.appendChild(handleRight);
+          el.appendChild(handleBottom);
+          el.appendChild(handleCorner);
+
+          function bindHandle(handle, mode) {
+            var dragging = false;
+            var startX = 0;
+            var startY = 0;
+            var startW = 0;
+            var startH = 0;
+            handle.addEventListener("pointerdown", function (e) {
+              if (e.button != null && e.button !== 0) return;
+              e.preventDefault();
+              e.stopPropagation();
+              dragging = true;
+              startX = e.clientX;
+              startY = e.clientY;
+              startW = el.offsetWidth;
+              startH = el.offsetHeight;
+              try {
+                handle.setPointerCapture(e.pointerId);
+              } catch (_) {}
+            });
+            handle.addEventListener("pointermove", function (e) {
+              if (!dragging) return;
+              var parentCap =
+                (el.parentElement && el.parentElement.clientWidth) ||
+                window.innerWidth ||
+                900;
+              var maxW = Math.max(220, Math.min(parentCap - 8, 900));
+              var maxH = Math.min(
+                window.innerHeight * 0.85 || 900,
+                900
+              );
+              if (mode === "x" || mode === "both") {
+                var nextW = Math.max(220, Math.min(maxW, startW + (e.clientX - startX)));
+                el.style.width = nextW + "px";
+                el.style.maxWidth = maxW + "px";
+              }
+              if (mode === "y" || mode === "both") {
+                var nextH = Math.max(200, Math.min(maxH, startH + (e.clientY - startY)));
+                el.style.height = nextH + "px";
+              }
+            });
+            function endDrag() {
+              dragging = false;
+              clampDeskChatWidths();
+            }
+            handle.addEventListener("pointerup", endDrag);
+            handle.addEventListener("pointercancel", endDrag);
+          }
+          bindHandle(handleRight, "x");
+          bindHandle(handleBottom, "y");
+          bindHandle(handleCorner, "both");
+        });
       }
 
       function bindDeskChatReactionMount(mount) {
@@ -13069,7 +13358,7 @@
           }
           applyFrontEmbedStatesFromStorage({ force: true });
         }
-        if (changed.indexOf("hkCloseDayAt") >= 0) {
+        if (changed.indexOf("hkCloseDayAt") >= 0 || changed.indexOf("hkClearLocalCaches") >= 0) {
           handleCloseDayFromSync(payload);
           syncFrontChatFromServer();
           renderFrontChatPanel({ force: true });
@@ -13748,14 +14037,20 @@
       }
 
       function handleCloseDayFromSync(payload) {
-        if (!payload || !payload.hkCloseDayAt) return;
+        if (!payload || (!payload.hkCloseDayAt && payload.hkClearLocalCaches !== true)) return;
         // 마감 시 정비등록(요청 로그) 로컬 UI도 비움
         if (Array.isArray(payload.hkRequestLog)) {
           requestLogEntries = payload.hkRequestLog.slice();
-        } else if (payload.hkCloseDayReset === true) {
+        } else if (payload.hkCloseDayReset === true || payload.hkClearLocalCaches === true) {
           requestLogEntries = [];
         } else {
           syncRequestLogFromServer({ replace: true, allowEmptyReplace: true });
+        }
+        if (Array.isArray(payload.hkOrderLog)) {
+          orderLogEntries = payload.hkOrderLog.slice();
+          normalizeOrderIssueEntries();
+        } else if (payload.hkCloseDayReset === true || payload.hkClearLocalCaches === true) {
+          syncOrderLogFromServer();
         }
         if (typeof HKSync !== "undefined" && HKSync.clearRequestLog && !requestLogEntries.length) {
           // 캐시도 비어 있으면 유지 (pushSnapshot이 이미 비운 경우)
@@ -13766,6 +14061,7 @@
         if (typeof renderSchedRequestCards === "function") {
           renderSchedRequestCards();
         }
+        renderOrderPanels();
         syncAllChatFromServer();
         renderFrontChatPanel({ force: true });
         initFrontChatTracking();
@@ -13783,6 +14079,23 @@
         initInvenNotifyAlertTracking();
         applyFacilityLogSidebarAlertUi();
         applyInvenNotifySidebarAlertUi();
+        if (typeof HKMbWorkflow !== "undefined") {
+          if (HKMbWorkflow.loadMbInv) HKMbWorkflow.loadMbInv();
+          if (HKMbWorkflow.loadMbCheck) HKMbWorkflow.loadMbCheck();
+          if (HKMbWorkflow.renderMbInvPanels) HKMbWorkflow.renderMbInvPanels();
+          if (HKMbWorkflow.renderMbCheckPanels) HKMbWorkflow.renderMbCheckPanels();
+        }
+      }
+
+      function stampRoomRow(row) {
+        if (!row || typeof row !== "object") return row;
+        if (typeof HKStorage !== "undefined" && typeof HKStorage.stampRoom === "function") {
+          return HKStorage.stampRoom(row);
+        }
+        var stamp = new Date().toISOString();
+        if (!row.createdAt) row.createdAt = stamp;
+        row.updatedAt = stamp;
+        return row;
       }
 
       function buildRoomChangeLines(prev, next) {
@@ -14157,6 +14470,7 @@
                 memo2: memo2Bulk,
                 time: "",
               };
+              stampRoomRow(row);
               dataBulk.rooms[zone].push(row);
               var entry = buildRoomChangeEntry(zone, null, row);
               if (entry) changeEntries.push(entry);
@@ -14213,6 +14527,7 @@
             memo2: memo2,
             time: "",
           };
+          stampRoomRow(newRow);
           var addEntry = buildRoomChangeEntry(zone, null, newRow);
           if (!data.rooms[zone]) data.rooms[zone] = [];
           if (typeof HKStorage.unmarkRoomDeleted === "function") {
@@ -15576,7 +15891,7 @@
       function toggleRequestRoomBoardView() {
         requestRoomBoardOpen = !requestRoomBoardOpen;
         if (requestRoomBoardOpen) requestSchedTypeViewOpen = false;
-        else requestRoomBoardScale = 1;
+        else requestRoomBoardScale = { x: 1, y: 1 };
         syncRequestRoomBoardUi();
       }
 
@@ -15584,9 +15899,23 @@
         requestSchedTypeViewOpen = !requestSchedTypeViewOpen;
         if (requestSchedTypeViewOpen) {
           requestRoomBoardOpen = false;
-          requestRoomBoardScale = 1;
+          requestRoomBoardScale = { x: 1, y: 1 };
         }
         syncRequestRoomBoardUi();
+      }
+
+      function hkBoardNormalizeScaleAxis(v) {
+        var n = Number(v);
+        if (isNaN(n)) n = 1;
+        return Math.max(0.55, Math.min(2.8, n));
+      }
+
+      function hkBoardNormalizeScale(scale) {
+        if (!scale || typeof scale !== "object") return { x: 1, y: 1 };
+        return {
+          x: hkBoardNormalizeScaleAxis(scale.x),
+          y: hkBoardNormalizeScaleAxis(scale.y),
+        };
       }
 
       function hkBoardMountResizableSheet(mount, triple, scaleState) {
@@ -15595,51 +15924,86 @@
         var outer = document.createElement("div");
         outer.className = "sheet-outer";
         outer.appendChild(triple);
-        var handle = document.createElement("button");
-        handle.type = "button";
-        handle.className = "hk-room-board-resize-handle";
-        handle.title = "모서리를 드래그하여 크기 조절";
-        handle.setAttribute("aria-label", "층별보기 크기 조절");
+
+        function makeHandle(axis, label) {
+          var handle = document.createElement("button");
+          handle.type = "button";
+          handle.className = "hk-room-board-resize-handle hk-room-board-resize-handle--" + axis;
+          handle.title =
+            axis === "right"
+              ? "좌우로 드래그하여 가로 크기 조절"
+              : axis === "bottom"
+                ? "위아래로 드래그하여 세로 크기 조절"
+                : "모서리를 드래그하여 가로·세로 크기 조절";
+          handle.setAttribute("aria-label", label);
+          handle.setAttribute("data-resize-axis", axis);
+          return handle;
+        }
+
+        var handleRight = makeHandle("right", "층별보기 가로 크기 조절");
+        var handleBottom = makeHandle("bottom", "층별보기 세로 크기 조절");
+        var handleCorner = makeHandle("corner", "층별보기 가로·세로 크기 조절");
         frame.appendChild(outer);
-        frame.appendChild(handle);
+        frame.appendChild(handleRight);
+        frame.appendChild(handleBottom);
+        frame.appendChild(handleCorner);
         mount.appendChild(frame);
 
         function applyScale(next) {
-          var s = Math.max(0.65, Math.min(2.5, Number(next) || 1));
-          scaleState.value = s;
-          outer.style.transform = "scale(" + s + ")";
+          var s = hkBoardNormalizeScale(next);
+          scaleState.x = s.x;
+          scaleState.y = s.y;
+          outer.style.transform = "scale(" + s.x + ", " + s.y + ")";
           var baseW = outer.offsetWidth;
           var baseH = outer.offsetHeight;
-          outer.style.marginRight = Math.max(0, Math.ceil(baseW * (s - 1))) + "px";
-          outer.style.marginBottom = Math.max(0, Math.ceil(baseH * (s - 1)) + 18) + "px";
+          outer.style.marginRight = Math.max(0, Math.ceil(baseW * (s.x - 1))) + "px";
+          outer.style.marginBottom = Math.max(0, Math.ceil(baseH * (s.y - 1)) + 18) + "px";
         }
-        applyScale(scaleState.value || 1);
+        applyScale({
+          x: scaleState.x,
+          y: scaleState.y,
+        });
 
-        var dragging = false;
-        var startX = 0;
-        var startY = 0;
-        var startScale = 1;
-        handle.addEventListener("pointerdown", function (e) {
-          if (e.button != null && e.button !== 0) return;
-          e.preventDefault();
-          dragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          startScale = scaleState.value || 1;
-          try {
-            handle.setPointerCapture(e.pointerId);
-          } catch (_) {}
-        });
-        handle.addEventListener("pointermove", function (e) {
-          if (!dragging) return;
-          var delta = (e.clientX - startX + (e.clientY - startY)) / 240;
-          applyScale(startScale + delta);
-        });
-        function endDrag() {
-          dragging = false;
+        function bindHandle(handle, mode) {
+          var dragging = false;
+          var startX = 0;
+          var startY = 0;
+          var startScale = { x: 1, y: 1 };
+          handle.addEventListener("pointerdown", function (e) {
+            if (e.button != null && e.button !== 0) return;
+            e.preventDefault();
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startScale = hkBoardNormalizeScale({
+              x: scaleState.x,
+              y: scaleState.y,
+            });
+            try {
+              handle.setPointerCapture(e.pointerId);
+            } catch (_) {}
+          });
+          handle.addEventListener("pointermove", function (e) {
+            if (!dragging) return;
+            var next = { x: startScale.x, y: startScale.y };
+            if (mode === "x" || mode === "both") {
+              next.x = startScale.x + (e.clientX - startX) / 260;
+            }
+            if (mode === "y" || mode === "both") {
+              next.y = startScale.y + (e.clientY - startY) / 220;
+            }
+            applyScale(next);
+          });
+          function endDrag() {
+            dragging = false;
+          }
+          handle.addEventListener("pointerup", endDrag);
+          handle.addEventListener("pointercancel", endDrag);
         }
-        handle.addEventListener("pointerup", endDrag);
-        handle.addEventListener("pointercancel", endDrag);
+
+        bindHandle(handleRight, "x");
+        bindHandle(handleBottom, "y");
+        bindHandle(handleCorner, "both");
         return frame;
       }
 
@@ -15694,14 +16058,7 @@
             "wing-panel-annex"
           )
         );
-        hkBoardMountResizableSheet(mount, triple, {
-          get value() {
-            return requestRoomBoardScale;
-          },
-          set value(v) {
-            requestRoomBoardScale = v;
-          },
-        });
+        hkBoardMountResizableSheet(mount, triple, requestRoomBoardScale);
       }
 
       function buildZoneRoomBoardRows(zone) {
@@ -15751,7 +16108,7 @@
 
       function toggleZoneRoomBoardView() {
         zoneRoomBoardOpen = !zoneRoomBoardOpen;
-        if (!zoneRoomBoardOpen) zoneRoomBoardScale = 1;
+        if (!zoneRoomBoardOpen) zoneRoomBoardScale = { x: 1, y: 1 };
         syncZoneRoomBoardUi();
         if (!zoneRoomBoardOpen) {
           var zone = getActiveZone();
@@ -15812,14 +16169,7 @@
             "wing-panel-annex"
           )
         );
-        hkBoardMountResizableSheet(mount, triple, {
-          get value() {
-            return zoneRoomBoardScale;
-          },
-          set value(v) {
-            zoneRoomBoardScale = v;
-          },
-        });
+        hkBoardMountResizableSheet(mount, triple, zoneRoomBoardScale);
       }
 
       function findRequestEntry(id) {
@@ -20587,6 +20937,16 @@
             stayBadge.setAttribute("aria-label", stayLabel);
             r.appendChild(stayBadge);
           }
+          var guestLabel = getFacilityGuestPresenceLabel(entry);
+          if (guestLabel) {
+            var guestBadge = document.createElement("span");
+            guestBadge.className =
+              "facility-guest-badge facility-guest-badge--" +
+              (getFacilityGuestPresence(entry) || "present");
+            guestBadge.textContent = guestLabel;
+            guestBadge.setAttribute("aria-label", guestLabel);
+            r.appendChild(guestBadge);
+          }
         }
         row.appendChild(r);
         var s = document.createElement("span");
@@ -21827,6 +22187,23 @@
         return "";
       }
 
+      function getFacilityGuestPresence(entry) {
+        if (!isFacilityOccupiedOrder(entry)) return "";
+        var g = entry.guestPresence != null ? String(entry.guestPresence).trim() : "";
+        if (g === "present" || g === "away") return g;
+        return "";
+      }
+
+      function getFacilityGuestPresenceLabel(entryOrPresence) {
+        var g =
+          typeof entryOrPresence === "string"
+            ? entryOrPresence
+            : getFacilityGuestPresence(entryOrPresence);
+        if (g === "present") return "고객님 계심";
+        if (g === "away") return "고객님 외출";
+        return "";
+      }
+
       function isFacilityOccupiedOrder(entry) {
         return isFacilityOrder(entry) && getFacilityStay(entry) === "occupied";
       }
@@ -22164,7 +22541,7 @@
           var tb = new Date(b.deployedAt || b.acceptedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         deployedEntries.forEach(function (entry) {
           noteChatAutoOpenFromFirstMessage(
@@ -23560,6 +23937,7 @@
           var d = HKStorage.load();
           if (d.rooms[zone] && d.rooms[zone][idx]) {
             d.rooms[zone][idx].time = p.value;
+            stampRoomRow(d.rooms[zone][idx]);
             HKStorage.save(d);
           }
           closeTimeEditor();
@@ -23630,6 +24008,7 @@
           var d = HKStorage.load();
           if (d.rooms[zone] && d.rooms[zone][idx]) {
             d.rooms[zone][idx].memo1 = ta.value;
+            stampRoomRow(d.rooms[zone][idx]);
             HKStorage.save(d);
           }
           closeMemo1Editor();
@@ -23708,6 +24087,7 @@
           if (d.rooms[zone] && d.rooms[zone][idx]) {
             d.rooms[zone][idx].memo2 = ta.value;
             d.rooms[zone][idx].memo2Image = hkGetPhoto(roomMemo2Key) || "";
+            stampRoomRow(d.rooms[zone][idx]);
             HKStorage.save(d);
           }
           hkClearPhoto(roomMemo2Key);
@@ -23942,6 +24322,9 @@
         next.tray = prevRow && prevRow.tray != null ? String(prevRow.tray) : "";
         next.trayUpdatedAt =
           prevRow && prevRow.trayUpdatedAt != null ? String(prevRow.trayUpdatedAt) : "";
+        next.createdAt =
+          prevRow && prevRow.createdAt != null ? String(prevRow.createdAt) : "";
+        stampRoomRow(next);
         var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
         if (!changeEntry) {
           showHkActionToast("변경된 내용이 없습니다.");
@@ -25636,6 +26019,7 @@
       bindDeskChatFontControls();
       applyDeskChatFontLevel(getDeskChatFontLevel());
       bindDeskChatResponsiveWidth();
+      bindDeskChatSizeHandles();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
@@ -26055,6 +26439,12 @@
             if (stay === "occupied" || stay === "vacant") return stay;
             return "";
           })(),
+          guestPresence: (function () {
+            var g =
+              extra.guestPresence != null ? String(extra.guestPresence).trim() : "";
+            if (g === "present" || g === "away") return g;
+            return "";
+          })(),
           at: new Date().toISOString(),
           by: getOperatorName(),
         });
@@ -26062,6 +26452,12 @@
         if (isFacilityOrder(orderLogEntries[0])) {
           if (!orderLogEntries[0].facilityStay) {
             orderLogEntries[0].facilityStay = "vacant";
+          }
+          if (
+            orderLogEntries[0].facilityStay === "occupied" &&
+            !orderLogEntries[0].guestPresence
+          ) {
+            orderLogEntries[0].guestPresence = "";
           }
           if (sidebarMainView !== "facility") pendingFacilityOrderAlert = true;
         } else if (sidebarMainView !== "order") {
@@ -26176,16 +26572,27 @@
         updateOrderFoDisplay();
       }
 
-      function processFacilityOrderFormSubmit(stayType) {
+      function processFacilityOrderFormSubmit(stayType, guestPresence) {
         var roomEl = document.getElementById("facilityOrderRoomNo");
         var memoEl = document.getElementById("facilityOrderMemo");
         var btnUrgentEl = document.getElementById("btnFacilityOrderUrgent");
+        var guestPick = document.getElementById("facilityOccGuestPick");
         var room = roomEl && roomEl.value.trim();
         var memo = memoEl ? expandOrderMemoItemCodes(String(memoEl.value || "").trim()) : "";
         var isUrgent = btnUrgentEl && btnUrgentEl.classList.contains("is-on");
         var memoImage = hkGetPhoto("facilityOrderMemo");
         var facilityStay =
           stayType === "occupied" || stayType === "vacant" ? stayType : "vacant";
+        var guest =
+          facilityStay === "occupied" &&
+          (guestPresence === "present" || guestPresence === "away")
+            ? guestPresence
+            : "";
+        if (facilityStay === "occupied" && !guest) {
+          if (guestPick) guestPick.hidden = false;
+          if (roomEl && !room) roomEl.focus();
+          return;
+        }
         if (!room) {
           if (roomEl) roomEl.focus();
           return;
@@ -26194,7 +26601,7 @@
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
-              processFacilityOrderFormSubmit(facilityStay);
+              processFacilityOrderFormSubmit(facilityStay, guest);
             },
           });
           return;
@@ -26204,6 +26611,7 @@
           fromMaint: true,
           photoKey: "facilityOrderMemo",
           facilityStay: facilityStay,
+          guestPresence: guest,
         });
         if (roomEl) roomEl.value = "";
         if (memoEl) memoEl.value = "";
@@ -26211,6 +26619,7 @@
           btnUrgentEl.classList.remove("is-on");
           btnUrgentEl.setAttribute("aria-pressed", "false");
         }
+        if (guestPick) guestPick.hidden = true;
         updateFacilityOrderFoDisplay();
       }
 
@@ -26409,10 +26818,23 @@
           e.preventDefault();
         });
         facilityOrderForm.addEventListener("click", function (e) {
+          var occBtn = e.target.closest("#btnFacilityOrderOccupied");
+          if (occBtn && facilityOrderForm.contains(occBtn)) {
+            e.preventDefault();
+            var pick = document.getElementById("facilityOccGuestPick");
+            if (pick) pick.hidden = !pick.hidden;
+            return;
+          }
           var stayBtn = e.target.closest("[data-facility-stay]");
           if (!stayBtn || !facilityOrderForm.contains(stayBtn)) return;
           e.preventDefault();
-          processFacilityOrderFormSubmit(stayBtn.getAttribute("data-facility-stay"));
+          var stay = stayBtn.getAttribute("data-facility-stay");
+          var guest = stayBtn.getAttribute("data-guest-presence") || "";
+          if (stay === "vacant") {
+            var pickVac = document.getElementById("facilityOccGuestPick");
+            if (pickVac) pickVac.hidden = true;
+          }
+          processFacilityOrderFormSubmit(stay, guest);
         });
       }
 

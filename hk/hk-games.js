@@ -117,11 +117,11 @@
       '.hkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.hkg-card{position:relative;text-align:left;min-height:225px;padding:22px;border:1px solid #ffffff18;border-radius:20px;color:inherit;background:linear-gradient(145deg,#123034dd,#0b1c25ee);box-shadow:0 14px 35px #0004;cursor:pointer;overflow:hidden;transition:.22s}.hkg-card:hover{transform:translateY(-4px);border-color:#cbb27088}.hkg-card:after{content:"";position:absolute;width:90px;height:90px;right:-25px;top:-25px;border-radius:50%;background:#d5bb7020}.hkg-card-icon{font-size:35px}.hkg-card h2{font-family:Georgia,serif;margin:10px 0 5px;font-size:22px}.hkg-card-desc{font-size:13px;color:#9fb2ad;min-height:38px}.hkg-best{margin:14px 0 9px;color:#ebd28f;font-weight:800}.hkg-mini{font-size:12px;color:#b9c8c3;line-height:1.65}.hkg-mini b{display:inline-block;width:18px;color:#d9bd78}',
       '.hkg-game{display:none}.hkg-game.show{display:block}.hkg-game-head{display:flex;align-items:center;gap:12px;margin-bottom:15px}.hkg-game-head h1{font-family:Georgia,serif;margin:0;font-size:clamp(25px,4vw,40px);flex:1}.hkg-hud{display:flex;gap:10px;flex-wrap:wrap}.hkg-pill{padding:8px 12px;border:1px solid #ffffff1c;background:#0d2429;border-radius:12px;font-size:13px}.hkg-pill b{color:#efd58f;margin-left:5px}',
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
-      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;position:relative;z-index:1;transition:transform .24s cubic-bezier(.22,.82,.2,1),opacity .22s,box-shadow .2s;will-change:transform}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 7px 8px #fff6,inset 0 -8px 10px #0004,0 4px 7px #0006;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.8)}.hkg-gem.swap{z-index:4;box-shadow:0 8px 18px #0007;transition:transform .26s cubic-bezier(.2,.85,.2,1)}.hkg-gem.fall{z-index:3;transition:transform .28s cubic-bezier(.2,.9,.2,1)}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
+      '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;position:relative;z-index:1;transition:transform .2s ease,opacity .18s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 5px 6px #fff5,inset 0 -6px 8px #0003,0 3px 5px #0005;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0}.hkg-gem.swap{z-index:4;transition:transform .22s ease}.hkg-gem.fall{z-index:3;transition:transform .24s ease}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:.12s}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory{width:min(100%,640px);display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:auto;perspective:800px;-webkit-user-select:none;user-select:none}.hkg-memory-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(145deg,#1b4945,#102d32);color:transparent;font-size:clamp(25px,6vw,46px);cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77036;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#e8d39d;color:#18302e}.hkg-memory-card.done{background:#a9d0b9;opacity:.72}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
-      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218b8;backdrop-filter:blur(2px);z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;backdrop-filter:blur(3px);z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
+      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
     document.head.appendChild(style);
@@ -268,24 +268,36 @@
     return {
       on: function (node, type, fn, opts) { node.addEventListener(type, fn, opts); removers.push(function () { node.removeEventListener(type, fn, opts); }); },
       raf: function (fn) {
+        function scheduleNext(delayMs) {
+          if (!alive) return;
+          if (delayMs > 0) {
+            var tid = setTimeout(function () {
+              if (!alive) return;
+              var id = requestAnimationFrame(tick);
+              frames.push(id);
+            }, delayMs);
+            timers.push(tid);
+            return;
+          }
+          var id = requestAnimationFrame(tick);
+          frames.push(id);
+        }
         function tick(t) {
           if (!alive || !active) return;
-          if (gamePaused) {
-            var waitId = requestAnimationFrame(tick);
-            frames.push(waitId);
+          // 일시정지·백그라운드 탭에서는 60fps 돌리지 않음
+          if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
+            scheduleNext(120);
             return;
           }
           fn(t);
         }
-        var id = requestAnimationFrame(tick);
-        frames.push(id);
-        return id;
+        scheduleNext(0);
       },
       timer: function (fn, ms) {
         function fire() {
           if (!alive) return;
-          if (gamePaused) {
-            var again = setTimeout(fire, 100);
+          if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
+            var again = setTimeout(fire, 120);
             timers.push(again);
             return;
           }
@@ -338,35 +350,47 @@
   }
   function makeFx() {
     var parts = [];
+    var MAX_PARTS = 72;
     return {
       burst: function (x, y, color, n, speed) {
-        n = n || 12; speed = speed || 180;
+        n = Math.min(n || 8, 10);
+        speed = speed || 160;
+        if (parts.length > MAX_PARTS) parts.splice(0, parts.length - 36);
         for (var i = 0; i < n; i++) {
-          var a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
-          var sp = speed * (0.45 + Math.random());
+          var a = (Math.PI * 2 * i) / n + Math.random() * 0.35;
+          var sp = speed * (0.5 + Math.random() * 0.7);
           parts.push({
-            x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
-            life: 0.35 + Math.random() * 0.45, max: 0.8, r: 2 + Math.random() * 3.5, color: color || '#efd28a'
+            x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 36,
+            life: 0.28 + Math.random() * 0.32, max: 0.65, r: 1.5 + Math.random() * 2.5, color: color || '#efd28a'
           });
         }
       },
       spark: function (x, y, color) {
-        this.burst(x, y, color || '#fff4d0', 8, 120);
+        this.burst(x, y, color || '#fff4d0', 6, 110);
       },
       update: function (dt) {
-        parts.forEach(function (p) {
-          p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 420 * dt; p.vx *= 0.98;
-        });
-        parts = parts.filter(function (p) { return p.life > 0; });
+        for (var i = parts.length - 1; i >= 0; i--) {
+          var p = parts[i];
+          p.life -= dt;
+          if (p.life <= 0) {
+            parts.splice(i, 1);
+            continue;
+          }
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 380 * dt;
+          p.vx *= 0.985;
+        }
       },
       draw: function (ctx) {
-        parts.forEach(function (p) {
+        if (!parts.length) return;
+        for (var i = 0; i < parts.length; i++) {
+          var p = parts[i];
           ctx.globalAlpha = Math.max(0, p.life / p.max);
           ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
-        });
+          var s = p.r * 2;
+          ctx.fillRect(p.x - p.r, p.y - p.r, s, s);
+        }
         ctx.globalAlpha = 1;
       }
     };
@@ -693,13 +717,32 @@
 
   function canvasBase(width, height, extraClass) {
     var canvas = el('canvas', 'hkg-canvas' + (extraClass ? ' ' + extraClass : ''));
-    canvas.width = width; canvas.height = height; refs.stage.appendChild(canvas);
-    return { canvas: canvas, ctx: canvas.getContext('2d') };
+    canvas.width = width;
+    canvas.height = height;
+    refs.stage.appendChild(canvas);
+    var ctx =
+      canvas.getContext('2d', { alpha: false, desynchronized: true }) ||
+      canvas.getContext('2d');
+    return { canvas: canvas, ctx: ctx };
   }
 
   games.snake = function () {
     var c = controller(), cv = canvasBase(600, 600), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 118, dead = false, touch, fx = makeFx(), anim = 0;
     setHud([['점수', '0', 'score'], ['속도', '1.0x', 'speed']]);
+    var gridCanvas = document.createElement('canvas');
+    gridCanvas.width = 600;
+    gridCanvas.height = 600;
+    (function paintGrid() {
+      var g = gridCanvas.getContext('2d');
+      g.fillStyle = '#07171c';
+      g.fillRect(0, 0, 600, 600);
+      g.strokeStyle = '#0e292c';
+      g.lineWidth = 1;
+      for (var i = 0; i <= 20; i++) {
+        g.beginPath(); g.moveTo(i * 30, 0); g.lineTo(i * 30, 600); g.stroke();
+        g.beginPath(); g.moveTo(0, i * 30); g.lineTo(600, i * 30); g.stroke();
+      }
+    })();
     function spawn() { do { food = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) }; } while (snake.some(function (p) { return p.x === food.x && p.y === food.y; })); }
     function input(x, y) { if (dir.x + x || dir.y + y) next = { x: x, y: y }; }
     function key(e) {
@@ -707,11 +750,10 @@
       if (m[e.key]) { e.preventDefault(); input(m[e.key][0], m[e.key][1]); }
     }
     function draw(alpha) {
-      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 600, 600);
-      ctx.strokeStyle = '#0e292c'; for (var i = 0; i <= 20; i++) { ctx.beginPath(); ctx.moveTo(i * 30, 0); ctx.lineTo(i * 30, 600); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i * 30); ctx.lineTo(600, i * 30); ctx.stroke(); }
+      ctx.drawImage(gridCanvas, 0, 0);
       var pulse = 10 + Math.sin(anim * 6) * 2;
-      ctx.fillStyle = '#e2bd64'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(food.x * 30 + 15, food.y * 30 + 15, pulse, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#e2bd64';
+      ctx.beginPath(); ctx.arc(food.x * 30 + 15, food.y * 30 + 15, pulse, 0, Math.PI * 2); ctx.fill();
       snake.forEach(function (p, i) {
         var t = alpha || 0;
         var ox = i + 1 < snake.length ? snake[i + 1].x : p.x - dir.x;
@@ -921,8 +963,8 @@
         ctx.fillText(m.label, it.x, it.y + 0.5);
       });
       drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 8, font: 10 });
-      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 14;
-      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff4d0';
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
       fx.draw(ctx);
     }
     function loop(t) {
@@ -1287,8 +1329,8 @@
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 640, 420);
       ctx.strokeStyle = '#ffffff18'; ctx.setLineDash([8, 10]); ctx.beginPath(); ctx.moveTo(0, 210); ctx.lineTo(640, 210); ctx.stroke(); ctx.setLineDash([]);
       drawHeroShape(ctx, paddle.x, paddle.y, paddle.w, paddle.h, { radius: 7, font: 10 });
-      ctx.fillStyle = '#fff4d0'; ctx.shadowColor = '#efd685'; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff4d0';
+      ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
       fx.draw(ctx);
     }
     function clampBall() {

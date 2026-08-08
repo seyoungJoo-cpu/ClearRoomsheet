@@ -345,6 +345,140 @@
     } catch (e) {}
   }
 
+  var EMBED_STATE_KEYS = [
+    "hk-dd-embed-state-v1",
+    "hk-inven-embed-state-v1",
+    "hk-chichi-embed-state-v1",
+  ];
+
+  var DAY_CACHE_KEYS = [
+    REQUEST_LOG_KEY,
+    REQUEST_CANCEL_NAME_LOG_KEY,
+    REQUEST_USE_LOG_KEY,
+    CHANGE_LOG_KEY,
+    ORDER_LOG_KEY,
+    MB_INV_LOG_KEY,
+    MB_CHECK_LOG_KEY,
+  ];
+
+  function getCloseDayAtLocal() {
+    try {
+      return global.localStorage.getItem(CLOSE_DAY_KEY) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function filterArrAfterCloseDay(arr, closeAt) {
+    if (!Array.isArray(arr)) return [];
+    if (!closeAt) return arr.slice();
+    if (
+      global.HKStorage &&
+      typeof global.HKStorage.filterLogEntriesAfterCloseDay === "function"
+    ) {
+      return global.HKStorage.filterLogEntriesAfterCloseDay(arr, closeAt);
+    }
+    var closeMs = new Date(closeAt).getTime();
+    if (isNaN(closeMs) || closeMs <= 0) return arr.slice();
+    return arr.filter(function (entry) {
+      if (!entry || typeof entry !== "object") return false;
+      var at = entry.updatedAt || entry.at || entry.createdAt || "";
+      var ms = new Date(at).getTime();
+      return !isNaN(ms) && ms >= closeMs;
+    });
+  }
+
+  function stripPreCloseRoomsFromStorage(storage, closeAt) {
+    if (!storage || typeof storage !== "object" || !closeAt) return storage;
+    if (!storage.rooms || typeof storage.rooms !== "object") return storage;
+    Object.keys(storage.rooms).forEach(function (zone) {
+      storage.rooms[zone] = (storage.rooms[zone] || []).filter(function (room) {
+        if (!room || !room.number) return false;
+        var at =
+          typeof global.HKStorage !== "undefined" &&
+          typeof global.HKStorage.roomActivityAt === "function"
+            ? global.HKStorage.roomActivityAt(room)
+            : room.updatedAt || room.createdAt || "";
+        // 스탬프 없는 기존 행은 유지. 스탬프가 마감 이전이면 제외.
+        if (!at) return true;
+        return String(at) >= String(closeAt);
+      });
+    });
+    return storage;
+  }
+
+  /**
+   * 마감 신호: 당일 업무용 localStorage·dirty 푸시를 비운다.
+   * 채팅·관리자문의·마감시각·루밍 XML은 유지.
+   */
+  function clearDayLocalCachesOnCloseDay(payload) {
+    var closeAt =
+      (payload && payload.hkCloseDayAt && String(payload.hkCloseDayAt)) ||
+      getCloseDayAtLocal() ||
+      "";
+    if (closeAt) {
+      try {
+        global.localStorage.setItem(CLOSE_DAY_KEY, closeAt);
+      } catch (eCd) {}
+    }
+
+    DAY_CACHE_KEYS.forEach(function (key) {
+      try {
+        global.localStorage.removeItem(key);
+      } catch (e) {}
+    });
+    EMBED_STATE_KEYS.forEach(function (key) {
+      try {
+        global.localStorage.removeItem(key);
+      } catch (e) {}
+    });
+
+    cache.requestLog = Array.isArray(payload && payload.hkRequestLog)
+      ? payload.hkRequestLog.slice()
+      : [];
+    cache.cancelLog = Array.isArray(payload && payload.hkCancelLog)
+      ? payload.hkCancelLog.slice()
+      : [];
+    cache.useLog = Array.isArray(payload && payload.hkUseLog)
+      ? payload.hkUseLog.slice()
+      : [];
+    cache.changeLog = Array.isArray(payload && payload.hkChangeLog)
+      ? payload.hkChangeLog.slice()
+      : [];
+    cache.orderLog = Array.isArray(payload && payload.hkOrderLog)
+      ? payload.hkOrderLog.slice()
+      : [];
+    cache.mbInvLog = Array.isArray(payload && payload.hkMbInvLog)
+      ? payload.hkMbInvLog.slice()
+      : [];
+    cache.mbCheckLog = Array.isArray(payload && payload.hkMbCheckLog)
+      ? payload.hkMbCheckLog.slice()
+      : [];
+
+    writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
+    writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
+    writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
+    writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
+    writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
+    writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
+    writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
+
+    [
+      "hkStorage",
+      "hkRequestLog",
+      "hkCancelLog",
+      "hkUseLog",
+      "hkChangeLog",
+      "hkOrderLog",
+      "hkMbInvLog",
+      "hkMbCheckLog",
+    ].forEach(function (field) {
+      clearDirty(field);
+      delete pendingPush[field];
+    });
+    pendingLastRoomChange = null;
+  }
+
   function applyCloseDayMarker(payload) {
     if (!payload || !payload.hkCloseDayAt) return;
     try {
@@ -816,36 +950,38 @@
 
   function buildPushBody() {
     var body = {};
+    var closeAt = getCloseDayAtLocal();
     if (pendingPush.hkStorage && dirty.hkStorage && global.HKStorage) {
       body.hkStorage = global.HKStorage.load();
       try {
-        var closeAt = global.localStorage.getItem(CLOSE_DAY_KEY) || "";
         if (closeAt && body.hkStorage && typeof body.hkStorage === "object") {
           body.hkStorage.closeDayAt = closeAt;
+          stripPreCloseRoomsFromStorage(body.hkStorage, closeAt);
         }
         if (closeAt) body.hkCloseDayAt = closeAt;
       } catch (eCd) {}
     }
     if (pendingPush.hkRequestLog && dirty.hkRequestLog) {
-      body.hkRequestLog = cache.requestLog;
+      body.hkRequestLog = filterArrAfterCloseDay(cache.requestLog, closeAt);
     }
     if (pendingPush.hkCancelLog && dirty.hkCancelLog) {
-      body.hkCancelLog = cache.cancelLog;
+      body.hkCancelLog = filterArrAfterCloseDay(cache.cancelLog, closeAt);
     }
     if (pendingPush.hkUseLog && dirty.hkUseLog) {
-      body.hkUseLog = cache.useLog;
+      body.hkUseLog = filterArrAfterCloseDay(cache.useLog, closeAt);
     }
     if (pendingPush.hkChangeLog && dirty.hkChangeLog) {
-      body.hkChangeLog = cache.changeLog;
+      body.hkChangeLog = filterArrAfterCloseDay(cache.changeLog, closeAt);
     }
     if (pendingPush.hkOrderLog && dirty.hkOrderLog) {
+      // 오더 알림은 마감 후 일부 유지 — close 필터로 지우지 않음
       body.hkOrderLog = cache.orderLog;
     }
     if (pendingPush.hkMbInvLog && dirty.hkMbInvLog) {
-      body.hkMbInvLog = cache.mbInvLog;
+      body.hkMbInvLog = filterArrAfterCloseDay(cache.mbInvLog, closeAt);
     }
     if (pendingPush.hkMbCheckLog && dirty.hkMbCheckLog) {
-      body.hkMbCheckLog = cache.mbCheckLog;
+      body.hkMbCheckLog = filterArrAfterCloseDay(cache.mbCheckLog, closeAt);
     }
     if (pendingPush.hkFrontChat && dirty.hkFrontChat) {
       body.hkFrontChat = cache.frontChat;
@@ -1057,11 +1193,33 @@
     }
     isApplyingRemote = true;
 
+    var isCloseDayReplace = payload.hkCloseDayReset === true;
+    var isNewCloseDay =
+      !!payload.hkCloseDayAt &&
+      String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
+    // 새 마감 시각에만 로컬 당일 캐시를 비움 (플래그 잔존 시 매 폴링 wipe 방지)
+    var clearLocalSignal =
+      isNewCloseDay &&
+      (payload.hkClearLocalCaches === true ||
+        isCloseDayReplace ||
+        !!payload.hkCloseDayAt);
+
+    if (clearLocalSignal) {
+      // 마감/초기화: dirty·대기 푸시 취소 후 당일 캐시 비움 (전날 데이터 재푸시 방지)
+      clearDayLocalCachesOnCloseDay(payload);
+      if (changed.indexOf("hkClearLocalCaches") < 0) {
+        changed.push("hkClearLocalCaches");
+      }
+      if (changed.indexOf("hkRequestLog") < 0) changed.push("hkRequestLog");
+      if (changed.indexOf("hkOrderLog") < 0) changed.push("hkOrderLog");
+      if (changed.indexOf("hkMbInvLog") < 0) changed.push("hkMbInvLog");
+      if (changed.indexOf("hkMbCheckLog") < 0) changed.push("hkMbCheckLog");
+      if (changed.indexOf("hkCancelLog") < 0) changed.push("hkCancelLog");
+      if (changed.indexOf("hkUseLog") < 0) changed.push("hkUseLog");
+      if (changed.indexOf("hkChangeLog") < 0) changed.push("hkChangeLog");
+    }
+
     if (payload.hkStorage && global.HKStorage) {
-      var isCloseDayReplace = payload.hkCloseDayReset === true;
-      var isNewCloseDay =
-        !!payload.hkCloseDayAt &&
-        String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
       var remoteStorageCd =
         payload.hkStorage.closeDayAt != null
           ? String(payload.hkStorage.closeDayAt).trim()
@@ -1083,7 +1241,9 @@
         String(remoteStorageCd) === String(localStorageCd);
       // 마감 직후 같은 closeDayAt 인데 로컬에 미전송 특이객실 등록이 있으면
       // 서버에 남은 hkCloseDayReset 빈 저장소로 덮어쓰지 않는다.
+      // (새 마감/클리어 신호는 예외 — 항상 교체)
       var skipStaleCloseDayClobber =
+        !clearLocalSignal &&
         !!dirty.hkStorage &&
         sameCloseEpoch &&
         !isNewCloseDay &&
@@ -1091,10 +1251,14 @@
       // 로컬 미전송 변경이 있으면 원격으로 덮어쓰지 않음 — 단, 새 마감/더 최신 closeDay는 강제 반영
       if (
         !skipStaleCloseDayClobber &&
-        (isCloseDayReplace || isNewCloseDay || storageEpochNewer || !dirty.hkStorage)
+        (isCloseDayReplace ||
+          isNewCloseDay ||
+          clearLocalSignal ||
+          storageEpochNewer ||
+          !dirty.hkStorage)
       ) {
         if (
-          (isCloseDayReplace || isNewCloseDay || storageEpochNewer) &&
+          (isCloseDayReplace || isNewCloseDay || clearLocalSignal || storageEpochNewer) &&
           typeof global.HKStorage.replaceRemote === "function"
         ) {
           global.HKStorage.replaceRemote(payload.hkStorage);
@@ -1133,6 +1297,7 @@
     }
     if (Array.isArray(payload.hkRequestLog)) {
       var closeResetReq =
+        clearLocalSignal ||
         payload.hkCloseDayReset === true ||
         (!!payload.hkCloseDayAt &&
           String(payload.hkCloseDayAt) !== String(prevCloseDayAt || ""));
@@ -1144,36 +1309,48 @@
         changed.push("hkRequestLog");
       } else if (!dirty.hkRequestLog) {
         cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
+        cache.requestLog = filterArrAfterCloseDay(
+          cache.requestLog,
+          payload.hkCloseDayAt || getCloseDayAtLocal()
+        );
         writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
         changed.push("hkRequestLog");
         clearDirty("hkRequestLog");
       } else {
         // dirty여도 원격에만 있는 새 요청은 합치고, 로컬이 더 최신이면 유지
         cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
+        cache.requestLog = filterArrAfterCloseDay(
+          cache.requestLog,
+          payload.hkCloseDayAt || getCloseDayAtLocal()
+        );
         writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
         changed.push("hkRequestLog");
       }
     }
-    if (Array.isArray(payload.hkCancelLog) && !dirty.hkCancelLog) {
+    if (Array.isArray(payload.hkCancelLog) && (!dirty.hkCancelLog || clearLocalSignal)) {
       cache.cancelLog = payload.hkCancelLog.slice();
       writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);
       changed.push("hkCancelLog");
       clearDirty("hkCancelLog");
     }
-    if (Array.isArray(payload.hkUseLog) && !dirty.hkUseLog) {
+    if (Array.isArray(payload.hkUseLog) && (!dirty.hkUseLog || clearLocalSignal)) {
       cache.useLog = payload.hkUseLog.slice();
       writeJsonArray(REQUEST_USE_LOG_KEY, cache.useLog);
       changed.push("hkUseLog");
       clearDirty("hkUseLog");
     }
-    if (Array.isArray(payload.hkChangeLog) && !dirty.hkChangeLog) {
+    if (Array.isArray(payload.hkChangeLog) && (!dirty.hkChangeLog || clearLocalSignal)) {
       cache.changeLog = payload.hkChangeLog.slice();
       writeJsonArray(CHANGE_LOG_KEY, cache.changeLog);
       changed.push("hkChangeLog");
       clearDirty("hkChangeLog");
     }
     if (Array.isArray(payload.hkOrderLog)) {
-      if (dirty.hkOrderLog) {
+      if (clearLocalSignal) {
+        cache.orderLog = payload.hkOrderLog.slice();
+        clearDirty("hkOrderLog");
+        delete pendingPush.hkOrderLog;
+      } else if (dirty.hkOrderLog) {
         cache.orderLog = mergeOrderLogsLocal(cache.orderLog, payload.hkOrderLog);
         pendingPush.hkOrderLog = true;
       } else {
@@ -1183,13 +1360,13 @@
       writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
       changed.push("hkOrderLog");
     }
-    if (Array.isArray(payload.hkMbInvLog) && !dirty.hkMbInvLog) {
+    if (Array.isArray(payload.hkMbInvLog) && (!dirty.hkMbInvLog || clearLocalSignal)) {
       cache.mbInvLog = payload.hkMbInvLog.slice();
       writeJsonArray(MB_INV_LOG_KEY, cache.mbInvLog);
       changed.push("hkMbInvLog");
       clearDirty("hkMbInvLog");
     }
-    if (Array.isArray(payload.hkMbCheckLog) && !dirty.hkMbCheckLog) {
+    if (Array.isArray(payload.hkMbCheckLog) && (!dirty.hkMbCheckLog || clearLocalSignal)) {
       cache.mbCheckLog = payload.hkMbCheckLog.slice();
       writeJsonArray(MB_CHECK_LOG_KEY, cache.mbCheckLog);
       changed.push("hkMbCheckLog");
@@ -1365,6 +1542,8 @@
     pull: pull,
     hydrateFromLocal: hydrateFromLocal,
     clearLocalCaches: clearLocalCaches,
+    clearDayLocalCachesOnCloseDay: clearDayLocalCachesOnCloseDay,
+    getCloseDayAt: getCloseDayAtLocal,
     getRequestLog: function () {
       return cache.requestLog;
     },
@@ -1573,6 +1752,9 @@
       if (payload.hkCloseDayReset !== true) {
         payload = Object.assign({}, payload, { hkCloseDayReset: true });
       }
+      if (payload.hkClearLocalCaches !== true) {
+        payload = Object.assign({}, payload, { hkClearLocalCaches: true });
+      }
       if (payload.hkStorage && global.HKStorage) {
         if (typeof global.HKStorage.replaceRemote === "function") {
           global.HKStorage.replaceRemote(payload.hkStorage);
@@ -1580,6 +1762,7 @@
           global.HKStorage.applyRemote(payload.hkStorage);
         }
       }
+      clearDayLocalCachesOnCloseDay(payload);
       if (Array.isArray(payload.hkRequestLog)) {
         cache.requestLog = payload.hkRequestLog.slice();
         writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
@@ -1625,15 +1808,30 @@
       pendingPush = {};
       return postPayload(payload).then(function (data) {
         if (data && data.version != null) saveSyncVersion(data.version);
-        var closeChanged = ["hkCloseDayAt", "hkStorage", "hkRequestLog"];
+        var closeChanged = [
+          "hkCloseDayAt",
+          "hkClearLocalCaches",
+          "hkStorage",
+          "hkRequestLog",
+        ];
         if (Array.isArray(payload.hkOrderLog)) closeChanged.push("hkOrderLog");
         if (Array.isArray(payload.hkMbInvLog)) closeChanged.push("hkMbInvLog");
         if (Array.isArray(payload.hkMbCheckLog)) closeChanged.push("hkMbCheckLog");
         if (Array.isArray(payload.hkAdminInquiries)) closeChanged.push("hkAdminInquiries");
+        if (Array.isArray(payload.hkCancelLog)) closeChanged.push("hkCancelLog");
+        if (Array.isArray(payload.hkUseLog)) closeChanged.push("hkUseLog");
+        if (Array.isArray(payload.hkChangeLog)) closeChanged.push("hkChangeLog");
         emitChange(closeChanged, {
           hkCloseDayReset: true,
+          hkClearLocalCaches: true,
           hkCloseDayAt: payload.hkCloseDayAt,
           hkRequestLog: cache.requestLog.slice(),
+          hkOrderLog: cache.orderLog.slice(),
+          hkMbInvLog: cache.mbInvLog.slice(),
+          hkMbCheckLog: cache.mbCheckLog.slice(),
+          hkCancelLog: cache.cancelLog.slice(),
+          hkUseLog: cache.useLog.slice(),
+          hkChangeLog: cache.changeLog.slice(),
           hkStorage: payload.hkStorage,
           hkAdminInquiries: Array.isArray(payload.hkAdminInquiries)
             ? payload.hkAdminInquiries.slice()

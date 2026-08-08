@@ -25,7 +25,72 @@
       time: "",
       tray: "",
       trayUpdatedAt: "",
+      createdAt: "",
+      updatedAt: "",
     };
+  }
+
+  function parseIsoMs(iso) {
+    if (!iso) return 0;
+    var t = new Date(String(iso)).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  /** closeDayAt 이후(동일 시각 포함)인지. 스탬프 없으면 false */
+  function isAtOrAfterCloseDay(iso, closeDayAt) {
+    var closeMs = parseIsoMs(closeDayAt);
+    if (!closeMs) return true;
+    var atMs = parseIsoMs(iso);
+    if (!atMs) return false;
+    return atMs >= closeMs;
+  }
+
+  function roomActivityAt(room) {
+    if (!room || typeof room !== "object") return "";
+    if (room.updatedAt != null && String(room.updatedAt).trim()) {
+      return String(room.updatedAt).trim();
+    }
+    if (room.createdAt != null && String(room.createdAt).trim()) {
+      return String(room.createdAt).trim();
+    }
+    return "";
+  }
+
+  /** 마감 이전·스탬프 없는 객실은 무시 (되살림 방지) */
+  function isRoomAfterCloseDay(room, closeDayAt) {
+    if (!closeDayAt) return true;
+    return isAtOrAfterCloseDay(roomActivityAt(room), closeDayAt);
+  }
+
+  function stampRoom(room, atIso) {
+    var r = room && typeof room === "object" ? room : defaultRoom();
+    var stamp = atIso != null && String(atIso).trim() ? String(atIso).trim() : new Date().toISOString();
+    if (!r.createdAt) r.createdAt = stamp;
+    r.updatedAt = stamp;
+    return r;
+  }
+
+  function filterLogEntriesAfterCloseDay(arr, closeDayAt) {
+    if (!Array.isArray(arr)) return [];
+    if (!closeDayAt) return arr.slice();
+    return arr.filter(function (entry) {
+      if (!entry || typeof entry !== "object") return false;
+      var at = entry.updatedAt || entry.at || entry.createdAt || "";
+      return isAtOrAfterCloseDay(at, closeDayAt);
+    });
+  }
+
+  function filterRoomsObjectAfterCloseDay(rooms, closeDayAt, zoneIds) {
+    var out = {};
+    var src = rooms && typeof rooms === "object" ? rooms : {};
+    var keys = Array.isArray(zoneIds) && zoneIds.length ? zoneIds : Object.keys(src);
+    keys.forEach(function (zone) {
+      var list = Array.isArray(src[zone]) ? src[zone] : [];
+      out[zone] = list.filter(function (room) {
+        return room && room.number && isRoomAfterCloseDay(room, closeDayAt);
+      });
+    });
+    return out;
   }
 
   function defaultZoneMemo() {
@@ -877,6 +942,8 @@
       d.tray = x.tray != null ? String(x.tray).trim() : "";
       d.trayUpdatedAt =
         x.trayUpdatedAt != null ? String(x.trayUpdatedAt).trim() : "";
+      d.createdAt = x.createdAt != null ? String(x.createdAt).trim() : "";
+      d.updatedAt = x.updatedAt != null ? String(x.updatedAt).trim() : "";
     }
     return d;
   }
@@ -946,6 +1013,24 @@
           ? parseRoomsArray(r[z.id], z.id, d.deletedRooms)
           : [];
     });
+
+    // 스탬프가 있고 마감 이전이면 제외. 스탬프 없는 행은 유지(배포 중 기존 데이터)
+    if (d.closeDayAt) {
+      var zoneIds = STANDARD_ZONE_IDS.concat(
+        customZones.map(function (z) {
+          return z.id;
+        })
+      );
+      zoneIds.forEach(function (zone) {
+        var list = Array.isArray(d.rooms[zone]) ? d.rooms[zone] : [];
+        d.rooms[zone] = list.filter(function (room) {
+          if (!room || !room.number) return false;
+          var at = roomActivityAt(room);
+          if (!at) return true;
+          return isRoomAfterCloseDay(room, d.closeDayAt);
+        });
+      });
+    }
 
     return d;
   }
@@ -1322,6 +1407,12 @@
     frontEmbedNonClearMayReplaceClear: frontEmbedNonClearMayReplaceClear,
     defaultData: defaultData,
     defaultRoom: defaultRoom,
+    stampRoom: stampRoom,
+    roomActivityAt: roomActivityAt,
+    isRoomAfterCloseDay: isRoomAfterCloseDay,
+    isAtOrAfterCloseDay: isAtOrAfterCloseDay,
+    filterLogEntriesAfterCloseDay: filterLogEntriesAfterCloseDay,
+    filterRoomsObjectAfterCloseDay: filterRoomsObjectAfterCloseDay,
     parseTime24: parseTime24,
     isStandardZone: isStandardZone,
     getZoneOrder: getZoneOrder,

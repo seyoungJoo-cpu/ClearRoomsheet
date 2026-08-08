@@ -4360,6 +4360,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
           HKSync.pushSnapshot({
             hkCloseDayReset: true,
+            hkClearLocalCaches: true,
             hkCloseDayAt: closeAtIso,
             hkStorage: resetStorage,
             hkRequestLog: [],

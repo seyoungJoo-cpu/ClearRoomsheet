@@ -471,9 +471,71 @@ function hkMergeRoomEntry(prev, incoming) {
   var incomingTrayWins = tiAt && (!tpAt || tiAt >= tpAt);
   var tray = incomingTrayWins ? ti : tpAt ? tp : ti || tp || "";
   var trayUpdatedAt = incomingTrayWins ? tiAt : tpAt || tiAt || "";
-  return Object.assign({}, prev, incoming, {
+  var merged = Object.assign({}, prev, incoming, {
     tray: tray,
     trayUpdatedAt: trayUpdatedAt,
+  });
+  // 더 최신 updatedAt/createdAt 유지
+  var prevAt = String(prev.updatedAt || prev.createdAt || "").trim();
+  var incAt = String(incoming.updatedAt || incoming.createdAt || "").trim();
+  if (incAt && (!prevAt || String(incAt) >= String(prevAt))) {
+    if (incoming.updatedAt) merged.updatedAt = String(incoming.updatedAt);
+    if (incoming.createdAt) merged.createdAt = String(incoming.createdAt);
+    else if (prev.createdAt) merged.createdAt = String(prev.createdAt);
+  } else {
+    if (prev.updatedAt) merged.updatedAt = String(prev.updatedAt);
+    if (prev.createdAt) merged.createdAt = String(prev.createdAt);
+  }
+  return merged;
+}
+
+function hkParseIsoMs(iso) {
+  if (!iso) return 0;
+  var t = new Date(String(iso)).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function hkRoomActivityAt(room) {
+  if (!room || typeof room !== "object") return "";
+  if (room.updatedAt != null && String(room.updatedAt).trim()) return String(room.updatedAt).trim();
+  if (room.createdAt != null && String(room.createdAt).trim()) return String(room.createdAt).trim();
+  return "";
+}
+
+/** 마감 이전 객실 제거. 스탬프 없는 신규는 거부하되 서버에 이미 있던 행은 유지 */
+function hkFilterRoomsAfterCloseDay(rooms, closeDayAt, prevRooms) {
+  if (!rooms || typeof rooms !== "object") return rooms || {};
+  var closeMs = hkParseIsoMs(closeDayAt);
+  if (!closeMs) return rooms;
+  var out = {};
+  Object.keys(rooms).forEach(function (zone) {
+    var prevMap = {};
+    var prevList =
+      prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
+    prevList.forEach(function (r) {
+      if (!r || !r.number) return;
+      var k = hkRoomNumberKey(r.number);
+      if (k) prevMap[k] = true;
+    });
+    out[zone] = (Array.isArray(rooms[zone]) ? rooms[zone] : []).filter(function (room) {
+      if (!room || !room.number) return false;
+      var at = hkRoomActivityAt(room);
+      if (at) return hkParseIsoMs(at) >= closeMs;
+      return !!prevMap[hkRoomNumberKey(room.number)];
+    });
+  });
+  return out;
+}
+
+function hkFilterLogAfterCloseDay(arr, closeDayAt) {
+  if (!Array.isArray(arr)) return [];
+  var closeMs = hkParseIsoMs(closeDayAt);
+  if (!closeMs) return arr.slice();
+  return arr.filter(function (entry) {
+    if (!entry || typeof entry !== "object") return false;
+    var at = entry.updatedAt || entry.at || entry.createdAt || "";
+    var ms = hkParseIsoMs(at);
+    return ms > 0 && ms >= closeMs;
   });
 }
 
@@ -1264,6 +1326,11 @@ function mergeHkStorage(prev, incoming) {
     );
   });
 
+  var closeForRooms = out.closeDayAt || prevCd || "";
+  if (closeForRooms) {
+    out.rooms = hkFilterRoomsAfterCloseDay(out.rooms, closeForRooms, prev.rooms);
+  }
+
   return out;
 }
 
@@ -1701,10 +1768,16 @@ function mergeSyncPayload(prev, incoming) {
         : mergeOrderLogs(prev.hkOrderLog, incoming.hkOrderLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) {
-    out.hkMbInvLog = replaceLogArray(incoming.hkMbInvLog);
+    out.hkMbInvLog =
+      incoming.hkCloseDayReset === true
+        ? replaceLogArray(incoming.hkMbInvLog)
+        : replaceLogArray(incoming.hkMbInvLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkMbCheckLog")) {
-    out.hkMbCheckLog = replaceLogArray(incoming.hkMbCheckLog);
+    out.hkMbCheckLog =
+      incoming.hkCloseDayReset === true
+        ? replaceLogArray(incoming.hkMbCheckLog)
+        : replaceLogArray(incoming.hkMbCheckLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
     out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
@@ -1740,6 +1813,61 @@ function mergeSyncPayload(prev, incoming) {
       out.hkCloseDayAt = incoming.hkCloseDayAt || null;
     }
   }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkClearLocalCaches")) {
+    out.hkClearLocalCaches = incoming.hkClearLocalCaches === true;
+  } else if (incoming.hkCloseDayReset === true) {
+    out.hkClearLocalCaches = true;
+  } else if (out.hkCloseDayReset !== true) {
+    delete out.hkClearLocalCaches;
+  }
+
+  // 마감 리셋 시 빠짐없이 당일 업무 필드 비움 (클라이언트가 키를 빼먹어도 서버에 잔존하지 않음)
+  if (incoming.hkCloseDayReset === true) {
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkRequestLog")) out.hkRequestLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) out.hkMbInvLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkMbCheckLog")) out.hkMbCheckLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkCancelLog")) out.hkCancelLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkUseLog")) out.hkUseLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkChangeLog")) out.hkChangeLog = [];
+    if (!Object.prototype.hasOwnProperty.call(incoming, "hkLastRoomChange")) {
+      out.hkLastRoomChange = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(incoming, "extendedStayRooms")) {
+      out.extendedStayRooms = {};
+      out.extendedStayUpdatedAt =
+        (incoming.hkCloseDayAt && String(incoming.hkCloseDayAt)) ||
+        new Date().toISOString();
+    }
+    out.hkClearLocalCaches = true;
+  }
+
+  // 마감 시각 이전 요청·MB·취소/사용/변경 로그는 서버에서도 폐기
+  var closeAtFilter =
+    (out.hkCloseDayAt != null && String(out.hkCloseDayAt).trim()) ||
+    (out.hkStorage && out.hkStorage.closeDayAt
+      ? String(out.hkStorage.closeDayAt).trim()
+      : "");
+  if (closeAtFilter) {
+    if (Array.isArray(out.hkRequestLog)) {
+      out.hkRequestLog = hkFilterLogAfterCloseDay(out.hkRequestLog, closeAtFilter);
+    }
+    if (Array.isArray(out.hkMbInvLog)) {
+      out.hkMbInvLog = hkFilterLogAfterCloseDay(out.hkMbInvLog, closeAtFilter);
+    }
+    if (Array.isArray(out.hkMbCheckLog)) {
+      out.hkMbCheckLog = hkFilterLogAfterCloseDay(out.hkMbCheckLog, closeAtFilter);
+    }
+    if (Array.isArray(out.hkCancelLog)) {
+      out.hkCancelLog = hkFilterLogAfterCloseDay(out.hkCancelLog, closeAtFilter);
+    }
+    if (Array.isArray(out.hkUseLog)) {
+      out.hkUseLog = hkFilterLogAfterCloseDay(out.hkUseLog, closeAtFilter);
+    }
+    if (Array.isArray(out.hkChangeLog)) {
+      out.hkChangeLog = hkFilterLogAfterCloseDay(out.hkChangeLog, closeAtFilter);
+    }
+  }
+
   return out;
 }
 
