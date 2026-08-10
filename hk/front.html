@@ -8594,15 +8594,21 @@
       min-width: min(100%, 42rem);
     }
 
-    .complaint-form__fields .field--complaint-memo input,
     .complaint-form__fields .field--complaint-memo textarea {
       min-width: 0;
       width: 100%;
-      height: auto;
-      min-height: calc(32px * 3);
-      padding: 8px;
-      resize: vertical;
+      height: 32px;
+      min-height: 32px;
+      max-height: 12em;
+      padding: 6px 8px;
+      resize: none;
+      overflow-y: hidden;
       line-height: 1.35;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.8125rem;
     }
 
     .complaint-type-block,
@@ -10419,7 +10425,7 @@
               </div>
               <div class="field field--complaint-memo">
                 <label for="complaintMemo">메모</label>
-                <textarea id="complaintMemo" rows="3" maxlength="200" placeholder="간단 메모"></textarea>
+                <textarea id="complaintMemo" rows="1" maxlength="200" placeholder="간단 메모"></textarea>
               </div>
               <div class="complaint-ox-block">
                 <span>룸체인지</span>
@@ -11462,7 +11468,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=6"></script>
+  <script src="hk-complaint-analysis.js?v=7"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>

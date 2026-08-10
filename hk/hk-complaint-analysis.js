@@ -176,9 +176,19 @@
     if (res) res.value = "";
     if (name) name.value = "";
     if (room) room.value = "";
-    if (memo) memo.value = "";
+    if (memo) {
+      memo.value = "";
+      fitMemoHeight(memo);
+    }
     syncFormTypeUi();
     syncFormRoomChangeUi();
+  }
+
+  function fitMemoHeight(el) {
+    if (!el) return;
+    el.style.height = "32px";
+    var next = Math.max(32, el.scrollHeight);
+    el.style.height = next + "px";
   }
 
   function canEdit() {
@@ -621,6 +631,16 @@
       resetBtn.__hkComplaintResetBound = true;
       resetBtn.addEventListener("click", function () {
         clearAllRecords();
+      });
+    }
+
+    var memoEl = document.getElementById("complaintMemo");
+    if (memoEl && !memoEl.__hkMemoAutosize) {
+      memoEl.__hkMemoAutosize = true;
+      memoEl.setAttribute("rows", "1");
+      fitMemoHeight(memoEl);
+      memoEl.addEventListener("input", function () {
+        fitMemoHeight(memoEl);
       });
     }
 
