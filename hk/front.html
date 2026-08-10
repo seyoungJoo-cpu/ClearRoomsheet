@@ -852,6 +852,8 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
     /* 오른쪽 알림 패널 */
@@ -1871,6 +1873,7 @@
       align-self: stretch;
       -webkit-overflow-scrolling: touch;
       position: relative;
+      z-index: 5;
       transition: width 0.2s ease;
     }
 
@@ -3748,21 +3751,28 @@
 
     .main.main--order .order-work-item .request-feedback__item-room,
     .main.main--facility .order-work-item .request-feedback__item-room,
+    .main.main--mb-inv .order-work-item .request-feedback__item-room,
+    .main.main--mb-check .order-work-item .request-feedback__item-room,
     .facility-log-panel .facility-log-card .request-feedback__item-room {
-      font-size: 1rem;
+      font-size: 1.65rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
     .main.main--order .order-work-item .order-feedback__item-memo,
-    .main.main--facility .order-work-item .order-feedback__item-memo {
-      font-size: 0.9375rem;
-      font-weight: 600;
-      line-height: 1.45;
+    .main.main--facility .order-work-item .order-feedback__item-memo,
+    .main.main--mb-inv .order-work-item .order-feedback__item-memo,
+    .main.main--mb-check .order-work-item .order-feedback__item-memo {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.4;
     }
 
     .facility-log-panel .facility-log-card .order-feedback__item-memo {
-      font-size: 1.0625rem;
-      font-weight: 600;
-      line-height: 1.5;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.45;
     }
 
     .main.main--order .order-work-item .order-feedback__item-by,
@@ -9291,6 +9301,89 @@
     .main .room-list-main > .room-card .room-card__inline-editor {
       flex: 1 1 100%;
       width: 100%;
+    }
+
+    /* 정비관리: 객실번호·정비시간·시설시간 강조 */
+    .main.main--request .sched-cards-list > .sched-req-card .room-card__no,
+    .main.main--request .sched-type-group__list > .sched-req-card .room-card__no {
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card .room-card__no-box,
+    .main.main--request .sched-type-group__list > .sched-req-card .room-card__no-box {
+      min-width: 4.8em;
+      min-height: 36px;
+      padding: 5px 12px;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card .room-card__time-display,
+    .main.main--request .sched-type-group__list > .sched-req-card .room-card__time-display {
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card .room-card__time-display .hk-time-em,
+    .main.main--request .sched-type-group__list > .sched-req-card .room-card__time-display .hk-time-em {
+      font-size: 1.45rem;
+      font-weight: 900;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card .request-feedback__sched,
+    .main.main--request .sched-type-group__list > .sched-req-card .request-feedback__sched {
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card .request-feedback__sched .hk-time-em,
+    .main.main--request .sched-type-group__list > .sched-req-card .request-feedback__sched .hk-time-em {
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+
+    /* 오더·시설·MB: 객실번호·메모 초대형 */
+    .main.main--order .order-work-item .request-feedback__item-room,
+    .main.main--facility .order-work-item .request-feedback__item-room,
+    .main.main--mb-inv .order-work-item .request-feedback__item-room,
+    .main.main--mb-check .order-work-item .request-feedback__item-room {
+      font-size: 1.7rem !important;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .main.main--order .order-work-item .order-feedback__item-memo,
+    .main.main--facility .order-work-item .order-feedback__item-memo,
+    .main.main--mb-inv .order-work-item .order-feedback__item-memo,
+    .main.main--mb-check .order-work-item .order-feedback__item-memo {
+      font-size: 1.4rem !important;
+      font-weight: 750;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    /* 특이객실: 상태색 → 카드 배경 */
+    .main .room-list-main > .room-card.hk-st--ip {
+      background: color-mix(in srgb, var(--st-ip-bg) 48%, #fff);
+      border-color: var(--st-ip-bd);
+    }
+    .main .room-list-main > .room-card.hk-st--cl {
+      background: color-mix(in srgb, var(--st-cl-bg) 48%, #fff);
+      border-color: var(--st-cl-bd);
+    }
+    .main .room-list-main > .room-card.hk-st--pu {
+      background: color-mix(in srgb, var(--st-pu-bg) 48%, #fff);
+      border-color: var(--st-pu-bd);
+    }
+    .main .room-list-main > .room-card.hk-st--di {
+      background: color-mix(in srgb, var(--st-di-bg) 32%, #fff);
+      border-color: var(--st-di-bd);
+    }
+    .main .room-list-main > .room-card.hk-st--oo,
+    .main .room-list-main > .room-card.hk-st--os {
+      background: color-mix(in srgb, var(--st-oo-bg) 42%, #fff);
+      border-color: var(--st-oo-bd);
     }
 
     /* ── 모바일·태블릿만 (PC는 창을 줄여도 데스크톱 레이아웃 유지) ── */
@@ -25474,6 +25567,12 @@
           (canHistory ? " is-history-toggle" : "") +
           (historyOpen ? " is-history-open" : "") +
           (multiRoom ? " is-multi-room" : "");
+        if (!multiRoom) {
+          var stTint = hkStatusSuffix(st);
+          if (stTint && stTint !== "none") {
+            li.className += " hk-st--" + stTint;
+          }
+        }
         li.setAttribute("data-room-index", String(idx));
         if (canHistory) {
           li.setAttribute("role", "button");
