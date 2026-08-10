@@ -11906,16 +11906,54 @@
 
       function hkChatNearBottom(el, px) {
         if (!el) return true;
-        var threshold = px == null ? 96 : px;
+        var threshold = px == null ? 80 : px;
         return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
       }
       function hkChatScrollToBottom(el, force) {
         if (!el) return;
         if (force || hkChatNearBottom(el)) el.scrollTop = el.scrollHeight;
       }
+      var hkChatStickCache = Object.create(null);
+      function hkChatStickKey(kind, id) {
+        return String(kind || "") + ":" + String(id || "");
+      }
+      function hkChatCaptureStickEl(el, kind, id) {
+        if (!el || id == null || id === "") return;
+        hkChatStickCache[hkChatStickKey(kind, id)] = {
+          stick: hkChatNearBottom(el),
+          top: el.scrollTop || 0,
+        };
+      }
+      function hkChatCaptureSticks(selector, kind, idAttr) {
+        if (!selector || !idAttr) return;
+        var nodes = document.querySelectorAll(selector);
+        for (var i = 0; i < nodes.length; i++) {
+          var el = nodes[i];
+          var card = el.closest("[" + idAttr + "]");
+          if (!card) continue;
+          hkChatCaptureStickEl(el, kind, card.getAttribute(idAttr));
+        }
+      }
+      function hkChatTakeStick(kind, id, defaultStick) {
+        var key = hkChatStickKey(kind, id);
+        var saved = hkChatStickCache[key];
+        if (saved) delete hkChatStickCache[key];
+        if (saved) return saved;
+        return { stick: defaultStick !== false, top: 0 };
+      }
+      function hkChatApplyStick(el, stickInfo) {
+        if (!el || !stickInfo) return;
+        requestAnimationFrame(function () {
+          if (stickInfo.stick) el.scrollTop = el.scrollHeight;
+          else el.scrollTop = stickInfo.top || 0;
+        });
+      }
       try {
         window.hkChatNearBottom = hkChatNearBottom;
         window.hkChatScrollToBottom = hkChatScrollToBottom;
+        window.hkChatCaptureSticks = hkChatCaptureSticks;
+        window.hkChatTakeStick = hkChatTakeStick;
+        window.hkChatApplyStick = hkChatApplyStick;
       } catch (eHkChatScroll) {}
 
       function isTextInputActive(el) {
@@ -14118,6 +14156,7 @@
           if (ae && ae.id === "requestDeskChatInput") return;
         }
         var stick = hkChatNearBottom(mount);
+        var savedTop = mount.scrollTop || 0;
         var msgs = getRequestDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -14151,6 +14190,7 @@
         });
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
+          else mount.scrollTop = savedTop;
         });
       }
 
@@ -14218,6 +14258,7 @@
           if (ae && ae.id === "orderDeskChatInput") return;
         }
         var stick = hkChatNearBottom(mount);
+        var savedTop = mount.scrollTop || 0;
         var msgs = getOrderDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -14251,6 +14292,7 @@
         });
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
+          else mount.scrollTop = savedTop;
         });
       }
 
@@ -14318,6 +14360,7 @@
           if (ae && ae.id === "mbCheckDeskChatInput") return;
         }
         var stick = hkChatNearBottom(mount);
+        var savedTop = mount.scrollTop || 0;
         var msgs = getMbCheckDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -14351,6 +14394,7 @@
         });
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
+          else mount.scrollTop = savedTop;
         });
       }
 
@@ -14418,6 +14462,7 @@
           if (ae && ae.id === "facilityDeskChatInput") return;
         }
         var stick = hkChatNearBottom(mount);
+        var savedTop = mount.scrollTop || 0;
         var msgs = getFacilityDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -14451,6 +14496,7 @@
         });
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
+          else mount.scrollTop = savedTop;
         });
       }
 
@@ -22647,15 +22693,8 @@
 
       function appendOrderChatUi(li, entry, opts) {
         opts = opts || {};
-        var stick = true;
-        try {
-          var prevMsgList = document.querySelector(
-            '.order-work-item[data-order-id="' +
-              String(entry && entry.id != null ? entry.id : "").replace(/"/g, '\\"') +
-              '"] .order-chat__messages'
-          );
-          stick = hkChatNearBottom(prevMsgList);
-        } catch (eStickOrder) {}
+        var stickInfo = hkChatTakeStick("order", entry && entry.id, true);
+        if (opts.forceScroll) stickInfo = { stick: true, top: 0 };
         var chatWrap = document.createElement("div");
         chatWrap.className = "order-chat";
 
@@ -22746,8 +22785,8 @@
         chatWrap.appendChild(hkCreatePhotoPreview(chatKey));
 
         li.appendChild(chatWrap);
+        hkChatApplyStick(msgList, stickInfo);
         requestAnimationFrame(function () {
-          if (stick) msgList.scrollTop = msgList.scrollHeight;
           if (
             orderChatComposeDraft &&
             orderChatComposeDraft.orderId === (entry.id || "") &&
@@ -23344,17 +23383,7 @@
 
       function appendSchedRequestChatUi(li, entry) {
         if (!li || !entry) return;
-        var stick = true;
-        try {
-          var prevSchedList = document.querySelector(
-            '.sched-req-card[data-req-id="' +
-              String(entry.id || "").replace(/"/g, '\\"') +
-              '"] .order-chat__messages, #confirmingCardsPanel .request-feedback__item[data-req-id="' +
-              String(entry.id || "").replace(/"/g, '\\"') +
-              '"] .order-chat__messages'
-          );
-          stick = hkChatNearBottom(prevSchedList);
-        } catch (eStickSched) {}
+        var stickInfo = hkChatTakeStick("sched", entry.id, true);
         var chatWrap = document.createElement("div");
         chatWrap.className = "order-chat";
         var msgList = document.createElement("ul");
@@ -23407,9 +23436,7 @@
         chatForm.appendChild(chatSend);
         chatWrap.appendChild(chatForm);
         li.appendChild(chatWrap);
-        requestAnimationFrame(function () {
-          if (stick) msgList.scrollTop = msgList.scrollHeight;
-        });
+        hkChatApplyStick(msgList, stickInfo);
       }
 
       function appendSchedRequestChat(reqId, text, image) {
@@ -23703,6 +23730,24 @@
         if (unavailableList) {
           ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists);
         }
+
+        hkChatCaptureSticks(
+          "#" +
+            prefix +
+            "IssueList .order-chat__messages, #" +
+            prefix +
+            "AcceptedList .order-chat__messages, #" +
+            prefix +
+            "CancelledList .order-chat__messages, #" +
+            prefix +
+            "DeployedList .order-chat__messages, #" +
+            prefix +
+            "DoorhandleList .order-chat__messages, #" +
+            prefix +
+            "UnavailableList .order-chat__messages",
+          "order",
+          "data-order-id"
+        );
 
         issueList.innerHTML = "";
         acceptedList.innerHTML = "";
@@ -24223,6 +24268,11 @@
         ensureStripSortHead(ul, "schedCards", function () {
           renderSchedRequestCards();
         });
+        hkChatCaptureSticks(
+          "#schedRequestCardList .order-chat__messages, #confirmingRequestCardList .order-chat__messages, #confirmingRequestCardListMain .order-chat__messages, #confirmingRequestCardListAnnex .order-chat__messages, .sched-type-group__list .order-chat__messages",
+          "sched",
+          "data-req-id"
+        );
         ul.innerHTML = "";
         if (ipList) ipList.innerHTML = "";
         var allScheduled = getFilteredScheduledRequestEntries();
@@ -26941,19 +26991,19 @@
       }
 
       function renderFrontChatPanel(opts) {
-        var scrollToBottom = false;
+        // boolean legacy: previously forced scroll on every sync — use sticky position instead
         if (typeof opts === "boolean") {
-          scrollToBottom = opts;
-          opts = {};
+          opts = { force: true };
         } else {
           opts = opts || {};
-          scrollToBottom = !!opts.scrollToBottom;
         }
         if (!opts.force && isHkUserEditing()) return;
         updateChatPanelChrome();
         var list = document.getElementById("frontChatMessages");
         var empty = document.getElementById("frontChatEmpty");
         if (!list) return;
+        var stick = opts.scrollToBottom === true ? true : hkChatNearBottom(list);
+        var savedTop = list.scrollTop || 0;
         list.innerHTML = "";
         var kind = getActiveChatKind();
         var messages = kind ? getChatMessagesForKind(kind).slice() : [];
@@ -27095,11 +27145,10 @@
             list.appendChild(li);
           });
         }
-        if (scrollToBottom) {
-          requestAnimationFrame(function () {
-            list.scrollTop = list.scrollHeight;
-          });
-        }
+        requestAnimationFrame(function () {
+          if (stick) list.scrollTop = list.scrollHeight;
+          else list.scrollTop = savedTop;
+        });
       }
 
       function getFrontChatMessageId(msg, idx) {

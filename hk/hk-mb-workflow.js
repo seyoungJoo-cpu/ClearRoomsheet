@@ -156,23 +156,10 @@
   }
 
   function appendMbInvChatUi(li, entry) {
-    var stick = true;
-    try {
-      var prevMsgList = document.querySelector(
-        '.order-work-item[data-mb-inv-id="' +
-          String((entry && entry.id) || "").replace(/"/g, '\\"') +
-          '"] .order-chat__messages'
-      );
-      if (typeof window.hkChatNearBottom === "function") {
-        stick = window.hkChatNearBottom(prevMsgList);
-      } else if (prevMsgList) {
-        stick =
-          prevMsgList.scrollHeight -
-            prevMsgList.scrollTop -
-            prevMsgList.clientHeight <=
-          96;
-      }
-    } catch (eStickMb) {}
+    var stickInfo =
+      typeof window.hkChatTakeStick === "function"
+        ? window.hkChatTakeStick("mbInv", entry && entry.id, true)
+        : { stick: true, top: 0 };
     var chatWrap = document.createElement("div");
     chatWrap.className = "order-chat";
     var msgList = document.createElement("ul");
@@ -240,9 +227,13 @@
     chatWrap.appendChild(chatForm);
     chatWrap.appendChild(ctx.hkCreatePhotoPreview(chatKey));
     li.appendChild(chatWrap);
-    requestAnimationFrame(function () {
-      if (stick) msgList.scrollTop = msgList.scrollHeight;
-    });
+    if (typeof window.hkChatApplyStick === "function") {
+      window.hkChatApplyStick(msgList, stickInfo);
+    } else {
+      requestAnimationFrame(function () {
+        if (stickInfo && stickInfo.stick) msgList.scrollTop = msgList.scrollHeight;
+      });
+    }
   }
 
   function renderMbInvWorkBlock(category, prefix) {
@@ -253,6 +244,20 @@
     var cancelledList = document.getElementById(prefix + "CancelledList");
     var cancelledEmpty = document.getElementById(prefix + "CancelledEmpty");
     if (!issueList || !acceptedList || !cancelledList) return;
+
+    if (typeof window.hkChatCaptureSticks === "function") {
+      window.hkChatCaptureSticks(
+        "#" +
+          prefix +
+          "IssueList .order-chat__messages, #" +
+          prefix +
+          "AcceptedList .order-chat__messages, #" +
+          prefix +
+          "CancelledList .order-chat__messages",
+        "mbInv",
+        "data-mb-inv-id"
+      );
+    }
 
     issueList.innerHTML = "";
     acceptedList.innerHTML = "";

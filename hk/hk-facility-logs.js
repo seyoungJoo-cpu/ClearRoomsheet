@@ -1237,23 +1237,10 @@
     opts = opts || {};
     var readOnly = !!opts.readOnly;
     if (!entry || !entry.id) return;
-    var stick = true;
-    try {
-      var prevMsgList = document.querySelector(
-        '.facility-log-panel .order-work-item[data-entry-id="' +
-          String(entry.id).replace(/"/g, '\\"') +
-          '"] .order-chat__messages'
-      );
-      if (typeof window.hkChatNearBottom === "function") {
-        stick = window.hkChatNearBottom(prevMsgList);
-      } else if (prevMsgList) {
-        stick =
-          prevMsgList.scrollHeight -
-            prevMsgList.scrollTop -
-            prevMsgList.clientHeight <=
-          96;
-      }
-    } catch (eStickFac) {}
+    var stickInfo =
+      typeof window.hkChatTakeStick === "function"
+        ? window.hkChatTakeStick("facilityLog", entry.id, true)
+        : { stick: true, top: 0 };
     var chatWrap = document.createElement("div");
     chatWrap.className = "order-chat facility-log-chat";
 
@@ -1331,9 +1318,13 @@
     }
 
     li.appendChild(chatWrap);
-    requestAnimationFrame(function () {
-      if (stick) msgList.scrollTop = msgList.scrollHeight;
-    });
+    if (typeof window.hkChatApplyStick === "function") {
+      window.hkChatApplyStick(msgList, stickInfo);
+    } else {
+      requestAnimationFrame(function () {
+        if (stickInfo && stickInfo.stick) msgList.scrollTop = msgList.scrollHeight;
+      });
+    }
   }
 
   function canFacilityLogChat(entry) {
@@ -1612,6 +1603,13 @@
 
   function renderOrderWorkLists(acceptedListEl, acceptedEmptyEl, completedListEl, completedEmptyEl, entries, logKind, searchQuery) {
     if (!acceptedListEl || !completedListEl) return;
+    if (typeof window.hkChatCaptureSticks === "function") {
+      window.hkChatCaptureSticks(
+        ".facility-log-panel .order-work-item .order-chat__messages",
+        "facilityLog",
+        "data-entry-id"
+      );
+    }
     acceptedListEl.innerHTML = "";
     completedListEl.innerHTML = "";
     var query = searchQuery != null ? searchQuery : "";
