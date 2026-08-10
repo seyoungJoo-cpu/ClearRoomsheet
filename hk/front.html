@@ -9362,27 +9362,44 @@
       line-height: 1.4;
     }
 
-    /* 특이객실: 상태색 → 카드 배경 */
-    .main .room-list-main > .room-card.hk-st--ip {
-      background: color-mix(in srgb, var(--st-ip-bg) 48%, #fff);
-      border-color: var(--st-ip-bd);
+    /* 특이객실·정비관리: 상태색 파스텔 카드 배경 */
+    .main .room-list-main > .room-card.hk-st--ip,
+    .main .sched-cards-list > .sched-req-card.hk-st--ip,
+    .main .sched-type-group__list > .sched-req-card.hk-st--ip {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: var(--text);
     }
-    .main .room-list-main > .room-card.hk-st--cl {
-      background: color-mix(in srgb, var(--st-cl-bg) 48%, #fff);
-      border-color: var(--st-cl-bd);
+    .main .room-list-main > .room-card.hk-st--cl,
+    .main .sched-cards-list > .sched-req-card.hk-st--cl,
+    .main .sched-type-group__list > .sched-req-card.hk-st--cl {
+      background: #ecfeff;
+      border-color: #a5f3fc;
+      color: var(--text);
     }
-    .main .room-list-main > .room-card.hk-st--pu {
-      background: color-mix(in srgb, var(--st-pu-bg) 48%, #fff);
-      border-color: var(--st-pu-bd);
+    .main .room-list-main > .room-card.hk-st--pu,
+    .main .sched-cards-list > .sched-req-card.hk-st--pu,
+    .main .sched-type-group__list > .sched-req-card.hk-st--pu {
+      background: #fefce8;
+      border-color: #fde68a;
+      color: var(--text);
     }
-    .main .room-list-main > .room-card.hk-st--di {
-      background: color-mix(in srgb, var(--st-di-bg) 32%, #fff);
-      border-color: var(--st-di-bd);
+    .main .room-list-main > .room-card.hk-st--di,
+    .main .sched-cards-list > .sched-req-card.hk-st--di,
+    .main .sched-type-group__list > .sched-req-card.hk-st--di {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: var(--text);
     }
     .main .room-list-main > .room-card.hk-st--oo,
-    .main .room-list-main > .room-card.hk-st--os {
-      background: color-mix(in srgb, var(--st-oo-bg) 42%, #fff);
-      border-color: var(--st-oo-bd);
+    .main .room-list-main > .room-card.hk-st--os,
+    .main .sched-cards-list > .sched-req-card.hk-st--oo,
+    .main .sched-cards-list > .sched-req-card.hk-st--os,
+    .main .sched-type-group__list > .sched-req-card.hk-st--oo,
+    .main .sched-type-group__list > .sched-req-card.hk-st--os {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: var(--text);
     }
 
     /* ── 모바일·태블릿만 (PC는 창을 줄여도 데스크톱 레이아웃 유지) ── */
@@ -24265,9 +24282,14 @@
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("sched-req-card--urgent");
           if (facDenied) li.classList.add("sched-req-card--facility-unavailable");
+          var multiSched = isMultiRoomRequest(entry);
+          var liveSt = facDenied ? "" : liveRequestEntryStatus(entry);
+          var stKeySched = hkStatusSuffix(liveSt);
+          if (!multiSched && !facDenied && stKeySched && stKeySched !== "none") {
+            li.classList.add("hk-st--" + stKeySched);
+          }
           /* 카드 깜빡임 없음 — 사이드바(정비관리/요청)만 알림 */
 
-          var multiSched = isMultiRoomRequest(entry);
           var head = document.createElement("div");
           head.className = "room-card__head";
           var noBox = document.createElement("span");
@@ -24278,7 +24300,7 @@
             ? formatRoomNoDisplay(String(entry.room)) + (entry.quick ? " 중 빠른거" : "")
             : "—";
           noBox.appendChild(no);
-          var st = facDenied ? "입실 불가" : liveRequestEntryStatus(entry);
+          var st = facDenied ? "입실 불가" : liveSt;
           head.appendChild(noBox);
           appendRoomWingBadge(head, entry.room);
           if (!multiSched) appendRoomTypeToCardHead(head, entry.room);
