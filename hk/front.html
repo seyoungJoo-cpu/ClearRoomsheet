@@ -8693,31 +8693,59 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 0.8rem;
-      min-width: 720px;
+      font-size: 0.78rem;
+      min-width: 0;
     }
 
-    .complaint-table col.c-date { width: 7%; }
-    .complaint-table col.c-res { width: 5%; }
-    .complaint-table col.c-name { width: 5%; }
-    .complaint-table col.c-room { width: 4%; }
-    .complaint-table col.c-memo { width: 48%; }
-    .complaint-table col.c-type { width: 8%; }
-    .complaint-table col.c-change { width: 7%; }
+    /* 하단 결과 표: 날짜÷2 · 예약÷3 · 이름÷3 · 객실÷4 · 메모×3 · 유형÷2 */
+    .complaint-table col.c-date { width: 6.2%; }
+    .complaint-table col.c-res { width: 4.2%; }
+    .complaint-table col.c-name { width: 4.2%; }
+    .complaint-table col.c-room { width: 3.2%; }
+    .complaint-table col.c-memo { width: 62%; }
+    .complaint-table col.c-type { width: 7%; }
+    .complaint-table col.c-change { width: 5.2%; }
     .complaint-table col.c-act { width: 8%; }
 
     .complaint-table th,
     .complaint-table td {
       border-bottom: 1px solid var(--border);
-      padding: 6px 8px;
+      padding: 4px 4px;
       text-align: left;
       vertical-align: middle;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .complaint-table td:nth-child(5) .complaint-cell-input {
+    .complaint-table td.complaint-td-memo,
+    .complaint-table th:nth-child(5) {
+      white-space: normal;
+    }
+
+    .complaint-table td.complaint-td-date .complaint-cell-input,
+    .complaint-table td.complaint-td-date input[type="date"] {
+      max-width: 100%;
       min-width: 0;
+      width: 100%;
+      font-size: 0.65rem;
+      padding: 0 1px;
+      letter-spacing: -0.03em;
+    }
+
+    .complaint-table td.complaint-td-narrow .complaint-cell-input {
+      font-size: 0.7rem;
+      padding: 0 2px;
+    }
+
+    .complaint-table td.complaint-td-type .complaint-cell-select {
+      font-size: 0.65rem;
+      padding: 0 1px;
+    }
+
+    .complaint-table td.complaint-td-memo .complaint-cell-input {
+      font-size: 0.78rem;
+      padding: 0 6px;
     }
 
     .complaint-table thead th {
@@ -8727,6 +8755,8 @@
       font-weight: 800;
       color: #0f766e;
       z-index: 1;
+      font-size: 0.7rem;
+      padding: 5px 3px;
     }
 
     .complaint-cell-input,
@@ -8751,8 +8781,23 @@
 
     .complaint-td-roomchange,
     .complaint-td-actions {
-      width: 64px;
+      width: auto;
       text-align: center;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+    }
+
+    .complaint-td-roomchange .complaint-ox-btn {
+      width: 28px;
+      min-width: 28px;
+      height: 26px;
+      padding: 0;
+      font-size: 0.7rem;
+    }
+
+    .complaint-row-del {
+      font-size: 0.68rem;
+      padding: 2px 4px;
     }
 
     .complaint-row-del {
@@ -10402,6 +10447,16 @@
 
           <div class="complaint-table-wrap">
             <table class="complaint-table" aria-label="불편사항 등록 목록">
+              <colgroup>
+                <col class="c-date" />
+                <col class="c-res" />
+                <col class="c-name" />
+                <col class="c-room" />
+                <col class="c-memo" />
+                <col class="c-type" />
+                <col class="c-change" />
+                <col class="c-act" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>날짜</th>
@@ -11407,7 +11462,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=5"></script>
+  <script src="hk-complaint-analysis.js?v=6"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>

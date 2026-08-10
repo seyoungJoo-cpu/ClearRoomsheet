@@ -219,6 +219,7 @@
       tr.setAttribute("data-id", row.id);
 
       var tdDate = document.createElement("td");
+      tdDate.className = "complaint-td-date complaint-td-narrow";
       if (editable) {
         var dateInp = document.createElement("input");
         dateInp.type = "date";
@@ -233,6 +234,8 @@
 
       ["reservationNo", "guestName", "roomNo", "memo"].forEach(function (field) {
         var td = document.createElement("td");
+        if (field === "memo") td.className = "complaint-td-memo";
+        else td.className = "complaint-td-narrow";
         if (editable) {
           var inp = document.createElement("input");
           inp.type = "text";
@@ -248,6 +251,7 @@
       });
 
       var tdType = document.createElement("td");
+      tdType.className = "complaint-td-type complaint-td-narrow";
       if (editable) {
         var sel = document.createElement("select");
         sel.className = "complaint-cell-select";
