@@ -8589,6 +8589,22 @@
       min-width: 7rem;
     }
 
+    .complaint-form__fields .field--complaint-memo {
+      flex: 6 1 24rem;
+      min-width: min(100%, 42rem);
+    }
+
+    .complaint-form__fields .field--complaint-memo input,
+    .complaint-form__fields .field--complaint-memo textarea {
+      min-width: 0;
+      width: 100%;
+      height: auto;
+      min-height: calc(32px * 3);
+      padding: 8px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
     .complaint-type-block,
     .complaint-ox-block {
       display: flex;
@@ -8676,9 +8692,19 @@
     .complaint-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
       font-size: 0.8rem;
       min-width: 720px;
     }
+
+    .complaint-table col.c-date { width: 7%; }
+    .complaint-table col.c-res { width: 5%; }
+    .complaint-table col.c-name { width: 5%; }
+    .complaint-table col.c-room { width: 4%; }
+    .complaint-table col.c-memo { width: 48%; }
+    .complaint-table col.c-type { width: 8%; }
+    .complaint-table col.c-change { width: 7%; }
+    .complaint-table col.c-act { width: 8%; }
 
     .complaint-table th,
     .complaint-table td {
@@ -8686,6 +8712,12 @@
       padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .complaint-table td:nth-child(5) .complaint-cell-input {
+      min-width: 0;
     }
 
     .complaint-table thead th {
@@ -9849,6 +9881,18 @@
             </button>
           </div>
         </nav>
+        <nav class="sidebar-section sidebar-section--handover is-collapsed" aria-label="야간 인계사항">
+          <button type="button" class="sidebar-section__toggle" id="sidebarHandoverToggle" aria-expanded="false" disabled title="준비중">
+            <span class="sidebar-section__toggle-label">야간 인계사항</span>
+            <span class="sidebar-section__toggle-hint">준비중</span>
+          </button>
+        </nav>
+        <nav class="sidebar-section sidebar-section--vip-notes is-collapsed" aria-label="VIP 특이사항">
+          <button type="button" class="sidebar-section__toggle" id="sidebarVipNotesToggle" aria-expanded="false" disabled title="준비중">
+            <span class="sidebar-section__toggle-label">VIP 특이사항</span>
+            <span class="sidebar-section__toggle-hint">준비중</span>
+          </button>
+        </nav>
         <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
           <button
             type="button"
@@ -9863,18 +9907,6 @@
           </button>
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
-        </nav>
-        <nav class="sidebar-section sidebar-section--handover is-collapsed" aria-label="야간 인계사항">
-          <button type="button" class="sidebar-section__toggle" id="sidebarHandoverToggle" aria-expanded="false" disabled title="준비중">
-            <span class="sidebar-section__toggle-label">야간 인계사항</span>
-            <span class="sidebar-section__toggle-hint">준비중</span>
-          </button>
-        </nav>
-        <nav class="sidebar-section sidebar-section--vip-notes is-collapsed" aria-label="VIP 특이사항">
-          <button type="button" class="sidebar-section__toggle" id="sidebarVipNotesToggle" aria-expanded="false" disabled title="준비중">
-            <span class="sidebar-section__toggle-label">VIP 특이사항</span>
-            <span class="sidebar-section__toggle-hint">준비중</span>
-          </button>
         </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
           <div class="sidebar-title">프론트</div>
@@ -10342,7 +10374,7 @@
               </div>
               <div class="field field--complaint-memo">
                 <label for="complaintMemo">메모</label>
-                <input type="text" id="complaintMemo" autocomplete="off" maxlength="200" placeholder="간단 메모" />
+                <textarea id="complaintMemo" rows="3" maxlength="200" placeholder="간단 메모"></textarea>
               </div>
               <div class="complaint-ox-block">
                 <span>룸체인지</span>
