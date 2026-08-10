@@ -1627,7 +1627,7 @@
       return new Date(a.acceptedAt || a.at || 0).getTime() - new Date(b.acceptedAt || b.at || 0).getTime();
     });
     completed.sort(function (a, b) {
-      return new Date(b.completedAt || b.at || 0).getTime() - new Date(a.completedAt || a.at || 0).getTime();
+      return new Date(a.completedAt || a.at || 0).getTime() - new Date(b.completedAt || b.at || 0).getTime();
     });
 
     accepted.forEach(function (entry) {

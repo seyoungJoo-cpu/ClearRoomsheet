@@ -13470,13 +13470,13 @@
         };
       }
 
-      function stripNewestCmp(fieldFn) {
+      function stripOldestCmp(fieldFn) {
         return function (a, b) {
           var ta = new Date(fieldFn(a) || 0).getTime();
           var tb = new Date(fieldFn(b) || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         };
       }
 
@@ -17145,13 +17145,13 @@
           );
         });
         list.sort(function (a, b) {
-          // 채팅·메모 등으로 updatedAt이 바뀌어도 카드 순서는 접수 시각(at) 기준 유지
+          // 채팅·메모 등으로 updatedAt이 바뀌어도 카드 순서는 접수 시각(at) 기준 유지 (오래된 위 · 최신 아래)
           var ta = new Date((a && a.at) || 0).getTime();
           var tb = new Date((b && b.at) || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          if (tb !== ta) return tb - ta;
-          return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
+          if (ta !== tb) return ta - tb;
+          return String((a && a.id) || "").localeCompare(String((b && b.id) || ""));
         });
         return list;
       }
@@ -21097,7 +21097,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         });
         var mainCount = 0;
         var annexCount = 0;
@@ -21188,7 +21188,7 @@
           var tb = new Date(b.ackedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         });
         var wingSplit = !!(maintenanceMode && listMain && listAnnex);
         panel.classList.toggle("confirming-cards-panel--front", !!frontMode && !maintenanceMode);
@@ -23767,7 +23767,7 @@
           orderStripGetters(function (e) {
             return e.issueAt || e.at;
           }),
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e.issueAt || e.at;
           })
         );
@@ -23777,7 +23777,7 @@
           orderStripGetters(function (e) {
             return e.acceptedAt || e.at;
           }),
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e.acceptedAt || e.at;
           })
         );
@@ -23830,7 +23830,7 @@
           orderStripGetters(function (e) {
             return e.unavailableAt || e.acceptedAt || e.at;
           }),
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e.unavailableAt || e.acceptedAt || e.at;
           })
         );
@@ -23871,7 +23871,7 @@
           orderStripGetters(function (e) {
             return e.cancelledAt || e.at;
           }),
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e.cancelledAt || e.at;
           })
         );
@@ -23907,7 +23907,7 @@
             orderStripGetters(function (e) {
               return e.doorhandleAt || e.deployedAt || e.at;
             }),
-            stripNewestCmp(function (e) {
+            stripOldestCmp(function (e) {
               return e.doorhandleAt || e.deployedAt || e.at;
             })
           );
@@ -23937,7 +23937,7 @@
           orderStripGetters(function (e) {
             return e.deployedAt || e.acceptedAt || e.at;
           }),
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e.deployedAt || e.acceptedAt || e.at;
           })
         );
@@ -24093,7 +24093,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         });
         entries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -24265,7 +24265,7 @@
               );
             },
           },
-          stripNewestCmp(function (e) {
+          stripOldestCmp(function (e) {
             return e && e.at;
           })
         );
@@ -24566,7 +24566,7 @@
           var tb = new Date((b && (b.usedAt || b.updatedAt || b.at)) || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         });
         if (!usedEntries.length || requestRoomBoardOpen) {
           panel.hidden = true;

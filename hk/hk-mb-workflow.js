@@ -34,6 +34,17 @@
     return getPhase(entry) === "issue";
   }
 
+  function sortEntriesOldestFirst(entries, fieldFn) {
+    (entries || []).sort(function (a, b) {
+      var ta = new Date(fieldFn(a) || 0).getTime();
+      var tb = new Date(fieldFn(b) || 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      return ta - tb;
+    });
+    return entries;
+  }
+
   function normalizeMbInvEntry(entry) {
     if (!entry) return;
     if (getPhase(entry) === "issue") {
@@ -256,6 +267,15 @@
     var cancelledEntries = mbInvLogEntries.filter(function (e) {
       return e.category === category && getPhase(e) === "cancelled";
     });
+    sortEntriesOldestFirst(issueEntries, function (e) {
+      return e.issueAt || e.at;
+    });
+    sortEntriesOldestFirst(acceptedEntries, function (e) {
+      return e.acceptedAt || e.at;
+    });
+    sortEntriesOldestFirst(cancelledEntries, function (e) {
+      return e.cancelledAt || e.at;
+    });
 
     issueEntries.forEach(function (entry) {
       var li = document.createElement("li");
@@ -422,6 +442,9 @@
     list.innerHTML = "";
     var entries = mbInvLogEntries.filter(function (e) {
       return getPhase(e) === "alert";
+    });
+    sortEntriesOldestFirst(entries, function (e) {
+      return e.at;
     });
     entries.forEach(function (entry) {
       var li = document.createElement("li");
@@ -663,6 +686,9 @@
     var entries = mbCheckLogEntries.filter(function (e) {
       return getPhase(e) === "alert";
     });
+    sortEntriesOldestFirst(entries, function (e) {
+      return e.at;
+    });
     entries.forEach(function (entry) {
       var li = document.createElement("li");
       li.className = "order-feedback__item";
@@ -875,6 +901,15 @@
     });
     var postedEntries = mbCheckLogEntries.filter(function (e) {
       return getPhase(e) === "posted";
+    });
+    sortEntriesOldestFirst(acceptedEntries, function (e) {
+      return e.acceptedAt || e.at;
+    });
+    sortEntriesOldestFirst(gstEntries, function (e) {
+      return e.gstAt || e.at;
+    });
+    sortEntriesOldestFirst(postedEntries, function (e) {
+      return e.postedAt || e.at;
     });
 
     function appendMbCheckWorkBase(li, entry, timeValue) {
