@@ -7933,17 +7933,74 @@
       background: #eff6ff;
     }
 
-    .request-feedback__item-wing {
+    .request-feedback__item-wing,
+    .room-card__wing {
       display: inline-block;
       margin-left: 6px;
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-size: 0.65rem;
-      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      font-weight: 800;
       letter-spacing: 0.02em;
       color: #1e40af;
       background: #dbeafe;
       vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .room-card__wing {
+      margin-left: 0;
+    }
+
+    .request-feedback__item-wing.is-annex,
+    .room-card__wing.is-annex {
+      color: #9a3412;
+      background: #ffedd5;
+    }
+
+    .hk-strip-sort {
+      display: grid;
+      grid-template-columns: minmax(5.5rem, 1.2fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.5fr);
+      gap: 6px 12px;
+      align-items: center;
+      padding: 7px 14px;
+      margin: 0 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      box-sizing: border-box;
+    }
+
+    .hk-strip-sort__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      border: none;
+      background: transparent;
+      padding: 4px 2px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: left;
+      border-radius: 4px;
+    }
+
+    .hk-strip-sort__btn:hover {
+      color: var(--accent);
+      background: var(--hover-bg);
+    }
+
+    .hk-strip-sort__btn.is-sorted {
+      color: var(--accent);
+    }
+
+    .hk-strip-sort__mark {
+      font-size: 0.65rem;
+      min-width: 0.85em;
+      color: var(--accent);
     }
 
     .sched-ip-panel__empty {
@@ -9113,10 +9170,39 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 4px 10px;
+      gap: 6px 14px;
       width: 100%;
       box-sizing: border-box;
       height: auto;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .main .order-work-item .request-feedback__item-room,
+    .main .room-list-main > .room-card .room-card__no,
+    .main .sched-cards-list > .sched-req-card .room-card__no {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .main .order-work-item .request-feedback__item-time,
+    .main .room-list-main > .room-card .room-card__time-display,
+    .main .sched-cards-list > .sched-req-card .room-card__time-display {
+      font-size: 0.8125rem;
+    }
+
+    .main .order-work-item .order-feedback__item-memo,
+    .main .room-list-main > .room-card .room-card__memo,
+    .main .sched-cards-list > .sched-req-card .room-card__memo {
+      font-size: 0.8125rem;
+    }
+
+    .main .room-list-main > .room-card .room-card__no-box,
+    .main .sched-cards-list > .sched-req-card .room-card__no-box {
+      min-width: 4.25em;
+      min-height: 32px;
+      padding: 4px 10px;
     }
 
     .main .sched-cards-list > .sched-req-card--confirming-compact,
@@ -13039,12 +13125,219 @@
           raw = raw.split(/[,，]/)[0].trim();
         }
         if (!isRoomInRoomingXml(raw)) return "";
+        return roomWingLabelForNumber(raw);
+      }
+
+      function roomWingLabelForNumber(roomInput) {
+        var raw = String(roomInput || "").trim();
+        if (!raw) return "";
+        if (/[,，]/.test(raw)) {
+          raw = raw.split(/[,，]/)[0].trim();
+        }
         var nr = roomNumberForStatusLookup(raw);
         var cl = hkBoardClassifyRoom(nr || raw);
         if (!cl) return "";
         if (cl.wing === "annex" || cl.annex) return "별관";
         if (cl.wing === "main" || cl.wing === "villa") return "본관";
         return "";
+      }
+
+      function appendRoomWingBadge(parent, roomInput, className) {
+        if (!parent) return null;
+        var label = roomWingLabelForNumber(roomInput);
+        if (!label) return null;
+        var el = document.createElement("span");
+        el.className = className || "room-card__wing request-feedback__item-wing";
+        if (label === "별관") el.classList.add("is-annex");
+        el.textContent = label;
+        parent.appendChild(el);
+        return el;
+      }
+
+      var stripSortStateByList = Object.create(null);
+      var STRIP_SORT_COLS = [
+        { id: "room", label: "객실" },
+        { id: "wing", label: "동" },
+        { id: "time", label: "시간" },
+        { id: "status", label: "상태" },
+        { id: "memo", label: "메모" },
+      ];
+
+      function getStripSortState(listKey) {
+        return stripSortStateByList[listKey] || { col: "", dir: "" };
+      }
+
+      function cycleStripSortState(listKey, col) {
+        var cur = getStripSortState(listKey);
+        if (cur.col !== col) {
+          stripSortStateByList[listKey] = { col: col, dir: "asc" };
+        } else if (cur.dir === "asc") {
+          stripSortStateByList[listKey] = { col: col, dir: "desc" };
+        } else {
+          stripSortStateByList[listKey] = { col: "", dir: "" };
+        }
+        return stripSortStateByList[listKey];
+      }
+
+      function stripSortWingRank(room) {
+        var w = roomWingLabelForNumber(room);
+        if (w === "본관") return 0;
+        if (w === "별관") return 1;
+        return 2;
+      }
+
+      function parseStripSortTime(val) {
+        if (val == null || val === "") return 0;
+        if (typeof val === "number" && isFinite(val)) return val;
+        var s = String(val).trim();
+        var hm = s.match(/^(\d{1,2}):(\d{2})/);
+        if (hm) return parseInt(hm[1], 10) * 60 + parseInt(hm[2], 10);
+        var t = new Date(s).getTime();
+        return isNaN(t) ? 0 : t;
+      }
+
+      function compareStripValues(col, aVal, bVal, aRoom, bRoom) {
+        if (col === "wing") return stripSortWingRank(aRoom) - stripSortWingRank(bRoom);
+        if (col === "room") {
+          return String(aVal || "").localeCompare(String(bVal || ""), undefined, {
+            numeric: true,
+          });
+        }
+        if (col === "time") return parseStripSortTime(aVal) - parseStripSortTime(bVal);
+        return String(aVal || "").localeCompare(String(bVal || ""), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      }
+
+      function applyStripSort(listKey, items, getters, defaultCmp) {
+        if (!items || !items.length) return items;
+        var st = getStripSortState(listKey);
+        if (!st.col || !st.dir || !getters || typeof getters[st.col] !== "function") {
+          if (typeof defaultCmp === "function") items.sort(defaultCmp);
+          return items;
+        }
+        var col = st.col;
+        var dir = st.dir === "desc" ? -1 : 1;
+        items.sort(function (a, b) {
+          var aRoom = getters.room ? getters.room(a) : "";
+          var bRoom = getters.room ? getters.room(b) : "";
+          var cmp = compareStripValues(col, getters[col](a), getters[col](b), aRoom, bRoom);
+          if (cmp === 0 && typeof defaultCmp === "function") return defaultCmp(a, b);
+          return cmp * dir;
+        });
+        return items;
+      }
+
+      function syncStripSortHeadUi(head, listKey) {
+        if (!head) return;
+        var st = getStripSortState(listKey);
+        var btns = head.querySelectorAll(".hk-strip-sort__btn");
+        for (var i = 0; i < btns.length; i++) {
+          var btn = btns[i];
+          var c = btn.getAttribute("data-sort-col");
+          var active = !!(st.col === c && st.dir);
+          btn.classList.toggle("is-sorted", active);
+          if (active) btn.setAttribute("data-sort", st.dir);
+          else btn.removeAttribute("data-sort");
+          var mark = btn.querySelector(".hk-strip-sort__mark");
+          if (mark) mark.textContent = !active ? "" : st.dir === "asc" ? "▲" : "▼";
+        }
+      }
+
+      function ensureStripSortHead(listEl, listKey, rerenderFn) {
+        if (!listEl || !listEl.parentNode) return null;
+        var prev = listEl.previousElementSibling;
+        var head;
+        if (
+          prev &&
+          prev.classList &&
+          prev.classList.contains("hk-strip-sort") &&
+          prev.getAttribute("data-sort-list") === listKey
+        ) {
+          head = prev;
+        } else {
+          head = document.createElement("div");
+          head.className = "hk-strip-sort";
+          head.setAttribute("data-sort-list", listKey);
+          head.setAttribute("role", "row");
+          STRIP_SORT_COLS.forEach(function (c) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "hk-strip-sort__btn";
+            btn.setAttribute("data-sort-col", c.id);
+            btn.setAttribute("aria-label", c.label + " 정렬 (오름차순 → 내림차순 → 기본)");
+            var label = document.createElement("span");
+            label.className = "hk-strip-sort__label";
+            label.textContent = c.label;
+            var mark = document.createElement("span");
+            mark.className = "hk-strip-sort__mark";
+            mark.setAttribute("aria-hidden", "true");
+            btn.appendChild(label);
+            btn.appendChild(mark);
+            head.appendChild(btn);
+          });
+          listEl.parentNode.insertBefore(head, listEl);
+        }
+        head.__hkSortRerender = rerenderFn;
+        syncStripSortHeadUi(head, listKey);
+        return head;
+      }
+
+      function bindStripSortUi() {
+        if (document.documentElement.__hkStripSortBound) return;
+        document.documentElement.__hkStripSortBound = true;
+        document.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest && e.target.closest(".hk-strip-sort__btn");
+          if (!btn) return;
+          var head = btn.closest(".hk-strip-sort");
+          if (!head) return;
+          e.preventDefault();
+          var listKey = head.getAttribute("data-sort-list") || "";
+          var col = btn.getAttribute("data-sort-col") || "";
+          if (!listKey || !col) return;
+          cycleStripSortState(listKey, col);
+          syncStripSortHeadUi(head, listKey);
+          if (typeof head.__hkSortRerender === "function") head.__hkSortRerender();
+        });
+      }
+
+      function orderStripGetters(timeFieldFn) {
+        return {
+          room: function (e) {
+            return e && e.room != null ? String(e.room) : "";
+          },
+          wing: function (e) {
+            return roomWingLabelForNumber(e && e.room);
+          },
+          time: function (e) {
+            return timeFieldFn ? timeFieldFn(e) : e && e.at;
+          },
+          status: function (e) {
+            if (!e) return "";
+            var st = lookupRoomStatusFromXml(e.room);
+            if (st) return st;
+            return getOrderPhase(e) || "";
+          },
+          memo: function (e) {
+            if (!e) return "";
+            return (
+              String(e.memo != null ? e.memo : "").trim() +
+              " " +
+              String(e.memo2 != null ? e.memo2 : "").trim()
+            );
+          },
+        };
+      }
+
+      function stripNewestCmp(fieldFn) {
+        return function (a, b) {
+          var ta = new Date(fieldFn(a) || 0).getTime();
+          var tb = new Date(fieldFn(b) || 0).getTime();
+          if (isNaN(ta)) ta = 0;
+          if (isNaN(tb)) tb = 0;
+          return tb - ta;
+        };
       }
 
       function updateRoomWingPrefix(prefixId, roomInput) {
@@ -21824,10 +22117,11 @@
             ? formatRoomNoDisplay(String(entry.room))
             : "객실 " + formatRoomNoDisplay(String(entry.room))
           : "—";
-        var wingLabel = roomWingLabelForInput(entry.room);
+        var wingLabel = roomWingLabelForNumber(entry.room);
         if (wingLabel) {
           var wingBadge = document.createElement("span");
           wingBadge.className = "request-feedback__item-wing";
+          if (wingLabel === "별관") wingBadge.classList.add("is-annex");
           wingBadge.textContent = wingLabel;
           r.appendChild(wingBadge);
         }
@@ -23256,6 +23550,20 @@
           : null;
         if (!issueList || !acceptedList || !cancelledList || !deployedList) return;
 
+        var rerenderOrderLists = function () {
+          renderOrderWorkPanels({ force: true });
+        };
+        ensureStripSortHead(issueList, prefix + "Issue", rerenderOrderLists);
+        ensureStripSortHead(acceptedList, prefix + "Accepted", rerenderOrderLists);
+        ensureStripSortHead(cancelledList, prefix + "Cancelled", rerenderOrderLists);
+        ensureStripSortHead(deployedList, prefix + "Deployed", rerenderOrderLists);
+        if (doorhandleList) {
+          ensureStripSortHead(doorhandleList, prefix + "Doorhandle", rerenderOrderLists);
+        }
+        if (unavailableList) {
+          ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists);
+        }
+
         issueList.innerHTML = "";
         acceptedList.innerHTML = "";
         cancelledList.innerHTML = "";
@@ -23313,20 +23621,26 @@
           });
         }
 
-        issueEntries.sort(function (a, b) {
-          var ta = new Date(a.issueAt || a.at || 0).getTime();
-          var tb = new Date(b.issueAt || b.at || 0).getTime();
-          if (isNaN(ta)) ta = 0;
-          if (isNaN(tb)) tb = 0;
-          return tb - ta;
-        });
-        acceptedEntries.sort(function (a, b) {
-          var ta = new Date(a.acceptedAt || a.at || 0).getTime();
-          var tb = new Date(b.acceptedAt || b.at || 0).getTime();
-          if (isNaN(ta)) ta = 0;
-          if (isNaN(tb)) tb = 0;
-          return tb - ta;
-        });
+        applyStripSort(
+          prefix + "Issue",
+          issueEntries,
+          orderStripGetters(function (e) {
+            return e.issueAt || e.at;
+          }),
+          stripNewestCmp(function (e) {
+            return e.issueAt || e.at;
+          })
+        );
+        applyStripSort(
+          prefix + "Accepted",
+          acceptedEntries,
+          orderStripGetters(function (e) {
+            return e.acceptedAt || e.at;
+          }),
+          stripNewestCmp(function (e) {
+            return e.acceptedAt || e.at;
+          })
+        );
 
         issueEntries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -23370,13 +23684,16 @@
           acceptedList.appendChild(li);
         });
 
-        unavailableEntries.sort(function (a, b) {
-          var ta = new Date(a.unavailableAt || a.acceptedAt || a.at || 0).getTime();
-          var tb = new Date(b.unavailableAt || b.acceptedAt || b.at || 0).getTime();
-          if (isNaN(ta)) ta = 0;
-          if (isNaN(tb)) tb = 0;
-          return tb - ta;
-        });
+        applyStripSort(
+          prefix + "Unavailable",
+          unavailableEntries,
+          orderStripGetters(function (e) {
+            return e.unavailableAt || e.acceptedAt || e.at;
+          }),
+          stripNewestCmp(function (e) {
+            return e.unavailableAt || e.acceptedAt || e.at;
+          })
+        );
         unavailableEntries.forEach(function (entry) {
           var li = document.createElement("li");
           li.className = "order-work-item order-work-item--unavailable";
@@ -23408,13 +23725,16 @@
           if (unavailableList) unavailableList.appendChild(li);
         });
 
-        cancelledEntries.sort(function (a, b) {
-          var ta = new Date(a.cancelledAt || a.at || 0).getTime();
-          var tb = new Date(b.cancelledAt || b.at || 0).getTime();
-          if (isNaN(ta)) ta = 0;
-          if (isNaN(tb)) tb = 0;
-          return tb - ta;
-        });
+        applyStripSort(
+          prefix + "Cancelled",
+          cancelledEntries,
+          orderStripGetters(function (e) {
+            return e.cancelledAt || e.at;
+          }),
+          stripNewestCmp(function (e) {
+            return e.cancelledAt || e.at;
+          })
+        );
         cancelledEntries.forEach(function (entry) {
           var li = document.createElement("li");
           li.className = "order-work-item order-work-item--cancelled";
@@ -23441,13 +23761,16 @@
         });
 
         if (doorhandleList) {
-          doorhandleEntries.sort(function (a, b) {
-            var ta = new Date(a.doorhandleAt || a.deployedAt || a.at || 0).getTime();
-            var tb = new Date(b.doorhandleAt || b.deployedAt || b.at || 0).getTime();
-            if (isNaN(ta)) ta = 0;
-            if (isNaN(tb)) tb = 0;
-            return tb - ta;
-          });
+          applyStripSort(
+            prefix + "Doorhandle",
+            doorhandleEntries,
+            orderStripGetters(function (e) {
+              return e.doorhandleAt || e.deployedAt || e.at;
+            }),
+            stripNewestCmp(function (e) {
+              return e.doorhandleAt || e.deployedAt || e.at;
+            })
+          );
           doorhandleEntries.forEach(function (entry) {
             var li = document.createElement("li");
             li.className = "order-work-item order-work-item--doorhandle";
@@ -23468,13 +23791,16 @@
           });
         }
 
-        deployedEntries.sort(function (a, b) {
-          var ta = new Date(a.deployedAt || a.acceptedAt || a.at || 0).getTime();
-          var tb = new Date(b.deployedAt || b.acceptedAt || b.at || 0).getTime();
-          if (isNaN(ta)) ta = 0;
-          if (isNaN(tb)) tb = 0;
-          return tb - ta;
-        });
+        applyStripSort(
+          prefix + "Deployed",
+          deployedEntries,
+          orderStripGetters(function (e) {
+            return e.deployedAt || e.acceptedAt || e.at;
+          }),
+          stripNewestCmp(function (e) {
+            return e.deployedAt || e.acceptedAt || e.at;
+          })
+        );
         deployedEntries.forEach(function (entry) {
           noteChatAutoOpenFromFirstMessage(
             entry.id,
@@ -23754,6 +24080,9 @@
         var ipList = document.getElementById("schedIpCardList");
         var ipEmpty = document.getElementById("schedIpEmpty");
         if (!ul) return;
+        ensureStripSortHead(ul, "schedCards", function () {
+          renderSchedRequestCards();
+        });
         ul.innerHTML = "";
         if (ipList) ipList.innerHTML = "";
         var allScheduled = getFilteredScheduledRequestEntries();
@@ -23769,6 +24098,37 @@
             numeric: true,
           });
         });
+        applyStripSort(
+          "schedCards",
+          otherEntries,
+          {
+            room: function (e) {
+              return e && e.room != null ? String(e.room) : "";
+            },
+            wing: function (e) {
+              return roomWingLabelForNumber(e && e.room);
+            },
+            time: function (e) {
+              return e && (e.sched || e.at);
+            },
+            status: function (e) {
+              if (!e) return "";
+              if (isFacilityUnavailable(e)) return "입실 불가";
+              return liveRequestEntryStatus(e) || lookupRoomStatusFromXml(e.room) || "";
+            },
+            memo: function (e) {
+              if (!e) return "";
+              return (
+                String(e.memo != null ? e.memo : "").trim() +
+                " " +
+                String(e.memo2 != null ? e.memo2 : "").trim()
+              );
+            },
+          },
+          stripNewestCmp(function (e) {
+            return e && e.at;
+          })
+        );
         if (ipPanel && ipList) {
           if (ipEntries.length) {
             ipPanel.hidden = false;
@@ -23818,6 +24178,7 @@
           noBox.appendChild(no);
           var st = facDenied ? "입실 불가" : liveRequestEntryStatus(entry);
           head.appendChild(noBox);
+          appendRoomWingBadge(head, entry.room);
           if (!multiSched) appendRoomTypeToCardHead(head, entry.room);
           if (facDenied) {
             var deniedGroup = document.createElement("span");
@@ -25132,6 +25493,7 @@
         no.textContent = formatRoomNoDisplay(room.number || "");
         noBox.appendChild(no);
         head.appendChild(noBox);
+        appendRoomWingBadge(head, room.number || "");
         if (!multiRoom) appendRoomTypeToCardHead(head, room.number || "");
         if (!multiRoom) {
           head.appendChild(
@@ -26159,6 +26521,10 @@
         closeMemo2Editor();
         closeTimeEditor();
         syncMinibarUploadUi(zone);
+        ensureStripSortHead(roomList, "zoneRooms", function () {
+          var z = getActiveZone();
+          if (z) renderRoomsForZone(z, { force: true });
+        });
         if (!zone) {
           roomList.innerHTML = "";
           roomEmpty.hidden = true;
@@ -26173,7 +26539,9 @@
           zone === "MINIBAR"
             ? getMinibarDisplayRooms(data)
             : ((data.rooms && data.rooms[zone]) || []).slice();
-        if (zone === "MINIBAR") {
+        var zoneSortState = getStripSortState("zoneRooms");
+        var zoneSortActive = !!(zoneSortState.col && zoneSortState.dir);
+        if (zone === "MINIBAR" && !zoneSortActive) {
           rooms.sort(function (a, b) {
             var ga = MINIBAR_GROUP_ORDER.indexOf(a && a.mbGroup);
             var gb = MINIBAR_GROUP_ORDER.indexOf(b && b.mbGroup);
@@ -26186,6 +26554,40 @@
               { numeric: true }
             );
           });
+        } else {
+          applyStripSort(
+            "zoneRooms",
+            rooms,
+            {
+              room: function (r) {
+                return r && r.number != null ? String(r.number) : "";
+              },
+              wing: function (r) {
+                return roomWingLabelForNumber(r && r.number);
+              },
+              time: function (r) {
+                return r && r.time != null ? String(r.time) : "";
+              },
+              status: function (r) {
+                return lookupRoomStatusFromXml((r && r.number) || "");
+              },
+              memo: function (r) {
+                if (!r) return "";
+                return (
+                  String(r.memo1 != null ? r.memo1 : "").trim() +
+                  " " +
+                  String(r.memo2 != null ? r.memo2 : "").trim()
+                );
+              },
+            },
+            function (a, b) {
+              return String((a && a.number) || "").localeCompare(
+                String((b && b.number) || ""),
+                undefined,
+                { numeric: true }
+              );
+            }
+          );
         }
         label.textContent = zoneLabels[zone] || zone;
         updateZoneBlockTitle(zone);
@@ -26204,13 +26606,14 @@
           var shownCount = 0;
           var statusPassCount = 0;
           var lastGroup = null;
+          var useMinibarGroups = zone === "MINIBAR" && !zoneSortActive;
           rooms.forEach(function (room, idx) {
             if (getRoomTray(room)) return;
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
             statusPassCount += 1;
             if (!roomPassesSchedTypeFilter(room.number)) return;
-            if (zone === "MINIBAR") {
+            if (useMinibarGroups) {
               var groupId = room.mbGroup || getMinibarGroupId(room.mbProductId);
               if (groupId !== lastGroup) {
                 lastGroup = groupId;
@@ -27359,6 +27762,7 @@
       bindDeskChatSizeHandles();
       bindMinibarXmlUploadUi();
       bindZoneResetUi();
+      bindStripSortUi();
       bindRequestDeskChatUi();
       renderRequestDeskChat({ force: true });
       bindOrderDeskChatUi();
