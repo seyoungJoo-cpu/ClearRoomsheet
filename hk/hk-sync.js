@@ -420,6 +420,9 @@
       try {
         global.localStorage.setItem(CLOSE_DAY_KEY, closeAt);
       } catch (eCd) {}
+      try {
+        global.localStorage.setItem("lotte-hk-wipe-epoch-v1", closeAt);
+      } catch (eEp) {}
     }
 
     DAY_CACHE_KEYS.forEach(function (key) {
@@ -431,6 +434,18 @@
       try {
         global.localStorage.removeItem(key);
       } catch (e) {}
+    });
+    // Extra day UI caches / drafts so stale local data cannot revive
+    [
+      "lotte-hk-zone-status-filters-v2",
+      "hk-inven-notify-draft-v6",
+      "hk-dd-embed-state-v1",
+      "hk-inven-embed-state-v1",
+      "hk-chichi-embed-state-v1",
+    ].forEach(function (key) {
+      try {
+        global.localStorage.removeItem(key);
+      } catch (eXtra) {}
     });
 
     cache.requestLog = Array.isArray(payload && payload.hkRequestLog)
@@ -454,6 +469,17 @@
     cache.mbCheckLog = Array.isArray(payload && payload.hkMbCheckLog)
       ? payload.hkMbCheckLog.slice()
       : [];
+
+    // Drop any log rows older than closeAt (ignore revived stale timestamps)
+    if (closeAt) {
+      cache.requestLog = filterArrAfterCloseDay(cache.requestLog, closeAt);
+      cache.cancelLog = filterArrAfterCloseDay(cache.cancelLog, closeAt);
+      cache.useLog = filterArrAfterCloseDay(cache.useLog, closeAt);
+      cache.changeLog = filterArrAfterCloseDay(cache.changeLog, closeAt);
+      cache.orderLog = filterOrdersAfterCloseDay(cache.orderLog, closeAt);
+      cache.mbInvLog = filterArrAfterCloseDay(cache.mbInvLog, closeAt);
+      cache.mbCheckLog = filterArrAfterCloseDay(cache.mbCheckLog, closeAt);
+    }
 
     writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
     writeJsonArray(REQUEST_CANCEL_NAME_LOG_KEY, cache.cancelLog);

@@ -620,8 +620,13 @@
     tankCam = { x: null, y: null, free: false };
     bindPlayKeys(true);
     if (gameId === 'memorymp') return;
-    inputTimer = setInterval(tickInput, gameId === 'airhockey' ? 16 : 33);
-    if (gameId === 'airhockey') startHockeySmooth();
+    // Air hockey uses RAF smooth for prediction — avoid a second 60fps input timer
+    if (gameId === 'airhockey') {
+      startHockeySmooth();
+      inputTimer = setInterval(tickInput, 50);
+    } else {
+      inputTimer = setInterval(tickInput, 40);
+    }
   }
   function stopInput() {
     if (inputTimer) clearInterval(inputTimer);

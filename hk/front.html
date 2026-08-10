@@ -731,12 +731,12 @@
     .notice-board {
       flex: 1;
       min-width: 0;
-      /* 기본 높이 = 글씨 4줄 */
+      /* 기본 최소 높이 = 글씨 4줄, 긴 공지는 스크롤·2단 단으로 확장 */
       --notice-font: 0.875rem;
       --notice-lh: 1.35;
-      height: calc(var(--notice-font) * var(--notice-lh) * 4 + 12px);
+      height: auto;
       min-height: calc(var(--notice-font) * var(--notice-lh) * 4 + 12px);
-      max-height: calc(var(--notice-font) * var(--notice-lh) * 4 + 12px);
+      max-height: min(40vh, 280px);
       border: 1px solid #fbbf24;
       border-radius: 6px;
       background: #fffbeb;
@@ -745,7 +745,7 @@
       align-items: flex-start;
       gap: 8px;
       padding: 5px 10px;
-      overflow: hidden;
+      overflow: auto;
       box-shadow: none;
       box-sizing: border-box;
     }
@@ -756,8 +756,8 @@
       gap: 8px;
       min-width: 0;
       flex: 1;
-      overflow: hidden;
-      max-height: 100%;
+      overflow: visible;
+      max-height: none;
     }
 
     .notice-board__text {
@@ -768,13 +768,20 @@
       color: #1a2332;
       line-height: var(--notice-lh, 1.35);
       white-space: pre-wrap;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 4;
-      line-clamp: 4;
+      overflow: visible;
+      display: block;
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
       word-break: break-word;
-      max-height: calc(var(--notice-lh, 1.35) * 1em * 4);
+      max-height: none;
+      column-count: 2;
+      column-gap: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .notice-board__text {
+        column-count: 1;
+      }
     }
 
     .notice-board__images {
@@ -6007,6 +6014,17 @@
       text-overflow: ellipsis;
     }
 
+    .sidebar-section--handover .sidebar-section__toggle:disabled,
+    .sidebar-section--vip-notes .sidebar-section__toggle:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      color: var(--text-muted, #64748b);
+    }
+    .sidebar-section--handover .sidebar-section__toggle:disabled:hover,
+    .sidebar-section--vip-notes .sidebar-section__toggle:disabled:hover {
+      background: transparent;
+    }
+
     .facility-log-toolbar__status {
       flex: 1 1 180px;
       min-width: 0;
@@ -8724,6 +8742,19 @@
       font-size: 0.8rem;
       color: var(--text-muted);
     }
+    .complaint-reset-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .complaint-reset-btn {
+      background: #7a2f2f !important;
+      border-color: #c07070 !important;
+    }
 
     .complaint-stats-toolbar {
       display: flex;
@@ -9117,7 +9148,7 @@
 
       .notice-board {
         min-height: 72px;
-        max-height: 160px;
+        max-height: min(40vh, 280px);
         padding: 12px 14px;
       }
 
@@ -9833,6 +9864,18 @@
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
         </nav>
+        <nav class="sidebar-section sidebar-section--handover is-collapsed" aria-label="야간 인계사항">
+          <button type="button" class="sidebar-section__toggle" id="sidebarHandoverToggle" aria-expanded="false" disabled title="준비중">
+            <span class="sidebar-section__toggle-label">야간 인계사항</span>
+            <span class="sidebar-section__toggle-hint">준비중</span>
+          </button>
+        </nav>
+        <nav class="sidebar-section sidebar-section--vip-notes is-collapsed" aria-label="VIP 특이사항">
+          <button type="button" class="sidebar-section__toggle" id="sidebarVipNotesToggle" aria-expanded="false" disabled title="준비중">
+            <span class="sidebar-section__toggle-label">VIP 특이사항</span>
+            <span class="sidebar-section__toggle-hint">준비중</span>
+          </button>
+        </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
           <div class="sidebar-title">프론트</div>
           <div class="sidebar-nav">
@@ -10297,6 +10340,10 @@
                 <label for="complaintRoomNo">객실번호</label>
                 <input type="text" id="complaintRoomNo" autocomplete="off" />
               </div>
+              <div class="field field--complaint-memo">
+                <label for="complaintMemo">메모</label>
+                <input type="text" id="complaintMemo" autocomplete="off" maxlength="200" placeholder="간단 메모" />
+              </div>
               <div class="complaint-ox-block">
                 <span>룸체인지</span>
                 <div class="complaint-ox-row" role="group" aria-label="룸체인지 여부">
@@ -10329,6 +10376,7 @@
                   <th>예약번호</th>
                   <th>이름</th>
                   <th>객실번호</th>
+                  <th>메모</th>
                   <th>유형</th>
                   <th>룸체인지</th>
                   <th></th>
@@ -10338,6 +10386,12 @@
             </table>
           </div>
           <p class="complaint-table-empty" id="complaintTableEmpty">등록된 불편사항이 없습니다.</p>
+          <div class="complaint-reset-row">
+            <button type="button" class="btn-order complaint-reset-btn" id="btnComplaintResetAll" title="등록된 불편사항 유형분석만 비웁니다 (마감과 별개)">
+              불편사항 초기화
+            </button>
+            <span class="complaint-panel__hint">이 버튼을 누르기 전에는 데이터가 유지됩니다 (마감해도 자동 초기화되지 않음).</span>
+          </div>
         </div>
 
         <div id="complaintPage2" role="tabpanel" hidden>
@@ -11312,19 +11366,19 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=embed-clear-1"></script>
-  <script src="hk-sync.js?v=force-sync-1"></script>
+  <script src="hk-storage.js?v=embed-clear-3"></script>
+  <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-  <script src="hk-mb-workflow.js?v=inv-memo-1"></script>
+  <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
-  <script src="hk-facility-logs.js"></script>
-  <script src="hk-complaint-analysis.js?v=3"></script>
+  <script src="hk-facility-logs.js?v=2"></script>
+  <script src="hk-complaint-analysis.js?v=5"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-23"></script>
-  <script src="hk-mp-games.js?v=mp-24"></script>
+  <script src="hk-games.js?v=lounge-25"></script>
+  <script src="hk-mp-games.js?v=mp-26"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -11430,6 +11484,20 @@
       var HK_BOARD_ANNEX_TAIL_MIN = 51;
       var HK_BOARD_DROP_ROOMS = { "0012": true, "0023": true };
       var HK_BOARD_MAIN_FLOOR_ORDER = [1, 2, 3, 4, 5, 9, 10, 11, 12];
+
+      function hkChatNearBottom(el, px) {
+        if (!el) return true;
+        var threshold = px == null ? 96 : px;
+        return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+      }
+      function hkChatScrollToBottom(el, force) {
+        if (!el) return;
+        if (force || hkChatNearBottom(el)) el.scrollTop = el.scrollHeight;
+      }
+      try {
+        window.hkChatNearBottom = hkChatNearBottom;
+        window.hkChatScrollToBottom = hkChatScrollToBottom;
+      } catch (eHkChatScroll) {}
 
       function isTextInputActive(el) {
         el = el || document.activeElement;
@@ -13399,6 +13467,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "requestDeskChatInput") return;
         }
+        var stick = hkChatNearBottom(mount);
         var msgs = getRequestDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -13430,7 +13499,9 @@
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
         });
-        mount.scrollTop = mount.scrollHeight;
+        requestAnimationFrame(function () {
+          if (stick) mount.scrollTop = mount.scrollHeight;
+        });
       }
 
       function appendRequestDeskChatMessage(text) {
@@ -13496,6 +13567,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "orderDeskChatInput") return;
         }
+        var stick = hkChatNearBottom(mount);
         var msgs = getOrderDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -13527,7 +13599,9 @@
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
         });
-        mount.scrollTop = mount.scrollHeight;
+        requestAnimationFrame(function () {
+          if (stick) mount.scrollTop = mount.scrollHeight;
+        });
       }
 
       function appendOrderDeskChatMessage(text) {
@@ -13593,6 +13667,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "mbCheckDeskChatInput") return;
         }
+        var stick = hkChatNearBottom(mount);
         var msgs = getMbCheckDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -13624,7 +13699,9 @@
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
         });
-        mount.scrollTop = mount.scrollHeight;
+        requestAnimationFrame(function () {
+          if (stick) mount.scrollTop = mount.scrollHeight;
+        });
       }
 
       function appendMbCheckDeskChatMessage(text) {
@@ -13690,6 +13767,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "facilityDeskChatInput") return;
         }
+        var stick = hkChatNearBottom(mount);
         var msgs = getFacilityDeskChatMessages();
         mount.innerHTML = "";
         if (!msgs.length) {
@@ -13721,7 +13799,9 @@
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
         });
-        mount.scrollTop = mount.scrollHeight;
+        requestAnimationFrame(function () {
+          if (stick) mount.scrollTop = mount.scrollHeight;
+        });
       }
 
       function appendFacilityDeskChatMessage(text) {
@@ -20367,7 +20447,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         var mainCount = 0;
         var annexCount = 0;
@@ -20458,7 +20538,7 @@
           var tb = new Date(b.ackedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         var wingSplit = !!(maintenanceMode && listMain && listAnnex);
         panel.classList.toggle("confirming-cards-panel--front", !!frontMode && !maintenanceMode);
@@ -21916,6 +21996,15 @@
 
       function appendOrderChatUi(li, entry, opts) {
         opts = opts || {};
+        var stick = true;
+        try {
+          var prevMsgList = document.querySelector(
+            '.order-work-item[data-order-id="' +
+              String(entry && entry.id != null ? entry.id : "").replace(/"/g, '\\"') +
+              '"] .order-chat__messages'
+          );
+          stick = hkChatNearBottom(prevMsgList);
+        } catch (eStickOrder) {}
         var chatWrap = document.createElement("div");
         chatWrap.className = "order-chat";
 
@@ -22007,7 +22096,7 @@
 
         li.appendChild(chatWrap);
         requestAnimationFrame(function () {
-          msgList.scrollTop = msgList.scrollHeight;
+          if (stick) msgList.scrollTop = msgList.scrollHeight;
           if (
             orderChatComposeDraft &&
             orderChatComposeDraft.orderId === (entry.id || "") &&
@@ -22604,6 +22693,17 @@
 
       function appendSchedRequestChatUi(li, entry) {
         if (!li || !entry) return;
+        var stick = true;
+        try {
+          var prevSchedList = document.querySelector(
+            '.sched-req-card[data-req-id="' +
+              String(entry.id || "").replace(/"/g, '\\"') +
+              '"] .order-chat__messages, #confirmingCardsPanel .request-feedback__item[data-req-id="' +
+              String(entry.id || "").replace(/"/g, '\\"') +
+              '"] .order-chat__messages'
+          );
+          stick = hkChatNearBottom(prevSchedList);
+        } catch (eStickSched) {}
         var chatWrap = document.createElement("div");
         chatWrap.className = "order-chat";
         var msgList = document.createElement("ul");
@@ -22657,7 +22757,7 @@
         chatWrap.appendChild(chatForm);
         li.appendChild(chatWrap);
         requestAnimationFrame(function () {
-          msgList.scrollTop = msgList.scrollHeight;
+          if (stick) msgList.scrollTop = msgList.scrollHeight;
         });
       }
 
@@ -22708,7 +22808,7 @@
           );
           if (!card) return;
           var msgList = card.querySelector(".order-chat__messages");
-          if (msgList) msgList.scrollTop = msgList.scrollHeight;
+          if (msgList) hkChatScrollToBottom(msgList, true);
           var chatInput = card.querySelector(".order-chat__form input");
           if (chatInput) chatInput.focus({ preventScroll: true });
         });
@@ -22774,7 +22874,7 @@
             );
           if (!card) return;
           var msgList = card.querySelector(".order-chat__messages");
-          if (msgList) msgList.scrollTop = msgList.scrollHeight;
+          if (msgList) hkChatScrollToBottom(msgList, true);
           var chatInput = card.querySelector(".order-chat__form input");
           if (chatInput) {
             chatInput.value = "";
@@ -23001,14 +23101,14 @@
           var tb = new Date(b.issueAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         acceptedEntries.sort(function (a, b) {
           var ta = new Date(a.acceptedAt || a.at || 0).getTime();
           var tb = new Date(b.acceptedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
 
         issueEntries.forEach(function (entry) {
@@ -23058,7 +23158,7 @@
           var tb = new Date(b.unavailableAt || b.acceptedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         unavailableEntries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -23096,7 +23196,7 @@
           var tb = new Date(b.cancelledAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         cancelledEntries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -23129,7 +23229,7 @@
             var tb = new Date(b.doorhandleAt || b.deployedAt || b.at || 0).getTime();
             if (isNaN(ta)) ta = 0;
             if (isNaN(tb)) tb = 0;
-            return ta - tb;
+            return tb - ta;
           });
           doorhandleEntries.forEach(function (entry) {
             var li = document.createElement("li");
@@ -23310,7 +23410,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         entries.forEach(function (entry) {
           var li = document.createElement("li");

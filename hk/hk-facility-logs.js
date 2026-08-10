@@ -1237,6 +1237,23 @@
     opts = opts || {};
     var readOnly = !!opts.readOnly;
     if (!entry || !entry.id) return;
+    var stick = true;
+    try {
+      var prevMsgList = document.querySelector(
+        '.facility-log-panel .order-work-item[data-entry-id="' +
+          String(entry.id).replace(/"/g, '\\"') +
+          '"] .order-chat__messages'
+      );
+      if (typeof window.hkChatNearBottom === "function") {
+        stick = window.hkChatNearBottom(prevMsgList);
+      } else if (prevMsgList) {
+        stick =
+          prevMsgList.scrollHeight -
+            prevMsgList.scrollTop -
+            prevMsgList.clientHeight <=
+          96;
+      }
+    } catch (eStickFac) {}
     var chatWrap = document.createElement("div");
     chatWrap.className = "order-chat facility-log-chat";
 
@@ -1315,7 +1332,7 @@
 
     li.appendChild(chatWrap);
     requestAnimationFrame(function () {
-      msgList.scrollTop = msgList.scrollHeight;
+      if (stick) msgList.scrollTop = msgList.scrollHeight;
     });
   }
 
@@ -1365,7 +1382,13 @@
             entryId +
             '"] .order-chat__messages'
         );
-        if (msgList) msgList.scrollTop = msgList.scrollHeight;
+        if (msgList) {
+          if (typeof window.hkChatScrollToBottom === "function") {
+            window.hkChatScrollToBottom(msgList, true);
+          } else {
+            msgList.scrollTop = msgList.scrollHeight;
+          }
+        }
       });
     };
     if (!getOperatorName() && uiHooks.showOperatorGate) {

@@ -280,6 +280,19 @@
     var incomingTrayWins = tiAt && (!tpAt || tiAt >= tpAt);
     var tray = incomingTrayWins ? ti : tpAt ? tp : ti || tp || "";
     var trayUpdatedAt = incomingTrayWins ? tiAt : tpAt || tiAt || "";
+    // Keep activity stamps — without them closeDay filter drops rooms (flicker)
+    var createdAt = "";
+    if (prev.createdAt && incoming.createdAt) {
+      createdAt = String(prev.createdAt) <= String(incoming.createdAt) ? String(prev.createdAt) : String(incoming.createdAt);
+    } else {
+      createdAt = String(prev.createdAt || incoming.createdAt || "");
+    }
+    var updatedAt = "";
+    if (prev.updatedAt && incoming.updatedAt) {
+      updatedAt = String(prev.updatedAt) >= String(incoming.updatedAt) ? String(prev.updatedAt) : String(incoming.updatedAt);
+    } else {
+      updatedAt = String(incoming.updatedAt || prev.updatedAt || "");
+    }
     return {
       number: incoming.number || prev.number,
       status: incoming.status != null ? String(incoming.status).trim() : prev.status,
@@ -290,6 +303,8 @@
       time: incoming.time != null ? normalizeTimeField(incoming.time) : prev.time,
       tray: tray,
       trayUpdatedAt: trayUpdatedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     };
   }
 
@@ -805,6 +820,7 @@
       reservationNo: raw.reservationNo != null ? String(raw.reservationNo).trim() : "",
       guestName: raw.guestName != null ? String(raw.guestName).trim() : "",
       roomNo: raw.roomNo != null ? String(raw.roomNo).trim() : "",
+      memo: raw.memo != null ? String(raw.memo).trim() : "",
       typeId: typeId,
       roomChange: roomChange,
     };

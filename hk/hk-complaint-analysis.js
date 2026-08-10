@@ -172,9 +172,11 @@
     var res = document.getElementById("complaintReservationNo");
     var name = document.getElementById("complaintGuestName");
     var room = document.getElementById("complaintRoomNo");
+    var memo = document.getElementById("complaintMemo");
     if (res) res.value = "";
     if (name) name.value = "";
     if (room) room.value = "";
+    if (memo) memo.value = "";
     syncFormTypeUi();
     syncFormRoomChangeUi();
   }
@@ -229,7 +231,7 @@
       }
       tr.appendChild(tdDate);
 
-      ["reservationNo", "guestName", "roomNo"].forEach(function (field) {
+      ["reservationNo", "guestName", "roomNo", "memo"].forEach(function (field) {
         var td = document.createElement("td");
         if (editable) {
           var inp = document.createElement("input");
@@ -237,6 +239,7 @@
           inp.className = "complaint-cell-input";
           inp.value = row[field] || "";
           inp.setAttribute("data-field", field);
+          if (field === "memo") inp.setAttribute("maxlength", "200");
           td.appendChild(inp);
         } else {
           td.textContent = row[field] || "—";
@@ -495,9 +498,11 @@
     var resEl = document.getElementById("complaintReservationNo");
     var nameEl = document.getElementById("complaintGuestName");
     var roomEl = document.getElementById("complaintRoomNo");
+    var memoEl = document.getElementById("complaintMemo");
     var reservationNo = resEl ? String(resEl.value || "").trim() : "";
     var guestName = nameEl ? String(nameEl.value || "").trim() : "";
     var roomNo = roomEl ? String(roomEl.value || "").trim() : "";
+    var memo = memoEl ? String(memoEl.value || "").trim() : "";
     if (!reservationNo && !guestName && !roomNo) {
       opts.toast("예약번호·이름·객실번호 중 하나 이상 입력하세요.");
       return;
@@ -516,6 +521,7 @@
       reservationNo: reservationNo,
       guestName: guestName,
       roomNo: roomNo,
+      memo: memo,
       typeId: formTypeId,
       roomChange: !!formRoomChange,
     });
@@ -551,7 +557,7 @@
       row.roomChange = !!value;
     } else if (field === "typeId") {
       row.typeId = String(value || "");
-    } else if (field === "reservationNo" || field === "guestName" || field === "roomNo") {
+    } else if (field === "reservationNo" || field === "guestName" || field === "roomNo" || field === "memo") {
       row[field] = String(value || "").trim();
     } else {
       return;
@@ -574,6 +580,26 @@
     opts.toast("삭제되었습니다.");
   }
 
+  function clearAllRecords() {
+    if (!canEdit()) {
+      opts.toast("프론트 모드에서만 초기화할 수 있습니다.");
+      return;
+    }
+    var pack = loadPack();
+    var n = (pack.records || []).length;
+    if (!n) {
+      opts.toast("초기화할 데이터가 없습니다.");
+      return;
+    }
+    if (!confirm("고객불편사항 유형분석 " + n + "건을 모두 삭제할까요?\n(마감과 별개이며, 이 버튼을 눌러야만 비워집니다.)")) {
+      return;
+    }
+    var stamp = new Date().toISOString();
+    persistRecords([], stamp);
+    render();
+    opts.toast("불편사항 유형분석이 초기화되었습니다.");
+  }
+
   function bindUi() {
     if (bound) return;
     bound = true;
@@ -583,6 +609,14 @@
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         addRecord();
+      });
+    }
+
+    var resetBtn = document.getElementById("btnComplaintResetAll");
+    if (resetBtn && !resetBtn.__hkComplaintResetBound) {
+      resetBtn.__hkComplaintResetBound = true;
+      resetBtn.addEventListener("click", function () {
+        clearAllRecords();
       });
     }
 

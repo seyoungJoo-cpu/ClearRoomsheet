@@ -145,6 +145,23 @@
   }
 
   function appendMbInvChatUi(li, entry) {
+    var stick = true;
+    try {
+      var prevMsgList = document.querySelector(
+        '.order-work-item[data-mb-inv-id="' +
+          String((entry && entry.id) || "").replace(/"/g, '\\"') +
+          '"] .order-chat__messages'
+      );
+      if (typeof window.hkChatNearBottom === "function") {
+        stick = window.hkChatNearBottom(prevMsgList);
+      } else if (prevMsgList) {
+        stick =
+          prevMsgList.scrollHeight -
+            prevMsgList.scrollTop -
+            prevMsgList.clientHeight <=
+          96;
+      }
+    } catch (eStickMb) {}
     var chatWrap = document.createElement("div");
     chatWrap.className = "order-chat";
     var msgList = document.createElement("ul");
@@ -212,6 +229,9 @@
     chatWrap.appendChild(chatForm);
     chatWrap.appendChild(ctx.hkCreatePhotoPreview(chatKey));
     li.appendChild(chatWrap);
+    requestAnimationFrame(function () {
+      if (stick) msgList.scrollTop = msgList.scrollHeight;
+    });
   }
 
   function renderMbInvWorkBlock(category, prefix) {
@@ -599,7 +619,13 @@
       );
       if (!card) return;
       var msgList = card.querySelector(".order-chat__messages");
-      if (msgList) msgList.scrollTop = msgList.scrollHeight;
+      if (msgList) {
+        if (typeof window.hkChatScrollToBottom === "function") {
+          window.hkChatScrollToBottom(msgList, true);
+        } else {
+          msgList.scrollTop = msgList.scrollHeight;
+        }
+      }
       var chatInput = card.querySelector(".order-chat__form input");
       if (chatInput) chatInput.focus();
     });

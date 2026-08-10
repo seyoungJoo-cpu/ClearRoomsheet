@@ -285,9 +285,9 @@
         }
         function tick(t) {
           if (!alive || !active) return;
-          // 일시정지·백그라운드 탭에서는 60fps 돌리지 않음
+          // 일시정지·백그라운드 탭에서는 루프를 거의 멈춤 (렉 완화)
           if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
-            scheduleNext(120);
+            scheduleNext(400);
             return;
           }
           fn(t);
@@ -298,7 +298,7 @@
         function fire() {
           if (!alive) return;
           if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
-            var again = setTimeout(fire, 120);
+            var again = setTimeout(fire, 400);
             timers.push(again);
             return;
           }
