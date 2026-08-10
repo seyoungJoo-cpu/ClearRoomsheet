@@ -1879,6 +1879,34 @@
       overflow: hidden;
     }
 
+    .sidebar.is-half-collapsed {
+      width: calc(var(--sidebar-w) / 2);
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .sidebar.is-half-collapsed .sidebar-brand,
+    .sidebar.is-half-collapsed .sidebar-section,
+    .sidebar.is-half-collapsed .sidebar-nav,
+    .sidebar.is-half-collapsed .sidebar-title {
+      overflow: hidden;
+    }
+
+    .sidebar.is-half-collapsed .sidebar-brand__title,
+    .sidebar.is-half-collapsed .sidebar-title,
+    .sidebar.is-half-collapsed .sidebar-nav__btn,
+    .sidebar.is-half-collapsed .sidebar-section__toggle-label,
+    .sidebar.is-half-collapsed .sidebar-section__toggle-hint,
+    .sidebar.is-half-collapsed a.sidebar-nav__link {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .sidebar.is-half-collapsed .sidebar-collapse-btn__label {
+      font-size: 0.55rem;
+    }
+
     .sidebar.is-collapsed .sidebar-brand__title,
     .sidebar.is-collapsed .sidebar-brand,
     .sidebar.is-collapsed .sidebar-section,
@@ -11468,7 +11496,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=7"></script>
+  <script src="hk-complaint-analysis.js?v=8"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
