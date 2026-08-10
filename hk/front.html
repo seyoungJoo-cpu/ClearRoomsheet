@@ -9930,26 +9930,6 @@
         </nav>
         <nav class="sidebar-section sidebar-section--secondary" aria-label="부가 메뉴">
           <div class="sidebar-nav">
-            <hr class="sidebar-nav__rule" id="sidebarFacilityLogRule" hidden />
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--multiline"
-              id="sidebarBtnFacilityMisc"
-              aria-pressed="false"
-              hidden
-            >
-              컴플레인·지난습득물
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn"
-              id="sidebarBtnFacilityDailyFound"
-              aria-pressed="false"
-              hidden
-            >
-              당일습득물
-            </button>
-            <hr class="sidebar-nav__rule" id="sidebarFacilityLogBottomRule" hidden />
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
@@ -12288,27 +12268,51 @@
           var sidebar = document.getElementById("hkSidebar");
           var btn = document.getElementById("btnSidebarCollapse");
           if (!sidebar || !btn) return;
-          var key = "lotte-hk-sidebar-collapsed";
-          function applyCollapsed(collapsed) {
-            sidebar.classList.toggle("is-collapsed", !!collapsed);
-            btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-            btn.title = collapsed ? "사이드바 펼치기" : "사이드바 접기";
+          var key = "lotte-hk-sidebar-mode-v2";
+          // open → half → full → open
+          function currentMode() {
+            if (sidebar.classList.contains("is-collapsed")) return "full";
+            if (sidebar.classList.contains("is-half-collapsed")) return "half";
+            return "open";
+          }
+          function nextMode(mode) {
+            if (mode === "open") return "half";
+            if (mode === "half") return "full";
+            return "open";
+          }
+          function applyMode(mode) {
+            if (mode !== "open" && mode !== "half" && mode !== "full") mode = "open";
+            sidebar.classList.toggle("is-half-collapsed", mode === "half");
+            sidebar.classList.toggle("is-collapsed", mode === "full");
+            btn.setAttribute("aria-expanded", mode === "open" ? "true" : "false");
             var chev = btn.querySelector("span[aria-hidden='true']");
             var label = btn.querySelector(".sidebar-collapse-btn__label");
-            if (chev) chev.textContent = collapsed ? "▶" : "◀";
-            if (label) label.textContent = collapsed ? "펼치기" : "접기";
+            if (mode === "open") {
+              if (chev) chev.textContent = "◀";
+              if (label) label.textContent = "접기";
+              btn.title = "사이드바 반만 접기";
+            } else if (mode === "half") {
+              if (chev) chev.textContent = "◀";
+              if (label) label.textContent = "더접기";
+              btn.title = "사이드바 완전 접기";
+            } else {
+              if (chev) chev.textContent = "▶";
+              if (label) label.textContent = "펼치기";
+              btn.title = "사이드바 펼치기";
+            }
             try {
-              sessionStorage.setItem(key, collapsed ? "1" : "0");
+              sessionStorage.setItem(key, mode);
             } catch (e) {}
           }
-          var saved = false;
+          var saved = "open";
           try {
-            saved = sessionStorage.getItem(key) === "1";
+            var raw = sessionStorage.getItem(key);
+            if (raw === "half" || raw === "full" || raw === "open") saved = raw;
+            else if (sessionStorage.getItem("lotte-hk-sidebar-collapsed") === "1") saved = "full";
           } catch (e2) {}
-          // 기본값: 펼침
-          applyCollapsed(saved);
+          applyMode(saved);
           btn.addEventListener("click", function () {
-            applyCollapsed(!sidebar.classList.contains("is-collapsed"));
+            applyMode(nextMode(currentMode()));
           });
         })();
       }
