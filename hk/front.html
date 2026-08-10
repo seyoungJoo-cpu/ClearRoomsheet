@@ -8240,6 +8240,27 @@
       font-weight: 700;
     }
 
+    /* 정비관리: 시설확인중·시설오더됨 글씨 강조 */
+    .main.main--request .request-feedback__facility-pending-hint,
+    .main.main--request .sched-req-card .request-feedback__facility-pending-hint {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      padding: 0;
+    }
+
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn,
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done,
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
+    .main.main--request .confirming-cards-panel .request-feedback__facility-btn,
+    .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done,
+    .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done.is-ok {
+      font-size: 1.1rem;
+      font-weight: 800;
+      padding: 5px 12px;
+      line-height: 1.2;
+    }
+
     .request-row {
       display: flex;
       flex-wrap: wrap;
