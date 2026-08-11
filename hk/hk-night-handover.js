@@ -125,16 +125,118 @@
     return raw && typeof raw === "object" ? raw : defaultData();
   }
 
-  function dayFromPack(pack, dateKey) {
+  function prevDateKey(key) {
+    var m = String(key || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return "";
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    d.setDate(d.getDate() - 1);
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function filledStr(v) {
+    return String(v == null ? "" : v).trim() !== "";
+  }
+
+  function wingHasContent(w) {
+    return !!(w && (filledStr(w.main) || filledStr(w.annex)));
+  }
+
+  function dayHasContent(day) {
+    if (!day || typeof day !== "object") return false;
+    var duty = day.duty || {};
+    if (wingHasContent(duty.mid) || wingHasContent(duty.allNight) || wingHasContent(duty.utility)) {
+      return true;
+    }
+    var ch = day.chargers || {};
+    if (filledStr(ch.cType) || filledStr(ch.iphone) || filledStr(ch.fivePin)) return true;
+    var etc = day.etc || {};
+    if (filledStr(etc.fan) || filledStr(etc.duckDown) || filledStr(etc.kidsRobe)) return true;
+    var extras = day.extras || {};
+    var ek;
+    for (ek in extras) {
+      if (Object.prototype.hasOwnProperty.call(extras, ek) && wingHasContent(extras[ek])) return true;
+    }
+    var notes = day.notes || [];
+    var i;
+    for (i = 0; i < notes.length; i++) {
+      var n = notes[i];
+      if (n && (filledStr(n.category) || filledStr(n.main) || filledStr(n.annex))) return true;
+    }
+    var incidents = day.incidents || [];
+    for (i = 0; i < incidents.length; i++) {
+      var inc = incidents[i];
+      if (inc && (filledStr(inc.room) || filledStr(inc.by) || filledStr(inc.dates) || filledStr(inc.detail))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function cloneDayForKey(src, dateKey) {
+    var raw;
+    try {
+      raw = JSON.parse(JSON.stringify(src || {}));
+    } catch (e) {
+      raw = src || {};
+    }
+    var day = normalizeDay(raw);
+    day.dateKey = dateKey;
+    day.titleDate = displayFromKey(dateKey);
+    day.updatedAt = "";
+    return day;
+  }
+
+  function persistSeededDay(day, key) {
+    if (!global.HKStorage || !global.HKStorage.save) return;
+    var data = global.HKStorage.load();
+    var pack = loadPack();
+    day = normalizeDay(day || defaultData(key));
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.updatedAt = new Date().toISOString();
+    if (!pack.byDate || typeof pack.byDate !== "object") pack.byDate = {};
+    pack.byDate[key] = day;
+    if (!pack.activeDate) pack.activeDate = key;
+    pack.updatedAt = day.updatedAt;
+    if (typeof global.HKStorage.normalizeNightHandover === "function") {
+      pack = global.HKStorage.normalizeNightHandover(pack);
+    }
+    data.nightHandover = pack;
+    global.HKStorage.save(data);
+    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
+    }
+  }
+
+  /** @param {boolean} [allowSeed=false] — seed from prev only for UI open/nav */
+  function dayFromPack(pack, dateKey, allowSeed) {
     pack = pack || loadPack();
     var key = dateKey || currentDateKey || pack.activeDate || opsDateKey();
-    var found = pack.byDate && pack.byDate[key];
-    if (found) {
-      var day = normalizeDay(found);
-      day.dateKey = key;
-      return day;
+    var byDate = (pack.byDate && typeof pack.byDate === "object") ? pack.byDate : {};
+    var found = byDate[key];
+    var day = found ? normalizeDay(found) : defaultData(key);
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+
+    if (!allowSeed || dayHasContent(day)) return day;
+
+    /* Intentionally emptied (saved with updatedAt) — do not reseed */
+    if (found && String(found.updatedAt || "").trim()) return day;
+
+    var prevKey = prevDateKey(key);
+    if (!prevKey || !byDate[prevKey]) return day;
+    var prev = normalizeDay(byDate[prevKey]);
+    if (!dayHasContent(prev)) return day;
+
+    var seeded = cloneDayForKey(prev, key);
+    persistSeededDay(seeded, key);
+    if (typeof opts.toast === "function") {
+      opts.toast("전날 내용을 이 날짜로 이어받았습니다");
     }
-    return defaultData(key);
+    return seeded;
   }
 
   function syncDateInputs(dateKey) {
@@ -395,7 +497,7 @@
       }
     }
     currentDateKey = nextKey;
-    fillDay(dayFromPack(loadPack(), currentDateKey));
+    fillDay(dayFromPack(loadPack(), currentDateKey, true));
   }
 
   function openDatePicker() {
@@ -531,7 +633,7 @@
       /* 기본: 오늘(17시 이후면 다음날). 다른 날은 달력으로 이동 */
       currentDateKey = opsDateKey();
     }
-    fillDay(dayFromPack(pack, currentDateKey));
+    fillDay(dayFromPack(pack, currentDateKey, true));
   }
 
   function onSave() {

@@ -48,6 +48,7 @@
       return false;
     },
     toast: function () {},
+    getRoomStatus: null,
   };
   var bound = false;
   var dirty = false;
@@ -55,6 +56,8 @@
   var connectingCount = DEFAULT_CONNECTING_SLOTS;
   var remarkCount = DEFAULT_REMARK_ROWS.length;
   var currentDateKey = "";
+  var VIP_COL_WIDTHS_KEY = "hk-vip-col-widths-v1";
+  var colResizeBound = false;
 
   function hs() {
     return global.HKStorage || null;
@@ -189,16 +192,185 @@
     return raw && typeof raw === "object" ? raw : defaultData();
   }
 
-  function dayFromPack(pack, dateKey) {
+  function prevDateKey(key) {
+    var m = String(key || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return "";
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    d.setDate(d.getDate() - 1);
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function filledStr(v) {
+    return String(v == null ? "" : v).trim() !== "";
+  }
+
+  function guestHasContent(g) {
+    if (!g) return false;
+    return !!(
+      filledStr(g.section) ||
+      filledStr(g.guestName) ||
+      filledStr(g.roomNo) ||
+      filledStr(g.roomType) ||
+      filledStr(g.rsvNo) ||
+      filledStr(g.eta) ||
+      filledStr(g.checkOut) ||
+      filledStr(g.remark)
+    );
+  }
+
+  function connectingHasContent(list) {
+    if (!Array.isArray(list) || !list.length) return false;
+    var defaults = defaultConnecting();
+    var i;
+    for (i = 0; i < list.length; i++) {
+      var c = list[i] || {};
+      var status = String(c.status || "CLOSE").toUpperCase();
+      if (status === "OPEN") return true;
+      var rooms = String(c.rooms || "").trim();
+      var def = defaults[i];
+      if (!def) {
+        if (rooms) return true;
+        continue;
+      }
+      if (rooms !== String(def.rooms || "").trim()) return true;
+    }
+    return false;
+  }
+
+  function remarksHaveContent(pack) {
+    var rows = normalizeRemarkRows(pack || {});
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r) continue;
+      if (filledStr(r.value)) return true;
+      var def = DEFAULT_REMARK_ROWS[i];
+      if (!def && filledStr(r.label)) return true;
+      if (def && filledStr(r.label) && String(r.label).trim() !== String(def.label || "").trim()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function dayHasContent(day) {
+    if (!day || typeof day !== "object") return false;
+    var guests = day.guests || [];
+    var i;
+    for (i = 0; i < guests.length; i++) {
+      if (guestHasContent(guests[i])) return true;
+    }
+    if (connectingHasContent(day.connecting)) return true;
+    if (remarksHaveContent(day)) return true;
+    return false;
+  }
+
+  function cloneDayForKey(src, dateKey) {
+    var raw;
+    try {
+      raw = JSON.parse(JSON.stringify(src || {}));
+    } catch (e) {
+      raw = src || {};
+    }
+    var day = normalizeDay(raw);
+    day.dateKey = dateKey;
+    day.titleDate = displayFromKey(dateKey);
+    day.titleYear = yearFromKey(dateKey);
+    day.updatedAt = "";
+    return day;
+  }
+
+  function persistSeededDay(day, key) {
+    if (!global.HKStorage || !global.HKStorage.save) return;
+    var data = global.HKStorage.load();
+    var pack = loadPack();
+    day = normalizeDay(day || defaultData(key));
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.titleYear = yearFromKey(key);
+    day.updatedAt = new Date().toISOString();
+    if (!pack.byDate || typeof pack.byDate !== "object") pack.byDate = {};
+    pack.byDate[key] = day;
+    if (!pack.activeDate) pack.activeDate = key;
+    pack.updatedAt = day.updatedAt;
+    if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
+      pack = global.HKStorage.normalizeVipCheckIn(pack);
+    }
+    data.vipCheckIn = pack;
+    global.HKStorage.save(data);
+    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
+    }
+  }
+
+  /** @param {boolean} [allowSeed=false] — seed from prev only for UI open/nav */
+  function dayFromPack(pack, dateKey, allowSeed) {
     pack = pack || loadPack();
     var key = dateKey || currentDateKey || pack.activeDate || opsDateKey();
-    var found = pack.byDate && pack.byDate[key];
-    if (found) {
-      var day = normalizeDay(found);
-      day.dateKey = key;
-      return day;
+    var byDate = pack.byDate && typeof pack.byDate === "object" ? pack.byDate : {};
+    var found = byDate[key];
+    var day = found ? normalizeDay(found) : defaultData(key);
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.titleYear = yearFromKey(key);
+
+    if (!allowSeed || dayHasContent(day)) return day;
+    if (found && String(found.updatedAt || "").trim()) return day;
+
+    var prevKey = prevDateKey(key);
+    if (!prevKey || !byDate[prevKey]) return day;
+    var prev = normalizeDay(byDate[prevKey]);
+    if (!dayHasContent(prev)) return day;
+
+    var seeded = cloneDayForKey(prev, key);
+    persistSeededDay(seeded, key);
+    if (typeof opts.toast === "function") {
+      opts.toast("전날 내용을 이 날짜로 이어받았습니다");
     }
-    return defaultData(key);
+    return seeded;
+  }
+
+  function lookupRoomStatus(roomNo) {
+    if (typeof opts.getRoomStatus !== "function") return "";
+    try {
+      var st = opts.getRoomStatus(roomNo);
+      st = String(st == null ? "" : st).trim().toUpperCase();
+      if (st === "IP" || st === "CL" || st === "PU" || st === "DI" || st === "OS" || st === "OO") {
+        return st;
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function setRoomStatusDisplay(rowIdx, status) {
+    var hid = document.getElementById(guestId(rowIdx, "roomStatus"));
+    if (hid) hid.value = status || "";
+    var badge = document.querySelector('[data-vip-room-status-display="' + rowIdx + '"]');
+    if (badge) {
+      var show = status || "—";
+      badge.textContent = show;
+      badge.className =
+        "vip-room-status-badge hk-st-badge hk-st--" +
+        (status ? String(status).toLowerCase() : "none");
+    }
+  }
+
+  function refreshRoomStatusForRow(rowIdx) {
+    var roomNo = val(guestId(rowIdx, "roomNo"));
+    var st = lookupRoomStatus(roomNo);
+    setRoomStatusDisplay(rowIdx, st);
+  }
+
+  function refreshAllRoomStatuses() {
+    var i;
+    for (i = 0; i < guestCount; i++) {
+      refreshRoomStatusForRow(i);
+    }
   }
 
   function syncDateInputs(dateKey) {
@@ -444,10 +616,24 @@
       }
 
       GUEST_FIELDS.forEach(function (f) {
+        if (f === "roomStatus") {
+          cells +=
+            '<td class="vip-room-status-cell">' +
+            '<input type="hidden" id="' +
+            guestId(i, "roomStatus") +
+            '" value="" />' +
+            '<span class="vip-room-status-badge hk-st-badge hk-st--none" data-vip-room-status-display="' +
+            i +
+            '" aria-label="Room 상태">—</span>' +
+            "</td>";
+          return;
+        }
         cells +=
           '<td><textarea id="' +
           guestId(i, f) +
-          '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
+          '" class="nh-autosize' +
+          (f === "remark" ? " vip-guest-remark" : "") +
+          '" rows="1" autocomplete="off"></textarea></td>';
       });
       cells +=
         '<td class="nh-row-actions">' +
@@ -459,8 +645,10 @@
       tbody.appendChild(tr);
       setVal(guestId(i, "section"), g.section);
       GUEST_FIELDS.forEach(function (f) {
+        if (f === "roomStatus") return;
         setVal(guestId(i, f), g[f]);
       });
+      setRoomStatusDisplay(i, lookupRoomStatus(g.roomNo) || "");
     }
     autosizeAllIn(tbody);
   }
@@ -785,6 +973,7 @@
     syncEditLock();
     syncDirtyUi();
     autosizeAllIn(document.getElementById("vipCheckInPanel"));
+    refreshAllRoomStatuses();
   }
 
   function switchToDateKey(nextKey) {
@@ -808,7 +997,7 @@
       }
     }
     currentDateKey = nextKey;
-    fillDay(dayFromPack(loadPack(), currentDateKey));
+    fillDay(dayFromPack(loadPack(), currentDateKey, true));
   }
 
   function openDatePicker() {
@@ -831,6 +1020,7 @@
     if (dirty && !force) {
       syncEditLock();
       syncDirtyUi();
+      refreshAllRoomStatuses();
       return;
     }
     var pack = loadPack();
@@ -838,7 +1028,7 @@
       /* 기본: 오늘(17시 이후면 다음날). 다른 날은 달력으로 이동 */
       currentDateKey = opsDateKey();
     }
-    fillDay(dayFromPack(pack, currentDateKey));
+    fillDay(dayFromPack(pack, currentDateKey, true));
   }
 
   function onSave() {
@@ -846,6 +1036,7 @@
       if (typeof opts.toast === "function") opts.toast("프론트 모드에서만 저장할 수 있습니다.");
       return;
     }
+    refreshAllRoomStatuses();
     persist(collectFromDom());
   }
 
@@ -1023,6 +1214,96 @@
     if (panel && !panel.hidden) render(true);
   }
 
+  function bindGuestColResize() {
+    if (colResizeBound) return;
+    var table = document.querySelector(".vip-table--guests");
+    if (!table) return;
+    colResizeBound = true;
+
+    var DEFAULT_WIDTHS = [36, 64, 110, 72, 72, 80, 90, 100, 90, 140, 52];
+
+    function ensureColgroup() {
+      var cg = table.querySelector("colgroup");
+      if (cg && cg.children.length === 11) return cg;
+      if (cg) cg.remove();
+      cg = document.createElement("colgroup");
+      var i;
+      for (i = 0; i < 11; i++) {
+        cg.appendChild(document.createElement("col"));
+      }
+      table.insertBefore(cg, table.firstChild);
+      return cg;
+    }
+
+    function loadWidths() {
+      try {
+        var raw = global.localStorage && global.localStorage.getItem(VIP_COL_WIDTHS_KEY);
+        if (!raw) return DEFAULT_WIDTHS.slice();
+        var arr = JSON.parse(raw);
+        if (!Array.isArray(arr) || arr.length !== 11) return DEFAULT_WIDTHS.slice();
+        return arr.map(function (n, i) {
+          var v = Number(n);
+          return v > 24 ? v : DEFAULT_WIDTHS[i];
+        });
+      } catch (e) {
+        return DEFAULT_WIDTHS.slice();
+      }
+    }
+
+    function applyWidths(widths) {
+      var cg = ensureColgroup();
+      var i;
+      for (i = 0; i < 11; i++) {
+        var col = cg.children[i];
+        if (col) col.style.width = widths[i] + "px";
+      }
+      var ths = table.querySelectorAll("thead th");
+      for (i = 0; i < ths.length && i < 11; i++) {
+        ths[i].style.width = widths[i] + "px";
+      }
+    }
+
+    function saveWidths(widths) {
+      try {
+        if (global.localStorage) {
+          global.localStorage.setItem(VIP_COL_WIDTHS_KEY, JSON.stringify(widths));
+        }
+      } catch (e) {}
+    }
+
+    var widths = loadWidths();
+    applyWidths(widths);
+
+    var theadRow = table.querySelector("thead tr");
+    if (!theadRow) return;
+    Array.prototype.forEach.call(theadRow.children, function (th, idx) {
+      if (idx >= 10) return;
+      th.style.position = "relative";
+      var handle = document.createElement("span");
+      handle.className = "vip-col-resizer";
+      handle.title = "열 너비 조절";
+      th.appendChild(handle);
+      handle.addEventListener("mousedown", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        var startX = ev.clientX;
+        var startW = widths[idx];
+        function onMove(e2) {
+          var next = Math.max(36, startW + (e2.clientX - startX));
+          widths[idx] = next;
+          applyWidths(widths);
+        }
+        function onUp() {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+          saveWidths(widths);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    });
+  }
+
   function bindUi() {
     if (bound) return;
     bound = true;
@@ -1030,6 +1311,12 @@
     if (panel) {
       panel.addEventListener("input", function (e) {
         if (e && e.target && e.target.id === "vipDateInput") return;
+        if (e && e.target && e.target.id) {
+          var m = String(e.target.id).match(/^vipGuest_(\d+)_roomNo$/);
+          if (m) {
+            refreshRoomStatusForRow(Number(m[1]));
+          }
+        }
         markDirty();
         if (e && e.target) autosizeTextarea(e.target);
       });
@@ -1037,6 +1324,10 @@
         if (e && e.target && e.target.id === "vipDateInput") {
           switchToDateKey(e.target.value);
           return;
+        }
+        if (e && e.target && e.target.id) {
+          var m = String(e.target.id).match(/^vipGuest_(\d+)_roomNo$/);
+          if (m) refreshRoomStatusForRow(Number(m[1]));
         }
         markDirty();
       });
@@ -1088,6 +1379,7 @@
         switchToDateKey(dateInput.value);
       });
     }
+    bindGuestColResize();
   }
 
   function init(userOpts) {

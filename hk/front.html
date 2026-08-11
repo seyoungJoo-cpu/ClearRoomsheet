@@ -9030,13 +9030,13 @@
     }
 
     .nh-title-date {
-      width: 5rem;
-      height: 40px;
+      width: 5.25rem;
+      height: 42px;
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0 6px;
       font: inherit;
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       font-weight: 800;
       text-align: center;
       color: var(--accent);
@@ -9098,7 +9098,7 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 1.05rem;
+      font-size: 15px;
       background: #fff;
     }
 
@@ -9129,20 +9129,25 @@
       padding: 3px 4px;
       vertical-align: middle;
       text-align: center;
+      font-size: 15px;
+    }
+
+    .nh-table th {
+      font-weight: 700;
     }
 
     .nh-th-blue {
       background: #dbeafe;
-      font-weight: 800;
+      font-weight: 700;
       color: #1e3a8a;
-      font-size: 0.95rem;
+      font-size: 15px;
     }
 
     .nh-th-pink {
       background: #fce7f3;
-      font-weight: 800;
+      font-weight: 700;
       color: #9d174d;
-      font-size: 0.95rem;
+      font-size: 15px;
     }
 
     .nh-vlabel {
@@ -9156,7 +9161,8 @@
       border: none;
       background: transparent;
       font: inherit;
-      font-size: 1.05rem;
+      font-size: 16px;
+      font-weight: 600;
       padding: 4px 6px;
       min-height: 28px;
       height: 28px;
@@ -9184,7 +9190,7 @@
       background: #f8fafc;
       font-weight: 700;
       width: 18%;
-      font-size: 0.95rem;
+      font-size: 15px;
     }
 
     .nh-table--extras th:nth-child(2),
@@ -9192,6 +9198,23 @@
     .nh-table--extras th:nth-child(3),
     .nh-table--extras td:nth-child(3) {
       width: 41%;
+      text-align: center;
+    }
+
+    .nh-table--extras td:nth-child(2) textarea,
+    .nh-table--extras td:nth-child(3) textarea,
+    .nh-table--top td textarea {
+      text-align: center;
+    }
+
+    /* 본관/별관 wing columns — center */
+    .nh-table--top thead th:nth-child(3),
+    .nh-table--top thead th:nth-child(4),
+    .nh-table--top tbody td:nth-child(3),
+    .nh-table--top tbody td:nth-child(4),
+    .nh-table--top tbody tr:first-child td:nth-child(3),
+    .nh-table--top tbody tr:first-child td:nth-child(4) {
+      text-align: center;
     }
 
     .nh-row--highlight,
@@ -9208,23 +9231,39 @@
     .nh-table--incidents th:nth-child(1),
     .nh-table--incidents td:nth-child(1) {
       width: 10%;
+      text-align: center;
     }
 
     .nh-table--incidents th:nth-child(2),
     .nh-table--incidents td:nth-child(2) {
       width: 12%;
+      text-align: center;
     }
 
     .nh-table--incidents th:nth-child(3),
     .nh-table--incidents td:nth-child(3) {
       width: 12%;
+      text-align: center;
+    }
+
+    .nh-table--incidents th:nth-child(4),
+    .nh-table--incidents td:nth-child(4) {
+      text-align: left;
     }
 
     .nh-incident-row td {
       background: #fce7f3;
     }
 
-    .nh-table--incidents textarea {
+    .nh-table--incidents td:nth-child(1) textarea,
+    .nh-table--incidents td:nth-child(2) textarea,
+    .nh-table--incidents td:nth-child(3) textarea {
+      text-align: center;
+      min-height: 28px;
+      line-height: 1.35;
+    }
+
+    .nh-table--incidents td:nth-child(4) textarea {
       text-align: left;
       min-height: 28px;
       line-height: 1.35;
@@ -9323,24 +9362,24 @@
     }
 
     .vip-title-date {
-      width: 4rem;
-      height: 38px;
+      width: 4.5rem;
+      height: 40px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
-      font-size: 1.1rem;
+      font-size: 1.3rem;
       font-weight: 800;
     }
 
     .vip-title-year {
-      width: 4.25rem;
-      height: 38px;
+      width: 4.5rem;
+      height: 40px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
-      font-size: 1.1rem;
+      font-size: 1.3rem;
       font-weight: 800;
     }
 
@@ -9362,7 +9401,7 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 1.05rem;
+      font-size: 15px;
       background: #fff;
     }
 
@@ -9372,13 +9411,26 @@
       padding: 5px 6px;
       vertical-align: middle;
       text-align: center;
+      font-size: 15px;
     }
 
     .vip-table thead th {
       background: #e2e8f0;
-      font-weight: 800;
-      font-size: 0.95rem;
+      font-weight: 700;
+      font-size: 15px;
       white-space: nowrap;
+      position: relative;
+    }
+
+    .vip-col-resizer {
+      position: absolute;
+      top: 0;
+      right: -3px;
+      width: 6px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+      z-index: 2;
     }
 
     .vip-table input[type="text"],
@@ -9388,7 +9440,8 @@
       border: none;
       background: transparent;
       font: inherit;
-      font-size: 1.05rem;
+      font-size: 16px;
+      font-weight: 600;
       padding: 4px 6px;
       min-height: 28px;
       height: 28px;
@@ -9432,6 +9485,34 @@
       min-height: 28px !important;
     }
 
+    .vip-table--guests th,
+    .vip-table--guests td {
+      text-align: center;
+    }
+
+    .vip-table--guests th:nth-child(10),
+    .vip-table--guests td:nth-child(10),
+    .vip-table--guests td:nth-child(10) textarea,
+    .vip-table--guests .vip-guest-remark {
+      text-align: left;
+    }
+
+    .vip-room-status-cell {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .vip-room-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.25rem;
+      padding: 2px 6px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
     .vip-table--guests th:nth-child(1),
     .vip-table--guests td:nth-child(1) { width: 3%; }
     .vip-table--guests th:nth-child(2),
@@ -9453,15 +9534,16 @@
 
     .vip-specials {
       border: 1px solid #334155;
-      padding: 10px 12px 14px;
+      padding: 10px 14px 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      text-align: left;
     }
 
     .vip-specials__title {
       font-weight: 900;
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       color: #1e3a8a;
     }
 
@@ -9470,11 +9552,12 @@
       grid-template-columns: 7rem 1fr;
       gap: 8px;
       align-items: start;
+      text-align: left;
     }
 
     .vip-conn-label {
       font-weight: 800;
-      font-size: 1.05rem;
+      font-size: 16px;
       padding-top: 8px;
     }
 
@@ -9482,6 +9565,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      text-align: left;
+      padding-left: 4px;
     }
 
     .vip-table--connecting .vip-conn-rooms,
@@ -9489,18 +9574,21 @@
     .vip-table--connecting .vip-conn-status {
       color: #dc2626;
       font-weight: 800;
-      font-size: 1.2rem;
+      font-size: 16px;
     }
 
     .vip-table--connecting .vip-conn-rooms {
-      text-align: center;
+      text-align: left;
       min-height: 28px !important;
       resize: none;
+      padding-left: 12px;
     }
 
     .vip-conn-mid {
       white-space: nowrap;
       background: #fff;
+      text-align: left;
+      padding-left: 12px;
     }
 
     .vip-conn-status {
@@ -9511,6 +9599,8 @@
       cursor: pointer;
       font: inherit;
       letter-spacing: 0.02em;
+      text-align: left;
+      padding-left: 12px;
     }
 
     .vip-conn-status.is-open {
@@ -9524,23 +9614,31 @@
     .vip-table--remarks th.vip-remark-label {
       width: 14rem;
       background: #dbeafe;
-      font-weight: 800;
-      text-align: center;
-      padding-left: 6px;
+      font-weight: 700;
+      text-align: left;
+      padding-left: 14px;
       padding-right: 6px;
       white-space: nowrap;
-      font-size: 1.05rem;
+      font-size: 15px;
     }
 
     .vip-remark-label-input {
-      text-align: center;
-      font-weight: 800;
+      text-align: left;
+      font-weight: 700;
       background: transparent;
+      font-size: 16px;
     }
 
     .vip-table--ajmb textarea,
     .vip-table--remarks textarea {
-      text-align: center;
+      text-align: left;
+      font-size: 16px;
+      font-weight: 600;
+      padding-left: 12px;
+    }
+
+    .vip-table--remarks td {
+      text-align: left;
     }
 
     .vip-row--green th,
@@ -12981,7 +13079,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-3"></script>
+  <script src="hk-storage.js?v=bydate-4"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12992,8 +13090,8 @@
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-2"></script>
   <script src="hk-track-it.js?v=bydate-2"></script>
-  <script src="hk-night-handover.js?v=bydate-3"></script>
-  <script src="hk-vip-checkin.js?v=bydate-3"></script>
+  <script src="hk-night-handover.js?v=bydate-4"></script>
+  <script src="hk-vip-checkin.js?v=bydate-4"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -29656,6 +29754,9 @@
             return frontMode;
           },
           toast: showHkActionToast,
+          getRoomStatus: function (roomNo) {
+            return lookupRoomStatusFromXml(roomNo) || "";
+          },
           onLeaveWhenLocked: function () {
             if (frontMode || maintenanceMode) return;
             showSidebarOrderView();
