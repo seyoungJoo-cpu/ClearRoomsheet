@@ -79,7 +79,7 @@
     var row = ranks().boards[id].filter(function (x) { return x.name === who; })[0];
     return row ? Number(row.score) : 0;
   }
-  function formatScore(n) { return Math.max(0, Math.round(Number(n) || 0)).toLocaleString('ko-KR'); }
+  function formatScore(n) { return Math.round(Number(n) || 0).toLocaleString('ko-KR'); }
   function toast(text) {
     clearTimeout(toastTimer);
     refs.toast.textContent = text;
@@ -88,9 +88,10 @@
   }
   function save(id, score) {
     if (MP_IDS.indexOf(id) >= 0) return;
-    score = Math.max(0, Math.round(Number(score) || 0));
+    score = Math.round(Number(score) || 0);
     var who = name();
-    if (!score || !who || !config.saveScore) return;
+    // 0점은 저장하지 않음. 음수(벨 리액션 컴플레인 등)는 랭킹 등록 가능.
+    if (!isFinite(score) || score === 0 || !who || !config.saveScore) return;
     try {
       config.saveScore(id, score);
       toast('랭킹 반영: ' + who + ' ' + formatScore(score));
@@ -120,8 +121,8 @@
       '.hkg-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:18px}.hkg-stage,.hkg-ranking{border:1px solid #ffffff17;border-radius:20px;background:#091a21cc;box-shadow:0 20px 55px #0005}.hkg-stage{min-height:560px;padding:20px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none}.hkg-stage-inner{width:100%;text-align:center}.hkg-ranking{padding:20px;align-self:start}.hkg-ranking h3{font-family:Georgia,serif;color:#ecd18b;margin:0 0 13px}.hkg-rank{display:grid;grid-template-columns:26px 1fr auto;gap:7px;padding:9px 0;border-bottom:1px solid #ffffff10;font-size:13px}.hkg-rank.me{color:#f2d88f}.hkg-empty{padding:25px 0;color:#708b87;text-align:center}.hkg-actions{display:flex;justify-content:center;gap:9px;margin-top:15px}.hkg-note{color:#88a09a;font-size:12px;margin-top:10px}',
       '.hkg-candy{width:min(100%,560px);display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:auto;position:relative}.hkg-gem{aspect-ratio:1;border:0;border-radius:14px;background:#0d292d;display:grid;place-items:center;cursor:pointer;padding:8%;position:relative;z-index:1;transition:transform .2s ease,opacity .18s}.hkg-gem:before{content:"";width:82%;height:82%;border-radius:42% 58% 50% 50%;background:var(--gem);box-shadow:inset 0 5px 6px #fff5,inset 0 -6px 8px #0003,0 3px 5px #0005;transform:rotate(45deg)}.hkg-gem.sel{transform:scale(.87);box-shadow:0 0 0 3px #efd484}.hkg-gem.pop{transform:scale(.12) rotate(28deg);opacity:0;filter:brightness(1.6)}.hkg-gem.pop:after{content:\"\";position:absolute;inset:-18%;border-radius:50%;box-shadow:0 0 0 2px #efd28a88,12px -10px 0 #efd28a66,-14px 8px 0 #9ad2a966,10px 14px 0 #f08b4388,-12px -12px 0 #fff8;animation:hkg-spark .28s ease forwards;pointer-events:none}@keyframes hkg-spark{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.35)}}.hkg-gem.swap{z-index:4;transition:transform .22s ease}.hkg-gem.fall{z-index:3;transition:transform .24s ease}.hkg-stage.shake{animation:hkg-shake .28s ease}@keyframes hkg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}.hkg-float{position:absolute;pointer-events:none;font-weight:800;color:#efd28a;text-shadow:0 2px 8px #000a;animation:hkg-float .9s ease forwards;z-index:6;font-size:18px}@keyframes hkg-float{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-36px) scale(1.15)}}',
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:transform .16s ease,background .12s,box-shadow .16s}.hkg-tile.is-merge{animation:hkg-merge-pop .28s ease}.hkg-tile.is-spawn{animation:hkg-tile-spawn .22s ease}@keyframes hkg-merge-pop{0%{transform:scale(.82);box-shadow:0 0 0 0 #efd28a00}45%{transform:scale(1.14);box-shadow:0 0 22px #efd28aaa}100%{transform:scale(1);box-shadow:0 0 0 0 #efd28a00}}@keyframes hkg-tile-spawn{from{transform:scale(.55);opacity:.35}to{transform:scale(1);opacity:1}}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
-      '.hkg-memory-frame{width:min(100%,340px);aspect-ratio:3/4;height:auto;max-height:min(72vh,560px);margin:auto;display:flex;align-items:center;justify-content:center}.hkg-memory{width:100%;height:100%;display:grid;gap:6px;margin:0;perspective:900px;-webkit-user-select:none;user-select:none;box-sizing:border-box}.hkg-memory.wave .hkg-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}.hkg-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(20px,4.2vw,36px);line-height:1;cursor:pointer;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#f0dfa8;color:#142826;text-shadow:0 1px 0 #fff6}.hkg-memory-card.done{background:#9fcbb0;opacity:.78}.hkg-memory-setup{width:min(100%,520px);margin:auto;text-align:center}.hkg-memory-setup h3{font-family:Georgia,serif;color:#efd28a;margin:0 0 12px;font-size:22px}.hkg-memory-sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}',
-      '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:72px;height:72px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:32px;cursor:pointer;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}.hkg-bell.is-complaint{background:radial-gradient(circle at 30% 25%,#fff8,#f6e05e 40%,#d69e2e);font-size:28px;box-shadow:0 8px 24px #0007,0 0 0 2px #f6e05e88}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
+      '.hkg-memory-frame{width:min(100%,340px);aspect-ratio:3/4;height:auto;max-height:min(72vh,560px);margin:auto;display:flex;align-items:center;justify-content:center}.hkg-memory{width:100%;height:100%;display:grid;gap:6px;margin:0;perspective:900px;-webkit-user-select:none;user-select:none;box-sizing:border-box}.hkg-memory.wave .hkg-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}.hkg-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(22px,4.6vw,40px);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;text-align:center;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#f0dfa8;color:#142826;text-shadow:0 1px 0 #fff6}.hkg-memory-card .hkg-memory-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;transform:rotateY(180deg)}.hkg-memory-card.done{background:#9fcbb0;opacity:.78}.hkg-memory-setup{width:min(100%,520px);margin:auto;text-align:center}.hkg-memory-setup h3{font-family:Georgia,serif;color:#efd28a;margin:0 0 12px;font-size:22px}.hkg-memory-sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}',
+      '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:104px;height:104px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}.hkg-bell.is-complaint{background:radial-gradient(circle at 30% 25%,#fff8,#f6e05e 40%,#d69e2e);font-size:40px;box-shadow:0 8px 24px #0007,0 0 0 2px #f6e05e88}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
       '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
@@ -873,7 +874,7 @@
       if (!grid) return;
       grid.innerHTML = cards.map(function (x, i) {
         var show = x.open || x.done;
-        return '<button type="button" class="hkg-memory-card ' + (x.open ? 'open ' : '') + (x.done ? 'done' : '') + '" data-i="' + i + '" draggable="false"' + (!playing ? ' disabled' : '') + '>' + (show ? x.icon : '') + '</button>';
+        return '<button type="button" class="hkg-memory-card ' + (x.open ? 'open ' : '') + (x.done ? 'done' : '') + '" data-i="' + i + '" draggable="false"' + (!playing ? ' disabled' : '') + '>' + (show ? '<span class="hkg-memory-face">' + x.icon + '</span>' : '') + '</button>';
       }).join('');
     }
     function paintWave(openFlags) {
@@ -1074,8 +1075,9 @@
     }
     function spawnItem(x, y) {
       if (Math.random() > stageCfg(stage).drop) return;
-      var kinds = ['wide', 'narrow', 'slow', 'fast', 'life'];
-      var kind = kinds[Math.floor(Math.random() * kinds.length)];
+      var roll = Math.random();
+      // 1UP(목숨)은 드물게
+      var kind = roll < 0.07 ? 'life' : ['wide', 'narrow', 'slow', 'fast'][Math.floor(Math.random() * 4)];
       items.push({ x: x, y: y, kind: kind, w: 46, h: 18, vy: 120 + stage * 12 });
     }
     function applyItem(kind) {
@@ -1315,7 +1317,7 @@
           player.y = p.y - player.h; player.vy = -690; canDouble = true;
           p.steps = (p.steps || 0) + 1;
           fx.spark(player.x + player.w / 2, player.y + player.h, '#d6bc75');
-          if (p.steps >= 3) {
+          if (p.steps >= 2) {
             fx.burst(p.x + p.w / 2, p.y, '#d6bc75', 10, 140);
             p._break = true;
           }
@@ -1362,7 +1364,7 @@
     c.on(cv.canvas, 'touchmove', function (e) { var r = cv.canvas.getBoundingClientRect(); touchX = (e.touches[0].clientX - r.left) * 520 / r.width; }, { passive: true });
     c.on(cv.canvas, 'touchend', function () { touchX = null; }, { passive: true });
     setup(); draw(); c.raf(loop);
-    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 이동 · SPACE(또는 화면 상단 탭)로 2단 점프 · 화면이 아주 천천히 올라가며 바닥에 닿으면 탈락합니다.');
+    actions(function () { startGame('jump'); }, function () { return score; }, '좌우 이동 · SPACE(또는 화면 상단 탭)로 2단 점프 · 같은 발판 2회 밟으면 사라집니다.');
     return { id: 'jump', destroy: c.destroy };
   };
 
@@ -1530,20 +1532,20 @@
   };
 
   games.pong = function () {
-    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, balls = [], score = 0, lives = 3, running = true, last = 0, fx = makeFx(), speed = 1.0, rally = 0, items = [], powerT = 0;
+    var c = controller(), cv = canvasBase(640, 420), ctx = cv.ctx, paddle, balls = [], score = 0, lives = 3, running = true, last = 0, fx = makeFx(), speed = 1.02, rally = 0, items = [], powerT = 0;
     setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('pong', name())), 'best']]);
     function makeBall(x, y, vx, vy, r) {
-      return { x: x, y: y, vx: vx, vy: vy, r: r || 8 };
+      return { x: x, y: y, vx: vx, vy: vy, r: r || 7.5 };
     }
     function reset() {
-      paddle = { x: 250, y: 378, w: 110, h: 16 };
-      var v = 270 * speed;
+      paddle = { x: 255, y: 378, w: 102, h: 16 };
+      var v = 285 * speed;
       var ang = (Math.random() * 0.7 + 0.35) * (Math.random() > .5 ? 1 : -1);
-      balls = [makeBall(320, 200, Math.sin(ang) * v, -Math.abs(Math.cos(ang)) * v, 8)];
+      balls = [makeBall(320, 200, Math.sin(ang) * v, -Math.abs(Math.cos(ang)) * v, 7.5)];
       items = []; powerT = 0;
     }
     function spawnItem() {
-      if (Math.random() > 0.018) return;
+      if (Math.random() > 0.008) return;
       var kinds = ['multi', 'big', 'wide', 'slow', 'slim', 'fast'];
       items.push({ x: 40 + Math.random() * 560, y: -20, kind: kinds[Math.floor(Math.random() * kinds.length)], vy: 90 + Math.random() * 40 });
     }
@@ -1627,7 +1629,7 @@
           hit = Math.max(-1, Math.min(1, hit));
           ball.vx = hit * (340 + speed * 70) + (Math.random() - 0.5) * 30;
           ball.vy = -Math.abs(ball.vy) * 1.04;
-          score += 12; rally++; speed = Math.min(2.1, speed + 0.024);
+          score += 12; rally++; speed = Math.min(2.2, speed + 0.028);
           hud('score', score); clampBall(ball); fx.burst(ball.x, ball.y, '#efd28a', 10, 160);
         }
         if (ball.y > 430) lostOne = true;
@@ -1746,7 +1748,7 @@
     var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
     var player, camX = 0, platforms = [], hooks = [], coins = [], bags = [], nextX = 0;
     var score = 0, tips = 0, running = true, started = false, last = 0, hold = false, deadMsg = '';
-    var keyWireLatch = false; // Shift: tap to wire, tap again to release
+    var wireKeyHeld = false; // Shift hold-to-ride (release = let go)
     setHud([['점수', '0', 'score'], ['팁', '0', 'tips'], ['거리', '0m', 'dist'], ['최고', formatScore(best('mines', name())), 'best']]);
 
     function makePlayer() {
@@ -1855,24 +1857,17 @@
       player.canWire = true;
       fx.spark(player.x + player.w / 2, player.y + player.h, '#efd28a');
     }
-    function tryWire(fromKey) {
+    function tryWire() {
       if (!running) return;
       if (!started) started = true;
-      if (player.wired && fromKey) {
-        releaseWire();
-        return;
-      }
       if (player.wired) return;
       player.canWire = true;
       var hook = nearestHook();
       if (!hook) return;
-      if (attachWire(hook) && fromKey) {
-        keyWireLatch = true;
-        hold = true;
-      }
+      if (attachWire(hook)) hold = true;
     }
     function releaseWire() {
-      if (!player.wired) { keyWireLatch = false; return; }
+      if (!player.wired) return;
       var hook = player.hook;
       var L = player.ropeLen || 100;
       var om = player.omega || 0;
@@ -1891,7 +1886,6 @@
       player.ropeLen = null;
       player.omega = 0;
       player.wireAge = 0;
-      keyWireLatch = false;
       hold = false;
     }
     function die(reason) {
@@ -1993,7 +1987,7 @@
         if (nextX < camX + W + 500) addSegment(nextX);
 
         player.x = camX + 130;
-        if (player.wired && player.hook && (hold || keyWireLatch)) {
+        if (player.wired && player.hook && (hold || wireKeyHeld)) {
           var hx = player.hook.x, hy = player.hook.y;
           var cx = player.x + player.w / 2;
           var cy = player.y + 10;
@@ -2029,14 +2023,10 @@
           }
           player.y = ny - 10;
           player.vy = -L * player.omega * Math.sin(theta);
-          var pastHook = cx > hx + 24 && theta > 0.35;
-          var timedOut = player.wireAge > 1.2;
-          var swungFar = theta > 1.05;
-          if (pastHook || timedOut || swungFar) {
-            releaseWire();
-          }
+          // Hold-to-ride: max 2.7s then auto-release
+          if (player.wireAge > 2.7) releaseWire();
         } else {
-          if (player.wired && !hold && !keyWireLatch) releaseWire();
+          if (player.wired && !hold && !wireKeyHeld) releaseWire();
           player.vy += 1650 * dt;
           player.y += player.vy * dt;
         }
@@ -2087,16 +2077,11 @@
     }
     function down(e) {
       if (e && e.preventDefault) e.preventDefault();
-      keyWireLatch = false;
       hold = true;
       if (player && player.onGround && !player.wired) tryJump();
-      else tryWire(false);
+      else tryWire();
     }
     function up() {
-      if (keyWireLatch) {
-        hold = false;
-        return;
-      }
       hold = false;
       if (player && player.wired) releaseWire();
     }
@@ -2115,11 +2100,12 @@
       }
       if (!isWireKey(e)) return;
       e.preventDefault();
-      if (e.type === 'keydown' && !e.repeat) {
-        tryWire(true);
-      }
-      if (e.type === 'keyup' && !keyWireLatch) {
-        hold = false;
+      if (e.type === 'keydown') {
+        wireKeyHeld = true;
+        if (!e.repeat) tryWire();
+      } else if (e.type === 'keyup') {
+        wireKeyHeld = false;
+        if (player && player.wired) releaseWire();
       }
     }
     c.on(document, 'keydown', key);
@@ -2127,91 +2113,144 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 와이어(다시 누르면 해제) · 와이어는 위로 끌어올림 · 팁 수집');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 누른 동안 와이어(떼면 해제, 최대 2.7초) · 팁 수집');
     return { id: 'mines', destroy: c.destroy };
   };
 
   games.reaction = function () {
-    var c = controller(), hits = 0, misses = 0, score = 0, left = 30, round = 0, alive = true, bell = null, spawnAt = 0, hideTimer = 0, lastPos = null, complaintHits = 0;
+    var c = controller(), hits = 0, misses = 0, score = 0, left = 30, round = 0, alive = true, complaintHits = 0;
+    var targets = []; // { el, complaint, spawnAt }
+    var waveTimer = 0;
+    var COMPLAIN_PENALTY = 70;
     refs.stage.innerHTML = '<div class="hkg-reaction"></div>';
     var arena = refs.stage.firstChild;
     setHud([['남은 종', '30', 'left'], ['적중', '0', 'hits'], ['점수', '0', 'score']]);
-    function clearBell() {
-      if (hideTimer) { clearTimeout(hideTimer); hideTimer = 0; }
-      if (bell && bell.parentNode) bell.parentNode.removeChild(bell);
-      bell = null;
+    function clearTargets() {
+      if (waveTimer) { clearTimeout(waveTimer); waveTimer = 0; }
+      targets.forEach(function (t) {
+        if (t.el && t.el.parentNode) t.el.parentNode.removeChild(t.el);
+      });
+      targets = [];
     }
     function windowMs() {
-      return Math.max(1100, 1700 - round * 18);
+      return Math.max(1050, 1750 - round * 16);
     }
-    function farPos() {
-      var tries = 0, leftPct, topPct;
+    function spawnCount() {
+      if (round < 7) return 1;
+      if (round < 14) return Math.random() < 0.5 ? 2 : 1;
+      if (round < 22) return 1 + Math.floor(Math.random() * 3); // 1~3
+      return 2 + Math.floor(Math.random() * 3); // 2~4
+    }
+    function farPos(used) {
+      var tries = 0, leftPct, topPct, ok;
       do {
         leftPct = 12 + Math.random() * 76;
         topPct = 12 + Math.random() * 76;
-        tries++;
-      } while (lastPos && tries < 12 && Math.hypot(leftPct - lastPos[0], topPct - lastPos[1]) < 28);
-      lastPos = [leftPct, topPct];
-      return lastPos;
-    }
-    function spawn() {
-      if (!alive) return;
-      clearBell();
-      round++;
-      var isComplaint = Math.random() < 0.38;
-      bell = el('button', 'hkg-bell' + (isComplaint ? ' is-complaint' : ''), isComplaint ? '😠' : '🔔');
-      bell.__complaint = isComplaint;
-      var pos = farPos();
-      bell.style.left = pos[0] + '%';
-      bell.style.top = pos[1] + '%';
-      spawnAt = Date.now();
-      arena.appendChild(bell);
-      hideTimer = setTimeout(function () {
-        hideTimer = 0;
-        if (!alive || !bell) return;
-        var wasComplaint = !!bell.__complaint;
-        clearBell();
-        if (!wasComplaint) {
-          misses++; left--; hud('left', left);
-        } else {
-          // missed complaint: free pass
+        ok = true;
+        for (var i = 0; i < used.length; i++) {
+          if (Math.hypot(leftPct - used[i][0], topPct - used[i][1]) < 26) { ok = false; break; }
         }
-        if (left <= 0) finish();
-        else c.timer(spawn, 360 + Math.random() * 260);
+        tries++;
+      } while (!ok && tries < 18);
+      return [leftPct, topPct];
+    }
+    function scheduleNext() {
+      if (!alive) return;
+      if (left <= 0) { finish(); return; }
+      c.timer(spawnWave, 280 + Math.random() * 240);
+    }
+    function endWaveMissRemaining() {
+      if (!alive) return;
+      var remaining = targets.slice();
+      clearTargets();
+      remaining.forEach(function (t) {
+        if (!t.complaint) {
+          misses++;
+          left = Math.max(0, left - 1);
+        }
+      });
+      hud('left', left);
+      if (left <= 0) finish();
+      else scheduleNext();
+    }
+    function spawnWave() {
+      if (!alive || left <= 0) return;
+      clearTargets();
+      round++;
+      var count = spawnCount();
+      var used = [];
+      var now = Date.now();
+      var bellsPlanned = 0;
+      for (var i = 0; i < count; i++) {
+        var remainingSlots = count - i;
+        var bellsLeft = left - bellsPlanned;
+        // 남은 종 수보다 실종을 더 만들지 않음. 여분은 컴플레인으로.
+        var mustComplaint = bellsLeft <= 0;
+        var isComplaint = mustComplaint || (bellsLeft < remainingSlots ? Math.random() < 0.55 : Math.random() < 0.34);
+        if (!isComplaint) bellsPlanned++;
+        var btn = el('button', 'hkg-bell' + (isComplaint ? ' is-complaint' : ''), isComplaint ? '😠' : '🔔');
+        btn.__complaint = isComplaint;
+        var pos = farPos(used);
+        used.push(pos);
+        btn.style.left = pos[0] + '%';
+        btn.style.top = pos[1] + '%';
+        arena.appendChild(btn);
+        targets.push({ el: btn, complaint: isComplaint, spawnAt: now });
+      }
+      waveTimer = setTimeout(function () {
+        waveTimer = 0;
+        endWaveMissRemaining();
       }, windowMs());
     }
+    function removeTarget(t) {
+      var ix = targets.indexOf(t);
+      if (ix >= 0) targets.splice(ix, 1);
+      if (t.el && t.el.parentNode) t.el.parentNode.removeChild(t.el);
+      if (!targets.length) {
+        if (waveTimer) { clearTimeout(waveTimer); waveTimer = 0; }
+        if (left <= 0) finish();
+        else scheduleNext();
+      }
+    }
     function finish() {
-      alive = false; clearBell();
-      score = Math.max(0, hits * 55 - misses * 12 - complaintHits * 28);
+      alive = false;
+      clearTargets();
       hud('score', formatScore(score));
       gameOver(hits >= 18 ? '빠른 손!' : '라운드 종료', '적중 ' + hits + ' · 미적중 ' + misses + ' · 컴플레인 ' + complaintHits + ' · ' + formatScore(score) + '점', function () { startGame('reaction'); }, score);
     }
     c.on(arena, 'click', function (e) {
       if (!alive) return;
-      if (e.target === bell) {
-        if (bell.__complaint) {
+      var btn = e.target && e.target.closest ? e.target.closest('.hkg-bell') : e.target;
+      var hit = null;
+      for (var i = 0; i < targets.length; i++) {
+        if (targets[i].el === btn) { hit = targets[i]; break; }
+      }
+      if (hit) {
+        if (hit.complaint) {
           complaintHits++;
-          score = Math.max(0, score - 35);
+          score -= COMPLAIN_PENALTY;
           hud('score', formatScore(score));
-          floatScore(e.offsetX || arena.clientWidth / 2, e.offsetY || 40, 'COMPLAIN -35', arena);
-          clearBell();
-          c.timer(spawn, 280 + Math.random() * 220);
+          floatScore(e.offsetX || arena.clientWidth / 2, e.offsetY || 40, 'COMPLAIN -' + COMPLAIN_PENALTY, arena);
+          removeTarget(hit);
           return;
         }
-        var ms = Date.now() - spawnAt;
-        hits++; left--; score += Math.max(12, 90 - Math.floor(ms / 16));
+        var ms = Date.now() - hit.spawnAt;
+        // 빠르게 누를수록 고득점
+        var gain = Math.max(8, Math.round(140 - ms / 7));
+        hits++; left = Math.max(0, left - 1);
+        score += gain;
         hud('hits', hits); hud('left', left); hud('score', formatScore(score));
-        floatScore(e.offsetX || arena.clientWidth / 2, e.offsetY || 40, 'HIT!', arena);
-        clearBell();
-        if (left <= 0) finish();
-        else c.timer(spawn, 320 + Math.random() * 280);
-      } else {
-        misses++; score = Math.max(0, score - 6); hud('score', formatScore(score));
+        floatScore(e.offsetX || arena.clientWidth / 2, e.offsetY || 40, '+' + gain, arena);
+        removeTarget(hit);
+        return;
       }
+      misses++;
+      score -= 8;
+      hud('score', formatScore(score));
     });
-    c.timer(spawn, 600);
-    actions(function () { startGame('reaction'); }, function () { return score; }, '종 30개. 노란 컴플레인 손님을 누르면 점수가 깎입니다. 겹치지 않게 멀리 나타납니다.');
-    return { id: 'reaction', destroy: function () { clearBell(); c.destroy(); } };
+    c.timer(spawnWave, 600);
+    actions(function () { startGame('reaction'); }, function () { return score; }, '종 30개 · 반응 빠를수록 고득점 · 후반엔 여러 개 동시 등장 · 노란 컴플레인은 큰 감점(음수 기록 가능)');
+    return { id: 'reaction', destroy: function () { clearTargets(); c.destroy(); } };
   };
 
   games.dodge = function () {
@@ -2285,7 +2324,7 @@
           starCount++; hud('stars', starCount + '/3');
           fx.burst(s0.x, s0.y, '#efd28a', 14, 180);
           if (starCount >= 3) {
-            starCount = 0; coinMode = 8; hud('stars', '0/3');
+            starCount = 0; coinMode = 2; hud('stars', '0/3');
             bags.forEach(function (b) { b.coin = true; });
             floatScore(210, 80, 'COIN TIME!', refs.stage);
           }

@@ -13628,8 +13628,8 @@
   <script src="hk-night-handover.js?v=bydate-14"></script>
   <script src="hk-vip-checkin.js?v=bydate-14"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-26"></script>
-  <script src="hk-mp-games.js?v=mp-27"></script>
+  <script src="hk-games.js?v=lounge-27"></script>
+  <script src="hk-mp-games.js?v=mp-28"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -30160,8 +30160,8 @@
           saveScore: function (gameId, score) {
             if (typeof HKStorage === "undefined") return;
             var who = getOperatorName();
-            var n = Math.max(0, Math.round(Number(score) || 0));
-            if (!who || !n) return;
+            var n = Math.round(Number(score) || 0);
+            if (!who || !isFinite(n) || n === 0) return;
             var data = HKStorage.load();
             var ranks =
               typeof HKStorage.normalizeGameRanks === "function"
