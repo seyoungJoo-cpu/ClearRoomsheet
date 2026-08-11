@@ -1919,7 +1919,27 @@
     GAME_RANK_IDS.forEach(function (id) {
       boards[id] = [];
     });
-    return { updatedAt: "", resetAt: "", boards: boards };
+    return { updatedAt: "", resetAt: "", boardResetAt: {}, boards: boards };
+  }
+
+  function normalizeBoardResetAt(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object") return out;
+    GAME_RANK_IDS.forEach(function (id) {
+      var v = raw[id] != null ? String(raw[id]).trim() : "";
+      if (v) out[id] = v;
+    });
+    return out;
+  }
+
+  function effectiveBoardResetAt(ranks, id) {
+    var globalAt = ranks && ranks.resetAt ? String(ranks.resetAt) : "";
+    var boardAt =
+      ranks && ranks.boardResetAt && ranks.boardResetAt[id]
+        ? String(ranks.boardResetAt[id])
+        : "";
+    if (globalAt && boardAt) return String(globalAt) >= String(boardAt) ? globalAt : boardAt;
+    return boardAt || globalAt || "";
   }
 
   function normalizeGameRankEntry(raw) {
@@ -1939,15 +1959,16 @@
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
     d.resetAt = raw.resetAt != null ? String(raw.resetAt) : "";
+    d.boardResetAt = normalizeBoardResetAt(raw.boardResetAt);
     var src = raw.boards && typeof raw.boards === "object" ? raw.boards : raw;
-    var resetAt = d.resetAt;
     GAME_RANK_IDS.forEach(function (id) {
       var list = Array.isArray(src[id]) ? src[id] : [];
+      var cut = effectiveBoardResetAt(d, id);
       var byName = {};
       list.forEach(function (row) {
         var n = normalizeGameRankEntry(row);
         if (!n) return;
-        if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
+        if (cut && (!n.at || String(n.at) < String(cut))) return;
         var prev = byName[n.name];
         if (!prev || n.score > prev.score) byName[n.name] = n;
       });
@@ -1978,7 +1999,7 @@
     var baseHasAny = GAME_RANK_IDS.some(function (id) {
       return (base.boards[id] || []).length > 0;
     });
-    // Intentional wipe: password reset sets BOTH newer resetAt and empty boards.
+    // Intentional full wipe: password reset sets BOTH newer resetAt and empty boards.
     var intentionalEmptyReset =
       !incHasAny &&
       !!incReset &&
@@ -1987,9 +2008,10 @@
     if (intentionalEmptyReset) {
       out.updatedAt = incAt;
       out.resetAt = incReset;
+      out.boardResetAt = normalizeBoardResetAt(inc.boardResetAt);
       return out;
     }
-    // Empty/stale boards must never advance resetAt or wipe existing high scores.
+    // Empty/stale boards must never advance global resetAt or wipe existing high scores.
     if (!incHasAny && baseHasAny) {
       out.updatedAt = baseAt || incAt;
       out.resetAt = baseReset || incReset;
@@ -2001,14 +2023,21 @@
           ? incReset
           : baseReset || incReset;
     }
-    var resetAt = out.resetAt;
+    // Per-game reset stamps: keep the newer stamp for each board.
+    GAME_RANK_IDS.forEach(function (id) {
+      var ba = (base.boardResetAt && base.boardResetAt[id]) || "";
+      var ia = (inc.boardResetAt && inc.boardResetAt[id]) || "";
+      if (ia && (!ba || String(ia) >= String(ba))) out.boardResetAt[id] = ia;
+      else if (ba) out.boardResetAt[id] = ba;
+    });
     GAME_RANK_IDS.forEach(function (id) {
       var byName = {};
+      var cut = effectiveBoardResetAt(out, id);
       [base.boards[id] || [], inc.boards[id] || []].forEach(function (list) {
         list.forEach(function (row) {
           var n = normalizeGameRankEntry(row);
           if (!n) return;
-          if (resetAt && (!n.at || String(n.at) < String(resetAt))) return;
+          if (cut && (!n.at || String(n.at) < String(cut))) return;
           var prev = byName[n.name];
           if (!prev || n.score > prev.score) byName[n.name] = n;
         });

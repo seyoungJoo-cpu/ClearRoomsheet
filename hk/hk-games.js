@@ -123,7 +123,7 @@
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:transform .16s ease,background .12s,box-shadow .16s}.hkg-tile.is-merge{animation:hkg-merge-pop .28s ease}.hkg-tile.is-spawn{animation:hkg-tile-spawn .22s ease}@keyframes hkg-merge-pop{0%{transform:scale(.82);box-shadow:0 0 0 0 #efd28a00}45%{transform:scale(1.14);box-shadow:0 0 22px #efd28aaa}100%{transform:scale(1);box-shadow:0 0 0 0 #efd28a00}}@keyframes hkg-tile-spawn{from{transform:scale(.55);opacity:.35}to{transform:scale(1);opacity:1}}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory-frame{width:min(100%,340px);aspect-ratio:3/4;height:auto;max-height:min(72vh,560px);margin:auto;display:flex;align-items:center;justify-content:center}.hkg-memory{width:100%;height:100%;display:grid;gap:6px;margin:0;perspective:900px;-webkit-user-select:none;user-select:none;box-sizing:border-box}.hkg-memory.wave .hkg-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}.hkg-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(22px,4.6vw,40px);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;text-align:center;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#f0dfa8;color:#142826;text-shadow:0 1px 0 #fff6}.hkg-memory-card .hkg-memory-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;transform:rotateY(180deg)}.hkg-memory-card.done{background:#9fcbb0;opacity:.78}.hkg-memory-setup{width:min(100%,520px);margin:auto;text-align:center}.hkg-memory-setup h3{font-family:Georgia,serif;color:#efd28a;margin:0 0 12px;font-size:22px}.hkg-memory-sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:104px;height:104px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}.hkg-bell.is-complaint{background:radial-gradient(circle at 30% 25%,#fff8,#f6e05e 40%,#d69e2e);font-size:40px;box-shadow:0 8px 24px #0007,0 0 0 2px #f6e05e88}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
-      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
+      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-reset-modal{position:fixed;inset:0;z-index:10003;display:none;place-items:center;background:#061218cc;padding:18px;box-sizing:border-box}.hkg-reset-modal.show{display:grid}.hkg-reset-box{width:min(520px,100%);max-height:min(80vh,640px);overflow:auto;padding:22px 20px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;box-shadow:0 16px 40px #0008}.hkg-reset-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:24px;margin-bottom:6px}.hkg-reset-box p{margin:0 0 14px;color:#b1c1bd;font-size:13px}.hkg-reset-list{display:grid;gap:8px;margin:0 0 12px}.hkg-reset-list button{appearance:none;width:100%;text-align:left;border:1px solid #ffffff1c;background:#0a1c20;color:#f5f0df;border-radius:12px;padding:11px 13px;cursor:pointer;font:inherit}.hkg-reset-list button:hover{border-color:#cbb27088;background:#123034}.hkg-reset-list button.all{background:linear-gradient(135deg,#3a2f14,#1f2a1e);border-color:#cbb27066;color:#efd28a;font-weight:700}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
     document.head.appendChild(style);
@@ -131,7 +131,7 @@
     root.innerHTML =
       '<div class="hkg-shell"><header class="hkg-top"><div class="hkg-brand"><button type="button" class="hkg-mark" title="랭킹 초기화" aria-label="랭킹 초기화">L</button><div><span class="hkg-eyebrow">Front Lounge</span><strong>Lotte Break</strong></div></div><button class="hkg-btn icon hkg-close" aria-label="닫기">✕</button></header>' +
       '<main class="hkg-hub"><section class="hkg-hero"><span class="hkg-eyebrow">A moment for yourself</span><h1>Lotte Break</h1><p>잠깐의 휴식, 가볍게 즐기고 동료들과 기록을 나눠보세요.</p><div class="hkg-who"></div></section><section class="hkg-grid"></section></main>' +
-      '<main class="hkg-game"><header class="hkg-game-head"><button class="hkg-btn hkg-back">← 라운지</button><h1></h1><div class="hkg-hud"></div></header><div class="hkg-layout"><section class="hkg-stage"><div class="hkg-stage-inner"></div><div class="hkg-pause" aria-hidden="true"><div class="hkg-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div><div class="hkg-message"><div class="hkg-message-box"></div></div></section><aside class="hkg-ranking"></aside></div></main></div><div class="hkg-toast" role="status"></div>';
+      '<main class="hkg-game"><header class="hkg-game-head"><button class="hkg-btn hkg-back">← 라운지</button><h1></h1><div class="hkg-hud"></div></header><div class="hkg-layout"><section class="hkg-stage"><div class="hkg-stage-inner"></div><div class="hkg-pause" aria-hidden="true"><div class="hkg-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div><div class="hkg-message"><div class="hkg-message-box"></div></div></section><aside class="hkg-ranking"></aside></div></main></div><div class="hkg-toast" role="status"></div><div class="hkg-reset-modal" aria-hidden="true"><div class="hkg-reset-box"><strong>랭킹 초기화</strong><p>전체 또는 게임별로 초기화할 수 있습니다.</p><div class="hkg-reset-list"></div><button type="button" class="hkg-btn hkg-reset-cancel" style="width:100%">취소</button></div></div>';
     document.body.appendChild(root);
     refs.hub = root.querySelector('.hkg-hub');
     refs.grid = root.querySelector('.hkg-grid');
@@ -143,10 +143,55 @@
     refs.pause = root.querySelector('.hkg-pause');
     refs.ranking = root.querySelector('.hkg-ranking');
     refs.toast = root.querySelector('.hkg-toast');
+    refs.resetModal = root.querySelector('.hkg-reset-modal');
+    refs.resetList = root.querySelector('.hkg-reset-list');
     root.querySelector('.hkg-close').addEventListener('click', close);
     root.querySelector('.hkg-back').addEventListener('click', showHub);
     root.querySelector('.hkg-mark').addEventListener('click', promptResetRanks);
+    root.querySelector('.hkg-reset-cancel').addEventListener('click', hideResetModal);
+    if (refs.resetModal) {
+      refs.resetModal.addEventListener('click', function (e) {
+        if (e.target === refs.resetModal) hideResetModal();
+      });
+    }
     document.addEventListener('keydown', globalKey);
+  }
+  function rankGameIds() {
+    return GAME_IDS.filter(function (id) { return MP_IDS.indexOf(id) < 0; });
+  }
+  function hideResetModal() {
+    if (!refs.resetModal) return;
+    refs.resetModal.classList.remove('show');
+    refs.resetModal.setAttribute('aria-hidden', 'true');
+  }
+  function showResetModal() {
+    if (!refs.resetModal || !refs.resetList) return;
+    var ids = rankGameIds();
+    refs.resetList.innerHTML =
+      '<button type="button" class="all" data-reset="*">전체 게임 랭킹 초기화</button>' +
+      ids.map(function (id) {
+        var m = META[id] || { icon: '🎮', name: id };
+        return '<button type="button" data-reset="' + id + '">' + m.icon + ' ' + m.name + '</button>';
+      }).join('');
+    Array.prototype.forEach.call(refs.resetList.querySelectorAll('[data-reset]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-reset');
+        var label = target === '*' ? '모든 미니게임 랭킹' : ((META[target] && META[target].name) || target) + ' 랭킹';
+        if (!window.confirm(label + '을(를) 초기화할까요?')) return;
+        try {
+          if (config.resetRanks) config.resetRanks(target === '*' ? null : target);
+          hideResetModal();
+          toast(label + '이(가) 초기화되었습니다');
+          if (active && active.id) renderRanking(active.id);
+          else renderHub();
+        } catch (err) {
+          toast('랭킹 초기화에 실패했습니다');
+          if (window.console) console.error(err);
+        }
+      });
+    });
+    refs.resetModal.classList.add('show');
+    refs.resetModal.setAttribute('aria-hidden', 'false');
   }
   function promptResetRanks() {
     var pw = window.prompt('랭킹을 초기화하려면 비밀번호를 입력하세요.');
@@ -155,17 +200,7 @@
       toast('비밀번호가 올바르지 않습니다');
       return;
     }
-    if (!window.confirm('모든 미니게임 랭킹을 초기화할까요?')) return;
-    try {
-      if (config.resetRanks) config.resetRanks();
-      toast('랭킹이 초기화되었습니다');
-      if (active && active.id) renderRanking(active.id);
-      else if (refs.hub && refs.hub.offsetParent !== null) renderHub();
-      else renderHub();
-    } catch (err) {
-      toast('랭킹 초기화에 실패했습니다');
-      if (window.console) console.error(err);
-    }
+    showResetModal();
   }
   function globalKey(e) {
     if (!root || !root.classList.contains('open')) return;
@@ -185,6 +220,7 @@
     }
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (refs.resetModal && refs.resetModal.classList.contains('show')) { hideResetModal(); return; }
       if (gamePaused) { setGamePaused(false); return; }
       if (active) showHub(); else close();
     }

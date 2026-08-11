@@ -13614,7 +13614,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-18"></script>
+  <script src="hk-storage.js?v=bydate-19"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -13628,7 +13628,7 @@
   <script src="hk-night-handover.js?v=bydate-14"></script>
   <script src="hk-vip-checkin.js?v=bydate-14"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-31"></script>
+  <script src="hk-games.js?v=lounge-32"></script>
   <script src="hk-mp-games.js?v=mp-28"></script>
   <script>
     (function () {
@@ -30194,19 +30194,39 @@
               HKSync.pushStorageNow();
             }
           },
-          resetRanks: function () {
+          resetRanks: function (gameId) {
             if (typeof HKStorage === "undefined") return;
             var data = HKStorage.load();
             var now = new Date().toISOString();
             var ranks =
               typeof HKStorage.normalizeGameRanks === "function"
-                ? HKStorage.normalizeGameRanks({})
-                : { updatedAt: "", resetAt: "", boards: {} };
-            ranks.updatedAt = now;
-            ranks.resetAt = now;
-            Object.keys(ranks.boards || {}).forEach(function (id) {
-              ranks.boards[id] = [];
-            });
+                ? HKStorage.normalizeGameRanks(data.gameRanks || {})
+                : { updatedAt: "", resetAt: "", boardResetAt: {}, boards: {} };
+            if (!ranks.boards) ranks.boards = {};
+            if (!ranks.boardResetAt || typeof ranks.boardResetAt !== "object") ranks.boardResetAt = {};
+            var only = gameId != null && String(gameId).trim() ? String(gameId).trim() : "";
+            if (only) {
+              ranks.boards[only] = [];
+              ranks.boardResetAt[only] = now;
+              ranks.updatedAt = now;
+            } else {
+              ranks.updatedAt = now;
+              ranks.resetAt = now;
+              ranks.boardResetAt = {};
+              Object.keys(ranks.boards || {}).forEach(function (id) {
+                ranks.boards[id] = [];
+              });
+            }
+            if (typeof HKStorage.normalizeGameRanks === "function") {
+              ranks = HKStorage.normalizeGameRanks(ranks);
+              // normalize may drop empty boardResetAt entries before we stamp; re-apply after if only
+              if (only) {
+                if (!ranks.boardResetAt) ranks.boardResetAt = {};
+                ranks.boardResetAt[only] = now;
+                ranks.boards[only] = [];
+                ranks.updatedAt = now;
+              }
+            }
             data.gameRanks = ranks;
             HKStorage.save(data, { skipSync: true });
             if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
