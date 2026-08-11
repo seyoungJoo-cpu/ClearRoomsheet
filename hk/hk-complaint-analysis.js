@@ -1,5 +1,5 @@
 /**
- * 고객불편사항 유형분석 — 등록·인라인 수정 · 유형별 월 집계
+ * 고객불편사항 유형분석 — 등록·목록 클릭 후 폼에서 수정 · 유형별 월 집계
  * 마감해도 유지 (hkStorage.complaintTypeAnalysis)
  */
 (function (global) {
@@ -32,6 +32,7 @@
   var activePage = 1;
   var formTypeId = "";
   var formRoomChange = false;
+  var editingId = "";
   var statsYear = "all";
   var bound = false;
 
@@ -167,6 +168,7 @@
   }
 
   function resetForm() {
+    editingId = "";
     formTypeId = "";
     formRoomChange = false;
     var res = document.getElementById("complaintReservationNo");
@@ -182,6 +184,29 @@
     }
     syncFormTypeUi();
     syncFormRoomChangeUi();
+    syncFormModeUi();
+  }
+
+  function syncFormModeUi() {
+    var submitBtn = document.querySelector("#complaintForm button[type='submit']");
+    if (submitBtn) {
+      submitBtn.textContent = editingId ? "수정 저장" : "등록";
+    }
+    var hint = document.getElementById("complaintEditHint");
+    if (hint) {
+      hint.hidden = !editingId;
+      hint.textContent = editingId
+        ? "목록에서 선택한 항목을 수정 중입니다. 저장하거나 취소를 누르세요."
+        : "";
+    }
+    var cancelBtn = document.getElementById("btnComplaintEditCancel");
+    if (cancelBtn) cancelBtn.hidden = !editingId;
+    var tbody = document.getElementById("complaintTableBody");
+    if (tbody) {
+      tbody.querySelectorAll("tr[data-id]").forEach(function (tr) {
+        tr.classList.toggle("is-editing", !!editingId && tr.getAttribute("data-id") === editingId);
+      });
+    }
   }
 
   function fitMemoHeight(el) {
@@ -227,80 +252,45 @@
     records.forEach(function (row) {
       var tr = document.createElement("tr");
       tr.setAttribute("data-id", row.id);
+      if (editable) {
+        tr.classList.add("is-clickable");
+        tr.title = "클릭하여 위 입력칸에서 수정";
+      }
+      if (editingId && row.id === editingId) tr.classList.add("is-editing");
 
       var tdDate = document.createElement("td");
       tdDate.className = "complaint-td-date complaint-td-narrow";
-      if (editable) {
-        var dateInp = document.createElement("input");
-        dateInp.type = "date";
-        dateInp.className = "complaint-cell-input";
-        dateInp.value = toDateInputValue(row.createdAt);
-        dateInp.setAttribute("data-field", "createdAt");
-        tdDate.appendChild(dateInp);
-      } else {
-        tdDate.textContent = formatDateDisplay(row.createdAt);
-      }
+      tdDate.textContent = formatDateDisplay(row.createdAt);
       tr.appendChild(tdDate);
 
       ["reservationNo", "guestName", "roomNo", "memo"].forEach(function (field) {
         var td = document.createElement("td");
         if (field === "memo") td.className = "complaint-td-memo";
         else td.className = "complaint-td-narrow";
-        if (editable) {
-          var inp = document.createElement("input");
-          inp.type = "text";
-          inp.className = "complaint-cell-input";
-          inp.value = row[field] || "";
-          inp.setAttribute("data-field", field);
-          if (field === "memo") inp.setAttribute("maxlength", "200");
-          td.appendChild(inp);
-        } else {
-          td.textContent = row[field] || "—";
-        }
+        td.textContent = row[field] || "—";
         tr.appendChild(td);
       });
 
       var tdType = document.createElement("td");
       tdType.className = "complaint-td-type complaint-td-narrow";
-      if (editable) {
-        var sel = document.createElement("select");
-        sel.className = "complaint-cell-select";
-        sel.setAttribute("data-field", "typeId");
-        var optEmpty = document.createElement("option");
-        optEmpty.value = "";
-        optEmpty.textContent = "선택";
-        sel.appendChild(optEmpty);
-        TYPE_OPTIONS.forEach(function (t) {
-          var o = document.createElement("option");
-          o.value = t.id;
-          o.textContent = t.label;
-          if (String(row.typeId) === t.id) o.selected = true;
-          sel.appendChild(o);
-        });
-        tdType.appendChild(sel);
-      } else {
-        tdType.textContent = typeLabelById[row.typeId] || "—";
-      }
+      tdType.textContent = typeLabelById[row.typeId] || "—";
       tr.appendChild(tdType);
 
       var tdChange = document.createElement("td");
       tdChange.className = "complaint-td-roomchange";
-      if (editable) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className =
-          "complaint-ox-btn" + (row.roomChange ? " is-o" : " is-x");
-        btn.setAttribute("data-field", "roomChange");
-        btn.textContent = row.roomChange ? "O" : "X";
-        tdChange.appendChild(btn);
-      } else {
-        tdChange.textContent = row.roomChange ? "O" : "X";
-      }
+      tdChange.textContent = row.roomChange ? "O" : "X";
       tr.appendChild(tdChange);
 
       var tdAct = document.createElement("td");
       tdAct.className = "complaint-td-actions";
       if (editable) {
+        var edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "complaint-row-edit";
+        edit.setAttribute("data-action", "edit");
+        edit.title = "수정";
+        edit.textContent = "수정";
+        tdAct.appendChild(edit);
         var del = document.createElement("button");
         del.type = "button";
         del.className = "complaint-row-del";
@@ -313,6 +303,42 @@
 
       tbody.appendChild(tr);
     });
+  }
+
+  function loadRecordIntoForm(id) {
+    if (!canEdit() || !id) return;
+    var pack = loadPack();
+    var row = null;
+    (pack.records || []).forEach(function (r) {
+      if (r && r.id === id) row = r;
+    });
+    if (!row) return;
+    editingId = id;
+    formTypeId = row.typeId != null ? String(row.typeId) : "";
+    formRoomChange = !!row.roomChange;
+    var res = document.getElementById("complaintReservationNo");
+    var name = document.getElementById("complaintGuestName");
+    var room = document.getElementById("complaintRoomNo");
+    var memo = document.getElementById("complaintMemo");
+    if (res) res.value = row.reservationNo || "";
+    if (name) name.value = row.guestName || "";
+    if (room) room.value = row.roomNo || "";
+    if (memo) {
+      memo.value = row.memo || "";
+      fitMemoHeight(memo);
+    }
+    syncFormTypeUi();
+    syncFormRoomChangeUi();
+    syncFormModeUi();
+    var form = document.getElementById("complaintForm");
+    if (form && form.scrollIntoView) {
+      form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    if (res) {
+      try {
+        res.focus();
+      } catch (eFocus) {}
+    }
   }
 
   function buildStatsGrid(records, yearFilter) {
@@ -528,6 +554,38 @@
     var stamp = new Date().toISOString();
     var pack = loadPack();
     var records = (pack.records || []).slice();
+
+    if (editingId) {
+      var idx = -1;
+      for (var i = 0; i < records.length; i++) {
+        if (records[i] && records[i].id === editingId) {
+          idx = i;
+          break;
+        }
+      }
+      if (idx < 0) {
+        opts.toast("수정할 항목을 찾지 못했습니다.");
+        resetForm();
+        renderTable();
+        return;
+      }
+      var prev = records[idx] || {};
+      records[idx] = Object.assign({}, prev, {
+        updatedAt: stamp,
+        reservationNo: reservationNo,
+        guestName: guestName,
+        roomNo: roomNo,
+        memo: memo,
+        typeId: formTypeId,
+        roomChange: !!formRoomChange,
+      });
+      persistRecords(records, stamp);
+      resetForm();
+      renderTable();
+      opts.toast("불편사항이 수정되었습니다.");
+      return;
+    }
+
     records.push({
       id: makeId(),
       createdAt: stamp,
@@ -551,36 +609,6 @@
     });
   }
 
-  function updateRecordField(id, field, value) {
-    if (!canEdit()) return;
-    var pack = loadPack();
-    var records = (pack.records || []).slice();
-    var idx = -1;
-    for (var i = 0; i < records.length; i++) {
-      if (records[i] && records[i].id === id) {
-        idx = i;
-        break;
-      }
-    }
-    if (idx < 0) return;
-    var row = Object.assign({}, records[idx]);
-    var stamp = new Date().toISOString();
-    if (field === "createdAt") {
-      row.createdAt = dateIsoFromInput(value, row.createdAt);
-    } else if (field === "roomChange") {
-      row.roomChange = !!value;
-    } else if (field === "typeId") {
-      row.typeId = String(value || "");
-    } else if (field === "reservationNo" || field === "guestName" || field === "roomNo" || field === "memo") {
-      row[field] = String(value || "").trim();
-    } else {
-      return;
-    }
-    row.updatedAt = stamp;
-    records[idx] = row;
-    persistRecords(records, stamp);
-  }
-
   function deleteRecord(id) {
     if (!canEdit()) return;
     if (!confirm("이 행을 삭제할까요?")) return;
@@ -590,6 +618,7 @@
       return r && r.id !== id;
     });
     persistRecords(records, stamp);
+    if (editingId === id) resetForm();
     renderTable();
     opts.toast("삭제되었습니다.");
   }
@@ -623,6 +652,16 @@
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         addRecord();
+      });
+    }
+
+    var cancelEditBtn = document.getElementById("btnComplaintEditCancel");
+    if (cancelEditBtn && !cancelEditBtn.__hkComplaintCancelBound) {
+      cancelEditBtn.__hkComplaintCancelBound = true;
+      cancelEditBtn.addEventListener("click", function () {
+        resetForm();
+        renderTable();
+        opts.toast("수정을 취소했습니다.");
       });
     }
 
@@ -694,35 +733,21 @@
 
     var tbody = document.getElementById("complaintTableBody");
     if (tbody) {
-      tbody.addEventListener("change", function (e) {
-        var el = e.target;
-        var tr = el.closest("tr[data-id]");
-        if (!tr || !tbody.contains(tr)) return;
-        var id = tr.getAttribute("data-id");
-        var field = el.getAttribute("data-field");
-        if (!id || !field) return;
-        updateRecordField(id, field, el.value);
-        if (field === "createdAt") {
-          // date change may affect page2 — rebuild sort order
-          renderTable();
-        }
-      });
       tbody.addEventListener("click", function (e) {
         var del = e.target.closest('[data-action="delete"]');
         if (del) {
+          e.preventDefault();
+          e.stopPropagation();
           var trDel = del.closest("tr[data-id]");
           if (trDel) deleteRecord(trDel.getAttribute("data-id"));
           return;
         }
-        var ox = e.target.closest('[data-field="roomChange"]');
-        if (ox) {
-          var trOx = ox.closest("tr[data-id]");
-          if (!trOx) return;
-          var next = ox.textContent.trim() !== "O";
-          updateRecordField(trOx.getAttribute("data-id"), "roomChange", next);
-          ox.textContent = next ? "O" : "X";
-          ox.classList.toggle("is-o", next);
-          ox.classList.toggle("is-x", !next);
+        var editBtn = e.target.closest('[data-action="edit"]');
+        var tr = e.target.closest("tr[data-id]");
+        if (!tr || !tbody.contains(tr)) return;
+        if (!canEdit()) return;
+        if (editBtn || !e.target.closest("button")) {
+          loadRecordIntoForm(tr.getAttribute("data-id"));
         }
       });
     }

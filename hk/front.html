@@ -731,11 +731,12 @@
     .notice-board {
       flex: 1;
       min-width: 0;
-      /* 기본 최소 높이 = 글씨 4줄, 긴 공지는 스크롤·2단 단으로 확장 */
+      /* 왼쪽 5줄까지 채운 뒤 오른쪽 다단으로 흐름 */
       --notice-font: 0.875rem;
       --notice-lh: 1.35;
+      --notice-lines: 5;
       height: auto;
-      min-height: calc(var(--notice-font) * var(--notice-lh) * 4 + 12px);
+      min-height: calc(var(--notice-font) * var(--notice-lh) * var(--notice-lines) + 12px);
       max-height: min(40vh, 280px);
       border: 1px solid #fbbf24;
       border-radius: 6px;
@@ -773,9 +774,11 @@
       -webkit-line-clamp: unset;
       line-clamp: unset;
       word-break: break-word;
-      max-height: none;
       column-count: 2;
       column-gap: 16px;
+      column-fill: auto;
+      height: calc(var(--notice-font) * var(--notice-lh) * var(--notice-lines));
+      max-height: none;
     }
 
     @media (max-width: 700px) {
@@ -8945,6 +8948,38 @@
       cursor: pointer;
     }
 
+    .complaint-row-edit {
+      height: 28px;
+      margin-right: 4px;
+      padding: 0 8px;
+      border: 1px solid #99f6e4;
+      border-radius: 6px;
+      background: #f0fdfa;
+      color: #0f766e;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .complaint-table tbody tr.is-clickable {
+      cursor: pointer;
+    }
+
+    .complaint-table tbody tr.is-clickable:hover {
+      background: #f0fdfa;
+    }
+
+    .complaint-table tbody tr.is-editing {
+      background: #ccfbf1;
+      outline: 2px solid #14b8a6;
+      outline-offset: -2px;
+    }
+
+    .complaint-edit-cancel-btn {
+      background: #64748b !important;
+    }
+
     .complaint-table-empty,
     .complaint-stats-empty {
       margin: 8px 0 0;
@@ -10770,7 +10805,11 @@
                 </div>
               </div>
               <button type="submit" class="btn-order">등록</button>
+              <button type="button" class="btn-order complaint-edit-cancel-btn" id="btnComplaintEditCancel" hidden>
+                수정 취소
+              </button>
             </div>
+            <p class="complaint-panel__hint" id="complaintEditHint" hidden></p>
             <div class="complaint-type-block">
               <span>유형</span>
               <div class="complaint-type-chips" id="complaintTypeChips" role="group" aria-label="불편 유형"></div>
@@ -12017,7 +12056,7 @@
       }
 
       function isRegularOrder(entry) {
-        return entry && !isFacilityOrder(entry);
+        return entry && !isFacilityOrder(entry) && !isAutoRobotOrder(entry);
       }
 
       function isZoneRoomManageEditing() {
@@ -21094,7 +21133,8 @@
         btn.type = "button";
         btn.className = "order-feedback__accept-btn";
         btn.setAttribute("data-order-id", entry && entry.id != null ? String(entry.id) : "");
-        btn.textContent = "접수";
+        btn.textContent = "확인";
+        btn.setAttribute("aria-label", "도우미 로봇 알림 확인");
         acts.appendChild(btn);
         li.appendChild(head);
         li.appendChild(memo);
@@ -22841,11 +22881,13 @@
             });
             return;
           }
-          entry.phase = "accepted";
-          entry.acceptedAt = new Date().toISOString();
-          entry.acceptedBy = getOperatorName();
-          // 도우미 로봇 오더는 접수와 동시에 투입완료로 이동
-          completeOrderDeployment(orderId, { auto: true });
+          // 도우미 로봇 알림: 접수하면 기록 없이 바로 제거
+          orderLogEntries = orderLogEntries.filter(function (e) {
+            return !(e && e.id === orderId);
+          });
+          saveOrderLog();
+          renderOrderPanels({ force: true });
+          renderRequestLogPanel({ force: true });
           return;
         }
         if (frontMode) {
@@ -24159,7 +24201,8 @@
             robotAcceptBtn.type = "button";
             robotAcceptBtn.className = "order-feedback__accept-btn";
             robotAcceptBtn.setAttribute("data-order-id", entry.id || "");
-            robotAcceptBtn.textContent = "접수";
+            robotAcceptBtn.textContent = "확인";
+            robotAcceptBtn.setAttribute("aria-label", "도우미 로봇 알림 확인");
             robotAcceptActs.appendChild(robotAcceptBtn);
             li.appendChild(robotAcceptActs);
           } else if (frontMode && entry.fromMaint && !isFacilityAlertList) {
@@ -25171,6 +25214,31 @@
         if (noticeImage) noticeImage.hidden = true;
       }
 
+      function layoutNoticeColumns() {
+        if (!noticeText) return;
+        var cs = window.getComputedStyle(noticeText);
+        var fontSize = parseFloat(cs.fontSize) || 14;
+        var lh = parseFloat(cs.lineHeight);
+        if (!isFinite(lh) || lh < fontSize) lh = fontSize * 1.35;
+        var baseLines = 5;
+        var text = noticeText.textContent != null ? String(noticeText.textContent) : "";
+        if (!text.trim()) {
+          noticeText.style.height = lh * baseLines + "px";
+          return;
+        }
+        // 왼쪽 5줄을 먼저 채운 뒤 오른쪽으로 넘어가도록 높이(=단 높이)를 계산
+        var colWidth = Math.max(80, (noticeText.clientWidth || 320) / 2 - 8);
+        var charsPerLine = Math.max(8, Math.floor(colWidth / (fontSize * 0.62)));
+        var approxLines = text.split(/\n/).reduce(function (sum, line) {
+          var len = Array.from(String(line || " ")).length || 1;
+          return sum + Math.max(1, Math.ceil(len / charsPerLine));
+        }, 0);
+        var rowsNeeded = Math.max(baseLines, Math.ceil(approxLines / 2));
+        var maxRows = Math.floor((Math.min(window.innerHeight * 0.4, 280) - 12) / lh) || baseLines;
+        if (rowsNeeded > maxRows) rowsNeeded = maxRows;
+        noticeText.style.height = lh * rowsNeeded + "px";
+      }
+
       function applyNotice(opts) {
         opts = opts || {};
         if (!noticeText) return;
@@ -25192,6 +25260,9 @@
         noticeChangeReady = true;
         noticeText.textContent = next;
         renderNoticeImages(nextImages);
+        requestAnimationFrame(function () {
+          layoutNoticeColumns();
+        });
       }
 
       function saveMbInvNoticePatch(patch) {
