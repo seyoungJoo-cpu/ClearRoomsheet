@@ -10367,7 +10367,7 @@
     .main .sched-cards-list > .sched-req-card.is-strip-cols,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols {
       display: grid;
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr);
       gap: 6px 12px;
       align-items: center;
       width: 100%;
@@ -10376,6 +10376,10 @@
       padding: 10px 14px;
       font-size: 0.875rem;
       line-height: 1.4;
+    }
+
+    .hk-strip-sort[data-sort-list="schedCards"] {
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr);
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
@@ -10421,12 +10425,26 @@
       font-weight: inherit;
     }
 
-    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .sched-req-card__received,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .sched-req-card__received {
-      margin-top: 2px;
-      font-size: 0.5625rem;
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--received,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--received {
+      font-size: 0.8125rem;
+      min-width: 0;
+      line-height: 1.35;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--received .sched-req-card__received,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--received .sched-req-card__received {
+      margin: 0;
+      font-size: 0.8125rem;
       font-weight: 600;
-      line-height: 1.3;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--received .hk-time-em,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--received .hk-time-em {
+      font-size: 0.9rem;
+      font-weight: 700;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
@@ -15013,6 +15031,9 @@
         { id: "status", label: "상태" },
         { id: "memo", label: "메모" },
       ];
+      var SCHED_STRIP_SORT_COLS = STRIP_SORT_COLS.concat([
+        { id: "received", label: "접수 시간" },
+      ]);
 
       function getStripSortState(listKey) {
         return stripSortStateByList[listKey] || { col: "", dir: "" };
@@ -15054,7 +15075,9 @@
             numeric: true,
           });
         }
-        if (col === "time") return parseStripSortTime(aVal) - parseStripSortTime(bVal);
+        if (col === "time" || col === "received") {
+          return parseStripSortTime(aVal) - parseStripSortTime(bVal);
+        }
         return String(aVal || "").localeCompare(String(bVal || ""), undefined, {
           numeric: true,
           sensitivity: "base",
@@ -15096,8 +15119,9 @@
         }
       }
 
-      function ensureStripSortHead(listEl, listKey, rerenderFn) {
+      function ensureStripSortHead(listEl, listKey, rerenderFn, cols) {
         if (!listEl || !listEl.parentNode) return null;
+        var sortCols = cols && cols.length ? cols : STRIP_SORT_COLS;
         var prev = listEl.previousElementSibling;
         var head;
         if (
@@ -15106,13 +15130,20 @@
           prev.classList.contains("hk-strip-sort") &&
           prev.getAttribute("data-sort-list") === listKey
         ) {
-          head = prev;
-        } else {
+          var existingBtns = prev.querySelectorAll(".hk-strip-sort__btn");
+          if (existingBtns.length !== sortCols.length) {
+            prev.parentNode.removeChild(prev);
+            head = null;
+          } else {
+            head = prev;
+          }
+        }
+        if (!head) {
           head = document.createElement("div");
           head.className = "hk-strip-sort";
           head.setAttribute("data-sort-list", listKey);
           head.setAttribute("role", "row");
-          STRIP_SORT_COLS.forEach(function (c) {
+          sortCols.forEach(function (c) {
             var btn = document.createElement("button");
             btn.type = "button";
             btn.className = "hk-strip-sort__btn";
@@ -26083,7 +26114,7 @@
         if (!ul) return;
         ensureStripSortHead(ul, "schedCards", function () {
           renderSchedRequestCards();
-        });
+        }, SCHED_STRIP_SORT_COLS);
         hkChatCaptureSticks(
           "#schedRequestCardList .order-chat__messages, #confirmingRequestCardList .order-chat__messages, #confirmingRequestCardListMain .order-chat__messages, #confirmingRequestCardListAnnex .order-chat__messages, .sched-type-group__list .order-chat__messages",
           "sched",
@@ -26129,6 +26160,9 @@
                 " " +
                 String(e.memo2 != null ? e.memo2 : "").trim()
               );
+            },
+            received: function (e) {
+              return e && e.at;
             },
           },
           stripOldestCmp(function (e) {
@@ -26253,11 +26287,16 @@
             hkAppendImageEl(m2P, memo2SchedImg);
             memoCell.appendChild(m2P);
           }
+
+          var receivedCell = document.createElement("div");
+          receivedCell.className = "hk-strip-cell hk-strip-cell--received";
           if (entry.at) {
             var acc = document.createElement("p");
             acc.className = "sched-req-card__received";
             setLineWithEmTime(acc, "접수 ", formatReqAt(entry.at));
-            memoCell.appendChild(acc);
+            receivedCell.appendChild(acc);
+          } else {
+            receivedCell.textContent = "—";
           }
 
           li.appendChild(roomCell);
@@ -26265,6 +26304,7 @@
           li.appendChild(timeCell);
           li.appendChild(statusCell);
           li.appendChild(memoCell);
+          li.appendChild(receivedCell);
 
           if (maintenanceMode || frontMode) {
             var actions = document.createElement("div");
