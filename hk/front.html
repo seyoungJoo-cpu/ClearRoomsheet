@@ -10006,6 +10006,114 @@
       background: #f1f5f9;
     }
 
+    /* 고객불편사항 유형분석만 — 글씨 키우고 진하게 (Track IT 제외) */
+    #complaintPanel {
+      font-size: 15px;
+    }
+    #complaintPanel #complaintPanelTitle {
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-panel__tab {
+      height: 32px;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-panel__hint,
+    #complaintPanel .complaint-table-empty,
+    #complaintPanel .complaint-stats-empty {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    #complaintPanel .complaint-form__fields .field label,
+    #complaintPanel .complaint-type-block > span,
+    #complaintPanel .complaint-ox-block > span {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-form__fields input[type="text"],
+    #complaintPanel .complaint-form__fields .field--complaint-memo textarea {
+      font-size: 15px;
+      font-weight: 700;
+      height: 36px;
+      min-height: 36px;
+    }
+    #complaintPanel .complaint-form__fields .field--complaint-memo textarea {
+      height: auto;
+      min-height: 36px;
+    }
+    #complaintPanel .complaint-type-chip {
+      height: 34px;
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-ox-btn {
+      font-size: 1rem;
+      font-weight: 800;
+      height: 36px;
+      width: 40px;
+    }
+    #complaintPanel .complaint-table {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    #complaintPanel .complaint-table th,
+    #complaintPanel .complaint-table td {
+      padding: 6px 10px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #complaintPanel .complaint-table thead th {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 8px;
+    }
+    #complaintPanel .complaint-cell-input,
+    #complaintPanel .complaint-cell-select {
+      font-size: 15px;
+      font-weight: 700;
+      height: 34px;
+    }
+    #complaintPanel .complaint-table td.complaint-td-date .complaint-cell-input,
+    #complaintPanel .complaint-table td.complaint-td-date input[type="date"],
+    #complaintPanel .complaint-table td.complaint-td-narrow .complaint-cell-input,
+    #complaintPanel .complaint-table td.complaint-td-type .complaint-cell-select,
+    #complaintPanel .complaint-table td.complaint-td-memo .complaint-cell-input {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #complaintPanel .complaint-row-edit,
+    #complaintPanel .complaint-row-del {
+      height: 32px;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-stats-toolbar label {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    #complaintPanel .complaint-stats-toolbar select {
+      height: 34px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    #complaintPanel .complaint-stats-table {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #complaintPanel .complaint-stats-table th,
+    #complaintPanel .complaint-stats-table td {
+      padding: 8px 10px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #complaintPanel .complaint-stats-table thead th,
+    #complaintPanel .complaint-stats-table .is-total,
+    #complaintPanel .complaint-stats-foot td,
+    #complaintPanel .complaint-stats-foot th {
+      font-weight: 800;
+    }
+
     .order-panel__body .order-row {
       flex: 1 1 auto;
       min-width: 0;
@@ -13193,7 +13301,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-2"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-7"></script>
   <script src="hk-track-it.js?v=bydate-2"></script>
   <script src="hk-night-handover.js?v=bydate-7"></script>
   <script src="hk-vip-checkin.js?v=bydate-7"></script>
