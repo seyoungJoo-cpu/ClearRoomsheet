@@ -987,7 +987,7 @@
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
-        <strong>고객불편사항 유형분석</strong>도 마감해도 유지됩니다.
+        <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
       <button type="button" class="btn-close-day" id="btnCloseDay">마감 (HTML + 엑셀 + 읽기모드 저장 + 초기화)</button>
@@ -1001,7 +1001,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=embed-clear-1"></script>
+  <script src="hk-storage.js?v=persist-close-4"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=force-sync-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -2162,6 +2162,37 @@
               return n ? n + "건 (마감 후 유지)" : "없음 (마감 후 유지)";
             })(),
           ],
+          [
+            "Track IT",
+            (function () {
+              var pack =
+                typeof HKStorage.normalizeTrackIt === "function"
+                  ? HKStorage.normalizeTrackIt(snapshot.data.trackIt)
+                  : snapshot.data.trackIt || {};
+              var n = pack && Array.isArray(pack.records) ? pack.records.length : 0;
+              return n ? n + "건 (마감 후 유지)" : "없음 (마감 후 유지)";
+            })(),
+          ],
+          [
+            "야간 인계사항",
+            (function () {
+              var pack =
+                typeof HKStorage.normalizeNightHandover === "function"
+                  ? HKStorage.normalizeNightHandover(snapshot.data.nightHandover)
+                  : snapshot.data.nightHandover || {};
+              return pack && pack.updatedAt ? "있음 (마감 후 유지)" : "없음 (마감 후 유지)";
+            })(),
+          ],
+          [
+            "VIP 체크인 리스트",
+            (function () {
+              var pack =
+                typeof HKStorage.normalizeVipCheckIn === "function"
+                  ? HKStorage.normalizeVipCheckIn(snapshot.data.vipCheckIn)
+                  : snapshot.data.vipCheckIn || {};
+              return pack && pack.updatedAt ? "있음 (마감 후 유지)" : "없음 (마감 후 유지)";
+            })(),
+          ],
           ["요청 알림", String((snapshot.requestLog || []).length) + "건"],
           ["오더", String((snapshot.orderLog || []).length) + "건"],
           ["MB & 인벤 변경", String((snapshot.mbInvLog || []).length) + "건"],
@@ -2301,7 +2332,7 @@
           },
           {
             title: "고객불편사항 유형분석",
-            headers: ["날짜", "예약번호", "이름", "객실번호", "유형", "룸체인지"],
+            headers: ["날짜", "예약번호", "이름", "객실번호", "유형", "룸체인지", "메모"],
             rows: (function () {
               var pack =
                 typeof HKStorage.normalizeComplaintTypeAnalysis === "function"
@@ -2347,8 +2378,213 @@
                   (r && r.roomNo) || "",
                   typeLabels[(r && r.typeId) || ""] || (r && r.typeId) || "",
                   r && r.roomChange ? "O" : "X",
+                  (r && r.memo) || "",
                 ];
               });
+            })(),
+          },
+          {
+            title: "Track IT",
+            headers: [
+              "등록일",
+              "배송",
+              "주소",
+              "우편번호",
+              "성함",
+              "휴대폰",
+              "물건",
+              "체크아웃",
+              "객실",
+              "발송",
+            ],
+            rows: (function () {
+              var pack =
+                typeof HKStorage.normalizeTrackIt === "function"
+                  ? HKStorage.normalizeTrackIt(snapshot.data.trackIt)
+                  : snapshot.data.trackIt || { records: [] };
+              return (pack.records || []).map(function (r) {
+                var d = "";
+                if (r && r.createdAt) {
+                  var dt = new Date(r.createdAt);
+                  if (!isNaN(dt.getTime())) {
+                    var mm = dt.getMonth() + 1;
+                    var dd = dt.getDate();
+                    d =
+                      dt.getFullYear() +
+                      "-" +
+                      (mm < 10 ? "0" : "") +
+                      mm +
+                      "-" +
+                      (dd < 10 ? "0" : "") +
+                      dd;
+                  } else {
+                    d = String(r.createdAt).slice(0, 10);
+                  }
+                }
+                return [
+                  d,
+                  r && r.shipType === "urgent" ? "긴급" : "착불",
+                  (r && r.address) || "",
+                  (r && r.zip) || "",
+                  (r && r.name) || "",
+                  (r && r.phone) || "",
+                  (r && r.item) || "",
+                  (r && r.checkoutDate) || "",
+                  (r && r.roomNo) || "",
+                  r && r.shippedOk ? "발송 OK" : "",
+                ];
+              });
+            })(),
+          },
+          {
+            title: "야간 인계사항",
+            headers: ["항목", "본관", "별관", "기타"],
+            rows: (function () {
+              var pack =
+                typeof HKStorage.normalizeNightHandover === "function"
+                  ? HKStorage.normalizeNightHandover(snapshot.data.nightHandover)
+                  : snapshot.data.nightHandover || {};
+              if (!pack || typeof pack !== "object") return [];
+              var rows = [["날짜", pack.titleDate || "", "", ""]];
+              var duty = pack.duty || {};
+              rows.push([
+                "미드",
+                (duty.mid && duty.mid.main) || "",
+                (duty.mid && duty.mid.annex) || "",
+                "",
+              ]);
+              rows.push([
+                "올나이트",
+                (duty.allNight && duty.allNight.main) || "",
+                (duty.allNight && duty.allNight.annex) || "",
+                "",
+              ]);
+              rows.push([
+                "유틸리티",
+                (duty.utility && duty.utility.main) || "",
+                (duty.utility && duty.utility.annex) || "",
+                "",
+              ]);
+              var ch = pack.chargers || {};
+              var etc = pack.etc || {};
+              rows.push([
+                "충전기/기타",
+                ["C:" + (ch.cType || ""), "아이폰:" + (ch.iphone || ""), "5핀:" + (ch.fivePin || "")].join(" "),
+                "",
+                ["선풍기:" + (etc.fan || ""), "덕다운:" + (etc.duckDown || ""), "키즈가운:" + (etc.kidsRobe || "")].join(
+                  " "
+                ),
+              ]);
+              var extras = pack.extras || {};
+              Object.keys(extras).forEach(function (key) {
+                var ex = extras[key] || {};
+                rows.push([key, ex.main || "", ex.annex || "", ""]);
+              });
+              (pack.notes || []).forEach(function (n, i) {
+                if (!n) return;
+                if (!(n.category || n.main || n.annex)) return;
+                rows.push(["메모" + (i + 1) + (n.category ? " · " + n.category : ""), n.main || "", n.annex || "", ""]);
+              });
+              (pack.incidents || []).forEach(function (inc) {
+                if (!inc) return;
+                if (!(inc.room || inc.by || inc.dates || inc.detail)) return;
+                rows.push([
+                  "이슈 " + (inc.room || ""),
+                  inc.by || "",
+                  inc.dates || "",
+                  inc.detail || "",
+                ]);
+              });
+              return rows;
+            })(),
+          },
+          {
+            title: "VIP 체크인 리스트",
+            headers: [
+              "구분",
+              "Guest Name",
+              "Room No.",
+              "Room 상태",
+              "Room Type",
+              "RSV No.",
+              "호텔도착 예정시간",
+              "Check Out",
+              "비고",
+            ],
+            rows: (function () {
+              var pack =
+                typeof HKStorage.normalizeVipCheckIn === "function"
+                  ? HKStorage.normalizeVipCheckIn(snapshot.data.vipCheckIn)
+                  : snapshot.data.vipCheckIn || {};
+              var out = [];
+              out.push([
+                "제목날짜",
+                (pack.titleDate || "") + " / " + (pack.titleYear || ""),
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+              ]);
+              var sections = pack.sections || {};
+              ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
+                (sections[sec] || []).forEach(function (g) {
+                  if (!g) return;
+                  if (
+                    !(
+                      g.guestName ||
+                      g.roomNo ||
+                      g.roomStatus ||
+                      g.roomType ||
+                      g.rsvNo ||
+                      g.eta ||
+                      g.checkOut ||
+                      g.remark
+                    )
+                  ) {
+                    return;
+                  }
+                  out.push([
+                    sec,
+                    g.guestName || "",
+                    g.roomNo || "",
+                    g.roomStatus || "",
+                    g.roomType || "",
+                    g.rsvNo || "",
+                    g.eta || "",
+                    g.checkOut || "",
+                    g.remark || "",
+                  ]);
+                });
+              });
+              (pack.connecting || []).forEach(function (c) {
+                if (!c || !(c.rooms || c.midDoor || c.status)) return;
+                out.push([
+                  "커넥팅",
+                  c.rooms || "",
+                  c.midDoor || "",
+                  c.status || "",
+                  "",
+                  "",
+                  "",
+                  "",
+                  "",
+                ]);
+              });
+              if (pack.aj && (pack.aj.main || pack.aj.annex)) {
+                out.push(["AJ 본관", pack.aj.main || "", "AJ 별관", pack.aj.annex || "", "", "", "", "", ""]);
+              }
+              if (pack.mb) {
+                out.push(["MB", pack.mb, "", "", "", "", "", "", ""]);
+              }
+              var remarks = pack.remarks || {};
+              Object.keys(remarks).forEach(function (k) {
+                if (!remarks[k]) return;
+                out.push([k, remarks[k], "", "", "", "", "", "", ""]);
+              });
+              return out;
             })(),
           },
           {
@@ -4334,7 +4570,7 @@
             reset.facilityDailyFoundLog = preservedFacility.facilityDailyFoundLog;
           }
         }
-        // 인포등록(호텔 인포·홈페이지) · 게임 랭킹 · 고객불편사항 유형분석은 마감해도 절대 초기화하지 않음
+        // 인포등록·게임 랭킹 · 고객불편·Track IT·야간인계·VIP체크인 은 마감해도 절대 초기화하지 않음
         reset.hotelInfo =
           typeof HKStorage.normalizeHotelInfo === "function"
             ? HKStorage.normalizeHotelInfo(prev.hotelInfo)
@@ -4353,6 +4589,24 @@
             : prev.complaintTypeAnalysis && typeof prev.complaintTypeAnalysis === "object"
               ? prev.complaintTypeAnalysis
               : reset.complaintTypeAnalysis;
+        reset.trackIt =
+          typeof HKStorage.normalizeTrackIt === "function"
+            ? HKStorage.normalizeTrackIt(prev.trackIt)
+            : prev.trackIt && typeof prev.trackIt === "object"
+              ? prev.trackIt
+              : reset.trackIt;
+        reset.nightHandover =
+          typeof HKStorage.normalizeNightHandover === "function"
+            ? HKStorage.normalizeNightHandover(prev.nightHandover)
+            : prev.nightHandover && typeof prev.nightHandover === "object"
+              ? prev.nightHandover
+              : reset.nightHandover;
+        reset.vipCheckIn =
+          typeof HKStorage.normalizeVipCheckIn === "function"
+            ? HKStorage.normalizeVipCheckIn(prev.vipCheckIn)
+            : prev.vipCheckIn && typeof prev.vipCheckIn === "object"
+              ? prev.vipCheckIn
+              : reset.vipCheckIn;
         return reset;
       }
 
@@ -4460,7 +4714,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편사항 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
           });
           return;
         }
@@ -4479,13 +4733,13 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편사항 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편사항 유형분석 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편사항 유형분석은 유지\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편·Track IT·야간인계·VIP체크인 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편·Track IT·야간인계·VIP체크인은 유지 (초기화 버튼으로만 삭제)\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;

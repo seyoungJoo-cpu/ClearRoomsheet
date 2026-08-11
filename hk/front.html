@@ -11666,7 +11666,7 @@
           </div>
         </div>
         <p class="complaint-panel__hint" id="nightHandoverFrontHint" hidden>
-          작성·저장은 프론트 모드에서만 가능합니다.
+          작성·저장은 프론트 모드에서만 가능합니다. 마감해도 유지되며 초기화 버튼으로만 비워집니다.
         </p>
 
         <div class="nh-sheet">
@@ -11770,7 +11770,7 @@
           </div>
         </div>
         <p class="complaint-panel__hint" id="vipCheckInFrontHint" hidden>
-          작성·저장은 프론트 모드에서만 가능합니다.
+          작성·저장은 프론트 모드에서만 가능합니다. 마감해도 유지되며 초기화 버튼으로만 비워집니다.
         </p>
 
         <div class="vip-sheet">
@@ -16397,12 +16397,6 @@
         }
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
-        }
-        if (typeof HKNightHandover !== "undefined" && HKNightHandover.resetOnCloseDay) {
-          HKNightHandover.resetOnCloseDay();
-        }
-        if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.resetOnCloseDay) {
-          HKVipCheckIn.resetOnCloseDay();
         }
         resetFrontEmbedPanelsOnCloseDay();
         pendingFacilityMiscAlert = false;

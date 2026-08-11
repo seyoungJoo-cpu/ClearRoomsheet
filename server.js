@@ -1050,6 +1050,29 @@ function mergeHkStorage(prev, incoming) {
         false
       );
     }
+    if (Object.prototype.hasOwnProperty.call(incoming, "trackIt")) {
+      staleOut.trackIt = mergeTrackItForServer(prev.trackIt, incoming.trackIt, true);
+    } else if (prev.trackIt) {
+      staleOut.trackIt = mergeTrackItForServer(prev.trackIt, null, false);
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "nightHandover")) {
+      staleOut.nightHandover = pickUpdatedAtDocForServer(
+        prev.nightHandover,
+        incoming.nightHandover,
+        true
+      );
+    } else if (prev.nightHandover) {
+      staleOut.nightHandover = prev.nightHandover;
+    }
+    if (Object.prototype.hasOwnProperty.call(incoming, "vipCheckIn")) {
+      staleOut.vipCheckIn = pickUpdatedAtDocForServer(
+        prev.vipCheckIn,
+        incoming.vipCheckIn,
+        true
+      );
+    } else if (prev.vipCheckIn) {
+      staleOut.vipCheckIn = prev.vipCheckIn;
+    }
     if (Object.prototype.hasOwnProperty.call(incoming, "gameRanks")) {
       staleOut.gameRanks = mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks);
     } else if (prev.gameRanks) {
@@ -1311,6 +1334,21 @@ function mergeHkStorage(prev, incoming) {
       prev.complaintTypeAnalysis,
       incoming.complaintTypeAnalysis,
       Object.prototype.hasOwnProperty.call(incoming, "complaintTypeAnalysis")
+    ),
+    trackIt: mergeTrackItForServer(
+      prev.trackIt,
+      incoming.trackIt,
+      Object.prototype.hasOwnProperty.call(incoming, "trackIt")
+    ),
+    nightHandover: pickUpdatedAtDocForServer(
+      prev.nightHandover,
+      incoming.nightHandover,
+      Object.prototype.hasOwnProperty.call(incoming, "nightHandover")
+    ),
+    vipCheckIn: pickUpdatedAtDocForServer(
+      prev.vipCheckIn,
+      incoming.vipCheckIn,
+      Object.prototype.hasOwnProperty.call(incoming, "vipCheckIn")
     ),
     gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
   };
@@ -1596,6 +1634,7 @@ function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) 
         reservationNo: row.reservationNo != null ? String(row.reservationNo) : "",
         guestName: row.guestName != null ? String(row.guestName) : "",
         roomNo: row.roomNo != null ? String(row.roomNo) : "",
+        memo: row.memo != null ? String(row.memo) : "",
         typeId: typeId,
         roomChange: roomChange,
       });
@@ -1637,6 +1676,91 @@ function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) 
         return String(a.id).localeCompare(String(b.id));
       }),
   };
+}
+
+function mergeTrackItForServer(prevRaw, incomingRaw, hasIncoming) {
+  function norm(raw) {
+    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
+    var seen = {};
+    var records = [];
+    (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
+      if (!row || typeof row !== "object") return;
+      var id = row.id != null ? String(row.id).trim() : "";
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      var shipType = row.shipType != null ? String(row.shipType).trim() : "cod";
+      if (shipType !== "urgent") shipType = "cod";
+      var shippedOk =
+        row.shippedOk === true ||
+        row.shippedOk === 1 ||
+        row.shippedOk === "1" ||
+        String(row.shippedOk || "").toUpperCase() === "Y" ||
+        String(row.shippedOk || "").toUpperCase() === "TRUE";
+      records.push({
+        id: id,
+        createdAt: row.createdAt != null ? String(row.createdAt) : "",
+        updatedAt: row.updatedAt != null ? String(row.updatedAt) : "",
+        shipType: shipType,
+        address: row.address != null ? String(row.address) : "",
+        zip: row.zip != null ? String(row.zip) : "",
+        name: row.name != null ? String(row.name) : "",
+        phone: row.phone != null ? String(row.phone) : "",
+        item: row.item != null ? String(row.item) : "",
+        checkoutDate: row.checkoutDate != null ? String(row.checkoutDate) : "",
+        roomNo: row.roomNo != null ? String(row.roomNo) : "",
+        shippedOk: shippedOk,
+        shippedAt: row.shippedAt != null ? String(row.shippedAt) : "",
+      });
+    });
+    return {
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+      records: records,
+    };
+  }
+  var base = norm(prevRaw);
+  if (!hasIncoming) return base;
+  var inc = norm(incomingRaw);
+  var map = {};
+  base.records.forEach(function (r) {
+    map[r.id] = r;
+  });
+  inc.records.forEach(function (r) {
+    var p = map[r.id];
+    if (!p) {
+      map[r.id] = r;
+      return;
+    }
+    var pa = p.updatedAt || p.createdAt || "";
+    var ia = r.updatedAt || r.createdAt || "";
+    if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
+  });
+  var ba = base.updatedAt || "";
+  var ia2 = inc.updatedAt || "";
+  return {
+    updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
+    records: Object.keys(map)
+      .map(function (k) {
+        return map[k];
+      })
+      .sort(function (a, b) {
+        var ta = a.createdAt || "";
+        var tb = b.createdAt || "";
+        if (ta !== tb) return String(ta).localeCompare(String(tb));
+        return String(a.id).localeCompare(String(b.id));
+      }),
+  };
+}
+
+function pickUpdatedAtDocForServer(prevRaw, incomingRaw, hasIncoming) {
+  if (!hasIncoming) return prevRaw && typeof prevRaw === "object" ? prevRaw : null;
+  var prev = prevRaw && typeof prevRaw === "object" ? prevRaw : null;
+  var inc = incomingRaw && typeof incomingRaw === "object" ? incomingRaw : null;
+  if (!prev) return inc;
+  if (!inc) return prev;
+  var ba = prev.updatedAt != null ? String(prev.updatedAt) : "";
+  var ia = inc.updatedAt != null ? String(inc.updatedAt) : "";
+  if (ia && (!ba || String(ia) >= String(ba))) return inc;
+  return prev;
 }
 
 function adminInquiryHasReply(entry) {
