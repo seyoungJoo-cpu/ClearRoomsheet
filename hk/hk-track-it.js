@@ -40,6 +40,55 @@
     formDirty = false;
   }
 
+  function formatKoreanPhone(raw) {
+    var digits = String(raw || "").replace(/\D/g, "").slice(0, 11);
+    if (!digits) return "";
+    // 서울 02
+    if (digits.indexOf("02") === 0) {
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 5) return digits.slice(0, 2) + "-" + digits.slice(2);
+      if (digits.length <= 9) {
+        return digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5);
+      }
+      return digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6, 10);
+    }
+    // 휴대폰 01x
+    if (/^01[016789]/.test(digits)) {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return digits.slice(0, 3) + "-" + digits.slice(3);
+      if (digits.length === 10) {
+        return digits.slice(0, 3) + "-" + digits.slice(3, 6) + "-" + digits.slice(6);
+      }
+      return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7, 11);
+    }
+    // 지역번호 3자리 (031 등)
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return digits.slice(0, 3) + "-" + digits.slice(3);
+    if (digits.length <= 10) {
+      return digits.slice(0, 3) + "-" + digits.slice(3, 6) + "-" + digits.slice(6);
+    }
+    return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7, 11);
+  }
+
+  function applyPhoneInputFormat(el) {
+    if (!el) return;
+    var prev = String(el.value || "");
+    var start = typeof el.selectionStart === "number" ? el.selectionStart : prev.length;
+    var digitsBefore = prev.slice(0, start).replace(/\D/g, "").length;
+    var formatted = formatKoreanPhone(prev);
+    if (formatted === prev) return;
+    el.value = formatted;
+    var pos = 0;
+    var seen = 0;
+    while (pos < formatted.length && seen < digitsBefore) {
+      if (/\d/.test(formatted.charAt(pos))) seen += 1;
+      pos += 1;
+    }
+    try {
+      el.setSelectionRange(pos, pos);
+    } catch (ePos) {}
+  }
+
   function pad2(n) {
     return (n < 10 ? "0" : "") + n;
   }
@@ -303,7 +352,7 @@
     setField("trackItAddress", row.address);
     setField("trackItZip", row.zip);
     setField("trackItName", row.name);
-    setField("trackItPhone", row.phone);
+    setField("trackItPhone", formatKoreanPhone(row.phone));
     setField("trackItItem", row.item);
     setField("trackItCheckoutDate", toDateInputValue(row.checkoutDate));
     setField("trackItRoomNo", row.roomNo);
@@ -362,7 +411,8 @@
     var address = getField("trackItAddress");
     var zip = getField("trackItZip");
     var name = getField("trackItName");
-    var phone = getField("trackItPhone");
+    var phone = formatKoreanPhone(getField("trackItPhone"));
+    setField("trackItPhone", phone);
     var item = getField("trackItItem");
     var checkoutDate = getField("trackItCheckoutDate");
     var roomNo = getField("trackItRoomNo");
@@ -572,6 +622,18 @@
       roomInput.addEventListener("input", function () {
         markFormDirty();
         renderTable();
+      });
+    }
+
+    var phoneInput = document.getElementById("trackItPhone");
+    if (phoneInput) {
+      phoneInput.setAttribute("inputmode", "tel");
+      phoneInput.addEventListener("input", function () {
+        applyPhoneInputFormat(phoneInput);
+        markFormDirty();
+      });
+      phoneInput.addEventListener("blur", function () {
+        applyPhoneInputFormat(phoneInput);
       });
     }
 

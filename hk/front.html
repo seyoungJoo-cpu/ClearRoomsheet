@@ -12192,7 +12192,7 @@
             </div>
             <div class="field">
               <label for="trackItPhone">휴대폰번호</label>
-              <input type="text" id="trackItPhone" autocomplete="off" />
+              <input type="text" id="trackItPhone" inputmode="tel" autocomplete="off" />
             </div>
             <div class="field field--complaint-memo">
               <label for="trackItItem">물건</label>
@@ -13443,7 +13443,7 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-10"></script>
-  <script src="hk-track-it.js?v=bydate-10"></script>
+  <script src="hk-track-it.js?v=bydate-15"></script>
   <script src="hk-night-handover.js?v=bydate-14"></script>
   <script src="hk-vip-checkin.js?v=bydate-14"></script>
   <script src="hk-admin-inquiry.js"></script>
@@ -19520,10 +19520,10 @@
         if (section) section.hidden = !showSection;
         if (frontChatNav) frontChatNav.hidden = !frontMode;
         if (sidebarMainView === "chat") {
-          showSidebarRequestView();
+          showSidebarRequestView({ skipDirtyConfirm: true });
         }
         if (!frontMode && sidebarMainView === "front") {
-          showSidebarRequestView();
+          showSidebarRequestView({ skipDirtyConfirm: true });
         }
       }
 
