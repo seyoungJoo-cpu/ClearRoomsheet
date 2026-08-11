@@ -291,7 +291,7 @@
         numeric: true,
       });
     });
-    var main = ['<div class="panel"><h2>처리·예정 요청</h2>'];
+    var main = ['<div class="panel"><h2>약속 시간</h2>'];
     if (!scheduled.length) main.push('<p class="empty">(내역 없음)</p>');
     else {
       main.push('<div class="bucket-list">');

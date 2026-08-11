@@ -7529,7 +7529,7 @@
       color: #6d28d9;
     }
 
-    /* 정비요청 아래 · 처리·예정 요청 카드 */
+    /* 정비요청 아래 · 약속 시간 카드 */
     .request-main-stack {
       flex: 1;
       min-height: 0;
@@ -11417,7 +11417,7 @@
           class="btn-front"
           id="btnFront"
           aria-pressed="false"
-          title="켠 뒤 처리·예정 요청에서 사용 처리 가능"
+          title="켠 뒤 약속 시간에서 사용 처리 가능"
         >
           프론트
         </button>
@@ -13059,7 +13059,7 @@
             </form>
           </aside>
         </div>
-        <div class="request-type-filters" id="requestTypeFilters" aria-label="처리·예정 TYPE 필터">
+        <div class="request-type-filters" id="requestTypeFilters" aria-label="약속 시간 TYPE 필터">
           <div class="request-type-filters__actions">
             <button
               type="button"
@@ -13092,7 +13092,7 @@
               class="request-type-filters__toggle request-type-filters__toggle--view"
               id="btnRequestSchedTypeView"
               aria-pressed="false"
-              title="처리·예정 요청을 객실 TYPE별로 묶어 표시"
+              title="약속 시간을 객실 TYPE별로 묶어 표시"
             >
               TYPE보기
             </button>
@@ -13111,7 +13111,7 @@
         <div class="panel-head-row">
           <h2 class="sched-cards-panel__title" id="confirmingCardsTitle">확인중</h2>
         </div>
-        <p class="sched-cards-panel__hint" id="confirmingCardsHint">알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다.</p>
+        <p class="sched-cards-panel__hint" id="confirmingCardsHint">알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 약속 시간으로 이동합니다.</p>
         <ul class="sched-cards-list" id="confirmingRequestCardList"></ul>
         <p class="sched-cards-panel__empty" id="confirmingCardsEmpty">확인중 요청이 없습니다.</p>
         <div class="confirming-cards-panel__split" id="confirmingCardsSplit" hidden>
@@ -13129,11 +13129,11 @@
       </section>
       <section class="sched-cards-panel" id="schedCardsPanel" aria-labelledby="schedCardsTitle">
         <div class="panel-head-row">
-          <h2 class="sched-cards-panel__title" id="schedCardsTitle">처리·예정 요청</h2>
+          <h2 class="sched-cards-panel__title" id="schedCardsTitle">약속 시간</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckSchedPanel" hidden>확인</button>
         </div>
         <p class="sched-cards-panel__hint" id="schedCardsHint">
-          요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.
+          요청 알림에서 약속 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.
         </p>
         <ul class="sched-cards-list" id="schedRequestCardList"></ul>
       </section>
@@ -13496,9 +13496,9 @@
       var pendingOperatorNameCallback = null;
       var pendingFacilityConfirmReqId = null;
       var SCHED_PANEL_HINT_EMPTY =
-        "요청 알림에서 처리·예정 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.";
-      var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 처리·예정 요청이 없습니다.";
-      var SCHED_PANEL_HINT_NO_TYPE = "선택한 TYPE에 해당하는 처리·예정 요청이 없습니다.";
+        "요청 알림에서 약속 시간을 입력하면, 객실 카드와 같은 형태로 이곳에 모읍니다.";
+      var SCHED_PANEL_HINT_NO_MATCH = "입력한 객실번호에 해당하는 약속 시간이 없습니다.";
+      var SCHED_PANEL_HINT_NO_TYPE = "선택한 TYPE에 해당하는 약속 시간이 없습니다.";
       var SCHED_TYPE_FILTER_LS = "lotte-hk-sched-type-filters-v3";
       var SHOW_ROOM_TYPE_LS = "lotte-hk-show-room-type-v1";
       var showRoomTypeOnCards = true;
@@ -19096,12 +19096,12 @@
           var filterRaw = getRequestRoomFilterRaw();
           var hasAnyScheduled = requestLogEntries.some(isScheduledRequestEntry);
           if (!hasAnyScheduled) {
-            emptyF.textContent = "처리·예정 시간이 입력된 요청이 없습니다.";
+            emptyF.textContent = "약속 시간이 입력된 요청이 없습니다.";
           } else if (filterRaw || isSchedTypeFilterRestricted()) {
             emptyF.textContent =
-              "입력한 객실번호·TYPE 조건에 맞는 처리·예정 요청이 없습니다.";
+              "입력한 객실번호·TYPE 조건에 맞는 약속 시간이 없습니다.";
           } else {
-            emptyF.textContent = "표시할 처리·예정 요청이 없습니다.";
+            emptyF.textContent = "표시할 약속 시간이 없습니다.";
           }
           mount.appendChild(emptyF);
           return;
@@ -20375,7 +20375,7 @@
           "· 문제발생 오더 · 오늘 오더\n" +
           "· 시설 오더 · 시설 대기 오더 (시설 관리에서 AI 진입 시 시설 오더만)\n\n" +
           "【정비 요청】\n" +
-          "· 대기 요청 · 긴급 요청 · 처리·예정 요청\n" +
+          "· 대기 요청 · 긴급 요청 · 약속 시간\n" +
           "· 16시까지 처리 예정 · 예정 지난 요청 · 다음 예정 요청\n\n" +
           "【객실·TYPE】\n" +
           "· 타입(ENCFT) 가능한 객실 / ENCFT 입실 가능 (IP·O, IN 제외)\n" +
@@ -21430,7 +21430,7 @@
         if (intent.type === "sched_next") {
           var nextList = queryAiNextScheduledRequests(15);
           appendAiChatBotResult(
-            "다음 처리·예정 요청 " + nextList.length + "건 (시간순)",
+            "다음 약속 시간 " + nextList.length + "건 (시간순)",
             nextList.map(buildAiRequestCard)
           );
           return;
@@ -23046,7 +23046,7 @@
         if (splitEl) splitEl.hidden = !wingSplit;
         if (hint) {
           hint.textContent = maintenanceMode
-            ? "알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 처리·예정으로 이동합니다."
+            ? "알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 약속 시간으로 이동합니다."
             : "정비에서 확인 중인 객실입니다. 메모·채팅을 확인할 수 있습니다.";
         }
         if (!confirming.length) {
@@ -25242,7 +25242,7 @@
         chatInput.placeholder = "메시지 입력";
         chatInput.autocomplete = "off";
         chatInput.className = "order-chat__input";
-        chatInput.setAttribute("aria-label", "처리·예정 요청 채팅");
+        chatInput.setAttribute("aria-label", "약속 시간 채팅");
         chatForm.appendChild(chatInput);
         var chatSend = document.createElement("button");
         chatSend.type = "submit";
