@@ -8743,16 +8743,17 @@
       width: 100%;
       height: 32px;
       min-height: 32px;
-      max-height: 12em;
+      max-height: 40em;
       padding: 6px 8px;
-      resize: none;
-      overflow-y: hidden;
+      resize: vertical;
+      overflow-y: auto;
       line-height: 1.35;
       box-sizing: border-box;
       border: 1px solid var(--border);
       border-radius: 8px;
       font: inherit;
       font-size: 0.8125rem;
+      white-space: pre-wrap;
     }
 
     .complaint-type-block,
@@ -8871,9 +8872,10 @@
 
     .complaint-table td.complaint-td-memo,
     .complaint-table th:nth-child(5) {
-      white-space: normal;
+      white-space: pre-wrap;
       word-break: break-word;
       max-width: 28rem;
+      vertical-align: top;
     }
 
     .complaint-table td.complaint-td-date .complaint-cell-input,
@@ -10877,7 +10879,7 @@
               </div>
               <div class="field field--complaint-memo">
                 <label for="complaintMemo">메모</label>
-                <textarea id="complaintMemo" rows="1" maxlength="200" placeholder="간단 메모"></textarea>
+                <textarea id="complaintMemo" rows="1" placeholder="메모"></textarea>
               </div>
               <div class="complaint-ox-block">
                 <span>룸체인지</span>
@@ -12028,7 +12030,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=8"></script>
+  <script src="hk-complaint-analysis.js?v=9"></script>
   <script src="hk-track-it.js?v=1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
