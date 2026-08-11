@@ -1296,6 +1296,43 @@
     d.mbList = normList(raw.mbList, d.remarks.mb);
     d.remarks.aj = d.ajList.filter(Boolean).join("\n");
     d.remarks.mb = d.mbList.filter(Boolean).join("\n");
+
+    var defaultRemarkDefs = [
+      { id: "aj", label: "AJ", highlight: "" },
+      { id: "mb", label: "MB", highlight: "" },
+      { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)", highlight: "" },
+      { id: "lateCo", label: "LATE C/O", highlight: "" },
+      { id: "earlyCi", label: "얼리체크인", highlight: "" },
+      { id: "casino", label: "카지노", highlight: "" },
+      { id: "seminar", label: "세미나 / 단체", highlight: "" },
+      { id: "business", label: "출장", highlight: "green" },
+      { id: "dami", label: "답사 룸쇼", highlight: "" },
+      { id: "tongTeam", label: "롱텀", highlight: "" },
+    ];
+    if (Array.isArray(raw.remarkRows) && raw.remarkRows.length) {
+      d.remarkRows = raw.remarkRows.map(function (r) {
+        r = r || {};
+        return {
+          id: r.id != null ? String(r.id) : "",
+          label: r.label != null ? String(r.label) : "",
+          value: r.value != null ? String(r.value) : "",
+          highlight: r.highlight != null ? String(r.highlight) : "",
+        };
+      });
+    } else {
+      d.remarkRows = defaultRemarkDefs.map(function (def) {
+        var value = "";
+        if (def.id === "aj") value = d.remarks.aj || "";
+        else if (def.id === "mb") value = d.remarks.mb || "";
+        else value = d.remarks[def.id] != null ? d.remarks[def.id] : "";
+        return {
+          id: def.id,
+          label: def.label,
+          value: value,
+          highlight: def.highlight || "",
+        };
+      });
+    }
     return d;
   }
 

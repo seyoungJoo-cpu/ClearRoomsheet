@@ -16,7 +16,7 @@
   var DEFAULT_CONNECTING_SLOTS = DEFAULT_CONNECTING_ROOMS.length;
   var CONNECTING_PER_ROW = 2;
   var MIN_CONNECTING_SLOTS = 2;
-  var MIN_AJMB_ROWS = 1;
+  var MIN_REMARK_ROWS = 1;
 
   var GUEST_FIELDS = [
     "guestName",
@@ -29,17 +29,19 @@
     "remark",
   ];
 
-  var FIXED_REMARK_KEYS = [
-    { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)" },
-    { id: "lateCo", label: "LATE C/O" },
-    { id: "earlyCi", label: "얼리체크인" },
-    { id: "casino", label: "카지노" },
-    { id: "seminar", label: "세미나 / 단체" },
-    { id: "business", label: "출장", highlight: "green" },
-    { id: "dami", label: "답사 룸쇼" },
-    { id: "tongTeam", label: "롱텀" },
+  var DEFAULT_REMARK_ROWS = [
+    { id: "aj", label: "AJ", value: "", highlight: "" },
+    { id: "mb", label: "MB", value: "", highlight: "" },
+    { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)", value: "", highlight: "" },
+    { id: "lateCo", label: "LATE C/O", value: "", highlight: "" },
+    { id: "earlyCi", label: "얼리체크인", value: "", highlight: "" },
+    { id: "casino", label: "카지노", value: "", highlight: "" },
+    { id: "seminar", label: "세미나 / 단체", value: "", highlight: "" },
+    { id: "business", label: "출장", value: "", highlight: "green" },
+    { id: "dami", label: "답사 룸쇼", value: "", highlight: "" },
+    { id: "tongTeam", label: "롱텀", value: "", highlight: "" },
   ];
-  var REMARK_KEYS = FIXED_REMARK_KEYS;
+  var REMARK_KEYS = DEFAULT_REMARK_ROWS;
 
   var opts = {
     isFrontMode: function () {
@@ -51,8 +53,7 @@
   var dirty = false;
   var guestCount = DEFAULT_GUEST_ROWS;
   var connectingCount = DEFAULT_CONNECTING_SLOTS;
-  var ajCount = MIN_AJMB_ROWS;
-  var mbCount = MIN_AJMB_ROWS;
+  var remarkCount = DEFAULT_REMARK_ROWS.length;
 
   function emptyGuest(section) {
     return {
@@ -95,21 +96,38 @@
     });
   }
 
-  function defaultData() {
-    var remarks = {};
-    FIXED_REMARK_KEYS.forEach(function (r) {
-      remarks[r.id] = "";
+  function defaultRemarkRows() {
+    return DEFAULT_REMARK_ROWS.map(function (r) {
+      return {
+        id: r.id,
+        label: r.label,
+        value: "",
+        highlight: r.highlight || "",
+      };
     });
+  }
+
+  function emptyRemarkRow() {
+    return {
+      id: "extra_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      label: "",
+      value: "",
+      highlight: "",
+    };
+  }
+
+  function defaultData() {
     return {
       updatedAt: "",
       titleDate: defaultTitleDate(),
       titleYear: String(new Date().getFullYear()),
       guests: defaultGuests(),
       connecting: defaultConnecting(),
+      remarkRows: defaultRemarkRows(),
+      /* 하위호환 */
+      remarks: {},
       ajList: [""],
       mbList: [""],
-      remarks: remarks,
-      /* 하위호환 */
       sections: { V4: [], EI: [], SA: [], NPS: [] },
       aj: { main: "", annex: "" },
       mb: "",
@@ -212,15 +230,55 @@
     return list;
   }
 
-  function collectAjMbFromDom(kind) {
-    var count = kind === "aj" ? ajCount : mbCount;
-    var list = [];
+  function collectRemarkRowsFromDom() {
+    var rows = [];
     var i;
-    for (i = 0; i < count; i++) {
-      list.push(val("vip" + (kind === "aj" ? "Aj" : "Mb") + "_" + i));
+    for (i = 0; i < remarkCount; i++) {
+      rows.push({
+        id: val("vipRemarkId_" + i) || "extra_" + i,
+        label: val("vipRemarkLabel_" + i),
+        value: val("vipRemarkValue_" + i),
+        highlight: val("vipRemarkHighlight_" + i) || "",
+      });
     }
-    if (!list.length) list = [""];
-    return list;
+    if (!rows.length) rows = defaultRemarkRows();
+    return rows;
+  }
+
+  function syncLegacyRemarks(rows) {
+    var remarks = {};
+    var ajList = [];
+    var mbList = [];
+    (rows || []).forEach(function (r) {
+      if (!r) return;
+      var id = r.id || "";
+      var label = String(r.label || "").trim();
+      var value = r.value != null ? String(r.value) : "";
+      if (id === "aj" || label === "AJ") {
+        ajList.push(value);
+        remarks.aj = ajList.filter(Boolean).join("\n");
+      } else if (id === "mb" || label === "MB") {
+        mbList.push(value);
+        remarks.mb = mbList.filter(Boolean).join("\n");
+      } else if (id) {
+        remarks[id] = value;
+      }
+    });
+    if (!ajList.length) {
+      ajList = [""];
+      remarks.aj = remarks.aj || "";
+    }
+    if (!mbList.length) {
+      mbList = [""];
+      remarks.mb = remarks.mb || "";
+    }
+    return {
+      remarks: remarks,
+      ajList: ajList,
+      mbList: mbList,
+      aj: { main: remarks.aj || "", annex: "" },
+      mb: remarks.mb || "",
+    };
   }
 
   function collectFromDom() {
@@ -229,16 +287,13 @@
     base.titleYear = val("vipTitleYear") || String(new Date().getFullYear());
     base.guests = collectGuestsFromDom();
     base.connecting = collectConnectingFromDom();
-    base.ajList = collectAjMbFromDom("aj");
-    base.mbList = collectAjMbFromDom("mb");
-    FIXED_REMARK_KEYS.forEach(function (r) {
-      base.remarks[r.id] = val("vipRemark_" + r.id);
-    });
-    base.remarks.aj = base.ajList.filter(Boolean).join("\n");
-    base.remarks.mb = base.mbList.filter(Boolean).join("\n");
-    /* 하위호환 필드 */
-    base.aj = { main: base.remarks.aj || "", annex: "" };
-    base.mb = base.remarks.mb || "";
+    base.remarkRows = collectRemarkRowsFromDom();
+    var legacy = syncLegacyRemarks(base.remarkRows);
+    base.remarks = legacy.remarks;
+    base.ajList = legacy.ajList;
+    base.mbList = legacy.mbList;
+    base.aj = legacy.aj;
+    base.mb = legacy.mb;
     base.sections = guestsToLegacySections(base.guests);
     return base;
   }
@@ -386,115 +441,99 @@
     autosizeAllIn(tbody);
   }
 
-  function rebuildAjMbBody(kind, values) {
-    var tbody = document.getElementById(kind === "aj" ? "vipAjBody" : "vipMbBody");
+  function rebuildRemarksBody(rows) {
+    var tbody = document.getElementById("vipRemarksBody");
     if (!tbody) return;
-    values = Array.isArray(values) && values.length ? values : [""];
-    if (kind === "aj") ajCount = Math.max(MIN_AJMB_ROWS, values.length);
-    else mbCount = Math.max(MIN_AJMB_ROWS, values.length);
-    var count = kind === "aj" ? ajCount : mbCount;
-    var prefix = kind === "aj" ? "vipAj_" : "vipMb_";
-    var label = kind === "aj" ? "AJ" : "MB";
-    var removeAttr = kind === "aj" ? "data-vip-aj-remove" : "data-vip-mb-remove";
+    rows = Array.isArray(rows) && rows.length ? rows : defaultRemarkRows();
+    remarkCount = Math.max(MIN_REMARK_ROWS, rows.length);
     tbody.innerHTML = "";
     var i;
-    for (i = 0; i < count; i++) {
-      var tr = document.createElement("tr");
-      tr.innerHTML =
-        '<th scope="row" class="vip-remark-label">' +
-        (i === 0 ? label : "") +
-        "</th>" +
-        '<td><textarea id="' +
-        prefix +
-        i +
-        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
-        '<td class="nh-row-actions">' +
-        '<button type="button" class="nh-row-btn nh-row-btn--minus" ' +
-        removeAttr +
-        '="' +
-        i +
-        '" title="행 삭제" aria-label="' +
-        label +
-        ' 행 삭제">−</button>' +
-        "</td>";
-      tbody.appendChild(tr);
-      setVal(prefix + i, values[i] != null ? values[i] : "");
-    }
-    autosizeAllIn(tbody);
-  }
-
-  function ensureRemarksBuilt() {
-    var tbody = document.getElementById("vipRemarksBody");
-    if (!tbody || tbody.__hkBuilt) return;
-    tbody.__hkBuilt = true;
-    tbody.innerHTML = "";
-    FIXED_REMARK_KEYS.forEach(function (r) {
+    for (i = 0; i < remarkCount; i++) {
+      var r = rows[i] || emptyRemarkRow();
       var tr = document.createElement("tr");
       if (r.highlight === "green") tr.className = "vip-row--green";
       tr.innerHTML =
         '<th scope="row" class="vip-remark-label">' +
-        r.label +
+        '<input type="hidden" id="vipRemarkId_' +
+        i +
+        '" />' +
+        '<input type="hidden" id="vipRemarkHighlight_' +
+        i +
+        '" />' +
+        '<textarea id="vipRemarkLabel_' +
+        i +
+        '" class="nh-autosize vip-remark-label-input" rows="1" autocomplete="off" aria-label="구분"></textarea>' +
         "</th>" +
-        '<td><textarea id="vipRemark_' +
-        r.id +
-        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
+        '<td><textarea id="vipRemarkValue_' +
+        i +
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
+        '<td class="nh-row-actions">' +
+        '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-remark-remove="' +
+        i +
+        '" title="행 삭제" aria-label="특이사항 행 삭제">−</button>' +
+        "</td>";
       tbody.appendChild(tr);
-    });
+      setVal("vipRemarkId_" + i, r.id || "");
+      setVal("vipRemarkHighlight_" + i, r.highlight || "");
+      setVal("vipRemarkLabel_" + i, r.label || "");
+      setVal("vipRemarkValue_" + i, r.value || "");
+    }
+    autosizeAllIn(tbody);
   }
 
-  function normalizeAjMbList(pack, kind) {
-    if (kind === "aj" && Array.isArray(pack.ajList) && pack.ajList.length) {
-      return pack.ajList.map(function (v) {
-        return v != null ? String(v) : "";
+  function normalizeRemarkRows(pack) {
+    if (Array.isArray(pack.remarkRows) && pack.remarkRows.length) {
+      return pack.remarkRows.map(function (r) {
+        r = r || {};
+        return {
+          id: r.id != null ? String(r.id) : "",
+          label: r.label != null ? String(r.label) : "",
+          value: r.value != null ? String(r.value) : "",
+          highlight: r.highlight != null ? String(r.highlight) : "",
+        };
       });
     }
-    if (kind === "mb" && Array.isArray(pack.mbList) && pack.mbList.length) {
-      return pack.mbList.map(function (v) {
-        return v != null ? String(v) : "";
-      });
-    }
-    var single = "";
-    if (kind === "aj") {
-      single =
-        (pack.remarks && pack.remarks.aj) ||
-        (pack.aj && [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ")) ||
-        "";
-    } else {
-      single = (pack.remarks && pack.remarks.mb) || pack.mb || "";
-    }
-    if (!single) return [""];
-    return String(single).split(/\n/).map(function (s) {
-      return s;
+    var rows = defaultRemarkRows();
+    var remarks = pack.remarks || {};
+    rows.forEach(function (r) {
+      if (r.id === "aj") {
+        if (Array.isArray(pack.ajList) && pack.ajList.length) {
+          r.value = pack.ajList.filter(Boolean).join("\n") || String(pack.ajList[0] || "");
+        } else if (remarks.aj) r.value = remarks.aj;
+        else if (pack.aj) r.value = [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ");
+      } else if (r.id === "mb") {
+        if (Array.isArray(pack.mbList) && pack.mbList.length) {
+          r.value = pack.mbList.filter(Boolean).join("\n") || String(pack.mbList[0] || "");
+        } else if (remarks.mb) r.value = remarks.mb;
+        else if (pack.mb) r.value = pack.mb;
+      } else if (remarks[r.id] != null) {
+        r.value = String(remarks[r.id]);
+      }
     });
+    return rows;
   }
 
-  function fillRemarks(pack) {
-    FIXED_REMARK_KEYS.forEach(function (r) {
-      setVal("vipRemark_" + r.id, pack.remarks && pack.remarks[r.id]);
-    });
-  }
-
-  function addAjMbRow(kind) {
+  function addRemarkRow() {
     if (!canEdit()) return;
-    var list = collectAjMbFromDom(kind);
-    list.push("");
-    rebuildAjMbBody(kind, list);
+    var rows = collectRemarkRowsFromDom();
+    rows.push(emptyRemarkRow());
+    rebuildRemarksBody(rows);
     markDirty();
     syncEditLock();
   }
 
-  function removeAjMbRow(kind, idx) {
+  function removeRemarkRow(idx) {
     if (!canEdit()) return;
-    var list = collectAjMbFromDom(kind);
-    if (list.length <= MIN_AJMB_ROWS) {
-      list[idx] = "";
-      rebuildAjMbBody(kind, list);
+    var rows = collectRemarkRowsFromDom();
+    if (rows.length <= MIN_REMARK_ROWS) {
+      rows[idx] = emptyRemarkRow();
+      rebuildRemarksBody(rows);
       markDirty();
       syncEditLock();
       return;
     }
-    list.splice(idx, 1);
-    rebuildAjMbBody(kind, list);
+    rows.splice(idx, 1);
+    rebuildRemarksBody(rows);
     markDirty();
     syncEditLock();
   }
@@ -620,14 +659,12 @@
         el.id === "btnVipGuestAdd" ||
         el.id === "btnVipGuestMerge" ||
         el.id === "btnVipConnAdd" ||
-        el.id === "btnVipAjAdd" ||
-        el.id === "btnVipMbAdd" ||
+        el.id === "btnVipRemarkAdd" ||
         el.classList.contains("vip-conn-status") ||
         el.classList.contains("vip-row-check") ||
         el.hasAttribute("data-vip-guest-remove") ||
         el.hasAttribute("data-vip-conn-remove-row") ||
-        el.hasAttribute("data-vip-aj-remove") ||
-        el.hasAttribute("data-vip-mb-remove")
+        el.hasAttribute("data-vip-remark-remove")
       ) {
         el.disabled = !editable;
         return;
@@ -660,15 +697,12 @@
       syncDirtyUi();
       return;
     }
-    ensureRemarksBuilt();
     var pack = loadData();
     setVal("vipTitleDate", pack.titleDate || defaultTitleDate());
     setVal("vipTitleYear", pack.titleYear || String(new Date().getFullYear()));
     rebuildGuestsBody(pack.guests);
     rebuildConnectingBody(pack.connecting);
-    rebuildAjMbBody("aj", normalizeAjMbList(pack, "aj"));
-    rebuildAjMbBody("mb", normalizeAjMbList(pack, "mb"));
-    fillRemarks(pack);
+    rebuildRemarksBody(normalizeRemarkRows(pack));
     dirty = false;
     syncEditLock();
     syncDirtyUi();
@@ -687,14 +721,11 @@
     if (!canEdit()) return;
     if (!window.confirm("VIP 체크인 리스트를 초기화할까요?\n내용이 비워지고 바로 동기화됩니다.")) return;
     var pack = defaultData();
-    ensureRemarksBuilt();
     setVal("vipTitleDate", pack.titleDate);
     setVal("vipTitleYear", pack.titleYear);
     rebuildGuestsBody(pack.guests);
     rebuildConnectingBody(pack.connecting);
-    rebuildAjMbBody("aj", pack.ajList);
-    rebuildAjMbBody("mb", pack.mbList);
-    fillRemarks(pack);
+    rebuildRemarksBody(pack.remarkRows);
     persist(collectFromDom(), true);
     if (typeof opts.toast === "function") opts.toast("VIP 체크인 리스트 초기화됨");
   }
@@ -777,18 +808,12 @@
       if (!c || !(c.rooms || c.status)) return;
       aoa.push(["커넥팅", c.rooms || "", "중간문", c.status || "CLOSE", "", "", "", "", ""]);
     });
-    (pack.ajList || []).forEach(function (v) {
-      if (!v) return;
-      aoa.push(["AJ", v, "", "", "", "", "", "", ""]);
-    });
-    (pack.mbList || []).forEach(function (v) {
-      if (!v) return;
-      aoa.push(["MB", v, "", "", "", "", "", "", ""]);
-    });
-    FIXED_REMARK_KEYS.forEach(function (r) {
-      var v = (pack.remarks && pack.remarks[r.id]) || "";
-      if (!v) return;
-      aoa.push([r.label, v, "", "", "", "", "", "", ""]);
+    (pack.remarkRows && pack.remarkRows.length
+      ? pack.remarkRows
+      : normalizeRemarkRows(pack)
+    ).forEach(function (r) {
+      if (!r || !(r.label || r.value)) return;
+      aoa.push([r.label || "", r.value || "", "", "", "", "", "", "", ""]);
     });
     var wb = global.XLSX.utils.book_new();
     var ws = global.XLSX.utils.aoa_to_sheet(aoa);
@@ -851,16 +876,10 @@
           removeConnectingRow(Number(connRm.getAttribute("data-vip-conn-remove-row")));
           return;
         }
-        var ajRm = e.target.closest("[data-vip-aj-remove]");
-        if (ajRm) {
+        var remarkRm = e.target.closest("[data-vip-remark-remove]");
+        if (remarkRm) {
           e.preventDefault();
-          removeAjMbRow("aj", Number(ajRm.getAttribute("data-vip-aj-remove")));
-          return;
-        }
-        var mbRm = e.target.closest("[data-vip-mb-remove]");
-        if (mbRm) {
-          e.preventDefault();
-          removeAjMbRow("mb", Number(mbRm.getAttribute("data-vip-mb-remove")));
+          removeRemarkRow(Number(remarkRm.getAttribute("data-vip-remark-remove")));
         }
       });
     }
@@ -876,14 +895,8 @@
     if (mergeBtn) mergeBtn.addEventListener("click", mergeSelectedGuestRows);
     var addConn = document.getElementById("btnVipConnAdd");
     if (addConn) addConn.addEventListener("click", addConnectingRow);
-    var addAj = document.getElementById("btnVipAjAdd");
-    if (addAj) addAj.addEventListener("click", function () {
-      addAjMbRow("aj");
-    });
-    var addMb = document.getElementById("btnVipMbAdd");
-    if (addMb) addMb.addEventListener("click", function () {
-      addAjMbRow("mb");
-    });
+    var addRemark = document.getElementById("btnVipRemarkAdd");
+    if (addRemark) addRemark.addEventListener("click", addRemarkRow);
   }
 
   function init(userOpts) {

@@ -9485,9 +9485,16 @@
       background: #dbeafe;
       font-weight: 800;
       text-align: center;
-      padding-left: 10px;
+      padding-left: 6px;
+      padding-right: 6px;
       white-space: nowrap;
       font-size: 1.05rem;
+    }
+
+    .vip-remark-label-input {
+      text-align: center;
+      font-weight: 800;
+      background: transparent;
     }
 
     .vip-table--ajmb textarea,
@@ -11955,23 +11962,12 @@
               </div>
             </div>
 
-            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="AJ">
-              <tbody id="vipAjBody"></tbody>
-            </table>
-            <div class="nh-row-addbar">
-              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipAjAdd" title="AJ 행 추가">+</button>
-            </div>
-
-            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="MB">
-              <tbody id="vipMbBody"></tbody>
-            </table>
-            <div class="nh-row-addbar">
-              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipMbAdd" title="MB 행 추가">+</button>
-            </div>
-
-            <table class="vip-table vip-table--remarks" aria-label="특이사항 구분">
+            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="특이사항 구분">
               <tbody id="vipRemarksBody"></tbody>
             </table>
+            <div class="nh-row-addbar">
+              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipRemarkAdd" title="특이사항 행 추가">+</button>
+            </div>
           </div>
         </div>
       </section>
@@ -12932,7 +12928,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=vip-ui-5"></script>
+  <script src="hk-storage.js?v=vip-ui-6"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12944,7 +12940,7 @@
   <script src="hk-complaint-analysis.js?v=9"></script>
   <script src="hk-track-it.js?v=3"></script>
   <script src="hk-night-handover.js?v=5"></script>
-  <script src="hk-vip-checkin.js?v=5"></script>
+  <script src="hk-vip-checkin.js?v=6"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
