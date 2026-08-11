@@ -782,6 +782,7 @@
       gameRanks: defaultGameRanks(),
       complaintTypeAnalysis: defaultComplaintTypeAnalysis(),
       trackIt: defaultTrackIt(),
+      nightHandover: defaultNightHandover(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -971,6 +972,112 @@
       return baseInfo;
     }
     return mergeTrackIt(baseInfo, incObj.trackIt);
+  }
+
+  function defaultNightHandover() {
+    if (typeof global.HKNightHandover !== "undefined" && global.HKNightHandover.defaultData) {
+      return global.HKNightHandover.defaultData();
+    }
+    return {
+      updatedAt: "",
+      titleDate: "",
+      duty: {
+        mid: { main: "", annex: "" },
+        allNight: { main: "", annex: "" },
+        utility: { main: "", annex: "" },
+      },
+      chargers: { cType: "", iphone: "", fivePin: "" },
+      etc: { fan: "", duckDown: "", kidsRobe: "" },
+      extras: {},
+      notes: [],
+      incidents: [],
+    };
+  }
+
+  function normalizeWingPair(raw) {
+    return {
+      main: raw && raw.main != null ? String(raw.main) : "",
+      annex: raw && raw.annex != null ? String(raw.annex) : "",
+    };
+  }
+
+  function normalizeNightHandover(raw) {
+    var d = defaultNightHandover();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    d.titleDate = raw.titleDate != null ? String(raw.titleDate).trim() : d.titleDate || "";
+    var duty = raw.duty && typeof raw.duty === "object" ? raw.duty : {};
+    d.duty = {
+      mid: normalizeWingPair(duty.mid),
+      allNight: normalizeWingPair(duty.allNight),
+      utility: normalizeWingPair(duty.utility),
+    };
+    var ch = raw.chargers && typeof raw.chargers === "object" ? raw.chargers : {};
+    d.chargers = {
+      cType: ch.cType != null ? String(ch.cType) : "",
+      iphone: ch.iphone != null ? String(ch.iphone) : "",
+      fivePin: ch.fivePin != null ? String(ch.fivePin) : "",
+    };
+    var etc = raw.etc && typeof raw.etc === "object" ? raw.etc : {};
+    d.etc = {
+      fan: etc.fan != null ? String(etc.fan) : "",
+      duckDown: etc.duckDown != null ? String(etc.duckDown) : "",
+      kidsRobe: etc.kidsRobe != null ? String(etc.kidsRobe) : "",
+    };
+    var extrasIn = raw.extras && typeof raw.extras === "object" ? raw.extras : {};
+    var extrasOut = {};
+    Object.keys(extrasIn).forEach(function (key) {
+      extrasOut[key] = normalizeWingPair(extrasIn[key]);
+    });
+    [
+      "addClean",
+      "oooStay",
+      "emptyStay",
+      "excludeClean",
+      "loCarry",
+      "stayOver",
+      "roomChange",
+      "ventReplace",
+      "linenMissing",
+    ].forEach(function (key) {
+      if (!extrasOut[key]) extrasOut[key] = normalizeWingPair(null);
+    });
+    d.extras = extrasOut;
+    var notes = Array.isArray(raw.notes) ? raw.notes : [];
+    d.notes = [];
+    var i;
+    for (i = 0; i < 10; i++) {
+      var n = notes[i] || {};
+      d.notes.push({
+        category: n.category != null ? String(n.category) : "",
+        main: n.main != null ? String(n.main) : "",
+        annex: n.annex != null ? String(n.annex) : "",
+      });
+    }
+    var incidents = Array.isArray(raw.incidents) ? raw.incidents : [];
+    d.incidents = [];
+    for (i = 0; i < 6; i++) {
+      var inc = incidents[i] || {};
+      d.incidents.push({
+        room: inc.room != null ? String(inc.room) : "",
+        by: inc.by != null ? String(inc.by) : "",
+        dates: inc.dates != null ? String(inc.dates) : "",
+        detail: inc.detail != null ? String(inc.detail) : "",
+      });
+    }
+    return d;
+  }
+
+  function pickNightHandover(baseObj, incObj) {
+    var base = normalizeNightHandover(baseObj && baseObj.nightHandover);
+    if (!Object.prototype.hasOwnProperty.call(incObj || {}, "nightHandover")) {
+      return base;
+    }
+    var inc = normalizeNightHandover(incObj.nightHandover);
+    var ba = base.updatedAt || "";
+    var ia = inc.updatedAt || "";
+    if (ia && (!ba || String(ia) >= String(ba))) return inc;
+    return base;
   }
 
   function defaultHotelInfo() {
@@ -1203,6 +1310,7 @@
     d.gameRanks = normalizeGameRanks(data.gameRanks);
     d.complaintTypeAnalysis = normalizeComplaintTypeAnalysis(data.complaintTypeAnalysis);
     d.trackIt = normalizeTrackIt(data.trackIt);
+    d.nightHandover = normalizeNightHandover(data.nightHandover);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -1584,6 +1692,7 @@
     }
     merged.complaintTypeAnalysis = pickComplaintTypeAnalysis(base, incoming);
     merged.trackIt = pickTrackIt(base, incoming);
+    merged.nightHandover = pickNightHandover(base, incoming);
     return normalize(merged);
   }
 
@@ -1650,5 +1759,7 @@
     normalizeTrackIt: normalizeTrackIt,
     defaultTrackIt: defaultTrackIt,
     mergeTrackIt: mergeTrackIt,
+    normalizeNightHandover: normalizeNightHandover,
+    defaultNightHandover: defaultNightHandover,
   };
 })(typeof window !== "undefined" ? window : this);

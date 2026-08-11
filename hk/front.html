@@ -3194,7 +3194,8 @@
     .main.main--mb-check #mbCheckPanel,
     .main.main--inven-notify #invenNotifyPanel,
     .main.main--complaint #complaintPanel,
-    .main.main--track-it #trackItPanel {
+    .main.main--track-it #trackItPanel,
+    .main.main--night-handover #nightHandoverPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -8954,6 +8955,215 @@
       padding: 4px 10px;
     }
 
+    .track-it-panel .track-it-row-confirm {
+      height: 28px;
+      margin-left: 4px;
+      padding: 0 10px;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      background: #f0fdf4;
+      color: #15803d;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .track-it-row-confirm:hover:not(:disabled) {
+      background: #dcfce7;
+      border-color: #22c55e;
+    }
+
+    .track-it-panel .track-it-row-confirm.is-done,
+    .track-it-panel .track-it-row-confirm:disabled {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #fff;
+      cursor: default;
+      opacity: 1;
+    }
+
+    .track-it-panel .track-it-ship-status.is-ok {
+      color: #15803d;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .complaint-table tbody tr.is-shipped-ok {
+      background: #f0fdf4;
+    }
+
+    /* ── 야간 인계사항 ── */
+    .night-handover-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+
+    .night-handover-panel[hidden] {
+      display: none !important;
+    }
+
+    .night-handover-panel .panel-head-row {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .night-handover-panel h2 {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .nh-title-date {
+      width: 4.5rem;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 6px;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      text-align: center;
+      color: var(--accent);
+    }
+
+    .nh-toolbar {
+      display: inline-flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .nh-save-btn.is-dirty {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .nh-sheet {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: auto;
+    }
+
+    .nh-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.875rem;
+      background: #fff;
+    }
+
+    .nh-table th,
+    .nh-table td {
+      border: 1px solid #334155;
+      padding: 4px;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .nh-th-blue {
+      background: #dbeafe;
+      font-weight: 800;
+      color: #1e3a8a;
+      font-size: 0.8125rem;
+    }
+
+    .nh-th-pink {
+      background: #fce7f3;
+      font-weight: 800;
+      color: #9d174d;
+      font-size: 0.8125rem;
+    }
+
+    .nh-vlabel {
+      line-height: 1.25;
+    }
+
+    .nh-table input[type="text"],
+    .nh-table textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-size: 0.875rem;
+      padding: 6px 8px;
+      min-height: 36px;
+      resize: vertical;
+    }
+
+    .nh-table input[type="text"]:focus,
+    .nh-table textarea:focus {
+      outline: 2px solid #0f766e55;
+      background: #f0fdfa;
+    }
+
+    .nh-table--extras th[scope="row"] {
+      text-align: left;
+      padding-left: 10px;
+      white-space: nowrap;
+      background: #f8fafc;
+      font-weight: 700;
+      width: 28%;
+    }
+
+    .nh-row--highlight,
+    .nh-row--highlight th,
+    .nh-row--highlight td {
+      background: #fef08a !important;
+    }
+
+    .nh-table--notes th:first-child,
+    .nh-table--notes td:first-child {
+      width: 22%;
+    }
+
+    .nh-table--incidents th:nth-child(1),
+    .nh-table--incidents td:nth-child(1) {
+      width: 10%;
+    }
+
+    .nh-table--incidents th:nth-child(2),
+    .nh-table--incidents td:nth-child(2) {
+      width: 12%;
+    }
+
+    .nh-table--incidents th:nth-child(3),
+    .nh-table--incidents td:nth-child(3) {
+      width: 12%;
+    }
+
+    .nh-incident-row td {
+      background: #fce7f3;
+    }
+
+    .nh-table--incidents textarea {
+      text-align: left;
+      min-height: 52px;
+      line-height: 1.4;
+    }
+
+    .night-handover-panel.is-readonly .nh-table input,
+    .night-handover-panel.is-readonly .nh-table textarea,
+    .night-handover-panel.is-readonly .nh-title-date {
+      color: #334155;
+      cursor: default;
+    }
+
     .complaint-table-wrap {
       overflow: auto;
       border: 1px solid var(--border);
@@ -10507,11 +10717,17 @@
             </button>
           </div>
         </nav>
-        <nav class="sidebar-section sidebar-section--handover is-collapsed" aria-label="야간 인계사항">
-          <button type="button" class="sidebar-section__toggle" id="sidebarHandoverToggle" aria-expanded="false" disabled title="준비중">
-            <span class="sidebar-section__toggle-label">야간 인계사항</span>
-            <span class="sidebar-section__toggle-hint">준비중</span>
-          </button>
+        <nav class="sidebar-section sidebar-section--handover" id="sidebarHandoverSection" hidden aria-label="야간 인계사항">
+          <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnNightHandover"
+              aria-pressed="false"
+            >
+              야간 인계사항
+            </button>
+          </div>
         </nav>
         <nav class="sidebar-section sidebar-section--vip-notes is-collapsed" aria-label="VIP 특이사항">
           <button type="button" class="sidebar-section__toggle" id="sidebarVipNotesToggle" aria-expanded="false" disabled title="준비중">
@@ -11184,6 +11400,113 @@
           <span class="complaint-panel__hint"
             >이 버튼을 누르기 전에는 데이터가 유지됩니다 (마감해도 자동 초기화되지 않음).</span
           >
+        </div>
+      </section>
+
+      <section
+        class="night-handover-panel"
+        id="nightHandoverPanel"
+        hidden
+        aria-labelledby="nightHandoverPanelTitle"
+      >
+        <div class="panel-head-row">
+          <h2 id="nightHandoverPanelTitle">
+            야간 인계 사항(
+            <input
+              type="text"
+              class="nh-title-date"
+              id="nhTitleDate"
+              maxlength="12"
+              aria-label="인계 날짜"
+            />)
+          </h2>
+          <div class="nh-toolbar">
+            <button type="button" class="btn-order" id="btnNightHandoverClear">비우기</button>
+            <button type="button" class="btn-order nh-save-btn" id="btnNightHandoverSave">
+              저장 · 동기화
+            </button>
+          </div>
+        </div>
+        <p class="complaint-panel__hint" id="nightHandoverFrontHint" hidden>
+          작성·저장은 프론트 모드에서만 가능합니다.
+        </p>
+
+        <div class="nh-sheet">
+          <table class="nh-table nh-table--top" aria-label="당직·비품">
+            <thead>
+              <tr>
+                <th colspan="2" class="nh-th-blue">야간당직</th>
+                <th class="nh-th-blue">본관</th>
+                <th class="nh-th-blue">별관</th>
+                <th class="nh-th-blue">구분</th>
+                <th class="nh-th-blue">C타입</th>
+                <th class="nh-th-blue">아이폰</th>
+                <th class="nh-th-blue">5핀</th>
+                <th class="nh-th-blue">선풍기</th>
+                <th class="nh-th-blue">덕다운</th>
+                <th class="nh-th-blue">키즈가운</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th rowspan="3" class="nh-th-blue nh-vlabel">야간<br />당직</th>
+                <th class="nh-th-blue">미드</th>
+                <td><input type="text" id="nhDutyMidMain" autocomplete="off" /></td>
+                <td><input type="text" id="nhDutyMidAnnex" autocomplete="off" /></td>
+                <th rowspan="3" class="nh-th-blue">충전기<br />/<br />기타</th>
+                <td rowspan="3"><input type="text" id="nhChargerC" autocomplete="off" /></td>
+                <td rowspan="3"><input type="text" id="nhChargerIphone" autocomplete="off" /></td>
+                <td rowspan="3"><input type="text" id="nhCharger5" autocomplete="off" /></td>
+                <td rowspan="3"><input type="text" id="nhEtcFan" autocomplete="off" /></td>
+                <td rowspan="3"><input type="text" id="nhEtcDuck" autocomplete="off" /></td>
+                <td rowspan="3"><input type="text" id="nhEtcKids" autocomplete="off" /></td>
+              </tr>
+              <tr>
+                <th class="nh-th-blue">올나이트</th>
+                <td><input type="text" id="nhDutyAllMain" autocomplete="off" /></td>
+                <td><input type="text" id="nhDutyAllAnnex" autocomplete="off" /></td>
+              </tr>
+              <tr>
+                <th class="nh-th-blue">유틸리티</th>
+                <td><input type="text" id="nhDutyUtilMain" autocomplete="off" /></td>
+                <td><input type="text" id="nhDutyUtilAnnex" autocomplete="off" /></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="nh-table nh-table--extras" aria-label="야간 추가 사항">
+            <thead>
+              <tr>
+                <th class="nh-th-blue">야간 추가 사항</th>
+                <th class="nh-th-blue">본관</th>
+                <th class="nh-th-blue">별관</th>
+              </tr>
+            </thead>
+            <tbody id="nhExtrasBody"></tbody>
+          </table>
+
+          <table class="nh-table nh-table--notes" aria-label="구분 메모">
+            <thead>
+              <tr>
+                <th class="nh-th-blue">구분</th>
+                <th class="nh-th-blue">본관</th>
+                <th class="nh-th-blue">별관</th>
+              </tr>
+            </thead>
+            <tbody id="nhNotesBody"></tbody>
+          </table>
+
+          <table class="nh-table nh-table--incidents" aria-label="이슈 로그">
+            <thead>
+              <tr>
+                <th class="nh-th-pink">객실</th>
+                <th class="nh-th-pink">담당</th>
+                <th class="nh-th-pink">기간</th>
+                <th class="nh-th-pink">내용</th>
+              </tr>
+            </thead>
+            <tbody id="nhIncidentsBody"></tbody>
+          </table>
         </div>
       </section>
 
@@ -12143,7 +12466,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=track-it-1"></script>
+  <script src="hk-storage.js?v=night-handover-1"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12153,7 +12476,8 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=9"></script>
-  <script src="hk-track-it.js?v=1"></script>
+  <script src="hk-track-it.js?v=2"></script>
+  <script src="hk-night-handover.js?v=1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -15033,6 +15357,13 @@
             if (typeof HKTrackIt !== "undefined" && sidebarMainView === "trackIt") {
               HKTrackIt.render();
             }
+            if (
+              typeof HKNightHandover !== "undefined" &&
+              sidebarMainView === "nightHandover" &&
+              !isHkUserEditing()
+            ) {
+              HKNightHandover.render();
+            }
           }
           applyFrontEmbedStatesFromStorage({ force: true });
         }
@@ -15749,6 +16080,9 @@
         }
         if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
           HKInvenNotify.resetOnCloseDay();
+        }
+        if (typeof HKNightHandover !== "undefined" && HKNightHandover.resetOnCloseDay) {
+          HKNightHandover.resetOnCloseDay();
         }
         resetFrontEmbedPanelsOnCloseDay();
         pendingFacilityMiscAlert = false;
@@ -18151,6 +18485,7 @@
         var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
         var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
         var trackItNav = document.getElementById("sidebarBtnTrackIt");
+        var nightHandoverNav = document.getElementById("sidebarBtnNightHandover");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
@@ -18204,6 +18539,13 @@
             sidebarMainView === "trackIt" ? "true" : "false"
           );
         }
+        if (nightHandoverNav) {
+          nightHandoverNav.classList.toggle("is-active", sidebarMainView === "nightHandover");
+          nightHandoverNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "nightHandover" ? "true" : "false"
+          );
+        }
         if (invenNotifyNav) {
           invenNotifyNav.classList.toggle("is-active", sidebarMainView === "invenNotify");
           invenNotifyNav.setAttribute(
@@ -18251,6 +18593,7 @@
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
         var showTrackIt = view === "trackIt";
+        var showNightHandover = view === "nightHandover";
         var showInvenNotify = view === "invenNotify";
         var showChat = view === "chat";
         var showFront = view === "front";
@@ -18288,6 +18631,7 @@
         var orderPanel = document.getElementById("orderPanel");
         var complaintPanel = document.getElementById("complaintPanel");
         var trackItPanel = document.getElementById("trackItPanel");
+        var nightHandoverPanel = document.getElementById("nightHandoverPanel");
         var facilityPanel = document.getElementById("facilityPanel");
         var facilityMiscPanel = document.getElementById("facilityMiscPanel");
         var facilityDailyFoundPanel = document.getElementById("facilityDailyFoundPanel");
@@ -18305,6 +18649,7 @@
         if (orderPanel) orderPanel.hidden = !showOrder;
         if (complaintPanel) complaintPanel.hidden = !showComplaint;
         if (trackItPanel) trackItPanel.hidden = !showTrackIt;
+        if (nightHandoverPanel) nightHandoverPanel.hidden = !showNightHandover;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
         if (facilityMiscPanel) facilityMiscPanel.hidden = !showFacilityMisc;
         if (facilityDailyFoundPanel) facilityDailyFoundPanel.hidden = !showFacilityDailyFound;
@@ -18326,6 +18671,7 @@
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--complaint", showComplaint);
           mainEl.classList.toggle("main--track-it", showTrackIt);
+          mainEl.classList.toggle("main--night-handover", showNightHandover);
           mainEl.classList.toggle("main--facility", showFacility);
           mainEl.classList.toggle("main--facility-misc", showFacilityMisc);
           mainEl.classList.toggle("main--facility-daily-found", showFacilityDailyFound);
@@ -18370,6 +18716,9 @@
         }
         if (showTrackIt && typeof HKTrackIt !== "undefined" && HKTrackIt.onViewActivated) {
           HKTrackIt.onViewActivated();
+        }
+        if (showNightHandover && typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
+          HKNightHandover.onViewActivated();
         }
         if (showFacilityMisc && typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.onViewActivated("facilityMisc");
@@ -20858,6 +21207,15 @@
         applySidebarMainView("trackIt");
         if (typeof HKTrackIt !== "undefined" && HKTrackIt.onViewActivated) {
           HKTrackIt.onViewActivated();
+        }
+      }
+
+      function showSidebarNightHandoverView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("nightHandover");
+        if (typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
+          HKNightHandover.onViewActivated();
         }
       }
 
@@ -27374,9 +27732,13 @@
         updateZoneAddRoomBtnUi();
         renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
+        var sidebarHandoverSection = document.getElementById("sidebarHandoverSection");
+        if (sidebarHandoverSection) sidebarHandoverSection.hidden = !frontMode;
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
         if (!frontMode && sidebarMainView === "complaint") {
+          showSidebarOrderView();
+        } else if (!frontMode && sidebarMainView === "nightHandover") {
           showSidebarOrderView();
         } else if (
           !frontMode &&
@@ -27400,6 +27762,9 @@
         }
         if (typeof HKTrackIt !== "undefined") {
           HKTrackIt.render();
+        }
+        if (typeof HKNightHandover !== "undefined") {
+          HKNightHandover.onFrontModeChanged();
         }
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
@@ -28649,6 +29014,17 @@
           toast: showHkActionToast,
         });
       }
+      if (typeof HKNightHandover !== "undefined") {
+        HKNightHandover.init({
+          isFrontMode: function () {
+            return frontMode;
+          },
+          toast: showHkActionToast,
+          onLeaveWhenLocked: function () {
+            showSidebarOrderView();
+          },
+        });
+      }
       if (typeof HKAdminInquiry !== "undefined") {
         HKAdminInquiry.init({
           formatAt: formatReqAt,
@@ -29596,6 +29972,7 @@
         var bMbCheck = document.getElementById("sidebarBtnMbCheck");
         var bInvenNotify = document.getElementById("sidebarBtnInvenNotify");
         var bTrackIt = document.getElementById("sidebarBtnTrackIt");
+        var bNightHandover = document.getElementById("sidebarBtnNightHandover");
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
         var bAi = document.getElementById("sidebarBtnAi");
@@ -29680,6 +30057,13 @@
           bTrackIt.addEventListener("click", function () {
             if (sidebarMainView === "trackIt") return;
             showSidebarTrackItView();
+          });
+        }
+        if (bNightHandover) {
+          bNightHandover.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "nightHandover") return;
+            showSidebarNightHandoverView();
           });
         }
         if (bInvenNotify) {
