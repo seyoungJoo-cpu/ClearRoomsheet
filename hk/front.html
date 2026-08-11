@@ -16579,9 +16579,14 @@
           HKInvenNotify.resetOnCloseDay();
         }
         resetFrontEmbedPanelsOnCloseDay();
+        pendingFacilityOrderAlert = false;
+        pendingFacilityOrderIssueAlert = false;
         pendingFacilityMiscAlert = false;
         pendingFacilityDailyAlert = false;
         pendingInvenNotifyAlert = false;
+        if (typeof clearFacilitySidebarAlerts === "function") {
+          clearFacilitySidebarAlerts();
+        }
         initFacilityLogAlertTracking();
         initInvenNotifyAlertTracking();
         applyFacilityLogSidebarAlertUi();

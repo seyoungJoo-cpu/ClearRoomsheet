@@ -1578,7 +1578,7 @@ function mergeOrderLogs(prev, incoming) {
     });
 }
 
-/** 마감 이후에도 남기는 오더(알림용)만 허용. 접수/투입/취소/문제 등은 마감 이전이면 폐기 */
+/** 마감 이후에도 남기는 오더(알림용)만 허용. 시설관리·접수/투입/취소/문제 등은 마감 이전이면 폐기 */
 function hkOrderSurvivesCloseDay(entry, closeDayAt) {
   if (!entry) return false;
   if (!closeDayAt) return true;
@@ -1586,6 +1586,8 @@ function hkOrderSurvivesCloseDay(entry, closeDayAt) {
   var ms = new Date(at).getTime();
   var closeMs = new Date(closeDayAt).getTime();
   if (!isNaN(ms) && !isNaN(closeMs) && ms >= closeMs) return true;
+  // 마감 시 시설 관리 알림은 유지하지 않음
+  if (String(entry.category || "").trim() === "facility") return false;
   var p = entry.phase != null ? String(entry.phase).trim() : "";
   if (
     p === "cancelled" ||
