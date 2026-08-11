@@ -30,6 +30,7 @@
   ];
 
   var DEFAULT_REMARK_ROWS = [
+    { id: "specialNote", label: "특이사항", value: "", highlight: "" },
     { id: "aj", label: "AJ", value: "", highlight: "" },
     { id: "mb", label: "MB", value: "", highlight: "" },
     { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)", value: "", highlight: "" },
@@ -42,6 +43,9 @@
     { id: "tongTeam", label: "롱텀", value: "", highlight: "" },
   ];
   var REMARK_KEYS = DEFAULT_REMARK_ROWS;
+  var FIXED_REMARK_IDS = {
+    specialNote: true,
+  };
 
   var opts = {
     isFrontMode: function () {
@@ -723,12 +727,14 @@
   function rebuildRemarksBody(rows) {
     var tbody = document.getElementById("vipRemarksBody");
     if (!tbody) return;
-    rows = Array.isArray(rows) && rows.length ? rows : defaultRemarkRows();
+    rows = ensureSpecialNoteRow(Array.isArray(rows) && rows.length ? rows : defaultRemarkRows());
     remarkCount = Math.max(MIN_REMARK_ROWS, rows.length);
     tbody.innerHTML = "";
     var i;
     for (i = 0; i < remarkCount; i++) {
       var r = rows[i] || emptyRemarkRow();
+      var fixed = !!(r.id && FIXED_REMARK_IDS[r.id]);
+      if (fixed && r.id === "specialNote") r.label = "특이사항";
       var tr = document.createElement("tr");
       if (r.highlight === "green") tr.className = "vip-row--green";
       tr.innerHTML =
@@ -741,15 +747,21 @@
         '" />' +
         '<textarea id="vipRemarkLabel_' +
         i +
-        '" class="nh-autosize vip-remark-label-input" rows="1" autocomplete="off" aria-label="구분"></textarea>' +
+        '" class="nh-autosize vip-remark-label-input' +
+        (fixed ? " is-fixed-label" : "") +
+        '" rows="1" autocomplete="off" aria-label="구분"' +
+        (fixed ? " readonly" : "") +
+        "></textarea>" +
         "</th>" +
         '<td><textarea id="vipRemarkValue_' +
         i +
         '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
         '<td class="nh-row-actions">' +
-        '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-remark-remove="' +
-        i +
-        '" title="행 삭제" aria-label="특이사항 행 삭제">−</button>' +
+        (fixed
+          ? ""
+          : '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-remark-remove="' +
+            i +
+            '" title="행 삭제" aria-label="특이사항 행 삭제">−</button>') +
         "</td>";
       tbody.appendChild(tr);
       setVal("vipRemarkId_" + i, r.id || "");
@@ -760,17 +772,58 @@
     autosizeAllIn(tbody);
   }
 
+  function ensureSpecialNoteRow(rows) {
+    rows = (rows || []).map(function (r) {
+      r = r || {};
+      return {
+        id: r.id != null ? String(r.id) : "",
+        label: r.label != null ? String(r.label) : "",
+        value: r.value != null ? String(r.value) : "",
+        highlight: r.highlight != null ? String(r.highlight) : "",
+      };
+    });
+    var has = rows.some(function (r) {
+      return r && (r.id === "specialNote" || String(r.label || "").trim() === "특이사항");
+    });
+    if (!has) {
+      var ajIdx = -1;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i] && (rows[i].id === "aj" || String(rows[i].label || "").trim() === "AJ")) {
+          ajIdx = i;
+          break;
+        }
+      }
+      var insertAt = ajIdx >= 0 ? ajIdx : 0;
+      rows.splice(insertAt, 0, {
+        id: "specialNote",
+        label: "특이사항",
+        value: "",
+        highlight: "",
+      });
+    } else {
+      rows.forEach(function (r) {
+        if (r && (r.id === "specialNote" || String(r.label || "").trim() === "특이사항")) {
+          r.id = "specialNote";
+          r.label = "특이사항";
+        }
+      });
+    }
+    return rows;
+  }
+
   function normalizeRemarkRows(pack) {
     if (Array.isArray(pack.remarkRows) && pack.remarkRows.length) {
-      return pack.remarkRows.map(function (r) {
-        r = r || {};
-        return {
-          id: r.id != null ? String(r.id) : "",
-          label: r.label != null ? String(r.label) : "",
-          value: r.value != null ? String(r.value) : "",
-          highlight: r.highlight != null ? String(r.highlight) : "",
-        };
-      });
+      return ensureSpecialNoteRow(
+        pack.remarkRows.map(function (r) {
+          r = r || {};
+          return {
+            id: r.id != null ? String(r.id) : "",
+            label: r.label != null ? String(r.label) : "",
+            value: r.value != null ? String(r.value) : "",
+            highlight: r.highlight != null ? String(r.highlight) : "",
+          };
+        })
+      );
     }
     var rows = defaultRemarkRows();
     var remarks = pack.remarks || {};
@@ -789,7 +842,7 @@
         r.value = String(remarks[r.id]);
       }
     });
-    return rows;
+    return ensureSpecialNoteRow(rows);
   }
 
   function addRemarkRow() {
@@ -804,6 +857,14 @@
   function removeRemarkRow(idx) {
     if (!canEdit()) return;
     var rows = collectRemarkRowsFromDom();
+    if (rows[idx] && rows[idx].id && FIXED_REMARK_IDS[rows[idx].id]) {
+      rows[idx].value = "";
+      if (rows[idx].id === "specialNote") rows[idx].label = "특이사항";
+      rebuildRemarksBody(rows);
+      markDirty();
+      syncEditLock();
+      return;
+    }
     if (rows.length <= MIN_REMARK_ROWS) {
       rows[idx] = emptyRemarkRow();
       rebuildRemarksBody(rows);

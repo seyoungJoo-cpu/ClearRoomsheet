@@ -1636,6 +1636,7 @@
     d.mb = raw.mb != null ? String(raw.mb) : "";
     var remarksIn = raw.remarks && typeof raw.remarks === "object" ? raw.remarks : {};
     var remarkIds = [
+      "specialNote",
       "aj",
       "mb",
       "welcomeCard",
@@ -1673,6 +1674,7 @@
     d.remarks.mb = d.mbList.filter(Boolean).join("\n");
 
     var defaultRemarkDefs = [
+      { id: "specialNote", label: "특이사항", highlight: "" },
       { id: "aj", label: "AJ", highlight: "" },
       { id: "mb", label: "MB", highlight: "" },
       { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)", highlight: "" },
@@ -1708,6 +1710,35 @@
         };
       });
     }
+    (function ensureSpecialNoteInDay(day) {
+      if (!day || !Array.isArray(day.remarkRows)) return;
+      var rows = day.remarkRows;
+      var has = rows.some(function (r) {
+        return r && (r.id === "specialNote" || String(r.label || "").trim() === "특이사항");
+      });
+      if (!has) {
+        var ajIdx = -1;
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i] && (rows[i].id === "aj" || String(rows[i].label || "").trim() === "AJ")) {
+            ajIdx = i;
+            break;
+          }
+        }
+        rows.splice(ajIdx >= 0 ? ajIdx : 0, 0, {
+          id: "specialNote",
+          label: "특이사항",
+          value: day.remarks && day.remarks.specialNote != null ? String(day.remarks.specialNote) : "",
+          highlight: "",
+        });
+      } else {
+        rows.forEach(function (r) {
+          if (r && (r.id === "specialNote" || String(r.label || "").trim() === "특이사항")) {
+            r.id = "specialNote";
+            r.label = "특이사항";
+          }
+        });
+      }
+    })(d);
     return d;
   }
 
