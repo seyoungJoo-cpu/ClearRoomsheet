@@ -7928,12 +7928,14 @@
       font-size: 0.75rem;
     }
 
-    .sched-req-card > .request-feedback__chips {
+    .sched-req-card > .request-feedback__chips,
+    .sched-req-card .hk-strip-cell--status > .request-feedback__chips {
       margin-top: 3px;
       gap: 3px 4px;
     }
 
-    .sched-req-card > .request-feedback__chips .request-quick-chip {
+    .sched-req-card > .request-feedback__chips .request-quick-chip,
+    .sched-req-card .hk-strip-cell--status > .request-feedback__chips .request-quick-chip {
       padding: 1px 5px;
       font-size: 0.625rem;
     }
@@ -10362,9 +10364,108 @@
       margin-top: 4px;
     }
 
+    .main .sched-cards-list > .sched-req-card.is-strip-cols,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols {
+      display: grid;
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
+      gap: 6px 12px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--room {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      min-width: 0;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--wing,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--wing {
+      justify-self: start;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--time,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--time {
+      font-size: 0.8125rem;
+      min-width: 0;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--status,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--status {
+      min-width: 0;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.35;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .room-card__memo,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .room-card__memo {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      font-size: inherit;
+      font-weight: inherit;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .sched-req-card__received,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo .sched-req-card__received {
+      margin-top: 2px;
+      font-size: 0.5625rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .order-chat,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__x,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .order-chat,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__x {
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
+    .main.main--request .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--room {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .room-card__time-display,
+    .main.main--request .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .room-card__time-display,
+    .main.main--request .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .request-feedback__sched,
+    .main.main--request .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .request-feedback__sched {
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+
+    .main.main--request .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .hk-time-em,
+    .main.main--request .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--time .hk-time-em {
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+
     .main .order-work-item:not(.is-strip-cols),
     .main .room-list-main > .room-card,
-    .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--ip-compact),
+    .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--ip-compact):not(.is-strip-cols),
     .confirming-cards-panel .request-feedback__item {
       display: flex;
       flex-wrap: wrap;
@@ -22421,13 +22522,39 @@
           var id = li.getAttribute("data-req-id");
           var entry = findRequestEntry(id);
           if (!entry) return;
+          if (
+            li.classList.contains("sched-req-card--ip-compact") ||
+            li.classList.contains("sched-req-card--confirming-compact")
+          ) {
+            return;
+          }
+          if (isFacilityUnavailable(entry)) return;
+          if (isMultiRoomRequest(entry)) {
+            var chipsHost =
+              li.querySelector(".hk-strip-cell--status .request-feedback__chips") ||
+              li.querySelector(".request-feedback__chips");
+            if (chipsHost) chipsHost.replaceWith(buildRequestRoomChips(entry));
+            return;
+          }
           var st = liveRequestEntryStatus(entry);
-          var head = li.querySelector(".room-card__head");
-          if (!head) return;
-          var oldSt = head.querySelector(".room-card__status, .hk-status-group");
+          var stKeyLive = hkStatusSuffix(st);
+          li.classList.remove(
+            "hk-st--ip",
+            "hk-st--cl",
+            "hk-st--pu",
+            "hk-st--di",
+            "hk-st--oo",
+            "hk-st--os",
+            "hk-st--none"
+          );
+          if (stKeyLive && stKeyLive !== "none") li.classList.add("hk-st--" + stKeyLive);
+          var statusHost =
+            li.querySelector(".hk-strip-cell--status") || li.querySelector(".room-card__head");
+          if (!statusHost) return;
+          var oldSt = statusHost.querySelector(".room-card__status, .hk-status-group");
           var nextSt = buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" });
           if (oldSt) oldSt.replaceWith(nextSt);
-          else head.appendChild(nextSt);
+          else statusHost.appendChild(nextSt);
         });
       }
 
@@ -26025,10 +26152,9 @@
           }
         }
         function buildSchedRequestCard(entry) {
-          var sched = String(entry.sched || "").trim();
           var facDenied = isFacilityUnavailable(entry);
           var li = document.createElement("li");
-          li.className = "room-card sched-req-card";
+          li.className = "room-card sched-req-card is-strip-cols";
           li.setAttribute("data-req-id", entry.id);
           if (entry.urgent) li.classList.add("sched-req-card--urgent");
           if (facDenied) li.classList.add("sched-req-card--facility-unavailable");
@@ -26040,45 +26166,34 @@
           }
           /* 카드 깜빡임 없음 — 사이드바(정비관리/요청)만 알림 */
 
-          var head = document.createElement("div");
-          head.className = "room-card__head";
-          var noBox = document.createElement("span");
-          noBox.className = "room-card__no-box";
-          var no = document.createElement("span");
-          no.className = "room-card__no";
-          no.textContent = entry.room
+          var roomCell = document.createElement("span");
+          roomCell.className = "hk-strip-cell hk-strip-cell--room";
+          roomCell.textContent = entry.room
             ? formatRoomNoDisplay(String(entry.room)) + (entry.quick ? " 중 빠른거" : "")
             : "—";
-          noBox.appendChild(no);
-          var st = facDenied ? "입실 불가" : liveSt;
-          head.appendChild(noBox);
-          appendRoomWingBadge(head, entry.room);
-          if (!multiSched) appendRoomTypeToCardHead(head, entry.room);
-          if (facDenied) {
-            var deniedGroup = document.createElement("span");
-            deniedGroup.className = "hk-status-group";
-            var deniedSt = document.createElement("span");
-            deniedSt.className = "room-card__status sched-req-card__denied-status";
-            deniedSt.textContent = "입실 불가";
-            deniedGroup.appendChild(deniedSt);
-            head.appendChild(deniedGroup);
-          } else if (!multiSched) {
-            head.appendChild(
-              buildRoomStatusGroup(st, entry.room, { statusClass: "room-card__status" })
-            );
-          }
-          li.appendChild(head);
-          if (multiSched && !facDenied) {
-            li.appendChild(buildRequestRoomChips(entry));
+          if (entry.urgent) {
+            var urgBadge = document.createElement("span");
+            urgBadge.className = "request-feedback__item-urgent-badge";
+            urgBadge.textContent = "긴급";
+            urgBadge.setAttribute("aria-label", "긴급");
+            roomCell.appendChild(urgBadge);
           }
 
-          var sl = document.createElement("p");
+          var wingCell = document.createElement("span");
+          wingCell.className = "hk-strip-cell hk-strip-cell--wing";
+          if (!appendRoomWingBadge(wingCell, entry.room)) {
+            wingCell.textContent = "—";
+          }
+
+          var timeCell = document.createElement("div");
+          timeCell.className = "hk-strip-cell hk-strip-cell--time";
+          var sl = document.createElement("div");
           sl.className = "room-card__time-display";
-          appendSchedTimeDisplay(sl, entry, { label: "정비" });
-          li.appendChild(sl);
+          appendSchedTimeDisplay(sl, entry, { label: "예정" });
+          timeCell.appendChild(sl);
           if (frontMode || maintenanceMode) {
-            appendFacilityPendingSchedEl(li, entry, {
-              tagName: "p",
+            appendFacilityPendingSchedEl(timeCell, entry, {
+              tagName: "div",
               className:
                 "room-card__time-display request-feedback__sched" +
                 (facDenied ? "" : " is-facility-pending"),
@@ -26086,17 +26201,32 @@
             });
           }
 
-          var acc = document.createElement("p");
-          acc.className = "room-card__memo sched-req-card__received";
-          setLineWithEmTime(acc, "접수 ", formatReqAt(entry.at));
-          li.appendChild(acc);
+          var statusCell = document.createElement("div");
+          statusCell.className = "hk-strip-cell hk-strip-cell--status";
+          if (!multiSched) appendRoomTypeToCardHead(statusCell, entry.room);
+          if (facDenied) {
+            var deniedGroup = document.createElement("span");
+            deniedGroup.className = "hk-status-group";
+            var deniedSt = document.createElement("span");
+            deniedSt.className = "room-card__status sched-req-card__denied-status";
+            deniedSt.textContent = "입실 불가";
+            deniedGroup.appendChild(deniedSt);
+            statusCell.appendChild(deniedGroup);
+          } else if (multiSched) {
+            statusCell.appendChild(buildRequestRoomChips(entry));
+          } else {
+            statusCell.appendChild(
+              buildRoomStatusGroup(liveSt, entry.room, { statusClass: "room-card__status" })
+            );
+          }
 
+          var memoCell = document.createElement("div");
+          memoCell.className = "hk-strip-cell hk-strip-cell--memo";
           var memoSched = entry.memo != null ? String(entry.memo).trim() : "";
           var memoSchedImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
           if (memoSched || memoSchedImg) {
-            hkAppendMemoBlock(li, "FD", memoSched, memoSchedImg, "room-card__memo");
+            hkAppendMemoBlock(memoCell, "FD", memoSched, memoSchedImg, "room-card__memo");
           }
-
           var memo2Sched = entry.memo2 != null ? String(entry.memo2).trim() : "";
           var memo2SchedImg = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
           if (memo2Sched || memo2SchedImg) {
@@ -26111,8 +26241,20 @@
               m2P.appendChild(m2Line);
             }
             hkAppendImageEl(m2P, memo2SchedImg);
-            li.appendChild(m2P);
+            memoCell.appendChild(m2P);
           }
+          if (entry.at) {
+            var acc = document.createElement("p");
+            acc.className = "sched-req-card__received";
+            setLineWithEmTime(acc, "접수 ", formatReqAt(entry.at));
+            memoCell.appendChild(acc);
+          }
+
+          li.appendChild(roomCell);
+          li.appendChild(wingCell);
+          li.appendChild(timeCell);
+          li.appendChild(statusCell);
+          li.appendChild(memoCell);
 
           if (maintenanceMode || frontMode) {
             var actions = document.createElement("div");
