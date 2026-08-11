@@ -1,5 +1,5 @@
 /**
- * 야간 인계사항 — 웹 폼 작성 · 저장 시 HKStorage 동기화
+ * 야간 인계사항 — 웹 폼 작성 · 저장 시 HKStorage 동기화 (날짜별 byDate)
  * 프론트 모드에서만 편집 · 마감해도 유지(초기화 버튼으로만 삭제)
  */
 (function (global) {
@@ -31,10 +31,34 @@
   var dirty = false;
   var noteCount = DEFAULT_NOTE_ROWS;
   var incidentCount = DEFAULT_INCIDENT_ROWS;
+  var currentDateKey = "";
+
+  function hs() {
+    return global.HKStorage || null;
+  }
+
+  function opsDateKey(now) {
+    var s = hs();
+    if (s && typeof s.defaultOpsDateKey === "function") return s.defaultOpsDateKey(now);
+    now = now || new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= 17) d.setDate(d.getDate() + 1);
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function displayFromKey(key) {
+    var s = hs();
+    if (s && typeof s.dateKeyToDisplay === "function") return s.dateKeyToDisplay(key);
+    var m = String(key || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return String(key || "");
+    return Number(m[2]) + "/" + Number(m[3]);
+  }
 
   function defaultTitleDate(d) {
-    d = d || new Date();
-    return d.getMonth() + 1 + "/" + d.getDate();
+    return displayFromKey(opsDateKey(d));
   }
 
   function emptyWing() {
@@ -49,7 +73,8 @@
     return { room: "", by: "", dates: "", detail: "" };
   }
 
-  function defaultData() {
+  function defaultData(dateKey) {
+    var key = dateKey || currentDateKey || opsDateKey();
     var extras = {};
     EXTRA_KEYS.forEach(function (k) {
       extras[k.id] = emptyWing();
@@ -61,7 +86,8 @@
     for (i = 0; i < DEFAULT_INCIDENT_ROWS; i++) incidents.push(emptyIncident());
     return {
       updatedAt: "",
-      titleDate: defaultTitleDate(),
+      dateKey: key,
+      titleDate: displayFromKey(key),
       duty: {
         mid: emptyWing(),
         allNight: emptyWing(),
@@ -79,32 +105,74 @@
     return !!opts.isFrontMode();
   }
 
-  function loadData() {
-    if (!global.HKStorage || !global.HKStorage.load) return defaultData();
+  function loadPack() {
+    if (!global.HKStorage || !global.HKStorage.load) {
+      return { activeDate: opsDateKey(), updatedAt: "", byDate: {} };
+    }
     var data = global.HKStorage.load();
     if (typeof global.HKStorage.normalizeNightHandover === "function") {
       return global.HKStorage.normalizeNightHandover(data.nightHandover);
     }
     return data.nightHandover && typeof data.nightHandover === "object"
       ? data.nightHandover
-      : defaultData();
+      : { activeDate: opsDateKey(), updatedAt: "", byDate: {} };
   }
 
-  function persist(pack, silentToast) {
+  function normalizeDay(raw) {
+    if (typeof global.HKStorage.normalizeNightHandoverDay === "function") {
+      return global.HKStorage.normalizeNightHandoverDay(raw);
+    }
+    return raw && typeof raw === "object" ? raw : defaultData();
+  }
+
+  function dayFromPack(pack, dateKey) {
+    pack = pack || loadPack();
+    var key = dateKey || currentDateKey || pack.activeDate || opsDateKey();
+    var found = pack.byDate && pack.byDate[key];
+    if (found) {
+      var day = normalizeDay(found);
+      day.dateKey = key;
+      return day;
+    }
+    return defaultData(key);
+  }
+
+  function syncDateInputs(dateKey) {
+    var key = dateKey || currentDateKey || opsDateKey();
+    var titleEl = document.getElementById("nhTitleDate");
+    if (titleEl) titleEl.value = displayFromKey(key);
+    var dateInput = document.getElementById("nhDateInput");
+    if (dateInput) dateInput.value = key;
+  }
+
+  function persist(dayDoc, silentToast) {
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
-    var next = pack || collectFromDom();
-    next.updatedAt = new Date().toISOString();
+    var pack = loadPack();
+    var key = currentDateKey || pack.activeDate || opsDateKey();
+    currentDateKey = key;
+    var day = dayDoc || collectFromDom();
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.updatedAt = new Date().toISOString();
+    day = normalizeDay(day);
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    if (!pack.byDate || typeof pack.byDate !== "object") pack.byDate = {};
+    pack.byDate[key] = day;
+    pack.activeDate = key;
+    pack.updatedAt = day.updatedAt;
     if (typeof global.HKStorage.normalizeNightHandover === "function") {
-      next = global.HKStorage.normalizeNightHandover(next);
+      pack = global.HKStorage.normalizeNightHandover(pack);
     }
-    data.nightHandover = next;
+    data.nightHandover = pack;
     global.HKStorage.save(data);
     if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
       global.HKSync.pushStorageNow();
     }
     dirty = false;
     syncDirtyUi();
+    syncDateInputs(key);
     if (!silentToast && typeof opts.toast === "function") {
       opts.toast("야간 인계사항 저장 · 동기화됨");
     }
@@ -132,8 +200,9 @@
   }
 
   function collectFromDom() {
-    var base = defaultData();
-    base.titleDate = val("nhTitleDate") || defaultTitleDate();
+    var base = defaultData(currentDateKey || opsDateKey());
+    base.dateKey = currentDateKey || base.dateKey;
+    base.titleDate = displayFromKey(base.dateKey);
     base.duty.mid = { main: val("nhDutyMidMain"), annex: val("nhDutyMidAnnex") };
     base.duty.allNight = { main: val("nhDutyAllMain"), annex: val("nhDutyAllAnnex") };
     base.duty.utility = { main: val("nhDutyUtilMain"), annex: val("nhDutyUtilAnnex") };
@@ -271,7 +340,7 @@
   }
 
   function fillTopFields(pack) {
-    setVal("nhTitleDate", pack.titleDate || defaultTitleDate());
+    syncDateInputs(pack.dateKey || currentDateKey);
     var duty = pack.duty || {};
     setVal("nhDutyMidMain", duty.mid && duty.mid.main);
     setVal("nhDutyMidAnnex", duty.mid && duty.mid.annex);
@@ -292,6 +361,57 @@
       setVal("nhEx_" + k.id + "_main", row.main);
       setVal("nhEx_" + k.id + "_annex", row.annex);
     });
+  }
+
+  function fillDay(day) {
+    ensureExtrasBuilt();
+    fillTopFields(day);
+    rebuildNotesBody(day.notes && day.notes.length ? day.notes : null);
+    rebuildIncidentsBody(day.incidents && day.incidents.length ? day.incidents : null);
+    dirty = false;
+    syncEditLock();
+    syncDirtyUi();
+    autosizeAllIn(document.getElementById("nightHandoverPanel"));
+  }
+
+  function switchToDateKey(nextKey) {
+    nextKey = String(nextKey || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextKey)) {
+      syncDateInputs(currentDateKey);
+      return;
+    }
+    if (nextKey === currentDateKey) {
+      syncDateInputs(currentDateKey);
+      return;
+    }
+    if (dirty) {
+      if (
+        !window.confirm(
+          "저장하지 않은 변경사항이 있습니다.\n날짜를 바꾸면 변경사항이 사라집니다. 계속할까요?"
+        )
+      ) {
+        syncDateInputs(currentDateKey);
+        return;
+      }
+    }
+    currentDateKey = nextKey;
+    fillDay(dayFromPack(loadPack(), currentDateKey));
+  }
+
+  function openDatePicker() {
+    var input = document.getElementById("nhDateInput");
+    if (!input) return;
+    input.value = currentDateKey || opsDateKey();
+    try {
+      if (typeof input.showPicker === "function") input.showPicker();
+      else {
+        input.focus();
+        input.click();
+      }
+    } catch (e) {
+      input.focus();
+      input.click();
+    }
   }
 
   function addNoteRow() {
@@ -350,6 +470,15 @@
     if (!root) return;
     root.classList.toggle("is-readonly", !editable);
     root.querySelectorAll("input, textarea, button").forEach(function (el) {
+      if (el.id === "nhDateInput") {
+        el.disabled = false;
+        return;
+      }
+      if (el.id === "nhTitleDate") {
+        el.readOnly = true;
+        el.disabled = false;
+        return;
+      }
       if (
         el.id === "btnNightHandoverSave" ||
         el.id === "btnNightHandoverClear" ||
@@ -357,11 +486,15 @@
         el.id === "btnNightHandoverExcel" ||
         el.id === "btnNhNoteAdd" ||
         el.id === "btnNhIncAdd" ||
+        el.id === "btnNhDateCal" ||
         el.hasAttribute("data-nh-note-remove") ||
         el.hasAttribute("data-nh-inc-remove")
       ) {
-        el.disabled = !editable && el.id !== "btnNightHandoverExcel";
-        if (el.id === "btnNightHandoverExcel") el.disabled = false;
+        if (el.id === "btnNightHandoverExcel" || el.id === "btnNhDateCal") {
+          el.disabled = false;
+          return;
+        }
+        el.disabled = !editable;
         return;
       }
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
@@ -393,15 +526,12 @@
       syncDirtyUi();
       return;
     }
-    ensureExtrasBuilt();
-    var pack = loadData();
-    fillTopFields(pack);
-    rebuildNotesBody(pack.notes && pack.notes.length ? pack.notes : null);
-    rebuildIncidentsBody(pack.incidents && pack.incidents.length ? pack.incidents : null);
-    dirty = false;
-    syncEditLock();
-    syncDirtyUi();
-    autosizeAllIn(document.getElementById("nightHandoverPanel"));
+    var pack = loadPack();
+    if (!currentDateKey) {
+      /* 기본: 오늘(17시 이후면 다음날). 다른 날은 달력으로 이동 */
+      currentDateKey = opsDateKey();
+    }
+    fillDay(dayFromPack(pack, currentDateKey));
   }
 
   function onSave() {
@@ -414,12 +544,9 @@
 
   function onClear() {
     if (!canEdit()) return;
-    if (!window.confirm("야간 인계사항을 초기화할까요?\n내용이 비워지고 바로 동기화됩니다.")) return;
-    var pack = defaultData();
-    ensureExtrasBuilt();
-    fillTopFields(pack);
-    rebuildNotesBody(pack.notes);
-    rebuildIncidentsBody(pack.incidents);
+    if (!window.confirm("야간 인계사항을 초기화할까요?\n이 날짜 내용이 비워지고 바로 동기화됩니다.")) return;
+    var pack = defaultData(currentDateKey || opsDateKey());
+    fillDay(pack);
     persist(collectFromDom(), true);
     if (typeof opts.toast === "function") opts.toast("야간 인계사항 초기화됨");
   }
@@ -444,9 +571,9 @@
       alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
       return;
     }
-    var pack = canEdit() ? collectFromDom() : loadData();
+    var pack = canEdit() ? collectFromDom() : dayFromPack(loadPack(), currentDateKey);
     var aoa = [["항목", "본관", "별관", "기타"]];
-    aoa.push(["날짜", pack.titleDate || "", "", ""]);
+    aoa.push(["날짜", pack.titleDate || displayFromKey(pack.dateKey || currentDateKey) || "", "", ""]);
     var duty = pack.duty || {};
     aoa.push(["미드", (duty.mid && duty.mid.main) || "", (duty.mid && duty.mid.annex) || "", ""]);
     aoa.push([
@@ -490,17 +617,10 @@
   }
 
   function resetOnCloseDay() {
-    if (!global.HKStorage || !global.HKStorage.save) return;
-    var data = global.HKStorage.load();
-    data.nightHandover = defaultData();
-    data.nightHandover.updatedAt = new Date().toISOString();
-    if (typeof global.HKStorage.normalizeNightHandover === "function") {
-      data.nightHandover = global.HKStorage.normalizeNightHandover(data.nightHandover);
-    }
-    global.HKStorage.save(data, { skipSync: true });
+    /* 마감 후에도 유지 — byDate 보존 */
     dirty = false;
     var panel = document.getElementById("nightHandoverPanel");
-    if (panel && !panel.hidden) render();
+    if (panel && !panel.hidden) render(true);
   }
 
   function bindUi() {
@@ -509,10 +629,15 @@
     var panel = document.getElementById("nightHandoverPanel");
     if (panel) {
       panel.addEventListener("input", function (e) {
+        if (e && e.target && e.target.id === "nhDateInput") return;
         markDirty();
         if (e && e.target) autosizeTextarea(e.target);
       });
-      panel.addEventListener("change", function () {
+      panel.addEventListener("change", function (e) {
+        if (e && e.target && e.target.id === "nhDateInput") {
+          switchToDateKey(e.target.value);
+          return;
+        }
         markDirty();
       });
       panel.addEventListener("click", function (e) {
@@ -541,6 +666,14 @@
     if (noteAdd) noteAdd.addEventListener("click", addNoteRow);
     var incAdd = document.getElementById("btnNhIncAdd");
     if (incAdd) incAdd.addEventListener("click", addIncidentRow);
+    var calBtn = document.getElementById("btnNhDateCal");
+    if (calBtn) calBtn.addEventListener("click", openDatePicker);
+    var dateInput = document.getElementById("nhDateInput");
+    if (dateInput) {
+      dateInput.addEventListener("change", function () {
+        switchToDateKey(dateInput.value);
+      });
+    }
   }
 
   function init(userOpts) {

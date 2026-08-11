@@ -1001,7 +1001,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=vip-ui-6"></script>
+  <script src="hk-storage.js?v=bydate-2"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=force-sync-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -2180,6 +2180,11 @@
                 typeof HKStorage.normalizeNightHandover === "function"
                   ? HKStorage.normalizeNightHandover(snapshot.data.nightHandover)
                   : snapshot.data.nightHandover || {};
+              var n =
+                pack && pack.byDate && typeof pack.byDate === "object"
+                  ? Object.keys(pack.byDate).length
+                  : 0;
+              if (n) return n + "일분 (마감 후 유지)";
               return pack && pack.updatedAt ? "있음 (마감 후 유지)" : "없음 (마감 후 유지)";
             })(),
           ],
@@ -2190,6 +2195,11 @@
                 typeof HKStorage.normalizeVipCheckIn === "function"
                   ? HKStorage.normalizeVipCheckIn(snapshot.data.vipCheckIn)
                   : snapshot.data.vipCheckIn || {};
+              var n =
+                pack && pack.byDate && typeof pack.byDate === "object"
+                  ? Object.keys(pack.byDate).length
+                  : 0;
+              if (n) return n + "일분 (마감 후 유지)";
               return pack && pack.updatedAt ? "있음 (마감 후 유지)" : "없음 (마감 후 유지)";
             })(),
           ],
@@ -2445,57 +2455,91 @@
                   ? HKStorage.normalizeNightHandover(snapshot.data.nightHandover)
                   : snapshot.data.nightHandover || {};
               if (!pack || typeof pack !== "object") return [];
-              var rows = [["날짜", pack.titleDate || "", "", ""]];
-              var duty = pack.duty || {};
-              rows.push([
-                "미드",
-                (duty.mid && duty.mid.main) || "",
-                (duty.mid && duty.mid.annex) || "",
-                "",
-              ]);
-              rows.push([
-                "올나이트",
-                (duty.allNight && duty.allNight.main) || "",
-                (duty.allNight && duty.allNight.annex) || "",
-                "",
-              ]);
-              rows.push([
-                "유틸리티",
-                (duty.utility && duty.utility.main) || "",
-                (duty.utility && duty.utility.annex) || "",
-                "",
-              ]);
-              var ch = pack.chargers || {};
-              var etc = pack.etc || {};
-              rows.push([
-                "충전기/기타",
-                ["C:" + (ch.cType || ""), "아이폰:" + (ch.iphone || ""), "5핀:" + (ch.fivePin || "")].join(" "),
-                "",
-                ["선풍기:" + (etc.fan || ""), "덕다운:" + (etc.duckDown || ""), "키즈가운:" + (etc.kidsRobe || "")].join(
-                  " "
-                ),
-              ]);
-              var extras = pack.extras || {};
-              Object.keys(extras).forEach(function (key) {
-                var ex = extras[key] || {};
-                rows.push([key, ex.main || "", ex.annex || "", ""]);
-              });
-              (pack.notes || []).forEach(function (n, i) {
-                if (!n) return;
-                if (!(n.category || n.main || n.annex)) return;
-                rows.push(["메모" + (i + 1) + (n.category ? " · " + n.category : ""), n.main || "", n.annex || "", ""]);
-              });
-              (pack.incidents || []).forEach(function (inc) {
-                if (!inc) return;
-                if (!(inc.room || inc.by || inc.dates || inc.detail)) return;
+
+              function dayRows(day, dateKey) {
+                day = day || {};
+                var rows = [];
+                var title =
+                  (day.titleDate ||
+                    (typeof HKStorage.dateKeyToDisplay === "function"
+                      ? HKStorage.dateKeyToDisplay(dateKey)
+                      : dateKey) ||
+                    "") + (dateKey ? " (" + dateKey + ")" : "");
+                rows.push(["날짜", title, "", ""]);
+                var duty = day.duty || {};
                 rows.push([
-                  "이슈 " + (inc.room || ""),
-                  inc.by || "",
-                  inc.dates || "",
-                  inc.detail || "",
+                  "미드",
+                  (duty.mid && duty.mid.main) || "",
+                  (duty.mid && duty.mid.annex) || "",
+                  "",
                 ]);
-              });
-              return rows;
+                rows.push([
+                  "올나이트",
+                  (duty.allNight && duty.allNight.main) || "",
+                  (duty.allNight && duty.allNight.annex) || "",
+                  "",
+                ]);
+                rows.push([
+                  "유틸리티",
+                  (duty.utility && duty.utility.main) || "",
+                  (duty.utility && duty.utility.annex) || "",
+                  "",
+                ]);
+                var ch = day.chargers || {};
+                var etc = day.etc || {};
+                rows.push([
+                  "충전기/기타",
+                  ["C:" + (ch.cType || ""), "아이폰:" + (ch.iphone || ""), "5핀:" + (ch.fivePin || "")].join(" "),
+                  "",
+                  ["선풍기:" + (etc.fan || ""), "덕다운:" + (etc.duckDown || ""), "키즈가운:" + (etc.kidsRobe || "")].join(
+                    " "
+                  ),
+                ]);
+                var extras = day.extras || {};
+                Object.keys(extras).forEach(function (key) {
+                  var ex = extras[key] || {};
+                  rows.push([key, ex.main || "", ex.annex || "", ""]);
+                });
+                (day.notes || []).forEach(function (n, i) {
+                  if (!n) return;
+                  if (!(n.category || n.main || n.annex)) return;
+                  rows.push(["메모" + (i + 1) + (n.category ? " · " + n.category : ""), n.main || "", n.annex || "", ""]);
+                });
+                (day.incidents || []).forEach(function (inc) {
+                  if (!inc) return;
+                  if (!(inc.room || inc.by || inc.dates || inc.detail)) return;
+                  rows.push([
+                    "이슈 " + (inc.room || ""),
+                    inc.by || "",
+                    inc.dates || "",
+                    inc.detail || "",
+                  ]);
+                });
+                return rows;
+              }
+
+              var byDate = pack.byDate && typeof pack.byDate === "object" ? pack.byDate : null;
+              if (byDate && Object.keys(byDate).length) {
+                var keys = Object.keys(byDate).sort();
+                var active = pack.activeDate && byDate[pack.activeDate] ? String(pack.activeDate) : "";
+                if (active) {
+                  keys = [active].concat(
+                    keys.filter(function (k) {
+                      return k !== active;
+                    })
+                  );
+                }
+                var out = [];
+                keys.forEach(function (k, idx) {
+                  if (keys.length > 1) {
+                    if (idx) out.push(["", "", "", ""]);
+                    out.push(["■ " + k, "", "", ""]);
+                  }
+                  out = out.concat(dayRows(byDate[k], k));
+                });
+                return out;
+              }
+              return dayRows(pack, pack.activeDate || "");
             })(),
           },
           {
@@ -2516,56 +2560,26 @@
                 typeof HKStorage.normalizeVipCheckIn === "function"
                   ? HKStorage.normalizeVipCheckIn(snapshot.data.vipCheckIn)
                   : snapshot.data.vipCheckIn || {};
-              var out = [];
-              out.push([
-                "제목날짜",
-                (pack.titleDate || "") + " / " + (pack.titleYear || ""),
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-              ]);
-              var guests = Array.isArray(pack.guests) ? pack.guests : null;
-              if (guests && guests.length) {
-                guests.forEach(function (g) {
-                  if (!g) return;
-                  if (
-                    !(
-                      g.section ||
-                      g.guestName ||
-                      g.roomNo ||
-                      g.roomStatus ||
-                      g.roomType ||
-                      g.rsvNo ||
-                      g.eta ||
-                      g.checkOut ||
-                      g.remark
-                    )
-                  ) {
-                    return;
-                  }
-                  out.push([
-                    g.mergePrev ? "" : g.section || "",
-                    g.guestName || "",
-                    g.roomNo || "",
-                    g.roomStatus || "",
-                    g.roomType || "",
-                    g.rsvNo || "",
-                    g.eta || "",
-                    g.checkOut || "",
-                    g.remark || "",
-                  ]);
-                });
-              } else {
-                var sections = pack.sections || {};
-                ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
-                  (sections[sec] || []).forEach(function (g) {
+
+              function dayRows(day, dateKey) {
+                day = day || {};
+                var out = [];
+                var titleDate =
+                  (day.titleDate ||
+                    (typeof HKStorage.dateKeyToDisplay === "function"
+                      ? HKStorage.dateKeyToDisplay(dateKey)
+                      : dateKey) ||
+                    "") +
+                  " / " +
+                  (day.titleYear || (dateKey ? String(dateKey).slice(0, 4) : "") || "");
+                out.push(["제목날짜", titleDate, "", "", "", "", "", "", ""]);
+                var guests = Array.isArray(day.guests) ? day.guests : null;
+                if (guests && guests.length) {
+                  guests.forEach(function (g) {
                     if (!g) return;
                     if (
                       !(
+                        g.section ||
                         g.guestName ||
                         g.roomNo ||
                         g.roomStatus ||
@@ -2579,7 +2593,7 @@
                       return;
                     }
                     out.push([
-                      sec,
+                      g.mergePrev ? "" : g.section || "",
                       g.guestName || "",
                       g.roomNo || "",
                       g.roomStatus || "",
@@ -2590,44 +2604,106 @@
                       g.remark || "",
                     ]);
                   });
+                } else {
+                  var sections = day.sections || {};
+                  ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
+                    (sections[sec] || []).forEach(function (g) {
+                      if (!g) return;
+                      if (
+                        !(
+                          g.guestName ||
+                          g.roomNo ||
+                          g.roomStatus ||
+                          g.roomType ||
+                          g.rsvNo ||
+                          g.eta ||
+                          g.checkOut ||
+                          g.remark
+                        )
+                      ) {
+                        return;
+                      }
+                      out.push([
+                        sec,
+                        g.guestName || "",
+                        g.roomNo || "",
+                        g.roomStatus || "",
+                        g.roomType || "",
+                        g.rsvNo || "",
+                        g.eta || "",
+                        g.checkOut || "",
+                        g.remark || "",
+                      ]);
+                    });
+                  });
+                }
+                (day.connecting || []).forEach(function (c) {
+                  if (!c || !(c.rooms || c.midDoor || c.status)) return;
+                  out.push([
+                    "커넥팅",
+                    c.rooms || "",
+                    c.midDoor || "중간문",
+                    c.status || "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                  ]);
                 });
+                var remarks = day.remarks || {};
+                var remarkLabels = {
+                  aj: "AJ",
+                  mb: "MB",
+                  welcomeCard: "웰컴카드 (VOUPS 2,3)",
+                  lateCo: "LATE C/O",
+                  earlyCi: "얼리체크인",
+                  casino: "카지노",
+                  seminar: "세미나 / 단체",
+                  business: "출장",
+                  dami: "답사 룸쇼",
+                  tongTeam: "롱텀",
+                };
+                if (!remarks.aj && day.aj && (day.aj.main || day.aj.annex)) {
+                  remarks.aj = [day.aj.main, day.aj.annex].filter(Boolean).join(" / ");
+                }
+                if (!remarks.mb && day.mb) remarks.mb = day.mb;
+                if (Array.isArray(day.remarkRows) && day.remarkRows.length) {
+                  day.remarkRows.forEach(function (r) {
+                    if (!r || !(r.label || r.value)) return;
+                    out.push([r.label || "", r.value || "", "", "", "", "", "", "", ""]);
+                  });
+                } else {
+                  Object.keys(remarkLabels).forEach(function (k) {
+                    if (!remarks[k]) return;
+                    out.push([remarkLabels[k], remarks[k], "", "", "", "", "", "", ""]);
+                  });
+                }
+                return out;
               }
-              (pack.connecting || []).forEach(function (c) {
-                if (!c || !(c.rooms || c.midDoor || c.status)) return;
-                out.push([
-                  "커넥팅",
-                  c.rooms || "",
-                  c.midDoor || "중간문",
-                  c.status || "",
-                  "",
-                  "",
-                  "",
-                  "",
-                  "",
-                ]);
-              });
-              var remarks = pack.remarks || {};
-              var remarkLabels = {
-                aj: "AJ",
-                mb: "MB",
-                welcomeCard: "웰컴카드 (VOUPS 2,3)",
-                lateCo: "LATE C/O",
-                earlyCi: "얼리체크인",
-                casino: "카지노",
-                seminar: "세미나 / 단체",
-                business: "출장",
-                dami: "답사 룸쇼",
-                tongTeam: "롱텀",
-              };
-              if (!remarks.aj && pack.aj && (pack.aj.main || pack.aj.annex)) {
-                remarks.aj = [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ");
+
+              var byDate = pack.byDate && typeof pack.byDate === "object" ? pack.byDate : null;
+              if (byDate && Object.keys(byDate).length) {
+                var keys = Object.keys(byDate).sort();
+                var active = pack.activeDate && byDate[pack.activeDate] ? String(pack.activeDate) : "";
+                if (active) {
+                  keys = [active].concat(
+                    keys.filter(function (k) {
+                      return k !== active;
+                    })
+                  );
+                }
+                var outAll = [];
+                keys.forEach(function (k, idx) {
+                  if (keys.length > 1) {
+                    if (idx) outAll.push(["", "", "", "", "", "", "", "", ""]);
+                    outAll.push(["■ " + k, "", "", "", "", "", "", "", ""]);
+                  }
+                  outAll = outAll.concat(dayRows(byDate[k], k));
+                });
+                return outAll;
               }
-              if (!remarks.mb && pack.mb) remarks.mb = pack.mb;
-              Object.keys(remarkLabels).forEach(function (k) {
-                if (!remarks[k]) return;
-                out.push([remarkLabels[k], remarks[k], "", "", "", "", "", "", ""]);
-              });
-              return out;
+              return dayRows(pack, pack.activeDate || "");
             })(),
           },
           {

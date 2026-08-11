@@ -54,6 +54,36 @@
   var guestCount = DEFAULT_GUEST_ROWS;
   var connectingCount = DEFAULT_CONNECTING_SLOTS;
   var remarkCount = DEFAULT_REMARK_ROWS.length;
+  var currentDateKey = "";
+
+  function hs() {
+    return global.HKStorage || null;
+  }
+
+  function opsDateKey(now) {
+    var s = hs();
+    if (s && typeof s.defaultOpsDateKey === "function") return s.defaultOpsDateKey(now);
+    now = now || new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= 17) d.setDate(d.getDate() + 1);
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function displayFromKey(key) {
+    var s = hs();
+    if (s && typeof s.dateKeyToDisplay === "function") return s.dateKeyToDisplay(key);
+    var m = String(key || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return String(key || "");
+    return Number(m[2]) + "/" + Number(m[3]);
+  }
+
+  function yearFromKey(key) {
+    var m = String(key || "").match(/^(\d{4})-/);
+    return m ? m[1] : String(new Date().getFullYear());
+  }
 
   function emptyGuest(section) {
     return {
@@ -79,8 +109,7 @@
   }
 
   function defaultTitleDate(d) {
-    d = d || new Date();
-    return d.getMonth() + 1 + "/" + d.getDate();
+    return displayFromKey(opsDateKey(d));
   }
 
   function defaultGuests() {
@@ -116,11 +145,13 @@
     };
   }
 
-  function defaultData() {
+  function defaultData(dateKey) {
+    var key = dateKey || currentDateKey || opsDateKey();
     return {
       updatedAt: "",
-      titleDate: defaultTitleDate(),
-      titleYear: String(new Date().getFullYear()),
+      dateKey: key,
+      titleDate: displayFromKey(key),
+      titleYear: yearFromKey(key),
       guests: defaultGuests(),
       connecting: defaultConnecting(),
       remarkRows: defaultRemarkRows(),
@@ -138,32 +169,76 @@
     return !!opts.isFrontMode();
   }
 
-  function loadData() {
-    if (!global.HKStorage || !global.HKStorage.load) return defaultData();
+  function loadPack() {
+    if (!global.HKStorage || !global.HKStorage.load) {
+      return { activeDate: opsDateKey(), updatedAt: "", byDate: {} };
+    }
     var data = global.HKStorage.load();
     if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
       return global.HKStorage.normalizeVipCheckIn(data.vipCheckIn);
     }
     return data.vipCheckIn && typeof data.vipCheckIn === "object"
       ? data.vipCheckIn
-      : defaultData();
+      : { activeDate: opsDateKey(), updatedAt: "", byDate: {} };
   }
 
-  function persist(pack, silentToast) {
+  function normalizeDay(raw) {
+    if (typeof global.HKStorage.normalizeVipCheckInDay === "function") {
+      return global.HKStorage.normalizeVipCheckInDay(raw);
+    }
+    return raw && typeof raw === "object" ? raw : defaultData();
+  }
+
+  function dayFromPack(pack, dateKey) {
+    pack = pack || loadPack();
+    var key = dateKey || currentDateKey || pack.activeDate || opsDateKey();
+    var found = pack.byDate && pack.byDate[key];
+    if (found) {
+      var day = normalizeDay(found);
+      day.dateKey = key;
+      return day;
+    }
+    return defaultData(key);
+  }
+
+  function syncDateInputs(dateKey) {
+    var key = dateKey || currentDateKey || opsDateKey();
+    setVal("vipTitleDate", displayFromKey(key));
+    setVal("vipTitleYear", yearFromKey(key));
+    var dateInput = document.getElementById("vipDateInput");
+    if (dateInput) dateInput.value = key;
+  }
+
+  function persist(dayDoc, silentToast) {
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
-    var next = pack || collectFromDom();
-    next.updatedAt = new Date().toISOString();
+    var pack = loadPack();
+    var key = currentDateKey || pack.activeDate || opsDateKey();
+    currentDateKey = key;
+    var day = dayDoc || collectFromDom();
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.titleYear = yearFromKey(key);
+    day.updatedAt = new Date().toISOString();
+    day = normalizeDay(day);
+    day.dateKey = key;
+    day.titleDate = displayFromKey(key);
+    day.titleYear = yearFromKey(key);
+    if (!pack.byDate || typeof pack.byDate !== "object") pack.byDate = {};
+    pack.byDate[key] = day;
+    pack.activeDate = key;
+    pack.updatedAt = day.updatedAt;
     if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
-      next = global.HKStorage.normalizeVipCheckIn(next);
+      pack = global.HKStorage.normalizeVipCheckIn(pack);
     }
-    data.vipCheckIn = next;
+    data.vipCheckIn = pack;
     global.HKStorage.save(data);
     if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
       global.HKSync.pushStorageNow();
     }
     dirty = false;
     syncDirtyUi();
+    syncDateInputs(key);
     if (!silentToast && typeof opts.toast === "function") {
       opts.toast("VIP 체크인 리스트 저장 · 동기화됨");
     }
@@ -282,9 +357,10 @@
   }
 
   function collectFromDom() {
-    var base = defaultData();
-    base.titleDate = val("vipTitleDate") || defaultTitleDate();
-    base.titleYear = val("vipTitleYear") || String(new Date().getFullYear());
+    var base = defaultData(currentDateKey || opsDateKey());
+    base.dateKey = currentDateKey || base.dateKey;
+    base.titleDate = displayFromKey(base.dateKey);
+    base.titleYear = yearFromKey(base.dateKey);
     base.guests = collectGuestsFromDom();
     base.connecting = collectConnectingFromDom();
     base.remarkRows = collectRemarkRowsFromDom();
@@ -649,7 +725,16 @@
     if (!root) return;
     root.classList.toggle("is-readonly", !editable);
     root.querySelectorAll("input, textarea, button").forEach(function (el) {
-      if (el.id === "btnVipCheckInExcel") {
+      if (el.id === "vipDateInput") {
+        el.disabled = false;
+        return;
+      }
+      if (el.id === "vipTitleDate" || el.id === "vipTitleYear") {
+        el.readOnly = true;
+        el.disabled = false;
+        return;
+      }
+      if (el.id === "btnVipCheckInExcel" || el.id === "btnVipDateCal") {
         el.disabled = false;
         return;
       }
@@ -691,22 +776,69 @@
     syncDirtyUi();
   }
 
+  function fillDay(day) {
+    syncDateInputs(day.dateKey || currentDateKey);
+    rebuildGuestsBody(day.guests);
+    rebuildConnectingBody(day.connecting);
+    rebuildRemarksBody(normalizeRemarkRows(day));
+    dirty = false;
+    syncEditLock();
+    syncDirtyUi();
+    autosizeAllIn(document.getElementById("vipCheckInPanel"));
+  }
+
+  function switchToDateKey(nextKey) {
+    nextKey = String(nextKey || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextKey)) {
+      syncDateInputs(currentDateKey);
+      return;
+    }
+    if (nextKey === currentDateKey) {
+      syncDateInputs(currentDateKey);
+      return;
+    }
+    if (dirty) {
+      if (
+        !window.confirm(
+          "저장하지 않은 변경사항이 있습니다.\n날짜를 바꾸면 변경사항이 사라집니다. 계속할까요?"
+        )
+      ) {
+        syncDateInputs(currentDateKey);
+        return;
+      }
+    }
+    currentDateKey = nextKey;
+    fillDay(dayFromPack(loadPack(), currentDateKey));
+  }
+
+  function openDatePicker() {
+    var input = document.getElementById("vipDateInput");
+    if (!input) return;
+    input.value = currentDateKey || opsDateKey();
+    try {
+      if (typeof input.showPicker === "function") input.showPicker();
+      else {
+        input.focus();
+        input.click();
+      }
+    } catch (e) {
+      input.focus();
+      input.click();
+    }
+  }
+
   function render(force) {
     if (dirty && !force) {
       syncEditLock();
       syncDirtyUi();
       return;
     }
-    var pack = loadData();
-    setVal("vipTitleDate", pack.titleDate || defaultTitleDate());
-    setVal("vipTitleYear", pack.titleYear || String(new Date().getFullYear()));
-    rebuildGuestsBody(pack.guests);
-    rebuildConnectingBody(pack.connecting);
-    rebuildRemarksBody(normalizeRemarkRows(pack));
-    dirty = false;
-    syncEditLock();
-    syncDirtyUi();
-    autosizeAllIn(document.getElementById("vipCheckInPanel"));
+    var pack = loadPack();
+    if (!currentDateKey) {
+      /* 기본: 오늘(17시 이후면 다음날). 다른 날은 달력으로 이동 */
+      currentDateKey = opsDateKey();
+    }
+    fillDay(dayFromPack(pack, currentDateKey));
   }
 
   function onSave() {
@@ -719,13 +851,9 @@
 
   function onReset() {
     if (!canEdit()) return;
-    if (!window.confirm("VIP 체크인 리스트를 초기화할까요?\n내용이 비워지고 바로 동기화됩니다.")) return;
-    var pack = defaultData();
-    setVal("vipTitleDate", pack.titleDate);
-    setVal("vipTitleYear", pack.titleYear);
-    rebuildGuestsBody(pack.guests);
-    rebuildConnectingBody(pack.connecting);
-    rebuildRemarksBody(pack.remarkRows);
+    if (!window.confirm("VIP 체크인 리스트를 초기화할까요?\n이 날짜 내용이 비워지고 바로 동기화됩니다.")) return;
+    var pack = defaultData(currentDateKey || opsDateKey());
+    fillDay(pack);
     persist(collectFromDom(), true);
     if (typeof opts.toast === "function") opts.toast("VIP 체크인 리스트 초기화됨");
   }
@@ -750,7 +878,7 @@
       alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
       return;
     }
-    var pack = canEdit() ? collectFromDom() : loadData();
+    var pack = canEdit() ? collectFromDom() : dayFromPack(loadPack(), currentDateKey);
     var aoa = [
       [
         "구분",
@@ -766,7 +894,9 @@
     ];
     aoa.push([
       "제목날짜",
-      (pack.titleDate || "") + " / " + (pack.titleYear || ""),
+      (pack.titleDate || displayFromKey(pack.dateKey || currentDateKey) || "") +
+        " / " +
+        (pack.titleYear || yearFromKey(pack.dateKey || currentDateKey) || ""),
       "",
       "",
       "",
@@ -834,17 +964,10 @@
   }
 
   function resetOnCloseDay() {
-    if (!global.HKStorage || !global.HKStorage.save) return;
-    var data = global.HKStorage.load();
-    data.vipCheckIn = defaultData();
-    data.vipCheckIn.updatedAt = new Date().toISOString();
-    if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
-      data.vipCheckIn = global.HKStorage.normalizeVipCheckIn(data.vipCheckIn);
-    }
-    global.HKStorage.save(data, { skipSync: true });
+    /* 마감 후에도 유지 — byDate 보존 */
     dirty = false;
     var panel = document.getElementById("vipCheckInPanel");
-    if (panel && !panel.hidden) render();
+    if (panel && !panel.hidden) render(true);
   }
 
   function bindUi() {
@@ -853,10 +976,17 @@
     var panel = document.getElementById("vipCheckInPanel");
     if (panel) {
       panel.addEventListener("input", function (e) {
+        if (e && e.target && e.target.id === "vipDateInput") return;
         markDirty();
         if (e && e.target) autosizeTextarea(e.target);
       });
-      panel.addEventListener("change", markDirty);
+      panel.addEventListener("change", function (e) {
+        if (e && e.target && e.target.id === "vipDateInput") {
+          switchToDateKey(e.target.value);
+          return;
+        }
+        markDirty();
+      });
       panel.addEventListener("click", function (e) {
         var statusBtn = e.target.closest("[data-vip-conn-status]");
         if (statusBtn) {
@@ -897,6 +1027,14 @@
     if (addConn) addConn.addEventListener("click", addConnectingRow);
     var addRemark = document.getElementById("btnVipRemarkAdd");
     if (addRemark) addRemark.addEventListener("click", addRemarkRow);
+    var calBtn = document.getElementById("btnVipDateCal");
+    if (calBtn) calBtn.addEventListener("click", openDatePicker);
+    var dateInput = document.getElementById("vipDateInput");
+    if (dateInput) {
+      dateInput.addEventListener("change", function () {
+        switchToDateKey(dateInput.value);
+      });
+    }
   }
 
   function init(userOpts) {

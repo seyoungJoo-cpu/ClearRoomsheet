@@ -9042,6 +9042,37 @@
       color: var(--accent);
     }
 
+    .nh-date-cal-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+
+    .nh-date-cal-btn {
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #0f172a;
+    }
+
+    .nh-date-input-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+
     .nh-toolbar {
       display: inline-flex;
       gap: 8px;
@@ -9245,6 +9276,16 @@
     .night-handover-panel.is-readonly .nh-title-date {
       color: #334155;
       cursor: default;
+    }
+
+    .night-handover-panel.is-readonly .nh-row-actions,
+    .night-handover-panel.is-readonly .nh-row-btn,
+    .night-handover-panel.is-readonly .nh-row-addbar,
+    .vip-checkin-panel.is-readonly .nh-row-actions,
+    .vip-checkin-panel.is-readonly .nh-row-btn,
+    .vip-checkin-panel.is-readonly .nh-row-addbar,
+    .vip-checkin-panel.is-readonly #btnVipGuestMerge {
+      display: none !important;
     }
 
     /* ── VIP 체크인 리스트 ── */
@@ -11774,13 +11815,20 @@
         <div class="panel-head-row">
           <h2 id="nightHandoverPanelTitle">
             야간 인계 사항(
-            <input
-              type="text"
-              class="nh-title-date"
-              id="nhTitleDate"
-              maxlength="12"
-              aria-label="인계 날짜"
-            />)
+            <span class="nh-date-cal-wrap">
+              <input
+                type="text"
+                class="nh-title-date"
+                id="nhTitleDate"
+                maxlength="12"
+                aria-label="인계 날짜"
+                readonly
+              />
+              <button type="button" class="nh-date-cal-btn" id="btnNhDateCal" title="날짜 선택" aria-label="날짜 선택">
+                달력
+              </button>
+              <input type="date" class="nh-date-input-hidden" id="nhDateInput" aria-label="날짜 선택" tabindex="-1" />
+            </span>)
           </h2>
           <div class="nh-toolbar">
             <button type="button" class="btn-order" id="btnNightHandoverExcel">엑셀 저장</button>
@@ -11903,9 +11951,14 @@
         <div class="panel-head-row">
           <h2 id="vipCheckInPanelTitle">
             Expected Arrival VIP List For
-            <input type="text" class="vip-title-date" id="vipTitleDate" maxlength="12" aria-label="월/일" />
-            .
-            <input type="text" class="vip-title-year" id="vipTitleYear" maxlength="4" aria-label="연도" />
+            <span class="nh-date-cal-wrap">
+              <input type="text" class="vip-title-date" id="vipTitleDate" maxlength="12" aria-label="월/일" readonly />
+              <input type="text" class="vip-title-year" id="vipTitleYear" maxlength="4" aria-label="연도" readonly />
+              <button type="button" class="nh-date-cal-btn" id="btnVipDateCal" title="날짜 선택" aria-label="날짜 선택">
+                달력
+              </button>
+              <input type="date" class="nh-date-input-hidden" id="vipDateInput" aria-label="날짜 선택" tabindex="-1" />
+            </span>
             (Tentative)
           </h2>
           <div class="nh-toolbar">
@@ -12928,7 +12981,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=vip-ui-6"></script>
+  <script src="hk-storage.js?v=bydate-2"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12937,10 +12990,10 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=9"></script>
-  <script src="hk-track-it.js?v=3"></script>
-  <script src="hk-night-handover.js?v=5"></script>
-  <script src="hk-vip-checkin.js?v=6"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-2"></script>
+  <script src="hk-track-it.js?v=bydate-2"></script>
+  <script src="hk-night-handover.js?v=bydate-1"></script>
+  <script src="hk-vip-checkin.js?v=bydate-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -13142,10 +13195,14 @@
           ) {
             return true;
           }
-          // 야간 인계·VIP 체크인 작성 중 — 동기화로 폼이 덮어씌워지지 않게
+          // 야간 인계·VIP·Track IT·불편사항·인벤 작성 중 — 동기화로 폼이 덮어씌워지지 않게
           if (
             ae.closest &&
-            (ae.closest("#nightHandoverPanel") || ae.closest("#vipCheckInPanel")) &&
+            (ae.closest("#nightHandoverPanel") ||
+              ae.closest("#vipCheckInPanel") ||
+              ae.closest("#trackItPanel") ||
+              ae.closest("#complaintPanel") ||
+              ae.closest("#invenNotifyPanel")) &&
             (ae.tagName === "TEXTAREA" ||
               ae.tagName === "INPUT" ||
               ae.tagName === "SELECT" ||
@@ -13165,6 +13222,27 @@
           typeof HKVipCheckIn !== "undefined" &&
           HKVipCheckIn.isDirty &&
           HKVipCheckIn.isDirty()
+        ) {
+          return true;
+        }
+        if (
+          typeof HKTrackIt !== "undefined" &&
+          HKTrackIt.isDirty &&
+          HKTrackIt.isDirty()
+        ) {
+          return true;
+        }
+        if (
+          typeof HKComplaintAnalysis !== "undefined" &&
+          HKComplaintAnalysis.isDirty &&
+          HKComplaintAnalysis.isDirty()
+        ) {
+          return true;
+        }
+        if (
+          typeof HKInvenNotify !== "undefined" &&
+          HKInvenNotify.isDraftDirty &&
+          HKInvenNotify.isDraftDirty()
         ) {
           return true;
         }
@@ -15829,7 +15907,8 @@
             renderFacilityDeskChat({ force: true });
             if (
               sidebarMainView === "invenNotify" &&
-              typeof HKInvenNotify !== "undefined"
+              typeof HKInvenNotify !== "undefined" &&
+              !(HKInvenNotify.isDraftDirty && HKInvenNotify.isDraftDirty())
             ) {
               HKInvenNotify.render();
             }
@@ -15838,12 +15917,19 @@
             }
             if (
               typeof HKComplaintAnalysis !== "undefined" &&
-              sidebarMainView === "complaint"
+              sidebarMainView === "complaint" &&
+              !(HKComplaintAnalysis.isDirty && HKComplaintAnalysis.isDirty()) &&
+              !isHkUserEditing()
             ) {
-              HKComplaintAnalysis.render();
+              HKComplaintAnalysis.render({ preserveForm: false });
             }
-            if (typeof HKTrackIt !== "undefined" && sidebarMainView === "trackIt") {
-              HKTrackIt.render();
+            if (
+              typeof HKTrackIt !== "undefined" &&
+              sidebarMainView === "trackIt" &&
+              !(HKTrackIt.isDirty && HKTrackIt.isDirty()) &&
+              !isHkUserEditing()
+            ) {
+              HKTrackIt.render({ preserveForm: false });
             }
             if (
               typeof HKNightHandover !== "undefined" &&

@@ -35,6 +35,35 @@
   var editingId = "";
   var statsYear = "all";
   var bound = false;
+  var formDirty = false;
+
+  function getField(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function formHasTypedContent() {
+    return !!(
+      getField("complaintReservationNo") ||
+      getField("complaintGuestName") ||
+      getField("complaintRoomNo") ||
+      getField("complaintMemo") ||
+      formTypeId ||
+      formRoomChange
+    );
+  }
+
+  function isDirty() {
+    return !!editingId || !!formDirty || formHasTypedContent();
+  }
+
+  function markFormDirty() {
+    formDirty = true;
+  }
+
+  function clearFormDirty() {
+    formDirty = false;
+  }
 
   function pad2(n) {
     return (n < 10 ? "0" : "") + n;
@@ -97,12 +126,19 @@
       : { updatedAt: "", records: [] };
   }
 
-  function persistRecords(records, stamp) {
+  function persistRecords(records, stamp, deletedIds) {
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
+    var prev = loadPack();
     var next = {
       updatedAt: stamp || new Date().toISOString(),
       records: records || [],
+      deletedIds:
+        deletedIds && typeof deletedIds === "object"
+          ? deletedIds
+          : prev.deletedIds && typeof prev.deletedIds === "object"
+            ? prev.deletedIds
+            : {},
     };
     if (typeof global.HKStorage.normalizeComplaintTypeAnalysis === "function") {
       next = global.HKStorage.normalizeComplaintTypeAnalysis(next);
@@ -182,6 +218,7 @@
       memo.value = "";
       fitMemoHeight(memo);
     }
+    clearFormDirty();
     syncFormTypeUi();
     syncFormRoomChangeUi();
     syncFormModeUi();
@@ -327,6 +364,7 @@
       memo.value = row.memo || "";
       fitMemoHeight(memo);
     }
+    clearFormDirty();
     syncFormTypeUi();
     syncFormRoomChangeUi();
     syncFormModeUi();
@@ -520,12 +558,16 @@
     if (hint) hint.hidden = editable;
   }
 
-  function render() {
+  function render(optsRender) {
+    var preserveForm = !!(optsRender && optsRender.preserveForm) || isDirty();
     renderTypeChips();
     syncPageTabs();
-    syncFormTypeUi();
-    syncFormRoomChangeUi();
+    if (!preserveForm) {
+      syncFormTypeUi();
+      syncFormRoomChangeUi();
+    }
     updateEntryControls();
+    syncFormModeUi();
     if (activePage === 1) renderTable();
     else renderStats();
   }
@@ -617,7 +659,9 @@
     var records = (pack.records || []).filter(function (r) {
       return r && r.id !== id;
     });
-    persistRecords(records, stamp);
+    var deletedIds = Object.assign({}, pack.deletedIds || {});
+    deletedIds[id] = stamp;
+    persistRecords(records, stamp, deletedIds);
     if (editingId === id) resetForm();
     renderTable();
     opts.toast("삭제되었습니다.");
@@ -638,7 +682,12 @@
       return;
     }
     var stamp = new Date().toISOString();
-    persistRecords([], stamp);
+    var deletedIds = Object.assign({}, pack.deletedIds || {});
+    (pack.records || []).forEach(function (r) {
+      if (r && r.id) deletedIds[r.id] = stamp;
+    });
+    persistRecords([], stamp, deletedIds);
+    resetForm();
     render();
     opts.toast("불편사항 유형분석이 초기화되었습니다.");
   }
@@ -653,6 +702,8 @@
         e.preventDefault();
         addRecord();
       });
+      form.addEventListener("input", markFormDirty);
+      form.addEventListener("change", markFormDirty);
     }
 
     var cancelEditBtn = document.getElementById("btnComplaintEditCancel");
@@ -689,6 +740,7 @@
         var btn = e.target.closest("[data-type-id]");
         if (!btn || !chips.contains(btn)) return;
         formTypeId = btn.getAttribute("data-type-id") || "";
+        markFormDirty();
         syncFormTypeUi();
       });
     }
@@ -698,12 +750,14 @@
     if (btnO) {
       btnO.addEventListener("click", function () {
         formRoomChange = true;
+        markFormDirty();
         syncFormRoomChangeUi();
       });
     }
     if (btnX) {
       btnX.addEventListener("click", function () {
         formRoomChange = false;
+        markFormDirty();
         syncFormRoomChangeUi();
       });
     }
@@ -780,5 +834,6 @@
     onViewActivated: onViewActivated,
     onFrontModeChanged: onFrontModeChanged,
     TYPE_OPTIONS: TYPE_OPTIONS,
+    isDirty: isDirty,
   };
 })(typeof window !== "undefined" ? window : this);

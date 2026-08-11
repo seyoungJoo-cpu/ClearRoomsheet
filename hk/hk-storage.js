@@ -800,7 +800,7 @@
   var COMPLAINT_TYPE_IDS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
   function defaultComplaintTypeAnalysis() {
-    return { updatedAt: "", records: [] };
+    return { updatedAt: "", records: [], deletedIds: {} };
   }
 
   function normalizeComplaintTypeRecord(raw) {
@@ -829,15 +829,31 @@
     };
   }
 
+  function normalizeComplaintDeletedIds(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object") return out;
+    Object.keys(raw).forEach(function (id) {
+      var key = String(id || "").trim();
+      if (!key) return;
+      var at = raw[id] != null ? String(raw[id]).trim() : "";
+      if (at) out[key] = at;
+    });
+    return out;
+  }
+
   function normalizeComplaintTypeAnalysis(raw) {
     var d = defaultComplaintTypeAnalysis();
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    d.deletedIds = normalizeComplaintDeletedIds(raw.deletedIds);
     var list = [];
     var seen = {};
     (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
       var n = normalizeComplaintTypeRecord(row);
       if (!n || seen[n.id]) return;
+      var delAt = d.deletedIds[n.id] || "";
+      var liveAt = n.updatedAt || n.createdAt || "";
+      if (delAt && (!liveAt || String(delAt) >= String(liveAt))) return;
       seen[n.id] = true;
       list.push(n);
     });
@@ -851,9 +867,44 @@
     return d;
   }
 
+  function mergeComplaintDeletedIds(baseMap, incMap) {
+    var out = {};
+    var keys = {};
+    Object.keys(baseMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(incMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(keys).forEach(function (k) {
+      var ba = baseMap && baseMap[k] ? String(baseMap[k]) : "";
+      var ia = incMap && incMap[k] ? String(incMap[k]) : "";
+      if (ia && (!ba || String(ia) >= String(ba))) out[k] = ia;
+      else if (ba) out[k] = ba;
+    });
+    return out;
+  }
+
   function mergeComplaintTypeAnalysis(baseRaw, incRaw) {
     var base = normalizeComplaintTypeAnalysis(baseRaw);
     var inc = normalizeComplaintTypeAnalysis(incRaw);
+    var ba = base.updatedAt || "";
+    var ia2 = inc.updatedAt || "";
+    if (ia2 && (!ba || String(ia2) > String(ba)) && !inc.records.length) {
+      return normalizeComplaintTypeAnalysis({
+        updatedAt: ia2,
+        records: [],
+        deletedIds: mergeComplaintDeletedIds(base.deletedIds, inc.deletedIds),
+      });
+    }
+    if (ba && (!ia2 || String(ba) > String(ia2)) && !base.records.length) {
+      return normalizeComplaintTypeAnalysis({
+        updatedAt: ba,
+        records: [],
+        deletedIds: mergeComplaintDeletedIds(base.deletedIds, inc.deletedIds),
+      });
+    }
+    var deletedIds = mergeComplaintDeletedIds(base.deletedIds, inc.deletedIds);
     var map = {};
     base.records.forEach(function (r) {
       map[r.id] = r;
@@ -868,13 +919,12 @@
       var ia = r.updatedAt || r.createdAt || "";
       if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
     });
-    var ba = base.updatedAt || "";
-    var ia2 = inc.updatedAt || "";
     return normalizeComplaintTypeAnalysis({
       updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
       records: Object.keys(map).map(function (k) {
         return map[k];
       }),
+      deletedIds: deletedIds,
     });
   }
 
@@ -887,7 +937,7 @@
   }
 
   function defaultTrackIt() {
-    return { updatedAt: "", records: [] };
+    return { updatedAt: "", records: [], deletedIds: {} };
   }
 
   function normalizeTrackItRecord(raw) {
@@ -918,15 +968,31 @@
     };
   }
 
+  function normalizeTrackItDeletedIds(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object") return out;
+    Object.keys(raw).forEach(function (id) {
+      var key = String(id || "").trim();
+      if (!key) return;
+      var at = raw[id] != null ? String(raw[id]).trim() : "";
+      if (at) out[key] = at;
+    });
+    return out;
+  }
+
   function normalizeTrackIt(raw) {
     var d = defaultTrackIt();
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    d.deletedIds = normalizeTrackItDeletedIds(raw.deletedIds);
     var list = [];
     var seen = {};
     (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
       var n = normalizeTrackItRecord(row);
       if (!n || seen[n.id]) return;
+      var delAt = d.deletedIds[n.id] || "";
+      var liveAt = n.updatedAt || n.createdAt || "";
+      if (delAt && (!liveAt || String(delAt) >= String(liveAt))) return;
       seen[n.id] = true;
       list.push(n);
     });
@@ -940,9 +1006,45 @@
     return d;
   }
 
+  function mergeTrackItDeletedIds(baseMap, incMap) {
+    var out = {};
+    var keys = {};
+    Object.keys(baseMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(incMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(keys).forEach(function (k) {
+      var ba = baseMap && baseMap[k] ? String(baseMap[k]) : "";
+      var ia = incMap && incMap[k] ? String(incMap[k]) : "";
+      if (ia && (!ba || String(ia) >= String(ba))) out[k] = ia;
+      else if (ba) out[k] = ba;
+    });
+    return out;
+  }
+
   function mergeTrackIt(baseRaw, incRaw) {
     var base = normalizeTrackIt(baseRaw);
     var inc = normalizeTrackIt(incRaw);
+    var ba = base.updatedAt || "";
+    var ia2 = inc.updatedAt || "";
+    // 최신 쪽에서 전체 비움(초기화)이면 잔여 레코드와 합치지 않음
+    if (ia2 && (!ba || String(ia2) > String(ba)) && !inc.records.length) {
+      return normalizeTrackIt({
+        updatedAt: ia2,
+        records: [],
+        deletedIds: mergeTrackItDeletedIds(base.deletedIds, inc.deletedIds),
+      });
+    }
+    if (ba && (!ia2 || String(ba) > String(ia2)) && !base.records.length) {
+      return normalizeTrackIt({
+        updatedAt: ba,
+        records: [],
+        deletedIds: mergeTrackItDeletedIds(base.deletedIds, inc.deletedIds),
+      });
+    }
+    var deletedIds = mergeTrackItDeletedIds(base.deletedIds, inc.deletedIds);
     var map = {};
     base.records.forEach(function (r) {
       map[r.id] = r;
@@ -957,13 +1059,12 @@
       var ia = r.updatedAt || r.createdAt || "";
       if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
     });
-    var ba = base.updatedAt || "";
-    var ia2 = inc.updatedAt || "";
     return normalizeTrackIt({
       updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
       records: Object.keys(map).map(function (k) {
         return map[k];
       }),
+      deletedIds: deletedIds,
     });
   }
 
@@ -975,12 +1076,130 @@
     return mergeTrackIt(baseInfo, incObj.trackIt);
   }
 
-  function defaultNightHandover() {
-    if (typeof global.HKNightHandover !== "undefined" && global.HKNightHandover.defaultData) {
-      return global.HKNightHandover.defaultData();
+  var BY_DATE_KEEP_DAYS = 60;
+
+  function pad2(n) {
+    n = Number(n);
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function formatDateKey(d) {
+    d = d instanceof Date ? d : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  function defaultOpsDateKey(now) {
+    now = now || new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (now.getHours() >= 17) d.setDate(d.getDate() + 1);
+    return formatDateKey(d);
+  }
+
+  function dateKeyToDisplay(key) {
+    var m = String(key || "").trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return String(key || "");
+    return Number(m[2]) + "/" + Number(m[3]);
+  }
+
+  function parseTitleDateToKey(titleDate, titleYear) {
+    var s = String(titleDate || "").trim();
+    if (!s) return "";
+    var iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) {
+      var di = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      if (
+        di.getFullYear() === Number(iso[1]) &&
+        di.getMonth() === Number(iso[2]) - 1 &&
+        di.getDate() === Number(iso[3])
+      ) {
+        return formatDateKey(di);
+      }
+      return "";
     }
+    var y = parseInt(titleYear, 10);
+    if (!y || isNaN(y)) y = new Date().getFullYear();
+    var mdy = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (mdy) {
+      var yy = Number(mdy[3]);
+      if (yy < 100) yy += 2000;
+      var d1 = new Date(yy, Number(mdy[1]) - 1, Number(mdy[2]));
+      if (
+        d1.getFullYear() === yy &&
+        d1.getMonth() === Number(mdy[1]) - 1 &&
+        d1.getDate() === Number(mdy[2])
+      ) {
+        return formatDateKey(d1);
+      }
+      return "";
+    }
+    var md = s.match(/^(\d{1,2})[\/\-.](\d{1,2})$/);
+    if (md) {
+      var d2 = new Date(y, Number(md[1]) - 1, Number(md[2]));
+      if (d2.getMonth() === Number(md[1]) - 1 && d2.getDate() === Number(md[2])) {
+        return formatDateKey(d2);
+      }
+    }
+    return "";
+  }
+
+  function isValidDateKey(key) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(key || "").trim());
+  }
+
+  function pruneByDateMap(byDate, keepDays) {
+    byDate = byDate && typeof byDate === "object" ? byDate : {};
+    keepDays = keepDays != null ? keepDays : BY_DATE_KEEP_DAYS;
+    var cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - keepDays);
+    var cutoffKey = formatDateKey(cutoff);
+    var out = {};
+    Object.keys(byDate).forEach(function (k) {
+      if (!isValidDateKey(k)) return;
+      if (String(k) >= cutoffKey) out[k] = byDate[k];
+    });
+    var keys = Object.keys(out).sort();
+    if (keys.length > keepDays) {
+      var keep = keys.slice(-keepDays);
+      var trimmed = {};
+      keep.forEach(function (k) {
+        trimmed[k] = out[k];
+      });
+      return trimmed;
+    }
+    return out;
+  }
+
+  function maxUpdatedAt() {
+    var max = "";
+    var i;
+    for (i = 0; i < arguments.length; i++) {
+      var v = arguments[i] != null ? String(arguments[i]).trim() : "";
+      if (v && (!max || String(v) > String(max))) max = v;
+    }
+    return max;
+  }
+
+  function inferOpsDateKeyFromRaw(raw) {
+    if (!raw || typeof raw !== "object") return defaultOpsDateKey();
+    if (isValidDateKey(raw.activeDate)) return String(raw.activeDate).trim();
+    if (isValidDateKey(raw.dateKey)) return String(raw.dateKey).trim();
+    var fromTitle = parseTitleDateToKey(raw.titleDate, raw.titleYear);
+    if (fromTitle) return fromTitle;
+    var at = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    if (/^\d{4}-\d{2}-\d{2}/.test(at)) return at.slice(0, 10);
+    return defaultOpsDateKey();
+  }
+
+  function looksLikeByDatePack(raw) {
+    return !!(raw && typeof raw === "object" && raw.byDate && typeof raw.byDate === "object");
+  }
+
+  function emptyNightHandoverDay() {
     return {
       updatedAt: "",
+      dateKey: "",
       titleDate: "",
       duty: {
         mid: { main: "", annex: "" },
@@ -995,6 +1214,26 @@
     };
   }
 
+  function defaultNightHandoverDay() {
+    if (typeof global.HKNightHandover !== "undefined" && global.HKNightHandover.defaultData) {
+      var day = global.HKNightHandover.defaultData();
+      if (day && typeof day === "object" && !looksLikeByDatePack(day)) return day;
+    }
+    return emptyNightHandoverDay();
+  }
+
+  function defaultNightHandover() {
+    var key = defaultOpsDateKey();
+    var day = defaultNightHandoverDay();
+    day.dateKey = key;
+    day.titleDate = day.titleDate || dateKeyToDisplay(key);
+    return {
+      activeDate: key,
+      updatedAt: "",
+      byDate: {},
+    };
+  }
+
   function normalizeWingPair(raw) {
     return {
       main: raw && raw.main != null ? String(raw.main) : "",
@@ -1002,11 +1241,17 @@
     };
   }
 
-  function normalizeNightHandover(raw) {
-    var d = defaultNightHandover();
+  function normalizeNightHandoverDay(raw) {
+    var d = emptyNightHandoverDay();
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
-    d.titleDate = raw.titleDate != null ? String(raw.titleDate).trim() : d.titleDate || "";
+    d.dateKey = isValidDateKey(raw.dateKey)
+      ? String(raw.dateKey).trim()
+      : inferOpsDateKeyFromRaw(raw);
+    d.titleDate =
+      raw.titleDate != null && String(raw.titleDate).trim()
+        ? String(raw.titleDate).trim()
+        : dateKeyToDisplay(d.dateKey);
     var duty = raw.duty && typeof raw.duty === "object" ? raw.duty : {};
     d.duty = {
       mid: normalizeWingPair(duty.mid),
@@ -1077,24 +1322,113 @@
     return d;
   }
 
+  function normalizeNightHandover(raw) {
+    var pack = {
+      activeDate: defaultOpsDateKey(),
+      updatedAt: "",
+      byDate: {},
+    };
+    if (!raw || typeof raw !== "object") return pack;
+
+    if (looksLikeByDatePack(raw)) {
+      var byDateIn = raw.byDate || {};
+      Object.keys(byDateIn).forEach(function (k) {
+        var day = normalizeNightHandoverDay(byDateIn[k]);
+        var key = isValidDateKey(k) ? String(k).trim() : day.dateKey;
+        if (!isValidDateKey(key)) return;
+        day.dateKey = key;
+        if (!day.titleDate) day.titleDate = dateKeyToDisplay(key);
+        pack.byDate[key] = day;
+        pack.updatedAt = maxUpdatedAt(pack.updatedAt, day.updatedAt);
+      });
+      if (isValidDateKey(raw.activeDate)) pack.activeDate = String(raw.activeDate).trim();
+      else if (Object.keys(pack.byDate).length) {
+        pack.activeDate = Object.keys(pack.byDate).sort().slice(-1)[0];
+      }
+      if (raw.updatedAt != null && String(raw.updatedAt).trim()) {
+        pack.updatedAt = maxUpdatedAt(pack.updatedAt, String(raw.updatedAt).trim());
+      }
+      pack.byDate = pruneByDateMap(pack.byDate);
+      return pack;
+    }
+
+    /* legacy flat day → migrate into byDate[inferredKey] */
+    var day = normalizeNightHandoverDay(raw);
+    var key = inferOpsDateKeyFromRaw(raw);
+    day.dateKey = key;
+    if (!day.titleDate) day.titleDate = dateKeyToDisplay(key);
+    pack.activeDate = key;
+    pack.updatedAt = day.updatedAt || "";
+    pack.byDate[key] = day;
+    pack.byDate = pruneByDateMap(pack.byDate);
+    return pack;
+  }
+
+  function pickByDatePack(basePack, incPack) {
+    var base = basePack && typeof basePack === "object" ? basePack : { activeDate: "", updatedAt: "", byDate: {} };
+    var inc = incPack && typeof incPack === "object" ? incPack : { activeDate: "", updatedAt: "", byDate: {} };
+    var byDate = {};
+    var baseMap = base.byDate && typeof base.byDate === "object" ? base.byDate : {};
+    var incMap = inc.byDate && typeof inc.byDate === "object" ? inc.byDate : {};
+    var keys = {};
+    Object.keys(baseMap).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(incMap).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(keys).forEach(function (k) {
+      var bd = baseMap[k];
+      var id = incMap[k];
+      if (!bd) {
+        byDate[k] = id;
+        return;
+      }
+      if (!id) {
+        byDate[k] = bd;
+        return;
+      }
+      var ba = bd.updatedAt != null ? String(bd.updatedAt) : "";
+      var ia = id.updatedAt != null ? String(id.updatedAt) : "";
+      byDate[k] = ia && (!ba || String(ia) >= String(ba)) ? id : bd;
+    });
+    var baPack = base.updatedAt != null ? String(base.updatedAt) : "";
+    var iaPack = inc.updatedAt != null ? String(inc.updatedAt) : "";
+    var newerIsInc = iaPack && (!baPack || String(iaPack) >= String(baPack));
+    var activeDate = "";
+    if (newerIsInc && isValidDateKey(inc.activeDate)) activeDate = String(inc.activeDate).trim();
+    else if (!newerIsInc && isValidDateKey(base.activeDate)) activeDate = String(base.activeDate).trim();
+    else if (isValidDateKey(inc.activeDate)) activeDate = String(inc.activeDate).trim();
+    else if (isValidDateKey(base.activeDate)) activeDate = String(base.activeDate).trim();
+    else {
+      var sorted = Object.keys(byDate).sort();
+      activeDate = sorted.length ? sorted[sorted.length - 1] : defaultOpsDateKey();
+    }
+    byDate = pruneByDateMap(byDate);
+    var updatedAt = maxUpdatedAt(baPack, iaPack);
+    Object.keys(byDate).forEach(function (k) {
+      if (byDate[k] && byDate[k].updatedAt) updatedAt = maxUpdatedAt(updatedAt, byDate[k].updatedAt);
+    });
+    return {
+      activeDate: activeDate,
+      updatedAt: updatedAt,
+      byDate: byDate,
+    };
+  }
+
   function pickNightHandover(baseObj, incObj) {
     var base = normalizeNightHandover(baseObj && baseObj.nightHandover);
     if (!Object.prototype.hasOwnProperty.call(incObj || {}, "nightHandover")) {
       return base;
     }
     var inc = normalizeNightHandover(incObj.nightHandover);
-    var ba = base.updatedAt || "";
-    var ia = inc.updatedAt || "";
-    if (ia && (!ba || String(ia) >= String(ba))) return inc;
-    return base;
+    return pickByDatePack(base, inc);
   }
 
-  function defaultVipCheckIn() {
-    if (typeof global.HKVipCheckIn !== "undefined" && global.HKVipCheckIn.defaultData) {
-      return global.HKVipCheckIn.defaultData();
-    }
+  function emptyVipCheckInDay() {
     return {
       updatedAt: "",
+      dateKey: "",
       titleDate: "",
       titleYear: "",
       guests: [
@@ -1117,6 +1451,23 @@
       aj: { main: "", annex: "" },
       mb: "",
       remarks: {},
+    };
+  }
+
+  function defaultVipCheckInDay() {
+    if (typeof global.HKVipCheckIn !== "undefined" && global.HKVipCheckIn.defaultData) {
+      var day = global.HKVipCheckIn.defaultData();
+      if (day && typeof day === "object" && !looksLikeByDatePack(day)) return day;
+    }
+    return emptyVipCheckInDay();
+  }
+
+  function defaultVipCheckIn() {
+    var key = defaultOpsDateKey();
+    return {
+      activeDate: key,
+      updatedAt: "",
+      byDate: {},
     };
   }
 
@@ -1179,12 +1530,23 @@
     return guests;
   }
 
-  function normalizeVipCheckIn(raw) {
-    var d = defaultVipCheckIn();
+  function normalizeVipCheckInDay(raw) {
+    var d = emptyVipCheckInDay();
     if (!raw || typeof raw !== "object") return d;
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
-    d.titleDate = raw.titleDate != null ? String(raw.titleDate).trim() : d.titleDate || "";
-    d.titleYear = raw.titleYear != null ? String(raw.titleYear).trim() : d.titleYear || "";
+    d.dateKey = isValidDateKey(raw.dateKey)
+      ? String(raw.dateKey).trim()
+      : inferOpsDateKeyFromRaw(raw);
+    d.titleDate =
+      raw.titleDate != null && String(raw.titleDate).trim()
+        ? String(raw.titleDate).trim()
+        : dateKeyToDisplay(d.dateKey);
+    d.titleYear =
+      raw.titleYear != null && String(raw.titleYear).trim()
+        ? String(raw.titleYear).trim()
+        : d.dateKey
+          ? String(d.dateKey).slice(0, 4)
+          : String(new Date().getFullYear());
 
     var guests = [];
     if (Array.isArray(raw.guests) && raw.guests.length) {
@@ -1336,16 +1698,56 @@
     return d;
   }
 
+  function normalizeVipCheckIn(raw) {
+    var pack = {
+      activeDate: defaultOpsDateKey(),
+      updatedAt: "",
+      byDate: {},
+    };
+    if (!raw || typeof raw !== "object") return pack;
+
+    if (looksLikeByDatePack(raw)) {
+      var byDateIn = raw.byDate || {};
+      Object.keys(byDateIn).forEach(function (k) {
+        var day = normalizeVipCheckInDay(byDateIn[k]);
+        var key = isValidDateKey(k) ? String(k).trim() : day.dateKey;
+        if (!isValidDateKey(key)) return;
+        day.dateKey = key;
+        if (!day.titleDate) day.titleDate = dateKeyToDisplay(key);
+        if (!day.titleYear) day.titleYear = String(key).slice(0, 4);
+        pack.byDate[key] = day;
+        pack.updatedAt = maxUpdatedAt(pack.updatedAt, day.updatedAt);
+      });
+      if (isValidDateKey(raw.activeDate)) pack.activeDate = String(raw.activeDate).trim();
+      else if (Object.keys(pack.byDate).length) {
+        pack.activeDate = Object.keys(pack.byDate).sort().slice(-1)[0];
+      }
+      if (raw.updatedAt != null && String(raw.updatedAt).trim()) {
+        pack.updatedAt = maxUpdatedAt(pack.updatedAt, String(raw.updatedAt).trim());
+      }
+      pack.byDate = pruneByDateMap(pack.byDate);
+      return pack;
+    }
+
+    var day = normalizeVipCheckInDay(raw);
+    var key = inferOpsDateKeyFromRaw(raw);
+    day.dateKey = key;
+    if (!day.titleDate) day.titleDate = dateKeyToDisplay(key);
+    if (!day.titleYear) day.titleYear = String(key).slice(0, 4);
+    pack.activeDate = key;
+    pack.updatedAt = day.updatedAt || "";
+    pack.byDate[key] = day;
+    pack.byDate = pruneByDateMap(pack.byDate);
+    return pack;
+  }
+
   function pickVipCheckIn(baseObj, incObj) {
     var base = normalizeVipCheckIn(baseObj && baseObj.vipCheckIn);
     if (!Object.prototype.hasOwnProperty.call(incObj || {}, "vipCheckIn")) {
       return base;
     }
     var inc = normalizeVipCheckIn(incObj.vipCheckIn);
-    var ba = base.updatedAt || "";
-    var ia = inc.updatedAt || "";
-    if (ia && (!ba || String(ia) >= String(ba))) return inc;
-    return base;
+    return pickByDatePack(base, inc);
   }
 
   function defaultHotelInfo() {
@@ -2030,8 +2432,15 @@
     defaultTrackIt: defaultTrackIt,
     mergeTrackIt: mergeTrackIt,
     normalizeNightHandover: normalizeNightHandover,
+    normalizeNightHandoverDay: normalizeNightHandoverDay,
     defaultNightHandover: defaultNightHandover,
     normalizeVipCheckIn: normalizeVipCheckIn,
+    normalizeVipCheckInDay: normalizeVipCheckInDay,
     defaultVipCheckIn: defaultVipCheckIn,
+    pad2: pad2,
+    formatDateKey: formatDateKey,
+    defaultOpsDateKey: defaultOpsDateKey,
+    dateKeyToDisplay: dateKeyToDisplay,
+    parseTitleDateToKey: parseTitleDateToKey,
   };
 })(typeof window !== "undefined" ? window : this);

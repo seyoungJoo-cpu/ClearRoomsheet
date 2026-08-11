@@ -13,6 +13,32 @@
   var formShipType = "cod"; // cod=착불, urgent=긴급
   var editingId = "";
   var bound = false;
+  var formDirty = false;
+
+  function formHasTypedContent() {
+    return !!(
+      getField("trackItAddress") ||
+      getField("trackItZip") ||
+      getField("trackItName") ||
+      getField("trackItPhone") ||
+      getField("trackItItem") ||
+      getField("trackItCheckoutDate") ||
+      getField("trackItRoomNo") ||
+      formShipType === "urgent"
+    );
+  }
+
+  function isDirty() {
+    return !!editingId || !!formDirty || formHasTypedContent();
+  }
+
+  function markFormDirty() {
+    formDirty = true;
+  }
+
+  function clearFormDirty() {
+    formDirty = false;
+  }
 
   function pad2(n) {
     return (n < 10 ? "0" : "") + n;
@@ -55,12 +81,19 @@
       : { updatedAt: "", records: [] };
   }
 
-  function persistRecords(records, stamp) {
+  function persistRecords(records, stamp, deletedIds) {
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
+    var prev = loadPack();
     var next = {
       updatedAt: stamp || new Date().toISOString(),
       records: records || [],
+      deletedIds:
+        deletedIds && typeof deletedIds === "object"
+          ? deletedIds
+          : prev.deletedIds && typeof prev.deletedIds === "object"
+            ? prev.deletedIds
+            : {},
     };
     if (typeof global.HKStorage.normalizeTrackIt === "function") {
       next = global.HKStorage.normalizeTrackIt(next);
@@ -141,6 +174,7 @@
     setField("trackItItem", "");
     setField("trackItCheckoutDate", "");
     setField("trackItRoomNo", "");
+    clearFormDirty();
     syncShipTypeUi();
     syncFormModeUi();
   }
@@ -247,6 +281,7 @@
     setField("trackItItem", row.item);
     setField("trackItCheckoutDate", toDateInputValue(row.checkoutDate));
     setField("trackItRoomNo", row.roomNo);
+    clearFormDirty();
     syncShipTypeUi();
     syncFormModeUi();
   }
@@ -255,11 +290,14 @@
     if (!canEdit() || !id) return;
     if (!window.confirm("이 Track IT 항목을 삭제할까요?")) return;
     var pack = loadPack();
+    var nowIso = new Date().toISOString();
     var next = (pack.records || []).filter(function (r) {
       return r && r.id !== id;
     });
+    var deletedIds = Object.assign({}, pack.deletedIds || {});
+    deletedIds[id] = nowIso;
     if (editingId === id) resetForm();
-    persistRecords(next);
+    persistRecords(next, nowIso, deletedIds);
     render();
     if (typeof opts.toast === "function") opts.toast("삭제되었습니다.");
   }
@@ -363,7 +401,13 @@
   function resetAll() {
     if (!canEdit()) return;
     if (!window.confirm("Track IT 등록 목록을 모두 비울까요? (마감과 별개)")) return;
-    persistRecords([], new Date().toISOString());
+    var pack = loadPack();
+    var nowIso = new Date().toISOString();
+    var deletedIds = Object.assign({}, pack.deletedIds || {});
+    (pack.records || []).forEach(function (r) {
+      if (r && r.id) deletedIds[r.id] = nowIso;
+    });
+    persistRecords([], nowIso, deletedIds);
     resetForm();
     render();
     if (typeof opts.toast === "function") opts.toast("Track IT가 초기화되었습니다.");
@@ -438,7 +482,8 @@
     if (typeof opts.toast === "function") opts.toast("Track IT 엑셀 저장됨");
   }
 
-  function render() {
+  function render(optsRender) {
+    var preserveForm = !!(optsRender && optsRender.preserveForm) || isDirty();
     var hint = document.getElementById("trackItEditLockHint");
     if (hint) hint.hidden = canEdit();
     var form = document.getElementById("trackItForm");
@@ -451,8 +496,12 @@
         }
       });
     }
-    syncShipTypeUi();
-    syncFormModeUi();
+    if (!preserveForm) {
+      syncShipTypeUi();
+      syncFormModeUi();
+    } else {
+      syncFormModeUi();
+    }
     renderTable();
   }
 
@@ -460,19 +509,25 @@
     if (bound) return;
     bound = true;
     var form = document.getElementById("trackItForm");
-    if (form) form.addEventListener("submit", onSubmit);
+    if (form) {
+      form.addEventListener("submit", onSubmit);
+      form.addEventListener("input", markFormDirty);
+      form.addEventListener("change", markFormDirty);
+    }
 
     var btnCod = document.getElementById("trackItShipCod");
     var btnUrgent = document.getElementById("trackItShipUrgent");
     if (btnCod) {
       btnCod.addEventListener("click", function () {
         formShipType = "cod";
+        markFormDirty();
         syncShipTypeUi();
       });
     }
     if (btnUrgent) {
       btnUrgent.addEventListener("click", function () {
         formShipType = "urgent";
+        markFormDirty();
         syncShipTypeUi();
       });
     }
@@ -541,5 +596,6 @@
     render: render,
     onViewActivated: onViewActivated,
     downloadExcel: downloadExcel,
+    isDirty: isDirty,
   };
 })(typeof window !== "undefined" ? window : this);

@@ -1056,19 +1056,21 @@ function mergeHkStorage(prev, incoming) {
       staleOut.trackIt = mergeTrackItForServer(prev.trackIt, null, false);
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "nightHandover")) {
-      staleOut.nightHandover = pickUpdatedAtDocForServer(
+      staleOut.nightHandover = mergeByDatePackForServer(
         prev.nightHandover,
         incoming.nightHandover,
-        true
+        true,
+        normalizeByDatePackLooseForServer
       );
     } else if (prev.nightHandover) {
       staleOut.nightHandover = prev.nightHandover;
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "vipCheckIn")) {
-      staleOut.vipCheckIn = pickUpdatedAtDocForServer(
+      staleOut.vipCheckIn = mergeByDatePackForServer(
         prev.vipCheckIn,
         incoming.vipCheckIn,
-        true
+        true,
+        normalizeByDatePackLooseForServer
       );
     } else if (prev.vipCheckIn) {
       staleOut.vipCheckIn = prev.vipCheckIn;
@@ -1340,15 +1342,17 @@ function mergeHkStorage(prev, incoming) {
       incoming.trackIt,
       Object.prototype.hasOwnProperty.call(incoming, "trackIt")
     ),
-    nightHandover: pickUpdatedAtDocForServer(
+    nightHandover: mergeByDatePackForServer(
       prev.nightHandover,
       incoming.nightHandover,
-      Object.prototype.hasOwnProperty.call(incoming, "nightHandover")
+      Object.prototype.hasOwnProperty.call(incoming, "nightHandover"),
+      normalizeByDatePackLooseForServer
     ),
-    vipCheckIn: pickUpdatedAtDocForServer(
+    vipCheckIn: mergeByDatePackForServer(
       prev.vipCheckIn,
       incoming.vipCheckIn,
-      Object.prototype.hasOwnProperty.call(incoming, "vipCheckIn")
+      Object.prototype.hasOwnProperty.call(incoming, "vipCheckIn"),
+      normalizeByDatePackLooseForServer
     ),
     gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
   };
@@ -1613,13 +1617,27 @@ function hkFilterOrdersAfterCloseDay(arr, closeDayAt) {
 
 function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) {
   function norm(raw) {
-    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
+    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [], deletedIds: {} };
+    var deletedIds = {};
+    if (raw.deletedIds && typeof raw.deletedIds === "object") {
+      Object.keys(raw.deletedIds).forEach(function (id) {
+        var key = String(id || "").trim();
+        if (!key) return;
+        var at = raw.deletedIds[id] != null ? String(raw.deletedIds[id]).trim() : "";
+        if (at) deletedIds[key] = at;
+      });
+    }
     var seen = {};
     var records = [];
     (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
       if (!row || typeof row !== "object") return;
       var id = row.id != null ? String(row.id).trim() : "";
       if (!id || seen[id]) return;
+      var delAt = deletedIds[id] || "";
+      var liveAt =
+        (row.updatedAt != null ? String(row.updatedAt) : "") ||
+        (row.createdAt != null ? String(row.createdAt) : "");
+      if (delAt && (!liveAt || String(delAt) >= String(liveAt))) return;
       seen[id] = true;
       var typeId = row.typeId != null ? String(row.typeId).trim() : "";
       var roomChange = false;
@@ -1644,11 +1662,46 @@ function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) 
     return {
       updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
       records: records,
+      deletedIds: deletedIds,
     };
+  }
+  function mergeDeleted(baseMap, incMap) {
+    var out = {};
+    var keys = {};
+    Object.keys(baseMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(incMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(keys).forEach(function (k) {
+      var ba = baseMap && baseMap[k] ? String(baseMap[k]) : "";
+      var ia = incMap && incMap[k] ? String(incMap[k]) : "";
+      if (ia && (!ba || String(ia) >= String(ba))) out[k] = ia;
+      else if (ba) out[k] = ba;
+    });
+    return out;
   }
   var base = norm(prevRaw);
   if (!hasIncoming) return base;
   var inc = norm(incomingRaw);
+  var ba = base.updatedAt || "";
+  var ia2 = inc.updatedAt || "";
+  if (ia2 && (!ba || String(ia2) > String(ba)) && !inc.records.length) {
+    return {
+      updatedAt: ia2,
+      records: [],
+      deletedIds: mergeDeleted(base.deletedIds, inc.deletedIds),
+    };
+  }
+  if (ba && (!ia2 || String(ba) > String(ia2)) && !base.records.length) {
+    return {
+      updatedAt: ba,
+      records: [],
+      deletedIds: mergeDeleted(base.deletedIds, inc.deletedIds),
+    };
+  }
+  var deletedIds = mergeDeleted(base.deletedIds, inc.deletedIds);
   var map = {};
   base.records.forEach(function (r) {
     map[r.id] = r;
@@ -1663,8 +1716,11 @@ function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) 
     var ia = r.updatedAt || r.createdAt || "";
     if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
   });
-  var ba = base.updatedAt || "";
-  var ia2 = inc.updatedAt || "";
+  Object.keys(map).forEach(function (id) {
+    var delAt = deletedIds[id] || "";
+    var liveAt = map[id].updatedAt || map[id].createdAt || "";
+    if (delAt && (!liveAt || String(delAt) >= String(liveAt))) delete map[id];
+  });
   return {
     updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
     records: Object.keys(map)
@@ -1677,18 +1733,33 @@ function mergeComplaintTypeAnalysisForServer(prevRaw, incomingRaw, hasIncoming) 
         if (ta !== tb) return String(ta).localeCompare(String(tb));
         return String(a.id).localeCompare(String(b.id));
       }),
+    deletedIds: deletedIds,
   };
 }
 
 function mergeTrackItForServer(prevRaw, incomingRaw, hasIncoming) {
   function norm(raw) {
-    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [] };
+    if (!raw || typeof raw !== "object") return { updatedAt: "", records: [], deletedIds: {} };
+    var deletedIds = {};
+    if (raw.deletedIds && typeof raw.deletedIds === "object") {
+      Object.keys(raw.deletedIds).forEach(function (id) {
+        var key = String(id || "").trim();
+        if (!key) return;
+        var at = raw.deletedIds[id] != null ? String(raw.deletedIds[id]).trim() : "";
+        if (at) deletedIds[key] = at;
+      });
+    }
     var seen = {};
     var records = [];
     (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
       if (!row || typeof row !== "object") return;
       var id = row.id != null ? String(row.id).trim() : "";
       if (!id || seen[id]) return;
+      var delAt = deletedIds[id] || "";
+      var liveAt =
+        (row.updatedAt != null ? String(row.updatedAt) : "") ||
+        (row.createdAt != null ? String(row.createdAt) : "");
+      if (delAt && (!liveAt || String(delAt) >= String(liveAt))) return;
       seen[id] = true;
       var shipType = row.shipType != null ? String(row.shipType).trim() : "cod";
       if (shipType !== "urgent") shipType = "cod";
@@ -1717,11 +1788,46 @@ function mergeTrackItForServer(prevRaw, incomingRaw, hasIncoming) {
     return {
       updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
       records: records,
+      deletedIds: deletedIds,
     };
+  }
+  function mergeDeleted(baseMap, incMap) {
+    var out = {};
+    var keys = {};
+    Object.keys(baseMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(incMap || {}).forEach(function (k) {
+      keys[k] = true;
+    });
+    Object.keys(keys).forEach(function (k) {
+      var ba = baseMap && baseMap[k] ? String(baseMap[k]) : "";
+      var ia = incMap && incMap[k] ? String(incMap[k]) : "";
+      if (ia && (!ba || String(ia) >= String(ba))) out[k] = ia;
+      else if (ba) out[k] = ba;
+    });
+    return out;
   }
   var base = norm(prevRaw);
   if (!hasIncoming) return base;
   var inc = norm(incomingRaw);
+  var ba = base.updatedAt || "";
+  var ia2 = inc.updatedAt || "";
+  if (ia2 && (!ba || String(ia2) > String(ba)) && !inc.records.length) {
+    return {
+      updatedAt: ia2,
+      records: [],
+      deletedIds: mergeDeleted(base.deletedIds, inc.deletedIds),
+    };
+  }
+  if (ba && (!ia2 || String(ba) > String(ia2)) && !base.records.length) {
+    return {
+      updatedAt: ba,
+      records: [],
+      deletedIds: mergeDeleted(base.deletedIds, inc.deletedIds),
+    };
+  }
+  var deletedIds = mergeDeleted(base.deletedIds, inc.deletedIds);
   var map = {};
   base.records.forEach(function (r) {
     map[r.id] = r;
@@ -1736,8 +1842,11 @@ function mergeTrackItForServer(prevRaw, incomingRaw, hasIncoming) {
     var ia = r.updatedAt || r.createdAt || "";
     if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
   });
-  var ba = base.updatedAt || "";
-  var ia2 = inc.updatedAt || "";
+  Object.keys(map).forEach(function (id) {
+    var delAt = deletedIds[id] || "";
+    var liveAt = (map[id].updatedAt || map[id].createdAt || "");
+    if (delAt && (!liveAt || String(delAt) >= String(liveAt))) delete map[id];
+  });
   return {
     updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
     records: Object.keys(map)
@@ -1750,6 +1859,7 @@ function mergeTrackItForServer(prevRaw, incomingRaw, hasIncoming) {
         if (ta !== tb) return String(ta).localeCompare(String(tb));
         return String(a.id).localeCompare(String(b.id));
       }),
+    deletedIds: deletedIds,
   };
 }
 
@@ -1763,6 +1873,106 @@ function pickUpdatedAtDocForServer(prevRaw, incomingRaw, hasIncoming) {
   var ia = inc.updatedAt != null ? String(inc.updatedAt) : "";
   if (ia && (!ba || String(ia) >= String(ba))) return inc;
   return prev;
+}
+
+function normalizeByDatePackLooseForServer(raw) {
+  if (!raw || typeof raw !== "object") {
+    return { activeDate: "", updatedAt: "", byDate: {} };
+  }
+  if (raw.byDate && typeof raw.byDate === "object") {
+    var byDate = {};
+    Object.keys(raw.byDate).forEach(function (k) {
+      var day = raw.byDate[k];
+      if (!day || typeof day !== "object") return;
+      byDate[k] = day;
+    });
+    return {
+      activeDate: raw.activeDate != null ? String(raw.activeDate) : "",
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+      byDate: byDate,
+    };
+  }
+  /* legacy flat day document */
+  var inferred =
+    (raw.activeDate != null && String(raw.activeDate).trim()) ||
+    (raw.dateKey != null && String(raw.dateKey).trim()) ||
+    (raw.updatedAt != null && /^\d{4}-\d{2}-\d{2}/.test(String(raw.updatedAt))
+      ? String(raw.updatedAt).slice(0, 10)
+      : "") ||
+    "legacy";
+  var day = Object.assign({}, raw);
+  day.dateKey = inferred;
+  var pack = {
+    activeDate: inferred,
+    updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+    byDate: {},
+  };
+  pack.byDate[inferred] = day;
+  return pack;
+}
+
+function mergeByDatePackForServer(prev, inc, hasIncoming, normalizePack) {
+  var normalize =
+    typeof normalizePack === "function" ? normalizePack : normalizeByDatePackLooseForServer;
+  if (!hasIncoming) {
+    return prev && typeof prev === "object" ? normalize(prev) : null;
+  }
+  var base = normalize(prev && typeof prev === "object" ? prev : null);
+  var incoming = normalize(inc && typeof inc === "object" ? inc : null);
+  if (!prev || typeof prev !== "object") return incoming;
+  if (!inc || typeof inc !== "object") return base;
+
+  var byDate = {};
+  var baseMap = base.byDate || {};
+  var incMap = incoming.byDate || {};
+  var keys = {};
+  Object.keys(baseMap).forEach(function (k) {
+    keys[k] = true;
+  });
+  Object.keys(incMap).forEach(function (k) {
+    keys[k] = true;
+  });
+  Object.keys(keys).forEach(function (k) {
+    var bd = baseMap[k];
+    var id = incMap[k];
+    if (!bd) {
+      byDate[k] = id;
+      return;
+    }
+    if (!id) {
+      byDate[k] = bd;
+      return;
+    }
+    var ba = bd.updatedAt != null ? String(bd.updatedAt) : "";
+    var ia = id.updatedAt != null ? String(id.updatedAt) : "";
+    byDate[k] = ia && (!ba || String(ia) >= String(ba)) ? id : bd;
+  });
+
+  var baPack = base.updatedAt != null ? String(base.updatedAt) : "";
+  var iaPack = incoming.updatedAt != null ? String(incoming.updatedAt) : "";
+  var newerIsInc = iaPack && (!baPack || String(iaPack) >= String(baPack));
+  var activeDate = "";
+  if (newerIsInc && incoming.activeDate) activeDate = String(incoming.activeDate);
+  else if (!newerIsInc && base.activeDate) activeDate = String(base.activeDate);
+  else if (incoming.activeDate) activeDate = String(incoming.activeDate);
+  else if (base.activeDate) activeDate = String(base.activeDate);
+  else {
+    var sorted = Object.keys(byDate).sort();
+    activeDate = sorted.length ? sorted[sorted.length - 1] : "";
+  }
+
+  var updatedAt = baPack;
+  if (iaPack && (!updatedAt || String(iaPack) >= String(updatedAt))) updatedAt = iaPack;
+  Object.keys(byDate).forEach(function (k) {
+    var u = byDate[k] && byDate[k].updatedAt != null ? String(byDate[k].updatedAt) : "";
+    if (u && (!updatedAt || String(u) > String(updatedAt))) updatedAt = u;
+  });
+
+  return {
+    activeDate: activeDate,
+    updatedAt: updatedAt,
+    byDate: byDate,
+  };
 }
 
 function adminInquiryHasReply(entry) {
