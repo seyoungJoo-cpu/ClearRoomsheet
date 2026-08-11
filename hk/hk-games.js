@@ -2113,7 +2113,7 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 누른 동안 와이어(떼면 해제, 최대 2.7초) · 팁 수집');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 누른 동안 와이어(떼면 해제, 최대 1초) · 팁 수집');
     return { id: 'mines', destroy: c.destroy };
   };
 
