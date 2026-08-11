@@ -11743,7 +11743,7 @@
           </div>
         </div>
         <p class="complaint-panel__hint" id="nightHandoverFrontHint" hidden>
-          작성·저장은 프론트 모드에서만 가능합니다. 마감해도 유지되며 초기화 버튼으로만 비워집니다.
+          작성·저장은 프론트 모드에서만 가능합니다. 정비 입력 모드에서는 조회만 가능합니다.
         </p>
 
         <div class="nh-sheet">
@@ -11856,7 +11856,7 @@
           </div>
         </div>
         <p class="complaint-panel__hint" id="vipCheckInFrontHint" hidden>
-          작성·저장은 프론트 모드에서만 가능합니다. 마감해도 유지되며 초기화 버튼으로만 비워집니다.
+          작성·저장은 프론트 모드에서만 가능합니다. 정비 입력 모드에서는 조회만 가능합니다.
         </p>
 
         <div class="vip-sheet">
@@ -28125,6 +28125,25 @@
         }
       }
 
+      function syncNightVipSidebarUi() {
+        var canView = !!(frontMode || maintenanceMode);
+        var sidebarHandoverSection = document.getElementById("sidebarHandoverSection");
+        if (sidebarHandoverSection) sidebarHandoverSection.hidden = !canView;
+        var sidebarVipCheckInSection = document.getElementById("sidebarVipCheckInSection");
+        if (sidebarVipCheckInSection) sidebarVipCheckInSection.hidden = !canView;
+        if (!canView) {
+          if (sidebarMainView === "nightHandover" || sidebarMainView === "vipCheckIn") {
+            showSidebarOrderView();
+          }
+        }
+        if (typeof HKNightHandover !== "undefined" && HKNightHandover.onFrontModeChanged) {
+          HKNightHandover.onFrontModeChanged();
+        }
+        if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.onFrontModeChanged) {
+          HKVipCheckIn.onFrontModeChanged();
+        }
+      }
+
       function applyMaintenanceModeUi() {
         var btnMaint = document.getElementById("btnMaint");
         if (btnMaint) {
@@ -28134,6 +28153,7 @@
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
         syncRequestFeedbackLayoutUi();
+        syncNightVipSidebarUi();
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
             HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
@@ -28159,17 +28179,10 @@
         updateZoneAddRoomBtnUi();
         renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
-        var sidebarHandoverSection = document.getElementById("sidebarHandoverSection");
-        if (sidebarHandoverSection) sidebarHandoverSection.hidden = !frontMode;
-        var sidebarVipCheckInSection = document.getElementById("sidebarVipCheckInSection");
-        if (sidebarVipCheckInSection) sidebarVipCheckInSection.hidden = !frontMode;
+        syncNightVipSidebarUi();
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
         if (!frontMode && sidebarMainView === "complaint") {
-          showSidebarOrderView();
-        } else if (!frontMode && sidebarMainView === "nightHandover") {
-          showSidebarOrderView();
-        } else if (!frontMode && sidebarMainView === "vipCheckIn") {
           showSidebarOrderView();
         } else if (
           !frontMode &&
@@ -28193,12 +28206,6 @@
         }
         if (typeof HKTrackIt !== "undefined") {
           HKTrackIt.render();
-        }
-        if (typeof HKNightHandover !== "undefined") {
-          HKNightHandover.onFrontModeChanged();
-        }
-        if (typeof HKVipCheckIn !== "undefined") {
-          HKVipCheckIn.onFrontModeChanged();
         }
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
@@ -29455,6 +29462,8 @@
           },
           toast: showHkActionToast,
           onLeaveWhenLocked: function () {
+            // 정비 모드에서는 조회만 허용 — 화면을 강제로 닫지 않음
+            if (frontMode || maintenanceMode) return;
             showSidebarOrderView();
           },
         });
@@ -29466,6 +29475,7 @@
           },
           toast: showHkActionToast,
           onLeaveWhenLocked: function () {
+            if (frontMode || maintenanceMode) return;
             showSidebarOrderView();
           },
         });
@@ -30507,14 +30517,14 @@
         }
         if (bNightHandover) {
           bNightHandover.addEventListener("click", function () {
-            if (!frontMode) return;
+            if (!(frontMode || maintenanceMode)) return;
             if (sidebarMainView === "nightHandover") return;
             showSidebarNightHandoverView();
           });
         }
         if (bVipCheckIn) {
           bVipCheckIn.addEventListener("click", function () {
-            if (!frontMode) return;
+            if (!(frontMode || maintenanceMode)) return;
             if (sidebarMainView === "vipCheckIn") return;
             showSidebarVipCheckInView();
           });
