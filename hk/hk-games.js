@@ -265,41 +265,37 @@
       }).join('') : '<div class="hkg-empty">첫 기록의 주인공이 되어보세요.</div>');
   }
   function controller() {
-    var removers = [], frames = [], timers = [], alive = true;
-    removers.push(function () { alive = false; });
+    var removers = [], timers = [], alive = true, rafId = 0;
+    removers.push(function () {
+      alive = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    });
     return {
       on: function (node, type, fn, opts) { node.addEventListener(type, fn, opts); removers.push(function () { node.removeEventListener(type, fn, opts); }); },
       raf: function (fn) {
-        function scheduleNext(delayMs) {
-          if (!alive) return;
-          if (delayMs > 0) {
+        function tick(t) {
+          rafId = 0;
+          if (!alive || !active) return;
+          // 일시정지·백그라운드에서는 루프만 낮춤 (끊기지 않게 재개)
+          if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
             var tid = setTimeout(function () {
               if (!alive) return;
-              var id = requestAnimationFrame(tick);
-              frames.push(id);
-            }, delayMs);
+              rafId = requestAnimationFrame(tick);
+            }, 200);
             timers.push(tid);
-            return;
-          }
-          var id = requestAnimationFrame(tick);
-          frames.push(id);
-        }
-        function tick(t) {
-          if (!alive || !active) return;
-          // 일시정지·백그라운드 탭에서는 루프를 거의 멈춤 (렉 완화)
-          if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
-            scheduleNext(400);
             return;
           }
           fn(t);
         }
-        scheduleNext(0);
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(tick);
       },
       timer: function (fn, ms) {
         function fire() {
           if (!alive) return;
           if (gamePaused || (typeof document !== 'undefined' && document.hidden)) {
-            var again = setTimeout(fire, 400);
+            var again = setTimeout(fire, 200);
             timers.push(again);
             return;
           }
@@ -310,8 +306,22 @@
         return id;
       },
       clearTimers: function () { timers.forEach(clearTimeout); timers = []; },
-      destroy: function () { alive = false; removers.forEach(function (x) { x(); }); frames.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); removers = []; frames = []; timers = []; }
+      destroy: function () {
+        alive = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        removers.forEach(function (x) { x(); });
+        timers.forEach(clearTimeout);
+        removers = [];
+        timers = [];
+      }
     };
+  }
+  /** 프레임 간격 — hitch 시 슬로모션이 되지 않게 1/30초까지 허용 */
+  function frameDt(t, last) {
+    var raw = (t - (last || t)) / 1000;
+    if (!(raw > 0) || !isFinite(raw)) return 1 / 60;
+    return Math.min(1 / 30, raw);
   }
   function setHud(items) {
     refs.hud.innerHTML = items.map(function (x) { return '<span class="hkg-pill">' + x[0] + '<b data-hud="' + x[2] + '">' + x[1] + '</b></span>'; }).join('');
@@ -352,23 +362,23 @@
   }
   function makeFx() {
     var parts = [];
-    var MAX_PARTS = 72;
+    var MAX_PARTS = 40;
     return {
       burst: function (x, y, color, n, speed) {
-        n = Math.min(n || 8, 10);
+        n = Math.min(n || 6, 8);
         speed = speed || 160;
-        if (parts.length > MAX_PARTS) parts.splice(0, parts.length - 36);
+        if (parts.length > MAX_PARTS) parts.splice(0, parts.length - 20);
         for (var i = 0; i < n; i++) {
           var a = (Math.PI * 2 * i) / n + Math.random() * 0.35;
           var sp = speed * (0.5 + Math.random() * 0.7);
           parts.push({
             x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 36,
-            life: 0.28 + Math.random() * 0.32, max: 0.65, r: 1.5 + Math.random() * 2.5, color: color || '#efd28a'
+            life: 0.22 + Math.random() * 0.22, max: 0.5, r: 1.4 + Math.random() * 2, color: color || '#efd28a'
           });
         }
       },
       spark: function (x, y, color) {
-        this.burst(x, y, color || '#fff4d0', 6, 110);
+        this.burst(x, y, color || '#fff4d0', 4, 100);
       },
       update: function (dt) {
         for (var i = parts.length - 1; i >= 0; i--) {
@@ -407,6 +417,7 @@
     while (t.length > 1 && ctx.measureText(t).width > maxW) t = t.slice(0, -1);
     return t;
   }
+  var _heroFitCache = { key: '', text: '' };
   function drawHeroShape(ctx, x, y, w, h, opts) {
     opts = opts || {};
     var label = heroNameText();
@@ -419,26 +430,27 @@
       x = -w / 2;
       y = -h / 2;
     }
-    var g = ctx.createLinearGradient(x, y, x + w * 0.15, y + h);
-    g.addColorStop(0, opts.top || '#fff4d2');
-    g.addColorStop(0.4, opts.mid || '#efd28a');
-    g.addColorStop(1, opts.bot || '#b89245');
-    ctx.fillStyle = g;
+    // solid fill — 매 프레임 gradient 생성보다 가볍게
+    ctx.fillStyle = opts.mid || '#efd28a';
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(x + 2, y + 2, Math.max(0, w - 4), Math.max(2, h * 0.2));
     ctx.fillStyle = 'rgba(0,0,0,0.12)';
     ctx.fillRect(x + 3, y + h - 5, w - 6, 3);
     ctx.fillStyle = opts.ink || '#1a302c';
     var fontSize = opts.font || Math.max(9, Math.min(14, Math.floor(Math.min(w * 0.32, h * 0.42))));
-    ctx.font = '700 ' + fontSize + 'px "Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+    var font = '700 ' + fontSize + 'px "Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+    ctx.font = font;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    label = fitHeroLabel(ctx, label, w - 8);
-    ctx.fillText(label, x + w / 2, y + h / 2 + 0.5);
+    var cacheKey = label + '|' + fontSize + '|' + Math.round(w);
+    if (_heroFitCache.key !== cacheKey) {
+      _heroFitCache.key = cacheKey;
+      _heroFitCache.text = fitHeroLabel(ctx, label, w - 8);
+    }
+    ctx.fillText(_heroFitCache.text, x + w / 2, y + h / 2 + 0.5);
     ctx.restore();
   }
 
@@ -805,7 +817,7 @@
     }
     function loop(t) {
       if (dead) return;
-      var dt = Math.min(0.033, (t - (loop._last || t)) / 1000 || 0); loop._last = t;
+      var dt = frameDt(t, loop._last); loop._last = t;
       anim += dt; fx.update(dt);
       if (score >= 100) {
         hazAcc += dt;
@@ -1158,7 +1170,7 @@
       fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t;
+      if (!running) return; var dt = frameDt(t, last); last = t;
       fx.update(dt);
       if (paddleTimer > 0) {
         paddleTimer -= dt;
@@ -1306,7 +1318,7 @@
       addPlatforms();
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
+      if (!running) return; var dt = frameDt(t, last); last = t; fx.update(dt);
       var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
       if (touchX != null) steer = touchX < player.x + player.w / 2 ? -1 : 1;
       player.vx += steer * 1300 * dt; player.vx *= Math.pow(.05, dt); player.vx = Math.max(-280, Math.min(280, player.vx));
@@ -1498,7 +1510,7 @@
     }
     function loop(t) {
       if (over) return;
-      var dt = Math.min(0.033, (t - (loop._last || t)) / 1000 || 0); loop._last = t;
+      var dt = frameDt(t, loop._last); loop._last = t;
       fx.update(dt);
       if (flashRows.length) { draw(); c.raf(loop); return; }
       if (!drop) drop = t;
@@ -1599,7 +1611,7 @@
       fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.02, (t - last) / 1000 || 0); last = t; fx.update(dt);
+      if (!running) return; var dt = frameDt(t, last); last = t; fx.update(dt);
       if (powerT > 0) powerT -= dt;
       spawnItem();
       items.forEach(function (it) { it.y += it.vy * dt; });
@@ -1715,7 +1727,7 @@
       if (!started) { ctx.fillStyle = '#f5ecd5'; ctx.font = '16px Georgia'; ctx.textAlign = 'center'; ctx.fillText('탭 / Space 로 시작', 210, 340); }
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; wing += dt * 12; fx.update(dt);
+      if (!running) return; var dt = frameDt(t, last); last = t; wing += dt * 12; fx.update(dt);
       if (started) {
         var d = difficulty();
         bird.vy += grav * dt; bird.y += bird.vy * dt;
@@ -1973,7 +1985,7 @@
     }
     function loop(t) {
       if (!running) return;
-      var dt = Math.min(0.033, (t - last) / 1000 || 0); last = t;
+      var dt = frameDt(t, last); last = t;
       fx.update(dt);
       player.anim += dt;
       if (started && !gamePaused) {
@@ -2292,7 +2304,7 @@
       drawPlayer(); fx.draw(ctx);
     }
     function loop(t) {
-      if (!running) return; var dt = Math.min(.022, (t - last) / 1000 || 0); last = t; fx.update(dt);
+      if (!running) return; var dt = frameDt(t, last); last = t; fx.update(dt);
       if (coinMode > 0) {
         coinMode -= dt;
         if (coinMode <= 0) {
