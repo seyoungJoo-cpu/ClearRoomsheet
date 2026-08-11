@@ -1007,7 +1007,7 @@
       var rows = [4, 5, 5, 6, 6][n - 1];
       var cols = [9, 10, 10, 10, 11][n - 1];
       var padW = [128, 118, 110, 102, 96][n - 1];
-      var spd = [330, 370, 420, 470, 530][n - 1];
+      var spd = [395, 420, 455, 495, 540][n - 1];
       var drop = [0.34, 0.36, 0.38, 0.4, 0.42][n - 1];
       var shape = ['rect', 'round', 'diamond', 'pill', 'hex'][n - 1];
       return { rows: rows, cols: cols, padW: padW, spd: spd, drop: drop, shape: shape };
