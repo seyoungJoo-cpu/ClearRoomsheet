@@ -682,7 +682,7 @@
         var item = connecting[idx] || emptyConnecting();
         var status = String(item.status || "CLOSE").toUpperCase() === "OPEN" ? "OPEN" : "CLOSE";
         html +=
-          '<td><textarea class="vip-conn-rooms nh-autosize" id="vipConnRooms_' +
+          '<td><textarea class="vip-conn-rooms" id="vipConnRooms_' +
           idx +
           '" rows="1" placeholder="예: 923-925" autocomplete="off"></textarea></td>' +
           '<td class="vip-conn-mid">중간문</td>' +
