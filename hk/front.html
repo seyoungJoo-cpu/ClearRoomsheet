@@ -9325,7 +9325,8 @@
     .vip-checkin-panel.is-readonly .nh-row-actions,
     .vip-checkin-panel.is-readonly .nh-row-btn,
     .vip-checkin-panel.is-readonly .nh-row-addbar,
-    .vip-checkin-panel.is-readonly #btnVipGuestMerge {
+    .vip-checkin-panel.is-readonly #btnVipGuestMerge,
+    .vip-checkin-panel.is-readonly #btnVipGuestUnmerge {
       display: none !important;
     }
 
@@ -12418,7 +12419,10 @@
         <div class="vip-sheet">
           <div class="vip-guest-toolbar">
             <button type="button" class="btn-order" id="btnVipGuestMerge">선택 행 병합</button>
-            <span class="complaint-panel__hint">왼쪽 체크박스로 연속 행을 고른 뒤 병합하세요. 구분은 직접 수정할 수 있습니다.</span>
+            <button type="button" class="btn-order" id="btnVipGuestUnmerge">병합 취소</button>
+            <span class="complaint-panel__hint"
+              >왼쪽 체크박스로 연속 행을 고른 뒤 병합/취소하세요. 구분은 직접 수정할 수 있습니다.</span
+            >
           </div>
           <table class="vip-table vip-table--guests" aria-label="VIP 체크인 게스트">
             <thead>
@@ -13435,7 +13439,7 @@
   <script src="hk-complaint-analysis.js?v=bydate-10"></script>
   <script src="hk-track-it.js?v=bydate-10"></script>
   <script src="hk-night-handover.js?v=bydate-9"></script>
-  <script src="hk-vip-checkin.js?v=bydate-9"></script>
+  <script src="hk-vip-checkin.js?v=bydate-11"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>

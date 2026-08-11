@@ -884,6 +884,52 @@
     if (typeof opts.toast === "function") opts.toast("선택한 행을 병합했습니다.");
   }
 
+  function unmergeSelectedGuestRows() {
+    if (!canEdit()) return;
+    var checks = Array.prototype.slice.call(document.querySelectorAll(".vip-row-check:checked"));
+    if (!checks.length) {
+      if (typeof opts.toast === "function") opts.toast("병합 취소할 행을 선택하세요.");
+      return;
+    }
+    var idxs = checks
+      .map(function (el) {
+        return Number(el.getAttribute("data-vip-guest-check"));
+      })
+      .filter(function (n) {
+        return !isNaN(n) && n >= 0;
+      })
+      .sort(function (a, b) {
+        return a - b;
+      });
+    var guests = collectGuestsFromDom();
+    var toClear = {};
+    idxs.forEach(function (idx) {
+      if (!guests[idx]) return;
+      var start = idx;
+      while (start > 0 && guests[start] && guests[start].mergePrev) start--;
+      var end = start;
+      while (end + 1 < guests.length && guests[end + 1] && guests[end + 1].mergePrev) {
+        end++;
+      }
+      if (end === start) return;
+      for (var i = start; i <= end; i++) toClear[i] = true;
+    });
+    var keys = Object.keys(toClear);
+    if (!keys.length) {
+      if (typeof opts.toast === "function") opts.toast("선택한 행에 병합이 없습니다.");
+      return;
+    }
+    keys.forEach(function (k) {
+      var i = Number(k);
+      if (guests[i]) guests[i].mergePrev = false;
+    });
+    if (guests[0]) guests[0].mergePrev = false;
+    rebuildGuestsBody(guests);
+    markDirty();
+    syncEditLock();
+    if (typeof opts.toast === "function") opts.toast("선택한 행의 병합을 취소했습니다.");
+  }
+
   function addConnectingRow() {
     if (!canEdit()) return;
     var list = collectConnectingFromDom();
@@ -949,6 +995,7 @@
         el.id === "btnVipCheckInReset" ||
         el.id === "btnVipGuestAdd" ||
         el.id === "btnVipGuestMerge" ||
+        el.id === "btnVipGuestUnmerge" ||
         el.id === "btnVipConnAdd" ||
         el.id === "btnVipRemarkAdd" ||
         el.classList.contains("vip-conn-status") ||
@@ -1453,6 +1500,8 @@
     if (addGuest) addGuest.addEventListener("click", addGuestRow);
     var mergeBtn = document.getElementById("btnVipGuestMerge");
     if (mergeBtn) mergeBtn.addEventListener("click", mergeSelectedGuestRows);
+    var unmergeBtn = document.getElementById("btnVipGuestUnmerge");
+    if (unmergeBtn) unmergeBtn.addEventListener("click", unmergeSelectedGuestRows);
     var addConn = document.getElementById("btnVipConnAdd");
     if (addConn) addConn.addEventListener("click", addConnectingRow);
     var addRemark = document.getElementById("btnVipRemarkAdd");
