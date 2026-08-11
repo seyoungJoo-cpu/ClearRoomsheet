@@ -1911,16 +1911,70 @@ function normalizeByDatePackLooseForServer(raw) {
   return pack;
 }
 
+var BY_DATE_KEEP_DAYS_SERVER = 35;
+
+function pad2ForDateKey(n) {
+  n = Number(n);
+  return n < 10 ? "0" + n : String(n);
+}
+
+function formatDateKeyForServer(d) {
+  d = d instanceof Date ? d : new Date();
+  if (isNaN(d.getTime())) d = new Date();
+  return (
+    d.getFullYear() +
+    "-" +
+    pad2ForDateKey(d.getMonth() + 1) +
+    "-" +
+    pad2ForDateKey(d.getDate())
+  );
+}
+
+/** Client pruneByDateMap 와 동일: cutoff = today - keepDays, 키 >= cutoffKey, 최신 keepDays개 상한 */
+function pruneByDateMapForServer(byDate, keepDays) {
+  byDate = byDate && typeof byDate === "object" ? byDate : {};
+  keepDays = keepDays != null ? keepDays : BY_DATE_KEEP_DAYS_SERVER;
+  var cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - keepDays);
+  var cutoffKey = formatDateKeyForServer(cutoff);
+  var out = {};
+  Object.keys(byDate).forEach(function (k) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(k || "").trim())) return;
+    if (String(k) >= cutoffKey) out[k] = byDate[k];
+  });
+  var keys = Object.keys(out).sort();
+  if (keys.length > keepDays) {
+    var keep = keys.slice(-keepDays);
+    var trimmed = {};
+    keep.forEach(function (k) {
+      trimmed[k] = out[k];
+    });
+    return trimmed;
+  }
+  return out;
+}
+
+function applyByDatePruneToPack(pack) {
+  if (!pack || typeof pack !== "object") return pack;
+  pack.byDate = pruneByDateMapForServer(pack.byDate);
+  var keys = Object.keys(pack.byDate || {}).sort();
+  if (pack.activeDate && keys.indexOf(String(pack.activeDate)) < 0) {
+    pack.activeDate = keys.length ? keys[keys.length - 1] : "";
+  }
+  return pack;
+}
+
 function mergeByDatePackForServer(prev, inc, hasIncoming, normalizePack) {
   var normalize =
     typeof normalizePack === "function" ? normalizePack : normalizeByDatePackLooseForServer;
   if (!hasIncoming) {
-    return prev && typeof prev === "object" ? normalize(prev) : null;
+    return prev && typeof prev === "object" ? applyByDatePruneToPack(normalize(prev)) : null;
   }
   var base = normalize(prev && typeof prev === "object" ? prev : null);
   var incoming = normalize(inc && typeof inc === "object" ? inc : null);
-  if (!prev || typeof prev !== "object") return incoming;
-  if (!inc || typeof inc !== "object") return base;
+  if (!prev || typeof prev !== "object") return applyByDatePruneToPack(incoming);
+  if (!inc || typeof inc !== "object") return applyByDatePruneToPack(base);
 
   var byDate = {};
   var baseMap = base.byDate || {};
@@ -1948,6 +2002,8 @@ function mergeByDatePackForServer(prev, inc, hasIncoming, normalizePack) {
     byDate[k] = ia && (!ba || String(ia) >= String(ba)) ? id : bd;
   });
 
+  byDate = pruneByDateMapForServer(byDate);
+
   var baPack = base.updatedAt != null ? String(base.updatedAt) : "";
   var iaPack = incoming.updatedAt != null ? String(incoming.updatedAt) : "";
   var newerIsInc = iaPack && (!baPack || String(iaPack) >= String(baPack));
@@ -1959,6 +2015,10 @@ function mergeByDatePackForServer(prev, inc, hasIncoming, normalizePack) {
   else {
     var sorted = Object.keys(byDate).sort();
     activeDate = sorted.length ? sorted[sorted.length - 1] : "";
+  }
+  var dateKeys = Object.keys(byDate).sort();
+  if (activeDate && dateKeys.indexOf(String(activeDate)) < 0) {
+    activeDate = dateKeys.length ? dateKeys[dateKeys.length - 1] : "";
   }
 
   var updatedAt = baPack;

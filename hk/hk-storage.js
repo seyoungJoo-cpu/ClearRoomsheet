@@ -1076,7 +1076,7 @@
     return mergeTrackIt(baseInfo, incObj.trackIt);
   }
 
-  var BY_DATE_KEEP_DAYS = 60;
+  var BY_DATE_KEEP_DAYS = 35;
 
   function pad2(n) {
     n = Number(n);

@@ -873,12 +873,9 @@
     );
   }
 
-  function downloadExcel() {
-    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
-      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
-      return;
-    }
-    var pack = canEdit() ? collectFromDom() : dayFromPack(loadPack(), currentDateKey);
+  function dayToAoa(dayDoc, dateKey) {
+    var pack = dayDoc && typeof dayDoc === "object" ? dayDoc : {};
+    var key = dateKey || pack.dateKey || "";
     var aoa = [
       [
         "구분",
@@ -894,9 +891,9 @@
     ];
     aoa.push([
       "제목날짜",
-      (pack.titleDate || displayFromKey(pack.dateKey || currentDateKey) || "") +
+      (pack.titleDate || displayFromKey(pack.dateKey || key) || "") +
         " / " +
-        (pack.titleYear || yearFromKey(pack.dateKey || currentDateKey) || ""),
+        (pack.titleYear || yearFromKey(pack.dateKey || key) || ""),
       "",
       "",
       "",
@@ -945,9 +942,11 @@
       if (!r || !(r.label || r.value)) return;
       aoa.push([r.label || "", r.value || "", "", "", "", "", "", "", ""]);
     });
-    var wb = global.XLSX.utils.book_new();
-    var ws = global.XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [
+    return aoa;
+  }
+
+  function vipExcelCols() {
+    return [
       { wch: 12 },
       { wch: 18 },
       { wch: 10 },
@@ -958,9 +957,63 @@
       { wch: 12 },
       { wch: 20 },
     ];
-    global.XLSX.utils.book_append_sheet(wb, ws, "VIP체크인");
-    global.XLSX.writeFile(wb, "VIP체크인리스트_" + stampNow() + ".xlsx");
-    if (typeof opts.toast === "function") opts.toast("VIP 체크인 리스트 엑셀 저장됨");
+  }
+
+  function downloadExcel() {
+    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    var onlyThisDay = confirm(
+      "이 날짜(표시일)만 엑셀로 저장할까요?\n\n확인: 이 날짜만\n취소: 다른 선택"
+    );
+    var exportAll = false;
+    if (!onlyThisDay) {
+      exportAll = confirm(
+        "저장된 전체 기간(최대 35일)을 엑셀로 저장할까요?\n\n확인: 전체 기간\n취소: 저장 취소"
+      );
+      if (!exportAll) return;
+    }
+
+    var stamp = stampNow();
+    var wb = global.XLSX.utils.book_new();
+
+    if (!exportAll) {
+      var day =
+        canEdit() ? collectFromDom() : dayFromPack(loadPack(), currentDateKey);
+      var aoa = dayToAoa(day, currentDateKey);
+      var ws = global.XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = vipExcelCols();
+      global.XLSX.utils.book_append_sheet(wb, ws, "VIP체크인");
+      var singleName =
+        "VIP체크인리스트_" +
+        (currentDateKey ? currentDateKey + "_" : "") +
+        stamp +
+        ".xlsx";
+      global.XLSX.writeFile(wb, singleName);
+      if (typeof opts.toast === "function") opts.toast("이 날짜 엑셀 저장됨");
+      return;
+    }
+
+    var pack = loadPack();
+    var byDate = (pack && pack.byDate) || {};
+    var dateKeys = Object.keys(byDate).sort();
+    if (!dateKeys.length) {
+      if (typeof opts.toast === "function") opts.toast("저장할 날짜 데이터가 없습니다");
+      return;
+    }
+    dateKeys.forEach(function (dk) {
+      var dayDoc =
+        dk === currentDateKey && canEdit()
+          ? collectFromDom()
+          : dayFromPack(pack, dk);
+      var sheetAoa = dayToAoa(dayDoc, dk);
+      var sheet = global.XLSX.utils.aoa_to_sheet(sheetAoa);
+      sheet["!cols"] = vipExcelCols();
+      global.XLSX.utils.book_append_sheet(wb, sheet, dk);
+    });
+    global.XLSX.writeFile(wb, "VIP체크인리스트_전체_" + stamp + ".xlsx");
+    if (typeof opts.toast === "function") opts.toast("전체 기간 엑셀 저장됨");
   }
 
   function resetOnCloseDay() {
