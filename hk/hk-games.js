@@ -1825,7 +1825,7 @@
     }
     function wireReach() {
       // 적당한 거리 안에서만 와이어 가능 (너무 멀면 안 잡힘)
-      return 158;
+      return 316;
     }
     function addSegment(fromX) {
       var x = fromX;
