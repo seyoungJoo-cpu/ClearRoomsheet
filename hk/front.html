@@ -9598,7 +9598,8 @@
 
     .vip-table--connecting td {
       vertical-align: middle;
-      padding: 4px 6px;
+      padding: 0;
+      height: 40px;
     }
 
     .vip-table--connecting .vip-conn-rooms,
@@ -9607,7 +9608,7 @@
       color: #dc2626;
       font-weight: 800;
       font-size: 16px;
-      line-height: 36px;
+      line-height: 40px;
       box-sizing: border-box;
     }
 
@@ -9620,9 +9621,9 @@
       display: block;
       width: 100%;
       text-align: left;
-      min-height: 36px !important;
-      height: 36px !important;
-      max-height: 36px !important;
+      min-height: 40px !important;
+      height: 40px !important;
+      max-height: 40px !important;
       padding: 0 8px 0 12px !important;
       margin: 0;
       resize: none;
@@ -9631,7 +9632,7 @@
       field-sizing: fixed;
       font-size: 16px;
       font-weight: 800;
-      line-height: 36px;
+      line-height: 40px;
     }
 
     .vip-conn-mid {
@@ -9639,29 +9640,30 @@
       background: #fff;
       text-align: left;
       padding: 0 8px 0 12px !important;
-      height: 36px;
-      line-height: 36px;
+      height: 40px;
+      line-height: 40px;
       vertical-align: middle;
     }
 
     .vip-conn-status-cell {
       display: flex;
       flex-direction: row;
-      align-items: center;
+      align-items: stretch;
       justify-content: flex-start;
-      gap: 6px;
+      gap: 0;
       text-align: left;
-      min-height: 36px;
-      height: 36px;
-      padding: 0 6px !important;
+      min-height: 40px;
+      height: 40px;
+      padding: 0 !important;
       box-sizing: border-box;
     }
 
     .vip-conn-status {
       width: auto;
-      min-width: 3.5rem;
-      min-height: 36px;
-      height: 36px;
+      min-width: 4.25rem;
+      flex: 1 1 auto;
+      min-height: 40px;
+      height: 40px;
       border: none;
       background: transparent;
       cursor: pointer;
@@ -9670,10 +9672,9 @@
       font-weight: 800;
       letter-spacing: 0.02em;
       text-align: left;
-      padding: 0 4px 0 12px;
+      padding: 0 8px 0 12px;
       margin: 0;
-      flex: 0 0 auto;
-      line-height: 36px;
+      line-height: 40px;
       box-sizing: border-box;
     }
 
@@ -9690,16 +9691,17 @@
       width: 4.5rem;
       min-width: 4.5rem;
       max-width: 5.5rem;
-      min-height: 36px !important;
-      height: 36px !important;
+      flex: 0 0 auto;
+      min-height: 40px !important;
+      height: 40px !important;
       border: none;
       background: transparent;
       font: inherit;
       font-size: 16px;
       font-weight: 800;
-      line-height: 36px;
+      line-height: 40px;
       text-align: left;
-      padding: 0 4px !important;
+      padding: 0 8px 0 4px !important;
       margin: 0;
       color: #16a34a;
       box-sizing: border-box;
@@ -13292,7 +13294,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-8"></script>
+  <script src="hk-storage.js?v=bydate-9"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -13301,10 +13303,10 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-7"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-9"></script>
   <script src="hk-track-it.js?v=bydate-2"></script>
-  <script src="hk-night-handover.js?v=bydate-8"></script>
-  <script src="hk-vip-checkin.js?v=bydate-8"></script>
+  <script src="hk-night-handover.js?v=bydate-9"></script>
+  <script src="hk-vip-checkin.js?v=bydate-9"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
