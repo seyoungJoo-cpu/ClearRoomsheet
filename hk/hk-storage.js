@@ -1380,6 +1380,35 @@
     return pack;
   }
 
+  function packDayHasContent(day) {
+    if (!day || typeof day !== "object") return false;
+    var skip = {
+      updatedAt: 1,
+      dateKey: 1,
+      titleDate: 1,
+      titleYear: 1,
+      mergePrev: 1,
+    };
+    function walk(v) {
+      if (v == null) return false;
+      if (typeof v === "string") return !!String(v).trim();
+      if (typeof v === "number" || typeof v === "boolean") return false;
+      if (Array.isArray(v)) {
+        for (var i = 0; i < v.length; i++) if (walk(v[i])) return true;
+        return false;
+      }
+      if (typeof v === "object") {
+        var keys = Object.keys(v);
+        for (var j = 0; j < keys.length; j++) {
+          if (skip[keys[j]]) continue;
+          if (walk(v[keys[j]])) return true;
+        }
+      }
+      return false;
+    }
+    return walk(day);
+  }
+
   function pickByDatePack(basePack, incPack) {
     var base = basePack && typeof basePack === "object" ? basePack : { activeDate: "", updatedAt: "", byDate: {} };
     var inc = incPack && typeof incPack === "object" ? incPack : { activeDate: "", updatedAt: "", byDate: {} };
@@ -1406,6 +1435,11 @@
       }
       var ba = bd.updatedAt != null ? String(bd.updatedAt) : "";
       var ia = id.updatedAt != null ? String(id.updatedAt) : "";
+      // Empty/stale days must never wipe filled VIP·야간인계 day packs.
+      if (packDayHasContent(bd) && !packDayHasContent(id)) {
+        byDate[k] = bd;
+        return;
+      }
       byDate[k] = ia && (!ba || String(ia) >= String(ba)) ? id : bd;
     });
     var baPack = base.updatedAt != null ? String(base.updatedAt) : "";
@@ -1938,12 +1972,35 @@
     var incAt = inc.updatedAt || "";
     var baseReset = base.resetAt || "";
     var incReset = inc.resetAt || "";
-    out.updatedAt =
-      incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
-    out.resetAt =
-      incReset && (!baseReset || String(incReset) >= String(baseReset))
-        ? incReset
-        : baseReset || incReset;
+    var incHasAny = GAME_RANK_IDS.some(function (id) {
+      return (inc.boards[id] || []).length > 0;
+    });
+    var baseHasAny = GAME_RANK_IDS.some(function (id) {
+      return (base.boards[id] || []).length > 0;
+    });
+    // Intentional wipe: password reset sets BOTH newer resetAt and empty boards.
+    var intentionalEmptyReset =
+      !incHasAny &&
+      !!incReset &&
+      (!baseReset || String(incReset) > String(baseReset)) &&
+      !!incAt;
+    if (intentionalEmptyReset) {
+      out.updatedAt = incAt;
+      out.resetAt = incReset;
+      return out;
+    }
+    // Empty/stale boards must never advance resetAt or wipe existing high scores.
+    if (!incHasAny && baseHasAny) {
+      out.updatedAt = baseAt || incAt;
+      out.resetAt = baseReset || incReset;
+    } else {
+      out.updatedAt =
+        incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+      out.resetAt =
+        incReset && (!baseReset || String(incReset) >= String(baseReset))
+          ? incReset
+          : baseReset || incReset;
+    }
     var resetAt = out.resetAt;
     GAME_RANK_IDS.forEach(function (id) {
       var byName = {};
@@ -1977,7 +2034,19 @@
     }
     var baseAt = baseInfo.updatedAt || "";
     var incAt = incInfo.updatedAt || "";
-    if (incAt && (!baseAt || String(incAt) >= String(baseAt))) return incInfo;
+    if (incAt && (!baseAt || String(incAt) >= String(baseAt))) {
+      // 빈 hotelInfo로 내용 있는 쪽을 덮지 않음 (배포·빈 탭 동기화 방어)
+      var incHas =
+        !!(incInfo.text && String(incInfo.text).trim()) ||
+        (incInfo.urls && incInfo.urls.length) ||
+        (incInfo.pages && incInfo.pages.length);
+      var baseHas =
+        !!(baseInfo.text && String(baseInfo.text).trim()) ||
+        (baseInfo.urls && baseInfo.urls.length) ||
+        (baseInfo.pages && baseInfo.pages.length);
+      if (!incHas && baseHas) return baseInfo;
+      return incInfo;
+    }
     if (baseAt && !incAt) return baseInfo;
     if (incAt || incInfo.text || (incInfo.urls && incInfo.urls.length)) return incInfo;
     return baseInfo;

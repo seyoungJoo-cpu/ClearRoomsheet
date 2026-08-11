@@ -1113,9 +1113,9 @@ const RTS_UNITS = {
   duck: { cost: 30, hp: 18, dps: 8, r: 12, speed: 110, range: 24, train: 2.5 },
 };
 const RTS_BUILD = {
-  nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 10 },
+  nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 8 },
   barracks: { cost: 150, hp: 300, w: 48, h: 48, build: 5 },
-  turret: { cost: 120, hp: 220, w: 36, h: 36, range: 160, dps: 18, build: 4 },
+  turret: { cost: 120, hp: 120, w: 36, h: 36, range: 160, dps: 18, build: 4 },
 };
 const RTS_NEXUS_TURRET_BAN_R = 110;
 const RTS_MAX_QUEUE = 5;
@@ -1535,13 +1535,15 @@ function rtsApplyInput(room, s, owner, inp, mode) {
           team: rtsTeamOf(owner, mode),
           x: x,
           y: y,
-          hp: def.hp,
+          hp: Math.max(1, Math.floor(def.hp * 0.12)),
           maxHp: def.hp,
           w: def.w,
           h: def.h,
           atkCd: 0,
           queue: [],
           trainT: 0,
+          building: true,
+          buildLeft: def.build || 4,
         };
         if (bt === "nexus") {
           const pl = room.players.find((pp) => pp.slot === owner);
@@ -1737,6 +1739,18 @@ function tickRts(room, dt) {
   }
 
   rtsProcessQueues(s, mode, dt);
+
+  // finish under-construction buildings
+  for (const e of s.entities) {
+    if (!e || !e.building) continue;
+    e.buildLeft = (e.buildLeft || 0) - dt;
+    if (e.buildLeft <= 0) {
+      e.building = false;
+      e.buildLeft = 0;
+      e.hp = e.maxHp || e.hp;
+    }
+  }
+
   rtsUpdateFog(room);
 
   // workers auto-harvest (idle only)
@@ -1851,6 +1865,28 @@ function tickRts(room, dt) {
     }
   }
 
+  // soft separation so units do not stack
+  for (let i = 0; i < s.entities.length; i++) {
+    const a = s.entities[i];
+    if (!a || a.kind !== "unit" || a.hp <= 0) continue;
+    for (let j = i + 1; j < s.entities.length; j++) {
+      const b = s.entities[j];
+      if (!b || b.kind !== "unit" || b.hp <= 0) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy) || 0.001;
+      const need = (a.r || 8) + (b.r || 8) + 4;
+      if (dist >= need) continue;
+      const push = (need - dist) * 0.5;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const ap = rtsClampPos(s, a.x - nx * push, a.y - ny * push, a.r || 8);
+      const bp = rtsClampPos(s, b.x + nx * push, b.y + ny * push, b.r || 8);
+      a.x = ap.x; a.y = ap.y;
+      b.x = bp.x; b.y = bp.y;
+    }
+  }
+
   // nexus laser — auto protect workers / base
   for (const e of s.entities) {
     if (e.type !== "nexus" || e.hp <= 0) continue;
@@ -1868,8 +1904,9 @@ function tickRts(room, dt) {
         best = o;
       }
     }
-    if (best && e.atkCd <= 0) {
-      best.hp -= RTS_BUILD.nexus.dps * 0.45;
+    if (best && e.atkCd <= 0 && !e.building) {
+      const mul = best.kind === "unit" ? 0.225 : 0.45;
+      best.hp -= RTS_BUILD.nexus.dps * mul;
       e.atkCd = 0.35;
       s.beams.push({
         x1: e.x,
@@ -1884,7 +1921,7 @@ function tickRts(room, dt) {
 
   // turrets
   for (const e of s.entities) {
-    if (e.type !== "turret" || e.hp <= 0) continue;
+    if (e.type !== "turret" || e.hp <= 0 || e.building) continue;
     if (e.atkCd > 0) e.atkCd -= dt;
     const range = RTS_BUILD.turret.range;
     let best = null,
@@ -2019,10 +2056,10 @@ function aowIsRanged(u) {
 function aowSpacing(a, b) {
   const ra = a.r || 12;
   const rb = b.r || 12;
-  const base = ra + rb + 6;
-  if (aowIsRanged(a) && aowIsRanged(b)) return Math.max(base, 38);
-  if (aowIsRanged(a) || aowIsRanged(b)) return Math.max(base, 30);
-  return Math.max(base * 0.8, 18);
+  const base = ra + rb + 10;
+  if (aowIsRanged(a) && aowIsRanged(b)) return Math.max(base, 46);
+  if (aowIsRanged(a) || aowIsRanged(b)) return Math.max(base, 36);
+  return Math.max(base * 0.95, 24);
 }
 
 function aowSeparateAllies(s) {
@@ -2305,7 +2342,7 @@ function initSnakes(room) {
     snakes,
     food: [],
     stepAcc: 0,
-    stepMs: 120,
+    stepMs: 95,
     startedAt: Date.now(),
     duration: 180000,
   };
