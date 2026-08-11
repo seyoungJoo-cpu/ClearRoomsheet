@@ -210,7 +210,7 @@
         el.disabled = !editable;
         return;
       }
-      if (el.id === "btnNightHandoverClear") {
+      if (el.id === "btnNightHandoverClear" || el.id === "btnNightHandoverReset") {
         el.disabled = !editable;
         return;
       }
@@ -329,10 +329,10 @@
 
   function onClear() {
     if (!canEdit()) return;
-    if (!window.confirm("야간 인계사항을 비울까요? (저장해야 동기화됩니다)")) return;
+    if (!window.confirm("야간 인계사항을 초기화할까요?\n내용이 비워지고 바로 동기화됩니다.")) return;
     fillDom(defaultData());
-    dirty = true;
-    syncDirtyUi();
+    persist(collectFromDom(), true);
+    if (typeof opts.toast === "function") opts.toast("야간 인계사항 초기화됨");
   }
 
   function resetOnCloseDay() {
@@ -365,6 +365,8 @@
     if (saveBtn) saveBtn.addEventListener("click", onSave);
     var clearBtn = document.getElementById("btnNightHandoverClear");
     if (clearBtn) clearBtn.addEventListener("click", onClear);
+    var resetBtn = document.getElementById("btnNightHandoverReset");
+    if (resetBtn) resetBtn.addEventListener("click", onClear);
   }
 
   function init(userOpts) {

@@ -3195,7 +3195,8 @@
     .main.main--inven-notify #invenNotifyPanel,
     .main.main--complaint #complaintPanel,
     .main.main--track-it #trackItPanel,
-    .main.main--night-handover #nightHandoverPanel {
+    .main.main--night-handover #nightHandoverPanel,
+    .main.main--vip-checkin #vipCheckInPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -9164,6 +9165,237 @@
       cursor: default;
     }
 
+    /* ── VIP 체크인 리스트 ── */
+    .vip-checkin-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+
+    .vip-checkin-panel[hidden] {
+      display: none !important;
+    }
+
+    .vip-checkin-panel .panel-head-row {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .vip-checkin-panel h2 {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .vip-title-date {
+      width: 3.5rem;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .vip-title-year {
+      width: 3.75rem;
+      height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .vip-sheet {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: auto;
+    }
+
+    .vip-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.8125rem;
+      background: #fff;
+    }
+
+    .vip-table th,
+    .vip-table td {
+      border: 1px solid #334155;
+      padding: 3px 4px;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .vip-table thead th {
+      background: #e2e8f0;
+      font-weight: 800;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .vip-table input[type="text"],
+    .vip-table textarea,
+    .vip-mb-block textarea,
+    .vip-aj-block input {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-size: 0.8125rem;
+      padding: 5px 6px;
+      min-height: 32px;
+    }
+
+    .vip-table input:focus,
+    .vip-table textarea:focus,
+    .vip-mb-block textarea:focus,
+    .vip-aj-block input:focus {
+      outline: 2px solid #0f766e55;
+      background: #f0fdfa;
+    }
+
+    .vip-sec-label {
+      background: #f1f5f9;
+      font-weight: 900;
+      color: #0f172a;
+      width: 3.2rem;
+    }
+
+    .vip-table--guests th:nth-child(1),
+    .vip-table--guests td:nth-child(1) { width: 4%; }
+    .vip-table--guests th:nth-child(2),
+    .vip-table--guests td:nth-child(2) { width: 14%; }
+    .vip-table--guests th:nth-child(3),
+    .vip-table--guests td:nth-child(3) { width: 8%; }
+    .vip-table--guests th:nth-child(4),
+    .vip-table--guests td:nth-child(4) { width: 8%; }
+    .vip-table--guests th:nth-child(5),
+    .vip-table--guests td:nth-child(5) { width: 9%; }
+    .vip-table--guests th:nth-child(6),
+    .vip-table--guests td:nth-child(6) { width: 10%; }
+    .vip-table--guests th:nth-child(7),
+    .vip-table--guests td:nth-child(7) { width: 12%; }
+    .vip-table--guests th:nth-child(8),
+    .vip-table--guests td:nth-child(8) { width: 10%; }
+
+    .vip-specials {
+      border: 1px solid #334155;
+      padding: 10px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .vip-specials__title {
+      font-weight: 900;
+      font-size: 0.9375rem;
+      color: #1e3a8a;
+    }
+
+    .vip-conn-block {
+      display: grid;
+      grid-template-columns: 6.5rem 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .vip-conn-label {
+      font-weight: 800;
+      padding-top: 8px;
+    }
+
+    .vip-table--connecting .vip-conn-rooms,
+    .vip-table--connecting input {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+    .vip-aj-block {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    .vip-aj-tag {
+      background: #dbeafe;
+      border: 1px solid #334155;
+      padding: 4px 10px;
+      font-weight: 900;
+    }
+
+    .vip-aj-block label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 12rem;
+    }
+
+    .vip-aj-block input {
+      border: 1px solid #94a3b8 !important;
+      border-radius: 4px;
+      min-width: 10rem;
+    }
+
+    .vip-mb-block {
+      display: grid;
+      grid-template-columns: 3rem 1fr;
+      gap: 8px;
+    }
+
+    .vip-mb-label {
+      font-weight: 900;
+      padding-top: 8px;
+    }
+
+    .vip-mb-block textarea {
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      background: #ffedd5;
+      min-height: 7rem;
+      line-height: 1.4;
+      resize: vertical;
+      text-align: left;
+    }
+
+    .vip-table--remarks th.vip-remark-label {
+      width: 12rem;
+      background: #dbeafe;
+      font-weight: 800;
+      text-align: left;
+      padding-left: 10px;
+      white-space: nowrap;
+    }
+
+    .vip-row--green th,
+    .vip-row--green td {
+      background: #dcfce7 !important;
+    }
+
+    .vip-checkin-panel.is-readonly input,
+    .vip-checkin-panel.is-readonly textarea {
+      color: #334155;
+      cursor: default;
+    }
+
     .complaint-table-wrap {
       overflow: auto;
       border: 1px solid var(--border);
@@ -10729,11 +10961,17 @@
             </button>
           </div>
         </nav>
-        <nav class="sidebar-section sidebar-section--vip-notes is-collapsed" aria-label="VIP 특이사항">
-          <button type="button" class="sidebar-section__toggle" id="sidebarVipNotesToggle" aria-expanded="false" disabled title="준비중">
-            <span class="sidebar-section__toggle-label">VIP 특이사항</span>
-            <span class="sidebar-section__toggle-hint">준비중</span>
-          </button>
+        <nav class="sidebar-section sidebar-section--vip-notes" id="sidebarVipCheckInSection" hidden aria-label="VIP 체크인 리스트">
+          <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnVipCheckIn"
+              aria-pressed="false"
+            >
+              VIP 체크인 리스트
+            </button>
+          </div>
         </nav>
         <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
           <button
@@ -11421,7 +11659,7 @@
             />)
           </h2>
           <div class="nh-toolbar">
-            <button type="button" class="btn-order" id="btnNightHandoverClear">비우기</button>
+            <button type="button" class="btn-order" id="btnNightHandoverReset">초기화</button>
             <button type="button" class="btn-order nh-save-btn" id="btnNightHandoverSave">
               저장 · 동기화
             </button>
@@ -11507,6 +11745,77 @@
             </thead>
             <tbody id="nhIncidentsBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section
+        class="vip-checkin-panel"
+        id="vipCheckInPanel"
+        hidden
+        aria-labelledby="vipCheckInPanelTitle"
+      >
+        <div class="panel-head-row">
+          <h2 id="vipCheckInPanelTitle">
+            Expected Arrival VIP List For
+            <input type="text" class="vip-title-date" id="vipTitleDate" maxlength="12" aria-label="월/일" />
+            .
+            <input type="text" class="vip-title-year" id="vipTitleYear" maxlength="4" aria-label="연도" />
+            (Tentative)
+          </h2>
+          <div class="nh-toolbar">
+            <button type="button" class="btn-order" id="btnVipCheckInReset">초기화</button>
+            <button type="button" class="btn-order nh-save-btn" id="btnVipCheckInSave">
+              저장 · 동기화
+            </button>
+          </div>
+        </div>
+        <p class="complaint-panel__hint" id="vipCheckInFrontHint" hidden>
+          작성·저장은 프론트 모드에서만 가능합니다.
+        </p>
+
+        <div class="vip-sheet">
+          <table class="vip-table vip-table--guests" aria-label="VIP 체크인 게스트">
+            <thead>
+              <tr>
+                <th>구분</th>
+                <th>Guest Name</th>
+                <th>Room No.</th>
+                <th>Room 상태</th>
+                <th>Room Type</th>
+                <th>RSV No.</th>
+                <th>호텔도착 예정시간</th>
+                <th>Check Out</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody id="vipGuestsBody"></tbody>
+          </table>
+
+          <div class="vip-specials">
+            <div class="vip-specials__title">특이사항</div>
+
+            <div class="vip-conn-block">
+              <div class="vip-conn-label">커넥팅 객실</div>
+              <table class="vip-table vip-table--connecting" aria-label="커넥팅 객실">
+                <tbody id="vipConnectingBody"></tbody>
+              </table>
+            </div>
+
+            <div class="vip-aj-block">
+              <span class="vip-aj-tag">AJ</span>
+              <label>본관: <input type="text" id="vipAjMain" autocomplete="off" /></label>
+              <label>별관: <input type="text" id="vipAjAnnex" autocomplete="off" /></label>
+            </div>
+
+            <div class="vip-mb-block">
+              <div class="vip-mb-label">MB</div>
+              <textarea id="vipMbText" rows="6" placeholder="MB0008 (알콜2+논알콜1+스낵1) …"></textarea>
+            </div>
+
+            <table class="vip-table vip-table--remarks" aria-label="특이사항 구분">
+              <tbody id="vipRemarksBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -12466,7 +12775,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=night-handover-1"></script>
+  <script src="hk-storage.js?v=vip-checkin-1"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12477,7 +12786,8 @@
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=9"></script>
   <script src="hk-track-it.js?v=2"></script>
-  <script src="hk-night-handover.js?v=1"></script>
+  <script src="hk-night-handover.js?v=2"></script>
+  <script src="hk-vip-checkin.js?v=1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -15364,6 +15674,13 @@
             ) {
               HKNightHandover.render();
             }
+            if (
+              typeof HKVipCheckIn !== "undefined" &&
+              sidebarMainView === "vipCheckIn" &&
+              !isHkUserEditing()
+            ) {
+              HKVipCheckIn.render();
+            }
           }
           applyFrontEmbedStatesFromStorage({ force: true });
         }
@@ -16083,6 +16400,9 @@
         }
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.resetOnCloseDay) {
           HKNightHandover.resetOnCloseDay();
+        }
+        if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.resetOnCloseDay) {
+          HKVipCheckIn.resetOnCloseDay();
         }
         resetFrontEmbedPanelsOnCloseDay();
         pendingFacilityMiscAlert = false;
@@ -18486,6 +18806,7 @@
         var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
         var trackItNav = document.getElementById("sidebarBtnTrackIt");
         var nightHandoverNav = document.getElementById("sidebarBtnNightHandover");
+        var vipCheckInNav = document.getElementById("sidebarBtnVipCheckIn");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
@@ -18546,6 +18867,13 @@
             sidebarMainView === "nightHandover" ? "true" : "false"
           );
         }
+        if (vipCheckInNav) {
+          vipCheckInNav.classList.toggle("is-active", sidebarMainView === "vipCheckIn");
+          vipCheckInNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "vipCheckIn" ? "true" : "false"
+          );
+        }
         if (invenNotifyNav) {
           invenNotifyNav.classList.toggle("is-active", sidebarMainView === "invenNotify");
           invenNotifyNav.setAttribute(
@@ -18594,6 +18922,7 @@
         var showMbCheck = view === "mbCheck";
         var showTrackIt = view === "trackIt";
         var showNightHandover = view === "nightHandover";
+        var showVipCheckIn = view === "vipCheckIn";
         var showInvenNotify = view === "invenNotify";
         var showChat = view === "chat";
         var showFront = view === "front";
@@ -18632,6 +18961,7 @@
         var complaintPanel = document.getElementById("complaintPanel");
         var trackItPanel = document.getElementById("trackItPanel");
         var nightHandoverPanel = document.getElementById("nightHandoverPanel");
+        var vipCheckInPanel = document.getElementById("vipCheckInPanel");
         var facilityPanel = document.getElementById("facilityPanel");
         var facilityMiscPanel = document.getElementById("facilityMiscPanel");
         var facilityDailyFoundPanel = document.getElementById("facilityDailyFoundPanel");
@@ -18650,6 +18980,7 @@
         if (complaintPanel) complaintPanel.hidden = !showComplaint;
         if (trackItPanel) trackItPanel.hidden = !showTrackIt;
         if (nightHandoverPanel) nightHandoverPanel.hidden = !showNightHandover;
+        if (vipCheckInPanel) vipCheckInPanel.hidden = !showVipCheckIn;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
         if (facilityMiscPanel) facilityMiscPanel.hidden = !showFacilityMisc;
         if (facilityDailyFoundPanel) facilityDailyFoundPanel.hidden = !showFacilityDailyFound;
@@ -18672,6 +19003,7 @@
           mainEl.classList.toggle("main--complaint", showComplaint);
           mainEl.classList.toggle("main--track-it", showTrackIt);
           mainEl.classList.toggle("main--night-handover", showNightHandover);
+          mainEl.classList.toggle("main--vip-checkin", showVipCheckIn);
           mainEl.classList.toggle("main--facility", showFacility);
           mainEl.classList.toggle("main--facility-misc", showFacilityMisc);
           mainEl.classList.toggle("main--facility-daily-found", showFacilityDailyFound);
@@ -18719,6 +19051,9 @@
         }
         if (showNightHandover && typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
           HKNightHandover.onViewActivated();
+        }
+        if (showVipCheckIn && typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.onViewActivated) {
+          HKVipCheckIn.onViewActivated();
         }
         if (showFacilityMisc && typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.onViewActivated("facilityMisc");
@@ -21216,6 +21551,15 @@
         applySidebarMainView("nightHandover");
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
           HKNightHandover.onViewActivated();
+        }
+      }
+
+      function showSidebarVipCheckInView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("vipCheckIn");
+        if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.onViewActivated) {
+          HKVipCheckIn.onViewActivated();
         }
       }
 
@@ -27734,11 +28078,15 @@
         if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         var sidebarHandoverSection = document.getElementById("sidebarHandoverSection");
         if (sidebarHandoverSection) sidebarHandoverSection.hidden = !frontMode;
+        var sidebarVipCheckInSection = document.getElementById("sidebarVipCheckInSection");
+        if (sidebarVipCheckInSection) sidebarVipCheckInSection.hidden = !frontMode;
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
         if (!frontMode && sidebarMainView === "complaint") {
           showSidebarOrderView();
         } else if (!frontMode && sidebarMainView === "nightHandover") {
+          showSidebarOrderView();
+        } else if (!frontMode && sidebarMainView === "vipCheckIn") {
           showSidebarOrderView();
         } else if (
           !frontMode &&
@@ -27765,6 +28113,9 @@
         }
         if (typeof HKNightHandover !== "undefined") {
           HKNightHandover.onFrontModeChanged();
+        }
+        if (typeof HKVipCheckIn !== "undefined") {
+          HKVipCheckIn.onFrontModeChanged();
         }
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
@@ -29025,6 +29376,17 @@
           },
         });
       }
+      if (typeof HKVipCheckIn !== "undefined") {
+        HKVipCheckIn.init({
+          isFrontMode: function () {
+            return frontMode;
+          },
+          toast: showHkActionToast,
+          onLeaveWhenLocked: function () {
+            showSidebarOrderView();
+          },
+        });
+      }
       if (typeof HKAdminInquiry !== "undefined") {
         HKAdminInquiry.init({
           formatAt: formatReqAt,
@@ -29973,6 +30335,7 @@
         var bInvenNotify = document.getElementById("sidebarBtnInvenNotify");
         var bTrackIt = document.getElementById("sidebarBtnTrackIt");
         var bNightHandover = document.getElementById("sidebarBtnNightHandover");
+        var bVipCheckIn = document.getElementById("sidebarBtnVipCheckIn");
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
         var bAi = document.getElementById("sidebarBtnAi");
@@ -30064,6 +30427,13 @@
             if (!frontMode) return;
             if (sidebarMainView === "nightHandover") return;
             showSidebarNightHandoverView();
+          });
+        }
+        if (bVipCheckIn) {
+          bVipCheckIn.addEventListener("click", function () {
+            if (!frontMode) return;
+            if (sidebarMainView === "vipCheckIn") return;
+            showSidebarVipCheckInView();
           });
         }
         if (bInvenNotify) {

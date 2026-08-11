@@ -783,6 +783,7 @@
       complaintTypeAnalysis: defaultComplaintTypeAnalysis(),
       trackIt: defaultTrackIt(),
       nightHandover: defaultNightHandover(),
+      vipCheckIn: defaultVipCheckIn(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -1080,6 +1081,100 @@
     return base;
   }
 
+  function defaultVipCheckIn() {
+    if (typeof global.HKVipCheckIn !== "undefined" && global.HKVipCheckIn.defaultData) {
+      return global.HKVipCheckIn.defaultData();
+    }
+    return {
+      updatedAt: "",
+      titleDate: "",
+      titleYear: "",
+      sections: { V4: [], EI: [], SA: [], NPS: [] },
+      connecting: [],
+      aj: { main: "", annex: "" },
+      mb: "",
+      remarks: {},
+    };
+  }
+
+  function emptyVipGuest() {
+    return {
+      guestName: "",
+      roomNo: "",
+      roomStatus: "",
+      roomType: "",
+      rsvNo: "",
+      eta: "",
+      checkOut: "",
+      remark: "",
+    };
+  }
+
+  function normalizeVipGuest(raw) {
+    var g = emptyVipGuest();
+    if (!raw || typeof raw !== "object") return g;
+    Object.keys(g).forEach(function (k) {
+      g[k] = raw[k] != null ? String(raw[k]) : "";
+    });
+    return g;
+  }
+
+  function normalizeVipCheckIn(raw) {
+    var d = defaultVipCheckIn();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    d.titleDate = raw.titleDate != null ? String(raw.titleDate).trim() : d.titleDate || "";
+    d.titleYear = raw.titleYear != null ? String(raw.titleYear).trim() : d.titleYear || "";
+    var sections = raw.sections && typeof raw.sections === "object" ? raw.sections : {};
+    ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
+      var src = Array.isArray(sections[sec]) ? sections[sec] : [];
+      var rows = [];
+      var i;
+      for (i = 0; i < 4; i++) rows.push(normalizeVipGuest(src[i]));
+      d.sections[sec] = rows;
+    });
+    var connecting = Array.isArray(raw.connecting) ? raw.connecting : [];
+    d.connecting = [];
+    for (var j = 0; j < 4; j++) {
+      var c = connecting[j] || {};
+      d.connecting.push({
+        rooms: c.rooms != null ? String(c.rooms) : "",
+        midDoor: c.midDoor != null ? String(c.midDoor) : "",
+        status: c.status != null ? String(c.status) : "",
+      });
+    }
+    d.aj = normalizeWingPair(raw.aj);
+    d.mb = raw.mb != null ? String(raw.mb) : "";
+    var remarksIn = raw.remarks && typeof raw.remarks === "object" ? raw.remarks : {};
+    var remarkIds = [
+      "welcomeCard",
+      "lateCo",
+      "earlyCi",
+      "casino",
+      "seminar",
+      "business",
+      "dami",
+      "tongTeam",
+    ];
+    d.remarks = {};
+    remarkIds.forEach(function (id) {
+      d.remarks[id] = remarksIn[id] != null ? String(remarksIn[id]) : "";
+    });
+    return d;
+  }
+
+  function pickVipCheckIn(baseObj, incObj) {
+    var base = normalizeVipCheckIn(baseObj && baseObj.vipCheckIn);
+    if (!Object.prototype.hasOwnProperty.call(incObj || {}, "vipCheckIn")) {
+      return base;
+    }
+    var inc = normalizeVipCheckIn(incObj.vipCheckIn);
+    var ba = base.updatedAt || "";
+    var ia = inc.updatedAt || "";
+    if (ia && (!ba || String(ia) >= String(ba))) return inc;
+    return base;
+  }
+
   function defaultHotelInfo() {
     return {
       text: "",
@@ -1311,6 +1406,7 @@
     d.complaintTypeAnalysis = normalizeComplaintTypeAnalysis(data.complaintTypeAnalysis);
     d.trackIt = normalizeTrackIt(data.trackIt);
     d.nightHandover = normalizeNightHandover(data.nightHandover);
+    d.vipCheckIn = normalizeVipCheckIn(data.vipCheckIn);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -1693,6 +1789,7 @@
     merged.complaintTypeAnalysis = pickComplaintTypeAnalysis(base, incoming);
     merged.trackIt = pickTrackIt(base, incoming);
     merged.nightHandover = pickNightHandover(base, incoming);
+    merged.vipCheckIn = pickVipCheckIn(base, incoming);
     return normalize(merged);
   }
 
@@ -1761,5 +1858,7 @@
     mergeTrackIt: mergeTrackIt,
     normalizeNightHandover: normalizeNightHandover,
     defaultNightHandover: defaultNightHandover,
+    normalizeVipCheckIn: normalizeVipCheckIn,
+    defaultVipCheckIn: defaultVipCheckIn,
   };
 })(typeof window !== "undefined" ? window : this);
