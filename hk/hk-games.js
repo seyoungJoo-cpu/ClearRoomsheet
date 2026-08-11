@@ -1770,39 +1770,65 @@
         ropeLen: null, omega: 0, wireAge: 0
       };
     }
+    function difficultyAt(x) {
+      // 0 early → 1 late: 바닥·와이어 줄어들고 속도는 별도 가속
+      var p = Math.min(1, Math.max(0, (x - 420) / 8500));
+      return {
+        prog: p,
+        floorChance: Math.max(0.05, 0.58 - p * 0.55),
+        roofChance: Math.max(0.06, 0.2 - p * 0.12),
+        hookOnFloor: Math.max(0.1, 0.58 - p * 0.5),
+        hookOnRoof: Math.max(0.12, 0.9 - p * 0.7),
+        hookOnGap: Math.max(0.3, 1 - p * 0.55),
+        floorLenMul: Math.max(0.45, 1 - p * 0.55),
+        gapMul: 1 + p * 0.85
+      };
+    }
+    function runSpeed() {
+      return 270 + Math.min(360, camX / 24);
+    }
+    function wireReach() {
+      // 적당한 거리 안에서만 와이어 가능 (너무 멀면 안 잡힘)
+      return 158;
+    }
     function addSegment(fromX) {
       var x = fromX;
       while (x < fromX + 900) {
-        var kind = Math.random();
-        if (kind < 0.55) {
-          var len = 160 + Math.random() * 220;
+        var d = difficultyAt(x);
+        var roll = Math.random();
+        if (roll < d.floorChance) {
+          var len = (120 + Math.random() * 180) * d.floorLenMul;
+          len = Math.max(70, len);
           platforms.push({ x: x, y: FLOOR, w: len, h: 40 });
-          if (Math.random() < 0.55) {
+          if (Math.random() < d.hookOnFloor) {
             hooks.push({ x: x + len * (0.35 + Math.random() * 0.3), y: 38 + Math.random() * 36, used: false });
           }
-          if (Math.random() < 0.7) {
+          if (Math.random() < 0.65) {
             for (var i = 0; i < 2 + (Math.random() * 3) | 0; i++) {
               coins.push({ x: x + 40 + i * 46 + Math.random() * 10, y: FLOOR - 70 - Math.random() * 40, r: 9, taken: false });
             }
           }
-          if (Math.random() < 0.35) {
-            bags.push({ x: x + 50 + Math.random() * (len - 80), y: FLOOR - 28, w: 28, h: 28 });
+          if (Math.random() < 0.32 + d.prog * 0.15) {
+            bags.push({ x: x + 40 + Math.random() * Math.max(20, len - 70), y: FLOOR - 28, w: 28, h: 28 });
           }
           x += len;
-        } else if (kind < 0.78) {
-          // short roof ledge
+        } else if (roll < d.floorChance + d.roofChance) {
           var ly = FLOOR - 90 - Math.random() * 70;
-          var lw = 90 + Math.random() * 100;
+          var lw = (80 + Math.random() * 90) * Math.max(0.55, 1 - d.prog * 0.35);
           platforms.push({ x: x + 20, y: ly, w: lw, h: 18 });
-          hooks.push({ x: x + 40 + lw * 0.4, y: Math.max(28, ly - 95), used: false });
+          if (Math.random() < d.hookOnRoof) {
+            hooks.push({ x: x + 40 + lw * 0.4, y: Math.max(28, ly - 95), used: false });
+          }
           coins.push({ x: x + 40 + lw * 0.5, y: ly - 28, r: 9, taken: false });
-          x += 130 + Math.random() * 80;
+          x += 120 + Math.random() * 70 + d.prog * 40;
         } else {
-          // cliff / gap — always a high wire above the precipice
-          var gap = 100 + Math.random() * 100 + Math.min(90, score / 35);
+          // 낭떠러지 — 후반엔 더 넓고, 와이어도 점점 드묾
+          var gap = (105 + Math.random() * 95 + Math.min(110, score / 30)) * d.gapMul;
           var mid = x + gap * 0.52;
-          hooks.push({ x: mid, y: 28 + Math.random() * 30, used: false, gapWire: true });
-          if (Math.random() < 0.55) {
+          if (Math.random() < d.hookOnGap) {
+            hooks.push({ x: mid, y: 28 + Math.random() * 30, used: false, gapWire: true });
+          }
+          if (Math.random() < 0.5) {
             coins.push({ x: mid, y: FLOOR - 140 - Math.random() * 40, r: 9, taken: false });
           }
           x += gap;
@@ -1826,15 +1852,15 @@
       return null;
     }
     function nearestHook() {
-      // Always try the closest unused hook — no max-distance fail
       var best = null, bd = 1e12;
       var px = player.x + player.w / 2, py = player.y + 10;
+      var reach = wireReach();
       for (var i = 0; i < hooks.length; i++) {
         var h = hooks[i];
         if (h.used) continue;
-        // Slightly prefer forward hooks, but still allow behind if closer
         var d = Math.hypot(h.x - px, h.y - py);
-        if (h.x < player.x - 80) d *= 1.35;
+        if (d > reach) continue;
+        if (h.x < player.x - 60) d *= 1.25;
         if (d < bd) { bd = d; best = h; }
       }
       return best;
@@ -1977,9 +2003,9 @@
       ctx.fillRect(0, H - 18, W, 18);
       if (!started) {
         ctx.fillStyle = '#f5f0df'; ctx.font = 'bold 18px Georgia,serif'; ctx.textAlign = 'center';
-        ctx.fillText('Space · 점프   /   Shift · 와이어', W / 2, 56);
+        ctx.fillText('Space · 점프   /   Shift · 와이어(가까운 훅)', W / 2, 56);
         ctx.font = '13px Georgia,serif'; ctx.fillStyle = '#b1c1bd';
-        ctx.fillText('Shift 다시 누르면 해제 · 터치/클릭은 점프·스윙', W / 2, 80);
+        ctx.fillText('Shift 누르는 동안 스윙 · 후반엔 바닥이 거의 사라집니다', W / 2, 80);
       }
       fx.draw(ctx);
     }
@@ -1989,7 +2015,7 @@
       fx.update(dt);
       player.anim += dt;
       if (started && !gamePaused) {
-        var speed = 255 + Math.min(250, camX / 35);
+        var speed = runSpeed();
         camX += speed * dt;
         // prune
         platforms = platforms.filter(function (p) { return p.x + p.w > camX - 80; });
@@ -2125,7 +2151,7 @@
     c.on(cv.canvas, 'pointerdown', down);
     c.on(window, 'pointerup', up);
     reset(); draw(); c.raf(loop);
-    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 누른 동안 와이어(떼면 해제, 최대 1초) · 팁 수집');
+    actions(function () { startGame('mines'); }, function () { return Math.floor(score); }, 'Space 점프 · Shift 누른 동안 와이어(가까운 훅만, 최대 1초) · 후반엔 바닥·와이어가 줄고 빨라집니다');
     return { id: 'mines', destroy: c.destroy };
   };
 
