@@ -2023,8 +2023,8 @@
           }
           player.y = ny - 10;
           player.vy = -L * player.omega * Math.sin(theta);
-          // Hold-to-ride: max 2.7s then auto-release
-          if (player.wireAge > 2.7) releaseWire();
+          // Hold-to-ride: max 1s then auto-release
+          if (player.wireAge > 1) releaseWire();
         } else {
           if (player.wired && !hold && !wireKeyHeld) releaseWire();
           player.vy += 1650 * dt;
