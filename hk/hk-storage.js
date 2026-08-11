@@ -1409,11 +1409,23 @@
     Object.keys(byDate).forEach(function (k) {
       if (byDate[k] && byDate[k].updatedAt) updatedAt = maxUpdatedAt(updatedAt, byDate[k].updatedAt);
     });
-    return {
+    var ui = null;
+    var baseUi = base.ui && typeof base.ui === "object" ? base.ui : null;
+    var incUi = inc.ui && typeof inc.ui === "object" ? inc.ui : null;
+    function uiHasContent(u) {
+      return !!(u && typeof u === "object" && Object.keys(u).length);
+    }
+    if (newerIsInc && uiHasContent(incUi)) ui = incUi;
+    else if (!newerIsInc && uiHasContent(baseUi)) ui = baseUi;
+    else if (uiHasContent(incUi)) ui = incUi;
+    else if (uiHasContent(baseUi)) ui = baseUi;
+    var out = {
       activeDate: activeDate,
       updatedAt: updatedAt,
       byDate: byDate,
     };
+    if (ui) out.ui = ui;
+    return out;
   }
 
   function pickNightHandover(baseObj, incObj) {
@@ -1439,12 +1451,12 @@
       ],
       sections: { V4: [], EI: [], SA: [], NPS: [] },
       connecting: [
-        { rooms: "923-925", midDoor: "중간문", status: "CLOSE" },
-        { rooms: "936-938", midDoor: "중간문", status: "CLOSE" },
-        { rooms: "857-858", midDoor: "중간문", status: "CLOSE" },
-        { rooms: "1220-1222", midDoor: "중간문", status: "CLOSE" },
-        { rooms: "1120-1122", midDoor: "중간문", status: "CLOSE" },
-        { rooms: "1210-1216", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "923-925", midDoor: "중간문", status: "CLOSE", openNote: "" },
+        { rooms: "936-938", midDoor: "중간문", status: "CLOSE", openNote: "" },
+        { rooms: "857-858", midDoor: "중간문", status: "CLOSE", openNote: "" },
+        { rooms: "1220-1222", midDoor: "중간문", status: "CLOSE", openNote: "" },
+        { rooms: "1120-1122", midDoor: "중간문", status: "CLOSE", openNote: "" },
+        { rooms: "1210-1216", midDoor: "중간문", status: "CLOSE", openNote: "" },
       ],
       ajList: [""],
       mbList: [""],
@@ -1596,7 +1608,7 @@
     d.connecting = [];
     if (!connecting.length) {
       defaultConnRooms.forEach(function (rooms) {
-        d.connecting.push({ rooms: rooms, midDoor: "중간문", status: "CLOSE" });
+        d.connecting.push({ rooms: rooms, midDoor: "중간문", status: "CLOSE", openNote: "" });
       });
     } else {
       connecting.forEach(function (c) {
@@ -1607,6 +1619,7 @@
           rooms: c.rooms != null ? String(c.rooms) : "",
           midDoor: "중간문",
           status: st,
+          openNote: c.openNote != null ? String(c.openNote) : "",
         });
       });
     }
@@ -1615,7 +1628,7 @@
     });
     if (allConnBlank) {
       d.connecting = defaultConnRooms.map(function (rooms) {
-        return { rooms: rooms, midDoor: "중간문", status: "CLOSE" };
+        return { rooms: rooms, midDoor: "중간문", status: "CLOSE", openNote: "" };
       });
     }
 
@@ -1698,6 +1711,27 @@
     return d;
   }
 
+  function normalizeVipGuestColWidths(raw) {
+    if (!Array.isArray(raw) || !raw.length) return null;
+    var widths = [];
+    var i;
+    var max = Math.min(raw.length, 20);
+    for (i = 0; i < max; i++) {
+      var v = Number(raw[i]);
+      if (!(v > 0) || !isFinite(v)) continue;
+      widths.push(v);
+    }
+    return widths.length ? widths : null;
+  }
+
+  function normalizeVipUi(rawUi) {
+    var ui = {};
+    if (!rawUi || typeof rawUi !== "object") return ui;
+    var widths = normalizeVipGuestColWidths(rawUi.guestColWidths);
+    if (widths) ui.guestColWidths = widths;
+    return ui;
+  }
+
   function normalizeVipCheckIn(raw) {
     var pack = {
       activeDate: defaultOpsDateKey(),
@@ -1726,6 +1760,9 @@
         pack.updatedAt = maxUpdatedAt(pack.updatedAt, String(raw.updatedAt).trim());
       }
       pack.byDate = pruneByDateMap(pack.byDate);
+      var uiNorm = normalizeVipUi(raw.ui);
+      if (Object.keys(uiNorm).length) pack.ui = uiNorm;
+      else delete pack.ui;
       return pack;
     }
 
@@ -1738,6 +1775,9 @@
     pack.updatedAt = day.updatedAt || "";
     pack.byDate[key] = day;
     pack.byDate = pruneByDateMap(pack.byDate);
+    var uiLegacy = normalizeVipUi(raw.ui);
+    if (Object.keys(uiLegacy).length) pack.ui = uiLegacy;
+    else delete pack.ui;
     return pack;
   }
 

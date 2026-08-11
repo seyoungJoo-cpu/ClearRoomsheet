@@ -1886,11 +1886,13 @@ function normalizeByDatePackLooseForServer(raw) {
       if (!day || typeof day !== "object") return;
       byDate[k] = day;
     });
-    return {
+    var packOut = {
       activeDate: raw.activeDate != null ? String(raw.activeDate) : "",
       updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
       byDate: byDate,
     };
+    if (raw.ui && typeof raw.ui === "object") packOut.ui = raw.ui;
+    return packOut;
   }
   /* legacy flat day document */
   var inferred =
@@ -1908,6 +1910,7 @@ function normalizeByDatePackLooseForServer(raw) {
     byDate: {},
   };
   pack.byDate[inferred] = day;
+  if (raw.ui && typeof raw.ui === "object") pack.ui = raw.ui;
   return pack;
 }
 
@@ -2028,11 +2031,24 @@ function mergeByDatePackForServer(prev, inc, hasIncoming, normalizePack) {
     if (u && (!updatedAt || String(u) > String(updatedAt))) updatedAt = u;
   });
 
-  return {
+  var ui = null;
+  var baseUi = base.ui && typeof base.ui === "object" ? base.ui : null;
+  var incUi = incoming.ui && typeof incoming.ui === "object" ? incoming.ui : null;
+  function uiHasContent(u) {
+    return !!(u && typeof u === "object" && Object.keys(u).length);
+  }
+  if (newerIsInc && uiHasContent(incUi)) ui = incUi;
+  else if (!newerIsInc && uiHasContent(baseUi)) ui = baseUi;
+  else if (uiHasContent(incUi)) ui = incUi;
+  else if (uiHasContent(baseUi)) ui = baseUi;
+
+  var mergedPack = {
     activeDate: activeDate,
     updatedAt: updatedAt,
     byDate: byDate,
   };
+  if (ui) mergedPack.ui = ui;
+  return mergedPack;
 }
 
 function adminInquiryHasReply(entry) {

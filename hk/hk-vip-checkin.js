@@ -58,6 +58,7 @@
   var currentDateKey = "";
   var VIP_COL_WIDTHS_KEY = "hk-vip-col-widths-v1";
   var colResizeBound = false;
+  var guestColWidthsLive = null;
 
   function hs() {
     return global.HKStorage || null;
@@ -108,6 +109,7 @@
       rooms: rooms != null ? String(rooms) : "",
       midDoor: "중간문",
       status: "CLOSE",
+      openNote: "",
     };
   }
 
@@ -229,6 +231,7 @@
       var c = list[i] || {};
       var status = String(c.status || "CLOSE").toUpperCase();
       if (status === "OPEN") return true;
+      if (filledStr(c.openNote)) return true;
       var rooms = String(c.rooms || "").trim();
       var def = defaults[i];
       if (!def) {
@@ -287,6 +290,7 @@
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
     var pack = loadPack();
+    var ui = pack.ui && typeof pack.ui === "object" ? pack.ui : {};
     day = normalizeDay(day || defaultData(key));
     day.dateKey = key;
     day.titleDate = displayFromKey(key);
@@ -296,6 +300,7 @@
     pack.byDate[key] = day;
     if (!pack.activeDate) pack.activeDate = key;
     pack.updatedAt = day.updatedAt;
+    pack.ui = ui;
     if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
       pack = global.HKStorage.normalizeVipCheckIn(pack);
     }
@@ -385,6 +390,7 @@
     if (!global.HKStorage || !global.HKStorage.save) return;
     var data = global.HKStorage.load();
     var pack = loadPack();
+    var ui = pack.ui && typeof pack.ui === "object" ? pack.ui : {};
     var key = currentDateKey || pack.activeDate || opsDateKey();
     currentDateKey = key;
     var day = dayDoc || collectFromDom();
@@ -400,6 +406,7 @@
     pack.byDate[key] = day;
     pack.activeDate = key;
     pack.updatedAt = day.updatedAt;
+    pack.ui = ui;
     if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
       pack = global.HKStorage.normalizeVipCheckIn(pack);
     }
@@ -472,6 +479,7 @@
         rooms: val("vipConnRooms_" + i),
         midDoor: "중간문",
         status: status,
+        openNote: val("vipConnOpenNote_" + i),
       });
     }
     return list;
@@ -687,7 +695,13 @@
           status +
           '" aria-label="커넥팅 상태 전환">' +
           status +
-          "</button></td>";
+          "</button>" +
+          '<input type="text" class="vip-conn-open-note' +
+          (status === "OPEN" ? " is-visible" : "") +
+          '" id="vipConnOpenNote_' +
+          idx +
+          '" placeholder="~日" autocomplete="off" aria-label="OPEN 메모" />' +
+          "</td>";
       }
       html +=
         '<td class="nh-row-actions">' +
@@ -700,6 +714,7 @@
       for (c = 0; c < CONNECTING_PER_ROW; c++) {
         var idx2 = rowIdx + c;
         setVal("vipConnRooms_" + idx2, (connecting[idx2] && connecting[idx2].rooms) || "");
+        setVal("vipConnOpenNote_" + idx2, (connecting[idx2] && connecting[idx2].openNote) || "");
       }
     }
     autosizeAllIn(tbody);
@@ -904,6 +919,9 @@
     btn.textContent = next;
     btn.classList.toggle("is-open", next === "OPEN");
     btn.classList.toggle("is-close", next === "CLOSE");
+    var idx = btn.getAttribute("data-vip-conn-status");
+    var note = document.getElementById("vipConnOpenNote_" + idx);
+    if (note) note.classList.toggle("is-visible", next === "OPEN");
     markDirty();
   }
 
@@ -1029,6 +1047,7 @@
       currentDateKey = opsDateKey();
     }
     fillDay(dayFromPack(pack, currentDateKey, true));
+    applyGuestColWidthsFromPack();
   }
 
   function onSave() {
@@ -1123,8 +1142,18 @@
       ]);
     });
     (pack.connecting || []).forEach(function (c) {
-      if (!c || !(c.rooms || c.status)) return;
-      aoa.push(["커넥팅", c.rooms || "", "중간문", c.status || "CLOSE", "", "", "", "", ""]);
+      if (!c || !(c.rooms || c.status || c.openNote)) return;
+      aoa.push([
+        "커넥팅",
+        c.rooms || "",
+        "중간문",
+        c.status || "CLOSE",
+        c.openNote || "",
+        "",
+        "",
+        "",
+        "",
+      ]);
     });
     (pack.remarkRows && pack.remarkRows.length
       ? pack.remarkRows
@@ -1214,65 +1243,120 @@
     if (panel && !panel.hidden) render(true);
   }
 
+  function normalizeGuestColWidthsArr(arr) {
+    var DEFAULT_WIDTHS = [36, 64, 110, 72, 72, 80, 90, 100, 90, 140, 52];
+    if (!Array.isArray(arr) || arr.length !== 11) return null;
+    var out = [];
+    var i;
+    for (i = 0; i < 11; i++) {
+      var v = Number(arr[i]);
+      out.push(v > 24 && isFinite(v) ? v : DEFAULT_WIDTHS[i]);
+    }
+    return out;
+  }
+
+  function readLocalGuestColWidths() {
+    try {
+      var raw = global.localStorage && global.localStorage.getItem(VIP_COL_WIDTHS_KEY);
+      if (!raw) return null;
+      return normalizeGuestColWidthsArr(JSON.parse(raw));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function mirrorLocalGuestColWidths(widths) {
+    try {
+      if (global.localStorage) {
+        global.localStorage.setItem(VIP_COL_WIDTHS_KEY, JSON.stringify(widths));
+      }
+    } catch (e) {}
+  }
+
+  function resolveGuestColWidths() {
+    var DEFAULT_WIDTHS = [36, 64, 110, 72, 72, 80, 90, 100, 90, 140, 52];
+    var pack = loadPack();
+    var fromPack =
+      pack && pack.ui && normalizeGuestColWidthsArr(pack.ui.guestColWidths);
+    if (fromPack) {
+      mirrorLocalGuestColWidths(fromPack);
+      return fromPack;
+    }
+    var fromLocal = readLocalGuestColWidths();
+    if (fromLocal) return fromLocal;
+    return DEFAULT_WIDTHS.slice();
+  }
+
+  function ensureGuestColgroup(table) {
+    var cg = table.querySelector("colgroup");
+    if (cg && cg.children.length === 11) return cg;
+    if (cg) cg.remove();
+    cg = document.createElement("colgroup");
+    var i;
+    for (i = 0; i < 11; i++) {
+      cg.appendChild(document.createElement("col"));
+    }
+    table.insertBefore(cg, table.firstChild);
+    return cg;
+  }
+
+  function applyGuestColWidths(widths) {
+    var table = document.querySelector(".vip-table--guests");
+    if (!table || !widths) return;
+    guestColWidthsLive = widths.slice();
+    var cg = ensureGuestColgroup(table);
+    var i;
+    for (i = 0; i < 11; i++) {
+      var col = cg.children[i];
+      if (col) col.style.width = widths[i] + "px";
+    }
+    var ths = table.querySelectorAll("thead th");
+    for (i = 0; i < ths.length && i < 11; i++) {
+      ths[i].style.width = widths[i] + "px";
+    }
+  }
+
+  function applyGuestColWidthsFromPack() {
+    applyGuestColWidths(resolveGuestColWidths());
+  }
+
+  function persistGuestColWidthsToPack(widths) {
+    if (!global.HKStorage || !global.HKStorage.save) {
+      mirrorLocalGuestColWidths(widths);
+      return;
+    }
+    var data = global.HKStorage.load();
+    var pack = loadPack();
+    if (!pack.ui || typeof pack.ui !== "object") pack.ui = {};
+    pack.ui.guestColWidths = widths.slice();
+    pack.updatedAt = new Date().toISOString();
+    if (typeof global.HKStorage.normalizeVipCheckIn === "function") {
+      pack = global.HKStorage.normalizeVipCheckIn(pack);
+    }
+    data.vipCheckIn = pack;
+    global.HKStorage.save(data);
+    mirrorLocalGuestColWidths(widths);
+    if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
+      global.HKSync.pushStorageNow();
+    }
+  }
+
   function bindGuestColResize() {
     if (colResizeBound) return;
     var table = document.querySelector(".vip-table--guests");
     if (!table) return;
     colResizeBound = true;
 
-    var DEFAULT_WIDTHS = [36, 64, 110, 72, 72, 80, 90, 100, 90, 140, 52];
-
-    function ensureColgroup() {
-      var cg = table.querySelector("colgroup");
-      if (cg && cg.children.length === 11) return cg;
-      if (cg) cg.remove();
-      cg = document.createElement("colgroup");
-      var i;
-      for (i = 0; i < 11; i++) {
-        cg.appendChild(document.createElement("col"));
-      }
-      table.insertBefore(cg, table.firstChild);
-      return cg;
+    var widths = resolveGuestColWidths();
+    var packNow = loadPack();
+    var packHasWidths =
+      packNow && packNow.ui && normalizeGuestColWidthsArr(packNow.ui.guestColWidths);
+    if (!packHasWidths && readLocalGuestColWidths()) {
+      /* migrate once into pack when pack missing widths */
+      persistGuestColWidthsToPack(widths);
     }
-
-    function loadWidths() {
-      try {
-        var raw = global.localStorage && global.localStorage.getItem(VIP_COL_WIDTHS_KEY);
-        if (!raw) return DEFAULT_WIDTHS.slice();
-        var arr = JSON.parse(raw);
-        if (!Array.isArray(arr) || arr.length !== 11) return DEFAULT_WIDTHS.slice();
-        return arr.map(function (n, i) {
-          var v = Number(n);
-          return v > 24 ? v : DEFAULT_WIDTHS[i];
-        });
-      } catch (e) {
-        return DEFAULT_WIDTHS.slice();
-      }
-    }
-
-    function applyWidths(widths) {
-      var cg = ensureColgroup();
-      var i;
-      for (i = 0; i < 11; i++) {
-        var col = cg.children[i];
-        if (col) col.style.width = widths[i] + "px";
-      }
-      var ths = table.querySelectorAll("thead th");
-      for (i = 0; i < ths.length && i < 11; i++) {
-        ths[i].style.width = widths[i] + "px";
-      }
-    }
-
-    function saveWidths(widths) {
-      try {
-        if (global.localStorage) {
-          global.localStorage.setItem(VIP_COL_WIDTHS_KEY, JSON.stringify(widths));
-        }
-      } catch (e) {}
-    }
-
-    var widths = loadWidths();
-    applyWidths(widths);
+    applyGuestColWidths(widths);
+    guestColWidthsLive = widths;
 
     var theadRow = table.querySelector("thead tr");
     if (!theadRow) return;
@@ -1287,16 +1371,18 @@
         ev.preventDefault();
         ev.stopPropagation();
         var startX = ev.clientX;
-        var startW = widths[idx];
+        var live = guestColWidthsLive || widths;
+        var startW = live[idx];
         function onMove(e2) {
           var next = Math.max(36, startW + (e2.clientX - startX));
-          widths[idx] = next;
-          applyWidths(widths);
+          live[idx] = next;
+          guestColWidthsLive = live;
+          applyGuestColWidths(live);
         }
         function onUp() {
           document.removeEventListener("mousemove", onMove);
           document.removeEventListener("mouseup", onUp);
-          saveWidths(widths);
+          persistGuestColWidthsToPack(guestColWidthsLive || live);
         }
         document.addEventListener("mousemove", onMove);
         document.addEventListener("mouseup", onUp);
