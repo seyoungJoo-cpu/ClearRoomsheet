@@ -3193,7 +3193,8 @@
     .main.main--mb-inv #mbInvPanel,
     .main.main--mb-check #mbCheckPanel,
     .main.main--inven-notify #invenNotifyPanel,
-    .main.main--complaint #complaintPanel {
+    .main.main--complaint #complaintPanel,
+    .main.main--track-it #trackItPanel {
       flex: 1;
       min-height: 0;
       margin-bottom: 0;
@@ -7983,7 +7984,8 @@
 
     .hk-strip-sort {
       display: grid;
-      grid-template-columns: minmax(5.5rem, 1.2fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.5fr);
+      /* 객실(1/2) · 동 · 시간 · 상태 · 메모 */
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
       gap: 6px 12px;
       align-items: center;
       padding: 7px 14px;
@@ -8643,6 +8645,19 @@
       display: none !important;
     }
 
+    .track-it-juso-link {
+      margin-left: auto;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .track-it-juso-link:hover {
+      color: #0f766e;
+    }
+
     .complaint-panel__tabs {
       display: inline-flex;
       gap: 4px;
@@ -8825,37 +8840,40 @@
     }
 
     .complaint-table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: collapse;
-      table-layout: fixed;
+      table-layout: auto;
       font-size: 0.78rem;
-      min-width: 0;
     }
 
-    /* 하단 결과 표: 날짜÷2 · 예약÷3 · 이름÷3 · 객실÷4 · 메모×3 · 유형÷2 */
-    .complaint-table col.c-date { width: 6.2%; }
-    .complaint-table col.c-res { width: 4.2%; }
-    .complaint-table col.c-name { width: 4.2%; }
-    .complaint-table col.c-room { width: 3.2%; }
-    .complaint-table col.c-memo { width: 62%; }
-    .complaint-table col.c-type { width: 7%; }
-    .complaint-table col.c-change { width: 5.2%; }
-    .complaint-table col.c-act { width: 8%; }
+    .complaint-table col.c-date,
+    .complaint-table col.c-res,
+    .complaint-table col.c-name,
+    .complaint-table col.c-room,
+    .complaint-table col.c-memo,
+    .complaint-table col.c-type,
+    .complaint-table col.c-change,
+    .complaint-table col.c-act {
+      width: auto;
+    }
 
     .complaint-table th,
     .complaint-table td {
       border-bottom: 1px solid var(--border);
-      padding: 4px 4px;
+      padding: 4px 8px;
       text-align: left;
       vertical-align: middle;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: visible;
+      text-overflow: clip;
       white-space: nowrap;
     }
 
     .complaint-table td.complaint-td-memo,
     .complaint-table th:nth-child(5) {
       white-space: normal;
+      word-break: break-word;
+      max-width: 28rem;
     }
 
     .complaint-table td.complaint-td-date .complaint-cell-input,
@@ -9239,7 +9257,72 @@
     }
 
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
-    .main .order-work-item,
+    .main .order-work-item.is-strip-cols {
+      display: grid;
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
+      gap: 6px 12px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--room {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      min-width: 0;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--wing {
+      justify-self: start;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--time {
+      font-size: 0.8125rem;
+      min-width: 0;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--status {
+      min-width: 0;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--memo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.35;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--memo .order-feedback__item-memo {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      font-size: inherit;
+      font-weight: inherit;
+    }
+
+    .main .order-work-item.is-strip-cols > .order-chat,
+    .main .order-work-item.is-strip-cols > .order-work__actions,
+    .main .order-work-item.is-strip-cols > .order-work__facility-time-wrap,
+    .main .order-work-item.is-strip-cols > .order-feedback__maint-actions,
+    .main .order-work-item.is-strip-cols > .hk-accepter-label,
+    .main .order-work-item.is-strip-cols > .order-work__facility-denied-label,
+    .main .order-work-item.is-strip-cols > .order-work-item__chat-hint,
+    .main .order-work-item.is-strip-cols > .order-work-item__x,
+    .main .order-work-item.is-strip-cols > .order-feedback__item-by,
+    .main .order-work-item.is-strip-cols > .order-feedback__front-actions {
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .main .order-work-item:not(.is-strip-cols),
     .main .room-list-main > .room-card,
     .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--ip-compact),
     .confirming-cards-panel .request-feedback__item {
@@ -10286,6 +10369,14 @@
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnTrackIt"
+              aria-pressed="false"
+            >
+              Track IT
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
               id="sidebarBtnInvenNotify"
               aria-pressed="false"
             >
@@ -10865,6 +10956,110 @@
           </div>
           <div class="complaint-table-wrap" id="complaintStatsTableWrap"></div>
           <p class="complaint-stats-empty" id="complaintStatsEmpty" hidden>집계할 데이터가 없습니다.</p>
+        </div>
+      </section>
+
+      <section class="complaint-panel track-it-panel" id="trackItPanel" hidden aria-labelledby="trackItPanelTitle">
+        <div class="panel-head-row">
+          <h2 id="trackItPanelTitle">Track IT</h2>
+          <a
+            class="track-it-juso-link"
+            href="https://www.juso.go.kr"
+            target="_blank"
+            rel="noopener noreferrer"
+            >주소찾기</a
+          >
+        </div>
+        <p class="complaint-panel__hint" id="trackItEditLockHint" hidden>
+          등록·수정은 프론트 또는 정비 모드에서 가능합니다.
+        </p>
+
+        <form class="complaint-form" id="trackItForm">
+          <div class="complaint-form__fields">
+            <div class="complaint-ox-block">
+              <span>배송</span>
+              <div class="complaint-ox-row" role="group" aria-label="착불 / 긴급">
+                <button
+                  type="button"
+                  class="complaint-ox-btn is-selected"
+                  id="trackItShipCod"
+                  aria-pressed="true"
+                >
+                  착불
+                </button>
+                <button type="button" class="complaint-ox-btn" id="trackItShipUrgent" aria-pressed="false">
+                  긴급
+                </button>
+              </div>
+            </div>
+            <div class="field field--complaint-memo">
+              <label for="trackItAddress">주소(가능시 건물명)</label>
+              <input type="text" id="trackItAddress" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="trackItZip">우편번호</label>
+              <input type="text" id="trackItZip" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="trackItName">성함</label>
+              <input type="text" id="trackItName" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="trackItPhone">휴대폰번호</label>
+              <input type="text" id="trackItPhone" autocomplete="off" />
+            </div>
+            <div class="field field--complaint-memo">
+              <label for="trackItItem">물건</label>
+              <input type="text" id="trackItItem" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="trackItCheckoutDate">체크아웃 날짜</label>
+              <input type="date" id="trackItCheckoutDate" />
+            </div>
+            <div class="field">
+              <label for="trackItRoomNo">객실번호</label>
+              <input type="text" id="trackItRoomNo" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn-order">등록</button>
+            <button type="button" class="btn-order complaint-edit-cancel-btn" id="btnTrackItEditCancel" hidden>
+              수정 취소
+            </button>
+          </div>
+          <p class="complaint-panel__hint" id="trackItEditHint" hidden></p>
+        </form>
+
+        <div class="complaint-table-wrap">
+          <table class="complaint-table" aria-label="Track IT 등록 목록">
+            <thead>
+              <tr>
+                <th>등록일</th>
+                <th>배송</th>
+                <th>주소</th>
+                <th>우편번호</th>
+                <th>성함</th>
+                <th>휴대폰</th>
+                <th>물건</th>
+                <th>체크아웃</th>
+                <th>객실</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="trackItTableBody"></tbody>
+          </table>
+        </div>
+        <p class="complaint-table-empty" id="trackItTableEmpty">등록된 Track IT가 없습니다.</p>
+        <div class="complaint-reset-row">
+          <button
+            type="button"
+            class="btn-order complaint-reset-btn"
+            id="btnTrackItResetAll"
+            title="등록된 Track IT만 비웁니다 (마감과 별개)"
+          >
+            Track IT 초기화
+          </button>
+          <span class="complaint-panel__hint"
+            >이 버튼을 누르기 전에는 데이터가 유지됩니다 (마감해도 자동 초기화되지 않음).</span
+          >
         </div>
       </section>
 
@@ -11824,7 +12019,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=embed-clear-3"></script>
+  <script src="hk-storage.js?v=track-it-1"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -11834,6 +12029,7 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=8"></script>
+  <script src="hk-track-it.js?v=1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -14194,7 +14390,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "requestDeskChatInput") return;
         }
-        var stick = hkChatNearBottom(mount);
+        var stick = opts.scrollToBottom === true ? true : hkChatNearBottom(mount);
         var savedTop = mount.scrollTop || 0;
         var msgs = getRequestDeskChatMessages();
         mount.innerHTML = "";
@@ -14263,7 +14459,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
-        renderRequestDeskChat({ force: true });
+        renderRequestDeskChat({ force: true, scrollToBottom: true });
         return true;
       }
 
@@ -14296,7 +14492,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "orderDeskChatInput") return;
         }
-        var stick = hkChatNearBottom(mount);
+        var stick = opts.scrollToBottom === true ? true : hkChatNearBottom(mount);
         var savedTop = mount.scrollTop || 0;
         var msgs = getOrderDeskChatMessages();
         mount.innerHTML = "";
@@ -14365,7 +14561,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
-        renderOrderDeskChat({ force: true });
+        renderOrderDeskChat({ force: true, scrollToBottom: true });
         return true;
       }
 
@@ -14398,7 +14594,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "mbCheckDeskChatInput") return;
         }
-        var stick = hkChatNearBottom(mount);
+        var stick = opts.scrollToBottom === true ? true : hkChatNearBottom(mount);
         var savedTop = mount.scrollTop || 0;
         var msgs = getMbCheckDeskChatMessages();
         mount.innerHTML = "";
@@ -14467,7 +14663,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
-        renderMbCheckDeskChat({ force: true });
+        renderMbCheckDeskChat({ force: true, scrollToBottom: true });
         return true;
       }
 
@@ -14500,7 +14696,7 @@
           var ae = document.activeElement;
           if (ae && ae.id === "facilityDeskChatInput") return;
         }
-        var stick = hkChatNearBottom(mount);
+        var stick = opts.scrollToBottom === true ? true : hkChatNearBottom(mount);
         var savedTop = mount.scrollTop || 0;
         var msgs = getFacilityDeskChatMessages();
         mount.innerHTML = "";
@@ -14569,7 +14765,7 @@
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
           HKSync.pushStorageNow();
         }
-        renderFacilityDeskChat({ force: true });
+        renderFacilityDeskChat({ force: true, scrollToBottom: true });
         return true;
       }
 
@@ -14709,6 +14905,9 @@
               sidebarMainView === "complaint"
             ) {
               HKComplaintAnalysis.render();
+            }
+            if (typeof HKTrackIt !== "undefined" && sidebarMainView === "trackIt") {
+              HKTrackIt.render();
             }
           }
           applyFrontEmbedStatesFromStorage({ force: true });
@@ -17827,6 +18026,7 @@
         var mbInvNav = document.getElementById("sidebarBtnMbInv");
         var mbCheckNav = document.getElementById("sidebarBtnMbCheck");
         var invenNotifyNav = document.getElementById("sidebarBtnInvenNotify");
+        var trackItNav = document.getElementById("sidebarBtnTrackIt");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
@@ -17872,6 +18072,13 @@
         if (mbCheckNav) {
           mbCheckNav.classList.toggle("is-active", sidebarMainView === "mbCheck");
           mbCheckNav.setAttribute("aria-pressed", sidebarMainView === "mbCheck" ? "true" : "false");
+        }
+        if (trackItNav) {
+          trackItNav.classList.toggle("is-active", sidebarMainView === "trackIt");
+          trackItNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "trackIt" ? "true" : "false"
+          );
         }
         if (invenNotifyNav) {
           invenNotifyNav.classList.toggle("is-active", sidebarMainView === "invenNotify");
@@ -17919,6 +18126,7 @@
         var showFacilityDailyFound = view === "facilityDailyFound";
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
+        var showTrackIt = view === "trackIt";
         var showInvenNotify = view === "invenNotify";
         var showChat = view === "chat";
         var showFront = view === "front";
@@ -17955,6 +18163,7 @@
         var schedPanel = document.getElementById("schedCardsPanel");
         var orderPanel = document.getElementById("orderPanel");
         var complaintPanel = document.getElementById("complaintPanel");
+        var trackItPanel = document.getElementById("trackItPanel");
         var facilityPanel = document.getElementById("facilityPanel");
         var facilityMiscPanel = document.getElementById("facilityMiscPanel");
         var facilityDailyFoundPanel = document.getElementById("facilityDailyFoundPanel");
@@ -17971,6 +18180,7 @@
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
         if (complaintPanel) complaintPanel.hidden = !showComplaint;
+        if (trackItPanel) trackItPanel.hidden = !showTrackIt;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
         if (facilityMiscPanel) facilityMiscPanel.hidden = !showFacilityMisc;
         if (facilityDailyFoundPanel) facilityDailyFoundPanel.hidden = !showFacilityDailyFound;
@@ -17991,6 +18201,7 @@
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--complaint", showComplaint);
+          mainEl.classList.toggle("main--track-it", showTrackIt);
           mainEl.classList.toggle("main--facility", showFacility);
           mainEl.classList.toggle("main--facility-misc", showFacilityMisc);
           mainEl.classList.toggle("main--facility-daily-found", showFacilityDailyFound);
@@ -18033,6 +18244,9 @@
         if (showInvenNotify && typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
         }
+        if (showTrackIt && typeof HKTrackIt !== "undefined" && HKTrackIt.onViewActivated) {
+          HKTrackIt.onViewActivated();
+        }
         if (showFacilityMisc && typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.onViewActivated("facilityMisc");
         }
@@ -18067,14 +18281,14 @@
         if (showRequest) {
           requestAnimationFrame(function () {
             renderRequestLogPanel({ force: true });
-            renderRequestDeskChat({ force: true });
+            renderRequestDeskChat({ force: true, scrollToBottom: true });
           });
         }
         if (showOrder || showFacility) {
           requestAnimationFrame(function () {
             renderOrderPanels({ force: true });
-            if (showOrder) renderOrderDeskChat({ force: true });
-            if (showFacility) renderFacilityDeskChat({ force: true });
+            if (showOrder) renderOrderDeskChat({ force: true, scrollToBottom: true });
+            if (showFacility) renderFacilityDeskChat({ force: true, scrollToBottom: true });
           });
         }
         if (showMbInv && typeof HKMbWorkflow !== "undefined") {
@@ -18085,7 +18299,7 @@
         if (showMbCheck && typeof HKMbWorkflow !== "undefined") {
           requestAnimationFrame(function () {
             HKMbWorkflow.renderMbCheckPanels();
-            renderMbCheckDeskChat({ force: true });
+            renderMbCheckDeskChat({ force: true, scrollToBottom: true });
           });
         }
         if (showZone) {
@@ -20493,7 +20707,7 @@
         clearRequestSidebarAlerts();
         applySidebarMainView("request");
         renderRequestLogPanel({ force: true });
-        renderRequestDeskChat({ force: true });
+        renderRequestDeskChat({ force: true, scrollToBottom: true });
       }
 
       function showSidebarOrderView() {
@@ -20502,7 +20716,7 @@
         clearOrderSidebarAlerts();
         applySidebarMainView("order");
         renderOrderPanels({ force: true });
-        renderOrderDeskChat({ force: true });
+        renderOrderDeskChat({ force: true, scrollToBottom: true });
       }
 
       function showSidebarComplaintView() {
@@ -20514,6 +20728,15 @@
         }
       }
 
+      function showSidebarTrackItView() {
+        collapseZoneBlock();
+        clearZoneTabSelection();
+        applySidebarMainView("trackIt");
+        if (typeof HKTrackIt !== "undefined" && HKTrackIt.onViewActivated) {
+          HKTrackIt.onViewActivated();
+        }
+      }
+
       function showSidebarFacilityView() {
         collapseZoneBlock();
         clearZoneTabSelection();
@@ -20521,7 +20744,7 @@
         applySidebarMainView("facility");
         updateFacilityOrderFoDisplay();
         renderOrderPanels({ force: true });
-        renderFacilityDeskChat({ force: true });
+        renderFacilityDeskChat({ force: true, scrollToBottom: true });
       }
 
       function showSidebarFacilityMiscView() {
@@ -20555,7 +20778,7 @@
         if (typeof HKMbWorkflow !== "undefined") {
           HKMbWorkflow.renderMbCheckPanels();
         }
-        renderMbCheckDeskChat({ force: true });
+        renderMbCheckDeskChat({ force: true, scrollToBottom: true });
       }
 
       function showSidebarInvenNotifyView() {
@@ -22314,49 +22537,21 @@
       function appendOrderItemCommon(li, entry, opts) {
         opts = opts || {};
         var compact = opts.compact !== false;
+        li.classList.add("is-strip-cols");
 
-        if (entry.at) {
-          var orderTimeEl = document.createElement("div");
-          orderTimeEl.className = "request-feedback__item-time";
-          setLineWithEmTime(orderTimeEl, "오더 ", formatReqAt(entry.at));
-          li.appendChild(orderTimeEl);
-        }
-        if (entry.acceptedAt) {
-          var acceptTimeEl = document.createElement("div");
-          acceptTimeEl.className = "request-feedback__item-time";
-          setLineWithEmTime(acceptTimeEl, "접수 ", formatReqAt(entry.acceptedAt));
-          li.appendChild(acceptTimeEl);
-        }
-        if (opts.extraLabel && opts.extraAt) {
-          var extraTimeEl = document.createElement("div");
-          extraTimeEl.className = "request-feedback__item-time";
-          setLineWithEmTime(extraTimeEl, opts.extraLabel, formatReqAt(opts.extraAt));
-          li.appendChild(extraTimeEl);
-        }
-
-        var row = document.createElement("div");
-        row.className = "request-feedback__item-row";
-        var r = document.createElement("span");
-        r.className = "request-feedback__item-room";
-        r.textContent = entry.room
+        var roomCell = document.createElement("span");
+        roomCell.className = "hk-strip-cell hk-strip-cell--room request-feedback__item-room";
+        roomCell.textContent = entry.room
           ? compact
             ? formatRoomNoDisplay(String(entry.room))
             : "객실 " + formatRoomNoDisplay(String(entry.room))
           : "—";
-        var wingLabel = roomWingLabelForNumber(entry.room);
-        if (wingLabel) {
-          var wingBadge = document.createElement("span");
-          wingBadge.className = "request-feedback__item-wing";
-          if (wingLabel === "별관") wingBadge.classList.add("is-annex");
-          wingBadge.textContent = wingLabel;
-          r.appendChild(wingBadge);
-        }
         if (entry.urgent) {
           var ub = document.createElement("span");
           ub.className = "request-feedback__item-urgent-badge";
           ub.textContent = "긴급";
           ub.setAttribute("aria-label", "긴급");
-          r.appendChild(ub);
+          roomCell.appendChild(ub);
         }
         if (isFacilityOrder(entry)) {
           var stayKey = getFacilityStay(entry);
@@ -22367,7 +22562,7 @@
               "facility-stay-badge facility-stay-badge--" + (stayKey || "vacant");
             stayBadge.textContent = stayLabel;
             stayBadge.setAttribute("aria-label", stayLabel);
-            r.appendChild(stayBadge);
+            roomCell.appendChild(stayBadge);
           }
           var guestLabel = getFacilityGuestPresenceLabel(entry);
           if (guestLabel) {
@@ -22377,20 +22572,54 @@
               (getFacilityGuestPresence(entry) || "present");
             guestBadge.textContent = guestLabel;
             guestBadge.setAttribute("aria-label", guestLabel);
-            r.appendChild(guestBadge);
+            roomCell.appendChild(guestBadge);
           }
         }
-        row.appendChild(r);
-        var s = document.createElement("span");
-        s.className = "request-feedback__item-st";
-        s.appendChild(
+
+        var wingCell = document.createElement("span");
+        wingCell.className = "hk-strip-cell hk-strip-cell--wing";
+        var wingLabel = roomWingLabelForNumber(entry.room);
+        if (wingLabel) {
+          var wingBadge = document.createElement("span");
+          wingBadge.className = "request-feedback__item-wing";
+          if (wingLabel === "별관") wingBadge.classList.add("is-annex");
+          wingBadge.textContent = wingLabel;
+          wingCell.appendChild(wingBadge);
+        } else {
+          wingCell.textContent = "—";
+        }
+
+        var timeCell = document.createElement("div");
+        timeCell.className = "hk-strip-cell hk-strip-cell--time";
+        if (entry.at) {
+          var orderTimeEl = document.createElement("div");
+          orderTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(orderTimeEl, "오더 ", formatReqAt(entry.at));
+          timeCell.appendChild(orderTimeEl);
+        }
+        if (entry.acceptedAt) {
+          var acceptTimeEl = document.createElement("div");
+          acceptTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(acceptTimeEl, "접수 ", formatReqAt(entry.acceptedAt));
+          timeCell.appendChild(acceptTimeEl);
+        }
+        if (opts.extraLabel && opts.extraAt) {
+          var extraTimeEl = document.createElement("div");
+          extraTimeEl.className = "request-feedback__item-time";
+          setLineWithEmTime(extraTimeEl, opts.extraLabel, formatReqAt(opts.extraAt));
+          timeCell.appendChild(extraTimeEl);
+        }
+
+        var statusCell = document.createElement("span");
+        statusCell.className = "hk-strip-cell hk-strip-cell--status request-feedback__item-st";
+        statusCell.appendChild(
           buildFoOnlyBadge(entry.room, {
             statusClass: "request-feedback__item-st hk-st-badge",
           })
         );
-        row.appendChild(s);
-        li.appendChild(row);
 
+        var memoCell = document.createElement("div");
+        memoCell.className = "hk-strip-cell hk-strip-cell--memo";
         var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
         var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
         if (isFacilityOrder(entry) && entry.sourceReqId && (!memoStr || !memo2Str)) {
@@ -22408,25 +22637,28 @@
           if (memoStr) {
             var mem1El = document.createElement("div");
             mem1El.className = "order-feedback__item-memo";
-            mem1El.textContent = compact ? "메모1 : " + memoStr : "메모1 : " + memoStr;
-            li.appendChild(mem1El);
+            mem1El.textContent = "메모1 : " + memoStr;
+            memoCell.appendChild(mem1El);
           }
           if (memo2Str) {
             var mem2El = document.createElement("div");
             mem2El.className = "order-feedback__item-memo order-feedback__item-memo--m2";
-            mem2El.textContent = compact ? "메모2 : " + memo2Str : "메모2 : " + memo2Str;
-            li.appendChild(mem2El);
-          }
-          if (!memoStr && !memo2Str) {
-            /* no memo */
+            mem2El.textContent = "메모2 : " + memo2Str;
+            memoCell.appendChild(mem2El);
           }
         } else if (memoStr) {
           var memEl = document.createElement("div");
           memEl.className = "order-feedback__item-memo";
           memEl.textContent = compact ? memoStr : "메모 : " + memoStr;
-          li.appendChild(memEl);
+          memoCell.appendChild(memEl);
         }
-        hkAppendImageEl(li, entry.memoImage);
+        hkAppendImageEl(memoCell, entry.memoImage);
+
+        li.appendChild(roomCell);
+        li.appendChild(wingCell);
+        li.appendChild(timeCell);
+        li.appendChild(statusCell);
+        li.appendChild(memoCell);
 
         var orderBy = entry.by != null ? String(entry.by).trim() : "";
         if (orderBy && !opts.hideBy) {
@@ -27042,6 +27274,9 @@
         if (typeof HKComplaintAnalysis !== "undefined") {
           HKComplaintAnalysis.onFrontModeChanged();
         }
+        if (typeof HKTrackIt !== "undefined") {
+          HKTrackIt.render();
+        }
         if (typeof HKFacilityLogs !== "undefined") {
           HKFacilityLogs.refreshFromRemote();
         }
@@ -28282,6 +28517,14 @@
           toast: showHkActionToast,
         });
       }
+      if (typeof HKTrackIt !== "undefined") {
+        HKTrackIt.init({
+          canEdit: function () {
+            return !!(frontMode || maintenanceMode);
+          },
+          toast: showHkActionToast,
+        });
+      }
       if (typeof HKAdminInquiry !== "undefined") {
         HKAdminInquiry.init({
           formatAt: formatReqAt,
@@ -29228,6 +29471,7 @@
         var bMbInv = document.getElementById("sidebarBtnMbInv");
         var bMbCheck = document.getElementById("sidebarBtnMbCheck");
         var bInvenNotify = document.getElementById("sidebarBtnInvenNotify");
+        var bTrackIt = document.getElementById("sidebarBtnTrackIt");
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
         var bAi = document.getElementById("sidebarBtnAi");
@@ -29306,6 +29550,12 @@
           bMbCheck.addEventListener("click", function () {
             if (sidebarMainView === "mbCheck") return;
             showSidebarMbCheckView();
+          });
+        }
+        if (bTrackIt) {
+          bTrackIt.addEventListener("click", function () {
+            if (sidebarMainView === "trackIt") return;
+            showSidebarTrackItView();
           });
         }
         if (bInvenNotify) {

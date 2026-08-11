@@ -781,6 +781,7 @@
       hotelInfo: defaultHotelInfo(),
       gameRanks: defaultGameRanks(),
       complaintTypeAnalysis: defaultComplaintTypeAnalysis(),
+      trackIt: defaultTrackIt(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -881,6 +882,88 @@
       return baseInfo;
     }
     return mergeComplaintTypeAnalysis(baseInfo, incObj.complaintTypeAnalysis);
+  }
+
+  function defaultTrackIt() {
+    return { updatedAt: "", records: [] };
+  }
+
+  function normalizeTrackItRecord(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    if (!id) return null;
+    var shipType = raw.shipType != null ? String(raw.shipType).trim() : "cod";
+    if (shipType !== "urgent") shipType = "cod";
+    return {
+      id: id,
+      createdAt: raw.createdAt != null ? String(raw.createdAt).trim() : "",
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt).trim() : "",
+      shipType: shipType,
+      address: raw.address != null ? String(raw.address).trim() : "",
+      zip: raw.zip != null ? String(raw.zip).trim() : "",
+      name: raw.name != null ? String(raw.name).trim() : "",
+      phone: raw.phone != null ? String(raw.phone).trim() : "",
+      item: raw.item != null ? String(raw.item).trim() : "",
+      checkoutDate: raw.checkoutDate != null ? String(raw.checkoutDate).trim() : "",
+      roomNo: raw.roomNo != null ? String(raw.roomNo).trim() : "",
+    };
+  }
+
+  function normalizeTrackIt(raw) {
+    var d = defaultTrackIt();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
+    var list = [];
+    var seen = {};
+    (Array.isArray(raw.records) ? raw.records : []).forEach(function (row) {
+      var n = normalizeTrackItRecord(row);
+      if (!n || seen[n.id]) return;
+      seen[n.id] = true;
+      list.push(n);
+    });
+    list.sort(function (a, b) {
+      var ta = a.createdAt || "";
+      var tb = b.createdAt || "";
+      if (ta !== tb) return String(ta).localeCompare(String(tb));
+      return String(a.id).localeCompare(String(b.id));
+    });
+    d.records = list;
+    return d;
+  }
+
+  function mergeTrackIt(baseRaw, incRaw) {
+    var base = normalizeTrackIt(baseRaw);
+    var inc = normalizeTrackIt(incRaw);
+    var map = {};
+    base.records.forEach(function (r) {
+      map[r.id] = r;
+    });
+    inc.records.forEach(function (r) {
+      var prev = map[r.id];
+      if (!prev) {
+        map[r.id] = r;
+        return;
+      }
+      var pa = prev.updatedAt || prev.createdAt || "";
+      var ia = r.updatedAt || r.createdAt || "";
+      if (!pa || (ia && String(ia) >= String(pa))) map[r.id] = r;
+    });
+    var ba = base.updatedAt || "";
+    var ia2 = inc.updatedAt || "";
+    return normalizeTrackIt({
+      updatedAt: ia2 && (!ba || String(ia2) >= String(ba)) ? ia2 : ba || ia2,
+      records: Object.keys(map).map(function (k) {
+        return map[k];
+      }),
+    });
+  }
+
+  function pickTrackIt(baseObj, incObj) {
+    var baseInfo = normalizeTrackIt(baseObj && baseObj.trackIt);
+    if (!Object.prototype.hasOwnProperty.call(incObj || {}, "trackIt")) {
+      return baseInfo;
+    }
+    return mergeTrackIt(baseInfo, incObj.trackIt);
   }
 
   function defaultHotelInfo() {
@@ -1112,6 +1195,7 @@
     d.hotelInfo = normalizeHotelInfo(data.hotelInfo);
     d.gameRanks = normalizeGameRanks(data.gameRanks);
     d.complaintTypeAnalysis = normalizeComplaintTypeAnalysis(data.complaintTypeAnalysis);
+    d.trackIt = normalizeTrackIt(data.trackIt);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -1492,6 +1576,7 @@
       merged.gameRanks = normalizeGameRanks(base.gameRanks);
     }
     merged.complaintTypeAnalysis = pickComplaintTypeAnalysis(base, incoming);
+    merged.trackIt = pickTrackIt(base, incoming);
     return normalize(merged);
   }
 
@@ -1555,5 +1640,8 @@
     defaultComplaintTypeAnalysis: defaultComplaintTypeAnalysis,
     mergeComplaintTypeAnalysis: mergeComplaintTypeAnalysis,
     COMPLAINT_TYPE_IDS: COMPLAINT_TYPE_IDS,
+    normalizeTrackIt: normalizeTrackIt,
+    defaultTrackIt: defaultTrackIt,
+    mergeTrackIt: mergeTrackIt,
   };
 })(typeof window !== "undefined" ? window : this);
