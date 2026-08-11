@@ -550,7 +550,7 @@
 
   <div id="resultArea" class="hidden">
     <div class="summary-bar">
-      <div class="summary-tile vip"><span class="label">VIP</span><span class="value" id="cnt-vip">0</span><span class="sub">VIP 코드 / RQ GM·AGM·VGM / 임원</span></div>
+      <div class="summary-tile vip"><span class="label">VIP</span><span class="value" id="cnt-vip">0</span><span class="sub">VIP 코드 / RQ GM·AGM·VGM / 임원 / 스위트(로컬)</span></div>
       <div class="summary-tile lvoc"><span class="label">LVOC (칭찬)</span><span class="value" id="cnt-lvoc">0</span><span class="sub">▷칭찬◁ / 감사 인사 · 편지</span></div>
       <div class="summary-tile warn"><span class="label">컴플레인</span><span class="value" id="cnt-complaint">0</span><span class="sub">컴플 / 사고 · 분실 / 사과 · 보상</span></div>
       <div class="summary-tile anniv"><span class="label">기념일</span><span class="value" id="cnt-anniv">0</span><span class="sub">생일·생신 · 칠순·팔순 · 결혼 · 태교</span></div>
@@ -687,6 +687,40 @@ const CAT_META = {
   prefRoom:  { label: '고객취향(객실배정)',  emoji: '🌿' }
 };
 const CAT_ORDER = ['vip', 'lvoc', 'complaint', 'anniv', 'ups', 'prefRoom'];
+
+/** HK 로컬 룰: 아래 TYPE 코드 외 전부도 코드는 스위트로 분류 → VIP 탭 */
+const LOCAL_EXPLICIT_ROOM_TYPES = [
+  'MNDFZ', 'ENDFZ', 'ENCFZ', 'MNPBG', 'ENDBG', 'MNCFY', 'MNCFQ', 'MNCFK',
+  'MNDDM', 'MNDTM', 'MNDFM', 'ENDDG', 'ENDFG', 'MNPFG', 'MNDMM', 'MNPMG',
+  'ENDDT', 'ENCFG', 'ENCDT', 'ENCFT', 'MNPDO', 'MNPFO', 'ESCMT', 'ESJMT', 'MSJTO'
+];
+
+function isLocalSuiteRoomType(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return false;
+  if (/스위트|suite|수트/i.test(s)) return true;
+  // 객실 TYPE 코드만 (공백·한글 설명 문구는 무시)
+  if (!/^[A-Za-z0-9]{3,12}$/.test(s)) return false;
+  return LOCAL_EXPLICIT_ROOM_TYPES.indexOf(s.toUpperCase()) < 0;
+}
+
+function pickReservationRoomType(r) {
+  var tags = [
+    'ROOM_CATEGORY',
+    'BOOKED_ROOM_CATEGORY',
+    'ROOM_TYPE',
+    'TYPE',
+    'ROOM_CLASS',
+    'ROOM_CLASS_CODE',
+    'ROOM_CATEGORY_LABEL',
+    'ROOM_TYPE_DESCRIPTION'
+  ];
+  for (var i = 0; i < tags.length; i++) {
+    var v = getText(r, tags[i]);
+    if (v) return v;
+  }
+  return '';
+}
 
 /* ---------- 1. 키워드 사전 (룰 엔진) ---------- */
 const KEYWORDS = {
@@ -963,6 +997,7 @@ function parseXMLFile(text) {
       roomNo:         getText(r, 'ROOM_NO') || getText(r, 'DISP_ROOM_NO'),
       fullName:       getText(r, 'FULL_NAME'),
       vipField:       getText(r, 'VIP'),
+      roomType:       pickReservationRoomType(r),
       comments:       collectComments(r),
       compHouse:      getText(r, 'COMP_HOUSE'),
       memTypes:       collectMemberships(r)
@@ -1198,9 +1233,16 @@ function analyzeRecord(rec) {
   if (rec.vipField && rec.vipField.trim()) cats.vip = true;
   if (lvocNoteLines.length > 0) cats.lvoc = true;
 
+  // 로컬 룰: XML 룸타입이 스위트(명시 목록 외 TYPE)면 VIP + 메모「스위트」
+  var isSuiteByLocalRule = isLocalSuiteRoomType(rec.roomType);
+  if (isSuiteByLocalRule) cats.vip = true;
+
   const perCat = {};
   for (const cat of CAT_ORDER) perCat[cat] = [];
 
+  if (isSuiteByLocalRule) {
+    perCat.vip.push('스위트');
+  }
   /** 한 코멘트 블록 안에 컴플레인이 한 줄이라도 있으면, 노이즈 제거된 본문 전체를 컴플레인에 1건으로 */
   function pushComplaintChunkIfAny(sents) {
     const chunk = sents.join('\n');
@@ -1248,8 +1290,17 @@ function analyzeRecord(rec) {
     }
   }
 
-  if (cats.vip && perCat.vip.length === 0 && rec.vipField) {
-    perCat.vip = ['VIP 코드: ' + rec.vipField];
+  if (cats.vip && rec.vipField) {
+    var vipCodeLine = 'VIP 코드: ' + rec.vipField;
+    if (perCat.vip.indexOf(vipCodeLine) < 0) {
+      // 스위트 로컬 룰만 있는 경우에도 VIP 코드는 함께 표시
+      if (perCat.vip.length === 0 || (isSuiteByLocalRule && perCat.vip.length === 1 && perCat.vip[0] === '스위트')) {
+        perCat.vip.push(vipCodeLine);
+      }
+    }
+  }
+  if (cats.vip && perCat.vip.length === 0 && isSuiteByLocalRule) {
+    perCat.vip = ['스위트'];
   }
 
   const sort = {
