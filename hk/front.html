@@ -12875,8 +12875,8 @@
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=9"></script>
   <script src="hk-track-it.js?v=3"></script>
-  <script src="hk-night-handover.js?v=3"></script>
-  <script src="hk-vip-checkin.js?v=3"></script>
+  <script src="hk-night-handover.js?v=4"></script>
+  <script src="hk-vip-checkin.js?v=4"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -13078,6 +13078,31 @@
           ) {
             return true;
           }
+          // 야간 인계·VIP 체크인 작성 중 — 동기화로 폼이 덮어씌워지지 않게
+          if (
+            ae.closest &&
+            (ae.closest("#nightHandoverPanel") || ae.closest("#vipCheckInPanel")) &&
+            (ae.tagName === "TEXTAREA" ||
+              ae.tagName === "INPUT" ||
+              ae.tagName === "SELECT" ||
+              ae.isContentEditable)
+          ) {
+            return true;
+          }
+        }
+        if (
+          typeof HKNightHandover !== "undefined" &&
+          HKNightHandover.isDirty &&
+          HKNightHandover.isDirty()
+        ) {
+          return true;
+        }
+        if (
+          typeof HKVipCheckIn !== "undefined" &&
+          HKVipCheckIn.isDirty &&
+          HKVipCheckIn.isDirty()
+        ) {
+          return true;
         }
         // 임시로 붙는 인라인 편집 UI는 존재하면 편집 중
         return !!document.querySelector(
@@ -15759,6 +15784,7 @@
             if (
               typeof HKNightHandover !== "undefined" &&
               sidebarMainView === "nightHandover" &&
+              !(HKNightHandover.isDirty && HKNightHandover.isDirty()) &&
               !isHkUserEditing()
             ) {
               HKNightHandover.render();
@@ -15766,6 +15792,7 @@
             if (
               typeof HKVipCheckIn !== "undefined" &&
               sidebarMainView === "vipCheckIn" &&
+              !(HKVipCheckIn.isDirty && HKVipCheckIn.isDirty()) &&
               !isHkUserEditing()
             ) {
               HKVipCheckIn.render();

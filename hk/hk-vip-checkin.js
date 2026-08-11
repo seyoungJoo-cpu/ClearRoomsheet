@@ -521,7 +521,12 @@
     syncDirtyUi();
   }
 
-  function render() {
+  function render(force) {
+    if (dirty && !force) {
+      syncEditLock();
+      syncDirtyUi();
+      return;
+    }
     ensureRemarksBuilt();
     var pack = loadData();
     setVal("vipTitleDate", pack.titleDate || defaultTitleDate());
@@ -718,7 +723,7 @@
   }
 
   function onViewActivated() {
-    render();
+    render(false);
   }
 
   function onFrontModeChanged() {
@@ -740,5 +745,8 @@
     defaultData: defaultData,
     downloadExcel: downloadExcel,
     REMARK_KEYS: REMARK_KEYS,
+    isDirty: function () {
+      return !!dirty;
+    },
   };
 })(typeof window !== "undefined" ? window : this);

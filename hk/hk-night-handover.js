@@ -374,7 +374,12 @@
     syncDirtyUi();
   }
 
-  function render() {
+  function render(force) {
+    if (dirty && !force) {
+      syncEditLock();
+      syncDirtyUi();
+      return;
+    }
     ensureExtrasBuilt();
     var pack = loadData();
     fillTopFields(pack);
@@ -529,7 +534,7 @@
   }
 
   function onViewActivated() {
-    render();
+    render(false);
   }
 
   function onFrontModeChanged() {
@@ -550,5 +555,8 @@
     resetOnCloseDay: resetOnCloseDay,
     defaultData: defaultData,
     downloadExcel: downloadExcel,
+    isDirty: function () {
+      return !!dirty;
+    },
   };
 })(typeof window !== "undefined" ? window : this);
