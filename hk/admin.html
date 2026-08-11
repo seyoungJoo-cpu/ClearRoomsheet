@@ -1001,7 +1001,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=persist-close-4"></script>
+  <script src="hk-storage.js?v=vip-ui-3"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=force-sync-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -2528,12 +2528,13 @@
                 "",
                 "",
               ]);
-              var sections = pack.sections || {};
-              ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
-                (sections[sec] || []).forEach(function (g) {
+              var guests = Array.isArray(pack.guests) ? pack.guests : null;
+              if (guests && guests.length) {
+                guests.forEach(function (g) {
                   if (!g) return;
                   if (
                     !(
+                      g.section ||
                       g.guestName ||
                       g.roomNo ||
                       g.roomStatus ||
@@ -2547,7 +2548,7 @@
                     return;
                   }
                   out.push([
-                    sec,
+                    g.mergePrev ? "" : g.section || "",
                     g.guestName || "",
                     g.roomNo || "",
                     g.roomStatus || "",
@@ -2558,13 +2559,45 @@
                     g.remark || "",
                   ]);
                 });
-              });
+              } else {
+                var sections = pack.sections || {};
+                ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
+                  (sections[sec] || []).forEach(function (g) {
+                    if (!g) return;
+                    if (
+                      !(
+                        g.guestName ||
+                        g.roomNo ||
+                        g.roomStatus ||
+                        g.roomType ||
+                        g.rsvNo ||
+                        g.eta ||
+                        g.checkOut ||
+                        g.remark
+                      )
+                    ) {
+                      return;
+                    }
+                    out.push([
+                      sec,
+                      g.guestName || "",
+                      g.roomNo || "",
+                      g.roomStatus || "",
+                      g.roomType || "",
+                      g.rsvNo || "",
+                      g.eta || "",
+                      g.checkOut || "",
+                      g.remark || "",
+                    ]);
+                  });
+                });
+              }
               (pack.connecting || []).forEach(function (c) {
                 if (!c || !(c.rooms || c.midDoor || c.status)) return;
                 out.push([
                   "커넥팅",
                   c.rooms || "",
-                  c.midDoor || "",
+                  c.midDoor || "중간문",
                   c.status || "",
                   "",
                   "",
@@ -2573,16 +2606,26 @@
                   "",
                 ]);
               });
-              if (pack.aj && (pack.aj.main || pack.aj.annex)) {
-                out.push(["AJ 본관", pack.aj.main || "", "AJ 별관", pack.aj.annex || "", "", "", "", "", ""]);
-              }
-              if (pack.mb) {
-                out.push(["MB", pack.mb, "", "", "", "", "", "", ""]);
-              }
               var remarks = pack.remarks || {};
-              Object.keys(remarks).forEach(function (k) {
+              var remarkLabels = {
+                aj: "AJ",
+                mb: "MB",
+                welcomeCard: "웰컴카드 (VOUPS 2,3)",
+                lateCo: "LATE C/O",
+                earlyCi: "얼리체크인",
+                casino: "카지노",
+                seminar: "세미나 / 단체",
+                business: "출장",
+                dami: "답사 룸쇼",
+                tongTeam: "롱텀",
+              };
+              if (!remarks.aj && pack.aj && (pack.aj.main || pack.aj.annex)) {
+                remarks.aj = [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ");
+              }
+              if (!remarks.mb && pack.mb) remarks.mb = pack.mb;
+              Object.keys(remarkLabels).forEach(function (k) {
                 if (!remarks[k]) return;
-                out.push([k, remarks[k], "", "", "", "", "", "", ""]);
+                out.push([remarkLabels[k], remarks[k], "", "", "", "", "", "", ""]);
               });
               return out;
             })(),

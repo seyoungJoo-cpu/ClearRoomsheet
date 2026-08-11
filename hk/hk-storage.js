@@ -1047,23 +1047,31 @@
     var notes = Array.isArray(raw.notes) ? raw.notes : [];
     d.notes = [];
     var i;
-    for (i = 0; i < 10; i++) {
-      var n = notes[i] || {};
-      d.notes.push({
-        category: n.category != null ? String(n.category) : "",
-        main: n.main != null ? String(n.main) : "",
-        annex: n.annex != null ? String(n.annex) : "",
+    if (!notes.length) {
+      for (i = 0; i < 3; i++) d.notes.push({ category: "", main: "", annex: "" });
+    } else {
+      notes.forEach(function (n) {
+        n = n || {};
+        d.notes.push({
+          category: n.category != null ? String(n.category) : "",
+          main: n.main != null ? String(n.main) : "",
+          annex: n.annex != null ? String(n.annex) : "",
+        });
       });
     }
     var incidents = Array.isArray(raw.incidents) ? raw.incidents : [];
     d.incidents = [];
-    for (i = 0; i < 6; i++) {
-      var inc = incidents[i] || {};
-      d.incidents.push({
-        room: inc.room != null ? String(inc.room) : "",
-        by: inc.by != null ? String(inc.by) : "",
-        dates: inc.dates != null ? String(inc.dates) : "",
-        detail: inc.detail != null ? String(inc.detail) : "",
+    if (!incidents.length) {
+      for (i = 0; i < 3; i++) d.incidents.push({ room: "", by: "", dates: "", detail: "" });
+    } else {
+      incidents.forEach(function (inc) {
+        inc = inc || {};
+        d.incidents.push({
+          room: inc.room != null ? String(inc.room) : "",
+          by: inc.by != null ? String(inc.by) : "",
+          dates: inc.dates != null ? String(inc.dates) : "",
+          detail: inc.detail != null ? String(inc.detail) : "",
+        });
       });
     }
     return d;
@@ -1089,6 +1097,11 @@
       updatedAt: "",
       titleDate: "",
       titleYear: "",
+      guests: [
+        { section: "V4", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "EI", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "SA", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+      ],
       sections: { V4: [], EI: [], SA: [], NPS: [] },
       connecting: [],
       aj: { main: "", annex: "" },
@@ -1099,6 +1112,8 @@
 
   function emptyVipGuest() {
     return {
+      section: "",
+      mergePrev: false,
       guestName: "",
       roomNo: "",
       roomStatus: "",
@@ -1110,13 +1125,48 @@
     };
   }
 
-  function normalizeVipGuest(raw) {
+  function normalizeVipGuest(raw, sectionFallback) {
     var g = emptyVipGuest();
-    if (!raw || typeof raw !== "object") return g;
-    Object.keys(g).forEach(function (k) {
+    if (!raw || typeof raw !== "object") {
+      if (sectionFallback) g.section = String(sectionFallback);
+      return g;
+    }
+    g.section =
+      raw.section != null && String(raw.section).trim()
+        ? String(raw.section)
+        : sectionFallback != null
+          ? String(sectionFallback)
+          : "";
+    g.mergePrev = raw.mergePrev === true || raw.mergePrev === 1 || raw.mergePrev === "1";
+    [
+      "guestName",
+      "roomNo",
+      "roomStatus",
+      "roomType",
+      "rsvNo",
+      "eta",
+      "checkOut",
+      "remark",
+    ].forEach(function (k) {
       g[k] = raw[k] != null ? String(raw[k]) : "";
     });
     return g;
+  }
+
+  function flattenLegacyVipSections(sections) {
+    var guests = [];
+    ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
+      var src = Array.isArray(sections[sec]) ? sections[sec] : [];
+      src.forEach(function (row, idx) {
+        var g = normalizeVipGuest(row, sec);
+        if (idx > 0) {
+          /* keep separate rows with same label — not auto-merged */
+          g.mergePrev = false;
+        }
+        guests.push(g);
+      });
+    });
+    return guests;
   }
 
   function normalizeVipCheckIn(raw) {
@@ -1125,28 +1175,68 @@
     d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt).trim() : "";
     d.titleDate = raw.titleDate != null ? String(raw.titleDate).trim() : d.titleDate || "";
     d.titleYear = raw.titleYear != null ? String(raw.titleYear).trim() : d.titleYear || "";
-    var sections = raw.sections && typeof raw.sections === "object" ? raw.sections : {};
-    ["V4", "EI", "SA", "NPS"].forEach(function (sec) {
-      var src = Array.isArray(sections[sec]) ? sections[sec] : [];
-      var rows = [];
-      var i;
-      for (i = 0; i < 4; i++) rows.push(normalizeVipGuest(src[i]));
-      d.sections[sec] = rows;
+
+    var guests = [];
+    if (Array.isArray(raw.guests) && raw.guests.length) {
+      raw.guests.forEach(function (row) {
+        guests.push(normalizeVipGuest(row));
+      });
+    } else {
+      var sections = raw.sections && typeof raw.sections === "object" ? raw.sections : {};
+      guests = flattenLegacyVipSections(sections);
+    }
+    if (!guests.length) {
+      guests = [
+        normalizeVipGuest(null, "V4"),
+        normalizeVipGuest(null, "EI"),
+        normalizeVipGuest(null, "SA"),
+      ];
+    }
+    if (guests[0]) guests[0].mergePrev = false;
+    d.guests = guests;
+
+    d.sections = { V4: [], EI: [], SA: [], NPS: [] };
+    guests.forEach(function (g) {
+      var key = String(g.section || "").trim().toUpperCase();
+      if (!d.sections[key]) key = "NPS";
+      d.sections[key].push({
+        guestName: g.guestName,
+        roomNo: g.roomNo,
+        roomStatus: g.roomStatus,
+        roomType: g.roomType,
+        rsvNo: g.rsvNo,
+        eta: g.eta,
+        checkOut: g.checkOut,
+        remark: g.remark,
+      });
     });
+
     var connecting = Array.isArray(raw.connecting) ? raw.connecting : [];
     d.connecting = [];
-    for (var j = 0; j < 4; j++) {
-      var c = connecting[j] || {};
-      d.connecting.push({
-        rooms: c.rooms != null ? String(c.rooms) : "",
-        midDoor: c.midDoor != null ? String(c.midDoor) : "",
-        status: c.status != null ? String(c.status) : "",
+    if (!connecting.length) {
+      var ci;
+      for (ci = 0; ci < 6; ci++) {
+        d.connecting.push({ rooms: "", midDoor: "중간문", status: "CLOSE" });
+      }
+    } else {
+      connecting.forEach(function (c) {
+        c = c || {};
+        var st = c.status != null ? String(c.status).trim().toUpperCase() : "CLOSE";
+        if (st !== "OPEN") st = "CLOSE";
+        d.connecting.push({
+          rooms: c.rooms != null ? String(c.rooms) : "",
+          midDoor: "중간문",
+          status: st,
+        });
       });
     }
+
     d.aj = normalizeWingPair(raw.aj);
     d.mb = raw.mb != null ? String(raw.mb) : "";
     var remarksIn = raw.remarks && typeof raw.remarks === "object" ? raw.remarks : {};
     var remarkIds = [
+      "aj",
+      "mb",
       "welcomeCard",
       "lateCo",
       "earlyCi",
@@ -1160,6 +1250,12 @@
     remarkIds.forEach(function (id) {
       d.remarks[id] = remarksIn[id] != null ? String(remarksIn[id]) : "";
     });
+    if (!d.remarks.aj && (d.aj.main || d.aj.annex)) {
+      d.remarks.aj = [d.aj.main, d.aj.annex].filter(Boolean).join(" / ");
+    }
+    if (!d.remarks.mb && d.mb) d.remarks.mb = d.mb;
+    if (d.remarks.aj && !d.aj.main) d.aj = { main: d.remarks.aj, annex: "" };
+    if (d.remarks.mb && !d.mb) d.mb = d.remarks.mb;
     return d;
   }
 

@@ -1,6 +1,6 @@
 /**
  * 야간 인계사항 — 웹 폼 작성 · 저장 시 HKStorage 동기화
- * 프론트 모드에서만 편집
+ * 프론트 모드에서만 편집 · 마감해도 유지(초기화 버튼으로만 삭제)
  */
 (function (global) {
   var EXTRA_KEYS = [
@@ -15,8 +15,10 @@
     { id: "linenMissing", label: "린넨 및 대여품 누락" },
   ];
 
-  var NOTE_ROWS = 10;
-  var INCIDENT_ROWS = 6;
+  var DEFAULT_NOTE_ROWS = 3;
+  var DEFAULT_INCIDENT_ROWS = 3;
+  var MIN_NOTE_ROWS = 1;
+  var MIN_INCIDENT_ROWS = 1;
 
   var opts = {
     isFrontMode: function () {
@@ -27,10 +29,8 @@
 
   var bound = false;
   var dirty = false;
-
-  function pad2(n) {
-    return (n < 10 ? "0" : "") + n;
-  }
+  var noteCount = DEFAULT_NOTE_ROWS;
+  var incidentCount = DEFAULT_INCIDENT_ROWS;
 
   function defaultTitleDate(d) {
     d = d || new Date();
@@ -41,18 +41,24 @@
     return { main: "", annex: "" };
   }
 
+  function emptyNote() {
+    return { category: "", main: "", annex: "" };
+  }
+
+  function emptyIncident() {
+    return { room: "", by: "", dates: "", detail: "" };
+  }
+
   function defaultData() {
     var extras = {};
     EXTRA_KEYS.forEach(function (k) {
       extras[k.id] = emptyWing();
     });
     var notes = [];
-    var i;
-    for (i = 0; i < NOTE_ROWS; i++) notes.push({ category: "", main: "", annex: "" });
     var incidents = [];
-    for (i = 0; i < INCIDENT_ROWS; i++) {
-      incidents.push({ room: "", by: "", dates: "", detail: "" });
-    }
+    var i;
+    for (i = 0; i < DEFAULT_NOTE_ROWS; i++) notes.push(emptyNote());
+    for (i = 0; i < DEFAULT_INCIDENT_ROWS; i++) incidents.push(emptyIncident());
     return {
       updatedAt: "",
       titleDate: defaultTitleDate(),
@@ -138,7 +144,7 @@
     });
     var notes = [];
     var i;
-    for (i = 0; i < NOTE_ROWS; i++) {
+    for (i = 0; i < noteCount; i++) {
       notes.push({
         category: val("nhNoteCat_" + i),
         main: val("nhNoteMain_" + i),
@@ -147,7 +153,7 @@
     }
     base.notes = notes;
     var incidents = [];
-    for (i = 0; i < INCIDENT_ROWS; i++) {
+    for (i = 0; i < incidentCount; i++) {
       incidents.push({
         room: val("nhIncRoom_" + i),
         by: val("nhIncBy_" + i),
@@ -159,8 +165,99 @@
     return base;
   }
 
-  function fillDom(pack) {
-    pack = pack || defaultData();
+  function ensureExtrasBuilt() {
+    var tbody = document.getElementById("nhExtrasBody");
+    if (!tbody || tbody.__hkBuilt) return;
+    tbody.__hkBuilt = true;
+    tbody.innerHTML = "";
+    EXTRA_KEYS.forEach(function (k) {
+      var tr = document.createElement("tr");
+      if (k.highlight) tr.className = "nh-row--highlight";
+      tr.innerHTML =
+        '<th scope="row">' +
+        k.label +
+        "</th>" +
+        '<td><textarea id="nhEx_' +
+        k.id +
+        '_main" rows="2" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhEx_' +
+        k.id +
+        '_annex" rows="2" autocomplete="off"></textarea></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function rebuildNotesBody(notes) {
+    var tbody = document.getElementById("nhNotesBody");
+    if (!tbody) return;
+    notes = Array.isArray(notes) ? notes : [];
+    noteCount = Math.max(MIN_NOTE_ROWS, notes.length || DEFAULT_NOTE_ROWS);
+    tbody.innerHTML = "";
+    var i;
+    for (i = 0; i < noteCount; i++) {
+      var n = notes[i] || emptyNote();
+      var tr = document.createElement("tr");
+      if (i === 0) tr.className = "nh-row--highlight";
+      tr.innerHTML =
+        '<td><textarea id="nhNoteCat_' +
+        i +
+        '" rows="2" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhNoteMain_' +
+        i +
+        '" rows="2" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhNoteAnnex_' +
+        i +
+        '" rows="2" autocomplete="off"></textarea></td>' +
+        '<td class="nh-row-actions">' +
+        '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-note-remove="' +
+        i +
+        '" title="행 삭제" aria-label="구분 행 삭제">−</button>' +
+        "</td>";
+      tbody.appendChild(tr);
+      setVal("nhNoteCat_" + i, n.category);
+      setVal("nhNoteMain_" + i, n.main);
+      setVal("nhNoteAnnex_" + i, n.annex);
+    }
+  }
+
+  function rebuildIncidentsBody(incidents) {
+    var tbody = document.getElementById("nhIncidentsBody");
+    if (!tbody) return;
+    incidents = Array.isArray(incidents) ? incidents : [];
+    incidentCount = Math.max(MIN_INCIDENT_ROWS, incidents.length || DEFAULT_INCIDENT_ROWS);
+    tbody.innerHTML = "";
+    var i;
+    for (i = 0; i < incidentCount; i++) {
+      var inc = incidents[i] || emptyIncident();
+      var tr = document.createElement("tr");
+      tr.className = "nh-incident-row";
+      tr.innerHTML =
+        '<td><textarea id="nhIncRoom_' +
+        i +
+        '" rows="2" placeholder="객실" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhIncBy_' +
+        i +
+        '" rows="2" placeholder="이름" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhIncDates_' +
+        i +
+        '" rows="2" placeholder="기간" autocomplete="off"></textarea></td>' +
+        '<td><textarea id="nhIncDetail_' +
+        i +
+        '" rows="2" placeholder="내용" autocomplete="off"></textarea></td>' +
+        '<td class="nh-row-actions">' +
+        '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-inc-remove="' +
+        i +
+        '" title="행 삭제" aria-label="이슈 행 삭제">−</button>' +
+        "</td>";
+      tbody.appendChild(tr);
+      setVal("nhIncRoom_" + i, inc.room);
+      setVal("nhIncBy_" + i, inc.by);
+      setVal("nhIncDates_" + i, inc.dates);
+      setVal("nhIncDetail_" + i, inc.detail);
+    }
+  }
+
+  function fillTopFields(pack) {
     setVal("nhTitleDate", pack.titleDate || defaultTitleDate());
     var duty = pack.duty || {};
     setVal("nhDutyMidMain", duty.mid && duty.mid.main);
@@ -182,22 +279,56 @@
       setVal("nhEx_" + k.id + "_main", row.main);
       setVal("nhEx_" + k.id + "_annex", row.annex);
     });
-    var notes = pack.notes || [];
-    var i;
-    for (i = 0; i < NOTE_ROWS; i++) {
-      var n = notes[i] || {};
-      setVal("nhNoteCat_" + i, n.category);
-      setVal("nhNoteMain_" + i, n.main);
-      setVal("nhNoteAnnex_" + i, n.annex);
+  }
+
+  function addNoteRow() {
+    if (!canEdit()) return;
+    var notes = collectFromDom().notes;
+    notes.push(emptyNote());
+    rebuildNotesBody(notes);
+    markDirty();
+    syncEditLock();
+  }
+
+  function removeNoteRow(idx) {
+    if (!canEdit()) return;
+    var notes = collectFromDom().notes;
+    if (notes.length <= MIN_NOTE_ROWS) {
+      notes[idx] = emptyNote();
+      rebuildNotesBody(notes);
+      markDirty();
+      syncEditLock();
+      return;
     }
-    var incidents = pack.incidents || [];
-    for (i = 0; i < INCIDENT_ROWS; i++) {
-      var inc = incidents[i] || {};
-      setVal("nhIncRoom_" + i, inc.room);
-      setVal("nhIncBy_" + i, inc.by);
-      setVal("nhIncDates_" + i, inc.dates);
-      setVal("nhIncDetail_" + i, inc.detail);
+    notes.splice(idx, 1);
+    rebuildNotesBody(notes);
+    markDirty();
+    syncEditLock();
+  }
+
+  function addIncidentRow() {
+    if (!canEdit()) return;
+    var incidents = collectFromDom().incidents;
+    incidents.push(emptyIncident());
+    rebuildIncidentsBody(incidents);
+    markDirty();
+    syncEditLock();
+  }
+
+  function removeIncidentRow(idx) {
+    if (!canEdit()) return;
+    var incidents = collectFromDom().incidents;
+    if (incidents.length <= MIN_INCIDENT_ROWS) {
+      incidents[idx] = emptyIncident();
+      rebuildIncidentsBody(incidents);
+      markDirty();
+      syncEditLock();
+      return;
     }
+    incidents.splice(idx, 1);
+    rebuildIncidentsBody(incidents);
+    markDirty();
+    syncEditLock();
   }
 
   function syncEditLock() {
@@ -206,12 +337,18 @@
     if (!root) return;
     root.classList.toggle("is-readonly", !editable);
     root.querySelectorAll("input, textarea, button").forEach(function (el) {
-      if (el.id === "btnNightHandoverSave") {
-        el.disabled = !editable;
-        return;
-      }
-      if (el.id === "btnNightHandoverClear" || el.id === "btnNightHandoverReset") {
-        el.disabled = !editable;
+      if (
+        el.id === "btnNightHandoverSave" ||
+        el.id === "btnNightHandoverClear" ||
+        el.id === "btnNightHandoverReset" ||
+        el.id === "btnNightHandoverExcel" ||
+        el.id === "btnNhNoteAdd" ||
+        el.id === "btnNhIncAdd" ||
+        el.hasAttribute("data-nh-note-remove") ||
+        el.hasAttribute("data-nh-inc-remove")
+      ) {
+        el.disabled = !editable && el.id !== "btnNightHandoverExcel";
+        if (el.id === "btnNightHandoverExcel") el.disabled = false;
         return;
       }
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
@@ -237,83 +374,12 @@
     syncDirtyUi();
   }
 
-  function buildExtrasTbody(tbody) {
-    if (!tbody || tbody.__hkBuilt) return;
-    tbody.__hkBuilt = true;
-    tbody.innerHTML = "";
-    EXTRA_KEYS.forEach(function (k) {
-      var tr = document.createElement("tr");
-      if (k.highlight) tr.className = "nh-row--highlight";
-      tr.innerHTML =
-        "<th scope=\"row\">" +
-        k.label +
-        "</th>" +
-        "<td><input type=\"text\" id=\"nhEx_" +
-        k.id +
-        "_main\" autocomplete=\"off\" /></td>" +
-        "<td><input type=\"text\" id=\"nhEx_" +
-        k.id +
-        "_annex\" autocomplete=\"off\" /></td>";
-      tbody.appendChild(tr);
-    });
-  }
-
-  function buildNotesTbody(tbody) {
-    if (!tbody || tbody.__hkBuilt) return;
-    tbody.__hkBuilt = true;
-    tbody.innerHTML = "";
-    var i;
-    for (i = 0; i < NOTE_ROWS; i++) {
-      var tr = document.createElement("tr");
-      if (i === 0) tr.className = "nh-row--highlight";
-      tr.innerHTML =
-        "<td><input type=\"text\" id=\"nhNoteCat_" +
-        i +
-        "\" autocomplete=\"off\" /></td>" +
-        "<td><input type=\"text\" id=\"nhNoteMain_" +
-        i +
-        "\" autocomplete=\"off\" /></td>" +
-        "<td><input type=\"text\" id=\"nhNoteAnnex_" +
-        i +
-        "\" autocomplete=\"off\" /></td>";
-      tbody.appendChild(tr);
-    }
-  }
-
-  function buildIncidentsTbody(tbody) {
-    if (!tbody || tbody.__hkBuilt) return;
-    tbody.__hkBuilt = true;
-    tbody.innerHTML = "";
-    var i;
-    for (i = 0; i < INCIDENT_ROWS; i++) {
-      var tr = document.createElement("tr");
-      tr.className = "nh-incident-row";
-      tr.innerHTML =
-        "<td><input type=\"text\" id=\"nhIncRoom_" +
-        i +
-        "\" placeholder=\"객실\" autocomplete=\"off\" /></td>" +
-        "<td><input type=\"text\" id=\"nhIncBy_" +
-        i +
-        "\" placeholder=\"이름\" autocomplete=\"off\" /></td>" +
-        "<td><input type=\"text\" id=\"nhIncDates_" +
-        i +
-        "\" placeholder=\"기간\" autocomplete=\"off\" /></td>" +
-        "<td><textarea id=\"nhIncDetail_" +
-        i +
-        "\" rows=\"2\" placeholder=\"내용\"></textarea></td>";
-      tbody.appendChild(tr);
-    }
-  }
-
-  function ensureDomBuilt() {
-    buildExtrasTbody(document.getElementById("nhExtrasBody"));
-    buildNotesTbody(document.getElementById("nhNotesBody"));
-    buildIncidentsTbody(document.getElementById("nhIncidentsBody"));
-  }
-
   function render() {
-    ensureDomBuilt();
-    fillDom(loadData());
+    ensureExtrasBuilt();
+    var pack = loadData();
+    fillTopFields(pack);
+    rebuildNotesBody(pack.notes && pack.notes.length ? pack.notes : null);
+    rebuildIncidentsBody(pack.incidents && pack.incidents.length ? pack.incidents : null);
     dirty = false;
     syncEditLock();
     syncDirtyUi();
@@ -330,9 +396,78 @@
   function onClear() {
     if (!canEdit()) return;
     if (!window.confirm("야간 인계사항을 초기화할까요?\n내용이 비워지고 바로 동기화됩니다.")) return;
-    fillDom(defaultData());
+    var pack = defaultData();
+    ensureExtrasBuilt();
+    fillTopFields(pack);
+    rebuildNotesBody(pack.notes);
+    rebuildIncidentsBody(pack.incidents);
     persist(collectFromDom(), true);
     if (typeof opts.toast === "function") opts.toast("야간 인계사항 초기화됨");
+  }
+
+  function stampNow() {
+    var now = new Date();
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return (
+      now.getFullYear() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      "_" +
+      pad(now.getHours()) +
+      pad(now.getMinutes())
+    );
+  }
+
+  function downloadExcel() {
+    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    var pack = canEdit() ? collectFromDom() : loadData();
+    var aoa = [["항목", "본관", "별관", "기타"]];
+    aoa.push(["날짜", pack.titleDate || "", "", ""]);
+    var duty = pack.duty || {};
+    aoa.push(["미드", (duty.mid && duty.mid.main) || "", (duty.mid && duty.mid.annex) || "", ""]);
+    aoa.push([
+      "올나이트",
+      (duty.allNight && duty.allNight.main) || "",
+      (duty.allNight && duty.allNight.annex) || "",
+      "",
+    ]);
+    aoa.push([
+      "유틸리티",
+      (duty.utility && duty.utility.main) || "",
+      (duty.utility && duty.utility.annex) || "",
+      "",
+    ]);
+    var ch = pack.chargers || {};
+    var etc = pack.etc || {};
+    aoa.push([
+      "충전기/기타",
+      ["C:" + (ch.cType || ""), "아이폰:" + (ch.iphone || ""), "5핀:" + (ch.fivePin || "")].join(" "),
+      "",
+      ["선풍기:" + (etc.fan || ""), "덕다운:" + (etc.duckDown || ""), "키즈가운:" + (etc.kidsRobe || "")].join(" "),
+    ]);
+    EXTRA_KEYS.forEach(function (k) {
+      var ex = (pack.extras && pack.extras[k.id]) || {};
+      aoa.push([k.label, ex.main || "", ex.annex || "", ""]);
+    });
+    (pack.notes || []).forEach(function (n, i) {
+      if (!n || !(n.category || n.main || n.annex)) return;
+      aoa.push(["구분" + (i + 1) + (n.category ? " · " + n.category : ""), n.main || "", n.annex || "", ""]);
+    });
+    (pack.incidents || []).forEach(function (inc) {
+      if (!inc || !(inc.room || inc.by || inc.dates || inc.detail)) return;
+      aoa.push(["이슈 " + (inc.room || ""), inc.by || "", inc.dates || "", inc.detail || ""]);
+    });
+    var wb = global.XLSX.utils.book_new();
+    var ws = global.XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 36 }];
+    global.XLSX.utils.book_append_sheet(wb, ws, "야간인계");
+    global.XLSX.writeFile(wb, "야간인계사항_" + stampNow() + ".xlsx");
+    if (typeof opts.toast === "function") opts.toast("야간 인계사항 엑셀 저장됨");
   }
 
   function resetOnCloseDay() {
@@ -360,6 +495,19 @@
       panel.addEventListener("change", function () {
         markDirty();
       });
+      panel.addEventListener("click", function (e) {
+        var noteRm = e.target.closest("[data-nh-note-remove]");
+        if (noteRm) {
+          e.preventDefault();
+          removeNoteRow(Number(noteRm.getAttribute("data-nh-note-remove")));
+          return;
+        }
+        var incRm = e.target.closest("[data-nh-inc-remove]");
+        if (incRm) {
+          e.preventDefault();
+          removeIncidentRow(Number(incRm.getAttribute("data-nh-inc-remove")));
+        }
+      });
     }
     var saveBtn = document.getElementById("btnNightHandoverSave");
     if (saveBtn) saveBtn.addEventListener("click", onSave);
@@ -367,6 +515,12 @@
     if (clearBtn) clearBtn.addEventListener("click", onClear);
     var resetBtn = document.getElementById("btnNightHandoverReset");
     if (resetBtn) resetBtn.addEventListener("click", onClear);
+    var excelBtn = document.getElementById("btnNightHandoverExcel");
+    if (excelBtn) excelBtn.addEventListener("click", downloadExcel);
+    var noteAdd = document.getElementById("btnNhNoteAdd");
+    if (noteAdd) noteAdd.addEventListener("click", addNoteRow);
+    var incAdd = document.getElementById("btnNhIncAdd");
+    if (incAdd) incAdd.addEventListener("click", addIncidentRow);
   }
 
   function init(userOpts) {
@@ -395,5 +549,6 @@
     onFrontModeChanged: onFrontModeChanged,
     resetOnCloseDay: resetOnCloseDay,
     defaultData: defaultData,
+    downloadExcel: downloadExcel,
   };
 })(typeof window !== "undefined" ? window : this);

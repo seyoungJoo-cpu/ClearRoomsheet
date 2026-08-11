@@ -369,6 +369,75 @@
     if (typeof opts.toast === "function") opts.toast("Track IT가 초기화되었습니다.");
   }
 
+  function stampNow() {
+    var now = new Date();
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    return (
+      now.getFullYear() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      "_" +
+      pad(now.getHours()) +
+      pad(now.getMinutes())
+    );
+  }
+
+  function downloadExcel() {
+    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    var records = loadRecords();
+    var aoa = [
+      [
+        "등록일",
+        "배송",
+        "주소",
+        "우편번호",
+        "성함",
+        "휴대폰",
+        "물건",
+        "체크아웃",
+        "객실",
+        "발송",
+      ],
+    ];
+    records.forEach(function (r) {
+      if (!r) return;
+      aoa.push([
+        r.createdAt || r.updatedAt || "",
+        r.shipType === "urgent" ? "긴급" : "착불",
+        r.address || "",
+        r.zip || "",
+        r.name || "",
+        r.phone || "",
+        r.item || "",
+        r.checkoutDate || "",
+        r.roomNo || "",
+        r.shippedOk ? "발송 OK" : "",
+      ]);
+    });
+    var wb = global.XLSX.utils.book_new();
+    var ws = global.XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [
+      { wch: 20 },
+      { wch: 8 },
+      { wch: 36 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 8 },
+      { wch: 10 },
+    ];
+    global.XLSX.utils.book_append_sheet(wb, ws, "TrackIT");
+    global.XLSX.writeFile(wb, "TrackIT_" + stampNow() + ".xlsx");
+    if (typeof opts.toast === "function") opts.toast("Track IT 엑셀 저장됨");
+  }
+
   function render() {
     var hint = document.getElementById("trackItEditLockHint");
     if (hint) hint.hidden = canEdit();
@@ -421,6 +490,11 @@
       resetBtn.addEventListener("click", resetAll);
     }
 
+    var excelBtn = document.getElementById("btnTrackItExcel");
+    if (excelBtn) {
+      excelBtn.addEventListener("click", downloadExcel);
+    }
+
     var tbody = document.getElementById("trackItTableBody");
     if (tbody) {
       tbody.addEventListener("click", function (e) {
@@ -466,5 +540,6 @@
     init: init,
     render: render,
     onViewActivated: onViewActivated,
+    downloadExcel: downloadExcel,
   };
 })(typeof window !== "undefined" ? window : this);

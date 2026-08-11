@@ -8858,19 +8858,19 @@
     .track-it-panel {
       padding: 14px 18px 20px;
       gap: 16px;
-      font-size: 0.9375rem;
+      font-size: 1.05rem;
     }
 
     .track-it-panel .panel-head-row h2 {
-      font-size: 1.125rem;
+      font-size: 1.3rem;
     }
 
     .track-it-panel .track-it-juso-link {
-      font-size: 0.9375rem;
+      font-size: 1.05rem;
     }
 
     .track-it-panel .complaint-panel__hint {
-      font-size: 0.875rem;
+      font-size: 1rem;
     }
 
     .track-it-panel .complaint-form {
@@ -8889,12 +8889,13 @@
     }
 
     .track-it-panel .complaint-form__fields .field label {
-      font-size: 0.8125rem;
+      font-size: 1rem;
     }
 
     .track-it-panel .complaint-form__fields input[type="text"],
     .track-it-panel .complaint-form__fields input[type="date"] {
-      height: 40px;
+      height: 48px;
+      font-size: 1.05rem;
       padding: 0 12px;
       font-size: 0.9375rem;
       min-width: 10rem;
@@ -8925,18 +8926,18 @@
     }
 
     .track-it-panel .btn-order {
-      height: 40px;
+      height: 44px;
       padding: 0 16px;
-      font-size: 0.9375rem;
+      font-size: 1.05rem;
     }
 
     .track-it-panel .complaint-table {
-      font-size: 0.875rem;
+      font-size: 1.05rem;
     }
 
     .track-it-panel .complaint-table th,
     .track-it-panel .complaint-table td {
-      padding: 8px 12px;
+      padding: 10px 12px;
       white-space: nowrap;
     }
 
@@ -8946,26 +8947,26 @@
     }
 
     .track-it-panel .complaint-table thead th {
-      font-size: 0.8125rem;
-      padding: 8px 12px;
+      font-size: 1rem;
+      padding: 10px 12px;
     }
 
     .track-it-panel .complaint-row-edit,
     .track-it-panel .complaint-row-del {
-      font-size: 0.8125rem;
-      padding: 4px 10px;
+      font-size: 0.95rem;
+      padding: 6px 12px;
     }
 
     .track-it-panel .track-it-row-confirm {
-      height: 28px;
+      height: 34px;
       margin-left: 4px;
-      padding: 0 10px;
+      padding: 0 12px;
       border: 1px solid #86efac;
       border-radius: 6px;
       background: #f0fdf4;
       color: #15803d;
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 1rem;
       font-weight: 800;
       cursor: pointer;
       white-space: nowrap;
@@ -9023,19 +9024,19 @@
       align-items: center;
       gap: 4px;
       margin: 0;
-      font-size: 1.05rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: var(--accent);
     }
 
     .nh-title-date {
-      width: 4.5rem;
-      height: 32px;
+      width: 5rem;
+      height: 40px;
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0 6px;
       font: inherit;
-      font-size: 1rem;
+      font-size: 1.2rem;
       font-weight: 800;
       text-align: center;
       color: var(--accent);
@@ -9045,6 +9046,8 @@
       display: inline-flex;
       gap: 8px;
       margin-left: auto;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .nh-save-btn.is-dirty {
@@ -9064,14 +9067,19 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 0.875rem;
+      font-size: 1.05rem;
       background: #fff;
+    }
+
+    .nh-table--extras {
+      width: 50%;
+      max-width: 50%;
     }
 
     .nh-table th,
     .nh-table td {
       border: 1px solid #334155;
-      padding: 4px;
+      padding: 6px;
       vertical-align: middle;
       text-align: center;
     }
@@ -9080,14 +9088,14 @@
       background: #dbeafe;
       font-weight: 800;
       color: #1e3a8a;
-      font-size: 0.8125rem;
+      font-size: 1rem;
     }
 
     .nh-th-pink {
       background: #fce7f3;
       font-weight: 800;
       color: #9d174d;
-      font-size: 0.8125rem;
+      font-size: 1rem;
     }
 
     .nh-vlabel {
@@ -9101,10 +9109,12 @@
       border: none;
       background: transparent;
       font: inherit;
-      font-size: 0.875rem;
-      padding: 6px 8px;
-      min-height: 36px;
+      font-size: 1.05rem;
+      padding: 8px 10px;
+      min-height: 48px;
       resize: vertical;
+      line-height: 1.4;
+      white-space: pre-wrap;
     }
 
     .nh-table input[type="text"]:focus,
@@ -9119,7 +9129,8 @@
       white-space: nowrap;
       background: #f8fafc;
       font-weight: 700;
-      width: 28%;
+      width: 36%;
+      font-size: 1rem;
     }
 
     .nh-row--highlight,
@@ -9154,8 +9165,49 @@
 
     .nh-table--incidents textarea {
       text-align: left;
-      min-height: 52px;
+      min-height: 56px;
       line-height: 1.4;
+    }
+
+    .nh-th-actions,
+    .nh-row-actions {
+      width: 3.25rem;
+      padding: 4px !important;
+      background: #f8fafc;
+    }
+
+    .nh-row-btn {
+      width: 2.25rem;
+      height: 2.25rem;
+      border: 1px solid #64748b;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+      color: #0f172a;
+    }
+
+    .nh-row-btn--plus {
+      background: #ecfeff;
+      border-color: #0f766e;
+      color: #0f766e;
+      width: 2.75rem;
+      height: 2.75rem;
+      font-size: 1.75rem;
+    }
+
+    .nh-row-btn--minus {
+      background: #fff1f2;
+      border-color: #e11d48;
+      color: #be123c;
+    }
+
+    .nh-row-addbar {
+      display: flex;
+      justify-content: flex-start;
+      padding: 4px 0 8px;
     }
 
     .night-handover-panel.is-readonly .nh-table input,
@@ -9194,28 +9246,30 @@
       align-items: center;
       gap: 4px;
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 1.2rem;
       font-weight: 800;
       color: #1e3a8a;
     }
 
     .vip-title-date {
-      width: 3.5rem;
-      height: 30px;
+      width: 4rem;
+      height: 38px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
+      font-size: 1.1rem;
       font-weight: 800;
     }
 
     .vip-title-year {
-      width: 3.75rem;
-      height: 30px;
+      width: 4.25rem;
+      height: 38px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
+      font-size: 1.1rem;
       font-weight: 800;
     }
 
@@ -9226,18 +9280,25 @@
       overflow: auto;
     }
 
+    .vip-guest-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
     .vip-table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 0.8125rem;
+      font-size: 1.05rem;
       background: #fff;
     }
 
     .vip-table th,
     .vip-table td {
       border: 1px solid #334155;
-      padding: 3px 4px;
+      padding: 5px 6px;
       vertical-align: middle;
       text-align: center;
     }
@@ -9245,55 +9306,73 @@
     .vip-table thead th {
       background: #e2e8f0;
       font-weight: 800;
-      font-size: 0.75rem;
+      font-size: 0.95rem;
       white-space: nowrap;
     }
 
     .vip-table input[type="text"],
-    .vip-table textarea,
-    .vip-mb-block textarea,
-    .vip-aj-block input {
+    .vip-table textarea {
       width: 100%;
       box-sizing: border-box;
       border: none;
       background: transparent;
       font: inherit;
-      font-size: 0.8125rem;
-      padding: 5px 6px;
-      min-height: 32px;
+      font-size: 1.05rem;
+      padding: 8px 8px;
+      min-height: 48px;
+      resize: vertical;
+      line-height: 1.35;
+      white-space: pre-wrap;
     }
 
     .vip-table input:focus,
-    .vip-table textarea:focus,
-    .vip-mb-block textarea:focus,
-    .vip-aj-block input:focus {
+    .vip-table textarea:focus {
       outline: 2px solid #0f766e55;
       background: #f0fdfa;
+    }
+
+    .vip-th-check,
+    .vip-select-cell {
+      width: 2.75rem;
+    }
+
+    .vip-row-check {
+      width: 1.15rem;
+      height: 1.15rem;
     }
 
     .vip-sec-label {
       background: #f1f5f9;
       font-weight: 900;
       color: #0f172a;
-      width: 3.2rem;
+      width: 5.5rem;
+      vertical-align: middle;
+    }
+
+    .vip-sec-input {
+      font-weight: 900;
+      text-align: center;
+      min-height: 56px !important;
     }
 
     .vip-table--guests th:nth-child(1),
-    .vip-table--guests td:nth-child(1) { width: 4%; }
+    .vip-table--guests td:nth-child(1) { width: 3%; }
     .vip-table--guests th:nth-child(2),
-    .vip-table--guests td:nth-child(2) { width: 14%; }
+    .vip-table--guests td:nth-child(2) { width: 7%; }
     .vip-table--guests th:nth-child(3),
-    .vip-table--guests td:nth-child(3) { width: 8%; }
+    .vip-table--guests td:nth-child(3) { width: 12%; }
     .vip-table--guests th:nth-child(4),
     .vip-table--guests td:nth-child(4) { width: 8%; }
     .vip-table--guests th:nth-child(5),
-    .vip-table--guests td:nth-child(5) { width: 9%; }
+    .vip-table--guests td:nth-child(5) { width: 8%; }
     .vip-table--guests th:nth-child(6),
-    .vip-table--guests td:nth-child(6) { width: 10%; }
+    .vip-table--guests td:nth-child(6) { width: 9%; }
     .vip-table--guests th:nth-child(7),
-    .vip-table--guests td:nth-child(7) { width: 12%; }
+    .vip-table--guests td:nth-child(7) { width: 10%; }
     .vip-table--guests th:nth-child(8),
-    .vip-table--guests td:nth-child(8) { width: 10%; }
+    .vip-table--guests td:nth-child(8) { width: 12%; }
+    .vip-table--guests th:nth-child(9),
+    .vip-table--guests td:nth-child(9) { width: 10%; }
 
     .vip-specials {
       border: 1px solid #334155;
@@ -9305,84 +9384,74 @@
 
     .vip-specials__title {
       font-weight: 900;
-      font-size: 0.9375rem;
+      font-size: 1.15rem;
       color: #1e3a8a;
     }
 
     .vip-conn-block {
       display: grid;
-      grid-template-columns: 6.5rem 1fr;
+      grid-template-columns: 7rem 1fr;
       gap: 8px;
       align-items: start;
     }
 
     .vip-conn-label {
       font-weight: 800;
+      font-size: 1.05rem;
       padding-top: 8px;
     }
 
-    .vip-table--connecting .vip-conn-rooms,
-    .vip-table--connecting input {
-      color: #dc2626;
-      font-weight: 700;
-    }
-
-    .vip-aj-block {
+    .vip-conn-wrap {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px 18px;
-      align-items: center;
-      font-weight: 700;
-    }
-
-    .vip-aj-tag {
-      background: #dbeafe;
-      border: 1px solid #334155;
-      padding: 4px 10px;
-      font-weight: 900;
-    }
-
-    .vip-aj-block label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 12rem;
-    }
-
-    .vip-aj-block input {
-      border: 1px solid #94a3b8 !important;
-      border-radius: 4px;
-      min-width: 10rem;
-    }
-
-    .vip-mb-block {
-      display: grid;
-      grid-template-columns: 3rem 1fr;
+      flex-direction: column;
       gap: 8px;
     }
 
-    .vip-mb-label {
-      font-weight: 900;
-      padding-top: 8px;
+    .vip-table--connecting .vip-conn-rooms,
+    .vip-table--connecting .vip-conn-mid,
+    .vip-table--connecting .vip-conn-status {
+      color: #dc2626;
+      font-weight: 800;
+      font-size: 1.2rem;
     }
 
-    .vip-mb-block textarea {
-      border: 1px solid #94a3b8;
-      border-radius: 4px;
-      background: #ffedd5;
-      min-height: 7rem;
-      line-height: 1.4;
-      resize: vertical;
-      text-align: left;
+    .vip-table--connecting .vip-conn-rooms {
+      text-align: center;
+      min-height: 44px !important;
+      resize: none;
+    }
+
+    .vip-conn-mid {
+      white-space: nowrap;
+      background: #fff;
+    }
+
+    .vip-conn-status {
+      width: 100%;
+      min-height: 44px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      letter-spacing: 0.02em;
+    }
+
+    .vip-conn-status.is-open {
+      color: #16a34a;
+    }
+
+    .vip-conn-status.is-close {
+      color: #dc2626;
     }
 
     .vip-table--remarks th.vip-remark-label {
-      width: 12rem;
+      width: 14rem;
       background: #dbeafe;
       font-weight: 800;
       text-align: left;
       padding-left: 10px;
       white-space: nowrap;
+      font-size: 1.05rem;
     }
 
     .vip-row--green th,
@@ -9393,6 +9462,10 @@
     .vip-checkin-panel.is-readonly input,
     .vip-checkin-panel.is-readonly textarea {
       color: #334155;
+      cursor: default;
+    }
+
+    .vip-checkin-panel.is-readonly .vip-conn-status {
       cursor: default;
     }
 
@@ -11539,13 +11612,16 @@
       <section class="complaint-panel track-it-panel" id="trackItPanel" hidden aria-labelledby="trackItPanelTitle">
         <div class="panel-head-row">
           <h2 id="trackItPanelTitle">Track IT</h2>
-          <a
-            class="track-it-juso-link"
-            href="https://www.juso.go.kr"
-            target="_blank"
-            rel="noopener noreferrer"
-            >주소찾기</a
-          >
+          <div class="nh-toolbar">
+            <button type="button" class="btn-order" id="btnTrackItExcel">엑셀 저장</button>
+            <a
+              class="track-it-juso-link"
+              href="https://www.juso.go.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              >주소찾기</a
+            >
+          </div>
         </div>
         <p class="complaint-panel__hint" id="trackItEditLockHint" hidden>
           등록·수정은 프론트 또는 정비 모드에서 가능합니다.
@@ -11659,6 +11735,7 @@
             />)
           </h2>
           <div class="nh-toolbar">
+            <button type="button" class="btn-order" id="btnNightHandoverExcel">엑셀 저장</button>
             <button type="button" class="btn-order" id="btnNightHandoverReset">초기화</button>
             <button type="button" class="btn-order nh-save-btn" id="btnNightHandoverSave">
               저장 · 동기화
@@ -11689,25 +11766,25 @@
               <tr>
                 <th rowspan="3" class="nh-th-blue nh-vlabel">야간<br />당직</th>
                 <th class="nh-th-blue">미드</th>
-                <td><input type="text" id="nhDutyMidMain" autocomplete="off" /></td>
-                <td><input type="text" id="nhDutyMidAnnex" autocomplete="off" /></td>
+                <td><textarea id="nhDutyMidMain" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyMidAnnex" rows="2" autocomplete="off"></textarea></td>
                 <th rowspan="3" class="nh-th-blue">충전기<br />/<br />기타</th>
-                <td rowspan="3"><input type="text" id="nhChargerC" autocomplete="off" /></td>
-                <td rowspan="3"><input type="text" id="nhChargerIphone" autocomplete="off" /></td>
-                <td rowspan="3"><input type="text" id="nhCharger5" autocomplete="off" /></td>
-                <td rowspan="3"><input type="text" id="nhEtcFan" autocomplete="off" /></td>
-                <td rowspan="3"><input type="text" id="nhEtcDuck" autocomplete="off" /></td>
-                <td rowspan="3"><input type="text" id="nhEtcKids" autocomplete="off" /></td>
+                <td rowspan="3"><textarea id="nhChargerC" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhChargerIphone" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhCharger5" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcFan" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcDuck" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcKids" rows="2" autocomplete="off"></textarea></td>
               </tr>
               <tr>
                 <th class="nh-th-blue">올나이트</th>
-                <td><input type="text" id="nhDutyAllMain" autocomplete="off" /></td>
-                <td><input type="text" id="nhDutyAllAnnex" autocomplete="off" /></td>
+                <td><textarea id="nhDutyAllMain" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyAllAnnex" rows="2" autocomplete="off"></textarea></td>
               </tr>
               <tr>
                 <th class="nh-th-blue">유틸리티</th>
-                <td><input type="text" id="nhDutyUtilMain" autocomplete="off" /></td>
-                <td><input type="text" id="nhDutyUtilAnnex" autocomplete="off" /></td>
+                <td><textarea id="nhDutyUtilMain" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyUtilAnnex" rows="2" autocomplete="off"></textarea></td>
               </tr>
             </tbody>
           </table>
@@ -11729,10 +11806,14 @@
                 <th class="nh-th-blue">구분</th>
                 <th class="nh-th-blue">본관</th>
                 <th class="nh-th-blue">별관</th>
+                <th class="nh-th-blue nh-th-actions">삭제</th>
               </tr>
             </thead>
             <tbody id="nhNotesBody"></tbody>
           </table>
+          <div class="nh-row-addbar">
+            <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnNhNoteAdd" title="구분 행 추가">+</button>
+          </div>
 
           <table class="nh-table nh-table--incidents" aria-label="이슈 로그">
             <thead>
@@ -11741,10 +11822,14 @@
                 <th class="nh-th-pink">담당</th>
                 <th class="nh-th-pink">기간</th>
                 <th class="nh-th-pink">내용</th>
+                <th class="nh-th-pink nh-th-actions">삭제</th>
               </tr>
             </thead>
             <tbody id="nhIncidentsBody"></tbody>
           </table>
+          <div class="nh-row-addbar">
+            <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnNhIncAdd" title="이슈 행 추가">+</button>
+          </div>
         </div>
       </section>
 
@@ -11763,6 +11848,7 @@
             (Tentative)
           </h2>
           <div class="nh-toolbar">
+            <button type="button" class="btn-order" id="btnVipCheckInExcel">엑셀 저장</button>
             <button type="button" class="btn-order" id="btnVipCheckInReset">초기화</button>
             <button type="button" class="btn-order nh-save-btn" id="btnVipCheckInSave">
               저장 · 동기화
@@ -11774,9 +11860,14 @@
         </p>
 
         <div class="vip-sheet">
+          <div class="vip-guest-toolbar">
+            <button type="button" class="btn-order" id="btnVipGuestMerge">선택 행 병합</button>
+            <span class="complaint-panel__hint">왼쪽 체크박스로 연속 행을 고른 뒤 병합하세요. 구분은 직접 수정할 수 있습니다.</span>
+          </div>
           <table class="vip-table vip-table--guests" aria-label="VIP 체크인 게스트">
             <thead>
               <tr>
+                <th class="vip-th-check">선택</th>
                 <th>구분</th>
                 <th>Guest Name</th>
                 <th>Room No.</th>
@@ -11786,30 +11877,28 @@
                 <th>호텔도착 예정시간</th>
                 <th>Check Out</th>
                 <th>비고</th>
+                <th class="nh-th-actions">삭제</th>
               </tr>
             </thead>
             <tbody id="vipGuestsBody"></tbody>
           </table>
+          <div class="nh-row-addbar">
+            <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipGuestAdd" title="게스트 행 추가">+</button>
+          </div>
 
           <div class="vip-specials">
             <div class="vip-specials__title">특이사항</div>
 
             <div class="vip-conn-block">
               <div class="vip-conn-label">커넥팅 객실</div>
-              <table class="vip-table vip-table--connecting" aria-label="커넥팅 객실">
-                <tbody id="vipConnectingBody"></tbody>
-              </table>
-            </div>
-
-            <div class="vip-aj-block">
-              <span class="vip-aj-tag">AJ</span>
-              <label>본관: <input type="text" id="vipAjMain" autocomplete="off" /></label>
-              <label>별관: <input type="text" id="vipAjAnnex" autocomplete="off" /></label>
-            </div>
-
-            <div class="vip-mb-block">
-              <div class="vip-mb-label">MB</div>
-              <textarea id="vipMbText" rows="6" placeholder="MB0008 (알콜2+논알콜1+스낵1) …"></textarea>
+              <div class="vip-conn-wrap">
+                <table class="vip-table vip-table--connecting" aria-label="커넥팅 객실">
+                  <tbody id="vipConnectingBody"></tbody>
+                </table>
+                <div class="nh-row-addbar">
+                  <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipConnAdd" title="커넥팅 행 추가">+</button>
+                </div>
+              </div>
             </div>
 
             <table class="vip-table vip-table--remarks" aria-label="특이사항 구분">
@@ -12775,7 +12864,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=vip-checkin-1"></script>
+  <script src="hk-storage.js?v=vip-ui-3"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12785,9 +12874,9 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=9"></script>
-  <script src="hk-track-it.js?v=2"></script>
-  <script src="hk-night-handover.js?v=2"></script>
-  <script src="hk-vip-checkin.js?v=1"></script>
+  <script src="hk-track-it.js?v=3"></script>
+  <script src="hk-night-handover.js?v=3"></script>
+  <script src="hk-vip-checkin.js?v=3"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
