@@ -170,6 +170,7 @@
         tr.title = "클릭하여 위 입력칸에서 수정";
       }
       if (editingId && row.id === editingId) tr.classList.add("is-editing");
+      if (row.shippedOk) tr.classList.add("is-shipped-ok");
 
       function td(text, className) {
         var cell = document.createElement("td");
@@ -188,6 +189,16 @@
       tr.appendChild(td(row.checkoutDate ? formatDateDisplay(row.checkoutDate) : "", "complaint-td-narrow"));
       tr.appendChild(td(row.roomNo, "complaint-td-narrow"));
 
+      var tdShip = document.createElement("td");
+      tdShip.className = "complaint-td-narrow track-it-ship-status";
+      if (row.shippedOk) {
+        tdShip.textContent = "발송 OK";
+        tdShip.classList.add("is-ok");
+      } else {
+        tdShip.textContent = "—";
+      }
+      tr.appendChild(tdShip);
+
       var tdAct = document.createElement("td");
       tdAct.className = "complaint-td-actions";
       if (editable) {
@@ -205,6 +216,14 @@
         del.title = "행 삭제";
         del.textContent = "삭제";
         tdAct.appendChild(del);
+        var confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.className = "track-it-row-confirm" + (row.shippedOk ? " is-done" : "");
+        confirmBtn.setAttribute("data-action", "confirm-ship");
+        confirmBtn.title = row.shippedOk ? "발송 완료" : "발송 확인";
+        confirmBtn.textContent = row.shippedOk ? "발송 OK" : "확인";
+        confirmBtn.disabled = !!row.shippedOk;
+        tdAct.appendChild(confirmBtn);
       }
       tr.appendChild(tdAct);
       tbody.appendChild(tr);
@@ -245,6 +264,30 @@
     if (typeof opts.toast === "function") opts.toast("삭제되었습니다.");
   }
 
+  function confirmShipRecord(id) {
+    if (!canEdit() || !id) return;
+    var pack = loadPack();
+    var nowIso = new Date().toISOString();
+    var found = false;
+    var next = (pack.records || []).map(function (r) {
+      if (!r || r.id !== id) return r;
+      found = true;
+      if (r.shippedOk) return r;
+      return Object.assign({}, r, {
+        shippedOk: true,
+        shippedAt: nowIso,
+        updatedAt: nowIso,
+      });
+    });
+    if (!found) {
+      if (typeof opts.toast === "function") opts.toast("항목을 찾지 못했습니다.");
+      return;
+    }
+    persistRecords(next, nowIso);
+    render();
+    if (typeof opts.toast === "function") opts.toast("발송 OK");
+  }
+
   function onSubmit(e) {
     e.preventDefault();
     if (!canEdit()) {
@@ -282,6 +325,8 @@
           item: item,
           checkoutDate: checkoutDate,
           roomNo: roomNo,
+          shippedOk: !!r.shippedOk,
+          shippedAt: r.shippedAt || "",
         };
       });
       if (!found) {
@@ -306,6 +351,8 @@
       item: item,
       checkoutDate: checkoutDate,
       roomNo: roomNo,
+      shippedOk: false,
+      shippedAt: "",
     });
     persistRecords(records, nowIso);
     resetForm();
@@ -383,6 +430,15 @@
           e.stopPropagation();
           var trDel = del.closest("tr[data-id]");
           if (trDel) deleteRecord(trDel.getAttribute("data-id"));
+          return;
+        }
+        var confirmShip = e.target.closest('[data-action="confirm-ship"]');
+        if (confirmShip) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (confirmShip.disabled) return;
+          var trConfirm = confirmShip.closest("tr[data-id]");
+          if (trConfirm) confirmShipRecord(trConfirm.getAttribute("data-id"));
           return;
         }
         var editBtn = e.target.closest('[data-action="edit"]');

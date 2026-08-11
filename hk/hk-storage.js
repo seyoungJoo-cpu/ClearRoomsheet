@@ -906,6 +906,13 @@
       item: raw.item != null ? String(raw.item).trim() : "",
       checkoutDate: raw.checkoutDate != null ? String(raw.checkoutDate).trim() : "",
       roomNo: raw.roomNo != null ? String(raw.roomNo).trim() : "",
+      shippedOk:
+        raw.shippedOk === true ||
+        raw.shippedOk === 1 ||
+        raw.shippedOk === "1" ||
+        String(raw.shippedOk || "").toUpperCase() === "Y" ||
+        String(raw.shippedOk || "").toUpperCase() === "TRUE",
+      shippedAt: raw.shippedAt != null ? String(raw.shippedAt).trim() : "",
     };
   }
 
