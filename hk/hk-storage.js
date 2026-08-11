@@ -946,13 +946,17 @@
     if (!id) return null;
     var shipType = raw.shipType != null ? String(raw.shipType).trim() : "cod";
     if (shipType !== "urgent") shipType = "cod";
+    var kind = raw.kind != null ? String(raw.kind).trim().toLowerCase() : "found";
+    if (kind !== "lost") kind = "found";
     return {
       id: id,
       createdAt: raw.createdAt != null ? String(raw.createdAt).trim() : "",
       updatedAt: raw.updatedAt != null ? String(raw.updatedAt).trim() : "",
+      kind: kind,
       shipType: shipType,
       address: raw.address != null ? String(raw.address).trim() : "",
       zip: raw.zip != null ? String(raw.zip).trim() : "",
+      reservationNo: raw.reservationNo != null ? String(raw.reservationNo).trim() : "",
       name: raw.name != null ? String(raw.name).trim() : "",
       phone: raw.phone != null ? String(raw.phone).trim() : "",
       item: raw.item != null ? String(raw.item).trim() : "",

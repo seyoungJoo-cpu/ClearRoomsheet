@@ -8662,6 +8662,23 @@
       color: #0f766e;
     }
 
+    .track-it-panel .panel-head-row {
+      flex-wrap: wrap;
+      gap: 8px 12px;
+    }
+
+    .track-it-panel.track-it-page--lost #trackItFieldZip,
+    .track-it-panel.track-it-page--lost #trackItThZip,
+    .track-it-panel.track-it-page--lost #trackItThShip,
+    .track-it-panel.track-it-page--lost #trackItJusoLink {
+      display: none !important;
+    }
+
+    .track-it-panel.track-it-page--lost td.track-it-col-zip,
+    .track-it-panel.track-it-page--lost td.track-it-ship-status {
+      display: none !important;
+    }
+
     .complaint-panel__tabs {
       display: inline-flex;
       gap: 4px;
@@ -12145,10 +12162,33 @@
       <section class="complaint-panel track-it-panel" id="trackItPanel" hidden aria-labelledby="trackItPanelTitle">
         <div class="panel-head-row">
           <h2 id="trackItPanelTitle">Track IT</h2>
+          <div class="complaint-panel__tabs" role="tablist" aria-label="Track IT 페이지">
+            <button
+              type="button"
+              class="complaint-panel__tab is-active"
+              data-track-it-page="found"
+              id="trackItTabFound"
+              role="tab"
+              aria-selected="true"
+            >
+              FOUND
+            </button>
+            <button
+              type="button"
+              class="complaint-panel__tab"
+              data-track-it-page="lost"
+              id="trackItTabLost"
+              role="tab"
+              aria-selected="false"
+            >
+              LOST
+            </button>
+          </div>
           <div class="nh-toolbar">
             <button type="button" class="btn-order" id="btnTrackItExcel">엑셀 저장</button>
             <a
               class="track-it-juso-link"
+              id="trackItJusoLink"
               href="https://www.juso.go.kr"
               target="_blank"
               rel="noopener noreferrer"
@@ -12178,11 +12218,11 @@
                 </button>
               </div>
             </div>
-            <div class="field field--complaint-memo">
-              <label for="trackItAddress">주소(가능시 건물명)</label>
+            <div class="field field--complaint-memo" id="trackItFieldAddress">
+              <label for="trackItAddress" id="trackItAddressLabel">주소(가능시 건물명)</label>
               <input type="text" id="trackItAddress" autocomplete="off" />
             </div>
-            <div class="field">
+            <div class="field" id="trackItFieldZip">
               <label for="trackItZip">우편번호</label>
               <input type="text" id="trackItZip" autocomplete="off" />
             </div>
@@ -12225,14 +12265,14 @@
               <tr>
                 <th>등록일</th>
                 <th>배송</th>
-                <th>주소</th>
-                <th>우편번호</th>
+                <th id="trackItThAddress">주소</th>
+                <th id="trackItThZip">우편번호</th>
                 <th>성함</th>
                 <th>휴대폰</th>
                 <th>물건</th>
                 <th>체크아웃</th>
                 <th>객실</th>
-                <th>발송</th>
+                <th id="trackItThShip">발송</th>
                 <th></th>
               </tr>
             </thead>
@@ -13433,7 +13473,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-12"></script>
+  <script src="hk-storage.js?v=bydate-16"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
