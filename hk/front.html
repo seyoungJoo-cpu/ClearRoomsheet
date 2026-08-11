@@ -19667,12 +19667,13 @@
           dirtyNow = !!HKInvenNotify.isDraftDirty();
         }
         if (!dirtyNow) return true;
-        if (!window.confirm("저장하시겠습니까??")) return false;
-        try {
-          if (from === "nightHandover" && HKNightHandover.save) HKNightHandover.save();
-          else if (from === "vipCheckIn" && HKVipCheckIn.save) HKVipCheckIn.save();
-          else if (from === "invenNotify" && HKInvenNotify.publish) HKInvenNotify.publish();
-        } catch (eSaveLeave) {}
+        if (window.confirm("저장하시겠습니까??")) {
+          try {
+            if (from === "nightHandover" && HKNightHandover.save) HKNightHandover.save();
+            else if (from === "vipCheckIn" && HKVipCheckIn.save) HKVipCheckIn.save();
+            else if (from === "invenNotify" && HKInvenNotify.publish) HKInvenNotify.publish();
+          } catch (eSaveLeave) {}
+        }
         return true;
       }
 
