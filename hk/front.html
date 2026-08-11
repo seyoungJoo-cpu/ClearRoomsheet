@@ -13444,8 +13444,8 @@
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-10"></script>
   <script src="hk-track-it.js?v=bydate-10"></script>
-  <script src="hk-night-handover.js?v=bydate-13"></script>
-  <script src="hk-vip-checkin.js?v=bydate-13"></script>
+  <script src="hk-night-handover.js?v=bydate-14"></script>
+  <script src="hk-vip-checkin.js?v=bydate-14"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>
@@ -19641,7 +19641,43 @@
         }
       }
 
-      function applySidebarMainView(view) {
+      function confirmLeaveDirtySidebarForm(nextView, opts) {
+        opts = opts || {};
+        if (opts.skipDirtyConfirm) return true;
+        if (!nextView || nextView === sidebarMainView) return true;
+        var from = sidebarMainView;
+        var dirtyNow = false;
+        if (
+          from === "nightHandover" &&
+          typeof HKNightHandover !== "undefined" &&
+          HKNightHandover.isDirty
+        ) {
+          dirtyNow = !!HKNightHandover.isDirty();
+        } else if (
+          from === "vipCheckIn" &&
+          typeof HKVipCheckIn !== "undefined" &&
+          HKVipCheckIn.isDirty
+        ) {
+          dirtyNow = !!HKVipCheckIn.isDirty();
+        } else if (
+          from === "invenNotify" &&
+          typeof HKInvenNotify !== "undefined" &&
+          HKInvenNotify.isDraftDirty
+        ) {
+          dirtyNow = !!HKInvenNotify.isDraftDirty();
+        }
+        if (!dirtyNow) return true;
+        if (!window.confirm("저장하시겠습니까??")) return false;
+        try {
+          if (from === "nightHandover" && HKNightHandover.save) HKNightHandover.save();
+          else if (from === "vipCheckIn" && HKVipCheckIn.save) HKVipCheckIn.save();
+          else if (from === "invenNotify" && HKInvenNotify.publish) HKInvenNotify.publish();
+        } catch (eSaveLeave) {}
+        return true;
+      }
+
+      function applySidebarMainView(view, opts) {
+        if (!confirmLeaveDirtySidebarForm(view, opts)) return false;
         sidebarMainView = view;
         var showRequest = view === "request";
         var showOrder = view === "order";
@@ -19846,6 +19882,7 @@
             if (z) renderRoomsForZone(z, { force: true });
           });
         }
+        return true;
       }
 
       function parseAiSchedMinutes(schedStr) {
@@ -22237,85 +22274,85 @@
         return li;
       }
 
-      function showSidebarRequestView() {
+      function showSidebarRequestView(opts) {
+        if (!applySidebarMainView("request", opts)) return;
         collapseZoneBlock();
         currentZone = null;
         setZonePanelOpen(false);
         renderRoomsForZone(null);
         clearRequestSidebarAlerts();
-        applySidebarMainView("request");
         renderRequestLogPanel({ force: true });
         renderRequestDeskChat({ force: true, scrollToBottom: true });
       }
 
-      function showSidebarOrderView() {
+      function showSidebarOrderView(opts) {
+        if (!applySidebarMainView("order", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         clearOrderSidebarAlerts();
-        applySidebarMainView("order");
         renderOrderPanels({ force: true });
         renderOrderDeskChat({ force: true, scrollToBottom: true });
       }
 
-      function showSidebarComplaintView() {
+      function showSidebarComplaintView(opts) {
+        if (!applySidebarMainView("complaint", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("complaint");
         if (typeof HKComplaintAnalysis !== "undefined" && HKComplaintAnalysis.onViewActivated) {
           HKComplaintAnalysis.onViewActivated();
         }
       }
 
-      function showSidebarTrackItView() {
+      function showSidebarTrackItView(opts) {
+        if (!applySidebarMainView("trackIt", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("trackIt");
         if (typeof HKTrackIt !== "undefined" && HKTrackIt.onViewActivated) {
           HKTrackIt.onViewActivated();
         }
       }
 
-      function showSidebarNightHandoverView() {
+      function showSidebarNightHandoverView(opts) {
+        if (!applySidebarMainView("nightHandover", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("nightHandover");
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
           HKNightHandover.onViewActivated();
         }
       }
 
-      function showSidebarVipCheckInView() {
+      function showSidebarVipCheckInView(opts) {
+        if (!applySidebarMainView("vipCheckIn", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("vipCheckIn");
         if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.onViewActivated) {
           HKVipCheckIn.onViewActivated();
         }
       }
 
-      function showSidebarFacilityView() {
+      function showSidebarFacilityView(opts) {
+        if (!applySidebarMainView("facility", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         clearFacilitySidebarAlerts();
-        applySidebarMainView("facility");
         updateFacilityOrderFoDisplay();
         renderOrderPanels({ force: true });
         renderFacilityDeskChat({ force: true, scrollToBottom: true });
       }
 
-      function showSidebarFacilityMiscView() {
+      function showSidebarFacilityMiscView(opts) {
+        if (!applySidebarMainView("facilityMisc", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("facilityMisc");
         if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.onViewActivated) {
           HKFacilityLogs.onViewActivated("facilityMisc");
         }
       }
 
-      function showSidebarFacilityDailyFoundView() {
+      function showSidebarFacilityDailyFoundView(opts) {
+        if (!applySidebarMainView("facilityDailyFound", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("facilityDailyFound");
         if (typeof HKFacilityLogs !== "undefined" && HKFacilityLogs.onViewActivated) {
           HKFacilityLogs.onViewActivated("facilityDailyFound");
         }
@@ -22326,21 +22363,21 @@
         showSidebarRequestView();
       }
 
-      function showSidebarMbCheckView() {
+      function showSidebarMbCheckView(opts) {
+        if (!applySidebarMainView("mbCheck", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         clearMbCheckSidebarAlerts();
-        applySidebarMainView("mbCheck");
         if (typeof HKMbWorkflow !== "undefined") {
           HKMbWorkflow.renderMbCheckPanels();
         }
         renderMbCheckDeskChat({ force: true, scrollToBottom: true });
       }
 
-      function showSidebarInvenNotifyView() {
+      function showSidebarInvenNotifyView(opts) {
+        if (!applySidebarMainView("invenNotify", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        applySidebarMainView("invenNotify");
         if (typeof HKInvenNotify !== "undefined") {
           HKInvenNotify.render(true);
         }
@@ -22378,43 +22415,45 @@
         syncFrontEmbedTabUi();
       }
 
-      function showSidebarFrontEmbedView(tab) {
+      function showSidebarFrontEmbedView(tab, opts) {
         if (!frontMode) return;
+        if (!applySidebarMainView("frontEmbed", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
         if (tab) applyFrontEmbedTab(tab);
-        applySidebarMainView("frontEmbed");
       }
 
-      function showSidebarChatView() {
+      function showSidebarChatView(opts) {
         if (!canUseTeamChat()) return;
+        if (!applySidebarMainView("chat", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
-        applySidebarMainView("chat");
       }
 
-      function showSidebarFrontView() {
+      function showSidebarFrontView(opts) {
         if (!frontMode) return;
+        if (!applySidebarMainView("front", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
         hideFrontChatToast();
-        applySidebarMainView("front");
       }
 
-      function showSidebarAiView() {
+      function showSidebarAiView(opts) {
+        var from = sidebarMainView;
+        if (!confirmLeaveDirtySidebarForm("ai", opts)) return;
         collapseZoneBlock();
         clearZoneTabSelection();
-        if (sidebarMainView === "order") aiOrdersScope = "regular";
-        else if (sidebarMainView === "facility") aiOrdersScope = "facility";
-        else if (sidebarMainView === "request") aiOrdersScope = "all";
-        applySidebarMainView("ai");
+        if (from === "order") aiOrdersScope = "regular";
+        else if (from === "facility") aiOrdersScope = "facility";
+        else if (from === "request") aiOrdersScope = "all";
+        applySidebarMainView("ai", { skipDirtyConfirm: true });
         ensureAiModeWelcome();
       }
 
-      function showSidebarZoneView(zone) {
-        applySidebarMainView("zone");
+      function showSidebarZoneView(zone, opts) {
+        if (!applySidebarMainView("zone", opts)) return;
         var z = zone || getActiveZone() || currentZone;
         if (z) {
           renderRoomsForZone(z, { force: true });
@@ -28830,7 +28869,7 @@
         if (sidebarVipCheckInSection) sidebarVipCheckInSection.hidden = !canView;
         if (!canView) {
           if (sidebarMainView === "nightHandover" || sidebarMainView === "vipCheckIn") {
-            showSidebarOrderView();
+            showSidebarOrderView({ skipDirtyConfirm: true });
           }
         }
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.onFrontModeChanged) {
@@ -28880,20 +28919,20 @@
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
         if (!frontMode && sidebarMainView === "complaint") {
-          showSidebarOrderView();
+          showSidebarOrderView({ skipDirtyConfirm: true });
         } else if (
           !frontMode &&
           (sidebarMainView === "front" || sidebarMainView === "frontEmbed")
         ) {
-          showSidebarRequestView();
+          showSidebarRequestView({ skipDirtyConfirm: true });
         } else if (sidebarMainView === "front") {
-          applySidebarMainView("front");
+          applySidebarMainView("front", { skipDirtyConfirm: true });
         } else if (sidebarMainView === "frontEmbed") {
-          applySidebarMainView("frontEmbed");
+          applySidebarMainView("frontEmbed", { skipDirtyConfirm: true });
         }
         if (!canUseTeamChat()) {
           hideFrontChatToast();
-          if (sidebarMainView === "chat") showSidebarRequestView();
+          if (sidebarMainView === "chat") showSidebarRequestView({ skipDirtyConfirm: true });
         }
         if (canUseTeamChat() || frontMode) requestFrontChatNotificationPermission();
         renderRequestLogPanel();
@@ -30161,7 +30200,7 @@
           onLeaveWhenLocked: function () {
             // 정비 모드에서는 조회만 허용 — 화면을 강제로 닫지 않음
             if (frontMode || maintenanceMode) return;
-            showSidebarOrderView();
+            showSidebarOrderView({ skipDirtyConfirm: true });
           },
         });
       }
@@ -30176,7 +30215,7 @@
           },
           onLeaveWhenLocked: function () {
             if (frontMode || maintenanceMode) return;
-            showSidebarOrderView();
+            showSidebarOrderView({ skipDirtyConfirm: true });
           },
         });
       }

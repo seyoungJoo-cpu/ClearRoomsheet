@@ -1612,5 +1612,8 @@
     isDirty: function () {
       return !!dirty;
     },
+    save: function () {
+      onSave();
+    },
   };
 })(typeof window !== "undefined" ? window : this);
