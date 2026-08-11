@@ -8836,8 +8836,8 @@
     #trackItShipCod,
     #trackItShipUrgent {
       width: auto;
-      min-width: 3.5rem;
-      padding: 0 12px;
+      min-width: 4.25rem;
+      padding: 0 14px;
     }
 
     #trackItShipCod.is-selected {
@@ -8850,6 +8850,108 @@
       background: #fef2f2;
       border-color: #dc2626;
       color: #b91c1c;
+    }
+
+    /* Track IT — 전체 UI·글자 조금 크게, 입력·표 가로로 여유 */
+    .track-it-panel {
+      padding: 14px 18px 20px;
+      gap: 16px;
+      font-size: 0.9375rem;
+    }
+
+    .track-it-panel .panel-head-row h2 {
+      font-size: 1.125rem;
+    }
+
+    .track-it-panel .track-it-juso-link {
+      font-size: 0.9375rem;
+    }
+
+    .track-it-panel .complaint-panel__hint {
+      font-size: 0.875rem;
+    }
+
+    .track-it-panel .complaint-form {
+      gap: 14px;
+      padding: 16px 18px;
+    }
+
+    .track-it-panel .complaint-form__fields {
+      gap: 12px 16px;
+      align-items: flex-end;
+    }
+
+    .track-it-panel .complaint-form__fields .field {
+      flex: 1 1 10rem;
+      min-width: 9.5rem;
+    }
+
+    .track-it-panel .complaint-form__fields .field label {
+      font-size: 0.8125rem;
+    }
+
+    .track-it-panel .complaint-form__fields input[type="text"],
+    .track-it-panel .complaint-form__fields input[type="date"] {
+      height: 40px;
+      padding: 0 12px;
+      font-size: 0.9375rem;
+      min-width: 10rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .track-it-panel .complaint-form__fields .field--complaint-memo {
+      flex: 3 1 22rem;
+      min-width: min(100%, 18rem);
+    }
+
+    .track-it-panel .complaint-ox-block {
+      gap: 8px;
+    }
+
+    .track-it-panel .complaint-ox-block > span {
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .track-it-panel #trackItShipCod,
+    .track-it-panel #trackItShipUrgent {
+      height: 40px;
+      min-width: 4.75rem;
+      font-size: 0.9375rem;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .btn-order {
+      height: 40px;
+      padding: 0 16px;
+      font-size: 0.9375rem;
+    }
+
+    .track-it-panel .complaint-table {
+      font-size: 0.875rem;
+    }
+
+    .track-it-panel .complaint-table th,
+    .track-it-panel .complaint-table td {
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .complaint-table td.complaint-td-memo {
+      white-space: nowrap;
+      max-width: none;
+    }
+
+    .track-it-panel .complaint-table thead th {
+      font-size: 0.8125rem;
+      padding: 8px 12px;
+    }
+
+    .track-it-panel .complaint-row-edit,
+    .track-it-panel .complaint-row-del {
+      font-size: 0.8125rem;
+      padding: 4px 10px;
     }
 
     .complaint-table-wrap {
