@@ -527,6 +527,7 @@
 
   function removeNoteRow(idx) {
     if (!canEdit()) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     var notes = collectFromDom().notes;
     if (notes.length <= MIN_NOTE_ROWS) {
       notes[idx] = emptyNote();
@@ -552,6 +553,7 @@
 
   function removeIncidentRow(idx) {
     if (!canEdit()) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     var incidents = collectFromDom().incidents;
     if (incidents.length <= MIN_INCIDENT_ROWS) {
       incidents[idx] = emptyIncident();

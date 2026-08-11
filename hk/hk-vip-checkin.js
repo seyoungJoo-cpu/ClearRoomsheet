@@ -856,6 +856,7 @@
 
   function removeRemarkRow(idx) {
     if (!canEdit()) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     var rows = collectRemarkRowsFromDom();
     if (rows[idx] && rows[idx].id && FIXED_REMARK_IDS[rows[idx].id]) {
       rows[idx].value = "";
@@ -889,6 +890,7 @@
 
   function removeGuestRow(idx) {
     if (!canEdit()) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     var guests = collectGuestsFromDom();
     if (guests.length <= MIN_GUEST_ROWS) {
       guests[idx] = emptyGuest(guests[idx] && guests[idx].section);
@@ -1003,6 +1005,7 @@
 
   function removeConnectingRow(startIdx) {
     if (!canEdit()) return;
+    if (!window.confirm("삭제하시겠습니까?")) return;
     var list = collectConnectingFromDom();
     if (list.length <= MIN_CONNECTING_SLOTS) {
       list[startIdx] = emptyConnecting();
