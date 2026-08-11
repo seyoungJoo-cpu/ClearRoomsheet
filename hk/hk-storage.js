@@ -969,6 +969,18 @@
         String(raw.shippedOk || "").toUpperCase() === "Y" ||
         String(raw.shippedOk || "").toUpperCase() === "TRUE",
       shippedAt: raw.shippedAt != null ? String(raw.shippedAt).trim() : "",
+      noneMarked:
+        raw.noneMarked === true ||
+        raw.noneMarked === 1 ||
+        raw.noneMarked === "1" ||
+        String(raw.noneMarked || "").toUpperCase() === "Y" ||
+        String(raw.noneMarked || "").toUpperCase() === "TRUE",
+      discarded:
+        raw.discarded === true ||
+        raw.discarded === 1 ||
+        raw.discarded === "1" ||
+        String(raw.discarded || "").toUpperCase() === "Y" ||
+        String(raw.discarded || "").toUpperCase() === "TRUE",
     };
   }
 

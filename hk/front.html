@@ -4612,6 +4612,12 @@
       padding-bottom: 6px;
     }
 
+    .sidebar-nav__btn--track-it {
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
     .sidebar-nav__rule {
       height: 0;
       margin: 4px 2px 6px;
@@ -8667,16 +8673,151 @@
       gap: 8px 12px;
     }
 
+    /* FOUND — 에메랄드 */
+    .track-it-panel.track-it-page--found {
+      border-color: #6ee7b7;
+      background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 42%);
+    }
+
+    .track-it-panel.track-it-page--found h2 {
+      color: #047857;
+    }
+
+    .track-it-panel.track-it-page--found .complaint-panel__tab.is-active {
+      color: #047857;
+    }
+
+    /* LOST — 붉은 계열 */
+    .track-it-panel.track-it-page--lost {
+      border-color: #fca5a5;
+      background: linear-gradient(180deg, #fef2f2 0%, #ffffff 42%);
+    }
+
+    .track-it-panel.track-it-page--lost h2 {
+      color: #b91c1c;
+    }
+
+    .track-it-panel.track-it-page--lost .complaint-panel__tabs {
+      background: #fee2e2;
+      border-color: #fecaca;
+    }
+
+    .track-it-panel.track-it-page--lost .complaint-panel__tab.is-active {
+      color: #b91c1c;
+      box-shadow: 0 1px 2px rgba(185, 28, 28, 0.12);
+    }
+
+    .track-it-panel.track-it-page--lost .track-it-row-confirm {
+      border-color: #fca5a5;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .track-it-panel.track-it-page--lost .track-it-row-confirm:hover:not(:disabled) {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .track-it-panel.track-it-page--lost .btn-order {
+      border-color: #fca5a5;
+    }
+
     .track-it-panel.track-it-page--lost #trackItFieldZip,
     .track-it-panel.track-it-page--lost #trackItThZip,
-    .track-it-panel.track-it-page--lost #trackItThShip,
     .track-it-panel.track-it-page--lost #trackItJusoLink {
       display: none !important;
     }
 
-    .track-it-panel.track-it-page--lost td.track-it-col-zip,
-    .track-it-panel.track-it-page--lost td.track-it-ship-status {
+    .track-it-panel.track-it-page--lost td.track-it-col-zip {
       display: none !important;
+    }
+
+    .track-it-panel .complaint-table thead th[data-sort-key] {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .complaint-table thead th[data-sort-key]:hover {
+      color: var(--accent);
+    }
+
+    .track-it-panel .complaint-table thead th.is-sorted[data-sort="asc"]::after,
+    .track-it-panel .complaint-table thead th.is-sorted[data-sort="desc"]::after {
+      margin-left: 4px;
+      font-size: 0.75em;
+      opacity: 0.85;
+    }
+
+    .track-it-panel .complaint-table thead th.is-sorted[data-sort="asc"]::after {
+      content: "▲";
+    }
+
+    .track-it-panel .complaint-table thead th.is-sorted[data-sort="desc"]::after {
+      content: "▼";
+    }
+
+    .track-it-panel .track-it-row-void {
+      height: 34px;
+      margin-left: 4px;
+      padding: 0 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #475569;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .track-it-panel .track-it-row-void:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .track-it-panel .track-it-row-void.is-on {
+      background: #64748b;
+      border-color: #64748b;
+      color: #fff;
+    }
+
+    .track-it-panel.track-it-page--lost .track-it-row-void {
+      border-color: #fca5a5;
+      background: #fff1f2;
+      color: #9f1239;
+    }
+
+    .track-it-panel.track-it-page--lost .track-it-row-void:hover {
+      background: #ffe4e6;
+    }
+
+    .track-it-panel.track-it-page--lost .track-it-row-void.is-on {
+      background: #9f1239;
+      border-color: #9f1239;
+      color: #fff;
+    }
+
+    .track-it-panel .complaint-table tbody tr.is-voided {
+      background: #e5e7eb !important;
+      color: #6b7280;
+    }
+
+    .track-it-panel .complaint-table tbody tr.is-voided td {
+      text-decoration: line-through;
+      text-decoration-thickness: 1.5px;
+    }
+
+    .track-it-panel .complaint-table tbody tr.is-voided .complaint-td-actions,
+    .track-it-panel .complaint-table tbody tr.is-voided .complaint-td-actions * {
+      text-decoration: none !important;
+    }
+
+    .track-it-panel .track-it-ship-status.is-discarded {
+      color: #6b7280;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .complaint-panel__tabs {
@@ -11551,7 +11692,7 @@
           <div class="sidebar-nav">
             <button
               type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
               id="sidebarBtnTrackIt"
               aria-pressed="false"
             >
@@ -12263,16 +12404,16 @@
           <table class="complaint-table" aria-label="Track IT 등록 목록">
             <thead>
               <tr>
-                <th>등록일</th>
-                <th>배송</th>
-                <th id="trackItThAddress">주소</th>
-                <th id="trackItThZip">우편번호</th>
-                <th>성함</th>
-                <th>휴대폰</th>
-                <th>물건</th>
-                <th>체크아웃</th>
-                <th>객실</th>
-                <th id="trackItThShip">발송</th>
+                <th data-sort-key="createdAt">등록일</th>
+                <th data-sort-key="shipType">배송</th>
+                <th id="trackItThAddress" data-sort-key="address">주소</th>
+                <th id="trackItThZip" data-sort-key="zip">우편번호</th>
+                <th data-sort-key="name">성함</th>
+                <th data-sort-key="phone">휴대폰</th>
+                <th data-sort-key="item">물건</th>
+                <th data-sort-key="checkoutDate">체크아웃</th>
+                <th data-sort-key="roomNo">객실</th>
+                <th id="trackItThShip" data-sort-key="shipStatus">발송</th>
                 <th></th>
               </tr>
             </thead>
@@ -13473,7 +13614,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-16"></script>
+  <script src="hk-storage.js?v=bydate-17"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -13483,7 +13624,7 @@
   <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-10"></script>
-  <script src="hk-track-it.js?v=bydate-15"></script>
+  <script src="hk-track-it.js?v=bydate-16"></script>
   <script src="hk-night-handover.js?v=bydate-14"></script>
   <script src="hk-vip-checkin.js?v=bydate-14"></script>
   <script src="hk-admin-inquiry.js"></script>

@@ -17,6 +17,7 @@
   var editingId = "";
   var bound = false;
   var formDirty = false;
+  var sortState = { col: "", dir: "" }; // dir: "" | "asc" | "desc"
 
   function isLostPage() {
     return currentPage === "lost";
@@ -209,11 +210,105 @@
       addrInput.placeholder = isLostPage() ? "예약번호 입력" : "";
     }
     var thAddress = document.getElementById("trackItThAddress");
-    if (thAddress) thAddress.textContent = isLostPage() ? "예약번호" : "주소";
-    var empty = document.getElementById("trackItTableEmpty");
-    if (empty && empty.hidden === false) {
-      /* text set in renderTable */
+    if (thAddress) {
+      thAddress.textContent = isLostPage() ? "예약번호" : "주소";
+      thAddress.setAttribute("data-sort-key", isLostPage() ? "reservationNo" : "address");
     }
+    var thShip = document.getElementById("trackItThShip");
+    if (thShip) {
+      thShip.textContent = isLostPage() ? "상태" : "발송";
+      thShip.setAttribute("data-sort-key", isLostPage() ? "noneStatus" : "shipStatus");
+    }
+    syncSortHeadUi();
+  }
+
+  function syncSortHeadUi() {
+    var table = document.querySelector("#trackItPanel .complaint-table");
+    if (!table) return;
+    table.querySelectorAll("thead th[data-sort-key]").forEach(function (th) {
+      var key = th.getAttribute("data-sort-key") || "";
+      var active = !!(sortState.col && sortState.dir && sortState.col === key);
+      th.classList.toggle("is-sorted", active);
+      if (active) th.setAttribute("data-sort", sortState.dir);
+      else th.removeAttribute("data-sort");
+    });
+  }
+
+  function cycleSort(col) {
+    if (!col) return;
+    if (sortState.col !== col) {
+      sortState = { col: col, dir: "asc" };
+    } else if (sortState.dir === "asc") {
+      sortState = { col: col, dir: "desc" };
+    } else if (sortState.dir === "desc") {
+      sortState = { col: "", dir: "" };
+    } else {
+      sortState = { col: col, dir: "asc" };
+    }
+    syncSortHeadUi();
+    renderTable();
+  }
+
+  function sortValue(row, col) {
+    if (!row) return "";
+    if (col === "shipType") return row.shipType === "urgent" ? "긴급" : "착불";
+    if (col === "reservationNo") return row.reservationNo || row.address || "";
+    if (col === "address") return row.address || "";
+    if (col === "shipStatus") {
+      if (row.discarded) return "폐기";
+      if (row.shippedOk) return "발송 OK";
+      return "";
+    }
+    if (col === "noneStatus") {
+      return row.noneMarked ? "없음" : "";
+    }
+    if (col === "createdAt" || col === "checkoutDate") {
+      return String(row[col] || "");
+    }
+    return row[col] != null ? String(row[col]) : "";
+  }
+
+  function compareSortValues(col, a, b) {
+    var av = sortValue(a, col);
+    var bv = sortValue(b, col);
+    if (col === "createdAt" || col === "checkoutDate") {
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    }
+    if (col === "roomNo" || col === "zip" || col === "phone") {
+      var an = String(av).replace(/\D/g, "");
+      var bn = String(bv).replace(/\D/g, "");
+      if (an && bn && an !== bn) {
+        var ai = Number(an);
+        var bi = Number(bn);
+        if (isFinite(ai) && isFinite(bi) && ai !== bi) return ai < bi ? -1 : 1;
+      }
+    }
+    return String(av).localeCompare(String(bv), "ko", { numeric: true, sensitivity: "base" });
+  }
+
+  function applySort(list) {
+    var items = (list || []).slice();
+    if (!sortState.col || !sortState.dir) {
+      items.sort(function (a, b) {
+        var ta = (a && a.createdAt) || "";
+        var tb = (b && b.createdAt) || "";
+        if (ta !== tb) return String(ta).localeCompare(String(tb));
+        return String((a && a.id) || "").localeCompare(String((b && b.id) || ""));
+      });
+      return items;
+    }
+    var dir = sortState.dir === "desc" ? -1 : 1;
+    var col = sortState.col;
+    items.sort(function (a, b) {
+      var cmp = compareSortValues(col, a, b);
+      if (cmp === 0) {
+        return String((a && a.createdAt) || "").localeCompare(String((b && b.createdAt) || ""));
+      }
+      return cmp * dir;
+    });
+    return items;
   }
 
   function syncFormModeUi() {
@@ -284,6 +379,7 @@
     }
     if (!optsPage.keepForm) resetForm();
     currentPage = next;
+    sortState = { col: "", dir: "" };
     syncPageUi();
     renderTable();
   }
@@ -299,6 +395,12 @@
     });
   }
 
+  function isRowVoided(row) {
+    if (!row) return false;
+    if (recordKind(row) === "lost") return !!row.noneMarked;
+    return !!row.discarded;
+  }
+
   function renderTable() {
     var tbody = document.getElementById("trackItTableBody");
     var empty = document.getElementById("trackItTableEmpty");
@@ -309,7 +411,9 @@
     var filtered = records.filter(function (row) {
       return roomMatchesFilter(row && row.roomNo, roomQuery);
     });
+    filtered = applySort(filtered);
     tbody.innerHTML = "";
+    syncSortHeadUi();
     var pageName = isLostPage() ? "LOST" : "FOUND";
     if (!filtered.length) {
       if (empty) {
@@ -336,7 +440,8 @@
         tr.title = "클릭하여 위 입력칸에서 수정";
       }
       if (editingId && row.id === editingId) tr.classList.add("is-editing");
-      if (!lost && row.shippedOk) tr.classList.add("is-shipped-ok");
+      if (!lost && row.shippedOk && !row.discarded) tr.classList.add("is-shipped-ok");
+      if (isRowVoided(row)) tr.classList.add("is-voided");
 
       function td(text, className) {
         var cell = document.createElement("td");
@@ -362,9 +467,19 @@
 
       var tdShip = document.createElement("td");
       tdShip.className = "complaint-td-narrow track-it-ship-status";
-      if (!lost && row.shippedOk) {
-        tdShip.textContent = "발송 OK";
-        tdShip.classList.add("is-ok");
+      if (!lost) {
+        if (row.discarded) {
+          tdShip.textContent = "폐기";
+          tdShip.classList.add("is-discarded");
+        } else if (row.shippedOk) {
+          tdShip.textContent = "발송 OK";
+          tdShip.classList.add("is-ok");
+        } else {
+          tdShip.textContent = "—";
+        }
+      } else if (row.noneMarked) {
+        tdShip.textContent = "없음";
+        tdShip.classList.add("is-discarded");
       } else {
         tdShip.textContent = "—";
       }
@@ -394,14 +509,29 @@
           confirmBtn.setAttribute("data-action", "confirm-to-found");
           confirmBtn.title = "FOUND로 이동";
           confirmBtn.textContent = "확인";
+          tdAct.appendChild(confirmBtn);
+          var noneBtn = document.createElement("button");
+          noneBtn.type = "button";
+          noneBtn.className = "track-it-row-void" + (row.noneMarked ? " is-on" : "");
+          noneBtn.setAttribute("data-action", "toggle-none");
+          noneBtn.title = row.noneMarked ? "없음 해제" : "없음 표시";
+          noneBtn.textContent = "없음";
+          tdAct.appendChild(noneBtn);
         } else {
-          confirmBtn.className = "track-it-row-confirm" + (row.shippedOk ? " is-done" : "");
+          confirmBtn.className = "track-it-row-confirm" + (row.shippedOk && !row.discarded ? " is-done" : "");
           confirmBtn.setAttribute("data-action", "confirm-ship");
           confirmBtn.title = row.shippedOk ? "발송 완료" : "발송 확인";
-          confirmBtn.textContent = row.shippedOk ? "발송 OK" : "확인";
-          confirmBtn.disabled = !!row.shippedOk;
+          confirmBtn.textContent = row.shippedOk && !row.discarded ? "발송 OK" : "확인";
+          confirmBtn.disabled = !!row.shippedOk && !row.discarded;
+          tdAct.appendChild(confirmBtn);
+          var discardBtn = document.createElement("button");
+          discardBtn.type = "button";
+          discardBtn.className = "track-it-row-void" + (row.discarded ? " is-on" : "");
+          discardBtn.setAttribute("data-action", "toggle-discard");
+          discardBtn.title = row.discarded ? "폐기 해제" : "폐기 표시";
+          discardBtn.textContent = "폐기";
+          tdAct.appendChild(discardBtn);
         }
-        tdAct.appendChild(confirmBtn);
       }
       tr.appendChild(tdAct);
       tbody.appendChild(tr);
@@ -470,6 +600,7 @@
         kind: "found",
         shippedOk: true,
         shippedAt: nowIso,
+        discarded: false,
         updatedAt: nowIso,
       });
     });
@@ -480,6 +611,45 @@
     persistRecords(next, nowIso);
     render();
     if (typeof opts.toast === "function") opts.toast("발송 OK");
+  }
+
+  function toggleNoneMarked(id) {
+    if (!canEdit() || !id) return;
+    var pack = loadPack();
+    var nowIso = new Date().toISOString();
+    var found = false;
+    var next = (pack.records || []).map(function (r) {
+      if (!r || r.id !== id) return r;
+      found = true;
+      if (recordKind(r) !== "lost") return r;
+      return Object.assign({}, r, {
+        noneMarked: !r.noneMarked,
+        updatedAt: nowIso,
+      });
+    });
+    if (!found) return;
+    persistRecords(next, nowIso);
+    render();
+  }
+
+  function toggleDiscarded(id) {
+    if (!canEdit() || !id) return;
+    var pack = loadPack();
+    var nowIso = new Date().toISOString();
+    var found = false;
+    var next = (pack.records || []).map(function (r) {
+      if (!r || r.id !== id) return r;
+      found = true;
+      if (recordKind(r) !== "found") return r;
+      var on = !r.discarded;
+      return Object.assign({}, r, {
+        discarded: on,
+        updatedAt: nowIso,
+      });
+    });
+    if (!found) return;
+    persistRecords(next, nowIso);
+    render();
   }
 
   function confirmLostToFound(id) {
@@ -498,6 +668,8 @@
         reservationNo: r.reservationNo || r.address || "",
         shippedOk: false,
         shippedAt: "",
+        noneMarked: false,
+        discarded: false,
         updatedAt: nowIso,
       });
     });
@@ -570,6 +742,8 @@
           roomNo: roomNo,
           shippedOk: !!r.shippedOk,
           shippedAt: r.shippedAt || "",
+          noneMarked: !!r.noneMarked,
+          discarded: !!r.discarded,
         };
       });
       if (!found) {
@@ -599,6 +773,8 @@
       roomNo: roomNo,
       shippedOk: false,
       shippedAt: "",
+      noneMarked: false,
+      discarded: false,
     });
     persistRecords(records, nowIso);
     resetForm();
@@ -807,6 +983,19 @@
       excelBtn.addEventListener("click", downloadExcel);
     }
 
+    var table = document.querySelector("#trackItPanel .complaint-table");
+    if (table) {
+      var thead = table.querySelector("thead");
+      if (thead) {
+        thead.addEventListener("click", function (e) {
+          var th = e.target.closest("th[data-sort-key]");
+          if (!th || !thead.contains(th)) return;
+          e.preventDefault();
+          cycleSort(th.getAttribute("data-sort-key") || "");
+        });
+      }
+    }
+
     var tbody = document.getElementById("trackItTableBody");
     if (tbody) {
       tbody.addEventListener("click", function (e) {
@@ -833,6 +1022,22 @@
           e.stopPropagation();
           var trMove = confirmFound.closest("tr[data-id]");
           if (trMove) confirmLostToFound(trMove.getAttribute("data-id"));
+          return;
+        }
+        var noneBtn = e.target.closest('[data-action="toggle-none"]');
+        if (noneBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          var trNone = noneBtn.closest("tr[data-id]");
+          if (trNone) toggleNoneMarked(trNone.getAttribute("data-id"));
+          return;
+        }
+        var discardBtn = e.target.closest('[data-action="toggle-discard"]');
+        if (discardBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          var trDisc = discardBtn.closest("tr[data-id]");
+          if (trDisc) toggleDiscarded(trDisc.getAttribute("data-id"));
           return;
         }
         var editBtn = e.target.closest('[data-action="edit"]');
