@@ -65,6 +65,18 @@
     formDirty = false;
   }
 
+  function normalizeRoomKey(s) {
+    return String(s == null ? "" : s)
+      .replace(/\s+/g, "")
+      .toLowerCase();
+  }
+
+  function roomMatchesFilter(roomNo, query) {
+    var q = normalizeRoomKey(query);
+    if (!q) return true;
+    return normalizeRoomKey(roomNo).indexOf(q) >= 0;
+  }
+
   function pad2(n) {
     return (n < 10 ? "0" : "") + n;
   }
@@ -279,14 +291,28 @@
     if (!tbody) return;
     var pack = loadPack();
     var records = (pack.records || []).slice();
+    var roomQuery = getField("complaintRoomNo");
+    var filtered = records.filter(function (row) {
+      return roomMatchesFilter(row && row.roomNo, roomQuery);
+    });
     tbody.innerHTML = "";
-    if (!records.length) {
-      if (empty) empty.hidden = false;
+    if (!filtered.length) {
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = roomQuery
+          ? "해당 객실번호의 불편사항이 없습니다."
+          : records.length
+            ? "표시할 불편사항이 없습니다."
+            : "등록된 불편사항이 없습니다.";
+      }
       return;
     }
-    if (empty) empty.hidden = true;
+    if (empty) {
+      empty.hidden = true;
+      empty.textContent = "등록된 불편사항이 없습니다.";
+    }
     var editable = canEdit();
-    records.forEach(function (row) {
+    filtered.forEach(function (row) {
       var tr = document.createElement("tr");
       tr.setAttribute("data-id", row.id);
       if (editable) {
@@ -368,6 +394,7 @@
     syncFormTypeUi();
     syncFormRoomChangeUi();
     syncFormModeUi();
+    renderTable();
     var form = document.getElementById("complaintForm");
     if (form && form.scrollIntoView) {
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -713,6 +740,15 @@
         resetForm();
         renderTable();
         opts.toast("수정을 취소했습니다.");
+      });
+    }
+
+    var roomInput = document.getElementById("complaintRoomNo");
+    if (roomInput && !roomInput.__hkComplaintRoomFilterBound) {
+      roomInput.__hkComplaintRoomFilterBound = true;
+      roomInput.addEventListener("input", function () {
+        markFormDirty();
+        renderTable();
       });
     }
 
