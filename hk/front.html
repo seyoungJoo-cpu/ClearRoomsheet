@@ -9071,15 +9071,31 @@
       background: #fff;
     }
 
+    .nh-table--top col.nh-col-duty {
+      width: 4.5%;
+    }
+    .nh-table--top col.nh-col-role {
+      width: 6.5%;
+    }
+    .nh-table--top col.nh-col-wing {
+      width: 18%;
+    }
+    .nh-table--top col.nh-col-sep {
+      width: 4%;
+    }
+    .nh-table--top col.nh-col-item {
+      width: 5.1%;
+    }
+
     .nh-table--extras {
-      width: 50%;
-      max-width: 50%;
+      width: 100%;
+      max-width: 100%;
     }
 
     .nh-table th,
     .nh-table td {
       border: 1px solid #334155;
-      padding: 6px;
+      padding: 3px 4px;
       vertical-align: middle;
       text-align: center;
     }
@@ -9088,14 +9104,14 @@
       background: #dbeafe;
       font-weight: 800;
       color: #1e3a8a;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .nh-th-pink {
       background: #fce7f3;
       font-weight: 800;
       color: #9d174d;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .nh-vlabel {
@@ -9110,11 +9126,17 @@
       background: transparent;
       font: inherit;
       font-size: 1.05rem;
-      padding: 8px 10px;
-      min-height: 48px;
-      resize: vertical;
-      line-height: 1.4;
+      padding: 4px 6px;
+      min-height: 28px;
+      height: 28px;
+      resize: none;
+      overflow: hidden;
+      line-height: 1.35;
       white-space: pre-wrap;
+    }
+
+    .nh-table textarea.nh-autosize {
+      field-sizing: content;
     }
 
     .nh-table input[type="text"]:focus,
@@ -9124,13 +9146,21 @@
     }
 
     .nh-table--extras th[scope="row"] {
-      text-align: left;
-      padding-left: 10px;
+      text-align: center;
+      padding-left: 6px;
+      padding-right: 6px;
       white-space: nowrap;
       background: #f8fafc;
       font-weight: 700;
-      width: 36%;
-      font-size: 1rem;
+      width: 18%;
+      font-size: 0.95rem;
+    }
+
+    .nh-table--extras th:nth-child(2),
+    .nh-table--extras td:nth-child(2),
+    .nh-table--extras th:nth-child(3),
+    .nh-table--extras td:nth-child(3) {
+      width: 41%;
     }
 
     .nh-row--highlight,
@@ -9141,7 +9171,7 @@
 
     .nh-table--notes th:first-child,
     .nh-table--notes td:first-child {
-      width: 22%;
+      width: 18%;
     }
 
     .nh-table--incidents th:nth-child(1),
@@ -9165,8 +9195,8 @@
 
     .nh-table--incidents textarea {
       text-align: left;
-      min-height: 56px;
-      line-height: 1.4;
+      min-height: 28px;
+      line-height: 1.35;
     }
 
     .nh-th-actions,
@@ -9318,11 +9348,17 @@
       background: transparent;
       font: inherit;
       font-size: 1.05rem;
-      padding: 8px 8px;
-      min-height: 48px;
-      resize: vertical;
+      padding: 4px 6px;
+      min-height: 28px;
+      height: 28px;
+      resize: none;
+      overflow: hidden;
       line-height: 1.35;
       white-space: pre-wrap;
+    }
+
+    .vip-table textarea.nh-autosize {
+      field-sizing: content;
     }
 
     .vip-table input:focus,
@@ -9352,7 +9388,7 @@
     .vip-sec-input {
       font-weight: 900;
       text-align: center;
-      min-height: 56px !important;
+      min-height: 28px !important;
     }
 
     .vip-table--guests th:nth-child(1),
@@ -9417,7 +9453,7 @@
 
     .vip-table--connecting .vip-conn-rooms {
       text-align: center;
-      min-height: 44px !important;
+      min-height: 28px !important;
       resize: none;
     }
 
@@ -9428,7 +9464,7 @@
 
     .vip-conn-status {
       width: 100%;
-      min-height: 44px;
+      min-height: 28px;
       border: none;
       background: transparent;
       cursor: pointer;
@@ -9448,10 +9484,15 @@
       width: 14rem;
       background: #dbeafe;
       font-weight: 800;
-      text-align: left;
+      text-align: center;
       padding-left: 10px;
       white-space: nowrap;
       font-size: 1.05rem;
+    }
+
+    .vip-table--ajmb textarea,
+    .vip-table--remarks textarea {
+      text-align: center;
     }
 
     .vip-row--green th,
@@ -11748,6 +11789,19 @@
 
         <div class="nh-sheet">
           <table class="nh-table nh-table--top" aria-label="당직·비품">
+            <colgroup>
+              <col class="nh-col-duty" />
+              <col class="nh-col-role" />
+              <col class="nh-col-wing" />
+              <col class="nh-col-wing" />
+              <col class="nh-col-sep" />
+              <col class="nh-col-item" />
+              <col class="nh-col-item" />
+              <col class="nh-col-item" />
+              <col class="nh-col-item" />
+              <col class="nh-col-item" />
+              <col class="nh-col-item" />
+            </colgroup>
             <thead>
               <tr>
                 <th colspan="2" class="nh-th-blue">야간당직</th>
@@ -11766,25 +11820,25 @@
               <tr>
                 <th rowspan="3" class="nh-th-blue nh-vlabel">야간<br />당직</th>
                 <th class="nh-th-blue">미드</th>
-                <td><textarea id="nhDutyMidMain" rows="2" autocomplete="off"></textarea></td>
-                <td><textarea id="nhDutyMidAnnex" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyMidMain" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyMidAnnex" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
                 <th rowspan="3" class="nh-th-blue">충전기<br />/<br />기타</th>
-                <td rowspan="3"><textarea id="nhChargerC" rows="2" autocomplete="off"></textarea></td>
-                <td rowspan="3"><textarea id="nhChargerIphone" rows="2" autocomplete="off"></textarea></td>
-                <td rowspan="3"><textarea id="nhCharger5" rows="2" autocomplete="off"></textarea></td>
-                <td rowspan="3"><textarea id="nhEtcFan" rows="2" autocomplete="off"></textarea></td>
-                <td rowspan="3"><textarea id="nhEtcDuck" rows="2" autocomplete="off"></textarea></td>
-                <td rowspan="3"><textarea id="nhEtcKids" rows="2" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhChargerC" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhChargerIphone" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhCharger5" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcFan" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcDuck" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td rowspan="3"><textarea id="nhEtcKids" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
               </tr>
               <tr>
                 <th class="nh-th-blue">올나이트</th>
-                <td><textarea id="nhDutyAllMain" rows="2" autocomplete="off"></textarea></td>
-                <td><textarea id="nhDutyAllAnnex" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyAllMain" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyAllAnnex" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
               </tr>
               <tr>
                 <th class="nh-th-blue">유틸리티</th>
-                <td><textarea id="nhDutyUtilMain" rows="2" autocomplete="off"></textarea></td>
-                <td><textarea id="nhDutyUtilAnnex" rows="2" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyUtilMain" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
+                <td><textarea id="nhDutyUtilAnnex" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>
               </tr>
             </tbody>
           </table>
@@ -11899,6 +11953,20 @@
                   <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipConnAdd" title="커넥팅 행 추가">+</button>
                 </div>
               </div>
+            </div>
+
+            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="AJ">
+              <tbody id="vipAjBody"></tbody>
+            </table>
+            <div class="nh-row-addbar">
+              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipAjAdd" title="AJ 행 추가">+</button>
+            </div>
+
+            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="MB">
+              <tbody id="vipMbBody"></tbody>
+            </table>
+            <div class="nh-row-addbar">
+              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipMbAdd" title="MB 행 추가">+</button>
             </div>
 
             <table class="vip-table vip-table--remarks" aria-label="특이사항 구분">
@@ -12864,7 +12932,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=vip-ui-3"></script>
+  <script src="hk-storage.js?v=vip-ui-5"></script>
   <script src="hk-sync.js?v=force-sync-3"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -12875,8 +12943,8 @@
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=9"></script>
   <script src="hk-track-it.js?v=3"></script>
-  <script src="hk-night-handover.js?v=4"></script>
-  <script src="hk-vip-checkin.js?v=4"></script>
+  <script src="hk-night-handover.js?v=5"></script>
+  <script src="hk-vip-checkin.js?v=5"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-25"></script>
   <script src="hk-mp-games.js?v=mp-26"></script>

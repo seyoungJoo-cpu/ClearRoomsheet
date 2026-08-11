@@ -120,6 +120,17 @@
     if (el) el.value = v != null ? String(v) : "";
   }
 
+  function autosizeTextarea(el) {
+    if (!el || el.tagName !== "TEXTAREA") return;
+    el.style.height = "0px";
+    el.style.height = Math.max(28, el.scrollHeight) + "px";
+  }
+
+  function autosizeAllIn(root) {
+    if (!root) return;
+    root.querySelectorAll("textarea").forEach(autosizeTextarea);
+  }
+
   function collectFromDom() {
     var base = defaultData();
     base.titleDate = val("nhTitleDate") || defaultTitleDate();
@@ -179,10 +190,10 @@
         "</th>" +
         '<td><textarea id="nhEx_' +
         k.id +
-        '_main" rows="2" autocomplete="off"></textarea></td>' +
+        '_main" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhEx_' +
         k.id +
-        '_annex" rows="2" autocomplete="off"></textarea></td>';
+        '_annex" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
       tbody.appendChild(tr);
     });
   }
@@ -201,13 +212,13 @@
       tr.innerHTML =
         '<td><textarea id="nhNoteCat_' +
         i +
-        '" rows="2" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhNoteMain_' +
         i +
-        '" rows="2" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhNoteAnnex_' +
         i +
-        '" rows="2" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
         '<td class="nh-row-actions">' +
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-note-remove="' +
         i +
@@ -218,6 +229,7 @@
       setVal("nhNoteMain_" + i, n.main);
       setVal("nhNoteAnnex_" + i, n.annex);
     }
+    autosizeAllIn(tbody);
   }
 
   function rebuildIncidentsBody(incidents) {
@@ -234,16 +246,16 @@
       tr.innerHTML =
         '<td><textarea id="nhIncRoom_' +
         i +
-        '" rows="2" placeholder="객실" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" placeholder="객실" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhIncBy_' +
         i +
-        '" rows="2" placeholder="이름" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" placeholder="이름" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhIncDates_' +
         i +
-        '" rows="2" placeholder="기간" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" placeholder="기간" autocomplete="off"></textarea></td>' +
         '<td><textarea id="nhIncDetail_' +
         i +
-        '" rows="2" placeholder="내용" autocomplete="off"></textarea></td>' +
+        '" class="nh-autosize" rows="1" placeholder="내용" autocomplete="off"></textarea></td>' +
         '<td class="nh-row-actions">' +
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-inc-remove="' +
         i +
@@ -255,6 +267,7 @@
       setVal("nhIncDates_" + i, inc.dates);
       setVal("nhIncDetail_" + i, inc.detail);
     }
+    autosizeAllIn(tbody);
   }
 
   function fillTopFields(pack) {
@@ -388,6 +401,7 @@
     dirty = false;
     syncEditLock();
     syncDirtyUi();
+    autosizeAllIn(document.getElementById("nightHandoverPanel"));
   }
 
   function onSave() {
@@ -494,8 +508,9 @@
     bound = true;
     var panel = document.getElementById("nightHandoverPanel");
     if (panel) {
-      panel.addEventListener("input", function () {
+      panel.addEventListener("input", function (e) {
         markDirty();
+        if (e && e.target) autosizeTextarea(e.target);
       });
       panel.addEventListener("change", function () {
         markDirty();

@@ -3,11 +3,20 @@
  * 프론트 모드에서만 편집 · 마감해도 유지(초기화 버튼으로만 삭제)
  */
 (function (global) {
-  var DEFAULT_GUEST_ROWS = 3;
+  var DEFAULT_GUEST_ROWS = 4;
   var MIN_GUEST_ROWS = 1;
-  var DEFAULT_CONNECTING_SLOTS = 6; /* 3행 × 좌우 2칸 */
+  var DEFAULT_CONNECTING_ROOMS = [
+    "923-925",
+    "936-938",
+    "857-858",
+    "1220-1222",
+    "1120-1122",
+    "1210-1216",
+  ];
+  var DEFAULT_CONNECTING_SLOTS = DEFAULT_CONNECTING_ROOMS.length;
   var CONNECTING_PER_ROW = 2;
   var MIN_CONNECTING_SLOTS = 2;
+  var MIN_AJMB_ROWS = 1;
 
   var GUEST_FIELDS = [
     "guestName",
@@ -20,9 +29,7 @@
     "remark",
   ];
 
-  var REMARK_KEYS = [
-    { id: "aj", label: "AJ" },
-    { id: "mb", label: "MB" },
+  var FIXED_REMARK_KEYS = [
     { id: "welcomeCard", label: "웰컴카드 (VOUPS 2,3)" },
     { id: "lateCo", label: "LATE C/O" },
     { id: "earlyCi", label: "얼리체크인" },
@@ -32,6 +39,7 @@
     { id: "dami", label: "답사 룸쇼" },
     { id: "tongTeam", label: "롱텀" },
   ];
+  var REMARK_KEYS = FIXED_REMARK_KEYS;
 
   var opts = {
     isFrontMode: function () {
@@ -43,6 +51,8 @@
   var dirty = false;
   var guestCount = DEFAULT_GUEST_ROWS;
   var connectingCount = DEFAULT_CONNECTING_SLOTS;
+  var ajCount = MIN_AJMB_ROWS;
+  var mbCount = MIN_AJMB_ROWS;
 
   function emptyGuest(section) {
     return {
@@ -59,8 +69,12 @@
     };
   }
 
-  function emptyConnecting() {
-    return { rooms: "", midDoor: "중간문", status: "CLOSE" };
+  function emptyConnecting(rooms) {
+    return {
+      rooms: rooms != null ? String(rooms) : "",
+      midDoor: "중간문",
+      status: "CLOSE",
+    };
   }
 
   function defaultTitleDate(d) {
@@ -69,19 +83,21 @@
   }
 
   function defaultGuests() {
-    return [emptyGuest("V4"), emptyGuest("EI"), emptyGuest("SA")];
+    var list = [];
+    var i;
+    for (i = 0; i < DEFAULT_GUEST_ROWS; i++) list.push(emptyGuest(""));
+    return list;
   }
 
   function defaultConnecting() {
-    var list = [];
-    var i;
-    for (i = 0; i < DEFAULT_CONNECTING_SLOTS; i++) list.push(emptyConnecting());
-    return list;
+    return DEFAULT_CONNECTING_ROOMS.map(function (r) {
+      return emptyConnecting(r);
+    });
   }
 
   function defaultData() {
     var remarks = {};
-    REMARK_KEYS.forEach(function (r) {
+    FIXED_REMARK_KEYS.forEach(function (r) {
       remarks[r.id] = "";
     });
     return {
@@ -90,6 +106,8 @@
       titleYear: String(new Date().getFullYear()),
       guests: defaultGuests(),
       connecting: defaultConnecting(),
+      ajList: [""],
+      mbList: [""],
       remarks: remarks,
       /* 하위호환 */
       sections: { V4: [], EI: [], SA: [], NPS: [] },
@@ -143,6 +161,17 @@
     if (el) el.value = v != null ? String(v) : "";
   }
 
+  function autosizeTextarea(el) {
+    if (!el || el.tagName !== "TEXTAREA") return;
+    el.style.height = "0px";
+    el.style.height = Math.max(28, el.scrollHeight) + "px";
+  }
+
+  function autosizeAllIn(root) {
+    if (!root) return;
+    root.querySelectorAll("textarea").forEach(autosizeTextarea);
+  }
+
   function guestId(row, field) {
     return "vipGuest_" + row + "_" + field;
   }
@@ -183,15 +212,30 @@
     return list;
   }
 
+  function collectAjMbFromDom(kind) {
+    var count = kind === "aj" ? ajCount : mbCount;
+    var list = [];
+    var i;
+    for (i = 0; i < count; i++) {
+      list.push(val("vip" + (kind === "aj" ? "Aj" : "Mb") + "_" + i));
+    }
+    if (!list.length) list = [""];
+    return list;
+  }
+
   function collectFromDom() {
     var base = defaultData();
     base.titleDate = val("vipTitleDate") || defaultTitleDate();
     base.titleYear = val("vipTitleYear") || String(new Date().getFullYear());
     base.guests = collectGuestsFromDom();
     base.connecting = collectConnectingFromDom();
-    REMARK_KEYS.forEach(function (r) {
+    base.ajList = collectAjMbFromDom("aj");
+    base.mbList = collectAjMbFromDom("mb");
+    FIXED_REMARK_KEYS.forEach(function (r) {
       base.remarks[r.id] = val("vipRemark_" + r.id);
     });
+    base.remarks.aj = base.ajList.filter(Boolean).join("\n");
+    base.remarks.mb = base.mbList.filter(Boolean).join("\n");
     /* 하위호환 필드 */
     base.aj = { main: base.remarks.aj || "", annex: "" };
     base.mb = base.remarks.mb || "";
@@ -259,7 +303,7 @@
           '">' +
           '<textarea id="' +
           guestId(i, "section") +
-          '" rows="2" class="vip-sec-input" autocomplete="off" aria-label="구분"></textarea>' +
+          '" rows="1" class="vip-sec-input nh-autosize" autocomplete="off" aria-label="구분"></textarea>' +
           "</td>";
       } else {
         cells +=
@@ -272,7 +316,7 @@
         cells +=
           '<td><textarea id="' +
           guestId(i, f) +
-          '" rows="2" autocomplete="off"></textarea></td>';
+          '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
       });
       cells +=
         '<td class="nh-row-actions">' +
@@ -287,6 +331,7 @@
         setVal(guestId(i, f), g[f]);
       });
     }
+    autosizeAllIn(tbody);
   }
 
   function rebuildConnectingBody(connecting) {
@@ -310,7 +355,7 @@
         var item = connecting[idx] || emptyConnecting();
         var status = String(item.status || "CLOSE").toUpperCase() === "OPEN" ? "OPEN" : "CLOSE";
         html +=
-          '<td><textarea class="vip-conn-rooms" id="vipConnRooms_' +
+          '<td><textarea class="vip-conn-rooms nh-autosize" id="vipConnRooms_' +
           idx +
           '" rows="1" placeholder="예: 923-925" autocomplete="off"></textarea></td>' +
           '<td class="vip-conn-mid">중간문</td>' +
@@ -338,6 +383,44 @@
         setVal("vipConnRooms_" + idx2, (connecting[idx2] && connecting[idx2].rooms) || "");
       }
     }
+    autosizeAllIn(tbody);
+  }
+
+  function rebuildAjMbBody(kind, values) {
+    var tbody = document.getElementById(kind === "aj" ? "vipAjBody" : "vipMbBody");
+    if (!tbody) return;
+    values = Array.isArray(values) && values.length ? values : [""];
+    if (kind === "aj") ajCount = Math.max(MIN_AJMB_ROWS, values.length);
+    else mbCount = Math.max(MIN_AJMB_ROWS, values.length);
+    var count = kind === "aj" ? ajCount : mbCount;
+    var prefix = kind === "aj" ? "vipAj_" : "vipMb_";
+    var label = kind === "aj" ? "AJ" : "MB";
+    var removeAttr = kind === "aj" ? "data-vip-aj-remove" : "data-vip-mb-remove";
+    tbody.innerHTML = "";
+    var i;
+    for (i = 0; i < count; i++) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<th scope="row" class="vip-remark-label">' +
+        (i === 0 ? label : "") +
+        "</th>" +
+        '<td><textarea id="' +
+        prefix +
+        i +
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
+        '<td class="nh-row-actions">' +
+        '<button type="button" class="nh-row-btn nh-row-btn--minus" ' +
+        removeAttr +
+        '="' +
+        i +
+        '" title="행 삭제" aria-label="' +
+        label +
+        ' 행 삭제">−</button>' +
+        "</td>";
+      tbody.appendChild(tr);
+      setVal(prefix + i, values[i] != null ? values[i] : "");
+    }
+    autosizeAllIn(tbody);
   }
 
   function ensureRemarksBuilt() {
@@ -345,7 +428,7 @@
     if (!tbody || tbody.__hkBuilt) return;
     tbody.__hkBuilt = true;
     tbody.innerHTML = "";
-    REMARK_KEYS.forEach(function (r) {
+    FIXED_REMARK_KEYS.forEach(function (r) {
       var tr = document.createElement("tr");
       if (r.highlight === "green") tr.className = "vip-row--green";
       tr.innerHTML =
@@ -354,20 +437,66 @@
         "</th>" +
         '<td><textarea id="vipRemark_' +
         r.id +
-        '" rows="2" autocomplete="off"></textarea></td>';
+        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
       tbody.appendChild(tr);
     });
   }
 
-  function fillRemarks(pack) {
-    REMARK_KEYS.forEach(function (r) {
-      var v = pack.remarks && pack.remarks[r.id];
-      if (r.id === "aj" && !v && pack.aj) {
-        v = [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ");
-      }
-      if (r.id === "mb" && !v && pack.mb) v = pack.mb;
-      setVal("vipRemark_" + r.id, v);
+  function normalizeAjMbList(pack, kind) {
+    if (kind === "aj" && Array.isArray(pack.ajList) && pack.ajList.length) {
+      return pack.ajList.map(function (v) {
+        return v != null ? String(v) : "";
+      });
+    }
+    if (kind === "mb" && Array.isArray(pack.mbList) && pack.mbList.length) {
+      return pack.mbList.map(function (v) {
+        return v != null ? String(v) : "";
+      });
+    }
+    var single = "";
+    if (kind === "aj") {
+      single =
+        (pack.remarks && pack.remarks.aj) ||
+        (pack.aj && [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ")) ||
+        "";
+    } else {
+      single = (pack.remarks && pack.remarks.mb) || pack.mb || "";
+    }
+    if (!single) return [""];
+    return String(single).split(/\n/).map(function (s) {
+      return s;
     });
+  }
+
+  function fillRemarks(pack) {
+    FIXED_REMARK_KEYS.forEach(function (r) {
+      setVal("vipRemark_" + r.id, pack.remarks && pack.remarks[r.id]);
+    });
+  }
+
+  function addAjMbRow(kind) {
+    if (!canEdit()) return;
+    var list = collectAjMbFromDom(kind);
+    list.push("");
+    rebuildAjMbBody(kind, list);
+    markDirty();
+    syncEditLock();
+  }
+
+  function removeAjMbRow(kind, idx) {
+    if (!canEdit()) return;
+    var list = collectAjMbFromDom(kind);
+    if (list.length <= MIN_AJMB_ROWS) {
+      list[idx] = "";
+      rebuildAjMbBody(kind, list);
+      markDirty();
+      syncEditLock();
+      return;
+    }
+    list.splice(idx, 1);
+    rebuildAjMbBody(kind, list);
+    markDirty();
+    syncEditLock();
   }
 
   function addGuestRow() {
@@ -491,10 +620,14 @@
         el.id === "btnVipGuestAdd" ||
         el.id === "btnVipGuestMerge" ||
         el.id === "btnVipConnAdd" ||
+        el.id === "btnVipAjAdd" ||
+        el.id === "btnVipMbAdd" ||
         el.classList.contains("vip-conn-status") ||
         el.classList.contains("vip-row-check") ||
         el.hasAttribute("data-vip-guest-remove") ||
-        el.hasAttribute("data-vip-conn-remove-row")
+        el.hasAttribute("data-vip-conn-remove-row") ||
+        el.hasAttribute("data-vip-aj-remove") ||
+        el.hasAttribute("data-vip-mb-remove")
       ) {
         el.disabled = !editable;
         return;
@@ -533,10 +666,13 @@
     setVal("vipTitleYear", pack.titleYear || String(new Date().getFullYear()));
     rebuildGuestsBody(pack.guests);
     rebuildConnectingBody(pack.connecting);
+    rebuildAjMbBody("aj", normalizeAjMbList(pack, "aj"));
+    rebuildAjMbBody("mb", normalizeAjMbList(pack, "mb"));
     fillRemarks(pack);
     dirty = false;
     syncEditLock();
     syncDirtyUi();
+    autosizeAllIn(document.getElementById("vipCheckInPanel"));
   }
 
   function onSave() {
@@ -556,6 +692,8 @@
     setVal("vipTitleYear", pack.titleYear);
     rebuildGuestsBody(pack.guests);
     rebuildConnectingBody(pack.connecting);
+    rebuildAjMbBody("aj", pack.ajList);
+    rebuildAjMbBody("mb", pack.mbList);
     fillRemarks(pack);
     persist(collectFromDom(), true);
     if (typeof opts.toast === "function") opts.toast("VIP 체크인 리스트 초기화됨");
@@ -639,7 +777,15 @@
       if (!c || !(c.rooms || c.status)) return;
       aoa.push(["커넥팅", c.rooms || "", "중간문", c.status || "CLOSE", "", "", "", "", ""]);
     });
-    REMARK_KEYS.forEach(function (r) {
+    (pack.ajList || []).forEach(function (v) {
+      if (!v) return;
+      aoa.push(["AJ", v, "", "", "", "", "", "", ""]);
+    });
+    (pack.mbList || []).forEach(function (v) {
+      if (!v) return;
+      aoa.push(["MB", v, "", "", "", "", "", "", ""]);
+    });
+    FIXED_REMARK_KEYS.forEach(function (r) {
       var v = (pack.remarks && pack.remarks[r.id]) || "";
       if (!v) return;
       aoa.push([r.label, v, "", "", "", "", "", "", ""]);
@@ -681,7 +827,10 @@
     bound = true;
     var panel = document.getElementById("vipCheckInPanel");
     if (panel) {
-      panel.addEventListener("input", markDirty);
+      panel.addEventListener("input", function (e) {
+        markDirty();
+        if (e && e.target) autosizeTextarea(e.target);
+      });
       panel.addEventListener("change", markDirty);
       panel.addEventListener("click", function (e) {
         var statusBtn = e.target.closest("[data-vip-conn-status]");
@@ -700,6 +849,18 @@
         if (connRm) {
           e.preventDefault();
           removeConnectingRow(Number(connRm.getAttribute("data-vip-conn-remove-row")));
+          return;
+        }
+        var ajRm = e.target.closest("[data-vip-aj-remove]");
+        if (ajRm) {
+          e.preventDefault();
+          removeAjMbRow("aj", Number(ajRm.getAttribute("data-vip-aj-remove")));
+          return;
+        }
+        var mbRm = e.target.closest("[data-vip-mb-remove]");
+        if (mbRm) {
+          e.preventDefault();
+          removeAjMbRow("mb", Number(mbRm.getAttribute("data-vip-mb-remove")));
         }
       });
     }
@@ -715,6 +876,14 @@
     if (mergeBtn) mergeBtn.addEventListener("click", mergeSelectedGuestRows);
     var addConn = document.getElementById("btnVipConnAdd");
     if (addConn) addConn.addEventListener("click", addConnectingRow);
+    var addAj = document.getElementById("btnVipAjAdd");
+    if (addAj) addAj.addEventListener("click", function () {
+      addAjMbRow("aj");
+    });
+    var addMb = document.getElementById("btnVipMbAdd");
+    if (addMb) addMb.addEventListener("click", function () {
+      addAjMbRow("mb");
+    });
   }
 
   function init(userOpts) {

@@ -1098,12 +1098,22 @@
       titleDate: "",
       titleYear: "",
       guests: [
-        { section: "V4", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
-        { section: "EI", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
-        { section: "SA", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
+        { section: "", mergePrev: false, guestName: "", roomNo: "", roomStatus: "", roomType: "", rsvNo: "", eta: "", checkOut: "", remark: "" },
       ],
       sections: { V4: [], EI: [], SA: [], NPS: [] },
-      connecting: [],
+      connecting: [
+        { rooms: "923-925", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "936-938", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "857-858", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "1220-1222", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "1120-1122", midDoor: "중간문", status: "CLOSE" },
+        { rooms: "1210-1216", midDoor: "중간문", status: "CLOSE" },
+      ],
+      ajList: [""],
+      mbList: [""],
       aj: { main: "", annex: "" },
       mb: "",
       remarks: {},
@@ -1187,9 +1197,10 @@
     }
     if (!guests.length) {
       guests = [
-        normalizeVipGuest(null, "V4"),
-        normalizeVipGuest(null, "EI"),
-        normalizeVipGuest(null, "SA"),
+        normalizeVipGuest(null, ""),
+        normalizeVipGuest(null, ""),
+        normalizeVipGuest(null, ""),
+        normalizeVipGuest(null, ""),
       ];
     }
     if (guests[0]) guests[0].mergePrev = false;
@@ -1211,13 +1222,20 @@
       });
     });
 
+    var defaultConnRooms = [
+      "923-925",
+      "936-938",
+      "857-858",
+      "1220-1222",
+      "1120-1122",
+      "1210-1216",
+    ];
     var connecting = Array.isArray(raw.connecting) ? raw.connecting : [];
     d.connecting = [];
     if (!connecting.length) {
-      var ci;
-      for (ci = 0; ci < 6; ci++) {
-        d.connecting.push({ rooms: "", midDoor: "중간문", status: "CLOSE" });
-      }
+      defaultConnRooms.forEach(function (rooms) {
+        d.connecting.push({ rooms: rooms, midDoor: "중간문", status: "CLOSE" });
+      });
     } else {
       connecting.forEach(function (c) {
         c = c || {};
@@ -1228,6 +1246,14 @@
           midDoor: "중간문",
           status: st,
         });
+      });
+    }
+    var allConnBlank = d.connecting.every(function (c) {
+      return !(c && String(c.rooms || "").trim());
+    });
+    if (allConnBlank) {
+      d.connecting = defaultConnRooms.map(function (rooms) {
+        return { rooms: rooms, midDoor: "중간문", status: "CLOSE" };
       });
     }
 
@@ -1256,6 +1282,20 @@
     if (!d.remarks.mb && d.mb) d.remarks.mb = d.mb;
     if (d.remarks.aj && !d.aj.main) d.aj = { main: d.remarks.aj, annex: "" };
     if (d.remarks.mb && !d.mb) d.mb = d.remarks.mb;
+
+    function normList(arr, fallback) {
+      if (Array.isArray(arr) && arr.length) {
+        return arr.map(function (v) {
+          return v != null ? String(v) : "";
+        });
+      }
+      if (fallback) return String(fallback).split(/\n/);
+      return [""];
+    }
+    d.ajList = normList(raw.ajList, d.remarks.aj);
+    d.mbList = normList(raw.mbList, d.remarks.mb);
+    d.remarks.aj = d.ajList.filter(Boolean).join("\n");
+    d.remarks.mb = d.mbList.filter(Boolean).join("\n");
     return d;
   }
 
