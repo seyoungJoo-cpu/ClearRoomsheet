@@ -164,6 +164,18 @@
     return el ? String(el.value || "").trim() : "";
   }
 
+  function normalizeRoomKey(s) {
+    return String(s == null ? "" : s)
+      .replace(/\s+/g, "")
+      .toLowerCase();
+  }
+
+  function roomMatchesFilter(roomNo, query) {
+    var q = normalizeRoomKey(query);
+    if (!q) return true;
+    return normalizeRoomKey(roomNo).indexOf(q) >= 0;
+  }
+
   function resetForm() {
     editingId = "";
     formShipType = "cod";
@@ -189,14 +201,28 @@
     if (!tbody) return;
     var pack = loadPack();
     var records = (pack.records || []).slice();
+    var roomQuery = getField("trackItRoomNo");
+    var filtered = records.filter(function (row) {
+      return roomMatchesFilter(row && row.roomNo, roomQuery);
+    });
     tbody.innerHTML = "";
-    if (!records.length) {
-      if (empty) empty.hidden = false;
+    if (!filtered.length) {
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = roomQuery
+          ? "해당 객실번호의 Track IT가 없습니다."
+          : records.length
+            ? "표시할 Track IT가 없습니다."
+            : "등록된 Track IT가 없습니다.";
+      }
       return;
     }
-    if (empty) empty.hidden = true;
+    if (empty) {
+      empty.hidden = true;
+      empty.textContent = "등록된 Track IT가 없습니다.";
+    }
     var editable = canEdit();
-    records.forEach(function (row) {
+    filtered.forEach(function (row) {
       var tr = document.createElement("tr");
       tr.setAttribute("data-id", row.id);
       if (editable) {
@@ -284,6 +310,7 @@
     clearFormDirty();
     syncShipTypeUi();
     syncFormModeUi();
+    renderTable();
   }
 
   function deleteRecord(id) {
@@ -536,6 +563,14 @@
     if (cancelBtn) {
       cancelBtn.addEventListener("click", function () {
         resetForm();
+        renderTable();
+      });
+    }
+
+    var roomInput = document.getElementById("trackItRoomNo");
+    if (roomInput) {
+      roomInput.addEventListener("input", function () {
+        markFormDirty();
         renderTable();
       });
     }
