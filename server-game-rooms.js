@@ -66,6 +66,7 @@ function roomSnapshot(room) {
       name: p.name,
       slot: p.slot,
       ready: !!p.ready,
+      isAi: !!p.isAi,
     })),
     max: room.max || GAMES[room.game].max,
   };
@@ -99,7 +100,7 @@ function publicState(room) {
 function rtsVisionRadius(e) {
   if (!e) return 0;
   if (e.type === "nexus") return 340;
-  if (e.type === "barracks") return 200;
+  if (e.type === "barracks" || e.type === "advBarracks") return 200;
   if (e.type === "turret") return 220;
   if (e.type === "worker") return 210;
   if (e.type === "ranged") return 240;
@@ -201,6 +202,7 @@ function publicRtsState(room, viewer) {
     H: s.H,
     mode: s.mode,
     gold: s.gold,
+    ages: s.ages || [],
     entities: ents,
     minerals: minerals,
     obstacles: s.obstacles,
@@ -230,8 +232,16 @@ function allReady(room) {
     return humans.length >= 2 && humans.length <= max && readyOk;
   }
   if (room.game === "rts") {
+    if (rtsIsSolo(room.mode)) {
+      ensureRtsAi(room);
+      const humans = room.players.filter((p) => !p.isAi);
+      const readyOk = room.players.every((p) => p.ready || p.isAi);
+      return humans.length === 1 && room.players.length >= 2 && readyOk;
+    }
     const need = rtsModeNeed(room.mode);
     const max = rtsModeMax(room.mode) || need;
+    const humans = room.players.filter((p) => !p.isAi);
+    const readyOk = room.players.every((p) => p.ready || p.isAi);
     return humans.length >= Math.min(2, need) && humans.length <= max && humans.length >= 2 && readyOk;
   }
   if (room.game === "ageofwar") {
@@ -1148,22 +1158,34 @@ function checkTankRoundEnd(room) {
 
 
 /* ===================== RTS ===================== */
+const RTS_AGE_NAMES = ["암흑시대", "봉건시대", "성주시대", "제국시대"];
+const RTS_AGE_COST = [0, 220, 380, 550]; // reach age 1/2/3
+const RTS_BARRACKS_UP_COST = [0, 120, 200, 300]; // reach tier 1/2/3
 const RTS_UNITS = {
-  worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5 },
-  melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5 },
-  ranged: { cost: 100, hp: 55, dps: 12, r: 14, speed: 75, range: 120, train: 5.5 },
-  bomber: { cost: 140, hp: 45, dps: 40, r: 14, speed: 95, range: 35, train: 7 },
-  tanker: { cost: 160, hp: 200, dps: 10, r: 22, speed: 50, range: 32, train: 8 },
-  duck: { cost: 30, hp: 18, dps: 8, r: 12, speed: 110, range: 24, train: 2.5 },
+  worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5, age: 0, from: "nexus" },
+  melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5, age: 0, from: "barracks" },
+  ranged: { cost: 100, hp: 55, dps: 12, r: 14, speed: 75, range: 120, train: 5.5, age: 0, from: "barracks" },
+  duck: { cost: 30, hp: 18, dps: 8, r: 12, speed: 110, range: 24, train: 2.5, age: 0, from: "barracks" },
+  swordsman: { cost: 110, hp: 120, dps: 18, r: 16, speed: 80, range: 28, train: 5.5, age: 1, from: "barracks" },
+  archer: { cost: 120, hp: 65, dps: 15, r: 14, speed: 78, range: 140, train: 5.5, age: 1, from: "barracks" },
+  knight: { cost: 180, hp: 160, dps: 22, r: 18, speed: 95, range: 32, train: 7, age: 2, from: "barracks" },
+  crossbow: { cost: 150, hp: 75, dps: 18, r: 14, speed: 72, range: 150, train: 6.5, age: 2, from: "barracks" },
+  bomber: { cost: 160, hp: 50, dps: 45, r: 14, speed: 90, range: 40, train: 7.5, age: 2, from: "barracks" },
+  champion: { cost: 220, hp: 200, dps: 28, r: 17, speed: 82, range: 30, train: 8, age: 3, from: "barracks" },
+  musketeer: { cost: 200, hp: 85, dps: 26, r: 14, speed: 70, range: 170, train: 7.5, age: 3, from: "barracks" },
+  tanker: { cost: 240, hp: 280, dps: 16, r: 22, speed: 55, range: 36, train: 9, age: 3, from: "barracks" },
+  cannon: { cost: 280, hp: 90, dps: 55, r: 16, speed: 45, range: 200, train: 10, age: 3, from: "barracks" },
 };
 const RTS_BUILD = {
-  nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 8 },
-  barracks: { cost: 150, hp: 300, w: 48, h: 48, build: 5 },
-  turret: { cost: 120, hp: 120, w: 36, h: 36, range: 160, dps: 18, build: 4 },
+  nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 12 },
+  barracks: { cost: 150, hp: 300, w: 48, h: 48, build: 8 },
+  advBarracks: { cost: 280, hp: 420, w: 56, h: 56, build: 11 },
+  turret: { cost: 120, hp: 120, w: 36, h: 36, range: 160, dps: 18, build: 6 },
 };
 const RTS_NEXUS_TURRET_BAN_R = 110;
 const RTS_MAX_QUEUE = 5;
 const RTS_MODES = {
+  solo: { max: 2, need: 2, team: false, label: "싱글 vs AI", solo: true },
   "1v1": { max: 2, need: 2, team: false, label: "1:1" },
   ffa3: { max: 3, need: 3, team: false, label: "1:1:1" },
   ffa4: { max: 4, need: 4, team: false, label: "1:1:1:1" },
@@ -1182,6 +1204,40 @@ function rtsModeMax(mode) {
 }
 function rtsIsTeam(mode) {
   return !!(RTS_MODES[mode] && RTS_MODES[mode].team);
+}
+function rtsIsSolo(mode) {
+  return !!(RTS_MODES[mode] && RTS_MODES[mode].solo);
+}
+function rtsPlayerAge(s, owner) {
+  if (!Array.isArray(s.ages)) s.ages = [];
+  if (s.ages[owner] == null || isNaN(s.ages[owner])) s.ages[owner] = 0;
+  return Math.max(0, Math.min(3, s.ages[owner] | 0));
+}
+function rtsIsBarracksType(t) {
+  return t === "barracks" || t === "advBarracks";
+}
+function ensureRtsAi(room) {
+  if (!rtsIsSolo(room.mode)) return false;
+  if (room.players.some((p) => p.isAi)) return false;
+  const used = new Set(room.players.map((p) => p.slot));
+  let slot = 0;
+  while (used.has(slot)) slot++;
+  room.players.push({
+    id: nextPlayerId++,
+    name: "AI 적군",
+    ws: null,
+    slot: slot,
+    ready: true,
+    input: defaultInput("rts"),
+    inputQ: [],
+    isAi: true,
+    roomCode: room.code,
+  });
+  room.players.forEach(function (p, i) {
+    p.slot = i;
+    p.team = rtsTeamOf(i, room.mode);
+  });
+  return true;
 }
 function rtsTeamOf(slot, mode) {
   if (rtsIsTeam(mode)) return slot < 2 ? 0 : 1;
@@ -1282,6 +1338,7 @@ function rtsMkSide(uidRef, owner, base, mode, W, H) {
     w: RTS_BUILD.nexus.w,
     h: RTS_BUILD.nexus.h,
     atkCd: 0,
+    tier: 0,
   };
   const minerals = [
     { x: baseX - sx * 108, y: baseY - sy * 102 },
@@ -1448,6 +1505,7 @@ function initRts(room) {
     const side = rtsMkSide(uidRef, i, layout[i % layout.length], mode, W, H);
     side.nexus.queue = [];
     side.nexus.trainT = 0;
+    side.nexus.tier = 0;
     side.nexus.label = (room.players[i] && room.players[i].name) || ("P" + (i + 1));
     entities.push(side.nexus);
     for (let w = 0; w < side.workers.length; w++) entities.push(side.workers[w]);
@@ -1504,6 +1562,9 @@ function initRts(room) {
     mode: mode,
     nextId: uidRef.v,
     gold: gold,
+    ages: room.players.map(function () {
+      return 0;
+    }),
     entities: entities,
     minerals: minerals,
     obstacles: obstacles,
@@ -1563,6 +1624,10 @@ function rtsApplyInput(room, s, owner, inp, mode) {
     }
   } else if (inp.cmd === "train" || (inp.cmd === "build" && inp.unitType && RTS_UNITS[inp.unitType])) {
     rtsEnqueueTrain(s, owner, String(inp.unitType || ""), ids);
+  } else if (inp.cmd === "upgradeAge") {
+    rtsUpgradeAge(s, owner, ids);
+  } else if (inp.cmd === "upgradeBarracks") {
+    rtsUpgradeBarracks(s, owner, ids);
   } else if (inp.cmd === "build") {
     const bt = inp.buildType;
     const def = RTS_BUILD[bt];
@@ -1571,6 +1636,7 @@ function rtsApplyInput(room, s, owner, inp, mode) {
       const y = Math.max(40, Math.min(s.H - 40, Number(inp.y) || 0));
       if (rtsBuildAllowed(s, owner, bt, x, y)) {
         s.gold[owner] -= def.cost;
+        const buildSec = def.build || 4;
         const bld = {
           id: s.nextId++,
           kind: "building",
@@ -1587,11 +1653,14 @@ function rtsApplyInput(room, s, owner, inp, mode) {
           queue: [],
           trainT: 0,
           building: true,
-          buildLeft: def.build || 4,
+          buildLeft: buildSec,
+          buildTotal: buildSec,
+          tier: bt === "advBarracks" ? 2 : bt === "barracks" ? 0 : 0,
         };
         if (bt === "nexus") {
           const pl = room.players.find((pp) => pp.slot === owner);
           bld.label = (pl && pl.name) || ("P" + (owner + 1));
+          bld.tier = rtsPlayerAge(s, owner);
         }
         s.entities.push(bld);
       }
@@ -1628,6 +1697,8 @@ function rtsBuildAllowed(s, owner, bt, x, y) {
   if (rtsCircleHitsObstacles(s, x, y, r * 0.7)) return false;
   // StarCraft-like: only build on explored (scouted) ground
   if (!rtsIsExplored(s, owner, x, y)) return false;
+  const age = rtsPlayerAge(s, owner);
+  if (bt === "advBarracks" && age < 2) return false;
   const ownNexus = s.entities.filter((e) => e.type === "nexus" && e.owner === owner && e.hp > 0);
   if (bt === "nexus") {
     const nearWorker = s.entities.some(
@@ -1648,23 +1719,106 @@ function rtsBuildAllowed(s, owner, bt, x, y) {
   return true;
 }
 
+function rtsUpgradeAge(s, owner, preferIds) {
+  const cur = rtsPlayerAge(s, owner);
+  if (cur >= 3) return false;
+  const next = cur + 1;
+  const cost = RTS_AGE_COST[next] || 0;
+  if (rtsOwnerGold(s, owner) < cost) return false;
+  const ids = Array.isArray(preferIds) ? preferIds.map(Number) : [];
+  let nexus = null;
+  for (const id of ids) {
+    const e = rtsFind(s, id);
+    if (e && e.type === "nexus" && e.owner === owner && e.hp > 0 && !e.building) {
+      nexus = e;
+      break;
+    }
+  }
+  if (!nexus) {
+    nexus = s.entities.find((e) => e.type === "nexus" && e.owner === owner && e.hp > 0 && !e.building) || null;
+  }
+  if (!nexus) return false;
+  s.gold[owner] -= cost;
+  if (!Array.isArray(s.ages)) s.ages = [];
+  s.ages[owner] = next;
+  nexus.tier = next;
+  nexus.maxHp = Math.floor((RTS_BUILD.nexus.hp || 900) * (1 + next * 0.12));
+  nexus.hp = Math.min(nexus.maxHp, (nexus.hp || 0) + 80);
+  return true;
+}
+
+function rtsUpgradeBarracks(s, owner, preferIds) {
+  const age = rtsPlayerAge(s, owner);
+  if (age < 1) return false;
+  const ids = Array.isArray(preferIds) ? preferIds.map(Number) : [];
+  let bar = null;
+  for (const id of ids) {
+    const e = rtsFind(s, id);
+    if (e && rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building) {
+      bar = e;
+      break;
+    }
+  }
+  if (!bar) {
+    const cands = s.entities.filter(
+      (e) => rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building
+    );
+    cands.sort((a, b) => (a.tier || 0) - (b.tier || 0));
+    bar = cands[0] || null;
+  }
+  if (!bar) return false;
+  const curTier = bar.tier != null ? bar.tier | 0 : bar.type === "advBarracks" ? 2 : 0;
+  if (curTier >= age) return false;
+  if (curTier >= 3) return false;
+  const next = curTier + 1;
+  const cost = RTS_BARRACKS_UP_COST[next] || 0;
+  if (rtsOwnerGold(s, owner) < cost) return false;
+  s.gold[owner] -= cost;
+  bar.tier = next;
+  if (next >= 2 && bar.type === "barracks") {
+    bar.type = "advBarracks";
+    bar.w = RTS_BUILD.advBarracks.w;
+    bar.h = RTS_BUILD.advBarracks.h;
+  }
+  const baseHp = (RTS_BUILD[bar.type] && RTS_BUILD[bar.type].hp) || 300;
+  bar.maxHp = Math.floor(baseHp * (1 + next * 0.1));
+  bar.hp = Math.min(bar.maxHp, (bar.hp || 0) + 40);
+  return true;
+}
+
 function rtsEnqueueTrain(s, owner, ut, preferIds) {
   const udef = RTS_UNITS[ut];
   if (!udef) return false;
   if (rtsOwnerGold(s, owner) < udef.cost) return false;
-  const needType = ut === "worker" ? "nexus" : "barracks";
+  const age = rtsPlayerAge(s, owner);
+  const needAge = udef.age != null ? udef.age : 0;
+  if (age < needAge) return false;
+  const fromKind = udef.from || (ut === "worker" ? "nexus" : "barracks");
   const ids = Array.isArray(preferIds) ? preferIds.map(Number) : [];
   let from = null;
   for (const id of ids) {
     const e = rtsFind(s, id);
-    if (e && e.type === needType && e.owner === owner && e.hp > 0) {
+    if (!e || e.owner !== owner || e.hp <= 0 || e.building) continue;
+    if (fromKind === "nexus" && e.type === "nexus") {
       from = e;
       break;
     }
+    if (fromKind === "barracks" && rtsIsBarracksType(e.type)) {
+      const tier = e.tier != null ? e.tier | 0 : e.type === "advBarracks" ? 2 : 0;
+      if (tier >= needAge) {
+        from = e;
+        break;
+      }
+    }
   }
   if (!from) {
-    // Fallback: shortest queue among matching buildings
-    const cands = s.entities.filter((e) => e.type === needType && e.owner === owner && e.hp > 0);
+    const cands = s.entities.filter((e) => {
+      if (!e || e.owner !== owner || e.hp <= 0 || e.building) return false;
+      if (fromKind === "nexus") return e.type === "nexus";
+      if (!rtsIsBarracksType(e.type)) return false;
+      const tier = e.tier != null ? e.tier | 0 : e.type === "advBarracks" ? 2 : 0;
+      return tier >= needAge;
+    });
     cands.sort((a, b) => (a.queue || []).length - (b.queue || []).length || (a.trainT || 0) - (b.trainT || 0));
     from = cands[0] || null;
   }
@@ -1735,7 +1889,7 @@ function rtsSpawnUnit(s, from, ut, mode) {
 
 function rtsProcessQueues(s, mode, dt) {
   for (const e of s.entities) {
-    if (e.kind !== "building" || e.hp <= 0) continue;
+    if (e.kind !== "building" || e.hp <= 0 || e.building) continue;
     if (!Array.isArray(e.queue) || !e.queue.length) {
       e.trainT = 0;
       continue;
@@ -1752,6 +1906,105 @@ function rtsProcessQueues(s, mode, dt) {
   }
 }
 
+function rtsAiPush(room, owner, cmd) {
+  const p = room.players.find((pp) => (pp.slot != null ? pp.slot : room.players.indexOf(pp)) === owner);
+  if (!p) return;
+  if (!Array.isArray(p.inputQ)) p.inputQ = [];
+  p.inputQ.push(cmd);
+}
+
+function rtsAiThink(room, s, owner, mode, dt) {
+  if (!s._aiT) s._aiT = [];
+  s._aiT[owner] = (s._aiT[owner] || 0) + dt;
+  if (s._aiT[owner] < 0.55) return;
+  s._aiT[owner] = 0;
+
+  const gold = rtsOwnerGold(s, owner);
+  const age = rtsPlayerAge(s, owner);
+  const nexus = s.entities.find((e) => e.type === "nexus" && e.owner === owner && e.hp > 0);
+  if (!nexus) return;
+  const barracks = s.entities.filter(
+    (e) => rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building
+  );
+  const workers = s.entities.filter((e) => e.type === "worker" && e.owner === owner && e.hp > 0);
+  const army = s.entities.filter(
+    (e) => e.kind === "unit" && e.type !== "worker" && e.owner === owner && e.hp > 0
+  );
+  const enemyNexus = s.entities.find(
+    (e) => e.type === "nexus" && e.hp > 0 && !rtsAllied(owner, e.owner, mode)
+  );
+
+  // Age up when affordable
+  const nextAge = age + 1;
+  if (nextAge <= 3 && gold >= (RTS_AGE_COST[nextAge] || 9999) + 80) {
+    rtsAiPush(room, owner, { cmd: "upgradeAge", selectIds: [nexus.id] });
+    return;
+  }
+
+  // Build first barracks
+  if (!barracks.length && !s.entities.some((e) => rtsIsBarracksType(e.type) && e.owner === owner && e.building)) {
+    if (gold >= RTS_BUILD.barracks.cost) {
+      const sx = nexus.x + (nexus.x < s.W / 2 ? 90 : -90);
+      const sy = nexus.y + (nexus.y < s.H / 2 ? 70 : -70);
+      rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
+      return;
+    }
+  }
+
+  // Upgrade barracks toward current age
+  if (barracks.length) {
+    barracks.sort((a, b) => (a.tier || 0) - (b.tier || 0));
+    const bar = barracks[0];
+    const tier = bar.tier != null ? bar.tier | 0 : bar.type === "advBarracks" ? 2 : 0;
+    if (tier < age) {
+      const cost = RTS_BARRACKS_UP_COST[tier + 1] || 9999;
+      if (gold >= cost + 40) {
+        rtsAiPush(room, owner, { cmd: "upgradeBarracks", selectIds: [bar.id] });
+        return;
+      }
+    }
+  }
+
+  // Adv barracks at age 2+
+  if (
+    age >= 2 &&
+    !s.entities.some((e) => e.type === "advBarracks" && e.owner === owner) &&
+    gold >= RTS_BUILD.advBarracks.cost + 50
+  ) {
+    const sx = nexus.x + (nexus.x < s.W / 2 ? 130 : -130);
+    const sy = nexus.y + (nexus.y < s.H / 2 ? -40 : 40);
+    rtsAiPush(room, owner, { cmd: "build", buildType: "advBarracks", x: sx, y: sy, selectIds: [] });
+    return;
+  }
+
+  if (workers.length < 6 && gold >= RTS_UNITS.worker.cost) {
+    rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });
+    return;
+  }
+
+  const trainOrder = ["cannon", "champion", "musketeer", "tanker", "knight", "bomber", "crossbow", "swordsman", "archer", "melee", "ranged", "duck"];
+  for (let i = 0; i < trainOrder.length; i++) {
+    const ut = trainOrder[i];
+    const def = RTS_UNITS[ut];
+    if (!def || age < (def.age || 0)) continue;
+    if (gold < def.cost) continue;
+    if (army.length > 14 && ut === "duck") continue;
+    rtsAiPush(room, owner, { cmd: "train", unitType: ut, selectIds: barracks.map((b) => b.id) });
+    break;
+  }
+
+  if (enemyNexus && army.length >= 3) {
+    const ids = army.map((u) => u.id);
+    rtsAiPush(room, owner, {
+      cmd: "attack",
+      selectIds: ids,
+      targetId: enemyNexus.id,
+      x: enemyNexus.x,
+      y: enemyNexus.y,
+    });
+  }
+}
+
 function tickRts(room, dt) {
   const s = room.state;
   if (!s) return;
@@ -1761,6 +2014,8 @@ function tickRts(room, dt) {
   if (!Array.isArray(s.entities)) s.entities = [];
   if (!Array.isArray(s.gold)) s.gold = room.players.map(() => RTS_START_GOLD);
   while (s.gold.length < room.players.length) s.gold.push(RTS_START_GOLD);
+  if (!Array.isArray(s.ages)) s.ages = [];
+  while (s.ages.length < room.players.length) s.ages.push(0);
   if (!s.beams) s.beams = [];
   s.beams = s.beams.filter((b) => {
     b.life -= dt;
@@ -1770,6 +2025,9 @@ function tickRts(room, dt) {
   for (const p of room.players) {
     const owner = p.slot != null ? p.slot : room.players.indexOf(p);
     if (s.gold[owner] == null) s.gold[owner] = RTS_START_GOLD;
+    if (p.isAi) {
+      rtsAiThink(room, s, owner, mode, dt);
+    }
     const q = Array.isArray(p.inputQ) ? p.inputQ : [];
     if (q.length) {
       for (let qi = 0; qi < q.length; qi++) {
@@ -2787,6 +3045,7 @@ function lobbyList(game) {
   for (const room of rooms.values()) {
     if (room.game !== game) continue;
     if (room.status !== "lobby") continue;
+    if (game === "rts" && rtsIsSolo(room.mode)) continue;
     list.push({
       code: room.code,
       players: room.players.filter((p) => !p.isAi).length,
@@ -2913,6 +3172,7 @@ function attachGameRooms(httpServer) {
           roomCode: code,
         };
         room.players.push(player);
+        if (game === "rts" && rtsIsSolo(room.mode)) ensureRtsAi(room);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
         // Host gets room first; lobby fan-out deferred off the hot path
@@ -2929,6 +3189,9 @@ function attachGameRooms(httpServer) {
         const room = rooms.get(code);
         if (!room) return error(ws, "room_not_found");
         if (room.status !== "lobby") return error(ws, "room_not_joinable");
+        if (room.game === "rts" && rtsIsSolo(room.mode)) {
+          return error(ws, "room_full");
+        }
         const joinMax = room.max || GAMES[room.game].max;
         if (room.players.length >= joinMax) return error(ws, "room_full");
         const existing = findPlayerByWs(ws);

@@ -3,7 +3,7 @@
 
   var META = {
     tank: { icon: '🛡️', name: '탱크대전', desc: '최대 4인 · FFA/2v2 · 중앙 아이템 · HP5' },
-    rts: { icon: '🏰', name: '미니 RTS', desc: '1:1 / 2:2 / FFA · 본진 파괴' },
+    rts: { icon: '🏰', name: '미니 RTS', desc: '싱글/대결 · 시대 진화 · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '석기→미래 시대 진화 · 라인전' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' },
@@ -15,10 +15,17 @@
   var memoryCreateMode = '1v1';
   var memoryPairs = 18;
   var RTS_MODE_META = {
+    solo: { label: '싱글 vs AI', max: 2 },
     '1v1': { label: '1:1', max: 2 },
     ffa3: { label: '1:1:1', max: 3 },
     ffa4: { label: '1:1:1:1', max: 4 },
     '2v2': { label: '2:2', max: 4 }
+  };
+  var RTS_AGE_NAMES = ['암흑시대', '봉건시대', '성주시대', '제국시대'];
+  var RTS_UNIT_LABELS = {
+    worker: '일꾼', melee: '민병', ranged: '투석병', duck: '오리',
+    swordsman: '검병', archer: '궁병', knight: '기사', crossbow: '석궁병',
+    bomber: '투석기', champion: '챔피언', musketeer: '화승총병', tanker: '팔라딘', cannon: '대포'
   };
   var MEMORY_MODE_META = {
     '1v1': { label: '1:1', max: 2 },
@@ -877,10 +884,10 @@
     }
     if (gameId === 'rts') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
-        [['1v1', '1:1'], ['ffa3', '1:1:1'], ['ffa4', '1:1:1:1'], ['2v2', '2:2']].map(function (mm) {
+        [['solo', '싱글 vs AI'], ['1v1', '1:1'], ['ffa3', '1:1:1'], ['ffa4', '1:1:1:1'], ['2v2', '2:2']].map(function (mm) {
           return '<button type="button" class="hkmp-btn' + (rtsCreateMode === mm[0] ? ' primary' : '') + '" data-rts-mode="' + mm[0] + '">' + mm[1] + '</button>';
         }).join('') +
-        '<span class="hkmp-note">인원 맞춰 Ready 시 시작</span></div>';
+        '<span class="hkmp-note">싱글은 Ready 한 명으로 시작 · AI 자동</span></div>';
     }
     if (gameId === 'memorymp') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
@@ -944,14 +951,21 @@
 
   function renderRoom() {
     if (!room) { view = 'browse'; render(); return; }
-    var players = room.players || [];
+      var players = room.players || [];
     var me = myPlayer();
     var minNeed = (gameId === 'snakes' || gameId === 'tank') ? 2 : (room.max || MAX_PLAYERS[gameId] || 2);
     if (gameId === 'rts') minNeed = room.max || ((RTS_MODE_META[room.mode] && RTS_MODE_META[room.mode].max) || 2);
+    if (gameId === 'rts' && room.mode === 'solo') minNeed = 1;
     if (gameId === 'memorymp') minNeed = room.max || ((MEMORY_MODE_META[room.mode] && MEMORY_MODE_META[room.mode].max) || 2);
     var maxP = room.max || MAX_PLAYERS[gameId] || 2;
     var pendingRoom = !!room._pending;
-    var allReady = !pendingRoom && players.length >= minNeed && players.every(function (p) { return p.ready; });
+    var humans = players.filter(function (p) { return !p.isAi; });
+    var humansReady = humans.length && humans.every(function (p) { return p.ready; });
+    var allReady = !pendingRoom && (
+      (gameId === 'rts' && room.mode === 'solo')
+        ? (humans.length >= 1 && humansReady)
+        : (players.length >= minNeed && players.every(function (p) { return p.ready || p.isAi; }))
+    );
     var rtsLabel = (gameId === 'rts' && room.mode && RTS_MODE_META[room.mode]) ? RTS_MODE_META[room.mode].label : '';
     var memLabel = '';
     if (gameId === 'memorymp') {
@@ -959,17 +973,17 @@
       if (room.pairs) memLabel += ' · ' + room.pairs + '쌍';
     }
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">' + (pendingRoom ? '방 생성 중…' : ('대기실 · ' + players.length + '/' + maxP + '명')) + (rtsLabel ? ' · ' + rtsLabel : '') + (memLabel ? ' · ' + memLabel : '') + '</span>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">' + (pendingRoom ? '방 생성 중…' : ('대기실 · ' + humans.length + '/' + (gameId === 'rts' && room.mode === 'solo' ? 1 : maxP) + '명')) + (rtsLabel ? ' · ' + rtsLabel : '') + (memLabel ? ' · ' + memLabel : '') + '</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave"' + (pendingRoom ? ' disabled' : '') + '>나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
-        var ready = !!p.ready;
+        var ready = !!p.ready || !!p.isAi;
         var isMe = p.id === selfId || p.id === 'me';
         var teamTag = '';
         if (gameId === 'rts' && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
         if (gameId === 'memorymp' && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
         return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' +
-          '<strong>' + esc(p.name || ('P' + (i + 1))) + '</strong>' +
-          '<span style="flex:1;color:#88a09a;font-size:12px">' + (pendingRoom ? '생성 중' : (ready ? 'Ready' : '대기')) + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
+          '<strong>' + esc(p.name || ('P' + (i + 1))) + (p.isAi ? ' ·AI' : '') + '</strong>' +
+          '<span style="flex:1;color:#88a09a;font-size:12px">' + (pendingRoom ? '생성 중' : (p.isAi ? 'Ready' : (ready ? 'Ready' : '대기'))) + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
       }).join('') + '</div>' +
       '<div class="hkmp-row">' +
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (pendingRoom || (me && me.ready) ? ' disabled' : '') + '>Ready</button>' +
@@ -977,10 +991,11 @@
       '<div class="hkmp-note">' +
         (pendingRoom ? '서버 응답을 기다리는 중…' :
         ((gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
-        (gameId === 'rts' ? ((rtsLabel || 'RTS') + ' · 본진·일꾼 자동 배치 · ') : '') +
+        (gameId === 'rts' ? ((rtsLabel || 'RTS') + (room.mode === 'solo' ? ' · AI 대전 · ' : ' · 본진·일꾼 자동 배치 · ')) : '') +
         (gameId === 'memorymp' ? ((memLabel || '메모리') + (room.mode === '2v2' ? ' · 팀원 각 1장씩 · ' : ' · ') ) : '') +
-        (allReady && players.length >= minNeed ? '모두 준비됨 — 곧 시작합니다' :
-        (players.length < minNeed ? '대기 중… (' + players.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작')) +
+        (allReady ? '모두 준비됨 — 곧 시작합니다' :
+        (gameId === 'rts' && room.mode === 'solo' ? 'Ready하면 AI와 바로 시작' :
+        (humans.length < minNeed ? '대기 중… (' + humans.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작'))) +
         (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : ''))) + '</div>';
     var leaveBtn = refs.body.querySelector('[data-act="leave"]');
     var readyBtn = refs.body.querySelector('[data-act="ready"]');
@@ -1166,7 +1181,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · HP5 · 중앙 아이템(회복/속도/실드/연사) · 목숨 3',
-      rts: '좌클릭 배럭/본진 선택 후 유닛 생산 · 우클릭 이동/공격 · 정찰한 곳만 건설',
+      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 정찰한 곳만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -1177,16 +1192,45 @@
   function buildToolbar() {
     if (!refs.tools) return;
     if (gameId === 'rts') {
-      refs.tools.innerHTML = [
-        ['build:nexus', '확장본진 ·400'], ['build:barracks', '배럭 ·150'], ['build:turret', '포탑 ·120'],
-        ['train:worker', '일꾼(1) ·50 ·3.5s'], ['train:melee', '전사(2) ·80 ·5s'], ['train:ranged', '사수(3) ·100 ·5.5s'],
-        ['train:bomber', '폭탄(4) ·140 ·7s'], ['train:tanker', '탱커(5) ·160 ·8s'], ['train:duck', '오리(6) ·30 ·2.5s']
-      ].map(function (x) {
+      var st = lastState || {};
+      var age = (st.ages && st.ages[mySlot()] != null) ? st.ages[mySlot()] : 0;
+      var tools = [
+        ['build:nexus', '확장본진 ·400'],
+        ['build:barracks', '배럭 ·150'],
+        ['build:turret', '포탑 ·120']
+      ];
+      if (age >= 2) tools.push(['build:advBarracks', '고급배럭 ·280']);
+      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 220, 380, 550][age + 1] || '—'))]);
+      tools.push(['upgradeBarracks', '배럭 업 ·' + ([0, 120, 200, 300][Math.min(3, age)] || '120')]);
+      tools.push(['train:worker', '일꾼 ·50']);
+      var byAge = [
+        [['melee', '민병 ·80'], ['ranged', '투석병 ·100'], ['duck', '오리 ·30']],
+        [['swordsman', '검병 ·110'], ['archer', '궁병 ·120']],
+        [['knight', '기사 ·180'], ['crossbow', '석궁병 ·150'], ['bomber', '투석기 ·160']],
+        [['champion', '챔피언 ·220'], ['musketeer', '화승총 ·200'], ['tanker', '팔라딘 ·240'], ['cannon', '대포 ·280']]
+      ];
+      for (var ai = 0; ai <= age && ai < byAge.length; ai++) {
+        byAge[ai].forEach(function (u) {
+          tools.push(['train:' + u[0], u[1]]);
+        });
+      }
+      refs.tools.innerHTML = tools.map(function (x) {
         return '<button type="button" class="hkmp-btn" data-tool="' + x[0] + '">' + x[1] + '</button>';
       }).join('');
       Array.prototype.forEach.call(refs.tools.querySelectorAll('[data-tool]'), function (btn) {
         btn.onclick = function () {
-          var t = btn.getAttribute('data-tool').split(':');
+          var key = btn.getAttribute('data-tool');
+          if (key === 'upgradeAge') {
+            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'upgradeAge' } });
+            toast('본진 시대 업그레이드 요청');
+            return;
+          }
+          if (key === 'upgradeBarracks') {
+            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'upgradeBarracks' } });
+            toast('배럭 업그레이드 요청 (본진 시대 먼저)');
+            return;
+          }
+          var t = key.split(':');
           if (t[0] === 'build') {
             pendingBuild = { mode: 'build', buildType: t[1] };
             toast(t[1] === 'nexus' ? '일꾼 옆에 확장 본진 위치를 클릭' : '건설 위치를 클릭');
@@ -1195,10 +1239,11 @@
             send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'train', unitType: t[1] } });
             pendingBuild = null;
             renderToolbarHighlight();
-            toast(t[1] + ' 대기열에 추가');
+            toast((RTS_UNIT_LABELS[t[1]] || t[1]) + ' 대기열에 추가');
           }
         };
       });
+      refs.tools.setAttribute('data-age', String(age));
     } else if (gameId === 'ageofwar') {
       var stAge = lastState || {};
       var age = (stAge.age && stAge.age[mySlot()] != null) ? stAge.age[mySlot()] : 0;
@@ -1336,7 +1381,7 @@
       var e = ents[i];
       if (!e || e.hp <= 0 || e.fogGhost) continue;
       var hitR;
-      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'turret') {
+      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'advBarracks' || e.type === 'turret') {
         hitR = Math.max(e.w || 40, e.h || 40) * 0.55;
       } else {
         hitR = (e.r || 12) + 6;
@@ -1388,7 +1433,7 @@
           if (Math.hypot((e.x || 0) - drag.x1, (e.y || 0) - drag.y1) < 20) {
             if (!unitHit) unitHit = e;
           }
-        } else if (e.type === 'nexus' || e.type === 'barracks') {
+        } else if (e.type === 'nexus' || e.type === 'barracks' || e.type === 'advBarracks') {
           if (hitBox(e, 4)) {
             if (!bldHit) bldHit = e;
           }
@@ -1402,7 +1447,7 @@
     ents.forEach(function (u) {
       if (!u || u.owner !== slot || u.hp <= 0 || u.fogGhost) return;
       if (u.kind === 'unit' && inRect(u)) selectIds.push(u.id);
-      else if ((u.type === 'nexus' || u.type === 'barracks') && inRect(u)) selectIds.push(u.id);
+      else if ((u.type === 'nexus' || u.type === 'barracks' || u.type === 'advBarracks') && inRect(u)) selectIds.push(u.id);
     });
     send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: null } });
   }
@@ -1432,6 +1477,7 @@
     } else if (gameId === 'rts') {
       var golds = st.gold || [];
       html += '<span class="hkmp-pill">' + ((st.mode && RTS_MODE_META[st.mode]) ? RTS_MODE_META[st.mode].label : 'RTS') + '</span>';
+      html += '<span class="hkmp-pill">시대 <b>' + (RTS_AGE_NAMES[(st.ages && st.ages[mySlot()]) || 0] || '암흑시대') + '</b></span>';
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
       (function () {
@@ -1441,8 +1487,10 @@
           for (var ei = 0; ei < ents.length; ei++) {
             var se = ents[ei];
             if (!se || se.id != selectIds[si] || se.owner !== slotNow) continue;
-            if (se.type === 'barracks') {
-              html += '<span class="hkmp-pill" style="color:#9ae6b4">생산지 <b>배럭</b></span>';
+            if (se.type === 'barracks' || se.type === 'advBarracks') {
+              html += '<span class="hkmp-pill" style="color:#9ae6b4">생산지 <b>' +
+                (se.type === 'advBarracks' ? '고급배럭' : '배럭') +
+                ' T' + ((se.tier != null ? se.tier : 0) + 1) + '</b></span>';
               return;
             }
             if (se.type === 'nexus') {
@@ -1460,7 +1508,7 @@
         var job = e.queue[0];
         var need = (job && job.need) || 4;
         var left = Math.max(0, need - (e.trainT || 0));
-        var label = e.type === 'nexus' ? '본진' : (e.type === 'barracks' ? '배럭' : e.type);
+        var label = e.type === 'nexus' ? '본진' : (e.type === 'barracks' ? '배럭' : (e.type === 'advBarracks' ? '고급배럭' : (RTS_UNIT_LABELS[e.type] || e.type)));
         qParts.push(label + ':' + (job.type || '?') + ' ' + left.toFixed(1) + 's' + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''));
       });
       if (qParts.length) html += '<span class="hkmp-pill" style="color:#efd28a">생산 <b>' + qParts.join(' · ') + '</b></span>';
@@ -1523,6 +1571,13 @@
       }
     }
     refs.hud.innerHTML = html;
+    if (gameId === 'rts' && refs.tools && view === 'play') {
+      var ageRts = (st.ages && st.ages[mySlot()] != null) ? st.ages[mySlot()] : 0;
+      if (refs.tools.getAttribute('data-age') !== String(ageRts)) {
+        refs.tools.setAttribute('data-age', String(ageRts));
+        buildToolbar();
+      }
+    }
     if (gameId === 'ageofwar' && refs.tools && view === 'play') {
       var ageNow = (st.age && st.age[mySlot()] != null) ? st.age[mySlot()] : 0;
       if (refs.tools.getAttribute('data-age') !== String(ageNow)) {
@@ -1919,29 +1974,60 @@
       ctx.lineTo(e.x + r * 0.9, e.y + r * 0.7);
       ctx.lineTo(e.x - r * 0.9, e.y + r * 0.7);
       ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'melee') {
+    } else if (e.type === 'melee' || e.type === 'swordsman' || e.type === 'champion') {
+      // AoE-style infantry: oval body + spear/sword tip
       ctx.beginPath();
-      ctx.moveTo(e.x - r, e.y - r * 0.6);
-      ctx.lineTo(e.x + r, e.y - r * 0.6);
-      ctx.lineTo(e.x + r * 0.7, e.y + r);
-      ctx.lineTo(e.x - r * 0.7, e.y + r);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'ranged') {
+      if (ctx.ellipse) ctx.ellipse(e.x, e.y + 1, r * 0.7, r * 1.05, 0, 0, Math.PI * 2);
+      else ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = e.type === 'champion' ? '#efd28a' : '#d9e2ec';
+      ctx.fillRect(e.x - 1.5, e.y - r * 1.35, 3, r * 0.9);
+      if (e.type === 'champion') {
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y - r * 1.5);
+        ctx.lineTo(e.x + 5, e.y - r * 1.1);
+        ctx.lineTo(e.x - 5, e.y - r * 1.1);
+        ctx.closePath(); ctx.fill();
+      }
+    } else if (e.type === 'ranged' || e.type === 'archer' || e.type === 'crossbow' || e.type === 'musketeer') {
+      // bowman / gunner: diamond + bow arc
       ctx.beginPath();
       ctx.moveTo(e.x, e.y - r);
-      ctx.lineTo(e.x + r, e.y);
+      ctx.lineTo(e.x + r * 0.85, e.y);
       ctx.lineTo(e.x, e.y + r);
-      ctx.lineTo(e.x - r, e.y);
+      ctx.lineTo(e.x - r * 0.85, e.y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'bomber') {
+      ctx.strokeStyle = '#f5f0dfcc';
+      ctx.lineWidth = e.type === 'musketeer' ? 2.5 : 1.5;
       ctx.beginPath();
-      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#122421';
-      ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
-    } else if (e.type === 'tanker') {
-      var w = r * 1.8, h = r * 1.5;
+      ctx.arc(e.x + r * 0.2, e.y, r * 0.95, -1.1, 1.1);
+      ctx.stroke();
+      if (e.type === 'musketeer') {
+        ctx.strokeStyle = '#2d3748';
+        ctx.beginPath();
+        ctx.moveTo(e.x - r * 0.2, e.y);
+        ctx.lineTo(e.x + r * 1.2, e.y - 2);
+        ctx.stroke();
+      }
+    } else if (e.type === 'knight' || e.type === 'tanker') {
+      // cavalry / paladin: wide shield body
+      var w = r * (e.type === 'tanker' ? 2.1 : 1.85), h = r * (e.type === 'tanker' ? 1.6 : 1.4);
       ctx.fillRect(e.x - w / 2, e.y - h / 2, w, h);
       ctx.strokeRect(e.x - w / 2, e.y - h / 2, w, h);
+      ctx.fillStyle = '#efd28a';
+      ctx.beginPath();
+      ctx.moveTo(e.x + w / 2 - 2, e.y);
+      ctx.lineTo(e.x + w / 2 + r * 0.7, e.y - 4);
+      ctx.lineTo(e.x + w / 2 + r * 0.7, e.y + 4);
+      ctx.closePath(); ctx.fill();
+    } else if (e.type === 'bomber' || e.type === 'cannon') {
+      // siege: round body + barrel
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a202c';
+      ctx.fillRect(e.x + r * 0.1, e.y - 3, r * (e.type === 'cannon' ? 1.3 : 0.9), 6);
+      ctx.fillStyle = '#122421';
+      ctx.beginPath(); ctx.arc(e.x - r * 0.25, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
     } else if (e.type === 'duck') {
       ctx.beginPath();
       if (ctx.ellipse) ctx.ellipse(e.x, e.y + 1, r * 1.1, r * 0.75, 0, 0, Math.PI * 2);
@@ -1970,10 +2056,10 @@
   function rtsClientVisionR(e) {
     if (!e) return 0;
     if (e.type === 'nexus') return 340;
-    if (e.type === 'barracks') return 200;
+    if (e.type === 'barracks' || e.type === 'advBarracks') return 200;
     if (e.type === 'turret') return 220;
     if (e.type === 'worker') return 210;
-    if (e.type === 'ranged') return 240;
+    if (e.type === 'ranged' || e.type === 'archer' || e.type === 'crossbow' || e.type === 'musketeer') return 240;
     return 200;
   }
   function rtsClientExplored(st, x, y) {
@@ -2044,10 +2130,13 @@
     (st.entities || []).forEach(function (e) {
       var col = COLORS[e.owner != null ? e.owner : 0] || '#efd28a';
       if (e.fogGhost) col = '#6a7a88';
-      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'turret') {
+      if (e.kind === 'building' || e.type === 'nexus' || e.type === 'barracks' || e.type === 'advBarracks' || e.type === 'turret') {
         var bw = e.w || 40, bh = e.h || 40;
+        var constructing = !!(e.building && e.buildTotal);
+        if (constructing) ctx.globalAlpha = e.fogGhost ? 0.25 : 0.55;
+        else if (e.fogGhost) ctx.globalAlpha = 0.45;
+        else ctx.globalAlpha = 1;
         if (e.type === 'nexus') {
-          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
           ctx.fillStyle = col;
           ctx.beginPath();
           ctx.moveTo(e.x, e.y - bh / 2);
@@ -2059,15 +2148,27 @@
           ctx.fillStyle = '#fff8'; ctx.beginPath(); ctx.arc(e.x, e.y, 8, 0, Math.PI * 2); ctx.fill();
           ctx.globalAlpha = 1;
           drawNameTag(ctx, e.label || '본진', e.x, e.y - bh / 2 - 12, e.fogGhost ? '#9aa8b4' : '#f5f0df');
-        } else if (e.type === 'barracks') {
-          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
+        } else if (e.type === 'barracks' || e.type === 'advBarracks') {
           ctx.fillStyle = col;
           ctx.fillRect(e.x - bw / 2, e.y - bh / 2, bw, bh);
           ctx.fillStyle = '#0004';
           ctx.fillRect(e.x - bw / 2 + 6, e.y - 8, bw - 12, 16);
+          if (e.type === 'advBarracks') {
+            ctx.strokeStyle = '#efd28a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(e.x - bw / 2 + 3, e.y - bh / 2 + 3, bw - 6, bh - 6);
+            ctx.fillStyle = '#efd28a';
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y - bh / 2 - 2);
+            ctx.lineTo(e.x + 7, e.y - bh / 2 + 10);
+            ctx.lineTo(e.x - 7, e.y - bh / 2 + 10);
+            ctx.closePath(); ctx.fill();
+          }
           ctx.globalAlpha = 1;
+          if (!e.fogGhost) {
+            drawNameTag(ctx, e.type === 'advBarracks' ? '고급배럭' : '배럭', e.x, e.y - bh / 2 - 10, '#c8d6c0');
+          }
         } else {
-          ctx.globalAlpha = e.fogGhost ? 0.45 : 1;
           ctx.fillStyle = col;
           ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(bw, bh) / 2, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = '#0006'; ctx.stroke();
@@ -2080,19 +2181,30 @@
             ctx.lineWidth = 2.5;
             ctx.strokeRect(e.x - bw / 2 - 4, e.y - bh / 2 - 4, bw + 8, bh + 8);
           }
-          if (e.queue && e.queue.length) {
+          if (constructing) {
+            var bprog = 1 - Math.max(0, Math.min(1, (e.buildLeft || 0) / (e.buildTotal || 1)));
+            var bw2 = Math.max(40, bw * 0.9);
+            ctx.fillStyle = '#000a';
+            ctx.fillRect(e.x - bw2 / 2, e.y - 4, bw2, 8);
+            ctx.fillStyle = '#f6ad55';
+            ctx.fillRect(e.x - bw2 / 2, e.y - 4, bw2 * bprog, 8);
+            ctx.fillStyle = '#efd28a';
+            ctx.font = 'bold 11px Georgia,serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('건설 ' + Math.round(bprog * 100) + '%', e.x, e.y + bh / 2 + 14);
+          } else if (e.queue && e.queue.length) {
             var job = e.queue[0];
             var need = (job && job.need) || 4;
             var prog = Math.max(0, Math.min(1, (e.trainT || 0) / need));
-            var bw2 = Math.max(36, bw * 0.85);
+            var bw3 = Math.max(36, bw * 0.85);
             ctx.fillStyle = '#0009';
-            ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2, 5);
+            ctx.fillRect(e.x - bw3 / 2, e.y + bh / 2 + 4, bw3, 5);
             ctx.fillStyle = '#6ec8ff';
-            ctx.fillRect(e.x - bw2 / 2, e.y + bh / 2 + 4, bw2 * prog, 5);
+            ctx.fillRect(e.x - bw3 / 2, e.y + bh / 2 + 4, bw3 * prog, 5);
             ctx.fillStyle = '#efd28a';
             ctx.font = '10px Georgia,serif';
             ctx.textAlign = 'center';
-            ctx.fillText((job.type || '') + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''), e.x, e.y + bh / 2 + 18);
+            ctx.fillText(((RTS_UNIT_LABELS[job.type] || job.type) || '') + (e.queue.length > 1 ? ' +' + (e.queue.length - 1) : ''), e.x, e.y + bh / 2 + 18);
           }
         }
       } else if (e.kind === 'unit') {
