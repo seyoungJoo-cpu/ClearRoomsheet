@@ -1,8 +1,8 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp'];
-  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
+  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
@@ -21,7 +21,9 @@
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '시대 진화 라인 워 · 기지 파괴' },
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' },
-    memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '1:1 · 1:1:1 · 2:2 · 카드수 선택' }
+    memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '1:1 · 1:1:1 · 2:2 · 카드수 선택' },
+    lanepush: { icon: '🗡️', name: '레인 푸시', desc: 'LOL 미니 · 챔피언·미니언·타워' },
+    nexuswar: { icon: '🌐', name: '점령전', desc: '거점 점령 · Galcon/Nexus War' }
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;

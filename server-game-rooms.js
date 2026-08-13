@@ -1,6 +1,7 @@
 "use strict";
 
 const { WebSocketServer } = require("ws");
+const laneNexus = require("./server-mp-lane-nexus");
 
 const GAMES = {
   tank: { max: 4, hz: 20 },
@@ -9,6 +10,8 @@ const GAMES = {
   snakes: { max: 8, hz: 15 },
   airhockey: { max: 2, hz: 45 },
   memorymp: { max: 4, hz: 30 },
+  lanepush: { max: 4, hz: 60 },
+  nexuswar: { max: 4, hz: 10 },
 };
 
 const MEMORY_MODES = {
@@ -252,6 +255,11 @@ function allReady(room) {
     const mmax = memoryModeMax(room.mode) || need;
     return humans.length === need && humans.length <= mmax && readyOk;
   }
+  if (room.game === "lanepush" || room.game === "nexuswar") {
+    const need = laneNexus.modeNeed(room.mode);
+    const mmax = laneNexus.modeMax(room.mode) || need;
+    return humans.length === need && humans.length <= mmax && readyOk;
+  }
   return room.players.length === max && readyOk;
 }
 
@@ -411,6 +419,19 @@ function defaultInput(game) {
   if (game === "snakes") return { dirX: 1, dirY: 0 };
   if (game === "airhockey") return { x: 175, y: 200 };
   if (game === "memorymp") return { flip: -1 };
+  if (game === "lanepush") {
+    return {
+      moveX: null,
+      moveY: null,
+      aimX: 0,
+      aimY: 0,
+      skill: null,
+      pick: null,
+      buy: null,
+      level: null,
+    };
+  }
+  if (game === "nexuswar") return { cmd: null, from: null, to: null, ratio: 0.5 };
   return {};
 }
 
@@ -3008,6 +3029,10 @@ function initState(room) {
       return initAirhockey(room);
     case "memorymp":
       return initMemory(room);
+    case "lanepush":
+      return laneNexus.initLanePush(room);
+    case "nexuswar":
+      return laneNexus.initNexusWar(room);
     default:
       return {};
   }
@@ -3033,6 +3058,12 @@ function tick(room, dt) {
         break;
       case "memorymp":
         tickMemory(room);
+        break;
+      case "lanepush":
+        laneNexus.tickLanePush(room, dt, endGame);
+        break;
+      case "nexuswar":
+        laneNexus.tickNexusWar(room, dt, endGame);
         break;
     }
   } catch (e) {
@@ -3149,14 +3180,18 @@ function attachGameRooms(httpServer) {
                 ? parseRtsMode(msg.mode)
                 : game === "memorymp"
                   ? parseMemoryMode(msg.mode)
-                  : null,
+                  : game === "lanepush" || game === "nexuswar"
+                    ? laneNexus.parseSharedMode(msg.mode)
+                    : null,
           pairs: game === "memorymp" ? parseMemoryPairs(msg.pairs) : null,
           max:
             game === "rts"
               ? rtsModeMax(parseRtsMode(msg.mode))
               : game === "memorymp"
                 ? memoryModeMax(parseMemoryMode(msg.mode))
-                : GAMES[game].max,
+                : game === "lanepush" || game === "nexuswar"
+                  ? laneNexus.modeMax(laneNexus.parseSharedMode(msg.mode))
+                  : GAMES[game].max,
           players: [],
           status: "lobby",
           state: null,
@@ -3288,6 +3323,30 @@ function attachGameRooms(httpServer) {
         } else if (room.game === "memorymp") {
           applyMemoryInput(room, player, payload);
           if (room.status === "playing") broadcastState(room);
+        } else if (room.game === "lanepush") {
+          player.input = {
+            moveX: payload.moveX != null ? Number(payload.moveX) : null,
+            moveY: payload.moveY != null ? Number(payload.moveY) : null,
+            aimX: typeof payload.aimX === "number" ? payload.aimX : Number(payload.aimX) || 0,
+            aimY: typeof payload.aimY === "number" ? payload.aimY : Number(payload.aimY) || 0,
+            skill: payload.skill ? String(payload.skill).toLowerCase() : null,
+            pick: payload.pick ? String(payload.pick) : null,
+            buy: payload.buy ? String(payload.buy) : null,
+            level: payload.level ? String(payload.level).toLowerCase() : null,
+          };
+        } else if (room.game === "nexuswar") {
+          if (!Array.isArray(player.inputQ)) player.inputQ = [];
+          if (payload.cmd === "send") {
+            const packed = {
+              cmd: "send",
+              from: Number(payload.from),
+              to: Number(payload.to),
+              ratio: payload.ratio != null ? Number(payload.ratio) : 0.5,
+            };
+            player.inputQ.push(packed);
+            if (player.inputQ.length > 20) player.inputQ.shift();
+            player.input = packed;
+          }
         } else {
           player.input = Object.assign({}, base, payload);
         }
