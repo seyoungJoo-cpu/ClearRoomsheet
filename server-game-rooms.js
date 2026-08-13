@@ -679,29 +679,74 @@ function ensureTankAi(room) {
   });
 }
 
+function tankItemSpotOk(W, H, x, y, used) {
+  const pad = 160;
+  if (x < pad || y < pad || x > W - pad || y > H - pad) return false;
+  // 가운데(구 아이템 광장)에는 두지 않음
+  if (Math.hypot(x - W * 0.5, y - H * 0.5) < 320) return false;
+  for (let i = 0; i < used.length; i++) {
+    if (Math.hypot(x - used[i][0], y - used[i][1]) < 140) return false;
+  }
+  return true;
+}
+
+function tankPickItemSpot(W, H, used) {
+  for (let attempt = 0; attempt < 48; attempt++) {
+    // 맵 가장자리·사분면 쪽 비중을 높여 중앙이 아닌 주변에 배치
+    const ring = 0.18 + Math.random() * 0.32; // 18%~50% from center toward edge
+    const ang = Math.random() * Math.PI * 2;
+    const rx = (W * 0.5 - 180) * (0.55 + ring);
+    const ry = (H * 0.5 - 160) * (0.55 + ring);
+    const x = W * 0.5 + Math.cos(ang) * rx;
+    const y = H * 0.5 + Math.sin(ang) * ry;
+    if (tankItemSpotOk(W, H, x, y, used)) return [x, y];
+  }
+  // fallback: corner-ish
+  const fx = padClamp(120 + Math.random() * (W - 240), 120, W - 120);
+  const fy = padClamp(120 + Math.random() * (H - 240), 120, H - 120);
+  return [fx, fy];
+}
+
+function padClamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
 function makeTankItems(W, H) {
   const kinds = ["heal", "speed", "shield", "rapid"];
-  const spots = [
-    [W * 0.5, H * 0.5],
-    [W * 0.5 - 150, H * 0.5],
-    [W * 0.5 + 150, H * 0.5],
-    [W * 0.5, H * 0.5 - 130],
-    [W * 0.5, H * 0.5 + 130],
-    [W * 0.5 - 110, H * 0.5 - 110],
-    [W * 0.5 + 110, H * 0.5 - 110],
-    [W * 0.5 - 110, H * 0.5 + 110],
-    [W * 0.5 + 110, H * 0.5 + 110],
-  ];
-  return spots.map(function (p, i) {
-    return {
+  const used = [];
+  const count = 9;
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const spot = tankPickItemSpot(W, H, used);
+    used.push(spot);
+    out.push({
       id: i + 1,
-      x: p[0],
-      y: p[1],
+      x: spot[0],
+      y: spot[1],
       type: kinds[i % kinds.length],
       taken: false,
       respawnAt: 0,
-    };
-  });
+    });
+  }
+  return out;
+}
+
+function tankRespawnItem(it, s) {
+  const W = s.W || 2800;
+  const H = s.H || 2000;
+  const used = [];
+  if (Array.isArray(s.items)) {
+    for (let i = 0; i < s.items.length; i++) {
+      const o = s.items[i];
+      if (!o || o === it || o.taken) continue;
+      used.push([o.x, o.y]);
+    }
+  }
+  const spot = tankPickItemSpot(W, H, used);
+  it.x = spot[0];
+  it.y = spot[1];
+  it.taken = false;
+  it.respawnAt = 0;
 }
 
 function tankClearBuffs(t) {
@@ -1000,13 +1045,12 @@ function tickTank(room, dt) {
     }
   }
 
-  // mid-map items pickup / respawn
+  // map items pickup / respawn (주변 랜덤 위치)
   if (!Array.isArray(s.items)) s.items = makeTankItems(s.W || 2800, s.H || 2000);
   for (const it of s.items) {
     if (it.taken) {
       if (it.respawnAt && nowMs >= it.respawnAt) {
-        it.taken = false;
-        it.respawnAt = 0;
+        tankRespawnItem(it, s);
       }
       continue;
     }
