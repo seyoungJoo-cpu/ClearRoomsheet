@@ -207,6 +207,7 @@ function publicRtsState(room, viewer) {
     mode: s.mode,
     gold: s.gold,
     ages: s.ages || [],
+    workerCost: rtsWorkerCost(s, owner),
     entities: ents,
     minerals: minerals,
     obstacles: s.obstacles,
@@ -1311,8 +1312,8 @@ const RTS_UNITS = {
 };
 const RTS_BUILD = {
   nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 12 },
-  barracks: { cost: 150, hp: 300, w: 48, h: 48, build: 8 },
-  advBarracks: { cost: 280, hp: 420, w: 56, h: 56, build: 11 },
+  barracks: { cost: 150, hp: 300, w: 48, h: 48, build: 8, range: 170, dps: 14 },
+  advBarracks: { cost: 280, hp: 420, w: 56, h: 56, build: 11, range: 190, dps: 18 },
   turret: { cost: 120, hp: 120, w: 36, h: 36, range: 160, dps: 18, build: 6 },
 };
 const RTS_NEXUS_TURRET_BAN_R = 110;
@@ -1767,16 +1768,25 @@ function rtsApplyInput(room, s, owner, inp, mode) {
       }
     }
   } else if (inp.cmd === "attack") {
+    const rawTid = inp.targetId != null ? Number(inp.targetId) : null;
+    const rawTarget = rawTid != null && isFinite(rawTid) ? rtsFind(s, rawTid) : null;
+    // Units cannot attack nexus — convert to move toward it
+    const blockNexus = rawTarget && rawTarget.type === "nexus";
     for (const id of ids) {
       const e = rtsFind(s, id);
       if (e && e.kind === "unit" && e.owner === owner && e.hp > 0) {
-        e.targetId = inp.targetId != null ? Number(inp.targetId) : null;
         e.tx = Number(inp.x);
         e.ty = Number(inp.y);
         if (!isFinite(e.tx)) e.tx = null;
         if (!isFinite(e.ty)) e.ty = null;
-        e.order = e.targetId != null ? "attack" : "move";
-        if (e.order === "move") e.targetId = null;
+        if (blockNexus) {
+          e.targetId = null;
+          e.order = "move";
+        } else {
+          e.targetId = rawTid != null && isFinite(rawTid) ? rawTid : null;
+          e.order = e.targetId != null ? "attack" : "move";
+          if (e.order === "move") e.targetId = null;
+        }
       }
     }
   } else if (inp.cmd === "train" || (inp.cmd === "build" && inp.unitType && RTS_UNITS[inp.unitType])) {
@@ -2174,13 +2184,35 @@ function rtsAiThink(room, s, owner, mode, dt) {
 
   if (enemyNexus && army.length >= 3) {
     const ids = army.map((u) => u.id);
-    rtsAiPush(room, owner, {
-      cmd: "attack",
-      selectIds: ids,
-      targetId: enemyNexus.id,
-      x: enemyNexus.x,
-      y: enemyNexus.y,
-    });
+    // Units cannot attack nexus — push onto enemy army / siege buildings instead
+    let focus = null;
+    let fd = 1e9;
+    for (const o of s.entities) {
+      if (!o || o.hp <= 0 || rtsAllied(owner, o.owner, mode)) continue;
+      if (o.type === "nexus") continue;
+      if (o.kind !== "unit" && o.type !== "turret" && !rtsIsBarracksType(o.type)) continue;
+      const d = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y);
+      if (d < fd) {
+        fd = d;
+        focus = o;
+      }
+    }
+    if (focus) {
+      rtsAiPush(room, owner, {
+        cmd: "attack",
+        selectIds: ids,
+        targetId: focus.id,
+        x: focus.x,
+        y: focus.y,
+      });
+    } else {
+      rtsAiPush(room, owner, {
+        cmd: "move",
+        selectIds: ids,
+        x: enemyNexus.x,
+        y: enemyNexus.y,
+      });
+    }
   }
 }
 
@@ -2308,12 +2340,19 @@ function tickRts(room, dt) {
         target = null;
         e.targetId = null;
       }
+      // Units cannot damage nexus
+      if (target && target.type === "nexus") {
+        target = null;
+        e.targetId = null;
+        if (e.order === "attack") e.order = "move";
+      }
       if (!target && e.order !== "move") {
         let bd = def.range + 40,
           best = null;
         for (const o of s.entities) {
           if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
           if (o.kind !== "unit" && o.kind !== "building") continue;
+          if (o.type === "nexus") continue;
           const d = Math.hypot(o.x - e.x, o.y - e.y);
           if (d < bd) {
             bd = d;
@@ -2330,11 +2369,13 @@ function tickRts(room, dt) {
             e.ty = null;
           }
           if (e.atkCd <= 0) {
-            target.hp -= def.dps * 0.5;
-            e.atkCd = 0.5;
-            if (e.type === "bomber") {
-              target.hp -= 25;
-              e.hp = 0;
+            if (target.type !== "nexus") {
+              target.hp -= def.dps * 0.5;
+              e.atkCd = 0.5;
+              if (e.type === "bomber") {
+                target.hp -= 25;
+                e.hp = 0;
+              }
             }
           }
         } else if (e.order !== "move") {
@@ -2410,7 +2451,7 @@ function tickRts(room, dt) {
     }
   }
 
-  // nexus laser — auto protect workers / base
+  // nexus laser — only hits enemy turrets / barracks (not units)
   for (const e of s.entities) {
     if (e.type !== "nexus" || e.hp <= 0) continue;
     if (e.atkCd > 0) e.atkCd -= dt;
@@ -2419,8 +2460,8 @@ function tickRts(room, dt) {
       bd = range;
     for (const o of s.entities) {
       if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
-      if (o.kind !== "unit" && o.kind !== "building") continue;
-      if (o.type === "nexus") continue;
+      if (o.type !== "turret" && o.type !== "barracks" && o.type !== "advBarracks") continue;
+      if (o.building) continue;
       const d = Math.hypot(o.x - e.x, o.y - e.y);
       if (d < bd) {
         bd = d;
@@ -2428,8 +2469,7 @@ function tickRts(room, dt) {
       }
     }
     if (best && e.atkCd <= 0 && !e.building) {
-      const mul = best.kind === "unit" ? 0.225 : 0.45;
-      best.hp -= RTS_BUILD.nexus.dps * mul;
+      best.hp -= RTS_BUILD.nexus.dps * 0.45;
       e.atkCd = 0.35;
       s.beams.push({
         x1: e.x,
@@ -2442,7 +2482,7 @@ function tickRts(room, dt) {
     }
   }
 
-  // turrets
+  // turrets — units + enemy nexus (units cannot kill nexus)
   for (const e of s.entities) {
     if (e.type !== "turret" || e.hp <= 0 || e.building) continue;
     if (e.atkCd > 0) e.atkCd -= dt;
@@ -2450,7 +2490,9 @@ function tickRts(room, dt) {
     let best = null,
       bd = range;
     for (const o of s.entities) {
-      if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0 || o.kind !== "unit") continue;
+      if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
+      if (o.kind !== "unit" && o.type !== "nexus") continue;
+      if (o.building) continue;
       const d = Math.hypot(o.x - e.x, o.y - e.y);
       if (d < bd) {
         bd = d;
@@ -2466,6 +2508,37 @@ function tickRts(room, dt) {
         x2: best.x,
         y2: best.y,
         life: 0.12,
+        owner: e.owner,
+      });
+    }
+  }
+
+  // barracks / adv barracks — siege fire on enemy nexus only
+  for (const e of s.entities) {
+    if (!rtsIsBarracksType(e.type) || e.hp <= 0 || e.building) continue;
+    if (e.atkCd > 0) e.atkCd -= dt;
+    const bdef = RTS_BUILD[e.type] || RTS_BUILD.barracks;
+    const range = bdef.range || 170;
+    let best = null,
+      bd = range;
+    for (const o of s.entities) {
+      if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
+      if (o.type !== "nexus" || o.building) continue;
+      const d = Math.hypot(o.x - e.x, o.y - e.y);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    if (best && e.atkCd <= 0) {
+      best.hp -= (bdef.dps || 14) * 0.4;
+      e.atkCd = 0.45;
+      s.beams.push({
+        x1: e.x,
+        y1: e.y,
+        x2: best.x,
+        y2: best.y,
+        life: 0.14,
         owner: e.owner,
       });
     }

@@ -1313,7 +1313,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · HP5 · 중앙 아이템(회복/속도/실드/연사) · 목숨 3',
-      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 밝은 시야에서만 건설',
+      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 본진은 유닛 공격 불가(포탑·배럭으로) · 밝은 시야에서만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -1351,6 +1351,8 @@
       refs.tools.innerHTML = tools.map(function (x) {
         return '<button type="button" class="hkmp-btn" data-tool="' + x[0] + '">' + x[1] + '</button>';
       }).join('');
+      refs.tools.setAttribute('data-age', String(age));
+      refs.tools.setAttribute('data-wc', String(rtsClientWorkerCost(st)));
       Array.prototype.forEach.call(refs.tools.querySelectorAll('[data-tool]'), function (btn) {
         btn.onclick = function () {
           var key = btn.getAttribute('data-tool');
@@ -1378,6 +1380,8 @@
         };
       });
       refs.tools.setAttribute('data-age', String(age));
+      refs.tools.setAttribute('data-wc', String(rtsClientWorkerCost(st)));
+      refs.tools.setAttribute('data-rts', String(age) + ':' + String(rtsClientWorkerCost(st)));
     } else if (gameId === 'ageofwar') {
       var stAge = lastState || {};
       var age = (stAge.age && stAge.age[mySlot()] != null) ? stAge.age[mySlot()] : 0;
@@ -1475,6 +1479,11 @@
               ally = (hit.owner < 2) === (my < 2);
             }
             if (!ally) {
+              if (hit.type === 'nexus') {
+                send({ type: 'input', payload: { selectIds: ids, cmd: 'move', x: p.x, y: p.y } });
+                toast('본진은 유닛으로 공격할 수 없습니다 (포탑·배럭만)');
+                return;
+              }
               send({ type: 'input', payload: { selectIds: ids, cmd: 'attack', targetId: hit.id, x: p.x, y: p.y } });
               return;
             }
@@ -1789,9 +1798,14 @@
     refs.hud.innerHTML = html;
     if (gameId === 'rts' && refs.tools && view === 'play') {
       var ageRts = (st.ages && st.ages[mySlot()] != null) ? st.ages[mySlot()] : 0;
-      if (refs.tools.getAttribute('data-age') !== String(ageRts)) {
-        refs.tools.setAttribute('data-age', String(ageRts));
+      var wcRts = rtsClientWorkerCost(st);
+      var rtsKey = String(ageRts) + ':' + String(wcRts);
+      if (refs.tools.getAttribute('data-rts') !== rtsKey) {
+        refs.tools.setAttribute('data-rts', rtsKey);
         buildToolbar();
+      } else {
+        var wBtn = refs.tools.querySelector('[data-tool="train:worker"]');
+        if (wBtn) wBtn.textContent = '일꾼 ·' + wcRts;
       }
     }
     if (gameId === 'lanepush' && refs.tools && view === 'play') {
@@ -2279,6 +2293,9 @@
   }
 
   function rtsClientWorkerCost(st) {
+    if (st && st.workerCost != null && isFinite(Number(st.workerCost))) {
+      return Math.max(50, Number(st.workerCost) | 0);
+    }
     var me = mySlot();
     var n = 0;
     var ents = (st && st.entities) || [];
