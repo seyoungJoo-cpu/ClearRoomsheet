@@ -706,6 +706,7 @@
     } else {
       inputTimer = setInterval(tickInput, 40);
     }
+    if (gameId === 'rts') startRtsAnim();
   }
   function stopInput() {
     if (inputTimer) clearInterval(inputTimer);
@@ -715,6 +716,25 @@
     fireLatch = false;
     stopHockeySmooth();
     stopMemoryWave();
+    stopRtsAnim();
+  }
+  function stopRtsAnim() {
+    if (rtsRaf) {
+      try { cancelAnimationFrame(rtsRaf); } catch (_) {}
+      rtsRaf = 0;
+    }
+  }
+  function startRtsAnim() {
+    stopRtsAnim();
+    function frame() {
+      if (gameId !== 'rts' || view !== 'play' || !root || !root.classList.contains('open')) {
+        rtsRaf = 0;
+        return;
+      }
+      if (!gamePaused && lastState) drawFrame();
+      rtsRaf = requestAnimationFrame(frame);
+    }
+    rtsRaf = requestAnimationFrame(frame);
   }
 
   function stopHockeySmooth() {
