@@ -42,9 +42,17 @@
   };
   var RTS_AGE_NAMES = ['암흑시대', '봉건시대', '성주시대', '제국시대'];
   var RTS_UNIT_LABELS = {
-    worker: '일꾼', melee: '민병', ranged: '투석병', duck: '오리',
-    swordsman: '검병', archer: '궁병', knight: '기사', crossbow: '석궁병',
-    bomber: '투석기', champion: '챔피언', musketeer: '화승총병', tanker: '팔라딘', cannon: '대포'
+    worker: '곡괭이광부', melee: '돌격광대', ranged: '돌팔매꾼', duck: '분노오리',
+    swordsman: '쌍검무도가', archer: '바람궁수', knight: '돌진기사', crossbow: '관통석궁수',
+    bomber: '자폭광대', champion: '전장의군주', musketeer: '저격화승총', tanker: '철벽팔라딘', cannon: '성벽분쇄포'
+  };
+  var RTS_UNIT_COST = {
+    worker: 50, melee: 75, ranged: 95, duck: 28, swordsman: 115, archer: 125,
+    knight: 185, crossbow: 155, bomber: 150, champion: 240, musketeer: 210, tanker: 250, cannon: 300
+  };
+  var RTS_UNIT_FLAIR = {
+    worker: '⛏', melee: '⚔', ranged: '🪨', duck: '🦆', swordsman: '🗡', archer: '🏹',
+    knight: '🐎', crossbow: '🎯', bomber: '💣', champion: '👑', musketeer: '🔫', tanker: '🛡', cannon: '💥'
   };
   var MEMORY_MODE_META = {
     solo: { label: '싱글 vs AI', max: 2 },
@@ -1334,16 +1342,18 @@
         ['build:turret', '포탑 ·120']
       ];
       tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 5000, 10000, 20000][age + 1] || '—'))]);
-      tools.push(['train:worker', '일꾼 ·' + rtsClientWorkerCost(st)]);
+      tools.push(['train:worker', '곡괭이광부 ·' + rtsClientWorkerCost(st)]);
       var byAge = [
-        [['melee', '민병 ·80'], ['ranged', '투석병 ·100'], ['duck', '오리 ·30']],
-        [['swordsman', '검병 ·110'], ['archer', '궁병 ·120']],
-        [['knight', '기사 ·180'], ['crossbow', '석궁병 ·150'], ['bomber', '투석기 ·160']],
-        [['champion', '챔피언 ·220'], ['musketeer', '화승총 ·200'], ['tanker', '팔라딘 ·240'], ['cannon', '대포 ·280']]
+        [['melee'], ['ranged'], ['duck']],
+        [['swordsman'], ['archer']],
+        [['knight'], ['crossbow'], ['bomber']],
+        [['champion'], ['musketeer'], ['tanker'], ['cannon']]
       ];
       for (var ai = 0; ai <= age && ai < byAge.length; ai++) {
         byAge[ai].forEach(function (u) {
-          tools.push(['train:' + u[0], u[1]]);
+          var id = u[0];
+          var flair = RTS_UNIT_FLAIR[id] || '';
+          tools.push(['train:' + id, flair + (RTS_UNIT_LABELS[id] || id) + ' ·' + (RTS_UNIT_COST[id] || '?')]);
         });
       }
       refs.tools.innerHTML = tools.map(function (x) {
@@ -1797,7 +1807,7 @@
         buildToolbar();
       } else {
         var wBtn = refs.tools.querySelector('[data-tool="train:worker"]');
-        if (wBtn) wBtn.textContent = '일꾼 ·' + wcRts;
+        if (wBtn) wBtn.textContent = '곡괭이광부 ·' + wcRts;
       }
     }
     if (gameId === 'lanepush' && refs.tools && view === 'play') {
@@ -2196,84 +2206,162 @@
 
   function drawRtsUnitShape(ctx, e, col) {
     var r = e.r || 8;
+    var t = e.type;
+    var bob = Math.sin((Date.now() / 140) + (e.id || 0)) * (t === 'duck' ? 2.2 : 0.8);
+    var x = e.x;
+    var y = e.y + bob;
+    ctx.save();
     ctx.fillStyle = col;
-    ctx.strokeStyle = '#0008';
-    ctx.lineWidth = 1.5;
-    if (e.type === 'worker') {
+    ctx.strokeStyle = '#0009';
+    ctx.lineWidth = 1.6;
+
+    if (t === 'worker') {
       ctx.beginPath();
-      ctx.moveTo(e.x, e.y - r);
-      ctx.lineTo(e.x + r * 0.9, e.y + r * 0.7);
-      ctx.lineTo(e.x - r * 0.9, e.y + r * 0.7);
+      ctx.moveTo(x, y - r);
+      ctx.lineTo(x + r * 0.95, y + r * 0.75);
+      ctx.lineTo(x - r * 0.95, y + r * 0.75);
       ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (e.type === 'melee' || e.type === 'swordsman' || e.type === 'champion') {
-      // AoE-style infantry: oval body + spear/sword tip
+      ctx.strokeStyle = '#c4a574';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      if (ctx.ellipse) ctx.ellipse(e.x, e.y + 1, r * 0.7, r * 1.05, 0, 0, Math.PI * 2);
-      else ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = e.type === 'champion' ? '#efd28a' : '#d9e2ec';
-      ctx.fillRect(e.x - 1.5, e.y - r * 1.35, 3, r * 0.9);
-      if (e.type === 'champion') {
-        ctx.beginPath();
-        ctx.moveTo(e.x, e.y - r * 1.5);
-        ctx.lineTo(e.x + 5, e.y - r * 1.1);
-        ctx.lineTo(e.x - 5, e.y - r * 1.1);
-        ctx.closePath(); ctx.fill();
-      }
-    } else if (e.type === 'ranged' || e.type === 'archer' || e.type === 'crossbow' || e.type === 'musketeer') {
-      // bowman / gunner: diamond + bow arc
-      ctx.beginPath();
-      ctx.moveTo(e.x, e.y - r);
-      ctx.lineTo(e.x + r * 0.85, e.y);
-      ctx.lineTo(e.x, e.y + r);
-      ctx.lineTo(e.x - r * 0.85, e.y);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = '#f5f0dfcc';
-      ctx.lineWidth = e.type === 'musketeer' ? 2.5 : 1.5;
-      ctx.beginPath();
-      ctx.arc(e.x + r * 0.2, e.y, r * 0.95, -1.1, 1.1);
+      ctx.moveTo(x + r * 0.2, y - r * 0.2);
+      ctx.lineTo(x + r * 1.15, y - r * 0.9);
       ctx.stroke();
-      if (e.type === 'musketeer') {
-        ctx.strokeStyle = '#2d3748';
-        ctx.beginPath();
-        ctx.moveTo(e.x - r * 0.2, e.y);
-        ctx.lineTo(e.x + r * 1.2, e.y - 2);
-        ctx.stroke();
-      }
-    } else if (e.type === 'knight' || e.type === 'tanker') {
-      // cavalry / paladin: wide shield body
-      var w = r * (e.type === 'tanker' ? 2.1 : 1.85), h = r * (e.type === 'tanker' ? 1.6 : 1.4);
-      ctx.fillRect(e.x - w / 2, e.y - h / 2, w, h);
-      ctx.strokeRect(e.x - w / 2, e.y - h / 2, w, h);
-      ctx.fillStyle = '#efd28a';
+      ctx.fillStyle = '#8b7355';
+      ctx.beginPath(); ctx.arc(x + r * 1.2, y - r, 3.5, 0, Math.PI * 2); ctx.fill();
+    } else if (t === 'melee') {
       ctx.beginPath();
-      ctx.moveTo(e.x + w / 2 - 2, e.y);
-      ctx.lineTo(e.x + w / 2 + r * 0.7, e.y - 4);
-      ctx.lineTo(e.x + w / 2 + r * 0.7, e.y + 4);
+      if (ctx.ellipse) ctx.ellipse(x, y + 1, r * 0.75, r * 1.1, 0.15, 0, Math.PI * 2);
+      else ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff6b6b';
+      ctx.fillRect(x + r * 0.35, y - r * 1.2, 3, r * 1.4);
+      ctx.beginPath();
+      ctx.moveTo(x + r * 0.35, y - r * 1.35);
+      ctx.lineTo(x + r * 0.9, y - r * 0.9);
+      ctx.lineTo(x + r * 0.35, y - r * 0.85);
       ctx.closePath(); ctx.fill();
-    } else if (e.type === 'bomber' || e.type === 'cannon') {
-      // siege: round body + barrel
+    } else if (t === 'swordsman') {
       ctx.beginPath();
-      ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      if (ctx.ellipse) ctx.ellipse(x, y, r * 0.7, r * 1.05, 0, 0, Math.PI * 2);
+      else ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x - r * 0.9, y - r * 0.9); ctx.lineTo(x - r * 0.2, y + r * 0.3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + r * 0.9, y - r * 0.9); ctx.lineTo(x + r * 0.2, y + r * 0.3); ctx.stroke();
+    } else if (t === 'champion') {
+      ctx.beginPath();
+      if (ctx.ellipse) ctx.ellipse(x, y, r * 0.85, r * 1.15, 0, 0, Math.PI * 2);
+      else ctx.arc(x, y, r * 1.05, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f6e05e';
+      ctx.beginPath();
+      ctx.moveTo(x, y - r * 1.55);
+      ctx.lineTo(x + 7, y - r * 1.05);
+      ctx.lineTo(x + 3, y - r * 1.05);
+      ctx.lineTo(x + 3, y - r * 0.7);
+      ctx.lineTo(x - 3, y - r * 0.7);
+      ctx.lineTo(x - 3, y - r * 1.05);
+      ctx.lineTo(x - 7, y - r * 1.05);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#f6e05e88';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+    } else if (t === 'ranged') {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#a0aec0';
+      ctx.beginPath(); ctx.arc(x + r * 0.9, y - 2, 3.5, 0, Math.PI * 2); ctx.fill();
+    } else if (t === 'archer') {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#68d391';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x + 2, y, r * 1.05, -1.2, 1.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - r * 0.3, y); ctx.lineTo(x + r * 1.1, y - 1); ctx.stroke();
+    } else if (t === 'crossbow') {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.85, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.85, y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ed8936';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(x + r * 0.1, y - 4, r * 1.1, 8);
+      ctx.beginPath(); ctx.moveTo(x + r * 1.2, y); ctx.lineTo(x + r * 1.7, y); ctx.stroke();
+    } else if (t === 'musketeer') {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.7, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.7, y);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#2d3748';
+      ctx.fillRect(x - 2, y - 3, r * 1.6, 5);
+      ctx.fillStyle = '#f6e05e';
+      ctx.beginPath(); ctx.arc(x + r * 1.5, y - 0.5, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (t === 'knight') {
+      var kw = r * 1.9, kh = r * 1.25;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x - kw / 2, y - kh / 2, kw, kh, 4);
+      else ctx.rect(x - kw / 2, y - kh / 2, kw, kh);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f6e05e';
+      ctx.beginPath();
+      ctx.moveTo(x + kw / 2, y);
+      ctx.lineTo(x + kw / 2 + r * 0.9, y - 5);
+      ctx.lineTo(x + kw / 2 + r * 0.9, y + 5);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#c53030';
+      ctx.fillRect(x - 3, y - kh / 2 - 6, 6, 6);
+    } else if (t === 'tanker') {
+      var tw = r * 2.3, th = r * 1.7;
+      ctx.fillStyle = '#4a5568';
+      ctx.fillRect(x - tw / 2, y - th / 2, tw, th);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - tw / 2, y - th / 2, tw, th);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#63b3ed';
+      ctx.fillRect(x - tw / 2 - 3, y - th / 2, 4, th);
+    } else if (t === 'bomber') {
+      ctx.beginPath(); ctx.arc(x, y, r * 0.95, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c53030';
+      ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f6e05e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y - r * 0.9);
+      ctx.quadraticCurveTo(x + 6, y - r * 1.4, x + 2, y - r * 1.7);
+      ctx.stroke();
+    } else if (t === 'cannon') {
+      ctx.fillStyle = '#2d3748';
+      ctx.fillRect(x - r * 0.9, y - r * 0.55, r * 1.8, r * 1.1);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x - r * 0.55, y + r * 0.55, r * 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + r * 0.45, y + r * 0.55, r * 0.4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#1a202c';
-      ctx.fillRect(e.x + r * 0.1, e.y - 3, r * (e.type === 'cannon' ? 1.3 : 0.9), 6);
-      ctx.fillStyle = '#122421';
-      ctx.beginPath(); ctx.arc(e.x - r * 0.25, e.y, r * 0.35, 0, Math.PI * 2); ctx.fill();
-    } else if (e.type === 'duck') {
+      ctx.fillRect(x + r * 0.2, y - 4, r * 1.5, 7);
+      ctx.fillStyle = '#e53e3e';
+      ctx.beginPath(); ctx.arc(x + r * 1.7, y - 0.5, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (t === 'duck') {
+      ctx.fillStyle = '#ecc94b';
       ctx.beginPath();
-      if (ctx.ellipse) ctx.ellipse(e.x, e.y + 1, r * 1.1, r * 0.75, 0, 0, Math.PI * 2);
-      else ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath(); ctx.arc(e.x + r * 0.55, e.y - r * 0.35, r * 0.45, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f6ad55';
+      if (ctx.ellipse) ctx.ellipse(x, y + 2, r * 1.15, r * 0.8, 0, 0, Math.PI * 2);
+      else ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + r * 0.6, y - r * 0.35, r * 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#dd6b20';
       ctx.beginPath();
-      ctx.moveTo(e.x + r * 0.85, e.y - r * 0.35);
-      ctx.lineTo(e.x + r * 1.45, e.y - r * 0.2);
-      ctx.lineTo(e.x + r * 0.85, e.y - r * 0.05);
+      ctx.moveTo(x + r * 0.95, y - r * 0.35);
+      ctx.lineTo(x + r * 1.55, y - r * 0.15);
+      ctx.lineTo(x + r * 0.95, y);
       ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#c53030';
+      ctx.beginPath(); ctx.arc(x + r * 0.75, y - r * 0.45, 2, 0, Math.PI * 2); ctx.fill();
     } else {
-      ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
+    ctx.restore();
   }
 
   function drawRtsHpBar(ctx, x, y, w, hp, maxHp) {
@@ -2466,6 +2554,10 @@
           ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, (e.r || 8) + 6, 0, Math.PI * 2); ctx.stroke();
         }
         drawRtsHpBar(ctx, e.x, e.y - (e.r || 8) - 8, 22, e.hp, e.maxHp);
+        var tag = (RTS_UNIT_FLAIR[e.type] || '') + (RTS_UNIT_LABELS[e.type] || '');
+        if (tag && (selectIds.indexOf(e.id) >= 0 || e.type === 'champion' || e.type === 'duck' || e.type === 'bomber')) {
+          drawNameTag(ctx, tag, e.x, e.y - (e.r || 8) - 12, '#f5f0df');
+        }
       }
     });
     (st.beams || []).forEach(function (b) {

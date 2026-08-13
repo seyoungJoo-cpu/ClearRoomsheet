@@ -1295,19 +1295,20 @@ const RTS_WORKER_BASE_COST = 50;
 const RTS_WORKER_SCALE_FROM = 10; // 10th worker onward costs more
 const RTS_WORKER_SCALE_STEP = 5;
 const RTS_UNITS = {
-  worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5, age: 0, from: "nexus" },
-  melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5, age: 0, from: "barracks" },
-  ranged: { cost: 100, hp: 55, dps: 12, r: 14, speed: 75, range: 120, train: 5.5, age: 0, from: "barracks" },
-  duck: { cost: 30, hp: 18, dps: 8, r: 12, speed: 110, range: 24, train: 2.5, age: 0, from: "barracks" },
-  swordsman: { cost: 110, hp: 120, dps: 18, r: 16, speed: 80, range: 28, train: 5.5, age: 1, from: "barracks" },
-  archer: { cost: 120, hp: 65, dps: 15, r: 14, speed: 78, range: 140, train: 5.5, age: 1, from: "barracks" },
-  knight: { cost: 180, hp: 160, dps: 22, r: 18, speed: 95, range: 32, train: 7, age: 2, from: "barracks" },
-  crossbow: { cost: 150, hp: 75, dps: 18, r: 14, speed: 72, range: 150, train: 6.5, age: 2, from: "barracks" },
-  bomber: { cost: 160, hp: 50, dps: 45, r: 14, speed: 90, range: 40, train: 7.5, age: 2, from: "barracks" },
-  champion: { cost: 220, hp: 200, dps: 28, r: 17, speed: 82, range: 30, train: 8, age: 3, from: "barracks" },
-  musketeer: { cost: 200, hp: 85, dps: 26, r: 14, speed: 70, range: 170, train: 7.5, age: 3, from: "barracks" },
-  tanker: { cost: 240, hp: 280, dps: 16, r: 22, speed: 55, range: 36, train: 9, age: 3, from: "barracks" },
-  cannon: { cost: 280, hp: 90, dps: 55, r: 16, speed: 45, range: 200, train: 10, age: 3, from: "barracks" },
+  // 완전 개성: 스탯 + 전투 특성(특수기는 tick에서 처리)
+  worker: { cost: 50, hp: 45, dps: 3, r: 13, speed: 72, range: 28, train: 3.2, age: 0, from: "nexus", atkPeriod: 0.55 },
+  melee: { cost: 75, hp: 95, dps: 16, r: 15, speed: 92, range: 30, train: 4.5, age: 0, from: "barracks", atkPeriod: 0.42, rush: true },
+  ranged: { cost: 95, hp: 48, dps: 11, r: 13, speed: 78, range: 135, train: 5, age: 0, from: "barracks", atkPeriod: 0.55, kite: true },
+  duck: { cost: 28, hp: 22, dps: 10, r: 11, speed: 128, range: 26, train: 2.2, age: 0, from: "barracks", atkPeriod: 0.28, lifesteal: 0.35, swarm: true },
+  swordsman: { cost: 115, hp: 130, dps: 17, r: 16, speed: 84, range: 32, train: 5.2, age: 1, from: "barracks", atkPeriod: 0.48, cleave: 55 },
+  archer: { cost: 125, hp: 58, dps: 14, r: 13, speed: 82, range: 155, train: 5.2, age: 1, from: "barracks", atkPeriod: 0.5, kite: true },
+  knight: { cost: 185, hp: 155, dps: 20, r: 17, speed: 108, range: 34, train: 6.5, age: 2, from: "barracks", atkPeriod: 0.45, charge: 1.75 },
+  crossbow: { cost: 155, hp: 70, dps: 16, r: 14, speed: 70, range: 160, train: 6.2, age: 2, from: "barracks", atkPeriod: 0.7, pierce: 0.55 },
+  bomber: { cost: 150, hp: 55, dps: 8, r: 14, speed: 98, range: 36, train: 6.8, age: 2, from: "barracks", atkPeriod: 0.35, suicide: 95, splash: 70 },
+  champion: { cost: 240, hp: 220, dps: 26, r: 18, speed: 80, range: 34, train: 7.5, age: 3, from: "barracks", atkPeriod: 0.5, aura: 0.18, cleave: 40 },
+  musketeer: { cost: 210, hp: 70, dps: 48, r: 13, speed: 68, range: 195, train: 7.2, age: 3, from: "barracks", atkPeriod: 1.15, sniper: true },
+  tanker: { cost: 250, hp: 340, dps: 12, r: 22, speed: 48, range: 38, train: 8.5, age: 3, from: "barracks", atkPeriod: 0.55, armor: 0.42, taunt: 90 },
+  cannon: { cost: 300, hp: 85, dps: 38, r: 16, speed: 40, range: 220, train: 9.5, age: 3, from: "barracks", atkPeriod: 1.35, vsBuilding: 2.6, splash: 45 },
 };
 const RTS_BUILD = {
   nexus: { cost: 400, hp: 900, w: 64, h: 64, range: 240, dps: 55, build: 12 },
@@ -2057,10 +2058,55 @@ function rtsAiPush(room, owner, cmd) {
   p.inputQ.push(cmd);
 }
 
+function rtsAiCountType(list, type) {
+  let n = 0;
+  for (let i = 0; i < list.length; i++) if (list[i].type === type) n++;
+  return n;
+}
+
+function rtsAiPickTrain(age, army, gold, workers) {
+  const n = (t) => rtsAiCountType(army, t);
+  // Fill composition gaps first — personality army
+  const wants = [];
+  if (age >= 0) {
+    if (n("duck") < 4) wants.push("duck");
+    if (n("melee") < 3) wants.push("melee");
+    if (n("ranged") < 2) wants.push("ranged");
+  }
+  if (age >= 1) {
+    if (n("swordsman") < 2) wants.push("swordsman");
+    if (n("archer") < 2) wants.push("archer");
+  }
+  if (age >= 2) {
+    if (n("knight") < 2) wants.push("knight");
+    if (n("bomber") < 1) wants.push("bomber");
+    if (n("crossbow") < 2) wants.push("crossbow");
+  }
+  if (age >= 3) {
+    if (n("tanker") < 1) wants.push("tanker");
+    if (n("cannon") < 1) wants.push("cannon");
+    if (n("musketeer") < 1) wants.push("musketeer");
+    if (n("champion") < 1) wants.push("champion");
+  }
+  for (let i = 0; i < wants.length; i++) {
+    const def = RTS_UNITS[wants[i]];
+    if (def && gold >= def.cost && age >= (def.age || 0)) return wants[i];
+  }
+  // Fallback: strongest affordable
+  const order = ["cannon", "champion", "tanker", "musketeer", "knight", "bomber", "crossbow", "swordsman", "archer", "melee", "ranged", "duck"];
+  for (let i = 0; i < order.length; i++) {
+    const def = RTS_UNITS[order[i]];
+    if (!def || age < (def.age || 0) || gold < def.cost) continue;
+    if (order[i] === "duck" && army.length > 16) continue;
+    return order[i];
+  }
+  return null;
+}
+
 function rtsAiThink(room, s, owner, mode, dt) {
   if (!s._aiT) s._aiT = [];
   s._aiT[owner] = (s._aiT[owner] || 0) + dt;
-  if (s._aiT[owner] < 0.55) return;
+  if (s._aiT[owner] < 0.42) return;
   s._aiT[owner] = 0;
 
   const gold = rtsOwnerGold(s, owner);
@@ -2070,79 +2116,212 @@ function rtsAiThink(room, s, owner, mode, dt) {
   const barracks = s.entities.filter(
     (e) => rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building
   );
+  const barracksBusy = barracks.filter((b) => (b.queue || []).length >= 2).length;
   const workers = s.entities.filter((e) => e.type === "worker" && e.owner === owner && e.hp > 0);
   const army = s.entities.filter(
     (e) => e.kind === "unit" && e.type !== "worker" && e.owner === owner && e.hp > 0
   );
+  const turrets = s.entities.filter((e) => e.type === "turret" && e.owner === owner && e.hp > 0);
   const enemyNexus = s.entities.find(
     (e) => e.type === "nexus" && e.hp > 0 && !rtsAllied(owner, e.owner, mode)
   );
+  const enemiesNearBase = s.entities.filter(
+    (e) =>
+      e &&
+      e.hp > 0 &&
+      !rtsAllied(owner, e.owner, mode) &&
+      e.kind === "unit" &&
+      Math.hypot(e.x - nexus.x, e.y - nexus.y) < 280
+  );
+  const underAttack = enemiesNearBase.length >= 2;
 
-  // Age up when affordable
-  const nextAge = age + 1;
-  if (nextAge <= 3 && gold >= (RTS_AGE_COST[nextAge] || 9999) + 80) {
-    rtsAiPush(room, owner, { cmd: "upgradeAge", selectIds: [nexus.id] });
-    return;
+  // 1) Defend home if threatened
+  if (underAttack && army.length) {
+    const threat = enemiesNearBase[0];
+    rtsAiPush(room, owner, {
+      cmd: "attack",
+      selectIds: army.map((u) => u.id),
+      targetId: threat.id,
+      x: threat.x,
+      y: threat.y,
+    });
   }
 
-  // Build first barracks
-  if (!barracks.length && !s.entities.some((e) => rtsIsBarracksType(e.type) && e.owner === owner && e.building)) {
-    if (gold >= RTS_BUILD.barracks.cost) {
-      const sx = nexus.x + (nexus.x < s.W / 2 ? 90 : -90);
-      const sy = nexus.y + (nexus.y < s.H / 2 ? 70 : -70);
-      rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
+  // 2) Economy: grow workers with age
+  const workerGoal = Math.min(14, 7 + age * 2);
+  if (workers.length < workerGoal && gold >= rtsWorkerCost(s, owner)) {
+    const nexusQ = (nexus.queue || []).length;
+    if (nexusQ < 2) {
+      rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });
       return;
     }
   }
 
-  // Upgrade barracks removed — age alone unlocks units
-
-  if (workers.length < 6 && gold >= rtsWorkerCost(s, owner)) {
-    rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });
+  // 3) First / second barracks
+  const barracksAll = s.entities.filter((e) => rtsIsBarracksType(e.type) && e.owner === owner);
+  if (!barracksAll.length && gold >= RTS_BUILD.barracks.cost) {
+    const sx = nexus.x + (nexus.x < s.W / 2 ? 95 : -95);
+    const sy = nexus.y + (nexus.y < s.H / 2 ? 75 : -75);
+    rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
+    return;
+  }
+  if (barracks.length >= 1 && barracksAll.length < 2 && gold >= RTS_BUILD.barracks.cost + 80 && army.length >= 4) {
+    const sx = nexus.x + (nexus.x < s.W / 2 ? 40 : -40);
+    const sy = nexus.y + (nexus.y < s.H / 2 ? 130 : -130);
+    rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
     return;
   }
 
-  const trainOrder = ["cannon", "champion", "musketeer", "tanker", "knight", "bomber", "crossbow", "swordsman", "archer", "melee", "ranged", "duck"];
-  for (let i = 0; i < trainOrder.length; i++) {
-    const ut = trainOrder[i];
-    const def = RTS_UNITS[ut];
-    if (!def || age < (def.age || 0)) continue;
-    if (gold < def.cost) continue;
-    if (army.length > 14 && ut === "duck") continue;
-    rtsAiPush(room, owner, { cmd: "train", unitType: ut, selectIds: barracks.map((b) => b.id) });
-    break;
+  // 4) Home defense turret
+  const homeTurrets = turrets.filter((t) => Math.hypot(t.x - nexus.x, t.y - nexus.y) < 220);
+  if (homeTurrets.length < 2 && gold >= RTS_BUILD.turret.cost + 40) {
+    const ang = (homeTurrets.length + 1) * 1.7;
+    const dist = RTS_NEXUS_TURRET_BAN_R + 35;
+    const sx = nexus.x + Math.cos(ang) * dist;
+    const sy = nexus.y + Math.sin(ang) * dist;
+    rtsAiPush(room, owner, { cmd: "build", buildType: "turret", x: sx, y: sy, selectIds: [] });
+    return;
   }
 
-  if (enemyNexus && army.length >= 3) {
-    const ids = army.map((u) => u.id);
-    // Units cannot attack nexus — push onto enemy army / siege buildings instead
+  // 5) Age up only with reserve (economy first)
+  const nextAge = age + 1;
+  const ageCost = RTS_AGE_COST[nextAge] || 99999;
+  if (nextAge <= 3 && workers.length >= workerGoal - 1 && gold >= ageCost + 150 && army.length >= 5) {
+    rtsAiPush(room, owner, { cmd: "upgradeAge", selectIds: [nexus.id] });
+    return;
+  }
+
+  // 6) Siege turret near enemy nexus (units cannot kill nexus)
+  if (enemyNexus && army.length >= 5 && gold >= RTS_BUILD.turret.cost) {
+    const siegeTurrets = turrets.filter((t) => Math.hypot(t.x - enemyNexus.x, t.y - enemyNexus.y) < 200);
+    if (siegeTurrets.length < 2) {
+      const dx = enemyNexus.x - nexus.x;
+      const dy = enemyNexus.y - nexus.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const sx = enemyNexus.x - (dx / len) * 150 + (siegeTurrets.length ? 40 : -40);
+      const sy = enemyNexus.y - (dy / len) * 150 + (siegeTurrets.length ? -30 : 30);
+      const nearAlly = s.entities.some(
+        (e) => e && e.hp > 0 && e.owner === owner && Math.hypot(e.x - sx, e.y - sy) < 160
+      );
+      if (nearAlly && rtsInVision(s, owner, sx, sy)) {
+        rtsAiPush(room, owner, { cmd: "build", buildType: "turret", x: sx, y: sy, selectIds: [] });
+        return;
+      }
+      if (!underAttack) {
+        rtsAiPush(room, owner, {
+          cmd: "move",
+          selectIds: army.map((u) => u.id),
+          x: sx,
+          y: sy,
+        });
+      }
+    }
+  }
+
+  // 7) Train balanced army
+  if (barracks.length && barracksBusy < barracks.length) {
+    const pick = rtsAiPickTrain(age, army, gold, workers);
+    if (pick) {
+      rtsAiPush(room, owner, { cmd: "train", unitType: pick, selectIds: barracks.map((b) => b.id) });
+    }
+  }
+
+  // 8) Attack: clear defenses / army near enemy, then hold on siege line
+  if (underAttack) return;
+  if (enemyNexus && army.length >= 4) {
     let focus = null;
     let fd = 1e9;
     for (const o of s.entities) {
       if (!o || o.hp <= 0 || rtsAllied(owner, o.owner, mode)) continue;
       if (o.type === "nexus") continue;
+      const nearEnemy = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y) < 320;
+      if (!nearEnemy && o.kind === "building") continue;
       if (o.kind !== "unit" && o.type !== "turret" && !rtsIsBarracksType(o.type)) continue;
-      const d = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y);
+      // Prefer enemy turrets (block siege), then barracks, then units
+      const bias = o.type === "turret" ? -80 : rtsIsBarracksType(o.type) ? -40 : 0;
+      const d = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y) + bias;
       if (d < fd) {
         fd = d;
         focus = o;
       }
     }
+    const tanks = army.filter((u) => u.type === "tanker" || u.type === "champion" || u.type === "knight" || u.type === "melee" || u.type === "swordsman");
+    const backline = army.filter((u) => u.type === "cannon" || u.type === "musketeer" || u.type === "archer" || u.type === "crossbow" || u.type === "ranged");
+    const rest = army.filter((u) => tanks.indexOf(u) < 0 && backline.indexOf(u) < 0);
     if (focus) {
-      rtsAiPush(room, owner, {
-        cmd: "attack",
-        selectIds: ids,
-        targetId: focus.id,
-        x: focus.x,
-        y: focus.y,
-      });
+      const front = tanks.concat(rest);
+      if (front.length) {
+        rtsAiPush(room, owner, {
+          cmd: "attack",
+          selectIds: front.map((u) => u.id),
+          targetId: focus.id,
+          x: focus.x,
+          y: focus.y,
+        });
+      }
+      if (backline.length) {
+        const bx = focus.x + (nexus.x - focus.x) * 0.15;
+        const by = focus.y + (nexus.y - focus.y) * 0.15;
+        rtsAiPush(room, owner, {
+          cmd: "attack",
+          selectIds: backline.map((u) => u.id),
+          targetId: focus.id,
+          x: bx,
+          y: by,
+        });
+      }
     } else {
+      // Park army on siege ring so turrets/barracks can finish nexus
+      const dx = enemyNexus.x - nexus.x;
+      const dy = enemyNexus.y - nexus.y;
+      const len = Math.hypot(dx, dy) || 1;
       rtsAiPush(room, owner, {
         cmd: "move",
-        selectIds: ids,
-        x: enemyNexus.x,
-        y: enemyNexus.y,
+        selectIds: army.map((u) => u.id),
+        x: enemyNexus.x - (dx / len) * 140,
+        y: enemyNexus.y - (dy / len) * 140,
       });
+    }
+  }
+}
+
+function rtsApplyUnitHit(s, attacker, target, rawDmg, mode) {
+  if (!target || target.hp <= 0 || target.type === "nexus") return 0;
+  const tdef = RTS_UNITS[target.type] || {};
+  let dmg = rawDmg;
+  if (tdef.armor) dmg *= 1 - Math.min(0.7, tdef.armor);
+  // Champion aura: nearby own champions buff outgoing damage
+  if (attacker.kind === "unit") {
+    for (const e of s.entities) {
+      if (!e || e.hp <= 0 || e.type !== "champion") continue;
+      if (e.owner !== attacker.owner && e.owner != attacker.owner) continue;
+      if (Math.hypot(e.x - attacker.x, e.y - attacker.y) < 110) {
+        dmg *= 1 + (RTS_UNITS.champion.aura || 0.15);
+        break;
+      }
+    }
+  }
+  const adef = RTS_UNITS[attacker.type] || {};
+  if (adef.vsBuilding && target.kind === "building") dmg *= adef.vsBuilding;
+  if (attacker._chargeMul && attacker._chargeMul > 1) {
+    dmg *= attacker._chargeMul;
+    attacker._chargeMul = 1;
+  }
+  target.hp -= dmg;
+  if (adef.lifesteal && attacker.hp > 0) {
+    attacker.hp = Math.min(attacker.maxHp || 999, attacker.hp + dmg * adef.lifesteal);
+  }
+  return dmg;
+}
+
+function rtsSplashDamage(s, attacker, cx, cy, radius, dmg, mode, skipId) {
+  for (const o of s.entities) {
+    if (!o || o.hp <= 0 || o.id === skipId) continue;
+    if (rtsAllied(attacker.owner, o.owner, mode)) continue;
+    if (o.type === "nexus") continue;
+    if (o.kind !== "unit" && o.kind !== "building") continue;
+    if (Math.hypot(o.x - cx, o.y - cy) <= radius) {
+      rtsApplyUnitHit(s, attacker, o, dmg, mode);
     }
   }
 }
@@ -2255,14 +2434,27 @@ function tickRts(room, dt) {
     }
   }
 
-  // move + combat
+  // move + combat (unit personalities)
   for (const e of s.entities) {
     if (e.kind !== "unit" || e.hp <= 0) continue;
     const def = RTS_UNITS[e.type] || RTS_UNITS.melee;
     if (e.atkCd > 0) e.atkCd -= dt;
+    if (e._chargeMul == null) e._chargeMul = 1;
+
+    // Tanker taunt: pull idle nearby enemies onto self
+    if (def.taunt && e.order !== "move" && e.order !== "harvest") {
+      for (const o of s.entities) {
+        if (!o || o.kind !== "unit" || o.hp <= 0) continue;
+        if (rtsAllied(e.owner, o.owner, mode)) continue;
+        if (Math.hypot(o.x - e.x, o.y - e.y) > def.taunt) continue;
+        if (o.order === "move" || o.order === "harvest") continue;
+        if (o.targetId != null) continue;
+        o.targetId = e.id;
+        o.order = "attack";
+      }
+    }
 
     if (e.order === "move") {
-      // Explicit move order: never auto-chase / stick to attack destination
       if (e.tx == null || e.ty == null) e.order = null;
       e.targetId = null;
     } else if (e.order !== "harvest") {
@@ -2271,45 +2463,84 @@ function tickRts(room, dt) {
         target = null;
         e.targetId = null;
       }
-      // Units cannot damage nexus
       if (target && target.type === "nexus") {
         target = null;
         e.targetId = null;
         if (e.order === "attack") e.order = "move";
       }
       if (!target && e.order !== "move") {
-        let bd = def.range + 40,
-          best = null;
+        let bd = def.range + (def.sniper ? 60 : 40),
+          best = null,
+          bestScore = 1e9;
         for (const o of s.entities) {
           if (rtsAllied(e.owner, o.owner, mode) || o.hp <= 0) continue;
           if (o.kind !== "unit" && o.kind !== "building") continue;
           if (o.type === "nexus") continue;
           const d = Math.hypot(o.x - e.x, o.y - e.y);
-          if (d < bd) {
-            bd = d;
+          if (d > bd) continue;
+          let score = d;
+          if (def.vsBuilding && o.kind === "building") score -= 80;
+          if (def.sniper) score += (o.hp || 0) * 0.15; // prefer wounded / closer
+          if (def.suicide && o.kind === "unit") score -= 20;
+          if (score < bestScore) {
+            bestScore = score;
             best = o;
           }
         }
-        if (best && bd <= def.range + 20) target = best;
+        if (best) target = best;
       }
       if (target) {
         const d = Math.hypot(target.x - e.x, target.y - e.y);
-        if (d <= def.range) {
-          if (e.order !== "move") {
+        // Kite: keep distance
+        if (def.kite && d < def.range * 0.55 && d > 8) {
+          const ang = Math.atan2(e.y - target.y, e.x - target.x);
+          e.tx = e.x + Math.cos(ang) * 40;
+          e.ty = e.y + Math.sin(ang) * 40;
+          e.order = "attack";
+        } else if (d <= def.range) {
+          if (e.order !== "move" && !def.kite) {
             e.tx = null;
             e.ty = null;
           }
           if (e.atkCd <= 0) {
-            if (target.type !== "nexus") {
-              target.hp -= def.dps * 0.5;
-              e.atkCd = 0.5;
-              if (e.type === "bomber") {
-                target.hp -= 25;
-                e.hp = 0;
+            const period = def.atkPeriod != null ? def.atkPeriod : 0.5;
+            const shot = def.dps * period;
+            if (def.suicide) {
+              rtsSplashDamage(s, e, e.x, e.y, def.splash || 70, def.suicide, mode, null);
+              e.hp = 0;
+              e.atkCd = 99;
+            } else {
+              rtsApplyUnitHit(s, e, target, shot, mode);
+              if (def.cleave) {
+                rtsSplashDamage(s, e, target.x, target.y, def.cleave, shot * 0.55, mode, target.id);
+              }
+              if (def.pierce) {
+                const ang = Math.atan2(target.y - e.y, target.x - e.x);
+                const px = target.x + Math.cos(ang) * 36;
+                const py = target.y + Math.sin(ang) * 36;
+                rtsSplashDamage(s, e, px, py, 28, shot * def.pierce, mode, target.id);
+              }
+              if (def.splash && !def.suicide) {
+                rtsSplashDamage(s, e, target.x, target.y, def.splash, shot * 0.4, mode, target.id);
+              }
+              e.atkCd = period;
+              // beam for sniper / cannon flair
+              if (def.sniper || def.vsBuilding) {
+                if (!s.beams) s.beams = [];
+                s.beams.push({
+                  x1: e.x,
+                  y1: e.y,
+                  x2: target.x,
+                  y2: target.y,
+                  life: def.sniper ? 0.2 : 0.12,
+                  owner: e.owner,
+                });
               }
             }
           }
         } else if (e.order !== "move") {
+          // Charge buildup while closing in
+          if (def.charge) e._chargeMul = Math.min(def.charge, (e._chargeMul || 1) + dt * 0.55);
           e.tx = target.x;
           e.ty = target.y;
         }
@@ -2326,11 +2557,13 @@ function tickRts(room, dt) {
         e.ty = null;
         if (e.order === "move") e.order = null;
       } else {
-        const step = def.speed * dt;
+        let spd = def.speed;
+        if (def.rush && e.order === "attack") spd *= 1.12;
+        if (def.charge && (e._chargeMul || 1) > 1.2) spd *= 1.2;
+        const step = spd * dt;
         const nx = e.x + (dx / dist) * Math.min(step, dist);
         const ny = e.y + (dy / dist) * Math.min(step, dist);
         const pos = rtsClampPos(s, nx, ny, e.r || 8);
-        // If blocked and barely moved, clear stuck harvest/move target so AI can repath next tick
         if (Math.hypot(pos.x - e.x, pos.y - e.y) < step * 0.05 && e.order === "harvest") {
           e.tx = null;
           e.ty = null;
