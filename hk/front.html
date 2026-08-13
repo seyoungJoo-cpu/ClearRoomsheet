@@ -8313,6 +8313,33 @@
       margin-bottom: 6px;
     }
 
+    /* 정비관리: 입력폼만 스크롤해도 상단 고정 */
+    .request-main-stack > .request-panel,
+    .request-main-stack > .request-panel > .request-panel__body {
+      display: contents;
+    }
+
+    .request-main-stack .request-panel__main {
+      position: sticky;
+      top: 0;
+      z-index: 24;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px 12px;
+      box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
+      margin-bottom: 10px;
+    }
+
+    .request-main-stack .request-type-filters {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px 12px;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
     .request-desk-chat,
     .order-desk-chat {
       position: relative;
@@ -8662,6 +8689,23 @@
 
     .order-panel__main .panel-head-row {
       margin-bottom: 6px;
+    }
+
+    /* 오더·시설: 입력폼만 스크롤해도 상단 고정 (채팅·작업목록은 흐름 유지) */
+    .main.main--order #orderPanel > .order-panel__body,
+    .main.main--facility #facilityPanel > .order-panel__body {
+      display: contents;
+    }
+
+    .main.main--order #orderPanel .order-panel__main,
+    .main.main--facility #facilityPanel .order-panel__main {
+      position: sticky;
+      top: 0;
+      z-index: 24;
+      background: var(--bg-card);
+      padding: 6px 0 10px;
+      margin: 0 0 8px;
+      box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
     }
 
     .complaint-panel {
