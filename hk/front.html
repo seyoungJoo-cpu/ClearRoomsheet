@@ -7798,8 +7798,9 @@
 
     .sched-req-card .request-feedback__item-by {
       margin-top: 0;
-      font-size: 0.75rem;
+      font-size: 0.625rem;
       font-weight: 700;
+      color: var(--text-muted);
     }
 
     .sched-req-card--urgent {
@@ -10548,10 +10549,8 @@
     }
 
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
-    /* 객실 | 동 | 시간 | 이름 | 상태 | 메모 | 접수 | 버튼 */
-    .main .order-work-item.is-strip-cols,
-    .main .sched-cards-list > .sched-req-card.is-strip-cols,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols {
+    /* 오더·시설: 객실 | 동 | 시간 | 이름 | 상태 | 메모 | 접수 | 버튼 */
+    .main .order-work-item.is-strip-cols {
       display: grid;
       grid-template-columns:
         minmax(2.5rem, 0.6fr)
@@ -10573,13 +10572,47 @@
       overflow: visible;
     }
 
-    .hk-strip-sort--work,
-    .hk-strip-sort[data-sort-list="schedCards"] {
+    /* 정비관리 약속시간: 객실 | 동 | 시간 | 상태 | 메모 | 접수 | 버튼 (요청은 우하단) */
+    .main .sched-cards-list > .sched-req-card.is-strip-cols,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols {
+      display: grid;
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(4.5rem, 0.9fr)
+        minmax(3.5rem, 0.7fr)
+        minmax(5rem, 1.5fr)
+        minmax(4.5rem, 1fr)
+        auto;
+      gap: 6px 12px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      padding: 10px 14px 22px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      overflow: visible;
+      position: relative;
+    }
+
+    .hk-strip-sort--work {
       grid-template-columns:
         minmax(2.5rem, 0.6fr)
         3.5rem
         minmax(4.5rem, 0.9fr)
         minmax(4.2rem, 0.9fr)
+        minmax(3.5rem, 0.7fr)
+        minmax(5rem, 1.5fr)
+        minmax(4.5rem, 1fr)
+        auto;
+    }
+
+    .hk-strip-sort[data-sort-list="schedCards"] {
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(4.5rem, 0.9fr)
         minmax(3.5rem, 0.7fr)
         minmax(5rem, 1.5fr)
         minmax(4.5rem, 1fr)
@@ -10655,9 +10688,7 @@
       gap: 6px;
     }
 
-    .main .order-work-item.is-strip-cols > .order-feedback__item-by,
-    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by {
+    .main .order-work-item.is-strip-cols > .order-feedback__item-by {
       grid-column: 4;
       grid-row: 1;
       justify-self: start;
@@ -10675,6 +10706,31 @@
       font-size: 0.8125rem;
       font-weight: 700;
       color: var(--text);
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by {
+      position: absolute;
+      right: 10px;
+      bottom: 4px;
+      left: auto;
+      grid-column: auto;
+      grid-row: auto;
+      justify-self: auto;
+      align-self: auto;
+      width: auto;
+      max-width: 42%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.625rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-muted);
+      z-index: 1;
+      pointer-events: none;
     }
 
     .main .order-work-item.is-strip-cols > .order-chat,
@@ -10718,14 +10774,14 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--status,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--status {
-      grid-column: 5;
+      grid-column: 4;
       grid-row: 1;
       min-width: 0;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo {
-      grid-column: 6;
+      grid-column: 5;
       grid-row: 1;
       font-size: 1.4rem;
       font-weight: 800;
@@ -10745,7 +10801,7 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--received,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--received {
-      grid-column: 7;
+      grid-column: 6;
       grid-row: 1;
       font-size: 0.8125rem;
       min-width: 0;
@@ -10769,7 +10825,7 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions {
-      grid-column: 8;
+      grid-column: 7;
       grid-row: 1;
       justify-self: end;
       width: auto;
@@ -15492,7 +15548,14 @@
         { id: "memo", label: "메모" },
         { id: "received", label: "접수 시간" },
       ];
-      var SCHED_STRIP_SORT_COLS = WORK_STRIP_SORT_COLS;
+      var SCHED_STRIP_SORT_COLS = [
+        { id: "room", label: "객실" },
+        { id: "wing", label: "동" },
+        { id: "time", label: "시간" },
+        { id: "status", label: "상태" },
+        { id: "memo", label: "메모" },
+        { id: "received", label: "접수 시간" },
+      ];
 
       function getStripSortState(listKey) {
         return stripSortStateByList[listKey] || { col: "", dir: "" };
