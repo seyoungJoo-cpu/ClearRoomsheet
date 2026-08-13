@@ -15,6 +15,7 @@ const GAMES = {
 };
 
 const MEMORY_MODES = {
+  solo: { label: "싱글 vs AI", need: 2, max: 2, team: false, solo: true },
   "1v1": { label: "1:1", need: 2, max: 2, team: false },
   ffa3: { label: "1:1:1", need: 3, max: 3, team: false },
   "2v2": { label: "2:2", need: 4, max: 4, team: true },
@@ -227,27 +228,70 @@ function seatedCount(room) {
   return room.players.length;
 }
 
+function roomIsSolo(room) {
+  if (!room) return false;
+  if (room.mode === "solo") return true;
+  if (room.game === "rts") return rtsIsSolo(room.mode);
+  if (room.game === "lanepush" || room.game === "nexuswar") return laneNexus.modeIsSolo(room.mode);
+  if (room.game === "memorymp") return memoryIsSolo(room.mode);
+  return false;
+}
+function soloAiWant(room) {
+  if (room.game === "snakes") return 3;
+  return 1;
+}
+function ensureSoloAiPlayers(room) {
+  if (!roomIsSolo(room)) return false;
+  const want = soloAiWant(room);
+  let added = false;
+  while (room.players.filter((p) => p.isAi).length < want) {
+    const used = new Set(room.players.map((p) => p.slot));
+    let slot = 0;
+    while (used.has(slot)) slot++;
+    room.players.push({
+      id: nextPlayerId++,
+      name: room.game === "snakes" ? "AI 뱀" + (slot + 1) : "AI 적군",
+      ws: null,
+      slot,
+      ready: true,
+      input: defaultInput(room.game),
+      inputQ: [],
+      isAi: true,
+      roomCode: room.code,
+    });
+    added = true;
+  }
+  room.players.forEach(function (p, i) {
+    p.slot = i;
+    if (room.game === "tank") p.team = tankTeamOf(i, room.mode === "solo" ? "ffa" : room.mode);
+    else if (room.game === "memorymp") p.team = memoryTeamOf(i, room.mode);
+    else if (room.game === "rts") p.team = rtsTeamOf(i, room.mode);
+    else if (room.game === "lanepush" || room.game === "nexuswar") p.team = laneNexus.teamOf(i, room.mode);
+  });
+  return added;
+}
+
 function allReady(room) {
   const max = room.max || GAMES[room.game].max;
+  if (roomIsSolo(room)) {
+    ensureSoloAiPlayers(room);
+    if (room.game === "rts") ensureRtsAi(room);
+    if (room.game === "lanepush" || room.game === "nexuswar") ensureLaneNexusAi(room);
+    const humans = room.players.filter((p) => !p.isAi);
+    const readyOk = room.players.every((p) => p.ready || p.isAi);
+    return humans.length === 1 && room.players.length >= 2 && readyOk;
+  }
   const humans = room.players.filter((p) => !p.isAi);
   const readyOk = room.players.every((p) => p.ready || p.isAi);
   if (room.game === "snakes" || room.game === "tank") {
     return humans.length >= 2 && humans.length <= max && readyOk;
   }
   if (room.game === "rts") {
-    if (rtsIsSolo(room.mode)) {
-      ensureRtsAi(room);
-      const humans = room.players.filter((p) => !p.isAi);
-      const readyOk = room.players.every((p) => p.ready || p.isAi);
-      return humans.length === 1 && room.players.length >= 2 && readyOk;
-    }
     const need = rtsModeNeed(room.mode);
-    const max = rtsModeMax(room.mode) || need;
-    const humans = room.players.filter((p) => !p.isAi);
-    const readyOk = room.players.every((p) => p.ready || p.isAi);
-    return humans.length >= Math.min(2, need) && humans.length <= max && humans.length >= 2 && readyOk;
+    const rmax = rtsModeMax(room.mode) || need;
+    return humans.length >= Math.min(2, need) && humans.length <= rmax && humans.length >= 2 && readyOk;
   }
-  if (room.game === "ageofwar") {
+  if (room.game === "ageofwar" || room.game === "airhockey") {
     return humans.length === 2 && readyOk;
   }
   if (room.game === "memorymp") {
@@ -256,12 +300,6 @@ function allReady(room) {
     return humans.length === need && humans.length <= mmax && readyOk;
   }
   if (room.game === "lanepush" || room.game === "nexuswar") {
-    if (laneNexus.modeIsSolo(room.mode)) {
-      ensureLaneNexusAi(room);
-      const humans = room.players.filter((p) => !p.isAi);
-      const readyOk = room.players.every((p) => p.ready || p.isAi);
-      return humans.length === 1 && room.players.length >= 2 && readyOk;
-    }
     const need = laneNexus.modeNeed(room.mode);
     const mmax = laneNexus.modeMax(room.mode) || need;
     return humans.length === need && humans.length <= mmax && readyOk;
@@ -388,6 +426,7 @@ function tryStart(room) {
     p.ready = false;
   }
   if (room.game === "tank") ensureTankAi(room);
+  if (roomIsSolo(room)) ensureSoloAiPlayers(room);
   try {
     room.state = initState(room);
   } catch (err) {
@@ -454,6 +493,9 @@ function memoryModeNeed(mode) {
 }
 function memoryModeMax(mode) {
   return (MEMORY_MODES[mode] || MEMORY_MODES["1v1"]).max;
+}
+function memoryIsSolo(mode) {
+  return !!(MEMORY_MODES[mode] && MEMORY_MODES[mode].solo);
 }
 function memoryIsTeam(mode) {
   return !!(MEMORY_MODES[mode] && MEMORY_MODES[mode].team);
@@ -682,13 +724,70 @@ function applyMemoryInput(room, player, payload) {
 }
 function tickMemory(room) {
   const s = room.state;
-  if (!s || !s.lockUntil) return;
-  if (Date.now() < s.lockUntil) return;
-  for (const i of s.openIdx) {
-    const c = s.cards[i];
-    if (c && !c.done) c.open = false;
+  if (!s) return;
+  if (s.lockUntil && Date.now() >= s.lockUntil) {
+    for (const i of s.openIdx) {
+      const c = s.cards[i];
+      if (c && !c.done) c.open = false;
+    }
+    memoryAdvanceTurn(room, s);
   }
-  memoryAdvanceTurn(room, s);
+  memoryAiTick(room);
+}
+function memoryAiTick(room) {
+  const s = room.state;
+  if (!s || room.status !== "playing") return;
+  if (s.previewEnds && Date.now() < s.previewEnds) return;
+  if (s.lockUntil && Date.now() < s.lockUntil) return;
+  if (s.matched >= s.pairs) return;
+  const picker = room.players.find((p) => p.id === s.currentPickerId);
+  if (!picker || !picker.isAi) return;
+  if (!s.aiMem) s.aiMem = {};
+  if (!s._aiFlipAt) s._aiFlipAt = 0;
+  if (Date.now() < s._aiFlipAt) return;
+  s._aiFlipAt = Date.now() + 380 + Math.random() * 280;
+
+  // remember currently open / previously seen
+  for (let i = 0; i < s.cards.length; i++) {
+    const c = s.cards[i];
+    if (c && (c.open || c.done) && c.icon) s.aiMem[i] = c.icon;
+  }
+
+  const closed = [];
+  for (let i = 0; i < s.cards.length; i++) {
+    const c = s.cards[i];
+    if (c && !c.open && !c.done) closed.push(i);
+  }
+  if (!closed.length) return;
+
+  let pick = null;
+  if (s.openIdx.length === 1) {
+    const first = s.openIdx[0];
+    const icon = s.cards[first] && s.cards[first].icon;
+    for (const i of closed) {
+      if (s.aiMem[i] === icon) {
+        pick = i;
+        break;
+      }
+    }
+  } else {
+    // look for known pair
+    const seen = {};
+    for (const i of Object.keys(s.aiMem)) {
+      const idx = Number(i);
+      const c = s.cards[idx];
+      if (!c || c.done || c.open) continue;
+      const ic = s.aiMem[idx];
+      if (seen[ic] != null) {
+        pick = idx;
+        break;
+      }
+      seen[ic] = idx;
+    }
+  }
+  if (pick == null) pick = closed[(Math.random() * closed.length) | 0];
+  applyMemoryInput(room, picker, { flip: pick });
+  if (s.cards[pick] && s.cards[pick].icon) s.aiMem[pick] = s.cards[pick].icon;
 }
 
 /* ===================== TANK (4p · 초대형 맵 · FFA/팀) ===================== */
@@ -698,6 +797,10 @@ function tankTeamOf(slot, mode) {
 }
 
 function ensureTankAi(room) {
+  if (room.mode === "solo") {
+    ensureSoloAiPlayers(room);
+    return;
+  }
   if (room.mode !== "team") return;
   if (room.players.length !== 3) return;
   if (room.players.some((p) => p.isAi)) return;
@@ -2452,6 +2555,34 @@ function aowSeparateAllies(s) {
   }
 }
 
+function aowAiThink(s, owner, dt) {
+  if (!s._aowAi) s._aowAi = {};
+  const st = s._aowAi[owner] || (s._aowAi[owner] = { t: 0.6 });
+  st.t -= dt;
+  if (st.t > 0) return { action: null, unitIndex: 0 };
+  st.t = 0.7 + Math.random() * 0.9;
+  const age = s.age[owner] || 0;
+  if (age < 4 && (s.xp[owner] || 0) >= (AOW_EVOLVE_XP[age] || 99999)) {
+    return { action: "evolve", unitIndex: 0 };
+  }
+  if ((s.specialCd[owner] || 0) <= 0 && Math.random() < 0.08) {
+    return { action: "special", unitIndex: 0 };
+  }
+  const defs = aowUnitDefs(age);
+  const own = s.units.filter((u) => u.owner === owner && u.hp > 0).length;
+  const foe = s.units.filter((u) => u.owner !== owner && u.hp > 0).length;
+  let pick = 0;
+  if (foe > own + 1) pick = Math.min(2, defs.length - 1);
+  else if (Math.random() < 0.35) pick = Math.min(1, defs.length - 1);
+  else pick = 0;
+  for (let tries = 0; tries < 3; tries++) {
+    const ui = (pick + tries) % 3;
+    const def = defs[ui];
+    if (def && s.gold[owner] >= def.cost) return { action: "spawn", unitIndex: ui };
+  }
+  return { action: null, unitIndex: 0 };
+}
+
 function tickAgeOfWar(room, dt) {
   const s = room.state;
   s.incomeT += dt;
@@ -2470,6 +2601,9 @@ function tickAgeOfWar(room, dt) {
   });
 
   for (const p of room.players) {
+    if (p.isAi) {
+      p.input = aowAiThink(s, p.slot, dt);
+    }
     const inp = p.input;
     if (!inp || !inp.action) continue;
     const owner = p.slot;
@@ -2801,7 +2935,7 @@ function snakesStep(room) {
   for (const sn of s.snakes) {
     if (!sn.alive) continue;
     const p = room.players.find((pl) => pl.id === sn.id);
-    snakesApplyDirInput(sn, p && p.input);
+    if (!(p && p.isAi)) snakesApplyDirInput(sn, p && p.input);
     sn.dirX = sn.nextDirX;
     sn.dirY = sn.nextDirY;
   }
@@ -2901,14 +3035,78 @@ function snakesStep(room) {
   checkSnakesEnd(room);
 }
 
+function snakeAiThink(s, sn) {
+  if (!sn.alive || sn.eliminated) return;
+  const head = sn.body[0];
+  if (!head) return;
+  const cols = s.cols;
+  const rows = s.rows;
+  const occ = new Set();
+  for (const o of s.snakes) {
+    if (!o.alive || o.eliminated) continue;
+    for (let i = 0; i < o.body.length; i++) {
+      // allow moving onto own tail tip
+      if (o === sn && i === o.body.length - 1) continue;
+      occ.add(o.body[i].x + "," + o.body[i].y);
+    }
+  }
+  const dirs = [
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
+  ];
+  let food = null;
+  let fd = 1e9;
+  for (const f of s.food || []) {
+    const d = Math.abs(f.x - head.x) + Math.abs(f.y - head.y);
+    if (d < fd) {
+      fd = d;
+      food = f;
+    }
+  }
+  let best = null;
+  let bestScore = -1e12;
+  for (const d of dirs) {
+    if (d.dx === -sn.dirX && d.dy === -sn.dirY) continue;
+    const nx = head.x + d.dx;
+    const ny = head.y + d.dy;
+    if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+    if (occ.has(nx + "," + ny)) continue;
+    let score = Math.random() * 2;
+    if (food) {
+      const before = Math.abs(food.x - head.x) + Math.abs(food.y - head.y);
+      const after = Math.abs(food.x - nx) + Math.abs(food.y - ny);
+      score += (before - after) * 8;
+    }
+    // prefer open space
+    let open = 0;
+    for (const d2 of dirs) {
+      const ax = nx + d2.dx;
+      const ay = ny + d2.dy;
+      if (ax < 0 || ay < 0 || ax >= cols || ay >= rows) continue;
+      if (!occ.has(ax + "," + ay)) open++;
+    }
+    score += open * 1.5;
+    if (score > bestScore) {
+      bestScore = score;
+      best = d;
+    }
+  }
+  if (best) {
+    sn.nextDirX = best.dx;
+    sn.nextDirY = best.dy;
+  }
+}
+
 function tickSnakes(room, dt) {
   const s = room.state;
   if (!s) return;
-  // keep applying direction every frame so inputs feel responsive before step
   for (const sn of s.snakes) {
     if (!sn.alive) continue;
     const p = room.players.find((pl) => pl.id === sn.id);
-    snakesApplyDirInput(sn, p && p.input);
+    if (p && p.isAi) snakeAiThink(s, sn);
+    else snakesApplyDirInput(sn, p && p.input);
   }
   s.stepAcc = (s.stepAcc || 0) + dt;
   const step = (s.stepMs || 120) / 1000;
@@ -2964,7 +3162,19 @@ function tickAirhockey(room, dt) {
     pad.px = pad.x;
     pad.py = pad.y;
     const p = room.players.find((pl) => pl.id === pad.id);
-    const inp = (p && p.input) || {};
+    let inp = (p && p.input) || {};
+    if (p && p.isAi) {
+      const puck = s.puck;
+      const targetY = puck.y + puck.vy * 0.12;
+      const defendX = i === 0 ? Math.min(s.W * 0.38, Math.max(pad.r + 10, puck.x - 40)) : Math.max(s.W * 0.62, Math.min(s.W - pad.r - 10, puck.x + 40));
+      // chase puck when on AI half, else guard goal line
+      const onMyHalf = i === 0 ? puck.x < s.W * 0.55 : puck.x > s.W * 0.45;
+      inp = {
+        x: onMyHalf ? defendX : i === 0 ? 90 : s.W - 90,
+        y: Math.max(pad.r, Math.min(s.H - pad.r, targetY)),
+      };
+      p.input = inp;
+    }
     const tx = typeof inp.x === "number" ? inp.x : pad.x;
     const ty = typeof inp.y === "number" ? inp.y : pad.y;
     const maxX0 = s.W * 0.45,
@@ -3106,8 +3316,7 @@ function lobbyList(game) {
   for (const room of rooms.values()) {
     if (room.game !== game) continue;
     if (room.status !== "lobby") continue;
-    if (game === "rts" && rtsIsSolo(room.mode)) continue;
-    if ((game === "lanepush" || game === "nexuswar") && laneNexus.modeIsSolo(room.mode)) continue;
+    if (roomIsSolo(room)) continue;
     list.push({
       code: room.code,
       players: room.players.filter((p) => !p.isAi).length,
@@ -3199,30 +3408,30 @@ function attachGameRooms(httpServer) {
         if (existing) removePlayer(existing.room, existing.player);
         const name = String(msg.name || ws._name || "Player").slice(0, 24);
         const code = randCode();
+        const rawMode = String(msg.mode || "");
+        let mode = null;
+        if (game === "tank") {
+          mode = rawMode === "team" ? "team" : rawMode === "solo" ? "solo" : "ffa";
+        } else if (game === "rts") {
+          mode = parseRtsMode(msg.mode);
+        } else if (game === "memorymp") {
+          mode = parseMemoryMode(msg.mode);
+        } else if (game === "lanepush" || game === "nexuswar") {
+          mode = laneNexus.parseSharedMode(msg.mode);
+        } else if (game === "ageofwar" || game === "snakes" || game === "airhockey") {
+          mode = rawMode === "solo" ? "solo" : null;
+        }
+        let maxPlayers = GAMES[game].max;
+        if (game === "rts") maxPlayers = rtsModeMax(mode);
+        else if (game === "memorymp") maxPlayers = memoryModeMax(mode);
+        else if (game === "lanepush" || game === "nexuswar") maxPlayers = laneNexus.modeMax(mode);
+        else if (mode === "solo") maxPlayers = game === "snakes" ? 4 : 2;
         const room = {
           code,
           game,
-          mode:
-            game === "tank"
-              ? String(msg.mode || "") === "team"
-                ? "team"
-                : "ffa"
-              : game === "rts"
-                ? parseRtsMode(msg.mode)
-                : game === "memorymp"
-                  ? parseMemoryMode(msg.mode)
-                  : game === "lanepush" || game === "nexuswar"
-                    ? laneNexus.parseSharedMode(msg.mode)
-                    : null,
+          mode,
           pairs: game === "memorymp" ? parseMemoryPairs(msg.pairs) : null,
-          max:
-            game === "rts"
-              ? rtsModeMax(parseRtsMode(msg.mode))
-              : game === "memorymp"
-                ? memoryModeMax(parseMemoryMode(msg.mode))
-                : game === "lanepush" || game === "nexuswar"
-                  ? laneNexus.modeMax(laneNexus.parseSharedMode(msg.mode))
-                  : GAMES[game].max,
+          max: maxPlayers,
           players: [],
           status: "lobby",
           state: null,
@@ -3238,10 +3447,7 @@ function attachGameRooms(httpServer) {
           roomCode: code,
         };
         room.players.push(player);
-        if (game === "rts" && rtsIsSolo(room.mode)) ensureRtsAi(room);
-        if ((game === "lanepush" || game === "nexuswar") && laneNexus.modeIsSolo(room.mode)) {
-          ensureLaneNexusAi(room);
-        }
+        if (roomIsSolo(room)) ensureSoloAiPlayers(room);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
         // Host gets room first; lobby fan-out deferred off the hot path
@@ -3258,13 +3464,7 @@ function attachGameRooms(httpServer) {
         const room = rooms.get(code);
         if (!room) return error(ws, "room_not_found");
         if (room.status !== "lobby") return error(ws, "room_not_joinable");
-        if (room.game === "rts" && rtsIsSolo(room.mode)) {
-          return error(ws, "room_full");
-        }
-        if (
-          (room.game === "lanepush" || room.game === "nexuswar") &&
-          laneNexus.modeIsSolo(room.mode)
-        ) {
+        if (roomIsSolo(room)) {
           return error(ws, "room_full");
         }
         const joinMax = room.max || GAMES[room.game].max;
