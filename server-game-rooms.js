@@ -1866,12 +1866,30 @@ function tickRts(room, dt) {
   }
 
   // soft separation so units do not stack
+  // 일꾼끼리 자원 채취 중에는 겹침 허용 (미네랄 근처에서 서로 밀지 않음)
+  function rtsWorkerNearMineral(e) {
+    if (!e || e.type !== "worker" || e.hp <= 0) return false;
+    if (!Array.isArray(s.minerals)) return false;
+    for (let mi = 0; mi < s.minerals.length; mi++) {
+      const m = s.minerals[mi];
+      if (!m || !(m.amount > 0)) continue;
+      if (Math.hypot((m.x || 0) - e.x, (m.y || 0) - e.y) < 42) return true;
+    }
+    return false;
+  }
   for (let i = 0; i < s.entities.length; i++) {
     const a = s.entities[i];
     if (!a || a.kind !== "unit" || a.hp <= 0) continue;
     for (let j = i + 1; j < s.entities.length; j++) {
       const b = s.entities[j];
       if (!b || b.kind !== "unit" || b.hp <= 0) continue;
+      if (
+        a.type === "worker" &&
+        b.type === "worker" &&
+        (rtsWorkerNearMineral(a) || rtsWorkerNearMineral(b))
+      ) {
+        continue;
+      }
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const dist = Math.hypot(dx, dy) || 0.001;
