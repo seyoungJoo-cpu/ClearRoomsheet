@@ -16051,6 +16051,22 @@
         return next;
       }
 
+      function findDeskChatPageScrollParent(el) {
+        var node = el && el.parentElement;
+        while (node && node !== document.body && node !== document.documentElement) {
+          var style = window.getComputedStyle(node);
+          var oy = style.overflowY;
+          if (
+            (oy === "auto" || oy === "scroll" || oy === "overlay") &&
+            node.scrollHeight > node.clientHeight + 1
+          ) {
+            return node;
+          }
+          node = node.parentElement;
+        }
+        return document.scrollingElement || document.documentElement;
+      }
+
       function bindDeskChatScrollControl() {
         var asides = document.querySelectorAll('.request-desk-chat, .order-desk-chat');
         asides.forEach(function (aside) {
@@ -16065,9 +16081,11 @@
           aside.addEventListener(
             'wheel',
             function (e) {
-              if (!aside.classList.contains('desk-chat--scroll-enabled')) {
-                e.preventDefault();
-              }
+              if (aside.classList.contains('desk-chat--scroll-enabled')) return;
+              // 클릭으로 채팅 스크롤 켜기 전: 채팅 위에서도 전체(패널) 스크롤
+              e.preventDefault();
+              var scroller = findDeskChatPageScrollParent(aside);
+              if (scroller) scroller.scrollTop += e.deltaY;
             },
             { passive: false }
           );
