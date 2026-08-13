@@ -2465,9 +2465,14 @@ function tickRts(room, dt) {
   while (s.ages.length < room.players.length) s.ages.push(0);
   if (!s.beams) s.beams = [];
   s.beams = s.beams.filter((b) => {
+    if (b.maxLife == null) b.maxLife = b.life;
     b.life -= dt;
     return b.life > 0;
   });
+  // Decay attack flash used by clients for swing poses
+  for (const e of s.entities || []) {
+    if (e && e.atkFlash > 0) e.atkFlash = Math.max(0, e.atkFlash - dt);
+  }
   s.aiDiff = room.aiDiff || s.aiDiff || null;
 
   // AI difficulty income boost (solo)
@@ -2646,6 +2651,19 @@ function tickRts(room, dt) {
             const period = def.atkPeriod != null ? def.atkPeriod : 0.5;
             const shot = def.dps * period;
             if (def.suicide) {
+              if (!s.beams) s.beams = [];
+              s.beams.push({
+                x1: e.x,
+                y1: e.y,
+                x2: e.x,
+                y2: e.y,
+                life: 0.35,
+                maxLife: 0.35,
+                owner: e.owner,
+                style: "boom",
+                fromId: e.id,
+                unitType: e.type,
+              });
               rtsSplashDamage(s, e, e.x, e.y, def.splash || 70, def.suicide, mode, null);
               e.hp = 0;
               e.atkCd = 99;
@@ -2664,18 +2682,33 @@ function tickRts(room, dt) {
                 rtsSplashDamage(s, e, target.x, target.y, def.splash, shot * 0.4, mode, target.id);
               }
               e.atkCd = period;
-              // beam for sniper / cannon flair
-              if (def.sniper || def.vsBuilding) {
-                if (!s.beams) s.beams = [];
-                s.beams.push({
-                  x1: e.x,
-                  y1: e.y,
-                  x2: target.x,
-                  y2: target.y,
-                  life: def.sniper ? 0.2 : 0.12,
-                  owner: e.owner,
-                });
-              }
+              if (!s.beams) s.beams = [];
+              const style = def.suicide
+                ? "boom"
+                : def.sniper || e.type === "musketeer"
+                  ? "shot"
+                  : def.vsBuilding || e.type === "cannon"
+                    ? "cannon"
+                    : def.kite || e.type === "archer" || e.type === "ranged" || e.type === "crossbow"
+                      ? "arrow"
+                      : def.charge || e.type === "knight"
+                        ? "thrust"
+                        : "slash";
+              s.beams.push({
+                x1: e.x,
+                y1: e.y,
+                x2: target.x,
+                y2: target.y,
+                life: style === "shot" || style === "cannon" ? 0.22 : style === "arrow" ? 0.28 : 0.16,
+                maxLife: style === "shot" || style === "cannon" ? 0.22 : style === "arrow" ? 0.28 : 0.16,
+                owner: e.owner,
+                style: style,
+                fromId: e.id,
+                unitType: e.type,
+              });
+              e.faceX = target.x;
+              e.faceY = target.y;
+              e.atkFlash = period;
             }
           }
         } else if (e.order !== "move") {
@@ -2683,6 +2716,8 @@ function tickRts(room, dt) {
           if (def.charge) e._chargeMul = Math.min(def.charge, (e._chargeMul || 1) + dt * 0.55);
           e.tx = target.x;
           e.ty = target.y;
+          e.faceX = target.x;
+          e.faceY = target.y;
         }
       }
     }

@@ -117,6 +117,9 @@
   var hockeyRaf = 0;
   var hockeyLastScore = '';
   var tankCam = { x: null, y: null, free: false };
+  var rtsAtkPrevCd = {};
+  var rtsAtkSwing = {}; // id -> { until, ang, style }
+  var rtsRaf = 0;
 
   function isTypingTarget(el) {
     if (!el || !el.tagName) return false;
@@ -2253,13 +2256,68 @@
   }
 
 
+  function rtsUnitAtkStyle(type) {
+    if (type === 'bomber') return 'boom';
+    if (type === 'musketeer') return 'shot';
+    if (type === 'cannon') return 'cannon';
+    if (type === 'archer' || type === 'ranged' || type === 'crossbow') return 'arrow';
+    if (type === 'knight') return 'thrust';
+    return 'slash';
+  }
+  function rtsNoteUnitAttack(e) {
+    if (!e || e.id == null) return;
+    var prev = rtsAtkPrevCd[e.id];
+    var cd = e.atkCd != null ? e.atkCd : 0;
+    var flash = e.atkFlash != null ? e.atkFlash : 0;
+    var fired = flash > 0.05 || (prev != null && cd > prev + 0.08);
+    rtsAtkPrevCd[e.id] = cd;
+    if (!fired) return;
+    var ang = 0;
+    if (e.faceX != null && e.faceY != null) ang = Math.atan2(e.faceY - e.y, e.faceX - e.x);
+    else if (e.tx != null && e.ty != null) ang = Math.atan2(e.ty - e.y, e.tx - e.x);
+    rtsAtkSwing[e.id] = {
+      until: Date.now() + 220,
+      ang: ang,
+      style: rtsUnitAtkStyle(e.type),
+      t0: Date.now()
+    };
+  }
   function drawRtsUnitShape(ctx, e, col) {
     var r = e.r || 8;
     var t = e.type;
-    var bob = Math.sin((Date.now() / 140) + (e.id || 0)) * (t === 'duck' ? 2.2 : 0.8);
-    var x = e.x;
-    var y = e.y + bob;
+    var swing = rtsAtkSwing[e.id];
+    var now = Date.now();
+    var swingT = 0;
+    var ang = 0;
+    if (swing && swing.until > now) {
+      swingT = Math.min(1, (now - swing.t0) / 200);
+      ang = swing.ang || 0;
+    } else if (e.faceX != null && e.faceY != null) {
+      ang = Math.atan2(e.faceY - e.y, e.faceX - e.x);
+    } else if (e.tx != null && e.ty != null) {
+      ang = Math.atan2(e.ty - e.y, e.tx - e.x);
+    }
+    // Attack body motion: wind-up then lunge
+    var lunge = 0;
+    var squash = 1;
+    if (swingT > 0) {
+      if (swingT < 0.35) {
+        lunge = -3 * (swingT / 0.35);
+        squash = 1.08;
+      } else {
+        var f = (swingT - 0.35) / 0.65;
+        lunge = 7 * Math.sin(f * Math.PI);
+        squash = 1 - 0.12 * Math.sin(f * Math.PI);
+      }
+    }
+    var bob = Math.sin((now / 140) + (e.id || 0)) * (t === 'duck' ? 2.2 : 0.8);
+    var x = e.x + Math.cos(ang) * lunge;
+    var y = e.y + bob + Math.sin(ang) * lunge;
     ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang * 0.15);
+    ctx.scale(1 / squash, squash);
+    ctx.translate(-x, -y);
     ctx.fillStyle = col;
     ctx.strokeStyle = '#0009';
     ctx.lineWidth = 1.6;
@@ -2283,22 +2341,30 @@
       if (ctx.ellipse) ctx.ellipse(x, y + 1, r * 0.75, r * 1.1, 0.15, 0, Math.PI * 2);
       else ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang + (swingT > 0 ? (-0.9 + swingT * 2.2) : 0.2));
       ctx.fillStyle = '#ff6b6b';
-      ctx.fillRect(x + r * 0.35, y - r * 1.2, 3, r * 1.4);
+      ctx.fillRect(2, -2, r * 1.35, 4);
       ctx.beginPath();
-      ctx.moveTo(x + r * 0.35, y - r * 1.35);
-      ctx.lineTo(x + r * 0.9, y - r * 0.9);
-      ctx.lineTo(x + r * 0.35, y - r * 0.85);
+      ctx.moveTo(r * 1.35 + 2, -5);
+      ctx.lineTo(r * 1.7 + 2, 0);
+      ctx.lineTo(r * 1.35 + 2, 5);
       ctx.closePath(); ctx.fill();
+      ctx.restore();
     } else if (t === 'swordsman') {
       ctx.beginPath();
       if (ctx.ellipse) ctx.ellipse(x, y, r * 0.7, r * 1.05, 0, 0, Math.PI * 2);
       else ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.translate(x, y);
+      var sw = swingT > 0 ? (-1.1 + swingT * 2.4) : 0.35;
       ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x - r * 0.9, y - r * 0.9); ctx.lineTo(x - r * 0.2, y + r * 0.3); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x + r * 0.9, y - r * 0.9); ctx.lineTo(x + r * 0.2, y + r * 0.3); ctx.stroke();
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(-r * 0.2, 2); ctx.lineTo(Math.cos(sw) * r * 1.5, Math.sin(sw) * r * 1.5 - 4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r * 0.2, 2); ctx.lineTo(Math.cos(sw + 0.9) * r * 1.35, Math.sin(sw + 0.9) * r * 1.35 - 2); ctx.stroke();
+      ctx.restore();
     } else if (t === 'champion') {
       ctx.beginPath();
       if (ctx.ellipse) ctx.ellipse(x, y, r * 0.85, r * 1.15, 0, 0, Math.PI * 2);
@@ -2314,51 +2380,67 @@
       ctx.lineTo(x - 3, y - r * 1.05);
       ctx.lineTo(x - 7, y - r * 1.05);
       ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#f6e05e88';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
-    } else if (t === 'ranged') {
-      ctx.beginPath();
-      ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#a0aec0';
-      ctx.beginPath(); ctx.arc(x + r * 0.9, y - 2, 3.5, 0, Math.PI * 2); ctx.fill();
-    } else if (t === 'archer') {
-      ctx.beginPath();
-      ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = '#68d391';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(x + 2, y, r * 1.05, -1.2, 1.2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x - r * 0.3, y); ctx.lineTo(x + r * 1.1, y - 1); ctx.stroke();
-    } else if (t === 'crossbow') {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang + (swingT > 0 ? (-0.7 + swingT * 1.8) : 0.15));
+      ctx.fillStyle = '#f6e05e';
+      ctx.fillRect(4, -2.5, r * 1.5, 5);
+      ctx.restore();
+      if (swingT > 0.3) {
+        ctx.strokeStyle = '#f6e05e88';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 4 + swingT * 8, ang - 1.2, ang + 1.2); ctx.stroke();
+      }
+    } else if (t === 'ranged' || t === 'archer' || t === 'crossbow') {
       ctx.beginPath();
       ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.85, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.85, y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = '#ed8936';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(x + r * 0.1, y - 4, r * 1.1, 8);
-      ctx.beginPath(); ctx.moveTo(x + r * 1.2, y); ctx.lineTo(x + r * 1.7, y); ctx.stroke();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      var pull = swingT > 0 && swingT < 0.45 ? -4 : (swingT >= 0.45 ? 6 : 0);
+      ctx.strokeStyle = t === 'crossbow' ? '#ed8936' : '#68d391';
+      ctx.lineWidth = t === 'crossbow' ? 2.5 : 2;
+      ctx.beginPath(); ctx.arc(2, 0, r * 1.0, -1.1, 1.1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r * 0.3, 0); ctx.lineTo(r * 1.15 + pull, 0); ctx.stroke();
+      if (swingT > 0.4) {
+        ctx.fillStyle = '#f5f0df';
+        ctx.fillRect(r * 0.6, -1.5, r * 0.9, 3);
+      }
+      ctx.restore();
     } else if (t === 'musketeer') {
       ctx.beginPath();
       ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.7, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.7, y);
       ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      var kick = swingT > 0.35 ? -3 : (swingT > 0 ? 2 : 0);
       ctx.fillStyle = '#2d3748';
-      ctx.fillRect(x - 2, y - 3, r * 1.6, 5);
+      ctx.fillRect(-4 + kick, -3, r * 1.7, 5);
       ctx.fillStyle = '#f6e05e';
-      ctx.beginPath(); ctx.arc(x + r * 1.5, y - 0.5, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 1.55 + kick, -0.5, 2.5, 0, Math.PI * 2); ctx.fill();
+      if (swingT > 0.35 && swingT < 0.85) {
+        ctx.fillStyle = '#fff8';
+        ctx.beginPath(); ctx.arc(r * 1.9, 0, 4 + (1 - swingT) * 6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     } else if (t === 'knight') {
       var kw = r * 1.9, kh = r * 1.25;
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(x - kw / 2, y - kh / 2, kw, kh, 4);
       else ctx.rect(x - kw / 2, y - kh / 2, kw, kh);
       ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang + (swingT > 0 ? (-0.4 + swingT * 1.1) : 0));
       ctx.fillStyle = '#f6e05e';
       ctx.beginPath();
-      ctx.moveTo(x + kw / 2, y);
-      ctx.lineTo(x + kw / 2 + r * 0.9, y - 5);
-      ctx.lineTo(x + kw / 2 + r * 0.9, y + 5);
+      ctx.moveTo(kw / 2 - 2, 0);
+      ctx.lineTo(kw / 2 + r * 1.0, -5);
+      ctx.lineTo(kw / 2 + r * 1.0, 5);
       ctx.closePath(); ctx.fill();
+      ctx.restore();
       ctx.fillStyle = '#c53030';
       ctx.fillRect(x - 3, y - kh / 2 - 6, 6, 6);
     } else if (t === 'tanker') {
@@ -2372,6 +2454,11 @@
       ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#63b3ed';
       ctx.fillRect(x - tw / 2 - 3, y - th / 2, 4, th);
+      if (swingT > 0) {
+        ctx.strokeStyle = '#63b3edaa';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 8 + swingT * 10, 0, Math.PI * 2); ctx.stroke();
+      }
     } else if (t === 'bomber') {
       ctx.beginPath(); ctx.arc(x, y, r * 0.95, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#c53030';
@@ -2382,16 +2469,30 @@
       ctx.moveTo(x, y - r * 0.9);
       ctx.quadraticCurveTo(x + 6, y - r * 1.4, x + 2, y - r * 1.7);
       ctx.stroke();
+      if (swingT > 0) {
+        ctx.strokeStyle = '#fc8181';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y, r + swingT * 28, 0, Math.PI * 2); ctx.stroke();
+      }
     } else if (t === 'cannon') {
       ctx.fillStyle = '#2d3748';
       ctx.fillRect(x - r * 0.9, y - r * 0.55, r * 1.8, r * 1.1);
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.arc(x - r * 0.55, y + r * 0.55, r * 0.4, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(x + r * 0.45, y + r * 0.55, r * 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      var recoil = swingT > 0.3 ? -5 : 0;
       ctx.fillStyle = '#1a202c';
-      ctx.fillRect(x + r * 0.2, y - 4, r * 1.5, 7);
+      ctx.fillRect(r * 0.1 + recoil, -4, r * 1.5, 7);
       ctx.fillStyle = '#e53e3e';
-      ctx.beginPath(); ctx.arc(x + r * 1.7, y - 0.5, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 1.6 + recoil, -0.5, 3, 0, Math.PI * 2); ctx.fill();
+      if (swingT > 0.35 && swingT < 0.9) {
+        ctx.fillStyle = '#f6ad55';
+        ctx.beginPath(); ctx.arc(r * 2.0, 0, 5 + (1 - swingT) * 8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     } else if (t === 'duck') {
       ctx.fillStyle = '#ecc94b';
       ctx.beginPath();
@@ -2407,10 +2508,89 @@
       ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#c53030';
       ctx.beginPath(); ctx.arc(x + r * 0.75, y - r * 0.45, 2, 0, Math.PI * 2); ctx.fill();
+      if (swingT > 0) {
+        ctx.strokeStyle = '#dd6b20aa';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 4 + swingT * 8, ang - 1, ang + 1); ctx.stroke();
+      }
     } else {
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     }
     ctx.restore();
+  }
+
+  function drawRtsAttackBeams(ctx, st) {
+    (st.beams || []).forEach(function (b) {
+      var life = b.life != null ? b.life : 0;
+      var maxL = b.maxLife || 0.2;
+      var prog = 1 - Math.max(0, Math.min(1, life / maxL));
+      var style = b.style || 'slash';
+      var col = COLORS[b.owner != null ? b.owner : 0] || '#efd28a';
+      if (b.fromId != null && !rtsAtkSwing[b.fromId]) {
+        rtsAtkSwing[b.fromId] = {
+          until: Date.now() + 220,
+          ang: Math.atan2(b.y2 - b.y1, b.x2 - b.x1),
+          style: style,
+          t0: Date.now()
+        };
+      }
+      if (style === 'boom') {
+        var rad = 10 + prog * 42;
+        ctx.strokeStyle = '#fc8181';
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 1 - prog;
+        ctx.beginPath(); ctx.arc(b.x1, b.y1, rad, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#f6ad5588';
+        ctx.beginPath(); ctx.arc(b.x1, b.y1, rad * 0.55, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        return;
+      }
+      if (style === 'slash' || style === 'thrust') {
+        var mid = prog < 0.5 ? prog * 2 : 1;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = style === 'thrust' ? 3 : 2.5;
+        ctx.globalAlpha = 0.95 - prog * 0.7;
+        ctx.beginPath();
+        ctx.arc(b.x1, b.y1, 18 + mid * 10, Math.atan2(b.y2 - b.y1, b.x2 - b.x1) - 1.1, Math.atan2(b.y2 - b.y1, b.x2 - b.x1) + 0.4);
+        ctx.stroke();
+        if (style === 'thrust') {
+          var tx = b.x1 + (b.x2 - b.x1) * Math.min(1, prog * 1.4);
+          var ty = b.y1 + (b.y2 - b.y1) * Math.min(1, prog * 1.4);
+          ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(tx, ty); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        return;
+      }
+      if (style === 'arrow') {
+        var ax = b.x1 + (b.x2 - b.x1) * Math.min(1, prog * 1.15);
+        var ay = b.y1 + (b.y2 - b.y1) * Math.min(1, prog * 1.15);
+        var a = Math.atan2(b.y2 - b.y1, b.x2 - b.x1);
+        ctx.strokeStyle = '#f5f0df';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 1 - prog * 0.4;
+        ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(ax, ay); ctx.stroke();
+        ctx.fillStyle = '#ed8936';
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(a) * 7, ay + Math.sin(a) * 7);
+        ctx.lineTo(ax + Math.cos(a + 2.5) * 6, ay + Math.sin(a + 2.5) * 6);
+        ctx.lineTo(ax + Math.cos(a - 2.5) * 6, ay + Math.sin(a - 2.5) * 6);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        return;
+      }
+      // shot / cannon / default laser
+      ctx.strokeStyle = style === 'cannon' ? '#f6ad55' : (col + 'cc');
+      ctx.lineWidth = style === 'cannon' ? 4 : 2.5;
+      ctx.globalAlpha = 0.9 - prog * 0.6;
+      ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(b.x2, b.y2, style === 'cannon' ? 5 : 3, 0, Math.PI * 2); ctx.fill();
+      if (style === 'shot' || style === 'cannon') {
+        ctx.fillStyle = '#fff8';
+        ctx.beginPath(); ctx.arc(b.x1, b.y1, 3 + prog * 4, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
   }
 
   function drawRtsHpBar(ctx, x, y, w, hp, maxHp) {
@@ -2598,6 +2778,7 @@
         }
       } else if (e.kind === 'unit') {
         if (!isFinite(e.x) || !isFinite(e.y)) return;
+        rtsNoteUnitAttack(e);
         drawRtsUnitShape(ctx, e, col);
         if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
           ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, (e.r || 8) + 6, 0, Math.PI * 2); ctx.stroke();
@@ -2608,13 +2789,7 @@
         }
       }
     });
-    (st.beams || []).forEach(function (b) {
-      ctx.strokeStyle = (COLORS[b.owner != null ? b.owner : 0] || '#efd28a') + 'cc';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(b.x2, b.y2, 3, 0, Math.PI * 2); ctx.fill();
-    });
+    drawRtsAttackBeams(ctx, st);
     drawRtsFog(ctx, st);
   }
 
