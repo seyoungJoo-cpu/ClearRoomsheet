@@ -43,7 +43,11 @@
   }
 
   function formHasTypedContent() {
+    var dateEl = document.getElementById("complaintDate");
+    var today = toDateInputValue("");
+    var dateVal = dateEl ? String(dateEl.value || "").trim() : "";
     return !!(
+      (dateVal && dateVal !== today) ||
       getField("complaintReservationNo") ||
       getField("complaintGuestName") ||
       getField("complaintRoomNo") ||
@@ -219,10 +223,12 @@
     editingId = "";
     formTypeId = "";
     formRoomChange = false;
+    var dateEl = document.getElementById("complaintDate");
     var res = document.getElementById("complaintReservationNo");
     var name = document.getElementById("complaintGuestName");
     var room = document.getElementById("complaintRoomNo");
     var memo = document.getElementById("complaintMemo");
+    if (dateEl) dateEl.value = toDateInputValue("");
     if (res) res.value = "";
     if (name) name.value = "";
     if (room) room.value = "";
@@ -379,10 +385,12 @@
     editingId = id;
     formTypeId = row.typeId != null ? String(row.typeId) : "";
     formRoomChange = !!row.roomChange;
+    var dateEl = document.getElementById("complaintDate");
     var res = document.getElementById("complaintReservationNo");
     var name = document.getElementById("complaintGuestName");
     var room = document.getElementById("complaintRoomNo");
     var memo = document.getElementById("complaintMemo");
+    if (dateEl) dateEl.value = toDateInputValue(row.createdAt || row.updatedAt || "");
     if (res) res.value = row.reservationNo || "";
     if (name) name.value = row.guestName || "";
     if (room) room.value = row.roomNo || "";
@@ -608,7 +616,7 @@
     var hint = document.getElementById("complaintFrontOnlyHint");
     var editable = canEdit();
     if (form) {
-      form.querySelectorAll("input, button, select").forEach(function (el) {
+      form.querySelectorAll("input, button, select, textarea").forEach(function (el) {
         if (el.hasAttribute("data-complaint-page")) return;
         el.disabled = !editable;
       });
@@ -635,6 +643,7 @@
       opts.toast("프론트 모드에서만 등록할 수 있습니다.");
       return;
     }
+    var dateEl = document.getElementById("complaintDate");
     var resEl = document.getElementById("complaintReservationNo");
     var nameEl = document.getElementById("complaintGuestName");
     var roomEl = document.getElementById("complaintRoomNo");
@@ -643,12 +652,17 @@
     var guestName = nameEl ? String(nameEl.value || "").trim() : "";
     var roomNo = roomEl ? String(roomEl.value || "").trim() : "";
     var memo = memoEl ? String(memoEl.value || "").trim() : "";
+    var dateStr = dateEl ? String(dateEl.value || "").trim() : "";
     if (!reservationNo && !guestName && !roomNo) {
       opts.toast("예약번호·이름·객실번호 중 하나 이상 입력하세요.");
       return;
     }
     if (!formTypeId) {
       opts.toast("유형을 선택하세요.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      opts.toast("날짜를 선택하세요.");
       return;
     }
     var stamp = new Date().toISOString();
@@ -671,6 +685,7 @@
       }
       var prev = records[idx] || {};
       records[idx] = Object.assign({}, prev, {
+        createdAt: dateIsoFromInput(dateStr, prev.createdAt || stamp),
         updatedAt: stamp,
         reservationNo: reservationNo,
         guestName: guestName,
@@ -688,7 +703,7 @@
 
     records.push({
       id: makeId(),
-      createdAt: stamp,
+      createdAt: dateIsoFromInput(dateStr, stamp),
       updatedAt: stamp,
       reservationNo: reservationNo,
       guestName: guestName,

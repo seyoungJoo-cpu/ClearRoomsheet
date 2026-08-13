@@ -8962,7 +8962,8 @@
       color: var(--text-muted);
     }
 
-    .complaint-form__fields input[type="text"] {
+    .complaint-form__fields input[type="text"],
+    .complaint-form__fields input[type="date"] {
       height: 32px;
       padding: 0 8px;
       border: 1px solid var(--border);
@@ -12517,6 +12518,10 @@
           <form class="complaint-form" id="complaintForm">
             <div class="complaint-form__fields">
               <div class="field">
+                <label for="complaintDate">날짜</label>
+                <input type="date" id="complaintDate" />
+              </div>
+              <div class="field">
                 <label for="complaintReservationNo">예약번호</label>
                 <input type="text" id="complaintReservationNo" autocomplete="off" />
               </div>
@@ -13940,7 +13945,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-13"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-15"></script>
   <script src="hk-vip-checkin.js?v=bydate-15"></script>
