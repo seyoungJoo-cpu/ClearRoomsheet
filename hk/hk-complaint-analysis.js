@@ -428,14 +428,23 @@
         counts[t.id][m] = 0;
       });
     });
+    var roomChangeCounts = {};
+    months.forEach(function (m) {
+      roomChangeCounts[m] = 0;
+    });
     (records || []).forEach(function (r) {
       var mk = monthKeyFromIso(r.createdAt);
       if (!mk || months.indexOf(mk) < 0) return;
       var tid = r.typeId && counts[r.typeId] ? r.typeId : null;
-      if (!tid) return;
-      counts[tid][mk] += 1;
+      if (tid) counts[tid][mk] += 1;
+      if (r.roomChange) roomChangeCounts[mk] += 1;
     });
-    return { yearList: yearList, months: months, counts: counts };
+    return {
+      yearList: yearList,
+      months: months,
+      counts: counts,
+      roomChangeCounts: roomChangeCounts,
+    };
   }
 
   function renderStats() {
@@ -504,6 +513,17 @@
       html.push("<td class=\"is-total\">" + col + "</td>");
     });
     html.push("<td class=\"is-total\">" + grand + "</td></tr>");
+    var rcCounts = grid.roomChangeCounts || {};
+    var rcTotal = 0;
+    html.push(
+      '<tr class="complaint-stats-roomchange"><th scope="row">룸체인지 (O)</th>'
+    );
+    months.forEach(function (m) {
+      var n = rcCounts[m] || 0;
+      rcTotal += n;
+      html.push("<td>" + (n || "") + "</td>");
+    });
+    html.push("<td class=\"is-total\">" + rcTotal + "</td></tr>");
     html.push("</tbody></table>");
     tableWrap.innerHTML = html.join("");
   }
@@ -546,6 +566,17 @@
     });
     foot.push(grand);
     aoa.push(foot);
+
+    var rcRow = ["룸체인지 (O)"];
+    var rcTotal = 0;
+    var rcCounts = grid.roomChangeCounts || {};
+    grid.months.forEach(function (m) {
+      var n = rcCounts[m] || 0;
+      rcTotal += n;
+      rcRow.push(n || 0);
+    });
+    rcRow.push(rcTotal);
+    aoa.push(rcRow);
 
     var wb = global.XLSX.utils.book_new();
     var ws = global.XLSX.utils.aoa_to_sheet(aoa);
