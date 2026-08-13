@@ -63,6 +63,7 @@ function roomSnapshot(room) {
     code: room.code,
     game: room.game,
     mode: room.mode || null,
+    aiDiff: room.aiDiff || null,
     pairs: room.pairs != null ? room.pairs : null,
     status: room.status,
     players: room.players.map((p) => ({
@@ -208,6 +209,7 @@ function publicRtsState(room, viewer) {
     gold: s.gold,
     ages: s.ages || [],
     workerCost: rtsWorkerCost(s, owner),
+    aiDiff: room.aiDiff || s.aiDiff || null,
     entities: ents,
     minerals: minerals,
     obstacles: s.obstacles,
@@ -251,7 +253,7 @@ function ensureSoloAiPlayers(room) {
     while (used.has(slot)) slot++;
     room.players.push({
       id: nextPlayerId++,
-      name: room.game === "snakes" ? "AI 뱀" + (slot + 1) : "AI 적군",
+      name: room.game === "snakes" ? "AI 뱀" + (slot + 1) : room.game === "rts" ? "AI · " + rtsAiDiffLabel(room.aiDiff) : "AI 적군",
       ws: null,
       slot,
       ready: true,
@@ -1330,6 +1332,86 @@ function parseRtsMode(raw) {
   const m = String(raw || "1v1");
   return RTS_MODES[m] ? m : "1v1";
 }
+function parseRtsAiDiff(raw) {
+  const d = String(raw || "medium").toLowerCase();
+  if (d === "easy" || d === "초보") return "easy";
+  if (d === "hard" || d === "고수") return "hard";
+  if (d === "elite" || d === "초고수" || d === "expert") return "elite";
+  return "medium";
+}
+const RTS_AI_DIFF = {
+  easy: {
+    label: "초보",
+    think: 0.95,
+    workerBase: 4,
+    workerAge: 1,
+    maxBarracks: 1,
+    homeTurrets: 0,
+    siegeTurrets: 0,
+    attackAt: 7,
+    ageArmyNeed: 8,
+    ageReserve: 600,
+    goldPerSec: 0,
+    mistake: 0.4,
+    splitMicro: false,
+    siege: false,
+  },
+  medium: {
+    label: "중급",
+    think: 0.5,
+    workerBase: 6,
+    workerAge: 2,
+    maxBarracks: 2,
+    homeTurrets: 1,
+    siegeTurrets: 1,
+    attackAt: 5,
+    ageArmyNeed: 5,
+    ageReserve: 200,
+    goldPerSec: 3,
+    mistake: 0.15,
+    splitMicro: false,
+    siege: true,
+  },
+  hard: {
+    label: "고수",
+    think: 0.36,
+    workerBase: 7,
+    workerAge: 2,
+    maxBarracks: 2,
+    homeTurrets: 2,
+    siegeTurrets: 2,
+    attackAt: 4,
+    ageArmyNeed: 4,
+    ageReserve: 120,
+    goldPerSec: 6,
+    mistake: 0.05,
+    splitMicro: true,
+    siege: true,
+  },
+  elite: {
+    label: "초고수",
+    think: 0.28,
+    workerBase: 8,
+    workerAge: 2,
+    maxBarracks: 3,
+    homeTurrets: 3,
+    siegeTurrets: 3,
+    attackAt: 3,
+    ageArmyNeed: 3,
+    ageReserve: 80,
+    goldPerSec: 10,
+    mistake: 0,
+    splitMicro: true,
+    siege: true,
+  },
+};
+function rtsAiDiffCfg(room) {
+  return RTS_AI_DIFF[parseRtsAiDiff(room && room.aiDiff)] || RTS_AI_DIFF.medium;
+}
+function rtsAiDiffLabel(diff) {
+  const cfg = RTS_AI_DIFF[parseRtsAiDiff(diff)];
+  return (cfg && cfg.label) || "중급";
+}
 function rtsModeNeed(mode) {
   return (RTS_MODES[mode] || RTS_MODES["1v1"]).need;
 }
@@ -1358,7 +1440,7 @@ function ensureRtsAi(room) {
   while (used.has(slot)) slot++;
   room.players.push({
     id: nextPlayerId++,
-    name: "AI 적군",
+    name: "AI · " + rtsAiDiffLabel(room.aiDiff),
     ws: null,
     slot: slot,
     ready: true,
@@ -1718,6 +1800,7 @@ function initRts(room) {
     W: W,
     H: H,
     mode: mode,
+    aiDiff: room.aiDiff || null,
     nextId: uidRef.v,
     gold: gold,
     ages: room.players.map(function () {
@@ -2064,36 +2147,45 @@ function rtsAiCountType(list, type) {
   return n;
 }
 
-function rtsAiPickTrain(age, army, gold, workers) {
+function rtsAiPickTrain(age, army, gold, cfg) {
   const n = (t) => rtsAiCountType(army, t);
-  // Fill composition gaps first — personality army
   const wants = [];
-  if (age >= 0) {
-    if (n("duck") < 4) wants.push("duck");
-    if (n("melee") < 3) wants.push("melee");
-    if (n("ranged") < 2) wants.push("ranged");
-  }
-  if (age >= 1) {
-    if (n("swordsman") < 2) wants.push("swordsman");
-    if (n("archer") < 2) wants.push("archer");
-  }
-  if (age >= 2) {
-    if (n("knight") < 2) wants.push("knight");
-    if (n("bomber") < 1) wants.push("bomber");
-    if (n("crossbow") < 2) wants.push("crossbow");
-  }
-  if (age >= 3) {
-    if (n("tanker") < 1) wants.push("tanker");
-    if (n("cannon") < 1) wants.push("cannon");
-    if (n("musketeer") < 1) wants.push("musketeer");
-    if (n("champion") < 1) wants.push("champion");
+  if (cfg.mistake > 0.25) {
+    // Easy: only basic units
+    if (n("melee") < 5) wants.push("melee");
+    if (n("ranged") < 3) wants.push("ranged");
+    if (n("duck") < 2) wants.push("duck");
+    if (age >= 1 && n("swordsman") < 2) wants.push("swordsman");
+  } else {
+    if (age >= 0) {
+      if (n("duck") < 4) wants.push("duck");
+      if (n("melee") < 3) wants.push("melee");
+      if (n("ranged") < 2) wants.push("ranged");
+    }
+    if (age >= 1) {
+      if (n("swordsman") < 2) wants.push("swordsman");
+      if (n("archer") < 2) wants.push("archer");
+    }
+    if (age >= 2) {
+      if (n("knight") < 2) wants.push("knight");
+      if (n("bomber") < 1) wants.push("bomber");
+      if (n("crossbow") < 2) wants.push("crossbow");
+    }
+    if (age >= 3) {
+      if (n("tanker") < 1) wants.push("tanker");
+      if (n("cannon") < 1) wants.push("cannon");
+      if (n("musketeer") < 1) wants.push("musketeer");
+      if (n("champion") < 1) wants.push("champion");
+    }
   }
   for (let i = 0; i < wants.length; i++) {
     const def = RTS_UNITS[wants[i]];
     if (def && gold >= def.cost && age >= (def.age || 0)) return wants[i];
   }
-  // Fallback: strongest affordable
-  const order = ["cannon", "champion", "tanker", "musketeer", "knight", "bomber", "crossbow", "swordsman", "archer", "melee", "ranged", "duck"];
+  const order =
+    cfg.mistake > 0.25
+      ? ["swordsman", "melee", "ranged", "duck"]
+      : ["cannon", "champion", "tanker", "musketeer", "knight", "bomber", "crossbow", "swordsman", "archer", "melee", "ranged", "duck"];
   for (let i = 0; i < order.length; i++) {
     const def = RTS_UNITS[order[i]];
     if (!def || age < (def.age || 0) || gold < def.cost) continue;
@@ -2104,10 +2196,14 @@ function rtsAiPickTrain(age, army, gold, workers) {
 }
 
 function rtsAiThink(room, s, owner, mode, dt) {
+  const cfg = rtsAiDiffCfg(room);
   if (!s._aiT) s._aiT = [];
   s._aiT[owner] = (s._aiT[owner] || 0) + dt;
-  if (s._aiT[owner] < 0.42) return;
+  if (s._aiT[owner] < cfg.think) return;
   s._aiT[owner] = 0;
+
+  // Occasional "mistake" skip on lower difficulties
+  if (cfg.mistake > 0 && Math.random() < cfg.mistake) return;
 
   const gold = rtsOwnerGold(s, owner);
   const age = rtsPlayerAge(s, owner);
@@ -2131,11 +2227,10 @@ function rtsAiThink(room, s, owner, mode, dt) {
       e.hp > 0 &&
       !rtsAllied(owner, e.owner, mode) &&
       e.kind === "unit" &&
-      Math.hypot(e.x - nexus.x, e.y - nexus.y) < 280
+      Math.hypot(e.x - nexus.x, e.y - nexus.y) < (cfg.mistake > 0.25 ? 220 : 300)
   );
-  const underAttack = enemiesNearBase.length >= 2;
+  const underAttack = enemiesNearBase.length >= (cfg.mistake > 0.2 ? 3 : 2);
 
-  // 1) Defend home if threatened
   if (underAttack && army.length) {
     const threat = enemiesNearBase[0];
     rtsAiPush(room, owner, {
@@ -2147,17 +2242,15 @@ function rtsAiThink(room, s, owner, mode, dt) {
     });
   }
 
-  // 2) Economy: grow workers with age
-  const workerGoal = Math.min(14, 7 + age * 2);
+  const workerGoal = Math.min(14, cfg.workerBase + age * cfg.workerAge);
   if (workers.length < workerGoal && gold >= rtsWorkerCost(s, owner)) {
     const nexusQ = (nexus.queue || []).length;
-    if (nexusQ < 2) {
+    if (nexusQ < (cfg.mistake > 0.25 ? 1 : 2)) {
       rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });
       return;
     }
   }
 
-  // 3) First / second barracks
   const barracksAll = s.entities.filter((e) => rtsIsBarracksType(e.type) && e.owner === owner);
   if (!barracksAll.length && gold >= RTS_BUILD.barracks.cost) {
     const sx = nexus.x + (nexus.x < s.W / 2 ? 95 : -95);
@@ -2165,16 +2258,20 @@ function rtsAiThink(room, s, owner, mode, dt) {
     rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
     return;
   }
-  if (barracks.length >= 1 && barracksAll.length < 2 && gold >= RTS_BUILD.barracks.cost + 80 && army.length >= 4) {
-    const sx = nexus.x + (nexus.x < s.W / 2 ? 40 : -40);
+  if (
+    barracks.length >= 1 &&
+    barracksAll.length < cfg.maxBarracks &&
+    gold >= RTS_BUILD.barracks.cost + 60 &&
+    army.length >= 3
+  ) {
+    const sx = nexus.x + (nexus.x < s.W / 2 ? 40 : -40) + barracksAll.length * 20;
     const sy = nexus.y + (nexus.y < s.H / 2 ? 130 : -130);
     rtsAiPush(room, owner, { cmd: "build", buildType: "barracks", x: sx, y: sy, selectIds: [] });
     return;
   }
 
-  // 4) Home defense turret
   const homeTurrets = turrets.filter((t) => Math.hypot(t.x - nexus.x, t.y - nexus.y) < 220);
-  if (homeTurrets.length < 2 && gold >= RTS_BUILD.turret.cost + 40) {
+  if (homeTurrets.length < cfg.homeTurrets && gold >= RTS_BUILD.turret.cost + 20) {
     const ang = (homeTurrets.length + 1) * 1.7;
     const dist = RTS_NEXUS_TURRET_BAN_R + 35;
     const sx = nexus.x + Math.cos(ang) * dist;
@@ -2183,18 +2280,21 @@ function rtsAiThink(room, s, owner, mode, dt) {
     return;
   }
 
-  // 5) Age up only with reserve (economy first)
   const nextAge = age + 1;
   const ageCost = RTS_AGE_COST[nextAge] || 99999;
-  if (nextAge <= 3 && workers.length >= workerGoal - 1 && gold >= ageCost + 150 && army.length >= 5) {
+  if (
+    nextAge <= 3 &&
+    workers.length >= Math.max(3, workerGoal - 2) &&
+    gold >= ageCost + cfg.ageReserve &&
+    army.length >= cfg.ageArmyNeed
+  ) {
     rtsAiPush(room, owner, { cmd: "upgradeAge", selectIds: [nexus.id] });
     return;
   }
 
-  // 6) Siege turret near enemy nexus (units cannot kill nexus)
-  if (enemyNexus && army.length >= 5 && gold >= RTS_BUILD.turret.cost) {
+  if (cfg.siege && enemyNexus && army.length >= cfg.attackAt && gold >= RTS_BUILD.turret.cost) {
     const siegeTurrets = turrets.filter((t) => Math.hypot(t.x - enemyNexus.x, t.y - enemyNexus.y) < 200);
-    if (siegeTurrets.length < 2) {
+    if (siegeTurrets.length < cfg.siegeTurrets) {
       const dx = enemyNexus.x - nexus.x;
       const dy = enemyNexus.y - nexus.y;
       const len = Math.hypot(dx, dy) || 1;
@@ -2218,17 +2318,15 @@ function rtsAiThink(room, s, owner, mode, dt) {
     }
   }
 
-  // 7) Train balanced army
   if (barracks.length && barracksBusy < barracks.length) {
-    const pick = rtsAiPickTrain(age, army, gold, workers);
+    const pick = rtsAiPickTrain(age, army, gold, cfg);
     if (pick) {
       rtsAiPush(room, owner, { cmd: "train", unitType: pick, selectIds: barracks.map((b) => b.id) });
     }
   }
 
-  // 8) Attack: clear defenses / army near enemy, then hold on siege line
   if (underAttack) return;
-  if (enemyNexus && army.length >= 4) {
+  if (enemyNexus && army.length >= cfg.attackAt) {
     let focus = null;
     let fd = 1e9;
     for (const o of s.entities) {
@@ -2237,7 +2335,6 @@ function rtsAiThink(room, s, owner, mode, dt) {
       const nearEnemy = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y) < 320;
       if (!nearEnemy && o.kind === "building") continue;
       if (o.kind !== "unit" && o.type !== "turret" && !rtsIsBarracksType(o.type)) continue;
-      // Prefer enemy turrets (block siege), then barracks, then units
       const bias = o.type === "turret" ? -80 : rtsIsBarracksType(o.type) ? -40 : 0;
       const d = Math.hypot(o.x - enemyNexus.x, o.y - enemyNexus.y) + bias;
       if (d < fd) {
@@ -2245,33 +2342,54 @@ function rtsAiThink(room, s, owner, mode, dt) {
         focus = o;
       }
     }
-    const tanks = army.filter((u) => u.type === "tanker" || u.type === "champion" || u.type === "knight" || u.type === "melee" || u.type === "swordsman");
-    const backline = army.filter((u) => u.type === "cannon" || u.type === "musketeer" || u.type === "archer" || u.type === "crossbow" || u.type === "ranged");
-    const rest = army.filter((u) => tanks.indexOf(u) < 0 && backline.indexOf(u) < 0);
     if (focus) {
-      const front = tanks.concat(rest);
-      if (front.length) {
+      if (cfg.splitMicro) {
+        const tanks = army.filter(
+          (u) =>
+            u.type === "tanker" ||
+            u.type === "champion" ||
+            u.type === "knight" ||
+            u.type === "melee" ||
+            u.type === "swordsman"
+        );
+        const backline = army.filter(
+          (u) =>
+            u.type === "cannon" ||
+            u.type === "musketeer" ||
+            u.type === "archer" ||
+            u.type === "crossbow" ||
+            u.type === "ranged"
+        );
+        const rest = army.filter((u) => tanks.indexOf(u) < 0 && backline.indexOf(u) < 0);
+        const front = tanks.concat(rest);
+        if (front.length) {
+          rtsAiPush(room, owner, {
+            cmd: "attack",
+            selectIds: front.map((u) => u.id),
+            targetId: focus.id,
+            x: focus.x,
+            y: focus.y,
+          });
+        }
+        if (backline.length) {
+          rtsAiPush(room, owner, {
+            cmd: "attack",
+            selectIds: backline.map((u) => u.id),
+            targetId: focus.id,
+            x: focus.x + (nexus.x - focus.x) * 0.15,
+            y: focus.y + (nexus.y - focus.y) * 0.15,
+          });
+        }
+      } else {
         rtsAiPush(room, owner, {
           cmd: "attack",
-          selectIds: front.map((u) => u.id),
+          selectIds: army.map((u) => u.id),
           targetId: focus.id,
           x: focus.x,
           y: focus.y,
         });
       }
-      if (backline.length) {
-        const bx = focus.x + (nexus.x - focus.x) * 0.15;
-        const by = focus.y + (nexus.y - focus.y) * 0.15;
-        rtsAiPush(room, owner, {
-          cmd: "attack",
-          selectIds: backline.map((u) => u.id),
-          targetId: focus.id,
-          x: bx,
-          y: by,
-        });
-      }
-    } else {
-      // Park army on siege ring so turrets/barracks can finish nexus
+    } else if (cfg.siege) {
       const dx = enemyNexus.x - nexus.x;
       const dy = enemyNexus.y - nexus.y;
       const len = Math.hypot(dx, dy) || 1;
@@ -2280,6 +2398,14 @@ function rtsAiThink(room, s, owner, mode, dt) {
         selectIds: army.map((u) => u.id),
         x: enemyNexus.x - (dx / len) * 140,
         y: enemyNexus.y - (dy / len) * 140,
+      });
+    } else {
+      // Easy: wander toward mid / enemy without smart siege
+      rtsAiPush(room, owner, {
+        cmd: "move",
+        selectIds: army.map((u) => u.id),
+        x: (nexus.x + enemyNexus.x) / 2,
+        y: (nexus.y + enemyNexus.y) / 2,
       });
     }
   }
@@ -2342,6 +2468,20 @@ function tickRts(room, dt) {
     b.life -= dt;
     return b.life > 0;
   });
+  s.aiDiff = room.aiDiff || s.aiDiff || null;
+
+  // AI difficulty income boost (solo)
+  if (rtsIsSolo(mode)) {
+    const cfg = rtsAiDiffCfg(room);
+    if (cfg.goldPerSec > 0) {
+      for (const p of room.players) {
+        if (!p.isAi) continue;
+        const owner = p.slot != null ? p.slot : room.players.indexOf(p);
+        if (s.gold[owner] == null) s.gold[owner] = RTS_START_GOLD;
+        s.gold[owner] += cfg.goldPerSec * dt;
+      }
+    }
+  }
 
   for (const p of room.players) {
     const owner = p.slot != null ? p.slot : room.players.indexOf(p);
@@ -3716,6 +3856,7 @@ function attachGameRooms(httpServer) {
           code,
           game,
           mode,
+          aiDiff: game === "rts" && mode === "solo" ? parseRtsAiDiff(msg.aiDiff) : null,
           pairs: game === "memorymp" ? parseMemoryPairs(msg.pairs) : null,
           max: maxPlayers,
           players: [],
@@ -3792,6 +3933,19 @@ function attachGameRooms(httpServer) {
         player.ready = true;
         broadcastRoom(room);
         return tryStart(room);
+      }
+
+      if (type === "rts_ai_diff") {
+        if (room.game !== "rts" || room.status !== "lobby") return;
+        if (!rtsIsSolo(room.mode)) return;
+        // Only human host (first human) can change
+        const host = room.players.find((p) => !p.isAi);
+        if (!host || host.id !== player.id) return error(ws, "not_host");
+        room.aiDiff = parseRtsAiDiff(msg.aiDiff);
+        for (const p of room.players) {
+          if (p.isAi) p.name = "AI · " + rtsAiDiffLabel(room.aiDiff);
+        }
+        return broadcastRoom(room);
       }
 
       if (type === "input") {

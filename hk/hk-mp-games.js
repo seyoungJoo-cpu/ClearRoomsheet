@@ -14,6 +14,7 @@
   var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4 };
   var tankCreateMode = 'ffa';
   var rtsCreateMode = '1v1';
+  var rtsCreateAiDiff = 'medium';
   var memoryCreateMode = '1v1';
   var laneCreateMode = '1v1';
   var nexusCreateMode = '1v1';
@@ -42,17 +43,23 @@
   };
   var RTS_AGE_NAMES = ['암흑시대', '봉건시대', '성주시대', '제국시대'];
   var RTS_UNIT_LABELS = {
-    worker: '곡괭이광부', melee: '돌격광대', ranged: '돌팔매꾼', duck: '분노오리',
-    swordsman: '쌍검무도가', archer: '바람궁수', knight: '돌진기사', crossbow: '관통석궁수',
-    bomber: '자폭광대', champion: '전장의군주', musketeer: '저격화승총', tanker: '철벽팔라딘', cannon: '성벽분쇄포'
+    worker: '일꾼', melee: '근접병', ranged: '원거리병', duck: '오리',
+    swordsman: '검사', archer: '궁수', knight: '기사', crossbow: '석궁병',
+    bomber: '폭탄병', champion: '챔피언', musketeer: '화승총병', tanker: '탱커', cannon: '대포'
   };
   var RTS_UNIT_COST = {
     worker: 50, melee: 75, ranged: 95, duck: 28, swordsman: 115, archer: 125,
     knight: 185, crossbow: 155, bomber: 150, champion: 240, musketeer: 210, tanker: 250, cannon: 300
   };
   var RTS_UNIT_FLAIR = {
-    worker: '⛏', melee: '⚔', ranged: '🪨', duck: '🦆', swordsman: '🗡', archer: '🏹',
-    knight: '🐎', crossbow: '🎯', bomber: '💣', champion: '👑', musketeer: '🔫', tanker: '🛡', cannon: '💥'
+    worker: '', melee: '', ranged: '', duck: '', swordsman: '', archer: '',
+    knight: '', crossbow: '', bomber: '', champion: '', musketeer: '', tanker: '', cannon: ''
+  };
+  var RTS_AI_DIFF_META = {
+    easy: { id: 'easy', label: '초보' },
+    medium: { id: 'medium', label: '중급' },
+    hard: { id: 'hard', label: '고수' },
+    elite: { id: 'elite', label: '초고수' }
   };
   var MEMORY_MODE_META = {
     solo: { label: '싱글 vs AI', max: 2 },
@@ -435,6 +442,7 @@
         : (gameId === 'ageofwar' ? aowCreateMode
         : (gameId === 'snakes' ? snakesCreateMode
         : (gameId === 'airhockey' ? hockeyCreateMode : null))))))),
+      aiDiff: gameId === 'rts' && rtsCreateMode === 'solo' ? rtsCreateAiDiff : null,
       pairs: gameId === 'memorymp' ? memoryPairs : null,
       status: 'lobby',
       players: [{ id: selfId || 'me', name: name() || 'Guest', ready: false, slot: 0 }],
@@ -448,7 +456,10 @@
     function doCreate() {
       var payload = { type: 'create', game: gameId, name: name() || 'Guest' };
       if (gameId === 'tank') payload.mode = tankCreateMode;
-      if (gameId === 'rts') payload.mode = rtsCreateMode;
+      if (gameId === 'rts') {
+        payload.mode = rtsCreateMode;
+        if (rtsCreateMode === 'solo') payload.aiDiff = rtsCreateAiDiff;
+      }
       if (gameId === 'lanepush') payload.mode = laneCreateMode;
       if (gameId === 'nexuswar') payload.mode = nexusCreateMode;
       if (gameId === 'ageofwar') payload.mode = aowCreateMode === 'solo' ? 'solo' : null;
@@ -521,6 +532,8 @@
         code: msg.code,
         game: msg.game || gameId,
         mode: msg.mode || null,
+        aiDiff: msg.aiDiff || null,
+        pairs: msg.pairs != null ? msg.pairs : null,
         status: msg.status,
         players: msg.players || [],
         max: msg.max
@@ -981,6 +994,13 @@
           return '<button type="button" class="hkmp-btn' + (rtsCreateMode === mm[0] ? ' primary' : '') + '" data-rts-mode="' + mm[0] + '">' + mm[1] + '</button>';
         }).join('') +
         '<span class="hkmp-note">싱글은 Ready 한 명으로 시작 · AI 자동</span></div>';
+      if (rtsCreateMode === 'solo') {
+        modeRow += '<div class="hkmp-row" style="margin:0">' +
+          [['easy', '초보'], ['medium', '중급'], ['hard', '고수'], ['elite', '초고수']].map(function (dd) {
+            return '<button type="button" class="hkmp-btn' + (rtsCreateAiDiff === dd[0] ? ' primary' : '') + '" data-rts-diff="' + dd[0] + '">AI ' + dd[1] + '</button>';
+          }).join('') +
+          '<span class="hkmp-note">AI 난이도</span></div>';
+      }
     }
     if (gameId === 'memorymp') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
@@ -1035,6 +1055,14 @@
       btn.onclick = function () {
         var rm = btn.getAttribute('data-rts-mode');
         if (RTS_MODE_META[rm]) rtsCreateMode = rm;
+        lastBrowseSig = '';
+        renderBrowse();
+      };
+    });
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-rts-diff]'), function (btn) {
+      btn.onclick = function () {
+        var dd = btn.getAttribute('data-rts-diff');
+        if (RTS_AI_DIFF_META[dd]) rtsCreateAiDiff = dd;
         lastBrowseSig = '';
         renderBrowse();
       };
@@ -1095,7 +1123,11 @@
     if ((gameId === 'lanepush' || gameId === 'nexuswar') && room.mode && SHARED_MODE_META[room.mode]) {
       rtsLabel = SHARED_MODE_META[room.mode].label;
     }
-    if (soloMode && !rtsLabel) rtsLabel = '싱글 vs AI';
+    if (soloMode && gameId === 'rts') {
+      var curDiff = room.aiDiff || 'medium';
+      var diffLabel = (RTS_AI_DIFF_META[curDiff] && RTS_AI_DIFF_META[curDiff].label) || '중급';
+      rtsLabel = (rtsLabel || '싱글 vs AI') + ' · AI ' + diffLabel;
+    }
     if (gameId === 'tank' && room.mode === 'solo') rtsLabel = '싱글 vs AI';
     if (gameId === 'tank' && room.mode === 'team') rtsLabel = '팀전';
     if (gameId === 'tank' && room.mode === 'ffa') rtsLabel = 'FFA';
@@ -1118,6 +1150,12 @@
           '<strong>' + esc(p.name || ('P' + (i + 1))) + (p.isAi ? ' ·AI' : '') + '</strong>' +
           '<span style="flex:1;color:#88a09a;font-size:12px">' + (pendingRoom ? '생성 중' : (p.isAi ? 'Ready' : (ready ? 'Ready' : '대기'))) + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
       }).join('') + '</div>' +
+      (soloMode && gameId === 'rts' && !pendingRoom
+        ? ('<div class="hkmp-row" style="margin:0 0 8px">' +
+          [['easy', '초보'], ['medium', '중급'], ['hard', '고수'], ['elite', '초고수']].map(function (dd) {
+            return '<button type="button" class="hkmp-btn' + ((room.aiDiff || 'medium') === dd[0] ? ' primary' : '') + '" data-room-rts-diff="' + dd[0] + '">AI ' + dd[1] + '</button>';
+          }).join('') + '</div>')
+        : '') +
       '<div class="hkmp-row">' +
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (pendingRoom || (me && me.ready) ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
@@ -1147,6 +1185,15 @@
     if (!pendingRoom && readyBtn) {
       readyBtn.onclick = function () { send({ type: 'ready' }); };
     }
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-room-rts-diff]'), function (btn) {
+      btn.onclick = function () {
+        var dd = btn.getAttribute('data-room-rts-diff');
+        if (!RTS_AI_DIFF_META[dd]) return;
+        send({ type: 'rts_ai_diff', aiDiff: dd });
+        room.aiDiff = dd;
+        renderRoom();
+      };
+    });
   }
 
   function renderPlay() {
@@ -1342,7 +1389,7 @@
         ['build:turret', '포탑 ·120']
       ];
       tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 5000, 10000, 20000][age + 1] || '—'))]);
-      tools.push(['train:worker', '곡괭이광부 ·' + rtsClientWorkerCost(st)]);
+      tools.push(['train:worker', '일꾼 ·' + rtsClientWorkerCost(st)]);
       var byAge = [
         [['melee'], ['ranged'], ['duck']],
         [['swordsman'], ['archer']],
@@ -1352,8 +1399,7 @@
       for (var ai = 0; ai <= age && ai < byAge.length; ai++) {
         byAge[ai].forEach(function (u) {
           var id = u[0];
-          var flair = RTS_UNIT_FLAIR[id] || '';
-          tools.push(['train:' + id, flair + (RTS_UNIT_LABELS[id] || id) + ' ·' + (RTS_UNIT_COST[id] || '?')]);
+          tools.push(['train:' + id, (RTS_UNIT_LABELS[id] || id) + ' ·' + (RTS_UNIT_COST[id] || '?')]);
         });
       }
       refs.tools.innerHTML = tools.map(function (x) {
@@ -1678,6 +1724,9 @@
     } else if (gameId === 'rts') {
       var golds = st.gold || [];
       html += '<span class="hkmp-pill">' + ((st.mode && RTS_MODE_META[st.mode]) ? RTS_MODE_META[st.mode].label : 'RTS') + '</span>';
+      if (st.aiDiff && RTS_AI_DIFF_META[st.aiDiff]) {
+        html += '<span class="hkmp-pill">AI <b>' + RTS_AI_DIFF_META[st.aiDiff].label + '</b></span>';
+      }
       html += '<span class="hkmp-pill">시대 <b>' + (RTS_AGE_NAMES[(st.ages && st.ages[mySlot()]) || 0] || '암흑시대') + '</b></span>';
       html += '<span class="hkmp-pill">미네랄 <b>' + (golds[mySlot()] != null ? golds[mySlot()] : 0) + '</b></span>';
       html += '<span class="hkmp-pill">선택 <b>' + selectIds.length + '</b></span>';
@@ -1807,7 +1856,7 @@
         buildToolbar();
       } else {
         var wBtn = refs.tools.querySelector('[data-tool="train:worker"]');
-        if (wBtn) wBtn.textContent = '곡괭이광부 ·' + wcRts;
+        if (wBtn) wBtn.textContent = '일꾼 ·' + wcRts;
       }
     }
     if (gameId === 'lanepush' && refs.tools && view === 'play') {
@@ -2554,9 +2603,8 @@
           ctx.strokeStyle = '#efd28a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, (e.r || 8) + 6, 0, Math.PI * 2); ctx.stroke();
         }
         drawRtsHpBar(ctx, e.x, e.y - (e.r || 8) - 8, 22, e.hp, e.maxHp);
-        var tag = (RTS_UNIT_FLAIR[e.type] || '') + (RTS_UNIT_LABELS[e.type] || '');
-        if (tag && (selectIds.indexOf(e.id) >= 0 || e.type === 'champion' || e.type === 'duck' || e.type === 'bomber')) {
-          drawNameTag(ctx, tag, e.x, e.y - (e.r || 8) - 12, '#f5f0df');
+        if (selectIds.indexOf(e.id) >= 0 || selectIds.some(function (id) { return id == e.id; })) {
+          drawNameTag(ctx, RTS_UNIT_LABELS[e.type] || e.type, e.x, e.y - (e.r || 8) - 12, '#f5f0df');
         }
       }
     });
