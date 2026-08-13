@@ -10828,33 +10828,99 @@
 
     .main .room-list-main > .room-card.is-strip-cols {
       display: grid;
+      /* 객실 · 동 · 시간 · 상태 · 메모 · 버튼 (정렬 헤더와 동일) */
       grid-template-columns:
-        minmax(2.5rem, 0.55fr)
-        minmax(3.5rem, 0.7fr)
-        minmax(3.2rem, 0.7fr)
-        minmax(8rem, 2.2fr)
-        minmax(3.5rem, 0.75fr)
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(5rem, 1fr)
+        minmax(3.8rem, 0.75fr)
+        minmax(6rem, 1.8fr)
         auto;
-      gap: 6px 10px;
+      gap: 6px 12px;
       align-items: center;
       width: 100%;
       box-sizing: border-box;
       height: auto;
-      padding: 8px 12px;
-      font-size: 0.8125rem;
-      line-height: 1.35;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--room {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      min-width: 0;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--wing {
+      justify-self: start;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--time {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      min-width: 0;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--status {
+      min-width: 0;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--status .room-card__status,
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--status .hk-st-badge {
+      font-size: 1.125rem;
+      font-weight: 900;
+      min-width: 2.8em;
+      padding: 5px 12px;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--status .hk-resv-badge,
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--status .hk-resv--in {
+      font-size: 1.05rem;
+      font-weight: 900;
+      min-width: 2.4em;
+      padding: 4px 10px;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--memo {
+      min-width: 0;
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--memo .room-card__memo {
       margin: 0;
-      font-size: 0.75rem;
-      line-height: 1.25;
+      font-size: 0.8125rem;
+      line-height: 1.3;
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .room-card__actions {
+      grid-column: 6;
+      grid-row: 1;
       justify-self: end;
+      width: auto;
       margin: 0;
+      flex: 0 0 auto;
       flex-wrap: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .room-card__history,
+    .main .room-list-main > .room-card.is-strip-cols > .room-card__inline-editor {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    .hk-strip-sort[data-sort-list="zoneRooms"] {
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(5rem, 1fr)
+        minmax(3.8rem, 0.75fr)
+        minmax(6rem, 1.8fr)
+        auto;
     }
 
     .main .order-work-item .request-feedback__item-room,
@@ -10955,7 +11021,7 @@
     }
 
     .main .room-list-main > .room-card .room-card__history,
-    .main .room-list-main > .room-card .room-card__actions,
+    .main .room-list-main > .room-card:not(.is-strip-cols) .room-card__actions,
     .main .room-list-main > .room-card .room-card__inline-editor {
       flex: 1 1 100%;
       width: 100%;
@@ -13818,7 +13884,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-12"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-13"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-15"></script>
   <script src="hk-vip-checkin.js?v=bydate-15"></script>
@@ -28313,24 +28379,15 @@
         setLineWithEmTime(timeDisp, "시간 · ", tm || "");
         timeCell.appendChild(timeDisp);
 
-        li.appendChild(wingCell);
         li.appendChild(roomCell);
+        li.appendChild(wingCell);
+        li.appendChild(timeCell);
         li.appendChild(statusCell);
         li.appendChild(memoCell);
-        li.appendChild(timeCell);
 
         if (cardOpts.showCheckIn && (frontMode || maintenanceMode)) {
           var actionsIn = document.createElement("div");
           actionsIn.className = "room-card__actions hk-strip-actions-trail";
-          if (frontMode) {
-            var btnIn = document.createElement("button");
-            btnIn.type = "button";
-            btnIn.className = "btn-zone-checkin";
-            btnIn.textContent = "입실";
-            btnIn.setAttribute("data-zone", zone);
-            btnIn.setAttribute("data-room", room.number || "");
-            actionsIn.appendChild(btnIn);
-          }
           var btnEdit = document.createElement("button");
           btnEdit.type = "button";
           btnEdit.className = "btn-zone-card-edit";
@@ -28813,17 +28870,7 @@
         var trayInList = document.getElementById("zoneTrayInList");
         if (!trayIn || !trayInList) return;
         trayInList.innerHTML = "";
-        var inCount = 0;
-        rooms.forEach(function (room, idx) {
-          var tray = getRoomTray(room);
-          if (tray === "in") {
-            trayInList.appendChild(
-              buildZoneRoomCardLi(zone, room, idx, { trayMode: true, showRestore: true })
-            );
-            inCount += 1;
-          }
-        });
-        trayIn.hidden = inCount === 0;
+        trayIn.hidden = true;
         renderZoneChangeFeed(zone);
         renderZoneCancelledRooms(zone);
       }
@@ -29393,7 +29440,7 @@
           var lastGroup = null;
           var useMinibarGroups = zone === "MINIBAR" && !zoneSortActive;
           rooms.forEach(function (room, idx) {
-            if (getRoomTray(room)) return;
+            if (getRoomTray(room) && getRoomTray(room) !== "in") return;
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
             statusPassCount += 1;
