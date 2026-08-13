@@ -1334,7 +1334,7 @@
         ['build:turret', '포탑 ·120']
       ];
       if (age >= 2) tools.push(['build:advBarracks', '고급배럭 ·280']);
-      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 660, 1140, 1650][age + 1] || '—'))]);
+      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 1000, 1500, 2000][age + 1] || '—'))]);
       tools.push(['upgradeBarracks', '배럭 업 ·' + ([0, 120, 200, 300][Math.min(3, age)] || '120')]);
       tools.push(['train:worker', '일꾼 ·' + rtsClientWorkerCost(st)]);
       var byAge = [
@@ -2294,7 +2294,7 @@
       }
     }
     var over = Math.max(0, n + 1 - 10);
-    return 50 + over * 12;
+    return 50 + over * 5;
   }
   function rtsClientVisionR(e) {
     if (!e) return 0;

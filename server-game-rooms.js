@@ -1289,11 +1289,11 @@ function checkTankRoundEnd(room) {
 
 /* ===================== RTS ===================== */
 const RTS_AGE_NAMES = ["암흑시대", "봉건시대", "성주시대", "제국시대"];
-const RTS_AGE_COST = [0, 660, 1140, 1650]; // reach age 1/2/3 (3× prior)
+const RTS_AGE_COST = [0, 1000, 1500, 2000]; // reach age 1/2/3
 const RTS_BARRACKS_UP_COST = [0, 120, 200, 300]; // reach tier 1/2/3
 const RTS_WORKER_BASE_COST = 50;
 const RTS_WORKER_SCALE_FROM = 10; // 10th worker onward costs more
-const RTS_WORKER_SCALE_STEP = 12;
+const RTS_WORKER_SCALE_STEP = 5;
 const RTS_UNITS = {
   worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5, age: 0, from: "nexus" },
   melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5, age: 0, from: "barracks" },
