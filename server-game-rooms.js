@@ -1934,45 +1934,6 @@ function rtsUpgradeAge(s, owner, preferIds) {
   return true;
 }
 
-function rtsUpgradeBarracks(s, owner, preferIds) {
-  const age = rtsPlayerAge(s, owner);
-  if (age < 1) return false;
-  const ids = Array.isArray(preferIds) ? preferIds.map(Number) : [];
-  let bar = null;
-  for (const id of ids) {
-    const e = rtsFind(s, id);
-    if (e && rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building) {
-      bar = e;
-      break;
-    }
-  }
-  if (!bar) {
-    const cands = s.entities.filter(
-      (e) => rtsIsBarracksType(e.type) && e.owner === owner && e.hp > 0 && !e.building
-    );
-    cands.sort((a, b) => (a.tier || 0) - (b.tier || 0));
-    bar = cands[0] || null;
-  }
-  if (!bar) return false;
-  const curTier = bar.tier != null ? bar.tier | 0 : bar.type === "advBarracks" ? 2 : 0;
-  if (curTier >= age) return false;
-  if (curTier >= 3) return false;
-  const next = curTier + 1;
-  const cost = RTS_BARRACKS_UP_COST[next] || 0;
-  if (rtsOwnerGold(s, owner) < cost) return false;
-  s.gold[owner] -= cost;
-  bar.tier = next;
-  if (next >= 2 && bar.type === "barracks") {
-    bar.type = "advBarracks";
-    bar.w = RTS_BUILD.advBarracks.w;
-    bar.h = RTS_BUILD.advBarracks.h;
-  }
-  const baseHp = (RTS_BUILD[bar.type] && RTS_BUILD[bar.type].hp) || 300;
-  bar.maxHp = Math.floor(baseHp * (1 + next * 0.1));
-  bar.hp = Math.min(bar.maxHp, (bar.hp || 0) + 40);
-  return true;
-}
-
 function rtsEnqueueTrain(s, owner, ut, preferIds) {
   const udef = RTS_UNITS[ut];
   if (!udef) return false;
