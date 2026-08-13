@@ -1313,7 +1313,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · HP5 · 중앙 아이템(회복/속도/실드/연사) · 목숨 3',
-      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 정찰한 곳만 건설',
+      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 밝은 시야에서만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -1334,9 +1334,9 @@
         ['build:turret', '포탑 ·120']
       ];
       if (age >= 2) tools.push(['build:advBarracks', '고급배럭 ·280']);
-      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 220, 380, 550][age + 1] || '—'))]);
+      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 660, 1140, 1650][age + 1] || '—'))]);
       tools.push(['upgradeBarracks', '배럭 업 ·' + ([0, 120, 200, 300][Math.min(3, age)] || '120')]);
-      tools.push(['train:worker', '일꾼 ·50']);
+      tools.push(['train:worker', '일꾼 ·' + rtsClientWorkerCost(st)]);
       var byAge = [
         [['melee', '민병 ·80'], ['ranged', '투석병 ·100'], ['duck', '오리 ·30']],
         [['swordsman', '검병 ·110'], ['archer', '궁병 ·120']],
@@ -1498,8 +1498,8 @@
       if (gameId === 'rts') {
         if (pendingBuild) {
           if (pendingBuild.mode === 'build') {
-            if (!rtsClientExplored(lastState, p.x, p.y)) {
-              toast('정찰한 곳에만 건물을 지을 수 있습니다');
+            if (!rtsClientInVision(lastState, p.x, p.y)) {
+              toast('밝은 시야에서만 건물을 지을 수 있습니다');
               return;
             }
             if (pendingBuild.buildType === 'turret') {
@@ -2278,6 +2278,24 @@
     ctx.fillRect(x - w / 2, y, w * ratio, 4);
   }
 
+  function rtsClientWorkerCost(st) {
+    var me = mySlot();
+    var n = 0;
+    var ents = (st && st.entities) || [];
+    for (var i = 0; i < ents.length; i++) {
+      var e = ents[i];
+      if (!e || e.hp <= 0) continue;
+      if (e.owner !== me && e.owner != me) continue;
+      if (e.type === 'worker') n++;
+      if (e.kind === 'building' && e.queue && e.queue.length) {
+        for (var q = 0; q < e.queue.length; q++) {
+          if (e.queue[q] && e.queue[q].type === 'worker') n++;
+        }
+      }
+    }
+    var over = Math.max(0, n + 1 - 10);
+    return 50 + over * 12;
+  }
   function rtsClientVisionR(e) {
     if (!e) return 0;
     if (e.type === 'nexus') return 340;

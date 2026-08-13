@@ -1289,8 +1289,11 @@ function checkTankRoundEnd(room) {
 
 /* ===================== RTS ===================== */
 const RTS_AGE_NAMES = ["암흑시대", "봉건시대", "성주시대", "제국시대"];
-const RTS_AGE_COST = [0, 220, 380, 550]; // reach age 1/2/3
+const RTS_AGE_COST = [0, 660, 1140, 1650]; // reach age 1/2/3 (3× prior)
 const RTS_BARRACKS_UP_COST = [0, 120, 200, 300]; // reach tier 1/2/3
+const RTS_WORKER_BASE_COST = 50;
+const RTS_WORKER_SCALE_FROM = 10; // 10th worker onward costs more
+const RTS_WORKER_SCALE_STEP = 12;
 const RTS_UNITS = {
   worker: { cost: 50, hp: 40, dps: 4, r: 14, speed: 70, range: 28, train: 3.5, age: 0, from: "nexus" },
   melee: { cost: 80, hp: 90, dps: 14, r: 16, speed: 85, range: 28, train: 5, age: 0, from: "barracks" },
@@ -1844,13 +1847,34 @@ function rtsNearestOwn(s, owner, type, x, y) {
   return best;
 }
 
+function rtsWorkerCount(s, owner) {
+  let n = 0;
+  for (const e of s.entities || []) {
+    if (!e || e.hp <= 0) continue;
+    if ((e.owner !== owner && e.owner != owner)) continue;
+    if (e.type === "worker") n++;
+    if (e.kind === "building" && Array.isArray(e.queue)) {
+      for (let i = 0; i < e.queue.length; i++) {
+        if (e.queue[i] && e.queue[i].type === "worker") n++;
+      }
+    }
+  }
+  return n;
+}
+function rtsWorkerCost(s, owner) {
+  const n = rtsWorkerCount(s, owner);
+  // next worker index = n + 1; from 10th onward scale up
+  const over = Math.max(0, n + 1 - RTS_WORKER_SCALE_FROM);
+  return RTS_WORKER_BASE_COST + over * RTS_WORKER_SCALE_STEP;
+}
+
 function rtsBuildAllowed(s, owner, bt, x, y) {
   const def = RTS_BUILD[bt];
   if (!def) return false;
   const r = Math.max(def.w || 40, def.h || 40) / 2;
   if (rtsCircleHitsObstacles(s, x, y, r * 0.7)) return false;
-  // StarCraft-like: only build on explored (scouted) ground
-  if (!rtsIsExplored(s, owner, x, y)) return false;
+  // Must be in current vision (bright fog), not just previously explored
+  if (!rtsInVision(s, owner, x, y)) return false;
   const age = rtsPlayerAge(s, owner);
   if (bt === "advBarracks" && age < 2) return false;
   const ownNexus = s.entities.filter((e) => e.type === "nexus" && e.owner === owner && e.hp > 0);
@@ -1943,7 +1967,8 @@ function rtsUpgradeBarracks(s, owner, preferIds) {
 function rtsEnqueueTrain(s, owner, ut, preferIds) {
   const udef = RTS_UNITS[ut];
   if (!udef) return false;
-  if (rtsOwnerGold(s, owner) < udef.cost) return false;
+  const cost = ut === "worker" ? rtsWorkerCost(s, owner) : udef.cost;
+  if (rtsOwnerGold(s, owner) < cost) return false;
   const age = rtsPlayerAge(s, owner);
   const needAge = udef.age != null ? udef.age : 0;
   if (age < needAge) return false;
@@ -1979,8 +2004,8 @@ function rtsEnqueueTrain(s, owner, ut, preferIds) {
   if (!from) return false;
   if (!Array.isArray(from.queue)) from.queue = [];
   if (from.queue.length >= RTS_MAX_QUEUE) return false;
-  s.gold[owner] -= udef.cost;
-  from.queue.push({ type: ut, need: udef.train || 4 });
+  s.gold[owner] -= cost;
+  from.queue.push({ type: ut, need: udef.train || 4, costPaid: cost });
   if (from.trainT == null) from.trainT = 0;
   return true;
 }
@@ -2131,7 +2156,7 @@ function rtsAiThink(room, s, owner, mode, dt) {
     return;
   }
 
-  if (workers.length < 6 && gold >= RTS_UNITS.worker.cost) {
+  if (workers.length < 6 && gold >= rtsWorkerCost(s, owner)) {
     rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });
     return;
   }
@@ -2209,44 +2234,61 @@ function tickRts(room, dt) {
 
   rtsUpdateFog(room);
 
-  // workers auto-harvest (idle only)
+  // workers auto-harvest (resume after move; deposit even while walking back)
   for (const e of s.entities) {
     if (e.kind !== "unit" || e.type !== "worker" || e.hp <= 0) continue;
-    if (e.order === "move" || e.order === "attack") continue;
-    if (e.tx != null) continue;
+    if (e.order === "attack") continue;
+    // Player explicit move: leave alone until arrived
+    if (e.order === "move" && e.tx != null) continue;
+
+    if (e.carry == null || isNaN(e.carry)) e.carry = 0;
+
     if (e.carry >= 10) {
       const nexus = rtsNearestOwn(s, e.owner, "nexus", e.x, e.y);
-      if (nexus) {
-        const d = Math.hypot(nexus.x - e.x, nexus.y - e.y);
-        if (d < 52) {
-          if (s.gold[e.owner] == null) s.gold[e.owner] = 0;
-          s.gold[e.owner] += e.carry;
-          e.carry = 0;
-        } else {
-          e.tx = nexus.x;
-          e.ty = nexus.y;
-        }
+      if (!nexus) continue;
+      const d = Math.hypot(nexus.x - e.x, nexus.y - e.y);
+      if (d < 56) {
+        if (s.gold[e.owner] == null) s.gold[e.owner] = 0;
+        s.gold[e.owner] += Math.floor(e.carry);
+        e.carry = 0;
+        e.tx = null;
+        e.ty = null;
+        if (e.order === "harvest") e.order = null;
+      } else {
+        e.order = "harvest";
+        e.tx = nexus.x;
+        e.ty = nexus.y;
       }
+      continue;
+    }
+
+    const mins = (s.minerals || []).filter((m) => m && m.amount > 0);
+    let best = null,
+      bd = 1e9;
+    for (const m of mins) {
+      const d = Math.hypot(m.x - e.x, m.y - e.y);
+      if (d < bd) {
+        bd = d;
+        best = m;
+      }
+    }
+    if (!best) {
+      e.tx = null;
+      e.ty = null;
+      continue;
+    }
+    if (bd < 36) {
+      const take = Math.min(dt * 4, best.amount, 10 - e.carry);
+      best.amount -= take;
+      e.carry = Math.min(10, e.carry + take);
+      e.tx = null;
+      e.ty = null;
+      e.order = "harvest";
+      if (best.amount <= 0.01) best.amount = 0;
     } else {
-      const mins = s.minerals.filter((m) => m.amount > 0);
-      let best = null,
-        bd = 1e9;
-      for (const m of mins) {
-        const d = Math.hypot(m.x - e.x, m.y - e.y);
-        if (d < bd) {
-          bd = d;
-          best = m;
-        }
-      }
-      if (best) {
-        if (bd < 30) {
-          best.amount -= dt * 4;
-          e.carry = Math.min(10, e.carry + dt * 4);
-        } else {
-          e.tx = best.x;
-          e.ty = best.y;
-        }
-      }
+      e.order = "harvest";
+      e.tx = best.x;
+      e.ty = best.y;
     }
   }
 
@@ -2260,7 +2302,7 @@ function tickRts(room, dt) {
       // Explicit move order: never auto-chase / stick to attack destination
       if (e.tx == null || e.ty == null) e.order = null;
       e.targetId = null;
-    } else {
+    } else if (e.order !== "harvest") {
       let target = e.targetId != null ? rtsFind(s, e.targetId) : null;
       if (target && target.hp <= 0) {
         target = null;
@@ -2306,17 +2348,24 @@ function tickRts(room, dt) {
       const dx = e.tx - e.x,
         dy = e.ty - e.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < 4) {
+      const arriveR = e.type === "worker" && e.order === "harvest" ? 28 : 4;
+      if (dist < arriveR) {
         e.tx = null;
         e.ty = null;
         if (e.order === "move") e.order = null;
       } else {
         const step = def.speed * dt;
-        const nx = e.x + (dx / dist) * step;
-        const ny = e.y + (dy / dist) * step;
+        const nx = e.x + (dx / dist) * Math.min(step, dist);
+        const ny = e.y + (dy / dist) * Math.min(step, dist);
         const pos = rtsClampPos(s, nx, ny, e.r || 8);
-        e.x = pos.x;
-        e.y = pos.y;
+        // If blocked and barely moved, clear stuck harvest/move target so AI can repath next tick
+        if (Math.hypot(pos.x - e.x, pos.y - e.y) < step * 0.05 && e.order === "harvest") {
+          e.tx = null;
+          e.ty = null;
+        } else {
+          e.x = pos.x;
+          e.y = pos.y;
+        }
       }
     }
   }
