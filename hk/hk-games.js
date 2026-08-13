@@ -795,7 +795,7 @@
 
   games.snake = function () {
     var COLS = 24, ROWS = 24, CELL = 26, MAP = COLS * CELL;
-    var c = controller(), cv = canvasBase(MAP, MAP), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 128, dead = false, touch, fx = makeFx(), anim = 0, hazards = [], hazAcc = 0, hazOnce = false;
+    var c = controller(), cv = canvasBase(MAP, MAP), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 128, dead = false, touch, fx = makeFx(), anim = 0, hazards = [], hazAcc = 0, playSec = 0;
     setHud([['점수', '0', 'score'], ['속도', '1.0x', 'speed']]);
     var gridCanvas = document.createElement('canvas');
     gridCanvas.width = MAP;
@@ -812,13 +812,26 @@
       }
     })();
     function spawn() { do { food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) }; } while (snake.some(function (p) { return p.x === food.x && p.y === food.y; }) || hazards.some(function (h) { return h.body.some(function (p) { return p.x === food.x && p.y === food.y; }); })); }
+    function hazardCap() {
+      // 점수·경과 시간에 따라 동시 악당 수 증가 (최대 6)
+      return Math.min(6, 1 + Math.floor(score / 80) + Math.floor(playSec / 35));
+    }
+    function hazardInterval() {
+      // 점수·시간이 오를수록 더 자주 등장
+      return Math.max(3.2, 9 - score / 90 - playSec / 40);
+    }
     function spawnHazard() {
-      if (hazards.length || hazOnce) return;
-      hazOnce = true;
+      if (hazards.length >= hazardCap()) return;
       var y = 2 + Math.floor(Math.random() * (ROWS - 4));
+      // 이미 비슷한 줄에 있으면 다른 줄 시도
+      var tries = 0;
+      while (tries < 8 && hazards.some(function (h) { return h.body[0] && Math.abs(h.body[0].y - y) < 2; })) {
+        y = 2 + Math.floor(Math.random() * (ROWS - 4));
+        tries++;
+      }
       var left = Math.random() > 0.5;
       var body = [];
-      for (var i = 0; i < 3; i++) body.push({ x: left ? i : COLS - 1 - i, y: y });
+      for (var i = 0; i < 3; i++) body.push({ x: left ? -1 - i : COLS + i, y: y });
       hazards.push({ body: body, dir: left ? 1 : -1, acc: 0 });
     }
     function input(x, y) { if (dir.x + x || dir.y + y) next = { x: x, y: y }; }
@@ -856,23 +869,28 @@
     function loop(t) {
       if (dead) return;
       var dt = frameDt(t, loop._last); loop._last = t;
-      anim += dt; fx.update(dt);
-      if (score >= 100) {
+      anim += dt; fx.update(dt); playSec += dt;
+      if (score >= 100 || playSec >= 45) {
         hazAcc += dt;
-        if (!hazOnce && hazAcc > 9) { hazAcc = 0; spawnHazard(); }
+        if (hazAcc >= hazardInterval()) {
+          hazAcc = 0;
+          spawnHazard();
+        }
       }
       hazards.forEach(function (h) {
         h.acc += dt;
-        if (h.acc >= 0.55) {
+        // 후반으로 갈수록 악당도 조금 빨라짐
+        var hazStep = Math.max(0.32, 0.55 - score / 1200 - playSec / 500);
+        if (h.acc >= hazStep) {
           h.acc = 0;
           var head = { x: h.body[0].x + h.dir, y: h.body[0].y };
-          // 벽에 튕기지 않고 그대로 빠져나가 1회성으로 사라짐
+          // 벽에 튕기지 않고 빠져나가 사라짐
           h.body.unshift(head); h.body.pop();
         }
       });
       hazards = hazards.filter(function (h) {
-        return h.body.some(function (p) { return p.x >= -1 && p.x < COLS + 1; }) &&
-          h.body.some(function (p) { return p.x >= 0 && p.x < COLS; });
+        return h.body.some(function (p) { return p.x >= -2 && p.x < COLS + 2; }) &&
+          h.body.some(function (p) { return p.x >= -1 && p.x <= COLS; });
       });
       var alpha = Math.min(1, (t - last) / step);
       if (t - last >= step) {
@@ -895,7 +913,7 @@
     c.on(cv.canvas, 'touchstart', function (e) { touch = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
     c.on(cv.canvas, 'touchend', function (e) { var dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1]; if (Math.abs(dx) > Math.abs(dy)) input(dx > 0 ? 1 : -1, 0); else input(0, dy > 0 ? 1 : -1); }, { passive: true });
     snake = [{ x: 12, y: 12 }, { x: 11, y: 12 }, { x: 10, y: 12 }]; dir = next = { x: 1, y: 0 }; score = 0; spawn(); draw(1); c.raf(loop);
-    actions(function () { startGame('snake'); }, function () { return score; }, '100점부터 방해 뱀이 한 번 지나가며 벽으로 사라집니다.');
+    actions(function () { startGame('snake'); }, function () { return score; }, '100점·시간이 지나면 악당 지렁이가 점점 더 자주, 더 많이 지나가며 벽으로 사라집니다.');
     return { id: 'snake', destroy: c.destroy };
   };
 
