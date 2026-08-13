@@ -8364,7 +8364,7 @@
       max-height: min(85vh, 900px);
       width: 100%;
       min-width: 220px;
-      max-width: min(1800px, 100%);
+      max-width: 100%;
       margin-top: 0;
       align-self: stretch;
       padding-left: 12px;
@@ -10636,7 +10636,7 @@
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--time {
-      grid-column: 3;
+      grid-column: 6;
       grid-row: 1;
       font-size: 0.8125rem;
       min-width: 0;
@@ -10649,7 +10649,7 @@
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--memo {
-      grid-column: 6;
+      grid-column: 3;
       grid-row: 1;
       font-size: 1.4rem;
       font-weight: 800;
@@ -15542,10 +15542,10 @@
       var WORK_STRIP_SORT_COLS = [
         { id: "room", label: "객실" },
         { id: "wing", label: "동" },
-        { id: "time", label: "시간" },
+        { id: "memo", label: "메모" },
         { id: "by", label: "요청" },
         { id: "status", label: "상태" },
-        { id: "memo", label: "메모" },
+        { id: "time", label: "오더 시간" },
         { id: "received", label: "접수 시간" },
       ];
       var SCHED_STRIP_SORT_COLS = [
@@ -16264,15 +16264,42 @@
 
       var DESK_CHAT_MAX_WIDTH = 1800;
 
+      function getDeskChatWidthBox(el) {
+        if (!el) return null;
+        return (
+          el.closest(
+            "#orderPanel, #facilityPanel, #mbCheckPanel, #requestMainStack, .order-panel, .request-main-stack"
+          ) || el.parentElement
+        );
+      }
+
       function getDeskChatMaxWidth(el) {
-        var parent = el && el.parentElement;
-        var avail = parent && parent.clientWidth > 0 ? parent.clientWidth : window.innerWidth || DESK_CHAT_MAX_WIDTH;
-        var pageCap =
-          (window.visualViewport && window.visualViewport.width) ||
-          document.documentElement.clientWidth ||
-          window.innerWidth ||
-          avail;
-        return Math.max(220, Math.min(avail, pageCap - 8, DESK_CHAT_MAX_WIDTH));
+        var box = getDeskChatWidthBox(el);
+        var avail = 0;
+        if (box) {
+          var style = window.getComputedStyle(box);
+          var padL = parseFloat(style.paddingLeft) || 0;
+          var padR = parseFloat(style.paddingRight) || 0;
+          avail = Math.max(0, box.clientWidth - padL - padR);
+          // 위쪽 입력폼(가로창) 폭에 맞추기
+          var formMain = null;
+          if (box.querySelector) {
+            formMain =
+              box.querySelector(":scope > .order-panel__main, :scope > .request-panel__main") ||
+              box.querySelector(".order-panel__main, .request-panel__main");
+          }
+          if (formMain && formMain.offsetWidth > 40) {
+            avail = formMain.offsetWidth;
+          }
+        }
+        if (!(avail > 0)) {
+          avail =
+            (window.visualViewport && window.visualViewport.width) ||
+            document.documentElement.clientWidth ||
+            window.innerWidth ||
+            DESK_CHAT_MAX_WIDTH;
+        }
+        return Math.max(220, Math.min(avail, DESK_CHAT_MAX_WIDTH));
       }
 
       function clampDeskChatWidths() {
@@ -16281,11 +16308,14 @@
           if (!el) return;
           var maxW = getDeskChatMaxWidth(el);
           el.style.maxWidth = maxW + "px";
-          if (!el.style.width || el.getAttribute("data-desk-width-user") !== "1") {
+          var userSet = el.getAttribute("data-desk-width-user") === "1";
+          if (!userSet) {
             el.style.width = maxW + "px";
             return;
           }
-          if (el.offsetWidth > maxW + 1) {
+          var cur = parseFloat(el.style.width);
+          if (!isFinite(cur) || cur <= 0) cur = el.offsetWidth;
+          if (cur > maxW + 1) {
             el.style.width = maxW + "px";
           }
         });
@@ -16297,23 +16327,57 @@
         var timer = 0;
         function schedule() {
           clearTimeout(timer);
-          timer = setTimeout(clampDeskChatWidths, 50);
+          timer = setTimeout(clampDeskChatWidths, 40);
         }
         window.addEventListener("resize", schedule);
         if (window.visualViewport) {
           window.visualViewport.addEventListener("resize", schedule);
           window.visualViewport.addEventListener("scroll", schedule);
         }
-        DESK_CHAT_IDS.forEach(function (id) {
-          var el = document.getElementById(id);
-          if (!el || typeof ResizeObserver === "undefined") return;
-          if (el.parentElement && !el.parentElement.__hkDeskParentObs) {
-            el.parentElement.__hkDeskParentObs = true;
-            var ro = new ResizeObserver(schedule);
-            ro.observe(el.parentElement);
+        if (typeof ResizeObserver !== "undefined") {
+          var ro = new ResizeObserver(schedule);
+          var seen = [];
+          function observe(node) {
+            if (!node || seen.indexOf(node) >= 0) return;
+            seen.push(node);
+            ro.observe(node);
           }
-        });
+          observe(document.querySelector(".layout-main-area"));
+          observe(document.querySelector(".main"));
+          observe(document.querySelector(".feedback-column"));
+          observe(document.querySelector(".sidebar"));
+          DESK_CHAT_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            observe(getDeskChatWidthBox(el));
+            observe(el.parentElement);
+            var formMain =
+              (getDeskChatWidthBox(el) &&
+                getDeskChatWidthBox(el).querySelector &&
+                getDeskChatWidthBox(el).querySelector(".order-panel__main, .request-panel__main")) ||
+              null;
+            observe(formMain);
+          });
+        }
+        document.addEventListener(
+          "transitionend",
+          function (e) {
+            var t = e && e.target;
+            if (!t || !t.classList) return;
+            if (
+              t.classList.contains("sidebar") ||
+              t.classList.contains("layout-main-area") ||
+              t.classList.contains("feedback-column") ||
+              t.classList.contains("main")
+            ) {
+              schedule();
+            }
+          },
+          true
+        );
         clampDeskChatWidths();
+        setTimeout(clampDeskChatWidths, 120);
+        setTimeout(clampDeskChatWidths, 400);
       }
 
       function bindDeskChatSizeHandles() {
