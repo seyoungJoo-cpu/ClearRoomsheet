@@ -2,6 +2,7 @@
 
 /* Shared modes for Lane Push + Nexus War */
 const SHARED_MODES = {
+  solo: { need: 2, max: 2, team: false, label: "싱글 vs AI", solo: true },
   "1v1": { need: 2, max: 2, team: false, label: "1:1" },
   ffa3: { need: 3, max: 3, team: false, label: "1:1:1" },
   "2v2": { need: 4, max: 4, team: true, label: "2:2" },
@@ -22,6 +23,9 @@ function modeMax(mode) {
 }
 function modeIsTeam(mode) {
   return !!(SHARED_MODES[mode] && SHARED_MODES[mode].team);
+}
+function modeIsSolo(mode) {
+  return !!(SHARED_MODES[mode] && SHARED_MODES[mode].solo);
 }
 function teamOf(slot, mode) {
   if (modeIsTeam(mode)) return slot < 2 ? 0 : 1;
@@ -603,6 +607,95 @@ function lpApplyInput(s, ch, inp) {
   }
 }
 
+function lpAiSpendPoints(ch) {
+  while (ch.skillPts > 0) {
+    let spent = false;
+    const tryLevel = (k) => {
+      const max = k === "r" ? 3 : 5;
+      if ((ch.ranks[k] || 0) >= max) return false;
+      if (k === "r") {
+        if (ch.level < 6) return false;
+        if ((ch.ranks.r || 0) >= Math.floor(ch.level / 6)) return false;
+      }
+      ch.ranks[k] = (ch.ranks[k] || 0) + 1;
+      ch.skillPts--;
+      return true;
+    };
+    for (const k of ["q", "w", "e", "r"]) {
+      if (tryLevel(k)) {
+        spent = true;
+        break;
+      }
+    }
+    if (!spent) break;
+  }
+  while (ch.gold >= 120 && ch.buyAd < 6) {
+    ch.gold -= 120;
+    ch.buyAd++;
+    ch.ad += 8;
+  }
+  while (ch.gold >= 100 && ch.buyHp < 6) {
+    ch.gold -= 100;
+    ch.buyHp++;
+    ch.maxHp += 45;
+    ch.hp = Math.min(ch.maxHp, ch.hp + 45);
+  }
+}
+
+function lpAiThink(s, ch, dt) {
+  if (!ch) return;
+  if (!ch._ai) ch._ai = { cd: 0.2 };
+  ch._ai.cd -= dt;
+
+  if (s.phase === "pick") {
+    if (!ch.champId) {
+      const pick = LP_CHAMP_IDS[(ch.owner + 2) % LP_CHAMP_IDS.length] || "blade";
+      lpApplyChamp(ch, pick);
+    }
+    return;
+  }
+  if (!ch.champId) lpApplyChamp(ch, "blade");
+  if (!ch.alive) return;
+
+  lpAiSpendPoints(ch);
+
+  const foe = lpNearestEnemy(s, ch.x, ch.y, ch.team, s.mode, {});
+  if (foe) {
+    const d = Math.hypot(foe.x - ch.x, foe.y - ch.y);
+    const want = ch.range * 0.75;
+    if (d > want + 20) {
+      ch.tx = foe.x;
+      ch.ty = foe.y;
+    } else if (d < ch.range * 0.35 && foe.kind === "champ") {
+      // kite slightly
+      const ang = Math.atan2(ch.y - foe.y, ch.x - foe.x);
+      ch.tx = Math.max(30, Math.min(s.W - 30, ch.x + Math.cos(ang) * 80));
+      ch.ty = Math.max(30, Math.min(s.H - 30, ch.y + Math.sin(ang) * 80));
+    } else {
+      ch.tx = null;
+      ch.ty = null;
+    }
+    if (ch._ai.cd <= 0 && d < Math.max(ch.range + 40, 160)) {
+      const order = ["q", "w", "e", "r"];
+      for (const sk of order) {
+        if ((ch.ranks[sk] || 0) > 0 && ch.cds[sk] <= 0) {
+          lpApplyInput(s, ch, { skill: sk, aimX: foe.x, aimY: foe.y });
+          ch._ai.cd = 0.55;
+          break;
+        }
+      }
+    }
+  } else {
+    const enemyBase = (s.bases || [])
+      .filter((b) => b.hp > 0 && !lpAllied(ch.team, b.team != null ? b.team : b.owner, s.mode))
+      .sort((a, b) => Math.hypot(a.x - ch.x, a.y - ch.y) - Math.hypot(b.x - ch.x, b.y - ch.y))[0];
+    if (enemyBase) {
+      ch.tx = enemyBase.x;
+      ch.ty = enemyBase.y;
+    }
+  }
+}
+
 function tickLanePush(room, dt, endGame) {
   const s = room.state;
   if (!s) return;
@@ -615,7 +708,8 @@ function tickLanePush(room, dt, endGame) {
     s.pickLeft -= dt;
     for (const p of room.players) {
       const ch = s.champs.find((c) => c.owner === p.slot);
-      if (ch && p.input) lpApplyInput(s, ch, p.input);
+      if (ch && p.isAi) lpAiThink(s, ch, dt);
+      else if (ch && p.input) lpApplyInput(s, ch, p.input);
       if (p.input) {
         p.input.pick = null;
         p.input.skill = null;
@@ -640,7 +734,8 @@ function tickLanePush(room, dt, endGame) {
 
   for (const p of room.players) {
     const ch = s.champs.find((c) => c.owner === p.slot);
-    if (ch && p.input) lpApplyInput(s, ch, p.input);
+    if (ch && p.isAi) lpAiThink(s, ch, dt);
+    else if (ch && p.input) lpApplyInput(s, ch, p.input);
     if (p.input) {
       p.input.skill = null;
       p.input.buy = null;
@@ -959,12 +1054,49 @@ function nwApplyInput(s, slot, mode, inp) {
   });
 }
 
+function nwAiThink(s, slot, mode, dt) {
+  if (!s._aiCd) s._aiCd = {};
+  s._aiCd[slot] = (s._aiCd[slot] != null ? s._aiCd[slot] : 1.2) - dt;
+  if (s._aiCd[slot] > 0) return;
+  s._aiCd[slot] = 1.4 + Math.random() * 0.8;
+
+  const my = nwOwnerKey(slot, mode);
+  const owned = s.nodes.filter((n) => n.owner === my && n.units >= 6);
+  if (!owned.length) return;
+
+  owned.sort((a, b) => b.units - a.units);
+  const from = owned[0];
+  const neutrals = s.nodes
+    .filter((n) => n.owner < 0 && n.id !== from.id)
+    .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y));
+  const enemies = s.nodes
+    .filter((n) => n.owner >= 0 && n.owner !== my && n.id !== from.id)
+    .sort((a, b) => {
+      const score = (n) => (n.nexus ? -40 : 0) + n.units + Math.hypot(n.x - from.x, n.y - from.y) * 0.02;
+      return score(a) - score(b);
+    });
+
+  let to = null;
+  const myCount = s.nodes.filter((n) => n.owner === my).length;
+  if (myCount < 4 && neutrals.length) to = neutrals[0];
+  else if (enemies.length) to = enemies[0];
+  else if (neutrals.length) to = neutrals[0];
+  if (!to) return;
+
+  const ratio = to.nexus || to.owner >= 0 ? 0.65 : 0.5;
+  nwApplyInput(s, slot, mode, { cmd: "send", from: from.id, to: to.id, ratio });
+}
+
 function tickNexusWar(room, dt, endGame) {
   const s = room.state;
   if (!s) return;
   const mode = s.mode;
 
   for (const p of room.players) {
+    if (p.isAi) {
+      nwAiThink(s, p.slot, mode, dt);
+      continue;
+    }
     if (!p.input) continue;
     if (Array.isArray(p.inputQ) && p.inputQ.length) {
       while (p.inputQ.length) {
@@ -1062,6 +1194,7 @@ module.exports = {
   modeNeed,
   modeMax,
   modeIsTeam,
+  modeIsSolo,
   teamOf,
   LP_CHAMPS,
   LP_CHAMP_IDS,

@@ -8,8 +8,8 @@
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 방' },
     memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '1:1 · 1:1:1 · 2:2 · 카드수 선택' },
-    lanepush: { icon: '🗡️', name: '레인 푸시', desc: 'LOL 미니 · 1:1/1:1:1/2:2 · 라인전' },
-    nexuswar: { icon: '🌐', name: '점령전', desc: 'Nexus War · 거점 점령 · 스노우볼' }
+    lanepush: { icon: '🗡️', name: '레인 푸시', desc: '싱글/대결 · LOL 미니 라인전' },
+    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령 스노우볼' }
   };
   var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4 };
   var tankCreateMode = 'ffa';
@@ -19,6 +19,7 @@
   var nexusCreateMode = '1v1';
   var memoryPairs = 18;
   var SHARED_MODE_META = {
+    solo: { label: '싱글 vs AI', max: 2 },
     '1v1': { label: '1:1', max: 2 },
     ffa3: { label: '1:1:1', max: 3 },
     '2v2': { label: '2:2', max: 4 }
@@ -959,10 +960,10 @@
     if (gameId === 'lanepush' || gameId === 'nexuswar') {
       var curMode = gameId === 'lanepush' ? laneCreateMode : nexusCreateMode;
       modeRow = '<div class="hkmp-row" style="margin:0">' +
-        [['1v1', '1:1'], ['ffa3', '1:1:1'], ['2v2', '2:2']].map(function (mm) {
+        [['solo', '싱글 vs AI'], ['1v1', '1:1'], ['ffa3', '1:1:1'], ['2v2', '2:2']].map(function (mm) {
           return '<button type="button" class="hkmp-btn' + (curMode === mm[0] ? ' primary' : '') + '" data-shared-mode="' + mm[0] + '">' + mm[1] + '</button>';
         }).join('') +
-        '<span class="hkmp-note">' + (gameId === 'lanepush' ? '챔피언 픽 → 라인 밀기' : '거점 드래그로 유닛 이동') + '</span></div>';
+        '<span class="hkmp-note">' + (gameId === 'lanepush' ? '싱글은 Ready 한 명 · AI 자동' : '싱글은 Ready 한 명 · AI 자동') + '</span></div>';
     }
     var creating = pendingCreate;
     var connected = !!(ws && ws.readyState === 1);
@@ -1032,12 +1033,14 @@
     if (gameId === 'rts' && room.mode === 'solo') minNeed = 1;
     if (gameId === 'memorymp') minNeed = room.max || ((MEMORY_MODE_META[room.mode] && MEMORY_MODE_META[room.mode].max) || 2);
     if (gameId === 'lanepush' || gameId === 'nexuswar') minNeed = room.max || ((SHARED_MODE_META[room.mode] && SHARED_MODE_META[room.mode].max) || 2);
+    if ((gameId === 'lanepush' || gameId === 'nexuswar') && room.mode === 'solo') minNeed = 1;
     var maxP = room.max || MAX_PLAYERS[gameId] || 2;
     var pendingRoom = !!room._pending;
     var humans = players.filter(function (p) { return !p.isAi; });
     var humansReady = humans.length && humans.every(function (p) { return p.ready; });
+    var soloMode = (gameId === 'rts' || gameId === 'lanepush' || gameId === 'nexuswar') && room.mode === 'solo';
     var allReady = !pendingRoom && (
-      (gameId === 'rts' && room.mode === 'solo')
+      soloMode
         ? (humans.length >= 1 && humansReady)
         : (players.length >= minNeed && players.every(function (p) { return p.ready || p.isAi; }))
     );
@@ -1051,7 +1054,7 @@
       if (room.pairs) memLabel += ' · ' + room.pairs + '쌍';
     }
     refs.body.innerHTML =
-      '<div class="hkmp-row"><span class="hkmp-pill">' + (pendingRoom ? '방 생성 중…' : ('대기실 · ' + humans.length + '/' + (gameId === 'rts' && room.mode === 'solo' ? 1 : maxP) + '명')) + (rtsLabel ? ' · ' + rtsLabel : '') + (memLabel ? ' · ' + memLabel : '') + '</span>' +
+      '<div class="hkmp-row"><span class="hkmp-pill">' + (pendingRoom ? '방 생성 중…' : ('대기실 · ' + humans.length + '/' + (soloMode ? 1 : maxP) + '명')) + (rtsLabel ? ' · ' + rtsLabel : '') + (memLabel ? ' · ' + memLabel : '') + '</span>' +
       '<button type="button" class="hkmp-btn" data-act="leave"' + (pendingRoom ? ' disabled' : '') + '>나가기</button></div>' +
       '<div class="hkmp-players">' + players.map(function (p, i) {
         var ready = !!p.ready || !!p.isAi;
@@ -1071,11 +1074,11 @@
         (pendingRoom ? '서버 응답을 기다리는 중…' :
         ((gameId === 'tank' && room.mode ? ((room.mode === 'team' ? '팀전 2vs2' : '자유대전') + ' · ') : '') +
         (gameId === 'rts' ? ((rtsLabel || 'RTS') + (room.mode === 'solo' ? ' · AI 대전 · ' : ' · 본진·일꾼 자동 배치 · ')) : '') +
-        (gameId === 'lanepush' ? ((rtsLabel || '레인푸시') + ' · 챔피언 픽 후 라인전 · ') : '') +
-        (gameId === 'nexuswar' ? ((rtsLabel || '점령전') + ' · 거점 드래그 · ') : '') +
+        (gameId === 'lanepush' ? ((rtsLabel || '레인푸시') + (room.mode === 'solo' ? ' · AI 대전 · ' : ' · 챔피언 픽 후 라인전 · ')) : '') +
+        (gameId === 'nexuswar' ? ((rtsLabel || '점령전') + (room.mode === 'solo' ? ' · AI 대전 · ' : ' · 거점 드래그 · ')) : '') +
         (gameId === 'memorymp' ? ((memLabel || '메모리') + (room.mode === '2v2' ? ' · 팀원 각 1장씩 · ' : ' · ') ) : '') +
         (allReady ? '모두 준비됨 — 곧 시작합니다' :
-        (gameId === 'rts' && room.mode === 'solo' ? 'Ready하면 AI와 바로 시작' :
+        (soloMode ? 'Ready하면 AI와 바로 시작' :
         (humans.length < minNeed ? '대기 중… (' + humans.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작'))) +
         (gameId === 'tank' && room.mode === 'team' ? ' · 3명이면 AI 합류' : ''))) + '</div>';
     var leaveBtn = refs.body.querySelector('[data-act="leave"]');

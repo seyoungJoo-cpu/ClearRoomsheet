@@ -22,8 +22,8 @@
     snakes: { icon: '🪱', name: '멀티 스네이크', desc: '목숨 3 · 이름 표시 · 최대 8인' },
     airhockey: { icon: '🏒', name: '에어하키', desc: '반응속도 에어하키 · 멀티 방' },
     memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '1:1 · 1:1:1 · 2:2 · 카드수 선택' },
-    lanepush: { icon: '🗡️', name: '레인 푸시', desc: 'LOL 미니 · 챔피언·미니언·타워' },
-    nexuswar: { icon: '🌐', name: '점령전', desc: '거점 점령 · Galcon/Nexus War' }
+    lanepush: { icon: '🗡️', name: '레인 푸시', desc: '싱글/대결 · LOL 미니 라인전' },
+    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령' }
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;

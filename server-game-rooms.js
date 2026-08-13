@@ -256,6 +256,12 @@ function allReady(room) {
     return humans.length === need && humans.length <= mmax && readyOk;
   }
   if (room.game === "lanepush" || room.game === "nexuswar") {
+    if (laneNexus.modeIsSolo(room.mode)) {
+      ensureLaneNexusAi(room);
+      const humans = room.players.filter((p) => !p.isAi);
+      const readyOk = room.players.every((p) => p.ready || p.isAi);
+      return humans.length === 1 && room.players.length >= 2 && readyOk;
+    }
     const need = laneNexus.modeNeed(room.mode);
     const mmax = laneNexus.modeMax(room.mode) || need;
     return humans.length === need && humans.length <= mmax && readyOk;
@@ -1257,6 +1263,30 @@ function ensureRtsAi(room) {
   room.players.forEach(function (p, i) {
     p.slot = i;
     p.team = rtsTeamOf(i, room.mode);
+  });
+  return true;
+}
+function ensureLaneNexusAi(room) {
+  if (!laneNexus.modeIsSolo(room.mode)) return false;
+  if (room.players.some((p) => p.isAi)) return false;
+  const used = new Set(room.players.map((p) => p.slot));
+  let slot = 0;
+  while (used.has(slot)) slot++;
+  const game = room.game;
+  room.players.push({
+    id: nextPlayerId++,
+    name: "AI 적군",
+    ws: null,
+    slot: slot,
+    ready: true,
+    input: defaultInput(game),
+    inputQ: [],
+    isAi: true,
+    roomCode: room.code,
+  });
+  room.players.forEach(function (p, i) {
+    p.slot = i;
+    p.team = laneNexus.teamOf(i, room.mode);
   });
   return true;
 }
@@ -3077,6 +3107,7 @@ function lobbyList(game) {
     if (room.game !== game) continue;
     if (room.status !== "lobby") continue;
     if (game === "rts" && rtsIsSolo(room.mode)) continue;
+    if ((game === "lanepush" || game === "nexuswar") && laneNexus.modeIsSolo(room.mode)) continue;
     list.push({
       code: room.code,
       players: room.players.filter((p) => !p.isAi).length,
@@ -3208,6 +3239,9 @@ function attachGameRooms(httpServer) {
         };
         room.players.push(player);
         if (game === "rts" && rtsIsSolo(room.mode)) ensureRtsAi(room);
+        if ((game === "lanepush" || game === "nexuswar") && laneNexus.modeIsSolo(room.mode)) {
+          ensureLaneNexusAi(room);
+        }
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
         // Host gets room first; lobby fan-out deferred off the hot path
@@ -3225,6 +3259,12 @@ function attachGameRooms(httpServer) {
         if (!room) return error(ws, "room_not_found");
         if (room.status !== "lobby") return error(ws, "room_not_joinable");
         if (room.game === "rts" && rtsIsSolo(room.mode)) {
+          return error(ws, "room_full");
+        }
+        if (
+          (room.game === "lanepush" || room.game === "nexuswar") &&
+          laneNexus.modeIsSolo(room.mode)
+        ) {
           return error(ws, "room_full");
         }
         const joinMax = room.max || GAMES[room.game].max;
