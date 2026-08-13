@@ -1122,7 +1122,7 @@
         (gameId === 'airhockey' ? ((soloMode ? '싱글 vs AI' : '에어하키') + ' · ') : '') +
         (gameId === 'lanepush' ? ((rtsLabel || '레인푸시') + (soloMode ? ' · AI 대전 · ' : ' · 챔피언 픽 후 라인전 · ')) : '') +
         (gameId === 'nexuswar' ? ((rtsLabel || '점령전') + (soloMode ? ' · AI 대전 · ' : ' · 거점 드래그 · ')) : '') +
-        (gameId === 'memorymp' ? ((rtsLabel || memLabel || '메모리') + (soloMode ? ' · AI 대전 · ' : (room.mode === '2v2' ? ' · 팀원 각 1장씩 · ' : ' · '))) : '') +
+        (gameId === 'memorymp' ? ((memLabel || '메모리') + (soloMode ? ' · AI 대전 · ' : (room.mode === '2v2' ? ' · 팀원 각 1장씩 · ' : ' · '))) : '') +
         (allReady ? '모두 준비됨 — 곧 시작합니다' :
         (soloMode ? 'Ready하면 AI와 바로 시작' :
         (humans.length < minNeed ? '대기 중… (' + humans.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작'))) +
