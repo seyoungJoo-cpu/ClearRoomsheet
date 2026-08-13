@@ -7792,8 +7792,9 @@
     }
 
     .sched-req-card .request-feedback__item-by {
-      margin-top: 2px;
-      font-size: 0.625rem;
+      margin-top: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
     }
 
     .sched-req-card--urgent {
@@ -10536,7 +10537,7 @@
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
     .main .order-work-item.is-strip-cols {
       display: grid;
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr) auto auto;
       gap: 6px 12px;
       align-items: center;
       width: 100%;
@@ -10584,16 +10585,35 @@
       font-weight: inherit;
     }
 
-    .main .order-work-item.is-strip-cols > .order-chat,
     .main .order-work-item.is-strip-cols > .order-work__actions,
-    .main .order-work-item.is-strip-cols > .order-work__facility-time-wrap,
     .main .order-work-item.is-strip-cols > .order-feedback__maint-actions,
+    .main .order-work-item.is-strip-cols > .order-feedback__front-actions {
+      grid-column: 6;
+      grid-row: 1;
+      justify-self: end;
+      width: auto;
+      margin: 0;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .main .order-work-item.is-strip-cols > .order-feedback__item-by {
+      grid-column: 7;
+      grid-row: 1;
+      justify-self: end;
+      width: auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .main .order-work-item.is-strip-cols > .order-chat,
+    .main .order-work-item.is-strip-cols > .order-work__facility-time-wrap,
     .main .order-work-item.is-strip-cols > .hk-accepter-label,
     .main .order-work-item.is-strip-cols > .order-work__facility-denied-label,
     .main .order-work-item.is-strip-cols > .order-work-item__chat-hint,
-    .main .order-work-item.is-strip-cols > .order-work-item__x,
-    .main .order-work-item.is-strip-cols > .order-feedback__item-by,
-    .main .order-work-item.is-strip-cols > .order-feedback__front-actions {
+    .main .order-work-item.is-strip-cols > .order-work-item__x {
       grid-column: 1 / -1;
       width: 100%;
       margin-top: 4px;
@@ -10602,7 +10622,7 @@
     .main .sched-cards-list > .sched-req-card.is-strip-cols,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols {
       display: grid;
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr);
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr) auto auto;
       gap: 6px 12px;
       align-items: center;
       width: 100%;
@@ -10614,7 +10634,7 @@
     }
 
     .hk-strip-sort[data-sort-list="schedCards"] {
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr);
+      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr) auto auto;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
@@ -10683,12 +10703,31 @@
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
-    .main .sched-cards-list > .sched-req-card.is-strip-cols > .order-chat,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions {
+      grid-column: 7;
+      grid-row: 1;
+      justify-self: end;
+      width: auto;
+      margin: 0;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
+    }
+
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by {
+      grid-column: 8;
+      grid-row: 1;
+      justify-self: end;
+      width: auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .order-chat,
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__x,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .order-chat,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__x {
       grid-column: 1 / -1;
       width: 100%;
