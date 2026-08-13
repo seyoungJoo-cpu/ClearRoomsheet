@@ -1445,9 +1445,9 @@
 
     .main .sched-req-card__actions .hk-strip-actions-trail,
     .main .order-work-item.is-strip-cols > .order-feedback__front-actions .hk-strip-actions-trail {
-      margin-left: auto;
+      margin-left: 0;
       display: inline-flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 6px;
       align-items: center;
     }
@@ -3757,6 +3757,11 @@
       font-size: 0.875rem;
       line-height: 1.5;
       padding: 10px 10px 24px;
+    }
+
+    .main.main--order .order-work-item.is-strip-cols,
+    .main.main--facility .order-work-item.is-strip-cols {
+      padding: 10px 14px;
     }
 
     .main.main--order .order-work-item .request-feedback__item-time,
@@ -10535,9 +10540,20 @@
     }
 
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
-    .main .order-work-item.is-strip-cols {
+    /* 객실 | 동 | 시간 | 이름 | 상태 | 메모 | 접수 | 버튼 */
+    .main .order-work-item.is-strip-cols,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols {
       display: grid;
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr) auto auto;
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(4.5rem, 0.9fr)
+        minmax(4.2rem, 0.9fr)
+        minmax(3.5rem, 0.7fr)
+        minmax(5rem, 1.5fr)
+        minmax(4.5rem, 1fr)
+        auto;
       gap: 6px 12px;
       align-items: center;
       width: 100%;
@@ -10546,9 +10562,25 @@
       padding: 10px 14px;
       font-size: 0.875rem;
       line-height: 1.4;
+      overflow: visible;
+    }
+
+    .hk-strip-sort--work,
+    .hk-strip-sort[data-sort-list="schedCards"] {
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(4.5rem, 0.9fr)
+        minmax(4.2rem, 0.9fr)
+        minmax(3.5rem, 0.7fr)
+        minmax(5rem, 1.5fr)
+        minmax(4.5rem, 1fr)
+        auto;
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--room {
+      grid-column: 1;
+      grid-row: 1;
       font-size: 1.7rem;
       font-weight: 900;
       letter-spacing: -0.02em;
@@ -10557,19 +10589,27 @@
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--wing {
+      grid-column: 2;
+      grid-row: 1;
       justify-self: start;
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--time {
+      grid-column: 3;
+      grid-row: 1;
       font-size: 0.8125rem;
       min-width: 0;
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--status {
+      grid-column: 5;
+      grid-row: 1;
       min-width: 0;
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--memo {
+      grid-column: 6;
+      grid-row: 1;
       font-size: 1.4rem;
       font-weight: 800;
       line-height: 1.35;
@@ -10585,10 +10625,18 @@
       font-weight: inherit;
     }
 
+    .main .order-work-item.is-strip-cols > .hk-strip-cell--received {
+      grid-column: 7;
+      grid-row: 1;
+      font-size: 0.8125rem;
+      min-width: 0;
+      line-height: 1.35;
+    }
+
     .main .order-work-item.is-strip-cols > .order-work__actions,
     .main .order-work-item.is-strip-cols > .order-feedback__maint-actions,
     .main .order-work-item.is-strip-cols > .order-feedback__front-actions {
-      grid-column: 6;
+      grid-column: 8;
       grid-row: 1;
       justify-self: end;
       width: auto;
@@ -10599,46 +10647,45 @@
       gap: 6px;
     }
 
-    .main .order-work-item.is-strip-cols > .order-feedback__item-by {
-      grid-column: 7;
+    .main .order-work-item.is-strip-cols > .order-feedback__item-by,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by {
+      grid-column: 4;
       grid-row: 1;
-      justify-self: end;
+      justify-self: start;
+      align-self: center;
+      position: static;
+      right: auto;
+      bottom: auto;
+      left: auto;
       width: auto;
+      max-width: none;
       margin: 0;
+      overflow: visible;
+      text-overflow: unset;
       white-space: nowrap;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
     }
 
     .main .order-work-item.is-strip-cols > .order-chat,
     .main .order-work-item.is-strip-cols > .order-work__facility-time-wrap,
+    .main .order-work-item.is-strip-cols > .order-work__facility-time-display,
     .main .order-work-item.is-strip-cols > .hk-accepter-label,
     .main .order-work-item.is-strip-cols > .order-work__facility-denied-label,
     .main .order-work-item.is-strip-cols > .order-work-item__chat-hint,
-    .main .order-work-item.is-strip-cols > .order-work-item__x {
+    .main .order-work-item.is-strip-cols > .order-work-item__x,
+    .main .order-work-item.is-strip-cols > .order-feedback__item-memo {
       grid-column: 1 / -1;
       width: 100%;
       margin-top: 4px;
     }
 
-    .main .sched-cards-list > .sched-req-card.is-strip-cols,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols {
-      display: grid;
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr) auto auto;
-      gap: 6px 12px;
-      align-items: center;
-      width: 100%;
-      box-sizing: border-box;
-      height: auto;
-      padding: 10px 14px;
-      font-size: 0.875rem;
-      line-height: 1.4;
-    }
-
-    .hk-strip-sort[data-sort-list="schedCards"] {
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(4.5rem, 0.9fr) minmax(3.5rem, 0.7fr) minmax(5rem, 1.5fr) minmax(4.5rem, 1fr) auto auto;
-    }
-
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--room {
+      grid-column: 1;
+      grid-row: 1;
       font-size: 1.7rem;
       font-weight: 900;
       letter-spacing: -0.02em;
@@ -10648,22 +10695,30 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--wing,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--wing {
+      grid-column: 2;
+      grid-row: 1;
       justify-self: start;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--time,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--time {
+      grid-column: 3;
+      grid-row: 1;
       font-size: 0.8125rem;
       min-width: 0;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--status,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--status {
+      grid-column: 5;
+      grid-row: 1;
       min-width: 0;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo {
+      grid-column: 6;
+      grid-row: 1;
       font-size: 1.4rem;
       font-weight: 800;
       line-height: 1.35;
@@ -10682,6 +10737,8 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--received,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--received {
+      grid-column: 7;
+      grid-row: 1;
       font-size: 0.8125rem;
       min-width: 0;
       line-height: 1.35;
@@ -10704,7 +10761,7 @@
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions {
-      grid-column: 7;
+      grid-column: 8;
       grid-row: 1;
       justify-self: end;
       width: auto;
@@ -10713,16 +10770,6 @@
       flex-wrap: nowrap;
       align-items: center;
       gap: 6px;
-    }
-
-    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__item-by,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__item-by {
-      grid-column: 8;
-      grid-row: 1;
-      justify-self: end;
-      width: auto;
-      margin: 0;
-      white-space: nowrap;
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .order-chat,
@@ -15362,9 +15409,16 @@
         { id: "status", label: "상태" },
         { id: "memo", label: "메모" },
       ];
-      var SCHED_STRIP_SORT_COLS = STRIP_SORT_COLS.concat([
+      var WORK_STRIP_SORT_COLS = [
+        { id: "room", label: "객실" },
+        { id: "wing", label: "동" },
+        { id: "time", label: "시간" },
+        { id: "by", label: "요청" },
+        { id: "status", label: "상태" },
+        { id: "memo", label: "메모" },
         { id: "received", label: "접수 시간" },
-      ]);
+      ];
+      var SCHED_STRIP_SORT_COLS = WORK_STRIP_SORT_COLS;
 
       function getStripSortState(listKey) {
         return stripSortStateByList[listKey] || { col: "", dir: "" };
@@ -15492,6 +15546,7 @@
           });
           listEl.parentNode.insertBefore(head, listEl);
         }
+        if (sortCols.length >= 7) head.classList.add("hk-strip-sort--work");
         head.__hkSortRerender = rerenderFn;
         syncStripSortHeadUi(head, listKey);
         return head;
@@ -15539,6 +15594,12 @@
               " " +
               String(e.memo2 != null ? e.memo2 : "").trim()
             );
+          },
+          by: function (e) {
+            return e && e.by != null ? String(e.by).trim() : "";
+          },
+          received: function (e) {
+            return e && (e.acceptedAt || e.at);
           },
         };
       }
@@ -24540,7 +24601,8 @@
       function appendOrderItemCommon(li, entry, opts) {
         opts = opts || {};
         var compact = opts.compact !== false;
-        li.classList.add("is-strip-cols");
+        var isWorkStrip = li.classList.contains("order-work-item");
+        if (isWorkStrip) li.classList.add("is-strip-cols");
 
         var roomCell = document.createElement("span");
         roomCell.className = "hk-strip-cell hk-strip-cell--room request-feedback__item-room";
@@ -24600,7 +24662,7 @@
           setLineWithEmTime(orderTimeEl, "오더 ", formatReqAt(entry.at));
           timeCell.appendChild(orderTimeEl);
         }
-        if (entry.acceptedAt) {
+        if (!isWorkStrip && entry.acceptedAt) {
           var acceptTimeEl = document.createElement("div");
           acceptTimeEl.className = "request-feedback__item-time";
           setLineWithEmTime(acceptTimeEl, "접수 ", formatReqAt(entry.acceptedAt));
@@ -24615,11 +24677,20 @@
 
         var statusCell = document.createElement("span");
         statusCell.className = "hk-strip-cell hk-strip-cell--status request-feedback__item-st";
-        statusCell.appendChild(
-          buildFoOnlyBadge(entry.room, {
-            statusClass: "request-feedback__item-st hk-st-badge",
-          })
-        );
+        if (isWorkStrip) {
+          appendRoomTypeToCardHead(statusCell, entry.room);
+          statusCell.appendChild(
+            buildRoomStatusGroup(lookupRoomStatusFromXml(entry.room), entry.room, {
+              statusClass: "room-card__status",
+            })
+          );
+        } else {
+          statusCell.appendChild(
+            buildFoOnlyBadge(entry.room, {
+              statusClass: "request-feedback__item-st hk-st-badge",
+            })
+          );
+        }
 
         var memoCell = document.createElement("div");
         memoCell.className = "hk-strip-cell hk-strip-cell--memo";
@@ -24663,6 +24734,20 @@
         li.appendChild(statusCell);
         li.appendChild(memoCell);
 
+        if (isWorkStrip) {
+          var receivedCell = document.createElement("div");
+          receivedCell.className = "hk-strip-cell hk-strip-cell--received";
+          if (entry.acceptedAt) {
+            var recEl = document.createElement("div");
+            recEl.className = "request-feedback__item-time";
+            setLineWithEmTime(recEl, "접수 ", formatReqAt(entry.acceptedAt));
+            receivedCell.appendChild(recEl);
+          } else {
+            receivedCell.textContent = "—";
+          }
+          li.appendChild(receivedCell);
+        }
+
         var orderBy = entry.by != null ? String(entry.by).trim() : "";
         if (orderBy && !opts.hideBy) {
           var orderByEl = document.createElement("div");
@@ -24672,6 +24757,7 @@
           li.appendChild(orderByEl);
         }
       }
+
 
       function canUseOrderChat(entry) {
         if (!entry) return false;
@@ -26022,15 +26108,15 @@
         var rerenderOrderLists = function () {
           renderOrderWorkPanels({ force: true });
         };
-        ensureStripSortHead(issueList, prefix + "Issue", rerenderOrderLists);
-        ensureStripSortHead(acceptedList, prefix + "Accepted", rerenderOrderLists);
-        ensureStripSortHead(cancelledList, prefix + "Cancelled", rerenderOrderLists);
-        ensureStripSortHead(deployedList, prefix + "Deployed", rerenderOrderLists);
+        ensureStripSortHead(issueList, prefix + "Issue", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+        ensureStripSortHead(acceptedList, prefix + "Accepted", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+        ensureStripSortHead(cancelledList, prefix + "Cancelled", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+        ensureStripSortHead(deployedList, prefix + "Deployed", rerenderOrderLists, WORK_STRIP_SORT_COLS);
         if (doorhandleList) {
-          ensureStripSortHead(doorhandleList, prefix + "Doorhandle", rerenderOrderLists);
+          ensureStripSortHead(doorhandleList, prefix + "Doorhandle", rerenderOrderLists, WORK_STRIP_SORT_COLS);
         }
         if (unavailableList) {
-          ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists);
+          ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists, WORK_STRIP_SORT_COLS);
         }
 
         hkChatCaptureSticks(
@@ -26616,6 +26702,9 @@
                 " " +
                 String(e.memo2 != null ? e.memo2 : "").trim()
               );
+            },
+            by: function (e) {
+              return e && e.by != null ? String(e.by).trim() : "";
             },
             received: function (e) {
               return e && e.at;
