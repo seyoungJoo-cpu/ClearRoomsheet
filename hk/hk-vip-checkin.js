@@ -1588,6 +1588,29 @@
 
   function onViewActivated() {
     render(false);
+    tickOpsDateRollover();
+  }
+
+  function tickOpsDateRollover() {
+    var nextKey = opsDateKey();
+    if (!currentDateKey) {
+      currentDateKey = nextKey;
+      return;
+    }
+    if (currentDateKey === nextKey) return;
+    if (dirty && canEdit()) {
+      try {
+        persist(collectFromDom(), true);
+      } catch (e) {}
+    }
+    currentDateKey = nextKey;
+    dirty = false;
+    fillDay(dayFromPack(loadPack(), currentDateKey, true));
+    syncDateInputs(currentDateKey);
+    applyGuestColWidthsFromPack();
+    if (typeof opts.toast === "function") {
+      opts.toast("17시 기준 날짜가 변경되어 자동 저장·전환되었습니다");
+    }
   }
 
   function onFrontModeChanged() {
@@ -1600,6 +1623,16 @@
     }
   }
 
+  if (!global.__hkVipCheckInRolloverTimer) {
+    global.__hkVipCheckInRolloverTimer = setInterval(function () {
+      try {
+        if (global.HKVipCheckIn && typeof tickOpsDateRollover === "function") {
+          tickOpsDateRollover();
+        }
+      } catch (e) {}
+    }, 30000);
+  }
+
   global.HKVipCheckIn = {
     init: init,
     render: render,
@@ -1609,6 +1642,7 @@
     defaultData: defaultData,
     downloadExcel: downloadExcel,
     REMARK_KEYS: REMARK_KEYS,
+    tickOpsDateRollover: tickOpsDateRollover,
     isDirty: function () {
       return !!dirty;
     },

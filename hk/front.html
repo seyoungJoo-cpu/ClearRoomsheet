@@ -944,14 +944,30 @@
 
     .order-feedback__item {
       position: relative;
-      padding: 6px 8px 18px;
-      margin-bottom: 6px;
+      padding: 4px 8px 6px;
+      margin-bottom: 4px;
       border: 2px solid var(--border);
       border-radius: 6px;
       background: #fff;
       font-size: 0.75rem;
-      line-height: 1.35;
+      line-height: 1.25;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      max-height: 3.2em;
+      overflow: hidden;
+    }
+
+    .order-feedback__item .order-feedback__item-memo,
+    .order-feedback__item .request-feedback__item-room {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .order-feedback__list,
+    .request-feedback__list {
+      flex: 0 1 auto;
+      max-height: min(42vh, 320px);
     }
 
     .order-feedback__item .request-feedback__item-room {
@@ -1054,14 +1070,16 @@
 
     .request-feedback__item {
       position: relative;
-      padding: 10px 10px 24px;
-      margin-bottom: 8px;
+      padding: 6px 8px 8px;
+      margin-bottom: 6px;
       border: 2px solid var(--border);
       border-radius: 8px;
       background: #fff;
-      font-size: 0.875rem;
-      line-height: 1.5;
+      font-size: 0.8125rem;
+      line-height: 1.3;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      max-height: 3.6em;
+      overflow: hidden;
     }
 
     .request-feedback__item.is-urgent {
@@ -1440,6 +1458,17 @@
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 6px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .request-feedback__front-actions .hk-strip-actions-trail,
+    .sched-req-card__actions .hk-strip-actions-trail,
+    .main .order-work-item.is-strip-cols > .order-feedback__front-actions .hk-strip-actions-trail {
+      margin-left: auto;
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
       align-items: center;
     }
 
@@ -3101,12 +3130,14 @@
     }
 
     .room-card__memo-block--m2.is-editable,
-    .room-card__memo-block--m1.is-editable {
+    .room-card__memo-block--m1.is-editable,
+    .room-card__memo-block--m3.is-editable {
       cursor: pointer;
     }
 
     .room-card__memo-block--m2.is-editable:hover .room-card__memo2-text,
-    .room-card__memo-block--m1.is-editable:hover .room-card__memo1-text {
+    .room-card__memo-block--m1.is-editable:hover .room-card__memo1-text,
+    .room-card__memo-block--m3.is-editable:hover .room-card__memo3-text {
       outline: 1px dashed rgba(30, 58, 95, 0.45);
       outline-offset: 2px;
       border-radius: 4px;
@@ -8457,6 +8488,21 @@
       min-height: 90px;
     }
 
+    .request-desk-chat:not(.desk-chat--scroll-enabled) .request-desk-chat__messages,
+    .order-desk-chat:not(.desk-chat--scroll-enabled) .order-desk-chat__messages {
+      overscroll-behavior: contain;
+    }
+
+    .request-desk-chat:not(.desk-chat--scroll-enabled),
+    .order-desk-chat:not(.desk-chat--scroll-enabled) {
+      cursor: pointer;
+    }
+
+    .request-desk-chat.desk-chat--scroll-enabled,
+    .order-desk-chat.desk-chat--scroll-enabled {
+      outline: 1px solid rgba(15, 118, 110, 0.35);
+    }
+
     .request-desk-chat__empty {
       margin: 0;
       font-size: 0.75rem;
@@ -8642,12 +8688,12 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 14px 16px;
+      padding: 8px 12px 12px;
       margin-bottom: 14px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       min-height: 0;
     }
 
@@ -8758,15 +8804,15 @@
     }
 
     .track-it-panel .track-it-row-void {
-      height: 34px;
+      height: 30px;
       margin-left: 4px;
-      padding: 0 10px;
+      padding: 0 8px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       background: #f8fafc;
       color: #475569;
       font: inherit;
-      font-size: 0.95rem;
+      font-size: 0.8rem;
       font-weight: 800;
       cursor: pointer;
       white-space: nowrap;
@@ -8858,8 +8904,8 @@
     .complaint-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 12px;
+      gap: 8px;
+      padding: 10px;
       border: 1px solid #99f6e4;
       border-radius: 10px;
       background: linear-gradient(135deg, #f0fdfa, #f8fafc);
@@ -8868,7 +8914,7 @@
     .complaint-form__fields {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 12px;
+      gap: 8px 10px;
       align-items: flex-end;
     }
 
@@ -9014,90 +9060,89 @@
       color: #b91c1c;
     }
 
-    /* Track IT — 전체 UI·글자 조금 크게, 입력·표 가로로 여유 */
+    /* Track IT — 입력·표 가로 여유, 전체 UI 약간 축소 */
     .track-it-panel {
-      padding: 14px 18px 20px;
-      gap: 16px;
-      font-size: 1.05rem;
+      padding: 10px 14px 14px;
+      gap: 12px;
+      font-size: 0.95rem;
     }
 
     .track-it-panel .panel-head-row h2 {
-      font-size: 1.3rem;
+      font-size: 1.1rem;
     }
 
     .track-it-panel .track-it-juso-link {
-      font-size: 1.05rem;
+      font-size: 0.875rem;
     }
 
     .track-it-panel .complaint-panel__hint {
-      font-size: 1rem;
+      font-size: 0.85rem;
     }
 
     .track-it-panel .complaint-form {
-      gap: 14px;
-      padding: 16px 18px;
+      gap: 10px;
+      padding: 12px 14px;
     }
 
     .track-it-panel .complaint-form__fields {
-      gap: 12px 16px;
+      gap: 10px 12px;
       align-items: flex-end;
     }
 
     .track-it-panel .complaint-form__fields .field {
-      flex: 1 1 10rem;
-      min-width: 9.5rem;
+      flex: 1 1 9rem;
+      min-width: 8.5rem;
     }
 
     .track-it-panel .complaint-form__fields .field label {
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
 
     .track-it-panel .complaint-form__fields input[type="text"],
     .track-it-panel .complaint-form__fields input[type="date"] {
-      height: 48px;
-      font-size: 1.05rem;
-      padding: 0 12px;
-      font-size: 0.9375rem;
-      min-width: 10rem;
+      height: 36px;
+      padding: 0 10px;
+      font-size: 0.875rem;
+      min-width: 9rem;
       width: 100%;
       box-sizing: border-box;
     }
 
     .track-it-panel .complaint-form__fields .field--complaint-memo {
-      flex: 3 1 22rem;
-      min-width: min(100%, 18rem);
+      flex: 3 1 20rem;
+      min-width: min(100%, 16rem);
     }
 
     .track-it-panel .complaint-ox-block {
-      gap: 8px;
+      gap: 6px;
     }
 
     .track-it-panel .complaint-ox-block > span {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-weight: 700;
     }
 
     .track-it-panel #trackItShipCod,
     .track-it-panel #trackItShipUrgent {
-      height: 40px;
-      min-width: 4.75rem;
-      font-size: 0.9375rem;
+      height: 34px;
+      min-width: 4.25rem;
+      font-size: 0.85rem;
       white-space: nowrap;
     }
 
     .track-it-panel .btn-order {
-      height: 44px;
-      padding: 0 16px;
-      font-size: 1.05rem;
+      height: 36px;
+      padding: 0 14px;
+      font-size: 0.9rem;
     }
 
     .track-it-panel .complaint-table {
-      font-size: 1.05rem;
+      font-size: 0.875rem;
     }
 
     .track-it-panel .complaint-table th,
     .track-it-panel .complaint-table td {
-      padding: 10px 12px;
+      padding: 6px 8px;
       white-space: nowrap;
     }
 
@@ -9107,26 +9152,26 @@
     }
 
     .track-it-panel .complaint-table thead th {
-      font-size: 1rem;
-      padding: 10px 12px;
+      font-size: 0.8rem;
+      padding: 6px 8px;
     }
 
     .track-it-panel .complaint-row-edit,
     .track-it-panel .complaint-row-del {
-      font-size: 0.95rem;
-      padding: 6px 12px;
+      font-size: 0.8rem;
+      padding: 4px 10px;
     }
 
     .track-it-panel .track-it-row-confirm {
-      height: 34px;
+      height: 30px;
       margin-left: 4px;
-      padding: 0 12px;
+      padding: 0 10px;
       border: 1px solid #86efac;
       border-radius: 6px;
       background: #f0fdf4;
       color: #15803d;
       font: inherit;
-      font-size: 1rem;
+      font-size: 0.85rem;
       font-weight: 800;
       cursor: pointer;
       white-space: nowrap;
@@ -9931,10 +9976,11 @@
     }
 
     .complaint-table-wrap {
-      overflow: auto;
+      /* 결과 표는 패널 본문과 함께 스크롤 (중첩 overflow 창 없음) */
+      overflow: visible;
+      max-height: none;
       border: 1px solid var(--border);
       border-radius: 10px;
-      max-height: min(55vh, 520px);
     }
 
     .complaint-table {
@@ -10107,9 +10153,9 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
-      margin-top: 14px;
-      padding-top: 12px;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 1px solid rgba(255, 255, 255, 0.12);
     }
     .complaint-reset-btn {
@@ -10175,105 +10221,105 @@
       background: #f1f5f9;
     }
 
-    /* 고객불편사항 유형분석만 — 글씨 키우고 진하게 (Track IT 제외) */
+    /* 고객불편사항 유형분석만 — 글씨·간격 약간 축소 (Track IT 제외) */
     #complaintPanel {
-      font-size: 15px;
+      font-size: 13px;
     }
     #complaintPanel #complaintPanelTitle {
-      font-size: 1.2rem;
+      font-size: 1.05rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-panel__tab {
-      height: 32px;
-      font-size: 0.9rem;
+      height: 28px;
+      font-size: 0.8rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-panel__hint,
     #complaintPanel .complaint-table-empty,
     #complaintPanel .complaint-stats-empty {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 600;
     }
     #complaintPanel .complaint-form__fields .field label,
     #complaintPanel .complaint-type-block > span,
     #complaintPanel .complaint-ox-block > span {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-form__fields input[type="text"],
     #complaintPanel .complaint-form__fields .field--complaint-memo textarea {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
-      height: 36px;
-      min-height: 36px;
+      height: 32px;
+      min-height: 32px;
     }
     #complaintPanel .complaint-form__fields .field--complaint-memo textarea {
       height: auto;
-      min-height: 36px;
+      min-height: 32px;
     }
     #complaintPanel .complaint-type-chip {
-      height: 34px;
-      font-size: 0.88rem;
+      height: 30px;
+      font-size: 0.78rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-ox-btn {
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 800;
-      height: 36px;
-      width: 40px;
+      height: 32px;
+      width: 36px;
     }
     #complaintPanel .complaint-table {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 600;
     }
     #complaintPanel .complaint-table th,
     #complaintPanel .complaint-table td {
-      padding: 6px 10px;
-      font-size: 15px;
+      padding: 4px 8px;
+      font-size: 13px;
       font-weight: 700;
     }
     #complaintPanel .complaint-table thead th {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 800;
-      padding: 8px 8px;
+      padding: 6px 6px;
     }
     #complaintPanel .complaint-cell-input,
     #complaintPanel .complaint-cell-select {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
-      height: 34px;
+      height: 30px;
     }
     #complaintPanel .complaint-table td.complaint-td-date .complaint-cell-input,
     #complaintPanel .complaint-table td.complaint-td-date input[type="date"],
     #complaintPanel .complaint-table td.complaint-td-narrow .complaint-cell-input,
     #complaintPanel .complaint-table td.complaint-td-type .complaint-cell-select,
     #complaintPanel .complaint-table td.complaint-td-memo .complaint-cell-input {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
     }
     #complaintPanel .complaint-row-edit,
     #complaintPanel .complaint-row-del {
-      height: 32px;
-      font-size: 0.85rem;
+      height: 28px;
+      font-size: 0.78rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-stats-toolbar label {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 800;
     }
     #complaintPanel .complaint-stats-toolbar select {
-      height: 34px;
-      font-size: 0.9rem;
+      height: 30px;
+      font-size: 0.8rem;
       font-weight: 700;
     }
     #complaintPanel .complaint-stats-table {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
     }
     #complaintPanel .complaint-stats-table th,
     #complaintPanel .complaint-stats-table td {
-      padding: 8px 10px;
-      font-size: 15px;
+      padding: 6px 8px;
+      font-size: 13px;
       font-weight: 700;
     }
     #complaintPanel .complaint-stats-table thead th,
@@ -10647,7 +10693,7 @@
     }
 
     .main .order-work-item:not(.is-strip-cols),
-    .main .room-list-main > .room-card,
+    .main .room-list-main > .room-card:not(.is-strip-cols),
     .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--ip-compact):not(.is-strip-cols),
     .confirming-cards-panel .request-feedback__item {
       display: flex;
@@ -10660,6 +10706,37 @@
       padding: 10px 14px;
       font-size: 0.875rem;
       line-height: 1.4;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols {
+      display: grid;
+      grid-template-columns:
+        minmax(2.5rem, 0.55fr)
+        minmax(3.5rem, 0.7fr)
+        minmax(3.2rem, 0.7fr)
+        minmax(8rem, 2.2fr)
+        minmax(3.5rem, 0.75fr)
+        auto;
+      gap: 6px 10px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      padding: 8px 12px;
+      font-size: 0.8125rem;
+      line-height: 1.35;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--memo .room-card__memo {
+      margin: 0;
+      font-size: 0.75rem;
+      line-height: 1.25;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .room-card__actions {
+      justify-self: end;
+      margin: 0;
+      flex-wrap: nowrap;
     }
 
     .main .order-work-item .request-feedback__item-room,
@@ -13614,21 +13691,21 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-19"></script>
-  <script src="hk-sync.js?v=force-sync-3"></script>
+  <script src="hk-storage.js?v=bydate-20"></script>
+  <script src="hk-sync.js?v=force-sync-4"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
-  <script src="hk-inven-notify.js?v=xlsx-real-1"></script>
+  <script src="hk-inven-notify.js?v=xlsx-real-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-10"></script>
-  <script src="hk-track-it.js?v=bydate-17"></script>
-  <script src="hk-night-handover.js?v=bydate-14"></script>
-  <script src="hk-vip-checkin.js?v=bydate-14"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-12"></script>
+  <script src="hk-track-it.js?v=bydate-19"></script>
+  <script src="hk-night-handover.js?v=bydate-15"></script>
+  <script src="hk-vip-checkin.js?v=bydate-15"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-33"></script>
+  <script src="hk-games.js?v=lounge-34"></script>
   <script src="hk-mp-games.js?v=mp-28"></script>
   <script>
     (function () {
@@ -13910,7 +13987,7 @@
         if (addMount) {
           var typed = false;
           addMount
-            .querySelectorAll(".af-num, .af-num-from, .af-num-to, .af-memo1, .af-memo2")
+            .querySelectorAll(".af-num, .af-num-from, .af-num-to, .af-memo1, .af-memo2, .af-memo3")
             .forEach(function (el) {
               if (el && String(el.value || "").trim()) typed = true;
             });
@@ -15850,6 +15927,32 @@
         return next;
       }
 
+      function bindDeskChatScrollControl() {
+        var asides = document.querySelectorAll('.request-desk-chat, .order-desk-chat');
+        asides.forEach(function (aside) {
+          if (!aside || aside.__hkScrollBound) return;
+          aside.__hkScrollBound = true;
+          aside.addEventListener('click', function () {
+            document.querySelectorAll('.request-desk-chat.desk-chat--scroll-enabled, .order-desk-chat.desk-chat--scroll-enabled').forEach(function (el) {
+              if (el !== aside) el.classList.remove('desk-chat--scroll-enabled');
+            });
+            aside.classList.add('desk-chat--scroll-enabled');
+          });
+          aside.addEventListener(
+            'wheel',
+            function (e) {
+              if (!aside.classList.contains('desk-chat--scroll-enabled')) {
+                e.preventDefault();
+              }
+            },
+            { passive: false }
+          );
+          aside.addEventListener('mouseleave', function () {
+            aside.classList.remove('desk-chat--scroll-enabled');
+          });
+        });
+      }
+
       function bindDeskChatFontControls() {
         document.querySelectorAll(".desk-chat-font-btn").forEach(function (btn) {
           if (btn.__hkDeskFontBound) return;
@@ -17348,6 +17451,7 @@
           { key: "number", label: "객실번호", fmt: formatRoomNoDisplay },
           { key: "memo1", label: "FD" },
           { key: "memo2", label: "정비" },
+          { key: "memo3", label: "키핑" },
         ];
         fields.forEach(function (f) {
           var a = String((prev && prev[f.key]) || "").trim();
@@ -17409,8 +17513,10 @@
         }
         var m1 = container.querySelector(".af-memo1");
         var m2 = container.querySelector(".af-memo2");
+        var m3 = container.querySelector(".af-memo3");
         if (m1) m1.value = "";
         if (m2) m2.value = "";
+        if (m3) m3.value = "";
       }
 
       function createFrontZoneAddStack(zoneId, label) {
@@ -17471,6 +17577,13 @@
         memo2Input.autocomplete = "off";
         stack.appendChild(memo2Input);
 
+        var memo3Input = document.createElement("input");
+        memo3Input.type = "text";
+        memo3Input.className = "af-memo3";
+        memo3Input.placeholder = "키핑 메모 (선택)";
+        memo3Input.autocomplete = "off";
+        stack.appendChild(memo3Input);
+
         var addBtn = document.createElement("button");
         addBtn.type = "button";
         addBtn.className = "btn-add";
@@ -17487,11 +17600,13 @@
         var num = canonicalRoomInput(numRaw) || numRaw;
         var memo1 = (li.querySelector(".re-memo1") && li.querySelector(".re-memo1").value) || "";
         var memo2 = (li.querySelector(".re-memo2") && li.querySelector(".re-memo2").value) || "";
+        var memo3 = (li.querySelector(".re-memo3") && li.querySelector(".re-memo3").value) || "";
         return {
           number: num,
           status: lookupRoomStatusFromXml(num),
           memo1: memo1,
           memo2: memo2,
+          memo3: memo3,
         };
       }
 
@@ -17539,6 +17654,9 @@
           }
         });
         data.rooms[zone] = [];
+        if (typeof HKStorage.markZoneRoomsCleared === "function") {
+          HKStorage.markZoneRoomsCleared(data, zone);
+        }
         if (zone === "MINIBAR") {
           pendingMinibarRooms = null;
           syncMinibarSaveUi();
@@ -17627,6 +17745,9 @@
             memo2:
               (addMount.querySelector(".af-memo2") && addMount.querySelector(".af-memo2").value) ||
               "",
+            memo3:
+              (addMount.querySelector(".af-memo3") && addMount.querySelector(".af-memo3").value) ||
+              "",
           };
         }
         addMount.innerHTML = "";
@@ -17637,11 +17758,13 @@
           var ntEl = addMount.querySelector(".af-num-to");
           var m1El = addMount.querySelector(".af-memo1");
           var m2El = addMount.querySelector(".af-memo2");
+          var m3El = addMount.querySelector(".af-memo3");
           if (nEl) nEl.value = keepValues.num;
           if (nfEl) nfEl.value = keepValues.numFrom;
           if (ntEl) ntEl.value = keepValues.numTo;
           if (m1El) m1El.value = keepValues.memo1;
           if (m2El) m2El.value = keepValues.memo2;
+          if (m3El) m3El.value = keepValues.memo3;
         }
 
         // 등록된 객실 수정·삭제 목록
@@ -17688,6 +17811,12 @@
             inM2.value = room.memo2 || "";
             inM2.placeholder = "정비";
             li.appendChild(inM2);
+            var inM3 = document.createElement("input");
+            inM3.type = "text";
+            inM3.className = "re-memo3";
+            inM3.value = room.memo3 || "";
+            inM3.placeholder = "키핑";
+            li.appendChild(inM3);
             var saveBtn = document.createElement("button");
             saveBtn.type = "button";
             saveBtn.className = "btn-save-row";
@@ -17749,6 +17878,9 @@
             var memo2Bulk =
               (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value.trim()) ||
               "";
+            var memo3Bulk =
+              (addRoot.querySelector(".af-memo3") && addRoot.querySelector(".af-memo3").value.trim()) ||
+              "";
             var toAdd = [];
             var skipped = [];
             numbers.forEach(function (n) {
@@ -17775,6 +17907,7 @@
                 status: lookupRoomStatusFromXml(n),
                 memo1: memo1Bulk,
                 memo2: memo2Bulk,
+                memo3: memo3Bulk,
                 time: "",
               };
               stampRoomRow(row);
@@ -17827,11 +17960,15 @@
           var memo2 =
             (addRoot.querySelector(".af-memo2") && addRoot.querySelector(".af-memo2").value.trim()) ||
             "";
+          var memo3 =
+            (addRoot.querySelector(".af-memo3") && addRoot.querySelector(".af-memo3").value.trim()) ||
+            "";
           var newRow = {
             number: num,
             status: lookupRoomStatusFromXml(num),
             memo1: memo1,
             memo2: memo2,
+            memo3: memo3,
             time: "",
           };
           stampRoomRow(newRow);
@@ -23068,13 +23205,6 @@
         if (frontMode) {
           var frontActs = document.createElement("div");
           frontActs.className = "request-feedback__front-actions";
-          var memoBtnF = document.createElement("button");
-          memoBtnF.type = "button";
-          memoBtnF.className = "request-feedback__memo-btn";
-          memoBtnF.setAttribute("data-req-id", entry.id);
-          memoBtnF.textContent = memoStr ? "메모 수정" : "메모 입력";
-          memoBtnF.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
-          frontActs.appendChild(memoBtnF);
           var ipBtnFront = document.createElement("button");
           ipBtnFront.type = "button";
           ipBtnFront.className = "request-feedback__ip-btn";
@@ -23093,6 +23223,15 @@
           if (getFacilityRequestStatus(entry.id) !== "none") {
             appendFacilityRequestStatusBtn(frontActs, entry.id);
           }
+          var trailFront = document.createElement("span");
+          trailFront.className = "hk-strip-actions-trail";
+          var memoBtnF = document.createElement("button");
+          memoBtnF.type = "button";
+          memoBtnF.className = "request-feedback__memo-btn";
+          memoBtnF.setAttribute("data-req-id", entry.id);
+          memoBtnF.textContent = memoStr ? "메모 수정" : "메모 입력";
+          memoBtnF.setAttribute("aria-label", memoStr ? "메모 수정" : "메모 입력");
+          trailFront.appendChild(memoBtnF);
           var frontConfirming = isRequestConfirmingEntry(entry);
           if (frontConfirming) {
             noteChatAutoOpenFromFirstMessage(
@@ -23114,9 +23253,10 @@
               : frontChatCount > 0
                 ? "채팅(" + frontChatCount + ")"
                 : "채팅";
-            frontActs.appendChild(frontChatBtn);
+            trailFront.appendChild(frontChatBtn);
             if (frontChatOpen) li.classList.add("is-chat-open");
           }
+          frontActs.appendChild(trailFront);
           li.appendChild(frontActs);
           if (frontConfirming && isSchedRequestChatOpen(entry)) {
             appendSchedRequestChatUi(li, entry);
@@ -24916,13 +25056,38 @@
             });
             return;
           }
-          // 도우미 로봇 알림: 접수하면 기록 없이 바로 제거
-          orderLogEntries = orderLogEntries.filter(function (e) {
-            return !(e && e.id === orderId);
+          // 도우미 로봇 알림: 접수 시 cancelled로 남겨 merge에서 되살아나지 않게 함
+          var kind = entry.autoOrderKind;
+          var nowIso = new Date().toISOString();
+          var isRpa = kind === "rpa_check" || kind === "rpa_check_maint";
+          orderLogEntries = orderLogEntries.map(function (e) {
+            if (!e) return e;
+            var hit =
+              e.id === orderId ||
+              (isRpa &&
+                (e.autoOrderKind === "rpa_check" || e.autoOrderKind === "rpa_check_maint") &&
+                getOrderPhase(e) === "alert");
+            if (!hit) return e;
+            return Object.assign({}, e, {
+              phase: "cancelled",
+              cancelledAt: nowIso,
+              updatedAt: nowIso,
+            });
           });
+          if (isRpa) {
+            window.__hkRpaAckAt = nowIso;
+          }
           saveOrderLog();
           renderOrderPanels({ force: true });
           renderRequestLogPanel({ force: true });
+          if (isRpa && typeof HKSync !== "undefined" && HKSync.pushPayloadFields) {
+            try {
+              HKSync.pushPayloadFields({
+                hkOrderLog: orderLogEntries,
+                hkAutoOrderState: { rpaAckAt: nowIso },
+              });
+            } catch (errAck) {}
+          }
           return;
         }
         if (frontMode) {
@@ -26570,13 +26735,15 @@
               }
             }
             if (frontMode) {
+              var trailSched = document.createElement("span");
+              trailSched.className = "hk-strip-actions-trail";
               var memoCardBtn = document.createElement("button");
               memoCardBtn.type = "button";
               memoCardBtn.className = "request-feedback__memo-btn sched-card__memo-btn";
               memoCardBtn.setAttribute("data-req-id", entry.id);
               memoCardBtn.textContent = memoSched ? "메모 수정" : "메모 입력";
               memoCardBtn.setAttribute("aria-label", memoSched ? "메모 수정" : "메모 입력");
-              actions.appendChild(memoCardBtn);
+              trailSched.appendChild(memoCardBtn);
               if (getFacilityRequestStatus(entry.id) !== "none") {
                 appendFacilityRequestStatusBtn(actions, entry.id);
               }
@@ -26601,7 +26768,11 @@
                 : chatCount > 0
                   ? "채팅(" + chatCount + ")"
                   : "채팅";
-              actions.appendChild(chatBtn);
+              if (!trailSched) {
+                trailSched = document.createElement("span");
+                trailSched.className = "hk-strip-actions-trail";
+              }
+              trailSched.appendChild(chatBtn);
               if (frontMode) {
                 var useBtn = document.createElement("button");
                 useBtn.type = "button";
@@ -26609,8 +26780,11 @@
                 useBtn.setAttribute("data-req-id", entry.id);
                 useBtn.setAttribute("aria-label", "사용 처리하여 하단 사용 섹션으로 이동");
                 useBtn.textContent = "사용";
-                actions.appendChild(useBtn);
+                trailSched.appendChild(useBtn);
               }
+              actions.appendChild(trailSched);
+            } else if (trailSched) {
+              actions.appendChild(trailSched);
             }
             li.appendChild(actions);
           } else {
@@ -27496,7 +27670,7 @@
       }
 
       function closeMemo2Editor() {
-        document.querySelectorAll(".room-memo2-editor").forEach(function (n) {
+        document.querySelectorAll(".room-memo2-editor:not(.room-memo1-editor):not(.room-memo3-editor)").forEach(function (n) {
           n.remove();
         });
         document.querySelectorAll(".room-card__memo2-text").forEach(function (p) {
@@ -27504,9 +27678,19 @@
         });
       }
 
+      function closeMemo3Editor() {
+        document.querySelectorAll(".room-memo3-editor").forEach(function (n) {
+          n.remove();
+        });
+        document.querySelectorAll(".room-card__memo3-text").forEach(function (p) {
+          p.style.display = "";
+        });
+      }
+
       function openTimeEditor(card, zone, idx) {
         closeMemo1Editor();
         closeMemo2Editor();
+        closeMemo3Editor();
         closeTimeEditor();
         var data = HKStorage.load();
         var room = data.rooms[zone] && data.rooms[zone][idx];
@@ -27542,7 +27726,14 @@
         wrap.appendChild(row);
 
         var head = card.querySelector(".room-card__head");
-        head.parentNode.insertBefore(wrap, head.nextSibling);
+        var timeCell = card.querySelector(".hk-strip-cell--time");
+        if (head && head.parentNode) {
+          head.parentNode.insertBefore(wrap, head.nextSibling);
+        } else if (timeCell && timeCell.parentNode) {
+          timeCell.parentNode.insertBefore(wrap, timeCell.nextSibling);
+        } else {
+          card.appendChild(wrap);
+        }
 
         function commit() {
           var p = HKStorage.parseTime24(inp.value);
@@ -27590,6 +27781,7 @@
       function openMemo1Editor(card, zone, idx) {
         closeMemo1Editor();
         closeMemo2Editor();
+        closeMemo3Editor();
         closeTimeEditor();
         var data = HKStorage.load();
         var room = data.rooms[zone] && data.rooms[zone][idx];
@@ -27661,6 +27853,7 @@
       function openMemo2Editor(card, zone, idx) {
         closeMemo1Editor();
         closeMemo2Editor();
+        closeMemo3Editor();
         closeTimeEditor();
         var data = HKStorage.load();
         var room = data.rooms[zone] && data.rooms[zone][idx];
@@ -27739,6 +27932,78 @@
         ta.focus();
       }
 
+      function openMemo3Editor(card, zone, idx) {
+        closeMemo1Editor();
+        closeMemo2Editor();
+        closeMemo3Editor();
+        closeTimeEditor();
+        var data = HKStorage.load();
+        var room = data.rooms[zone] && data.rooms[zone][idx];
+        if (!room) return;
+
+        var block = card.querySelector(".room-card__memo-block--m3");
+        var p3 = card.querySelector(".room-card__memo3-text");
+        if (!block || !p3) return;
+
+        var wrap = document.createElement("div");
+        wrap.className = "room-memo3-editor room-memo2-editor";
+        var ta = document.createElement("textarea");
+        ta.className = "room-memo2-editor__ta";
+        ta.value = room.memo3 != null ? String(room.memo3) : "";
+        ta.setAttribute("aria-label", "키핑");
+        var actions = document.createElement("div");
+        actions.className = "room-memo2-editor__actions";
+        var btnOk = document.createElement("button");
+        btnOk.type = "button";
+        btnOk.className = "room-memo2-editor__ok";
+        btnOk.textContent = "적용";
+        var btnCancel = document.createElement("button");
+        btnCancel.type = "button";
+        btnCancel.className = "room-memo2-editor__cancel";
+        btnCancel.textContent = "취소";
+        actions.appendChild(btnOk);
+        actions.appendChild(btnCancel);
+        wrap.appendChild(ta);
+        wrap.appendChild(actions);
+        block.appendChild(wrap);
+        p3.style.display = "none";
+
+        function commit() {
+          var next = ta.value != null ? String(ta.value) : "";
+          var d = HKStorage.load();
+          if (d.rooms[zone] && d.rooms[zone][idx]) {
+            d.rooms[zone][idx].memo3 = next;
+            stampRoomRow(d.rooms[zone][idx]);
+            HKStorage.save(d);
+            if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
+              HKSync.pushStorageNow();
+            }
+          }
+          closeMemo3Editor();
+          renderRoomsForZone(zone);
+        }
+
+        ta.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" && !ev.shiftKey) {
+            ev.preventDefault();
+            commit();
+          }
+        });
+        btnOk.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          commit();
+        });
+        btnCancel.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          closeMemo3Editor();
+          renderRoomsForZone(zone);
+        });
+        wrap.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+        });
+        ta.focus();
+      }
+
       function getRoomTray(room) {
         if (!room) return "";
         return room.tray != null ? String(room.tray).trim() : "";
@@ -27774,6 +28039,7 @@
         var m1 = (room.memo1 || "").trim();
         var m2 = (room.memo2 || "").trim();
         var m2Img = room.memo2Image != null ? String(room.memo2Image).trim() : "";
+        var m3 = (room.memo3 || "").trim();
         var tm = (room.time || "").trim();
         var editableMemo =
           (maintenanceMode || frontMode || isOperatorSessionUnlocked()) && !cardOpts.trayMode;
@@ -27784,7 +28050,7 @@
         var historyOpen = isRoomHistoryOpen(zone, room.number);
         var canHistory = canToggleRoomHistory(zone, room.number);
         li.className =
-          "room-card" +
+          "room-card is-strip-cols" +
           (maintenanceMode && !cardOpts.trayMode ? " is-clickable" : "") +
           (canHistory ? " is-history-toggle" : "") +
           (historyOpen ? " is-history-open" : "") +
@@ -27805,42 +28071,36 @@
           li.setAttribute("tabindex", "0");
           li.title = "변경 알림 · 클릭하면 강조 해제";
         } else if (editableMemo) {
-          li.title = "FD·정비 줄 클릭하여 메모 입력";
+          li.title = "FD·정비·키핑 줄 클릭하여 메모 입력";
         } else if (maintenanceMode && !cardOpts.trayMode) {
           li.setAttribute("role", "button");
           li.setAttribute("tabindex", "0");
           li.title = "카드: 시간 입력 · 정비: 아래 정비 줄 클릭";
         }
 
-        var surface = document.createElement("div");
-        surface.className = "room-card__surface";
+        var wingCell = document.createElement("span");
+        wingCell.className = "hk-strip-cell hk-strip-cell--wing";
+        if (!appendRoomWingBadge(wingCell, room.number || "")) {
+          wingCell.textContent = "—";
+        }
 
-        var head = document.createElement("div");
-        head.className = "room-card__head";
-        var noBox = document.createElement("span");
-        noBox.className = "room-card__no-box";
-        var no = document.createElement("span");
-        no.className = "room-card__no";
-        no.textContent = formatRoomNoDisplay(room.number || "");
-        noBox.appendChild(no);
-        head.appendChild(noBox);
-        appendRoomWingBadge(head, room.number || "");
-        if (!multiRoom) appendRoomTypeToCardHead(head, room.number || "");
-        if (!multiRoom) {
-          head.appendChild(
+        var roomCell = document.createElement("span");
+        roomCell.className = "hk-strip-cell hk-strip-cell--room";
+        roomCell.textContent = formatRoomNoDisplay(room.number || "");
+
+        var statusCell = document.createElement("div");
+        statusCell.className = "hk-strip-cell hk-strip-cell--status";
+        if (!multiRoom) appendRoomTypeToCardHead(statusCell, room.number || "");
+        if (multiRoom) {
+          statusCell.appendChild(buildRoomStatusChipsFromRooms(roomParts));
+        } else {
+          statusCell.appendChild(
             buildRoomStatusGroup(st, room.number || "", { statusClass: "room-card__status" })
           );
         }
-        surface.appendChild(head);
-        if (multiRoom) {
-          surface.appendChild(buildRoomStatusChipsFromRooms(roomParts));
-        }
 
-        var timeDisp = document.createElement("p");
-        timeDisp.className = "room-card__time-display";
-        setLineWithEmTime(timeDisp, "시간 · ", tm || "");
-        surface.appendChild(timeDisp);
-
+        var memoCell = document.createElement("div");
+        memoCell.className = "hk-strip-cell hk-strip-cell--memo";
         var b1 = document.createElement("div");
         b1.className =
           "room-card__memo-block room-card__memo-block--m1" +
@@ -27849,8 +28109,7 @@
         p1.className = "room-card__memo room-card__memo1-text" + (m1 ? "" : " is-empty");
         p1.textContent = m1 ? "FD : " + m1 : "FD : —";
         b1.appendChild(p1);
-        surface.appendChild(b1);
-
+        memoCell.appendChild(b1);
         var b2 = document.createElement("div");
         b2.className =
           "room-card__memo-block room-card__memo-block--m2" +
@@ -27861,11 +28120,33 @@
         p2.textContent = m2 ? "정비 : " + m2 : "정비 : —";
         b2.appendChild(p2);
         hkAppendImageEl(b2, m2Img);
-        surface.appendChild(b2);
+        memoCell.appendChild(b2);
+        var b3 = document.createElement("div");
+        b3.className =
+          "room-card__memo-block room-card__memo-block--m3" +
+          (editableMemo ? " is-editable" : "");
+        var p3 = document.createElement("p");
+        p3.className = "room-card__memo room-card__memo3-text" + (m3 ? "" : " is-empty");
+        p3.textContent = m3 ? "키핑 : " + m3 : "키핑 : —";
+        b3.appendChild(p3);
+        memoCell.appendChild(b3);
+
+        var timeCell = document.createElement("div");
+        timeCell.className = "hk-strip-cell hk-strip-cell--time";
+        var timeDisp = document.createElement("p");
+        timeDisp.className = "room-card__time-display";
+        setLineWithEmTime(timeDisp, "시간 · ", tm || "");
+        timeCell.appendChild(timeDisp);
+
+        li.appendChild(wingCell);
+        li.appendChild(roomCell);
+        li.appendChild(statusCell);
+        li.appendChild(memoCell);
+        li.appendChild(timeCell);
 
         if (cardOpts.showCheckIn && (frontMode || maintenanceMode)) {
           var actionsIn = document.createElement("div");
-          actionsIn.className = "room-card__actions";
+          actionsIn.className = "room-card__actions hk-strip-actions-trail";
           if (frontMode) {
             var btnIn = document.createElement("button");
             btnIn.type = "button";
@@ -27889,12 +28170,12 @@
           btnDel.setAttribute("data-zone", zone);
           btnDel.setAttribute("data-index", String(idx));
           actionsIn.appendChild(btnDel);
-          surface.appendChild(actionsIn);
+          li.appendChild(actionsIn);
         }
 
         if (cardOpts.showRestore && frontMode) {
           var actionsRestore = document.createElement("div");
-          actionsRestore.className = "room-card__actions";
+          actionsRestore.className = "room-card__actions hk-strip-actions-trail";
           var btnRestore = document.createElement("button");
           btnRestore.type = "button";
           btnRestore.className = "btn-zone-restore";
@@ -27902,10 +28183,8 @@
           btnRestore.setAttribute("data-zone", zone);
           btnRestore.setAttribute("data-room", room.number || "");
           actionsRestore.appendChild(btnRestore);
-          surface.appendChild(actionsRestore);
+          li.appendChild(actionsRestore);
         }
-
-        li.appendChild(surface);
 
         if (historyOpen && hasHistory) {
           var historyBlock = buildRoomCardHistoryBlock(zone, room.number);
@@ -29877,8 +30156,23 @@
 
       function tryOpenRoomMemoEditorFromClick(e) {
         if (!frontMode && !maintenanceMode && !isOperatorSessionUnlocked()) return false;
-        if (e.target.closest(".room-memo1-editor") || e.target.closest(".room-memo2-editor")) {
+        if (
+          e.target.closest(".room-memo1-editor") ||
+          e.target.closest(".room-memo2-editor") ||
+          e.target.closest(".room-memo3-editor")
+        ) {
           return false;
+        }
+        var m3block = e.target.closest(".room-card__memo-block--m3.is-editable");
+        if (m3block) {
+          var cardK = m3block.closest(".room-card");
+          if (!cardK) return false;
+          var ixK = parseInt(cardK.getAttribute("data-room-index"), 10);
+          if (isNaN(ixK)) return false;
+          e.preventDefault();
+          e.stopPropagation();
+          openMemo3Editor(cardK, getActiveZone(), ixK);
+          return true;
         }
         var m2block = e.target.closest(".room-card__memo-block--m2.is-editable");
         if (m2block) {
@@ -30111,6 +30405,7 @@
       loadOrderLog();
       loadFrontChat();
       bindDeskChatFontControls();
+      bindDeskChatScrollControl();
       applyDeskChatFontLevel(getDeskChatFontLevel());
       bindDeskChatResponsiveWidth();
       bindDeskChatSizeHandles();

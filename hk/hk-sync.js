@@ -1647,6 +1647,10 @@
       markDirty("hkOrderLog");
       schedulePush({ hkOrderLog: true });
     },
+    pushPayloadFields: function (fields) {
+      if (!fields || typeof fields !== "object") return Promise.resolve(false);
+      return postPayloadNow(fields);
+    },
     clearOrderLog: function () {
       cache.orderLog = [];
       writeJsonArray(ORDER_LOG_KEY, []);

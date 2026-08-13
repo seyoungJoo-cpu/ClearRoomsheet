@@ -795,7 +795,7 @@
 
   games.snake = function () {
     var COLS = 24, ROWS = 24, CELL = 26, MAP = COLS * CELL;
-    var c = controller(), cv = canvasBase(MAP, MAP), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 128, dead = false, touch, fx = makeFx(), anim = 0, hazards = [], hazAcc = 0;
+    var c = controller(), cv = canvasBase(MAP, MAP), ctx = cv.ctx, snake, dir, next, food, score, last = 0, step = 128, dead = false, touch, fx = makeFx(), anim = 0, hazards = [], hazAcc = 0, hazOnce = false;
     setHud([['점수', '0', 'score'], ['속도', '1.0x', 'speed']]);
     var gridCanvas = document.createElement('canvas');
     gridCanvas.width = MAP;
@@ -813,7 +813,8 @@
     })();
     function spawn() { do { food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) }; } while (snake.some(function (p) { return p.x === food.x && p.y === food.y; }) || hazards.some(function (h) { return h.body.some(function (p) { return p.x === food.x && p.y === food.y; }); })); }
     function spawnHazard() {
-      if (hazards.length >= 2) return;
+      if (hazards.length || hazOnce) return;
+      hazOnce = true;
       var y = 2 + Math.floor(Math.random() * (ROWS - 4));
       var left = Math.random() > 0.5;
       var body = [];
@@ -832,6 +833,7 @@
       ctx.beginPath(); ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, pulse, 0, Math.PI * 2); ctx.fill();
       hazards.forEach(function (h) {
         h.body.forEach(function (p, i) {
+          if (p.x < 0 || p.x >= COLS) return;
           ctx.fillStyle = i ? '#7a3f52' : '#c45a72';
           ctx.beginPath(); ctx.roundRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4, 7); ctx.fill();
         });
@@ -857,16 +859,20 @@
       anim += dt; fx.update(dt);
       if (score >= 100) {
         hazAcc += dt;
-        if (hazAcc > 9 && hazards.length < 2) { hazAcc = 0; spawnHazard(); }
+        if (!hazOnce && hazAcc > 9) { hazAcc = 0; spawnHazard(); }
       }
       hazards.forEach(function (h) {
         h.acc += dt;
         if (h.acc >= 0.55) {
           h.acc = 0;
           var head = { x: h.body[0].x + h.dir, y: h.body[0].y };
-          if (head.x < 0 || head.x >= COLS) { h.dir *= -1; head.x = h.body[0].x + h.dir; }
+          // 벽에 튕기지 않고 그대로 빠져나가 1회성으로 사라짐
           h.body.unshift(head); h.body.pop();
         }
+      });
+      hazards = hazards.filter(function (h) {
+        return h.body.some(function (p) { return p.x >= -1 && p.x < COLS + 1; }) &&
+          h.body.some(function (p) { return p.x >= 0 && p.x < COLS; });
       });
       var alpha = Math.min(1, (t - last) / step);
       if (t - last >= step) {
@@ -889,7 +895,7 @@
     c.on(cv.canvas, 'touchstart', function (e) { touch = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
     c.on(cv.canvas, 'touchend', function (e) { var dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1]; if (Math.abs(dx) > Math.abs(dy)) input(dx > 0 ? 1 : -1, 0); else input(0, dy > 0 ? 1 : -1); }, { passive: true });
     snake = [{ x: 12, y: 12 }, { x: 11, y: 12 }, { x: 10, y: 12 }]; dir = next = { x: 1, y: 0 }; score = 0; spawn(); draw(1); c.raf(loop);
-    actions(function () { startGame('snake'); }, function () { return score; }, '맵이 넓어졌고 속도 상승은 완만합니다. 100점부터 느린 방해 뱀이 등장합니다.');
+    actions(function () { startGame('snake'); }, function () { return score; }, '100점부터 방해 뱀이 한 번 지나가며 벽으로 사라집니다.');
     return { id: 'snake', destroy: c.destroy };
   };
 

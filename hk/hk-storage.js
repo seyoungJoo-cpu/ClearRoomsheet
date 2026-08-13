@@ -1,6 +1,6 @@
 /**
  * House Keeping 공지·구역별 객실 — localStorage + 서버 /api/sync (hk-sync.js)
- * 객실: { number, status, memo1, memo2, time? }
+ * 객실: { number, status, memo1, memo2, memo3, time? }
  * time: 메인「정비관리」에서만 입력 (24시간, 빈 문자면 미입력). 14:30·1400·1430 등
  * 키: lotte-hk-v1
  */
@@ -23,6 +23,7 @@
       memo1: "",
       memo2: "",
       memo2Image: "",
+      memo3: "",
       time: "",
       tray: "",
       trayUpdatedAt: "",
@@ -300,15 +301,26 @@
       memo2: incoming.memo2 != null ? String(incoming.memo2) : prev.memo2,
       memo2Image:
         incoming.memo2Image != null ? String(incoming.memo2Image) : prev.memo2Image,
+      memo3: incoming.memo3 != null ? String(incoming.memo3) : prev.memo3,
       time: incoming.time != null ? normalizeTimeField(incoming.time) : prev.time,
       tray: tray,
       trayUpdatedAt: trayUpdatedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      mbProductId:
+        incoming.mbProductId != null ? String(incoming.mbProductId) : prev.mbProductId,
+      mbGroup: incoming.mbGroup != null ? String(incoming.mbGroup) : prev.mbGroup,
     };
   }
 
-  function mergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, incomingDeletedRooms) {
+  function mergeRoomArraysByNumber(
+    prevArr,
+    incomingArr,
+    zone,
+    deletedRooms,
+    incomingDeletedRooms,
+    zoneClearAtMap
+  ) {
     var map = {};
     var incomingKeys = {};
     (incomingArr || []).forEach(function (room) {
@@ -319,9 +331,18 @@
     function incomingClaimsDeleted(k) {
       return isRoomMarkedDeleted(incomingDeletedRooms, zone, k);
     }
-    function canReviveFromIncoming(k) {
+    function canReviveFromIncoming(k, room) {
       // 같은 페이로드에 객실이 있고, 그 페이로드의 deletedRooms에 없으면 재등록으로 본다
-      return !!incomingKeys[k] && !incomingClaimsDeleted(k);
+      if (!incomingKeys[k] || incomingClaimsDeleted(k)) return false;
+      // 구역 초기화 시각보다 오래된 객실은 되살리지 않음 (다른 PC 잔존 배열 방지)
+      var clearAt =
+        zoneClearAtMap && zoneClearAtMap[zone] ? String(zoneClearAtMap[zone]) : "";
+      if (!clearAt) return true;
+      var roomAt =
+        room && (room.updatedAt || room.createdAt)
+          ? String(room.updatedAt || room.createdAt)
+          : "";
+      return !!(roomAt && roomAt >= clearAt);
     }
     function ingest(room, fromIncoming) {
       if (!room || !room.number) return;
@@ -334,7 +355,7 @@
         return;
       }
       if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
-        if (fromIncoming && canReviveFromIncoming(k)) {
+        if (fromIncoming && canReviveFromIncoming(k, room)) {
           if (deletedRooms && deletedRooms[zone]) {
             deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
               return roomNumberKey(n) !== k;
@@ -389,6 +410,27 @@
     if (!data) return;
     if (!data.deletedRooms) data.deletedRooms = {};
     markRoomDeletedInMap(data.deletedRooms, zone, roomNumber);
+  }
+
+  function markZoneRoomsCleared(data, zone) {
+    if (!data || !zone) return;
+    if (!data.zoneRoomClearAt || typeof data.zoneRoomClearAt !== "object") {
+      data.zoneRoomClearAt = {};
+    }
+    data.zoneRoomClearAt[zone] = new Date().toISOString();
+  }
+
+  function mergeZoneRoomClearAt(a, b) {
+    var out = {};
+    [a, b].forEach(function (src) {
+      if (!src || typeof src !== "object") return;
+      Object.keys(src).forEach(function (z) {
+        var at = src[z] != null ? String(src[z]).trim() : "";
+        if (!at) return;
+        if (!out[z] || at > out[z]) out[z] = at;
+      });
+    });
+    return out;
   }
 
   function unmarkRoomDeleted(data, zone, roomNumber) {
@@ -509,10 +551,11 @@
     if (!baseInv || typeof baseInv !== "object") return inc;
     var baseAt = getInvenNotifyUpdatedAt(baseInv);
     var incAt = getInvenNotifyUpdatedAt(inc);
-    // 내용 있는 표를 빈 표로 덮을 때는 반드시 더 최신 시각이어야 함 (동시각·역행 방지)
+    // 내용 있는 표를 빈 표로 덮지 않음 — 마감/수동 초기화(clearReason)만 허용
     if (invenNotifyHasContent(baseInv) && !invenNotifyHasContent(inc)) {
-      if (!incAt || (baseAt && incAt <= baseAt)) return baseInv;
-      return inc;
+      var reason = inc.clearReason != null ? String(inc.clearReason).trim() : "";
+      if (reason === "closeDay" || reason === "userReset") return inc;
+      return baseInv;
     }
     if (baseAt && incAt && incAt < baseAt) return baseInv;
     if (baseAt && !incAt) return baseInv;
@@ -773,6 +816,7 @@
       zoneMemos: { VIP: defaultZoneMemo() },
       customZones: [],
       deletedRooms: {},
+      zoneRoomClearAt: {},
       requestDeskChat: [],
       orderDeskChat: [],
       mbCheckDeskChat: [],
@@ -2099,6 +2143,7 @@
       d.memo1 = x.memo1 != null ? String(x.memo1) : "";
       d.memo2 = x.memo2 != null ? String(x.memo2) : "";
       d.memo2Image = x.memo2Image != null ? String(x.memo2Image) : "";
+      d.memo3 = x.memo3 != null ? String(x.memo3) : "";
       d.time = x.time != null ? normalizeTimeField(x.time) : "";
       d.tray = x.tray != null ? String(x.tray).trim() : "";
       d.trayUpdatedAt =
@@ -2153,6 +2198,10 @@
 
     d.customZones = customZones;
     d.deletedRooms = normalizeDeletedRooms(data, customZones);
+    d.zoneRoomClearAt =
+      data.zoneRoomClearAt && typeof data.zoneRoomClearAt === "object"
+        ? mergeZoneRoomClearAt({}, data.zoneRoomClearAt)
+        : {};
     d.deletedCustomZones = normalizeDeletedCustomZones(data);
     d.closeDayAt =
       data.closeDayAt != null ? String(data.closeDayAt).trim() : "";
@@ -2348,7 +2397,8 @@
     incomingRooms,
     customZones,
     deletedRooms,
-    incomingDeletedRooms
+    incomingDeletedRooms,
+    zoneClearAtMap
   ) {
     var out = {};
     STANDARD_ZONE_IDS.forEach(function (zone) {
@@ -2361,7 +2411,8 @@
           inc || [],
           zone,
           deletedRooms,
-          incomingDeletedRooms
+          incomingDeletedRooms,
+          zoneClearAtMap
         ),
         zone,
         deletedRooms
@@ -2379,7 +2430,8 @@
           inc || [],
           zone,
           deletedRooms,
-          incomingDeletedRooms
+          incomingDeletedRooms,
+          zoneClearAtMap
         ),
         zone,
         deletedRooms
@@ -2457,6 +2509,7 @@
       merged.customZones = base.customZones || [];
       merged.deletedCustomZones = base.deletedCustomZones || [];
       merged.deletedRooms = base.deletedRooms || {};
+      merged.zoneRoomClearAt = base.zoneRoomClearAt || {};
       merged.rooms = base.rooms || merged.rooms;
       // invenNotify / 공지 등은 위에서 이미 병합됨
     } else {
@@ -2486,6 +2539,12 @@
           : null
       );
       merged.deletedRooms = mergedDeleted;
+      merged.zoneRoomClearAt = mergeZoneRoomClearAt(
+        base.zoneRoomClearAt,
+        Object.prototype.hasOwnProperty.call(incoming, "zoneRoomClearAt")
+          ? incoming.zoneRoomClearAt
+          : null
+      );
       if (incoming.rooms && typeof incoming.rooms === "object") {
         merged.rooms = mergeRoomsObject(
           base.rooms,
@@ -2494,7 +2553,8 @@
           mergedDeleted,
           Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
             ? incoming.deletedRooms
-            : null
+            : null,
+          merged.zoneRoomClearAt
         );
       } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
         merged.rooms = base.rooms;
@@ -2593,6 +2653,7 @@
     makeCustomZoneId: makeCustomZoneId,
     removeCustomZone: removeCustomZone,
     markRoomDeleted: markRoomDeleted,
+    markZoneRoomsCleared: markZoneRoomsCleared,
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
     pickNoticeFields: pickNoticeFields,

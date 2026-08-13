@@ -164,7 +164,15 @@ function startAutoOrderScheduler(ctx) {
         // 업로드 시각이 없으면 stale 판정하지 않음 (Infinity → 오발송 방지)
         if (uploadIso) {
           const staleMin = minutesSinceIso(uploadIso);
-          if (staleMin >= STALE_XML_MINUTES && !hasOpenAutoOrder("rpa_check")) {
+          const ackAt = st.rpaAckAt ? String(st.rpaAckAt) : "";
+          // 확인 후·같은 업로드 구간에서는 재생성하지 않음. 새 업로드 뒤에만 다시 감시.
+          const ackedThisUpload = !!(ackAt && String(uploadIso) <= ackAt);
+          if (
+            staleMin >= STALE_XML_MINUTES &&
+            !ackedThisUpload &&
+            !hasOpenAutoOrder("rpa_check") &&
+            !hasOpenAutoOrder("rpa_check_maint")
+          ) {
             appendAutoOrder("rpa_check", MSG_RPA_CHECK);
           }
         }

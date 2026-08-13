@@ -278,6 +278,8 @@
       table: table,
       cards: cards,
       changeDone: normalizeChangeDone(data.changeDone),
+      clearReason:
+        data.clearReason != null ? String(data.clearReason).trim() : "",
     };
   }
 
@@ -515,6 +517,7 @@
       return;
     }
     state.table.updatedAt = nextUpdatedAt();
+    state.clearReason = "";
     saveInvenNotify(state, { pushNow: true });
     draftDirty = false;
     clearDraftLocal();
@@ -549,6 +552,7 @@
     }
     state = cloneState(defaultInvenNotify());
     state.table.updatedAt = nextUpdatedAt();
+    state.clearReason = "userReset";
     draftDirty = false;
     clearDraftLocal();
     saveInvenNotify(state, { pushNow: true });
@@ -562,6 +566,7 @@
   function resetOnCloseDay() {
     clearDraftLocal();
     var empty = cloneState(defaultInvenNotify());
+    empty.clearReason = "closeDay";
     // 마감 스냅샷에 이미 빈 표(+updatedAt)가 있으면 그 시각을 유지해 merge 우선순위 보존
     try {
       var stored = loadInvenNotify();

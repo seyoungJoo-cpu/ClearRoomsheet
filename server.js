@@ -744,8 +744,9 @@ function pickInvenNotifyForServer(prev, incoming) {
     return false;
   }
   if (hasContent(baseInv) && !hasContent(inc)) {
-    if (!incAt || (baseAt && incAt <= baseAt)) return baseInv;
-    return inc;
+    var reason = inc.clearReason != null ? String(inc.clearReason).trim() : "";
+    if (reason === "closeDay" || reason === "userReset") return inc;
+    return baseInv;
   }
   if (baseAt && incAt && incAt < baseAt) return baseInv;
   if (baseAt && !incAt) return baseInv;
@@ -2240,7 +2241,13 @@ function mergeSyncPayload(prev, incoming) {
     out.uploadSummary = incoming.uploadSummary;
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "roomingUploadedAt") && applyMainRooming) {
+    var prevUploadAt = prev.roomingUploadedAt != null ? String(prev.roomingUploadedAt) : "";
+    var nextUploadAt =
+      incoming.roomingUploadedAt != null ? String(incoming.roomingUploadedAt) : "";
     out.roomingUploadedAt = incoming.roomingUploadedAt;
+    if (nextUploadAt && nextUploadAt !== prevUploadAt) {
+      out.__hkClearRpaOnUpload = nextUploadAt;
+    }
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "fasnBlockMap") && applyFasnRooming) {
     out.fasnBlockMap = incoming.fasnBlockMap;
@@ -2299,6 +2306,48 @@ function mergeSyncPayload(prev, incoming) {
       incoming.hkCloseDayReset === true
         ? replaceLogArray(incoming.hkOrderLog)
         : mergeOrderLogs(prev.hkOrderLog, incoming.hkOrderLog);
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "hkAutoOrderState")) {
+    out.hkAutoOrderState = Object.assign(
+      {},
+      prev.hkAutoOrderState && typeof prev.hkAutoOrderState === "object"
+        ? prev.hkAutoOrderState
+        : {},
+      incoming.hkAutoOrderState && typeof incoming.hkAutoOrderState === "object"
+        ? incoming.hkAutoOrderState
+        : {}
+    );
+  }
+  if (out.__hkClearRpaOnUpload) {
+    var uploadAck = String(out.__hkClearRpaOnUpload);
+    delete out.__hkClearRpaOnUpload;
+    var cancelAt = new Date().toISOString();
+    var logSrc = Array.isArray(out.hkOrderLog)
+      ? out.hkOrderLog
+      : Array.isArray(prev.hkOrderLog)
+        ? prev.hkOrderLog
+        : [];
+    out.hkOrderLog = logSrc.map(function (entry) {
+      if (!entry) return entry;
+      var kind = entry.autoOrderKind;
+      if (kind !== "rpa_check" && kind !== "rpa_check_maint") return entry;
+      var phase = entry.phase != null ? String(entry.phase).trim() : "";
+      if (phase && phase !== "alert" && phase !== "pending") return entry;
+      return Object.assign({}, entry, {
+        phase: "cancelled",
+        cancelledAt: cancelAt,
+        updatedAt: cancelAt,
+      });
+    });
+    out.hkAutoOrderState = Object.assign(
+      {},
+      out.hkAutoOrderState && typeof out.hkAutoOrderState === "object"
+        ? out.hkAutoOrderState
+        : prev.hkAutoOrderState && typeof prev.hkAutoOrderState === "object"
+          ? prev.hkAutoOrderState
+          : {},
+      { rpaAckAt: uploadAck }
+    );
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) {
     out.hkMbInvLog =

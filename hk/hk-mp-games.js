@@ -1144,7 +1144,7 @@
       var show = c.open || c.done;
       var cls = 'hkmp-memory-card' + (c.open ? ' open' : '') + (c.done ? ' done' : '') + (myTurn && !locked && !c.open && !c.done ? ' mine' : '');
       var dis = locked || !myTurn || c.open || c.done;
-      return '<button type="button" class="' + cls + '" data-i="' + i + '"' + (dis ? ' disabled' : '') + '>' + (show && c.icon ? c.icon : '') + '</button>';
+      return '<button type="button" class="' + cls + '" data-i="' + i + '"' + (dis ? ' disabled' : '') + '>' + (show && c.icon ? '<span class="hkmp-memory-face">' + c.icon + '</span>' : '') + '</button>';
     }).join('');
     Array.prototype.forEach.call(refs.memGrid.querySelectorAll('[data-i]'), function (btn) {
       btn.onclick = function () {
