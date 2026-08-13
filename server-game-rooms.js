@@ -1290,8 +1290,7 @@ function checkTankRoundEnd(room) {
 
 /* ===================== RTS ===================== */
 const RTS_AGE_NAMES = ["암흑시대", "봉건시대", "성주시대", "제국시대"];
-const RTS_AGE_COST = [0, 1000, 1500, 2000]; // reach age 1/2/3
-const RTS_BARRACKS_UP_COST = [0, 120, 200, 300]; // reach tier 1/2/3
+const RTS_AGE_COST = [0, 5000, 10000, 20000]; // reach age 1/2/3
 const RTS_WORKER_BASE_COST = 50;
 const RTS_WORKER_SCALE_FROM = 10; // 10th worker onward costs more
 const RTS_WORKER_SCALE_STEP = 5;
@@ -1794,7 +1793,7 @@ function rtsApplyInput(room, s, owner, inp, mode) {
   } else if (inp.cmd === "upgradeAge") {
     rtsUpgradeAge(s, owner, ids);
   } else if (inp.cmd === "upgradeBarracks") {
-    rtsUpgradeBarracks(s, owner, ids);
+    // Barracks upgrades removed — age alone unlocks unit tiers
   } else if (inp.cmd === "build") {
     const bt = inp.buildType;
     const def = RTS_BUILD[bt];
@@ -1993,20 +1992,15 @@ function rtsEnqueueTrain(s, owner, ut, preferIds) {
       break;
     }
     if (fromKind === "barracks" && rtsIsBarracksType(e.type)) {
-      const tier = e.tier != null ? e.tier | 0 : e.type === "advBarracks" ? 2 : 0;
-      if (tier >= needAge) {
-        from = e;
-        break;
-      }
+      from = e;
+      break;
     }
   }
   if (!from) {
     const cands = s.entities.filter((e) => {
       if (!e || e.owner !== owner || e.hp <= 0 || e.building) return false;
       if (fromKind === "nexus") return e.type === "nexus";
-      if (!rtsIsBarracksType(e.type)) return false;
-      const tier = e.tier != null ? e.tier | 0 : e.type === "advBarracks" ? 2 : 0;
-      return tier >= needAge;
+      return rtsIsBarracksType(e.type);
     });
     cands.sort((a, b) => (a.queue || []).length - (b.queue || []).length || (a.trainT || 0) - (b.trainT || 0));
     from = cands[0] || null;
@@ -2140,31 +2134,7 @@ function rtsAiThink(room, s, owner, mode, dt) {
     }
   }
 
-  // Upgrade barracks toward current age
-  if (barracks.length) {
-    barracks.sort((a, b) => (a.tier || 0) - (b.tier || 0));
-    const bar = barracks[0];
-    const tier = bar.tier != null ? bar.tier | 0 : bar.type === "advBarracks" ? 2 : 0;
-    if (tier < age) {
-      const cost = RTS_BARRACKS_UP_COST[tier + 1] || 9999;
-      if (gold >= cost + 40) {
-        rtsAiPush(room, owner, { cmd: "upgradeBarracks", selectIds: [bar.id] });
-        return;
-      }
-    }
-  }
-
-  // Adv barracks at age 2+
-  if (
-    age >= 2 &&
-    !s.entities.some((e) => e.type === "advBarracks" && e.owner === owner) &&
-    gold >= RTS_BUILD.advBarracks.cost + 50
-  ) {
-    const sx = nexus.x + (nexus.x < s.W / 2 ? 130 : -130);
-    const sy = nexus.y + (nexus.y < s.H / 2 ? -40 : 40);
-    rtsAiPush(room, owner, { cmd: "build", buildType: "advBarracks", x: sx, y: sy, selectIds: [] });
-    return;
-  }
+  // Upgrade barracks removed — age alone unlocks units
 
   if (workers.length < 6 && gold >= rtsWorkerCost(s, owner)) {
     rtsAiPush(room, owner, { cmd: "train", unitType: "worker", selectIds: [nexus.id] });

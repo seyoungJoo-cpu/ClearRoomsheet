@@ -1313,7 +1313,7 @@
   function helpText() {
     return {
       tank: 'WASD · 마우스 조준/발사 · HP5 · 중앙 아이템(회복/속도/실드/연사) · 목숨 3',
-      rts: '좌클릭 본진/배럭 선택 · 시대·배럭 업그레이드 · 우클릭 이동/공격 · 본진은 유닛 공격 불가(포탑·배럭으로) · 밝은 시야에서만 건설',
+      rts: '좌클릭 본진/배럭 선택 · 시대 업그레이드 · 우클릭 이동/공격 · 본진은 유닛 공격 불가(포탑·배럭으로) · 밝은 시야에서만 건설',
       ageofwar: '유닛 생산 · 시대 진화 · 특수공격 · 상대 기지 파괴',
       snakes: '방향키/WASD · 목숨 3 · 탈락 후 관전 · 최후 1인 승리',
       airhockey: '마우스/터치로 패들 · 충돌할수록 퍽이 점점 빨라집니다',
@@ -1333,9 +1333,7 @@
         ['build:barracks', '배럭 ·150'],
         ['build:turret', '포탑 ·120']
       ];
-      if (age >= 2) tools.push(['build:advBarracks', '고급배럭 ·280']);
-      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 1000, 1500, 2000][age + 1] || '—'))]);
-      tools.push(['upgradeBarracks', '배럭 업 ·' + ([0, 120, 200, 300][Math.min(3, age)] || '120')]);
+      tools.push(['upgradeAge', age >= 3 ? '본진 시대 MAX' : ('본진 시대업 ·' + ([0, 5000, 10000, 20000][age + 1] || '—'))]);
       tools.push(['train:worker', '일꾼 ·' + rtsClientWorkerCost(st)]);
       var byAge = [
         [['melee', '민병 ·80'], ['ranged', '투석병 ·100'], ['duck', '오리 ·30']],
@@ -1359,11 +1357,6 @@
           if (key === 'upgradeAge') {
             send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'upgradeAge' } });
             toast('본진 시대 업그레이드 요청');
-            return;
-          }
-          if (key === 'upgradeBarracks') {
-            send({ type: 'input', payload: { selectIds: selectIds.slice(), cmd: 'upgradeBarracks' } });
-            toast('배럭 업그레이드 요청 (본진 시대 먼저)');
             return;
           }
           var t = key.split(':');
@@ -1687,8 +1680,7 @@
             if (!se || se.id != selectIds[si] || se.owner !== slotNow) continue;
             if (se.type === 'barracks' || se.type === 'advBarracks') {
               html += '<span class="hkmp-pill" style="color:#9ae6b4">생산지 <b>' +
-                (se.type === 'advBarracks' ? '고급배럭' : '배럭') +
-                ' T' + ((se.tier != null ? se.tier : 0) + 1) + '</b></span>';
+                (se.type === 'advBarracks' ? '고급배럭' : '배럭') + '</b></span>';
               return;
             }
             if (se.type === 'nexus') {
