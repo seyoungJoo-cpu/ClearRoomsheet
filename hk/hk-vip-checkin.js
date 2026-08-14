@@ -1420,13 +1420,27 @@
     guestColWidthsLive = widths.slice();
     var cg = ensureGuestColgroup(table);
     var i;
+    var total = 0;
     for (i = 0; i < 11; i++) {
+      var w = Math.max(36, Number(widths[i]) || 36);
       var col = cg.children[i];
-      if (col) col.style.width = widths[i] + "px";
+      if (col) col.style.width = w + "px";
+      total += w;
     }
     var ths = table.querySelectorAll("thead th");
     for (i = 0; i < ths.length && i < 11; i++) {
-      ths[i].style.width = widths[i] + "px";
+      var tw = Math.max(36, Number(widths[i]) || 36);
+      ths[i].style.width = tw + "px";
+      ths[i].style.minWidth = tw + "px";
+      ths[i].style.maxWidth = tw + "px";
+    }
+    var packNow = loadPack();
+    var packHas = !!(packNow && packNow.ui && normalizeGuestColWidthsArr(packNow.ui.guestColWidths));
+    if (table.classList.contains("hk-table-user-sized") || packHas) {
+      table.classList.add("hk-table-user-sized");
+      table.style.width = total + "px";
+      table.style.minWidth = total + "px";
+      table.style.maxWidth = "none";
     }
   }
 
@@ -1476,6 +1490,7 @@
     if (!theadRow) return;
     Array.prototype.forEach.call(theadRow.children, function (th, idx) {
       if (idx >= 10) return;
+      if (th.querySelector(".hk-col-resizer, .vip-col-resizer")) return;
       th.style.position = "relative";
       var handle = document.createElement("span");
       handle.className = "vip-col-resizer";
@@ -1484,8 +1499,17 @@
       handle.addEventListener("mousedown", function (ev) {
         ev.preventDefault();
         ev.stopPropagation();
-        var startX = ev.clientX;
         var live = guestColWidthsLive || widths;
+        if (table && !table.classList.contains("hk-table-user-sized")) {
+          Array.prototype.forEach.call(theadRow.children, function (cell, i) {
+            if (i < live.length) {
+              live[i] = Math.max(36, Math.round(cell.getBoundingClientRect().width));
+            }
+          });
+          table.classList.add("hk-table-user-sized");
+          applyGuestColWidths(live);
+        }
+        var startX = ev.clientX;
         var startW = live[idx];
         function onMove(e2) {
           var next = Math.max(36, startW + (e2.clientX - startX));

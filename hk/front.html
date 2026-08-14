@@ -9846,6 +9846,11 @@
       table-layout: fixed;
     }
 
+    table.hk-table-user-sized {
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+
     table.hk-table-resizable th,
     table.nh-table th,
     table.vip-table th,
@@ -14194,7 +14199,7 @@
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
-  <script src="hk-vip-checkin.js?v=bydate-17"></script>
+  <script src="hk-vip-checkin.js?v=bydate-18"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -16901,10 +16906,39 @@
         highlightDeskChatRoomMatches(document.getElementById("mbCheckDeskChatMessages"));
       }
 
+      function snapshotHkTableColWidths(cells) {
+        var widths = [];
+        Array.prototype.forEach.call(cells, function (th) {
+          widths.push(Math.max(36, Math.round(th.getBoundingClientRect().width)));
+        });
+        return widths;
+      }
+
+      function applyHkTableLockedColWidths(table, cells, widths) {
+        if (!table || !cells || !widths) return;
+        var total = 0;
+        Array.prototype.forEach.call(cells, function (th, idx) {
+          var w = Math.max(36, Number(widths[idx]) || Math.round(th.getBoundingClientRect().width));
+          th.style.width = w + "px";
+          th.style.minWidth = w + "px";
+          th.style.maxWidth = w + "px";
+          var col = table.querySelector("colgroup > col:nth-child(" + (idx + 1) + ")");
+          if (col) col.style.width = w + "px";
+          total += w;
+        });
+        table.style.width = total + "px";
+        table.style.minWidth = total + "px";
+        table.style.maxWidth = "none";
+        table.classList.add("hk-table-user-sized");
+        table.__hkColWidths = widths.slice();
+      }
+
       function bindHkTableColResize(root) {
         var scope = root && root.querySelectorAll ? root : document;
         var tables = scope.querySelectorAll
-          ? scope.querySelectorAll("table.nh-table, table.vip-table, table.complaint-table")
+          ? scope.querySelectorAll(
+              "table.nh-table, table.vip-table:not(.vip-table--guests), table.complaint-table"
+            )
           : [];
         Array.prototype.forEach.call(tables, function (table) {
           if (!table) return;
@@ -16921,10 +16955,12 @@
             var first = table.querySelector("tr");
             if (first) cells = first.children;
           }
+          if (saved && Array.isArray(saved) && saved.length) {
+            applyHkTableLockedColWidths(table, cells, saved);
+          }
           Array.prototype.forEach.call(cells, function (th, idx) {
             if (!th || th.querySelector(".hk-col-resizer, .vip-col-resizer")) return;
             th.style.position = "relative";
-            if (saved && saved[idx]) th.style.width = saved[idx] + "px";
             var handle = document.createElement("span");
             handle.className = "hk-col-resizer";
             handle.title = "열 너비 조절";
@@ -16932,21 +16968,23 @@
             handle.addEventListener("mousedown", function (ev) {
               ev.preventDefault();
               ev.stopPropagation();
+              var live = table.__hkColWidths;
+              if (!table.classList.contains("hk-table-user-sized") || !live || live.length !== cells.length) {
+                live = snapshotHkTableColWidths(cells);
+                applyHkTableLockedColWidths(table, cells, live);
+              }
               var startX = ev.clientX;
-              var startW = th.getBoundingClientRect().width;
+              var startW = live[idx];
               function onMove(e2) {
                 var next = Math.max(36, startW + (e2.clientX - startX));
-                th.style.width = next + "px";
+                live[idx] = next;
+                applyHkTableLockedColWidths(table, cells, live);
               }
               function onUp() {
                 document.removeEventListener("mousemove", onMove);
                 document.removeEventListener("mouseup", onUp);
-                var widths = [];
-                Array.prototype.forEach.call(cells, function (c) {
-                  widths.push(Math.round(c.getBoundingClientRect().width));
-                });
                 try {
-                  localStorage.setItem(key, JSON.stringify(widths));
+                  localStorage.setItem(key, JSON.stringify(live));
                 } catch (e) {}
               }
               document.addEventListener("mousemove", onMove);
