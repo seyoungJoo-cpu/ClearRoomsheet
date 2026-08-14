@@ -828,6 +828,7 @@
       trackIt: defaultTrackIt(),
       nightHandover: defaultNightHandover(),
       vipCheckIn: defaultVipCheckIn(),
+      staffBroadcasts: defaultStaffBroadcasts(),
       closeDayAt: "",
       deletedCustomZones: [],
       rooms: {
@@ -1147,6 +1148,234 @@
     d = d instanceof Date ? d : new Date();
     if (isNaN(d.getTime())) d = new Date();
     return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  function defaultStaffBroadcasts() {
+    return { updatedAt: "", alerts: [], polls: [], deletedIds: {} };
+  }
+
+  function normalizeStrMap(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (k) {
+      var key = String(k || "").trim();
+      if (!key) return;
+      out[key] = raw[k] != null ? String(raw[k]) : "1";
+    });
+    return out;
+  }
+
+  function normalizeNameList(raw) {
+    var seen = {};
+    var out = [];
+    (Array.isArray(raw) ? raw : []).forEach(function (n) {
+      var name = String(n || "").trim();
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      out.push(name);
+    });
+    return out;
+  }
+
+  function normalizeBroadcastAudience(v) {
+    return String(v || "").trim() === "all" ? "all" : "online";
+  }
+
+  function normalizeAlertBroadcast(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    if (!id) return null;
+    var text = raw.text != null ? String(raw.text).trim() : "";
+    if (!text) return null;
+    return {
+      id: id,
+      kind: "alert",
+      text: text,
+      audience: normalizeBroadcastAudience(raw.audience),
+      createdAt: raw.createdAt != null ? String(raw.createdAt) : "",
+      createdBy: raw.createdBy != null ? String(raw.createdBy) : "",
+      dayKey: raw.dayKey != null ? String(raw.dayKey) : "",
+      dismissedBy: normalizeStrMap(raw.dismissedBy),
+    };
+  }
+
+  function normalizePollItem(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    var text = raw.text != null ? String(raw.text).trim() : "";
+    if (!id || !text) return null;
+    return {
+      id: id,
+      text: text,
+      addedBy: raw.addedBy != null ? String(raw.addedBy) : "",
+      addedAt: raw.addedAt != null ? String(raw.addedAt) : "",
+    };
+  }
+
+  function normalizePollVotes(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object") return out;
+    Object.keys(raw).forEach(function (itemId) {
+      var id = String(itemId || "").trim();
+      if (!id) return;
+      out[id] = normalizeNameList(raw[itemId]);
+    });
+    return out;
+  }
+
+  function normalizePollBroadcast(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    var title = raw.title != null ? String(raw.title).trim() : "";
+    if (!id || !title) return null;
+    var items = [];
+    var seen = {};
+    (Array.isArray(raw.items) ? raw.items : []).forEach(function (it) {
+      var n = normalizePollItem(it);
+      if (!n || seen[n.id]) return;
+      seen[n.id] = true;
+      items.push(n);
+    });
+    return {
+      id: id,
+      kind: "poll",
+      title: title,
+      audience: normalizeBroadcastAudience(raw.audience),
+      createdAt: raw.createdAt != null ? String(raw.createdAt) : "",
+      createdBy: raw.createdBy != null ? String(raw.createdBy) : "",
+      dayKey: raw.dayKey != null ? String(raw.dayKey) : "",
+      startsAt: raw.startsAt != null ? String(raw.startsAt) : "",
+      endsAt: raw.endsAt != null ? String(raw.endsAt) : "",
+      multi: !!raw.multi,
+      items: items,
+      votes: normalizePollVotes(raw.votes),
+      dismissedBy: normalizeStrMap(raw.dismissedBy),
+    };
+  }
+
+  function normalizeStaffBroadcasts(raw) {
+    var d = defaultStaffBroadcasts();
+    if (!raw || typeof raw !== "object") return d;
+    d.updatedAt = raw.updatedAt != null ? String(raw.updatedAt) : "";
+    d.deletedIds = normalizeStrMap(raw.deletedIds);
+    (Array.isArray(raw.alerts) ? raw.alerts : []).forEach(function (row) {
+      var n = normalizeAlertBroadcast(row);
+      if (n && !d.deletedIds[n.id]) d.alerts.push(n);
+    });
+    (Array.isArray(raw.polls) ? raw.polls : []).forEach(function (row) {
+      var n = normalizePollBroadcast(row);
+      if (n && !d.deletedIds[n.id]) d.polls.push(n);
+    });
+    if (d.alerts.length > 80) d.alerts = d.alerts.slice(-80);
+    if (d.polls.length > 80) d.polls = d.polls.slice(-80);
+    return d;
+  }
+
+  function mergeVoteMaps(a, b) {
+    var out = {};
+    [a || {}, b || {}].forEach(function (m) {
+      Object.keys(m).forEach(function (itemId) {
+        var seen = {};
+        var list = [];
+        (out[itemId] || []).concat(m[itemId] || []).forEach(function (n) {
+          var name = String(n || "").trim();
+          if (!name || seen[name]) return;
+          seen[name] = true;
+          list.push(name);
+        });
+        out[itemId] = list;
+      });
+    });
+    return out;
+  }
+
+  function mergeStaffBroadcasts(baseRaw, incRaw) {
+    var base = normalizeStaffBroadcasts(baseRaw);
+    var inc = normalizeStaffBroadcasts(incRaw);
+    var deleted = Object.assign({}, base.deletedIds, inc.deletedIds);
+    var alertsById = {};
+    function takeAlert(row) {
+      if (!row || deleted[row.id]) return;
+      var prev = alertsById[row.id];
+      if (!prev) {
+        alertsById[row.id] = row;
+        return;
+      }
+      prev.dismissedBy = Object.assign({}, prev.dismissedBy || {}, row.dismissedBy || {});
+      if (String(row.createdAt || "") > String(prev.createdAt || "")) {
+        prev.text = row.text;
+        prev.audience = row.audience;
+        prev.createdBy = row.createdBy;
+        prev.dayKey = row.dayKey;
+        prev.createdAt = row.createdAt;
+      }
+      alertsById[row.id] = prev;
+    }
+    (base.alerts || []).forEach(takeAlert);
+    (inc.alerts || []).forEach(takeAlert);
+
+    var pollsById = {};
+    function takePoll(row) {
+      if (!row || deleted[row.id]) return;
+      var prev = pollsById[row.id];
+      if (!prev) {
+        pollsById[row.id] = row;
+        return;
+      }
+      prev.dismissedBy = Object.assign({}, prev.dismissedBy || {}, row.dismissedBy || {});
+      prev.votes = mergeVoteMaps(prev.votes, row.votes);
+      var itemsById = {};
+      (prev.items || []).concat(row.items || []).forEach(function (it) {
+        if (!it || !it.id) return;
+        var old = itemsById[it.id];
+        if (!old || String(it.addedAt || "") >= String(old.addedAt || "")) {
+          itemsById[it.id] = it;
+        }
+      });
+      prev.items = Object.keys(itemsById).map(function (k) {
+        return itemsById[k];
+      });
+      if (String(row.createdAt || "") > String(prev.createdAt || "")) {
+        prev.title = row.title;
+        prev.audience = row.audience;
+        prev.createdBy = row.createdBy;
+        prev.dayKey = row.dayKey;
+        prev.createdAt = row.createdAt;
+        prev.startsAt = row.startsAt;
+        prev.endsAt = row.endsAt;
+        prev.multi = row.multi;
+      } else {
+        if (row.endsAt && (!prev.endsAt || String(row.endsAt) < String(prev.endsAt))) {
+          prev.endsAt = row.endsAt;
+        }
+      }
+      pollsById[row.id] = prev;
+    }
+    (base.polls || []).forEach(takePoll);
+    (inc.polls || []).forEach(takePoll);
+
+    var out = defaultStaffBroadcasts();
+    var baseAt = base.updatedAt || "";
+    var incAt = inc.updatedAt || "";
+    out.updatedAt = incAt && (!baseAt || String(incAt) >= String(baseAt)) ? incAt : baseAt || incAt;
+    out.deletedIds = deleted;
+    out.alerts = Object.keys(alertsById)
+      .map(function (k) {
+        return alertsById[k];
+      })
+      .sort(function (a, b) {
+        return String(a.createdAt).localeCompare(String(b.createdAt));
+      });
+    out.polls = Object.keys(pollsById)
+      .map(function (k) {
+        return pollsById[k];
+      })
+      .sort(function (a, b) {
+        return String(a.createdAt).localeCompare(String(b.createdAt));
+      });
+    if (out.alerts.length > 80) out.alerts = out.alerts.slice(-80);
+    if (out.polls.length > 80) out.polls = out.polls.slice(-80);
+    return out;
   }
 
   function defaultOpsDateKey(now) {
@@ -2216,6 +2445,7 @@
     d.trackIt = normalizeTrackIt(data.trackIt);
     d.nightHandover = normalizeNightHandover(data.nightHandover);
     d.vipCheckIn = normalizeVipCheckIn(data.vipCheckIn);
+    d.staffBroadcasts = normalizeStaffBroadcasts(data.staffBroadcasts);
 
     STANDARD_ZONE_IDS.forEach(function (k) {
       if (r && Array.isArray(r[k])) {
@@ -2610,6 +2840,14 @@
     merged.trackIt = pickTrackIt(base, incoming);
     merged.nightHandover = pickNightHandover(base, incoming);
     merged.vipCheckIn = pickVipCheckIn(base, incoming);
+    if (Object.prototype.hasOwnProperty.call(incoming, "staffBroadcasts")) {
+      merged.staffBroadcasts = mergeStaffBroadcasts(
+        base.staffBroadcasts,
+        incoming.staffBroadcasts
+      );
+    } else {
+      merged.staffBroadcasts = normalizeStaffBroadcasts(base.staffBroadcasts);
+    }
     return normalize(merged);
   }
 
@@ -2683,6 +2921,9 @@
     normalizeVipCheckIn: normalizeVipCheckIn,
     normalizeVipCheckInDay: normalizeVipCheckInDay,
     defaultVipCheckIn: defaultVipCheckIn,
+    defaultStaffBroadcasts: defaultStaffBroadcasts,
+    normalizeStaffBroadcasts: normalizeStaffBroadcasts,
+    mergeStaffBroadcasts: mergeStaffBroadcasts,
     pad2: pad2,
     formatDateKey: formatDateKey,
     defaultOpsDateKey: defaultOpsDateKey,

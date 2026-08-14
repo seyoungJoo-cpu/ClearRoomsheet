@@ -119,6 +119,127 @@
       color: var(--accent);
     }
 
+    .admin-broadcast-modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      margin: 0 0 10px;
+      font-size: 0.875rem;
+    }
+
+    .admin-broadcast-modes label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .admin-broadcast-field {
+      margin: 0 0 10px;
+    }
+
+    .admin-broadcast-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .admin-broadcast-field input[type="text"],
+    .admin-broadcast-field input[type="datetime-local"],
+    .admin-broadcast-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    .admin-broadcast-field textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .admin-broadcast-item-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .admin-broadcast-item-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .admin-broadcast-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 6px 0 10px;
+    }
+
+    .admin-broadcast-chip {
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-raised);
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .admin-broadcast-row {
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .admin-broadcast-row__head {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .admin-broadcast-row__title {
+      margin: 0 0 6px;
+      font-weight: 700;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .admin-broadcast-tally {
+      margin: 0 0 8px;
+      padding-left: 18px;
+      font-size: 0.8125rem;
+    }
+
+    .admin-broadcast-row__actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .admin-broadcast-empty {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+    }
+
+    .admin-broadcast-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .admin-broadcast-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .notice-field label {
       display: block;
       font-size: 0.75rem;
@@ -870,6 +991,56 @@
       <button type="button" class="btn-primary" id="saveNotice">공지 저장</button>
     </section>
 
+    <section class="card" id="adminBroadcastCard">
+      <h2>알럿 · 투표</h2>
+      <p style="margin: 0 0 12px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
+        프론트 모드 화면에 창을 띄웁니다. <strong>온라인</strong>은 지금 열려 있는 탭만,
+        <strong>ALL</strong>은 오늘 열려 있는 사람과 이후에 프론트 모드로 들어오는 사람까지 보여 줍니다.
+        창을 클릭하면 닫힙니다.
+      </p>
+      <div class="admin-broadcast-split">
+        <div>
+          <h3 style="margin: 0 0 8px; font-size: 0.875rem;">알럿</h3>
+          <div class="admin-broadcast-modes">
+            <label><input type="radio" name="adminAlertAudience" value="online" checked /> 온라인</label>
+            <label><input type="radio" name="adminAlertAudience" value="all" /> ALL</label>
+          </div>
+          <div class="admin-broadcast-field">
+            <textarea id="adminAlertText" placeholder="알럿 내용을 입력하세요."></textarea>
+          </div>
+          <button type="button" class="btn-primary" id="btnAdminAlertSend">알럿 등록</button>
+        </div>
+        <div>
+          <h3 style="margin: 0 0 8px; font-size: 0.875rem;">투표</h3>
+          <div class="admin-broadcast-modes">
+            <label><input type="radio" name="adminPollAudience" value="online" checked /> 온라인</label>
+            <label><input type="radio" name="adminPollAudience" value="all" /> ALL</label>
+            <label><input type="checkbox" id="adminPollMulti" /> 복수선택</label>
+          </div>
+          <div class="admin-broadcast-field">
+            <input type="text" id="adminPollTitle" placeholder="투표 제목" maxlength="80" />
+          </div>
+          <div class="admin-broadcast-field">
+            <label for="adminPollStart">시작</label>
+            <input type="datetime-local" id="adminPollStart" />
+          </div>
+          <div class="admin-broadcast-field">
+            <label for="adminPollEnd">마감</label>
+            <input type="datetime-local" id="adminPollEnd" />
+          </div>
+          <div class="admin-broadcast-field">
+            <div class="admin-broadcast-item-row">
+              <input type="text" id="adminPollItemInput" placeholder="항목 입력 후 추가" maxlength="80" />
+              <button type="button" class="btn-secondary" id="btnAdminPollAddItem">추가</button>
+            </div>
+            <div class="admin-broadcast-chips" id="adminPollDraftItems"></div>
+          </div>
+          <button type="button" class="btn-primary" id="btnAdminPollSend">투표 등록</button>
+        </div>
+      </div>
+      <div id="adminBroadcastList" style="margin-top: 14px;"></div>
+    </section>
+
     <section class="card">
       <h2>MB &amp; 인벤 공지</h2>
       <div class="notice-field">
@@ -987,6 +1158,7 @@
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>시설 관리 알림</strong>·<strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
         <strong>오더/정비/시설 작은 채팅창</strong>은 마감 후에도 <strong>7일간 보관</strong>합니다.
+        <strong>알럿·투표</strong>는 마감 시 초기화합니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
         되돌릴 수 없으니 마감 시점에만 사용하세요.
@@ -1002,11 +1174,12 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-21"></script>
+  <script src="hk-storage.js?v=bydate-22"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=force-sync-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-inven-notify.js?v=view2-cols-fluid"></script>
+  <script src="hk-staff-broadcast.js?v=alert-poll-1"></script>
   <script>
     (function () {
       var authGate = document.getElementById("auth-gate");
@@ -4725,6 +4898,11 @@
             : prev.vipCheckIn && typeof prev.vipCheckIn === "object"
               ? prev.vipCheckIn
               : reset.vipCheckIn;
+        reset.staffBroadcasts =
+          typeof HKStorage.defaultStaffBroadcasts === "function"
+            ? HKStorage.defaultStaffBroadcasts()
+            : { updatedAt: closeAt, alerts: [], polls: [], deletedIds: {} };
+        if (reset.staffBroadcasts) reset.staffBroadcasts.updatedAt = closeAt;
         return reset;
       }
 
@@ -5060,6 +5238,9 @@
         }
         loadHotelInfoIntoForm(data, false);
         renderZoneGrid(data);
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.renderAdminList) {
+          HKStaffBroadcast.renderAdminList();
+        }
       }
 
       var adminNoticeImages = [];
@@ -5602,6 +5783,12 @@
 
       refresh();
       setupAdminNameField();
+      if (typeof HKStaffBroadcast !== "undefined") {
+        HKStaffBroadcast.initAdmin({
+          getAuthorName: getAdminAuthorName,
+          toast: toast,
+        });
+      }
 
       var linkFrontFromAdmin = document.getElementById("linkFrontFromAdmin");
       if (linkFrontFromAdmin) {

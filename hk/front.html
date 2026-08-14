@@ -1682,6 +1682,139 @@
       color: var(--text);
     }
 
+    .hk-broadcast {
+      position: fixed;
+      inset: 0;
+      z-index: 10040;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .hk-broadcast[hidden] {
+      display: none !important;
+    }
+
+    .hk-broadcast__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      cursor: pointer;
+    }
+
+    .hk-broadcast__card {
+      position: relative;
+      width: min(440px, 100%);
+      max-height: min(82vh, 640px);
+      overflow: auto;
+      padding: 22px 20px 16px;
+      background: #fff;
+      border: 2px solid #0f766e;
+      border-radius: 12px;
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28);
+      box-sizing: border-box;
+    }
+
+    .hk-broadcast__kicker {
+      margin: 0 0 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0f766e;
+    }
+
+    .hk-broadcast__title,
+    .hk-broadcast__text {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1.4;
+      color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .hk-broadcast__hint {
+      margin: 0 0 12px;
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+
+    .hk-broadcast__options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 0 0 12px;
+    }
+
+    .hk-broadcast__option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .hk-broadcast__option em {
+      font-style: normal;
+      min-width: 1.6em;
+      text-align: right;
+      color: #0f766e;
+    }
+
+    .hk-broadcast__option.is-on {
+      border-color: #0f766e;
+      background: #ecfdf5;
+    }
+
+    .hk-broadcast__add {
+      display: flex;
+      gap: 6px;
+      margin: 0 0 12px;
+    }
+
+    .hk-broadcast__add input {
+      flex: 1;
+      min-width: 0;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    .hk-broadcast__add button,
+    .hk-broadcast__ok {
+      height: 34px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .hk-broadcast__ok {
+      display: block;
+      width: 100%;
+      height: 40px;
+    }
+
     .hk-confirm {
       position: fixed;
       inset: 0;
@@ -14182,12 +14315,17 @@
     </div>
   </div>
 
+  <div id="hkStaffBroadcastOverlay" class="hk-broadcast" hidden aria-hidden="true">
+    <div class="hk-broadcast__backdrop"></div>
+    <div class="hk-broadcast__card" role="dialog" aria-modal="true" aria-label="알럿"></div>
+  </div>
+
   <div class="hk-image-lightbox" id="hkImageLightbox" hidden aria-hidden="true">
     <img class="hk-image-lightbox__img" id="hkImageLightboxImg" alt="첨부 사진 확대" />
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-21"></script>
+  <script src="hk-storage.js?v=bydate-22"></script>
   <script src="hk-sync.js?v=force-sync-4"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -14200,6 +14338,7 @@
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
   <script src="hk-vip-checkin.js?v=bydate-18"></script>
+  <script src="hk-staff-broadcast.js?v=alert-poll-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -17646,6 +17785,9 @@
               !isHkUserEditing()
             ) {
               HKVipCheckIn.render();
+            }
+            if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+              HKStaffBroadcast.refresh();
             }
           }
           applyFrontEmbedStatesFromStorage({ force: true });
@@ -30374,6 +30516,9 @@
           HKInvenNotify.render(true);
           HKInvenNotify.onFrontModeChanged();
         }
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+          HKStaffBroadcast.refresh();
+        }
         if (currentZone === "VIP") {
           applyZoneVipMemo();
         }
@@ -31640,6 +31785,14 @@
             return frontMode;
           },
           toast: showHkActionToast,
+        });
+      }
+      if (typeof HKStaffBroadcast !== "undefined") {
+        HKStaffBroadcast.initFront({
+          isFrontMode: function () {
+            return frontMode;
+          },
+          getOperatorName: getOperatorName,
         });
       }
       if (typeof HKTrackIt !== "undefined") {
