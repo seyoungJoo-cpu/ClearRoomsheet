@@ -1420,28 +1420,28 @@
     guestColWidthsLive = widths.slice();
     var cg = ensureGuestColgroup(table);
     var i;
-    var total = 0;
+    var sum = 0;
+    var fitted = [];
     for (i = 0; i < 11; i++) {
-      var w = Math.max(36, Number(widths[i]) || 36);
-      var col = cg.children[i];
-      if (col) col.style.width = w + "px";
-      total += w;
+      fitted[i] = Math.max(36, Number(widths[i]) || 36);
+      sum += fitted[i];
     }
+    if (sum <= 0) return;
     var ths = table.querySelectorAll("thead th");
-    for (i = 0; i < ths.length && i < 11; i++) {
-      var tw = Math.max(36, Number(widths[i]) || 36);
-      ths[i].style.width = tw + "px";
-      ths[i].style.minWidth = tw + "px";
-      ths[i].style.maxWidth = tw + "px";
+    for (i = 0; i < 11; i++) {
+      var pct = (fitted[i] / sum) * 100;
+      var col = cg.children[i];
+      if (col) col.style.width = pct + "%";
+      if (ths[i]) {
+        ths[i].style.width = pct + "%";
+        ths[i].style.minWidth = "";
+        ths[i].style.maxWidth = "";
+      }
     }
-    var packNow = loadPack();
-    var packHas = !!(packNow && packNow.ui && normalizeGuestColWidthsArr(packNow.ui.guestColWidths));
-    if (table.classList.contains("hk-table-user-sized") || packHas) {
-      table.classList.add("hk-table-user-sized");
-      table.style.width = total + "px";
-      table.style.minWidth = total + "px";
-      table.style.maxWidth = "none";
-    }
+    table.style.width = "100%";
+    table.style.minWidth = "100%";
+    table.style.maxWidth = "100%";
+    table.classList.add("hk-table-user-sized");
   }
 
   function applyGuestColWidthsFromPack() {
@@ -1500,20 +1500,21 @@
         ev.preventDefault();
         ev.stopPropagation();
         var live = guestColWidthsLive || widths;
-        if (table && !table.classList.contains("hk-table-user-sized")) {
-          Array.prototype.forEach.call(theadRow.children, function (cell, i) {
-            if (i < live.length) {
-              live[i] = Math.max(36, Math.round(cell.getBoundingClientRect().width));
-            }
-          });
-          table.classList.add("hk-table-user-sized");
-          applyGuestColWidths(live);
-        }
+        Array.prototype.forEach.call(theadRow.children, function (cell, i) {
+          if (i < 11) {
+            live[i] = Math.max(36, Math.round(cell.getBoundingClientRect().width));
+          }
+        });
+        applyGuestColWidths(live);
         var startX = ev.clientX;
+        var neighbor = idx < 10 ? idx + 1 : idx - 1;
         var startW = live[idx];
+        var startN = live[neighbor];
+        var pair = startW + startN;
         function onMove(e2) {
-          var next = Math.max(36, startW + (e2.clientX - startX));
+          var next = Math.max(36, Math.min(pair - 36, startW + (e2.clientX - startX)));
           live[idx] = next;
+          live[neighbor] = pair - next;
           guestColWidthsLive = live;
           applyGuestColWidths(live);
         }

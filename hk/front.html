@@ -9977,11 +9977,14 @@
     table.vip-table,
     table.complaint-table {
       table-layout: fixed;
+      width: 100%;
+      max-width: 100%;
     }
 
     table.hk-table-user-sized {
-      min-width: 0 !important;
-      max-width: none !important;
+      width: 100% !important;
+      min-width: 100% !important;
+      max-width: 100% !important;
     }
 
     table.hk-table-resizable th,
@@ -10349,10 +10352,11 @@
     }
 
     .complaint-table {
-      width: max-content;
+      width: 100%;
       min-width: 100%;
+      max-width: 100%;
       border-collapse: collapse;
-      table-layout: auto;
+      table-layout: fixed;
       font-size: 0.78rem;
     }
 
@@ -14337,7 +14341,7 @@
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
-  <script src="hk-vip-checkin.js?v=bydate-18"></script>
+  <script src="hk-vip-checkin.js?v=table-fit-1"></script>
   <script src="hk-staff-broadcast.js?v=alert-poll-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
@@ -17055,21 +17059,27 @@
 
       function applyHkTableLockedColWidths(table, cells, widths) {
         if (!table || !cells || !widths) return;
-        var total = 0;
+        var fitted = [];
+        var sum = 0;
         Array.prototype.forEach.call(cells, function (th, idx) {
           var w = Math.max(36, Number(widths[idx]) || Math.round(th.getBoundingClientRect().width));
-          th.style.width = w + "px";
-          th.style.minWidth = w + "px";
-          th.style.maxWidth = w + "px";
-          var col = table.querySelector("colgroup > col:nth-child(" + (idx + 1) + ")");
-          if (col) col.style.width = w + "px";
-          total += w;
+          fitted[idx] = w;
+          sum += w;
         });
-        table.style.width = total + "px";
-        table.style.minWidth = total + "px";
-        table.style.maxWidth = "none";
+        if (sum <= 0) return;
+        Array.prototype.forEach.call(cells, function (th, idx) {
+          var pct = (fitted[idx] / sum) * 100;
+          th.style.width = pct + "%";
+          th.style.minWidth = "";
+          th.style.maxWidth = "";
+          var col = table.querySelector("colgroup > col:nth-child(" + (idx + 1) + ")");
+          if (col) col.style.width = pct + "%";
+        });
+        table.style.width = "100%";
+        table.style.minWidth = "100%";
+        table.style.maxWidth = "100%";
         table.classList.add("hk-table-user-sized");
-        table.__hkColWidths = widths.slice();
+        table.__hkColWidths = fitted.slice();
       }
 
       function bindHkTableColResize(root) {
@@ -17107,16 +17117,18 @@
             handle.addEventListener("mousedown", function (ev) {
               ev.preventDefault();
               ev.stopPropagation();
-              var live = table.__hkColWidths;
-              if (!table.classList.contains("hk-table-user-sized") || !live || live.length !== cells.length) {
-                live = snapshotHkTableColWidths(cells);
-                applyHkTableLockedColWidths(table, cells, live);
-              }
+              var live = snapshotHkTableColWidths(cells);
+              applyHkTableLockedColWidths(table, cells, live);
               var startX = ev.clientX;
+              var neighbor = idx < cells.length - 1 ? idx + 1 : idx - 1;
               var startW = live[idx];
+              var startN = neighbor >= 0 ? live[neighbor] : 0;
+              var pair = startW + startN;
               function onMove(e2) {
-                var next = Math.max(36, startW + (e2.clientX - startX));
+                if (neighbor < 0) return;
+                var next = Math.max(36, Math.min(pair - 36, startW + (e2.clientX - startX)));
                 live[idx] = next;
+                live[neighbor] = pair - next;
                 applyHkTableLockedColWidths(table, cells, live);
               }
               function onUp() {
