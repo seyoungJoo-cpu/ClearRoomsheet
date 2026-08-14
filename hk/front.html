@@ -2601,17 +2601,18 @@
     }
 
     .minibar-xml-upload {
-      margin: 0 0 12px;
-      padding: 12px;
+      margin: 0 0 6px;
+      padding: 3px 5px;
+      max-width: 360px;
       border: 1px solid #cbb27088;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #fffbeb, #f8fafc);
+      border-radius: 6px;
+      background: #fffbeb;
       transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
 
     .minibar-xml-upload.is-dragover {
       border-color: #0f766e;
-      background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+      background: #ecfdf5;
       box-shadow: inset 0 0 0 1px #0f766e55;
     }
 
@@ -2621,18 +2622,14 @@
 
     .minibar-xml-upload__row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-end;
-      justify-content: space-between;
+      flex-wrap: nowrap;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-start;
     }
 
     .minibar-xml-upload__copy {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 220px;
-      flex: 1 1 240px;
+      display: none;
     }
 
     .minibar-xml-upload__copy strong {
@@ -2648,20 +2645,22 @@
 
     .minibar-xml-upload__drop {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
       justify-content: center;
-      min-width: min(100%, 280px);
-      padding: 10px 12px;
-      border: 1.5px dashed #cbb270aa;
-      border-radius: 10px;
+      flex: 0 0 auto;
+      width: 48px;
+      min-width: 48px;
+      height: 26px;
+      padding: 0 4px;
+      border: 1px dashed #cbb270aa;
+      border-radius: 4px;
       background: #fffdf7;
       color: #92400e;
-      font-size: 0.78rem;
-      font-weight: 650;
+      font-size: 0.62rem;
+      font-weight: 700;
       text-align: center;
-      line-height: 1.35;
+      line-height: 1;
+      white-space: nowrap;
     }
 
     .minibar-xml-upload.is-dragover .minibar-xml-upload__drop {
@@ -2672,19 +2671,26 @@
 
     .minibar-xml-upload__actions {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      flex-wrap: nowrap;
+      gap: 4px;
       align-items: center;
+      min-width: 0;
     }
 
     .minibar-xml-upload__actions input[type="file"] {
-      max-width: min(100%, 260px);
-      font-size: 0.78rem;
+      max-width: 140px;
+      font-size: 0.62rem;
+    }
+
+    .minibar-xml-upload .btn-order {
+      height: 26px;
+      padding: 0 8px;
+      font-size: 0.72rem;
     }
 
     .minibar-xml-upload__status {
-      margin: 8px 0 0;
-      font-size: 0.8rem;
+      margin: 2px 0 0;
+      font-size: 0.68rem;
       color: #0f766e;
       font-weight: 700;
     }
@@ -2692,14 +2698,15 @@
     .room-list-main .minibar-group-head {
       grid-column: 1 / -1;
       list-style: none;
-      margin: 6px 0 2px;
-      padding: 8px 10px;
+      margin: 12px 0 6px;
+      padding: 12px 14px;
       border-radius: 8px;
       background: #0f766e14;
       border: 1px solid #0f766e44;
       color: #115e59;
-      font-size: 0.86rem;
+      font-size: 1.12rem;
       font-weight: 800;
+      line-height: 1.35;
     }
 
     .room-list-main {
@@ -8582,10 +8589,30 @@
       border: 1px solid var(--border);
     }
 
-    .request-desk-chat__msg-meta {
+    .request-desk-chat__msg-meta,
+    .order-desk-chat__msg-meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
       font-size: var(--desk-chat-meta-size, 0.7rem);
       color: var(--muted, #888);
       margin-bottom: 2px;
+    }
+
+    .desk-chat-msg-by {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .desk-chat-msg-time {
+      margin-left: auto;
+      flex: 0 0 auto;
+      text-align: right;
+      white-space: nowrap;
     }
 
     .request-desk-chat__msg-text {
@@ -8645,18 +8672,6 @@
     .request-desk-chat__msg-text.is-bold,
     .order-desk-chat__msg-text.is-bold {
       font-weight: 800;
-    }
-    .request-desk-chat__msg-text[data-write-font="1"],
-    .order-desk-chat__msg-text[data-write-font="1"] {
-      font-size: 0.8rem;
-    }
-    .request-desk-chat__msg-text[data-write-font="2"],
-    .order-desk-chat__msg-text[data-write-font="2"] {
-      font-size: 0.95rem;
-    }
-    .request-desk-chat__msg-text[data-write-font="3"],
-    .order-desk-chat__msg-text[data-write-font="3"] {
-      font-size: 1.15rem;
     }
     .request-desk-chat__form,
     .order-desk-chat__form {
@@ -8745,12 +8760,13 @@
     }
 
     .order-panel__main .panel-head-row {
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
-    /* 오더·시설: 입력 + 미니채팅 상단 고정, 좌우 반반 */
+    /* 오더·시설·MB CHECK: 입력 + 미니채팅 상단 고정, 좌우 반반 */
     .main.main--order #orderPanel > .order-panel__body,
-    .main.main--facility #facilityPanel > .order-panel__body {
+    .main.main--facility #facilityPanel > .order-panel__body,
+    .main.main--mb-check #mbCheckPanel > .order-panel__body {
       display: flex;
       flex-wrap: nowrap;
       align-items: stretch;
@@ -8772,7 +8788,8 @@
     }
 
     .main.main--order #orderPanel .order-panel__main,
-    .main.main--facility #facilityPanel .order-panel__main {
+    .main.main--facility #facilityPanel .order-panel__main,
+    .main.main--mb-check #mbCheckPanel .order-panel__main {
       flex: 1 1 0;
       min-width: 0;
       overflow: auto;
@@ -8785,7 +8802,8 @@
 
     .request-main-stack .request-panel__body > .request-desk-chat,
     .main.main--order #orderPanel .order-panel__body > .order-desk-chat,
-    .main.main--facility #facilityPanel .order-panel__body > .order-desk-chat {
+    .main.main--facility #facilityPanel .order-panel__body > .order-desk-chat,
+    .main.main--mb-check #mbCheckPanel .order-panel__body > .order-desk-chat {
       flex: 1 1 0;
       width: auto !important;
       max-width: none !important;
@@ -8798,7 +8816,8 @@
 
     .request-main-stack .request-panel__main h2,
     .main.main--order #orderPanel .order-panel__main h2,
-    .main.main--facility #facilityPanel .order-panel__main h2 {
+    .main.main--facility #facilityPanel .order-panel__main h2,
+    .main.main--mb-check #mbCheckPanel .order-panel__main h2 {
       font-size: 1rem;
       margin: 0;
     }
@@ -9984,30 +10003,30 @@
 
     .vip-conn-block {
       display: grid;
-      grid-template-columns: 7rem 1fr;
-      gap: 8px;
+      grid-template-columns: 4.5rem 1fr;
+      gap: 4px;
       align-items: start;
       text-align: left;
     }
 
     .vip-conn-label {
       font-weight: 800;
-      font-size: 16px;
-      padding-top: 8px;
+      font-size: 11px;
+      padding-top: 2px;
     }
 
     .vip-conn-wrap {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 2px;
       text-align: left;
-      padding-left: 4px;
+      padding-left: 2px;
     }
 
     .vip-table--connecting td {
       vertical-align: middle;
       padding: 0;
-      height: 40px;
+      height: 20px;
     }
 
     .vip-table--connecting .vip-conn-rooms,
@@ -10015,8 +10034,8 @@
     .vip-table--connecting .vip-conn-status {
       color: #dc2626;
       font-weight: 800;
-      font-size: 16px;
-      line-height: 40px;
+      font-size: 11px;
+      line-height: 20px;
       box-sizing: border-box;
     }
 
@@ -10029,27 +10048,27 @@
       display: block;
       width: 100%;
       text-align: left;
-      min-height: 40px !important;
-      height: 40px !important;
-      max-height: 40px !important;
-      padding: 0 8px 0 12px !important;
+      min-height: 20px !important;
+      height: 20px !important;
+      max-height: 20px !important;
+      padding: 0 6px 0 8px !important;
       margin: 0;
       resize: none;
       overflow: hidden;
       white-space: nowrap;
       field-sizing: fixed;
-      font-size: 16px;
+      font-size: 11px;
       font-weight: 800;
-      line-height: 40px;
+      line-height: 20px;
     }
 
     .vip-conn-mid {
       white-space: nowrap;
       background: #fff;
       text-align: left;
-      padding: 0 8px 0 12px !important;
-      height: 40px;
-      line-height: 40px;
+      padding: 0 6px 0 8px !important;
+      height: 20px;
+      line-height: 20px;
       vertical-align: middle;
     }
 
@@ -10060,29 +10079,29 @@
       justify-content: flex-start;
       gap: 0;
       text-align: left;
-      min-height: 40px;
-      height: 40px;
+      min-height: 20px;
+      height: 20px;
       padding: 0 !important;
       box-sizing: border-box;
     }
 
     .vip-conn-status {
       width: auto;
-      min-width: 4.25rem;
+      min-width: 3.25rem;
       flex: 1 1 auto;
-      min-height: 40px;
-      height: 40px;
+      min-height: 20px;
+      height: 20px;
       border: none;
       background: transparent;
       cursor: pointer;
       font: inherit;
-      font-size: 16px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.02em;
       text-align: left;
-      padding: 0 8px 0 12px;
+      padding: 0 6px 0 8px;
       margin: 0;
-      line-height: 40px;
+      line-height: 20px;
       box-sizing: border-box;
     }
 
@@ -10096,20 +10115,20 @@
 
     .vip-conn-open-note {
       display: none;
-      width: 4.5rem;
-      min-width: 4.5rem;
-      max-width: 5.5rem;
+      width: 3.5rem;
+      min-width: 3.5rem;
+      max-width: 4.5rem;
       flex: 0 0 auto;
-      min-height: 40px !important;
-      height: 40px !important;
+      min-height: 20px !important;
+      height: 20px !important;
       border: none;
       background: transparent;
       font: inherit;
-      font-size: 16px;
+      font-size: 11px;
       font-weight: 800;
-      line-height: 40px;
+      line-height: 20px;
       text-align: left;
-      padding: 0 8px 0 4px !important;
+      padding: 0 6px 0 2px !important;
       margin: 0;
       color: #16a34a;
       box-sizing: border-box;
@@ -10118,8 +10137,14 @@
       white-space: nowrap;
     }
 
-    .vip-conn-open-note.is-visible {
-      display: inline-block;
+    .vip-table--connecting input[type="text"],
+    .vip-table--connecting textarea,
+    .vip-table--connecting button {
+      font-size: 11px !important;
+      min-height: 20px !important;
+      height: 20px !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
     }
 
     .vip-checkin-panel.is-readonly .vip-conn-open-note {
@@ -10572,12 +10597,6 @@
       border: 1px solid var(--border);
     }
 
-    .order-desk-chat__msg-meta {
-      font-size: var(--desk-chat-meta-size, 0.7rem);
-      color: var(--muted, #888);
-      margin-bottom: 2px;
-    }
-
     .order-desk-chat__msg-text {
       font-size: var(--desk-chat-msg-size, 0.8rem);
       white-space: pre-wrap;
@@ -10863,9 +10882,9 @@
     }
 
     .main .order-work-item.is-strip-cols > .order-feedback__item-by {
-      grid-column: 9;
+      grid-column: 4;
       grid-row: 1;
-      justify-self: end;
+      justify-self: start;
       align-self: center;
       position: static;
       right: auto;
@@ -10877,7 +10896,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      text-align: right;
+      text-align: left;
       font-size: 0.8125rem;
       font-weight: 700;
       color: var(--text);
@@ -10919,16 +10938,37 @@
       margin-top: 4px;
     }
 
-    .main .order-work-item.is-strip-cols > .hk-accepter-label {
+    .main .order-work-item.is-strip-cols > .hk-staff-names {
       grid-column: 9;
       grid-row: 1;
       justify-self: end;
-      align-self: center;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 1px;
       width: auto;
       max-width: 100%;
+      min-height: 2.5em;
       margin: 0;
       text-align: right;
+    }
+
+    .hk-staff-names .hk-accepter-label {
+      margin: 0;
+      padding: 0;
+      border: none;
       white-space: nowrap;
+      line-height: 1.25;
+    }
+
+    .main .order-work-item.is-strip-cols .hk-staff-names .hk-accepter-label--deploy {
+      margin-top: 0;
+    }
+
+    .main .order-work-item.is-strip-cols .hk-staff-names .hk-accepter-label--accept {
+      margin-top: auto;
     }
 
     .order-work-item__chat-hint {
@@ -11216,6 +11256,7 @@
     .main .order-work-item > .request-feedback__item-row,
     .main .order-work-item > .order-feedback__item-memo,
     .main .order-work-item > .hk-accepter-label,
+    .main .order-work-item > .hk-staff-names,
     .main .order-work-item > .order-work__facility-denied-label,
     .main .order-work-item > .order-work-item__chat-hint,
     .main .order-work-item > .order-work-item__x,
@@ -12489,14 +12530,10 @@
             </div>
             <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="미니바 XML 업로드">
               <div class="minibar-xml-upload__row">
-                <div class="minibar-xml-upload__copy">
-                  <strong>pkgforecast XML 업로드</strong>
-                  <span>ROOM · PRODUCT_ID1 기준으로 미니바 객실을 미리보기합니다. 저장을 눌러야 서버에 반영됩니다.</span>
+                <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
+                  XML
                 </div>
                 <div class="minibar-xml-upload__actions">
-                  <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
-                    XML을 여기로 드래그하거나 아래에서 선택
-                  </div>
                   <input
                     type="file"
                     id="minibarXmlFile"
@@ -12504,7 +12541,6 @@
                     aria-label="미니바 pkgforecast XML 파일"
                   />
                   <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
-                  <button type="button" class="btn-order" id="btnMinibarXmlSave" disabled>저장</button>
                 </div>
               </div>
               <p class="minibar-xml-upload__status" id="minibarXmlStatus" hidden></p>
@@ -14146,7 +14182,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-20"></script>
+  <script src="hk-storage.js?v=bydate-21"></script>
   <script src="hk-sync.js?v=force-sync-4"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -14158,7 +14194,7 @@
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
-  <script src="hk-vip-checkin.js?v=bydate-16"></script>
+  <script src="hk-vip-checkin.js?v=bydate-17"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -16522,7 +16558,7 @@
           var el = document.getElementById(id);
           if (!el) return;
           if (el.closest(".order-panel__body, .request-panel__body") &&
-              (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat")) {
+              (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat" || id === "mbCheckDeskChat")) {
             el.style.width = "";
             el.style.maxWidth = "";
             el.style.height = "";
@@ -16608,7 +16644,7 @@
         DESK_CHAT_IDS.forEach(function (id) {
           var el = document.getElementById(id);
           if (!el || el.__hkDeskSizeHandles) return;
-          if (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat") {
+          if (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat" || id === "mbCheckDeskChat") {
             return;
           }
           el.__hkDeskSizeHandles = true;
@@ -16725,6 +16761,7 @@
         var items = [
           { id: "orderSticky", el: document.querySelector("#orderPanel > .order-panel__body"), h: 156 },
           { id: "facilitySticky", el: document.querySelector("#facilityPanel > .order-panel__body"), h: 168 },
+          { id: "mbCheckSticky", el: document.querySelector("#mbCheckPanel > .order-panel__body"), h: 156 },
           { id: "requestSticky", el: document.querySelector("#requestMainStack .request-panel__body"), h: 168 },
         ];
         var saved = loadStickyDeskLayout();
@@ -16978,12 +17015,26 @@
         textEl.classList.toggle("is-bold", bold);
         if (bold) textEl.style.fontWeight = "800";
         else textEl.style.fontWeight = "";
-        if (fl) {
-          textEl.setAttribute("data-write-font", String(fl));
-          textEl.style.fontSize = fl === 1 ? "0.8rem" : fl === 3 ? "1.15rem" : "0.95rem";
-        } else {
-          textEl.removeAttribute("data-write-font");
+        textEl.style.fontSize = "";
+        if (fl) textEl.setAttribute("data-write-font", String(fl));
+        else textEl.removeAttribute("data-write-font");
+      }
+
+      function fillDeskChatMsgMeta(meta, by, at) {
+        if (!meta) return null;
+        meta.textContent = "";
+        var byEl = document.createElement("span");
+        byEl.className = "desk-chat-msg-by";
+        byEl.textContent = by || "—";
+        meta.appendChild(byEl);
+        var atLabel = at ? formatDeskChatAt(at) : "";
+        if (atLabel) {
+          var timeEl = document.createElement("span");
+          timeEl.className = "desk-chat-msg-time";
+          timeEl.textContent = atLabel;
+          meta.appendChild(timeEl);
         }
+        return byEl;
       }
 
       function attachDeskChatMsgReactionUi(row, msg, kind) {
@@ -17024,15 +17075,14 @@
           var meta = document.createElement("div");
           meta.className = "request-desk-chat__msg-meta";
           var by = m.by != null ? String(m.by).trim() : "";
-          var atLabel = m.at ? formatReqAt(m.at) : "";
-          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          fillDeskChatMsgMeta(meta, by, m.at);
           var text = document.createElement("div");
           text.className = "request-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta, "request-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "request-desk-chat__msg-text");
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
@@ -17130,15 +17180,14 @@
           var meta = document.createElement("div");
           meta.className = "order-desk-chat__msg-meta";
           var by = m.by != null ? String(m.by).trim() : "";
-          var atLabel = m.at ? formatReqAt(m.at) : "";
-          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          fillDeskChatMsgMeta(meta, by, m.at);
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
@@ -17236,15 +17285,14 @@
           var meta = document.createElement("div");
           meta.className = "order-desk-chat__msg-meta";
           var by = m.by != null ? String(m.by).trim() : "";
-          var atLabel = m.at ? formatReqAt(m.at) : "";
-          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          fillDeskChatMsgMeta(meta, by, m.at);
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
@@ -17342,15 +17390,14 @@
           var meta = document.createElement("div");
           meta.className = "order-desk-chat__msg-meta";
           var by = m.by != null ? String(m.by).trim() : "";
-          var atLabel = m.at ? formatReqAt(m.at) : "";
-          meta.textContent = (by || "—") + (atLabel ? " · " + atLabel : "");
+          fillDeskChatMsgMeta(meta, by, m.at);
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
@@ -19368,6 +19415,13 @@
         var d = new Date(iso);
         if (isNaN(d.getTime())) return "";
         return pad2(d.getMonth() + 1) + "." + pad2(d.getDate());
+      }
+
+      function formatDeskChatAt(iso) {
+        var date = formatChatMsgDate(iso);
+        var time = formatReqAt(iso);
+        if (date && time) return date + " " + time;
+        return date || time || "";
       }
 
       function chatDayKey(iso) {
@@ -25507,6 +25561,28 @@
         }
       }
 
+      function appendOrderStaffLabels(li, entry, opts) {
+        if (!li || !entry) return;
+        opts = opts || {};
+        var wrap = document.createElement("div");
+        wrap.className = "hk-staff-names";
+        var topName = opts.topName != null ? String(opts.topName).trim() : "";
+        var acceptedBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
+        if (topName) {
+          var top = document.createElement("div");
+          top.className = "hk-accepter-label hk-accepter-label--deploy";
+          top.textContent = (opts.topLabel || "투입 : ") + topName;
+          wrap.appendChild(top);
+        }
+        if (opts.showAccept !== false && acceptedBy) {
+          var acc = document.createElement("div");
+          acc.className = "hk-accepter-label hk-accepter-label--accept";
+          acc.textContent = "접수자 : " + acceptedBy;
+          wrap.appendChild(acc);
+        }
+        if (wrap.childNodes.length) li.appendChild(wrap);
+      }
+
 
       function canUseOrderChat(entry) {
         if (!entry) return false;
@@ -26992,13 +27068,7 @@
           li.className = "order-work-item";
           li.setAttribute("data-order-id", entry.id || "");
           appendOrderItemCommon(li, entry);
-          var acceptedBy = entry.acceptedBy != null ? String(entry.acceptedBy).trim() : "";
-          if (acceptedBy) {
-            var accMeta = document.createElement("div");
-            accMeta.className = "hk-accepter-label";
-            accMeta.textContent = "접수자 : " + acceptedBy;
-            li.appendChild(accMeta);
-          }
+          appendOrderStaffLabels(li, entry);
           if (isFacilityOrder(entry) && !maintenanceMode) {
             appendFacilityDueTimeDisplay(li, entry);
           }
@@ -27101,14 +27171,10 @@
               extraLabel: "문고리 ",
               extraAt: entry.doorhandleAt || entry.deployedAt || entry.at,
             });
-            var doorBy =
-              entry.doorhandleBy != null ? String(entry.doorhandleBy).trim() : "";
-            if (doorBy) {
-              var doorMeta = document.createElement("div");
-              doorMeta.className = "hk-accepter-label";
-              doorMeta.textContent = "문고리 : " + doorBy;
-              li.appendChild(doorMeta);
-            }
+            appendOrderStaffLabels(li, entry, {
+              topName: entry.doorhandleBy,
+              topLabel: "문고리 : ",
+            });
             doorhandleList.appendChild(li);
           });
         }
@@ -27144,13 +27210,10 @@
             li.title = "클릭하면 대화 보기";
           }
           appendOrderItemCommon(li, entry);
-          var deployedBy = entry.deployedBy != null ? String(entry.deployedBy).trim() : "";
-          if (deployedBy) {
-            var depMeta = document.createElement("div");
-            depMeta.className = "hk-accepter-label";
-            depMeta.textContent = (isFacilityPanel ? "처리완료 : " : "투입 : ") + deployedBy;
-            li.appendChild(depMeta);
-          }
+          appendOrderStaffLabels(li, entry, {
+            topName: entry.deployedBy,
+            topLabel: isFacilityPanel ? "처리완료 : " : "투입 : ",
+          });
           if (isFacilityPanel && isFacilityOrder(entry)) {
             var dueShown = getFacilityOrderDueTime(entry);
             if (dueShown) {
@@ -29841,9 +29904,9 @@
           }
         }
         if (dropHint) {
-          dropHint.textContent = "선택됨 · " + name + " · 업로드를 누르세요";
+          dropHint.textContent = name;
         }
-        setMinibarUploadStatus("파일 선택됨 · " + name + " · 업로드를 누르세요", false);
+        setMinibarUploadStatus("선택됨 · " + name + " · 업로드", false);
         return true;
       }
 
@@ -29867,27 +29930,17 @@
               return;
             }
             pendingMinibarRooms = buildMinibarRoomsFromRows(rows);
-            syncMinibarSaveUi();
             closeZoneRoomManagePanel();
             currentZone = "MINIBAR";
             setZonePanelOpen(true);
             expandZoneBlock();
             renderSidebarZoneTabs();
             updateZoneAddRoomBtnUi();
-            renderRoomsForZone("MINIBAR", { force: true });
-            setMinibarUploadStatus(
-              "미리보기 · 객실 " +
-                pendingMinibarRooms.length +
-                "개 · 저장을 누르면 서버에 반영됩니다",
-              false
-            );
-            showHkActionToast(
-              "미니바 미리보기 · " + pendingMinibarRooms.length + "개 · 저장 필요"
-            );
+            handleMinibarXmlSave();
             input.value = "";
             var dropHint = document.getElementById("minibarXmlDrop");
             if (dropHint) {
-              dropHint.textContent = "XML을 여기로 드래그하거나 아래에서 선택";
+              dropHint.textContent = "XML";
             }
           } catch (err) {
             setMinibarUploadStatus(
@@ -29931,13 +29984,6 @@
           btn.__hkMinibarBound = true;
           btn.addEventListener("click", function () {
             handleMinibarXmlUpload();
-          });
-        }
-        var saveBtn = document.getElementById("btnMinibarXmlSave");
-        if (saveBtn && !saveBtn.__hkMinibarSaveBound) {
-          saveBtn.__hkMinibarSaveBound = true;
-          saveBtn.addEventListener("click", function () {
-            handleMinibarXmlSave();
           });
         }
         var panel = document.getElementById("minibarXmlUpload");
