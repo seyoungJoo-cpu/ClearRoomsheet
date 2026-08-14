@@ -32265,6 +32265,21 @@
           refreshAllDeskChatRoomHighlights();
         });
         orderRoomEl.addEventListener("change", updateOrderFoDisplay);
+        orderRoomEl.addEventListener("keydown", function (e) {
+          if (e.key !== "Tab" || e.shiftKey) return;
+          var memoEl = document.getElementById("orderMemo");
+          if (!memoEl) return;
+          e.preventDefault();
+          memoEl.focus();
+        });
+        var orderMemoEl = document.getElementById("orderMemo");
+        if (orderMemoEl) {
+          orderMemoEl.addEventListener("keydown", function (e) {
+            if (e.key !== "Tab" || !e.shiftKey) return;
+            e.preventDefault();
+            orderRoomEl.focus();
+          });
+        }
         updateOrderFoDisplay();
       })();
 
