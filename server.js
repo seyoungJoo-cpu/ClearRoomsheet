@@ -895,6 +895,123 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
   };
 }
 
+function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
+  function asPack(raw) {
+    if (!raw || typeof raw !== "object") {
+      return { updatedAt: "", alerts: [], polls: [], deletedIds: {} };
+    }
+    var deletedIds = {};
+    if (raw.deletedIds && typeof raw.deletedIds === "object" && !Array.isArray(raw.deletedIds)) {
+      Object.keys(raw.deletedIds).forEach(function (k) {
+        var id = String(k || "").trim();
+        if (id) deletedIds[id] = raw.deletedIds[k] != null ? String(raw.deletedIds[k]) : "1";
+      });
+    }
+    return {
+      updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
+      alerts: Array.isArray(raw.alerts) ? raw.alerts.filter(function (a) { return a && a.id; }) : [],
+      polls: Array.isArray(raw.polls) ? raw.polls.filter(function (p) { return p && p.id; }) : [],
+      deletedIds: deletedIds,
+    };
+  }
+  function mergeDismissed(a, b) {
+    var out = {};
+    [a, b].forEach(function (m) {
+      if (!m || typeof m !== "object" || Array.isArray(m)) return;
+      Object.keys(m).forEach(function (k) {
+        var key = String(k || "").trim();
+        if (key) out[key] = m[k] != null ? String(m[k]) : "1";
+      });
+    });
+    return out;
+  }
+  function mergeNames(a, b) {
+    var seen = {};
+    var out = [];
+    (Array.isArray(a) ? a : []).concat(Array.isArray(b) ? b : []).forEach(function (n) {
+      var name = String(n || "").trim();
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      out.push(name);
+    });
+    return out;
+  }
+  var prev = asPack(prevRaw);
+  if (!hasIncoming) return prev;
+  var inc = asPack(incomingRaw);
+  var deleted = Object.assign({}, prev.deletedIds, inc.deletedIds);
+  var alertsById = {};
+  function takeAlert(row) {
+    if (!row || !row.id || deleted[String(row.id)]) return;
+    var id = String(row.id);
+    var cur = alertsById[id];
+    if (!cur) {
+      alertsById[id] = row;
+      return;
+    }
+    var newer = String(row.createdAt || "") > String(cur.createdAt || "") ? row : cur;
+    var older = newer === row ? cur : row;
+    var merged = Object.assign({}, older, newer);
+    merged.dismissedBy = mergeDismissed(cur.dismissedBy, row.dismissedBy);
+    alertsById[id] = merged;
+  }
+  prev.alerts.forEach(takeAlert);
+  inc.alerts.forEach(takeAlert);
+  var pollsById = {};
+  function takePoll(row) {
+    if (!row || !row.id || deleted[String(row.id)]) return;
+    var id = String(row.id);
+    var cur = pollsById[id];
+    if (!cur) {
+      pollsById[id] = row;
+      return;
+    }
+    var newer = String(row.createdAt || "") > String(cur.createdAt || "") ? row : cur;
+    var older = newer === row ? cur : row;
+    var merged = Object.assign({}, older, newer);
+    merged.dismissedBy = mergeDismissed(cur.dismissedBy, row.dismissedBy);
+    var itemsById = {};
+    (cur.items || []).concat(row.items || []).forEach(function (it) {
+      if (!it || !it.id) return;
+      var old = itemsById[it.id];
+      if (!old || String(it.addedAt || "") >= String(old.addedAt || "")) {
+        itemsById[it.id] = it;
+      }
+    });
+    merged.items = Object.keys(itemsById).map(function (k) {
+      return itemsById[k];
+    });
+    var votes = {};
+    [cur.votes || {}, row.votes || {}].forEach(function (m) {
+      if (!m || typeof m !== "object") return;
+      Object.keys(m).forEach(function (itemId) {
+        votes[itemId] = mergeNames(votes[itemId], m[itemId]);
+      });
+    });
+    merged.votes = votes;
+    if (row.endsAt && (!merged.endsAt || String(row.endsAt) < String(merged.endsAt))) {
+      merged.endsAt = row.endsAt;
+    }
+    pollsById[id] = merged;
+  }
+  prev.polls.forEach(takePoll);
+  inc.polls.forEach(takePoll);
+  var updatedAt =
+    inc.updatedAt && (!prev.updatedAt || String(inc.updatedAt) >= String(prev.updatedAt))
+      ? inc.updatedAt
+      : prev.updatedAt || inc.updatedAt;
+  return {
+    updatedAt: updatedAt,
+    deletedIds: deleted,
+    alerts: Object.keys(alertsById).map(function (k) {
+      return alertsById[k];
+    }),
+    polls: Object.keys(pollsById).map(function (k) {
+      return pollsById[k];
+    }),
+  };
+}
+
 function mergeGameRanksForServer(prev, incoming) {
   var IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump", "tetris", "pong", "flappy", "mines", "reaction", "dodge"];
   var MAX = 30;
@@ -1081,6 +1198,11 @@ function mergeHkStorage(prev, incoming) {
     } else if (prev.gameRanks) {
       staleOut.gameRanks = prev.gameRanks;
     }
+    staleOut.staffBroadcasts = mergeStaffBroadcastsForServer(
+      prev.staffBroadcasts,
+      incoming.staffBroadcasts,
+      Object.prototype.hasOwnProperty.call(incoming, "staffBroadcasts")
+    );
     return staleOut;
   }
 
@@ -1356,6 +1478,11 @@ function mergeHkStorage(prev, incoming) {
       normalizeByDatePackLooseForServer
     ),
     gameRanks: mergeGameRanksForServer(prev.gameRanks, incoming.gameRanks),
+    staffBroadcasts: mergeStaffBroadcastsForServer(
+      prev.staffBroadcasts,
+      incoming.staffBroadcasts,
+      Object.prototype.hasOwnProperty.call(incoming, "staffBroadcasts")
+    ),
   };
 
   var mergedDeleted = hkMergeDeletedRoomsMaps(

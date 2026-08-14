@@ -1327,32 +1327,53 @@
         }
         changed.push("hkStorage");
         clearDirty("hkStorage");
-      } else if (
-        dirty.hkStorage &&
-        payload.hkStorage &&
-        payload.hkStorage.frontEmbedStates &&
-        typeof global.HKStorage.mergeFrontEmbedStates === "function"
-      ) {
-        // 다른 필드 dirty여도 DD/인벤/취향 초기화(__cleared)는 원격이 더 최신이면 반영
+      } else if (dirty.hkStorage && payload.hkStorage) {
+        // 다른 필드 dirty여도 알럿·투표·임베드 초기화는 원격과 합친다
         try {
-          var localForEmbed = global.HKStorage.load();
-          var prevEmbed = JSON.stringify(
-            (localForEmbed && localForEmbed.frontEmbedStates) || {}
-          );
-          var mergedEmbed = global.HKStorage.mergeFrontEmbedStates(
-            localForEmbed.frontEmbedStates,
-            payload.hkStorage.frontEmbedStates
-          );
-          if (JSON.stringify(mergedEmbed) !== prevEmbed) {
-            localForEmbed.frontEmbedStates = mergedEmbed;
+          var localPartial = global.HKStorage.load();
+          var wrotePartial = false;
+          if (
+            payload.hkStorage.frontEmbedStates &&
+            typeof global.HKStorage.mergeFrontEmbedStates === "function"
+          ) {
+            var prevEmbed = JSON.stringify(
+              (localPartial && localPartial.frontEmbedStates) || {}
+            );
+            var mergedEmbed = global.HKStorage.mergeFrontEmbedStates(
+              localPartial.frontEmbedStates,
+              payload.hkStorage.frontEmbedStates
+            );
+            if (JSON.stringify(mergedEmbed) !== prevEmbed) {
+              localPartial.frontEmbedStates = mergedEmbed;
+              wrotePartial = true;
+              changed.push("frontEmbedStates");
+            }
+          }
+          if (
+            Object.prototype.hasOwnProperty.call(payload.hkStorage, "staffBroadcasts") &&
+            typeof global.HKStorage.mergeStaffBroadcasts === "function"
+          ) {
+            var prevBroadcast = JSON.stringify(
+              (localPartial && localPartial.staffBroadcasts) || {}
+            );
+            var mergedBroadcast = global.HKStorage.mergeStaffBroadcasts(
+              localPartial.staffBroadcasts,
+              payload.hkStorage.staffBroadcasts
+            );
+            if (JSON.stringify(mergedBroadcast) !== prevBroadcast) {
+              localPartial.staffBroadcasts = mergedBroadcast;
+              wrotePartial = true;
+              changed.push("staffBroadcasts");
+            }
+          }
+          if (wrotePartial) {
             global.localStorage.setItem(
               global.HKStorage.key,
-              JSON.stringify(localForEmbed)
+              JSON.stringify(localPartial)
             );
             changed.push("hkStorage");
-            changed.push("frontEmbedStates");
           }
-        } catch (eEmbedMerge) {}
+        } catch (ePartialMerge) {}
       }
     }
     if (Array.isArray(payload.hkRequestLog)) {
