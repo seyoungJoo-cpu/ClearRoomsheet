@@ -10,6 +10,7 @@
   var pollDraftItems = [];
   var tickTimer = null;
   var pollUi = { id: "", selected: {}, showCounts: false };
+  var lastSeenOperatorName = "";
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -138,6 +139,12 @@
     } catch (e) {}
   }
 
+  function clearLocalDismiss() {
+    try {
+      sessionStorage.removeItem(DISMISS_LS);
+    } catch (e) {}
+  }
+
   function isFront() {
     return !!(frontCtx && typeof frontCtx.isFrontMode === "function" && frontCtx.isFrontMode());
   }
@@ -173,13 +180,28 @@
     return true;
   }
 
+  function hasOperatorVoted(poll, name) {
+    if (!poll || !name || !poll.votes) return false;
+    var keys = Object.keys(poll.votes);
+    var i;
+    for (i = 0; i < keys.length; i++) {
+      if (hasVoted(poll, keys[i], name)) return true;
+    }
+    return false;
+  }
+
   function canSee(row) {
     if (!row || !isActiveToday(row)) return false;
     if (row.kind !== "poll" && !alertReady(row)) return false;
-    if (localDismissed()[row.id]) return false;
-    var name = operatorName();
-    if (name && row.dismissedBy && row.dismissedBy[name]) return false;
     if (row.kind === "poll" && !pollInWindow(row)) return false;
+    var name = operatorName();
+    if (row.kind === "poll") {
+      if (name && hasOperatorVoted(row, name)) return false;
+      if (localDismissed()[row.id]) return false;
+    } else {
+      if (name && row.dismissedBy && row.dismissedBy[name]) return false;
+      else if (!name && localDismissed()[row.id]) return false;
+    }
     if (row.audience === "all") return true;
     return wasOpenAt(fireAtOf(row));
   }
@@ -213,12 +235,11 @@
   function persistDismiss(row) {
     if (!row) return;
     markLocalDismiss(row.id);
-    if (row.audience !== "all") return;
+    if (row.kind === "poll") return;
     var name = operatorName();
     if (!name) return;
     var pack = getPack();
-    var list = row.kind === "poll" ? pack.polls : pack.alerts;
-    (list || []).forEach(function (it) {
+    (pack.alerts || []).forEach(function (it) {
       if (it && it.id === row.id) {
         if (!it.dismissedBy) it.dismissedBy = {};
         it.dismissedBy[name] = nowIso();
@@ -482,11 +503,37 @@
     wrap.setAttribute("aria-hidden", "false");
   }
 
+  function noteOperatorChange() {
+    var name = operatorName();
+    if (lastSeenOperatorName && name && lastSeenOperatorName !== name) {
+      clearLocalDismiss();
+      pollUi = { id: "", selected: {}, showCounts: false };
+      showingId = "";
+    }
+    if (name) lastSeenOperatorName = name;
+  }
+
+  function onFrontEnabled() {
+    clearLocalDismiss();
+    pollUi = { id: "", selected: {}, showCounts: false };
+    showingId = "";
+    refreshFront();
+  }
+
+  function onOperatorChange() {
+    clearLocalDismiss();
+    pollUi = { id: "", selected: {}, showCounts: false };
+    showingId = "";
+    lastSeenOperatorName = operatorName();
+    refreshFront();
+  }
+
   function refreshFront() {
     if (!isFront()) {
       hideOverlay();
       return;
     }
+    noteOperatorChange();
     ensureSessionStarted();
     var next = pickNext();
     if (!next) {
@@ -791,6 +838,8 @@
       refreshFront();
       if (adminCtx) renderAdminList();
     },
+    onFrontEnabled: onFrontEnabled,
+    onOperatorChange: onOperatorChange,
     renderAdminList: renderAdminList,
   };
 })(typeof window !== "undefined" ? window : this);

@@ -14380,7 +14380,7 @@
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
   <script src="hk-vip-checkin.js?v=table-fit-1"></script>
-  <script src="hk-staff-broadcast.js?v=poll-vote-btn-1"></script>
+  <script src="hk-staff-broadcast.js?v=resume-all-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -14870,6 +14870,9 @@
           if (n) sessionStorage.setItem(OPERATOR_NAME_KEY, n);
         } catch (e) {}
         updateOperatorNameDisplay();
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.onOperatorChange) {
+          HKStaffBroadcast.onOperatorChange();
+        }
         if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
           HKPush.refreshOrderPushSubscription();
         }
@@ -30566,8 +30569,12 @@
           HKInvenNotify.render(true);
           HKInvenNotify.onFrontModeChanged();
         }
-        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
-          HKStaffBroadcast.refresh();
+        if (typeof HKStaffBroadcast !== "undefined") {
+          if (frontMode && HKStaffBroadcast.onFrontEnabled) {
+            HKStaffBroadcast.onFrontEnabled();
+          } else if (HKStaffBroadcast.refresh) {
+            HKStaffBroadcast.refresh();
+          }
         }
         if (currentZone === "VIP") {
           applyZoneVipMemo();
