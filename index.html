@@ -1348,6 +1348,7 @@
       <h1>정비 오더 관리</h1>
       <nav class="app-nav" aria-label="다른 프로그램">
         <a class="app-nav-btn" href="/hk/front.html?entry=1" id="linkToHkFront" title="정비 오더 (F9)">정비 오더</a>
+        <button type="button" class="app-nav-btn" id="btnRoomingFileFind" title="파일 찾기 (F4)">파일 찾기</button>
       </nav>
     </header>
 
@@ -5387,8 +5388,21 @@
             saveRoomingStateToLocal();
           });
         }
+        var btnRoomingFileFind = document.getElementById("btnRoomingFileFind");
+        if (btnRoomingFileFind) {
+          btnRoomingFileFind.addEventListener("click", function () {
+            var inputUpload = document.getElementById("inputUpload");
+            if (inputUpload) inputUpload.click();
+          });
+        }
         document.addEventListener("keydown", function (e) {
           if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+          if (e.key === "F4" || e.code === "F4") {
+            e.preventDefault();
+            var fileFind = document.getElementById("btnRoomingFileFind");
+            if (fileFind) fileFind.click();
+            return;
+          }
           if (e.key !== "F9" && e.code !== "F9") return;
           e.preventDefault();
           var link = document.getElementById("linkToHkFront");
