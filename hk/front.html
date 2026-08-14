@@ -2969,9 +2969,9 @@
       align-items: center;
       justify-content: center;
       min-width: 3.2em;
-      height: 38px;
-      padding: 0 12px;
-      font-size: 1rem;
+      height: 28px;
+      padding: 0 10px;
+      font-size: 0.875rem;
       font-variant-numeric: tabular-nums;
     }
 
@@ -2984,8 +2984,8 @@
     }
 
     .btn-request {
-      height: 36px;
-      padding: 0 18px;
+      height: 28px;
+      padding: 0 12px;
       background: var(--accent);
       color: #fff;
       border: none;
@@ -3232,7 +3232,7 @@
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
-      gap: 10px 12px;
+      gap: 6px 8px;
     }
 
     .order-row .field {
@@ -3249,7 +3249,7 @@
     }
 
     .order-row input[type="text"] {
-      height: 32px;
+      height: 28px;
       padding: 0 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -3282,11 +3282,11 @@
       align-items: center;
       justify-content: center;
       min-width: 2.5rem;
-      height: 36px;
-      padding: 0 10px;
+      height: 28px;
+      padding: 0 8px;
       border-radius: 8px;
       font-weight: 800;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       background: var(--surface-inset);
       border: 1px solid var(--border);
       color: var(--text-muted);
@@ -3305,8 +3305,8 @@
     }
 
     .btn-order {
-      height: 36px;
-      padding: 0 18px;
+      height: 28px;
+      padding: 0 12px;
       border: none;
       border-radius: 8px;
       background: var(--accent);
@@ -3729,29 +3729,45 @@
     .main.main--facility .order-row .field label,
     .main.main--facility-misc .order-row .field label,
     .main.main--facility-daily-found .order-row .field label {
-      font-size: 0.8125rem;
+      font-size: 0.6875rem;
     }
 
     .main.main--order .order-row input[type="text"],
     .main.main--facility .order-row input[type="text"],
     .main.main--facility-misc .order-row input[type="text"],
     .main.main--facility-daily-found .order-row input[type="text"] {
-      height: 36px;
-      font-size: 0.875rem;
+      height: 28px;
+      font-size: 0.8125rem;
     }
 
     .main.main--order .order-fo-display,
     .main.main--facility .order-fo-display {
-      height: 38px;
-      font-size: 0.9375rem;
+      height: 28px;
+      font-size: 0.8125rem;
     }
 
     .main.main--order .btn-order,
     .main.main--facility .btn-order,
     .main.main--facility-misc .btn-order,
     .main.main--facility-daily-found .btn-order {
-      height: 38px;
-      font-size: 0.9375rem;
+      height: 28px;
+      font-size: 0.8125rem;
+      padding: 0 12px;
+    }
+
+    .main.main--order .btn-urgent,
+    .main.main--facility .btn-urgent,
+    .main.main--request .btn-urgent {
+      height: 28px;
+      min-width: 44px;
+      padding: 0 10px;
+      font-size: 0.75rem;
+    }
+
+    .main.main--request .btn-request {
+      height: 28px;
+      padding: 0 12px;
+      font-size: 0.8125rem;
     }
 
     .main.main--order .order-work-section__title,
@@ -6994,8 +7010,8 @@
     }
 
     .hk-photo-btn {
-      height: 32px;
-      padding: 0 10px;
+      height: 28px;
+      padding: 0 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: #f1f5f9;
@@ -8029,8 +8045,8 @@
 
     .hk-strip-sort {
       display: grid;
-      /* 객실(1/2) · 동 · 시간 · 상태 · 메모 */
-      grid-template-columns: minmax(2.5rem, 0.6fr) 3.5rem minmax(5rem, 1fr) minmax(3.8rem, 0.75fr) minmax(6rem, 1.8fr);
+      /* 객실(1/2) · 동 · 시간(1/3) · 상태 · 메모 */
+      grid-template-columns: minmax(2.2rem, 0.3fr) 3.5rem minmax(2.4rem, 0.33fr) minmax(3.8rem, 0.75fr) minmax(8rem, 2.4fr);
       gap: 6px 12px;
       align-items: center;
       padding: 7px 14px;
@@ -8314,7 +8330,7 @@
     .request-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 6px 8px;
       align-items: flex-end;
       flex: 1 1 280px;
       min-width: 0;
@@ -8334,7 +8350,7 @@
     }
 
     .request-panel__main .panel-head-row {
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
     /* 정비관리: 입력 + 미니채팅 상단 고정, 좌우 반반 */
@@ -8349,11 +8365,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 4px 6px 12px;
+      padding: 3px 6px 8px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
       margin-bottom: 8px;
-      height: var(--hk-sticky-h, 220px);
-      min-height: 140px;
+      height: var(--hk-sticky-h, 168px);
+      min-height: 118px;
       max-height: min(62vh, 480px);
       overflow: hidden;
       box-sizing: border-box;
@@ -8745,11 +8761,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 4px 6px 12px;
+      padding: 3px 6px 8px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
       margin-bottom: 8px;
-      height: var(--hk-sticky-h, 200px);
-      min-height: 132px;
+      height: var(--hk-sticky-h, 156px);
+      min-height: 110px;
       max-height: min(62vh, 480px);
       overflow: hidden;
       box-sizing: border-box;
@@ -8788,19 +8804,14 @@
     }
 
     .hk-sticky-split-handle {
-      flex: 0 0 8px;
-      width: 8px;
+      flex: 0 0 6px;
+      width: 6px;
       cursor: ew-resize;
       border: none;
       padding: 0;
       align-self: stretch;
       z-index: 6;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0 4px,
-        #94a3b8 4px 6px,
-        transparent 6px 10px
-      );
+      background: transparent;
     }
 
     .hk-sticky-height-handle {
@@ -8808,17 +8819,12 @@
       left: 8px;
       right: 8px;
       bottom: 0;
-      height: 10px;
+      height: 8px;
       cursor: ns-resize;
       border: none;
       padding: 0;
       z-index: 6;
-      background: repeating-linear-gradient(
-        to right,
-        transparent 0 4px,
-        #94a3b8 4px 6px,
-        transparent 6px 10px
-      );
+      background: transparent;
     }
 
     .order-memo-quick {
@@ -8829,10 +8835,10 @@
     }
 
     .order-memo-quick button {
-      height: 22px;
-      padding: 0 6px;
+      height: 20px;
+      padding: 0 5px;
       font: inherit;
-      font-size: 0.6875rem;
+      font-size: 0.625rem;
       font-weight: 700;
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -9385,6 +9391,7 @@
       gap: 8px;
       min-height: 0;
       box-sizing: border-box;
+      zoom: 0.75;
     }
 
     .night-handover-panel[hidden] {
@@ -9717,6 +9724,7 @@
       gap: 8px;
       min-height: 0;
       box-sizing: border-box;
+      zoom: 0.75;
     }
 
     .vip-checkin-panel[hidden] {
@@ -10619,8 +10627,8 @@
     }
 
     .btn-memo-register {
-      height: 34px;
-      padding: 0 14px;
+      height: 28px;
+      padding: 0 10px;
       font: inherit;
       font-weight: 600;
       font-size: 0.8125rem;
@@ -10651,9 +10659,9 @@
     }
 
     .btn-urgent {
-      min-width: 56px;
-      height: 34px;
-      padding: 0 14px;
+      min-width: 44px;
+      height: 28px;
+      padding: 0 10px;
       font: inherit;
       font-weight: 700;
       font-size: 0.8125rem;
@@ -10698,8 +10706,8 @@
 
     .field input,
     .field select {
-      height: 34px;
-      padding: 0 10px;
+      height: 28px;
+      padding: 0 8px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font: inherit;
@@ -11083,26 +11091,12 @@
       line-height: 1.4;
     }
 
-    .main .room-list-main > .room-card.is-strip-cols[data-zone="RC"] {
-      grid-template-columns:
-        minmax(2.5rem, 0.6fr)
-        3.5rem
-        minmax(2.4rem, 0.33fr)
-        minmax(3.8rem, 0.75fr)
-        minmax(8rem, 2.4fr)
-        auto;
-    }
-
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--room {
       font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.15;
       min-width: 0;
-    }
-
-    .main .room-list-main > .room-card.is-strip-cols[data-zone="RC"] > .hk-strip-cell--room {
-      font-size: 1.7rem;
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--wing {
@@ -11177,11 +11171,11 @@
 
     .hk-strip-sort[data-sort-list="zoneRooms"] {
       grid-template-columns:
-        minmax(2.5rem, 0.6fr)
+        minmax(2.2rem, 0.3fr)
         3.5rem
-        minmax(5rem, 1fr)
+        minmax(2.4rem, 0.33fr)
         minmax(3.8rem, 0.75fr)
-        minmax(6rem, 1.8fr)
+        minmax(8rem, 2.4fr)
         auto;
     }
 
@@ -12597,6 +12591,13 @@
                 <label for="orderFoDisplay">IN</label>
                 <div class="order-fo-display" id="orderFoDisplay" aria-live="polite">—</div>
               </div>
+              <div class="field">
+                <label for="btnOrderUrgent">긴급</label>
+                <button type="button" class="btn-urgent" id="btnOrderUrgent" aria-pressed="false">
+                  긴급
+                </button>
+              </div>
+              <button type="submit" class="btn-order">오더</button>
               <div class="field field--memo">
                 <label for="orderMemo">메모</label>
                 <div class="order-memo-quick" id="orderMemoQuickBar" role="group" aria-label="오더 메모 빠른 입력">
@@ -12622,13 +12623,6 @@
                 </div>
                 <div class="hk-photo-preview" data-photo-key="orderMemo" hidden></div>
               </div>
-              <div class="field">
-                <label for="btnOrderUrgent">긴급</label>
-                <button type="button" class="btn-urgent" id="btnOrderUrgent" aria-pressed="false">
-                  긴급
-                </button>
-              </div>
-              <button type="submit" class="btn-order">오더</button>
             </form>
           </div>
           <aside class="order-desk-chat" id="orderDeskChat" aria-label="오더 관리 채팅">
@@ -16692,7 +16686,7 @@
         mount.addEventListener("click", handleChatReactionClick);
       }
 
-      var STICKY_LAYOUT_KEY = "hk-sticky-desk-layout-v1";
+      var STICKY_LAYOUT_KEY = "hk-sticky-desk-layout-v2";
 
       function loadStickyDeskLayout() {
         try {
@@ -16704,7 +16698,7 @@
 
       function saveStickyDeskLayout(id, patch) {
         var all = loadStickyDeskLayout();
-        all[id] = Object.assign({ split: 0.5, h: 200 }, all[id] || {}, patch || {});
+        all[id] = Object.assign({ split: 0.5, h: 156 }, all[id] || {}, patch || {});
         try {
           localStorage.setItem(STICKY_LAYOUT_KEY, JSON.stringify(all));
         } catch (e) {}
@@ -16717,7 +16711,7 @@
         split = Math.max(0.22, Math.min(0.78, split));
         var h = Number(conf.h);
         if (!isFinite(h)) h = 200;
-        h = Math.max(132, Math.min(Math.min(window.innerHeight * 0.62 || 480, 480), h));
+        h = Math.max(110, Math.min(Math.min(window.innerHeight * 0.62 || 480, 480), h));
         body.style.setProperty("--hk-sticky-h", h + "px");
         var form = body.querySelector(":scope > .order-panel__main, :scope > .request-panel__main");
         var chat = body.querySelector(":scope > .order-desk-chat, :scope > .request-desk-chat");
@@ -16729,9 +16723,9 @@
         if (window.__hkStickyDeskBound) return;
         window.__hkStickyDeskBound = true;
         var items = [
-          { id: "orderSticky", el: document.querySelector("#orderPanel > .order-panel__body"), h: 200 },
-          { id: "facilitySticky", el: document.querySelector("#facilityPanel > .order-panel__body"), h: 220 },
-          { id: "requestSticky", el: document.querySelector("#requestMainStack .request-panel__body"), h: 220 },
+          { id: "orderSticky", el: document.querySelector("#orderPanel > .order-panel__body"), h: 156 },
+          { id: "facilitySticky", el: document.querySelector("#facilityPanel > .order-panel__body"), h: 168 },
+          { id: "requestSticky", el: document.querySelector("#requestMainStack .request-panel__body"), h: 168 },
         ];
         var saved = loadStickyDeskLayout();
         items.forEach(function (item) {
@@ -16778,7 +16772,7 @@
                 applyStickyDeskLayout(body, { split: next, h: body.offsetHeight });
               } else {
                 var maxH = Math.min(window.innerHeight * 0.62 || 480, 480);
-                var nextH = Math.max(132, Math.min(maxH, startH + (e.clientY - startY)));
+                var nextH = Math.max(110, Math.min(maxH, startH + (e.clientY - startY)));
                 var curSplit = 0.5;
                 var form = body.querySelector(":scope > .order-panel__main, :scope > .request-panel__main");
                 if (form && body.clientWidth) {
@@ -16816,9 +16810,10 @@
       }
 
       function highlightDeskChatRoomMatches(mount) {
-        if (!mount) return;
+        if (!mount) return null;
         var filterRaw = getDeskChatRoomFilterForMount(mount);
         var digits = typeof roomDigitsLoose === "function" ? roomDigitsLoose(filterRaw) : String(filterRaw || "").replace(/\D/g, "");
+        var firstHit = null;
         mount.querySelectorAll(".order-desk-chat__msg-text, .request-desk-chat__msg-text").forEach(function (el) {
           var raw = el.getAttribute("data-desk-raw");
           if (raw == null) {
@@ -16843,6 +16838,9 @@
             if (hit) {
               span.className = "desk-chat-room-hit";
               any = true;
+              if (!firstHit) {
+                firstHit = el.closest(".order-desk-chat__msg, .request-desk-chat__msg") || el;
+              }
             }
             span.textContent = m[1];
             frag.appendChild(span);
@@ -16853,6 +16851,10 @@
           el.textContent = "";
           el.appendChild(frag);
         });
+        if (firstHit && firstHit.scrollIntoView) {
+          firstHit.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+        return firstHit;
       }
 
       function refreshAllDeskChatRoomHighlights() {
@@ -16939,7 +16941,7 @@
         if (count <= 0) {
           if (found >= 0) parts.splice(found, 1);
         } else {
-          var next = count === 1 ? itemText : itemText + " " + count;
+          var next = itemText + " " + count;
           if (found >= 0) parts[found] = next;
           else parts.push(next);
         }
@@ -17035,9 +17037,11 @@
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
         });
-        highlightDeskChatRoomMatches(mount);
+        var hitMsg = highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
-          if (stick) mount.scrollTop = mount.scrollHeight;
+          if (hitMsg) {
+            hitMsg.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } else if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
         });
       }
@@ -17139,9 +17143,11 @@
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
         });
-        highlightDeskChatRoomMatches(mount);
+        var hitMsg = highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
-          if (stick) mount.scrollTop = mount.scrollHeight;
+          if (hitMsg) {
+            hitMsg.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } else if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
         });
       }
@@ -17243,9 +17249,11 @@
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
         });
-        highlightDeskChatRoomMatches(mount);
+        var hitMsg = highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
-          if (stick) mount.scrollTop = mount.scrollHeight;
+          if (hitMsg) {
+            hitMsg.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } else if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
         });
       }
@@ -17347,9 +17355,11 @@
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
         });
-        highlightDeskChatRoomMatches(mount);
+        var hitMsg = highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
-          if (stick) mount.scrollTop = mount.scrollHeight;
+          if (hitMsg) {
+            hitMsg.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } else if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
         });
       }
