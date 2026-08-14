@@ -9,6 +9,7 @@
   var showingId = "";
   var pollDraftItems = [];
   var tickTimer = null;
+  var pollUi = { id: "", selected: {}, showCounts: false };
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -206,6 +207,7 @@
       el.setAttribute("aria-hidden", "true");
     }
     showingId = "";
+    pollUi = { id: "", selected: {}, showCounts: false };
   }
 
   function persistDismiss(row) {
@@ -235,30 +237,32 @@
     return Array.isArray(arr) && arr.indexOf(name) >= 0;
   }
 
-  function applyVote(pollId, itemId) {
+  function applyVoteSet(pollId, selectedIds) {
     var name = operatorName();
-    if (!name) return;
+    if (!name) return false;
     var pack = getPack();
     var poll = null;
     (pack.polls || []).forEach(function (p) {
       if (p && p.id === pollId) poll = p;
     });
-    if (!poll) return;
+    if (!poll) return false;
     if (!poll.votes) poll.votes = {};
-    if (!poll.multi) {
-      Object.keys(poll.votes).forEach(function (k) {
-        poll.votes[k] = (poll.votes[k] || []).filter(function (n) {
-          return n !== name;
-        });
+    var chosen = {};
+    (selectedIds || []).forEach(function (id) {
+      if (id) chosen[String(id)] = true;
+    });
+    Object.keys(poll.votes).forEach(function (k) {
+      poll.votes[k] = (poll.votes[k] || []).filter(function (n) {
+        return n !== name;
       });
-    }
-    var cur = poll.votes[itemId] ? poll.votes[itemId].slice() : [];
-    var idx = cur.indexOf(name);
-    if (idx >= 0) cur.splice(idx, 1);
-    else cur.push(name);
-    poll.votes[itemId] = cur;
+    });
+    Object.keys(chosen).forEach(function (itemId) {
+      var cur = poll.votes[itemId] ? poll.votes[itemId].slice() : [];
+      if (cur.indexOf(name) < 0) cur.push(name);
+      poll.votes[itemId] = cur;
+    });
     savePack(pack);
-    refreshFront();
+    return true;
   }
 
   function addPollItem(pollId, text) {
@@ -318,7 +322,11 @@
   }
 
   function renderPollCard(row, card) {
+    if (pollUi.id !== row.id) {
+      pollUi = { id: row.id, selected: {}, showCounts: false };
+    }
     card.innerHTML = "";
+    card.classList.toggle("is-poll-tallied", !!pollUi.showCounts);
     card.onclick = function (e) {
       e.stopPropagation();
     };
@@ -353,62 +361,97 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "hk-broadcast__option";
-      if (name && hasVoted(row, it.id, name)) btn.classList.add("is-on");
+      var picked = pollUi.showCounts
+        ? !!(name && hasVoted(row, it.id, name))
+        : !!pollUi.selected[it.id];
+      if (picked) btn.classList.add("is-on");
       var lab = document.createElement("span");
       lab.textContent = it.text;
+      btn.appendChild(lab);
       var cnt = document.createElement("em");
       cnt.textContent = String(voteCount(row, it.id));
-      btn.appendChild(lab);
       btn.appendChild(cnt);
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        applyVote(row.id, it.id);
-      });
+      if (!pollUi.showCounts) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (row.multi) {
+            if (pollUi.selected[it.id]) delete pollUi.selected[it.id];
+            else pollUi.selected[it.id] = true;
+          } else {
+            pollUi.selected = {};
+            pollUi.selected[it.id] = true;
+          }
+          renderPollCard(row, card);
+        });
+      }
       list.appendChild(btn);
     });
     card.appendChild(list);
 
-    var addRow = document.createElement("div");
-    addRow.className = "hk-broadcast__add";
-    var inp = document.createElement("input");
-    inp.type = "text";
-    inp.maxLength = 80;
-    inp.placeholder = "항목 추가";
-    inp.setAttribute("aria-label", "투표 항목 추가");
-    var addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.textContent = "추가";
-    function submitAdd() {
-      if (addPollItem(row.id, inp.value)) {
-        inp.value = "";
-        refreshFront();
+    if (!pollUi.showCounts) {
+      var addRow = document.createElement("div");
+      addRow.className = "hk-broadcast__add";
+      var inp = document.createElement("input");
+      inp.type = "text";
+      inp.maxLength = 80;
+      inp.placeholder = "항목 추가";
+      inp.setAttribute("aria-label", "투표 항목 추가");
+      var addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.textContent = "추가";
+      function submitAdd() {
+        if (addPollItem(row.id, inp.value)) {
+          inp.value = "";
+          refreshFront();
+        }
       }
-    }
-    addBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      submitAdd();
-    });
-    inp.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
+      addBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
         submitAdd();
-      }
-    });
-    addRow.appendChild(inp);
-    addRow.appendChild(addBtn);
-    card.appendChild(addRow);
+      });
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitAdd();
+        }
+      });
+      addRow.appendChild(inp);
+      addRow.appendChild(addBtn);
+      card.appendChild(addRow);
+    }
 
+    function dismissPoll() {
+      persistDismiss(row);
+      hideOverlay();
+      refreshFront();
+    }
+
+    var actions = document.createElement("div");
+    actions.className = "hk-broadcast__actions";
     var close = document.createElement("button");
     close.type = "button";
     close.className = "hk-broadcast__ok";
     close.textContent = "닫기";
     close.addEventListener("click", function (e) {
       e.stopPropagation();
-      persistDismiss(row);
-      hideOverlay();
-      refreshFront();
+      dismissPoll();
     });
-    card.appendChild(close);
+    actions.appendChild(close);
+    if (!pollUi.showCounts) {
+      var voteBtn = document.createElement("button");
+      voteBtn.type = "button";
+      voteBtn.className = "hk-broadcast__vote";
+      voteBtn.textContent = "투표하기";
+      voteBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var pickedIds = Object.keys(pollUi.selected);
+        if (pickedIds.length) applyVoteSet(row.id, pickedIds);
+        pollUi.showCounts = true;
+        refreshFront();
+      });
+      actions.appendChild(voteBtn);
+    }
+    card.appendChild(actions);
   }
 
   function showRow(row) {
@@ -418,8 +461,12 @@
     var backdrop = wrap.querySelector(".hk-broadcast__backdrop");
     if (!card) return;
     showingId = row.id;
-    if (row.kind === "poll") renderPollCard(row, card);
-    else renderAlertCard(row, card);
+    if (row.kind === "poll") {
+      if (pollUi.id !== row.id) {
+        pollUi = { id: row.id, selected: {}, showCounts: false };
+      }
+      renderPollCard(row, card);
+    } else renderAlertCard(row, card);
     if (backdrop && !backdrop.__hkBound) {
       backdrop.__hkBound = true;
       backdrop.addEventListener("click", function () {

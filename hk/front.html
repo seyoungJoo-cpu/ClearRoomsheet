@@ -1775,6 +1775,35 @@
       color: #0f766e;
     }
 
+    .hk-broadcast__card:not(.is-poll-tallied) .hk-broadcast__option em {
+      display: none;
+    }
+
+    .hk-broadcast__actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .hk-broadcast__actions .hk-broadcast__ok,
+    .hk-broadcast__actions .hk-broadcast__vote {
+      flex: 1;
+      width: auto;
+      display: block;
+      height: 40px;
+    }
+
+    .hk-broadcast__vote {
+      height: 40px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     .hk-broadcast__option.is-on {
       border-color: #0f766e;
       background: #ecfdf5;
@@ -14351,7 +14380,7 @@
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
   <script src="hk-vip-checkin.js?v=table-fit-1"></script>
-  <script src="hk-staff-broadcast.js?v=alert-sched-1"></script>
+  <script src="hk-staff-broadcast.js?v=poll-vote-btn-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
