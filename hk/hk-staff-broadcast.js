@@ -8,6 +8,7 @@
   var adminCtx = null;
   var showingId = "";
   var pollDraftItems = [];
+  var tickTimer = null;
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -23,6 +24,52 @@
     }
     var d = new Date();
     return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  function dateKeyFromIso(iso) {
+    var d = iso ? new Date(iso) : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+    if (global.HKStorage && typeof global.HKStorage.formatDateKey === "function") {
+      return global.HKStorage.formatDateKey(d);
+    }
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  function fmtWhen(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return (
+      pad2(d.getMonth() + 1) +
+      "." +
+      pad2(d.getDate()) +
+      " " +
+      pad2(d.getHours()) +
+      ":" +
+      pad2(d.getMinutes())
+    );
+  }
+
+  function fireAtOf(row) {
+    if (!row) return "";
+    return row.scheduledAt || row.createdAt || "";
+  }
+
+  function isScheduledPending(row) {
+    if (!row || row.kind === "poll") return false;
+    var iso = row.scheduledAt;
+    if (!iso) return false;
+    var t = new Date(iso).getTime();
+    return isFinite(t) && t > Date.now() + 400;
+  }
+
+  function alertReady(row) {
+    if (!row) return false;
+    var iso = fireAtOf(row);
+    if (!iso) return true;
+    var t = new Date(iso).getTime();
+    if (!isFinite(t) || t <= 0) return true;
+    return Date.now() + 400 >= t;
   }
 
   function newId(prefix) {
@@ -110,6 +157,7 @@
 
   function isActiveToday(row) {
     if (!row) return false;
+    if (isScheduledPending(row)) return true;
     var day = row.dayKey || "";
     if (day && day !== todayKey()) return false;
     return true;
@@ -126,12 +174,13 @@
 
   function canSee(row) {
     if (!row || !isActiveToday(row)) return false;
+    if (row.kind !== "poll" && !alertReady(row)) return false;
     if (localDismissed()[row.id]) return false;
     var name = operatorName();
     if (name && row.dismissedBy && row.dismissedBy[name]) return false;
     if (row.kind === "poll" && !pollInWindow(row)) return false;
     if (row.audience === "all") return true;
-    return wasOpenAt(row.createdAt);
+    return wasOpenAt(fireAtOf(row));
   }
 
   function pickNext() {
@@ -479,14 +528,14 @@
         var head = document.createElement("div");
         head.className = "admin-broadcast-row__head";
         var kind = row.kind === "poll" ? "투표" : "알럿";
-        var live =
-          row.kind === "poll"
-            ? pollInWindow(row)
-              ? "진행중"
-              : "마감"
-            : isActiveToday(row)
-              ? "활성"
-              : "만료";
+        var live;
+        if (row.kind === "poll") {
+          live = pollInWindow(row) ? "진행중" : "마감";
+        } else if (isScheduledPending(row)) {
+          live = "예약 " + fmtWhen(row.scheduledAt);
+        } else {
+          live = isActiveToday(row) ? "활성" : "만료";
+        }
         head.textContent =
           kind +
           " · " +
@@ -561,19 +610,31 @@
           return;
         }
         var audEl = document.querySelector('input[name="adminAlertAudience"]:checked');
+        var whenEl = document.getElementById("adminAlertWhen");
+        var scheduledAt = fromLocalInput(whenEl && whenEl.value);
+        var createdAt = nowIso();
+        if (scheduledAt) {
+          var fireMs = new Date(scheduledAt).getTime();
+          if (!isFinite(fireMs) || fireMs <= Date.now()) {
+            scheduledAt = "";
+          }
+        }
+        var fireAt = scheduledAt || createdAt;
         var pack = getPack();
         pack.alerts.push({
           id: newId("al-"),
           kind: "alert",
           text: text,
           audience: audEl && audEl.value === "all" ? "all" : "online",
-          createdAt: nowIso(),
+          createdAt: createdAt,
+          scheduledAt: scheduledAt,
           createdBy: adminName(),
-          dayKey: todayKey(),
+          dayKey: dateKeyFromIso(fireAt),
           dismissedBy: {},
         });
-        savePack(pack, "알럿을 보냈습니다.");
+        savePack(pack, scheduledAt ? "알럿을 예약했습니다." : "알럿을 보냈습니다.");
         if (textEl) textEl.value = "";
+        if (whenEl) whenEl.value = "";
         renderAdminList();
       });
     }
@@ -659,15 +720,25 @@
     renderAdminList();
   }
 
+  function ensureTick() {
+    if (tickTimer) return;
+    tickTimer = setInterval(function () {
+      if (frontCtx) refreshFront();
+      if (adminCtx) renderAdminList();
+    }, 4000);
+  }
+
   global.HKStaffBroadcast = {
     initFront: function (ctx) {
       frontCtx = ctx || {};
       ensureSessionStarted();
+      ensureTick();
       refreshFront();
     },
     initAdmin: function (ctx) {
       adminCtx = ctx || {};
       bindAdmin();
+      ensureTick();
     },
     refresh: function () {
       refreshFront();

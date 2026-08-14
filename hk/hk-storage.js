@@ -1195,6 +1195,7 @@
       createdAt: raw.createdAt != null ? String(raw.createdAt) : "",
       createdBy: raw.createdBy != null ? String(raw.createdBy) : "",
       dayKey: raw.dayKey != null ? String(raw.dayKey) : "",
+      scheduledAt: raw.scheduledAt != null ? String(raw.scheduledAt) : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
   }
@@ -1308,6 +1309,7 @@
         prev.createdBy = row.createdBy;
         prev.dayKey = row.dayKey;
         prev.createdAt = row.createdAt;
+        prev.scheduledAt = row.scheduledAt;
       }
       alertsById[row.id] = prev;
     }
