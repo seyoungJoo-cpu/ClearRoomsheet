@@ -898,7 +898,7 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
 function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
   function asPack(raw) {
     if (!raw || typeof raw !== "object") {
-      return { updatedAt: "", alerts: [], polls: [], deletedIds: {} };
+      return { updatedAt: "", alerts: [], polls: [], directs: [], presence: {}, deletedIds: {} };
     }
     var deletedIds = {};
     if (raw.deletedIds && typeof raw.deletedIds === "object" && !Array.isArray(raw.deletedIds)) {
@@ -911,6 +911,8 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
       updatedAt: raw.updatedAt != null ? String(raw.updatedAt) : "",
       alerts: Array.isArray(raw.alerts) ? raw.alerts.filter(function (a) { return a && a.id; }) : [],
       polls: Array.isArray(raw.polls) ? raw.polls.filter(function (p) { return p && p.id; }) : [],
+      directs: Array.isArray(raw.directs) ? raw.directs.filter(function (d) { return d && d.id; }) : [],
+      presence: raw.presence && typeof raw.presence === "object" && !Array.isArray(raw.presence) ? raw.presence : {},
       deletedIds: deletedIds,
     };
   }
@@ -996,6 +998,41 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
   }
   prev.polls.forEach(takePoll);
   inc.polls.forEach(takePoll);
+  var directsById = {};
+  function takeDirect(row) {
+    if (!row || !row.id || deleted[String(row.id)]) return;
+    var id = String(row.id);
+    var cur = directsById[id];
+    if (!cur) {
+      directsById[id] = row;
+      return;
+    }
+    var newer = String(row.createdAt || "") > String(cur.createdAt || "") ? row : cur;
+    var older = newer === row ? cur : row;
+    var merged = Object.assign({}, older, newer);
+    merged.dismissedBy = mergeDismissed(cur.dismissedBy, row.dismissedBy);
+    if (cur.cancelled || row.cancelled) {
+      merged.cancelled = true;
+      merged.cancelledAt = row.cancelledAt || cur.cancelledAt || "";
+    }
+    directsById[id] = merged;
+  }
+  prev.directs.forEach(takeDirect);
+  inc.directs.forEach(takeDirect);
+  var presence = {};
+  [prev.presence || {}, inc.presence || {}].forEach(function (m) {
+    Object.keys(m).forEach(function (sid) {
+      var row = m[sid];
+      if (!row || typeof row !== "object") return;
+      var prevP = presence[sid];
+      if (!prevP || String(row.at || "") >= String(prevP.at || "")) presence[sid] = row;
+    });
+  });
+  var nowMs = Date.now();
+  Object.keys(presence).forEach(function (sid) {
+    var t = presence[sid] && presence[sid].at ? new Date(presence[sid].at).getTime() : 0;
+    if (!isFinite(t) || nowMs - t > 30000) delete presence[sid];
+  });
   var updatedAt =
     inc.updatedAt && (!prev.updatedAt || String(inc.updatedAt) >= String(prev.updatedAt))
       ? inc.updatedAt
@@ -1009,6 +1046,10 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
     polls: Object.keys(pollsById).map(function (k) {
       return pollsById[k];
     }),
+    directs: Object.keys(directsById).map(function (k) {
+      return directsById[k];
+    }),
+    presence: presence,
   };
 }
 

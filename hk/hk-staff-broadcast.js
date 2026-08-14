@@ -11,6 +11,8 @@
   var tickTimer = null;
   var pollUi = { id: "", selected: {}, showCounts: false };
   var lastSeenOperatorName = "";
+  var lastPresencePush = 0;
+  var presenceWasOn = false;
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -198,10 +200,15 @@
     if (row.kind === "poll") {
       if (name && hasOperatorVoted(row, name)) return false;
       if (localDismissed()[row.id]) return false;
+    } else if (row.kind === "direct") {
+      if (row.cancelled) return false;
+      if (!name || name !== String(row.to || "").trim()) return false;
+      if (row.dismissedBy && row.dismissedBy[name]) return false;
     } else {
       if (name && row.dismissedBy && row.dismissedBy[name]) return false;
       else if (!name && localDismissed()[row.id]) return false;
     }
+    if (row.kind === "direct") return true;
     if (row.audience === "all") return true;
     return wasOpenAt(fireAtOf(row));
   }
@@ -209,6 +216,9 @@
   function pickNext() {
     var pack = getPack();
     var i;
+    for (i = 0; i < (pack.directs || []).length; i++) {
+      if (canSee(pack.directs[i])) return pack.directs[i];
+    }
     for (i = 0; i < (pack.alerts || []).length; i++) {
       if (canSee(pack.alerts[i])) return pack.alerts[i];
     }
@@ -239,7 +249,8 @@
     var name = operatorName();
     if (!name) return;
     var pack = getPack();
-    (pack.alerts || []).forEach(function (it) {
+    var list = row.kind === "direct" ? pack.directs : pack.alerts;
+    (list || []).forEach(function (it) {
       if (it && it.id === row.id) {
         if (!it.dismissedBy) it.dismissedBy = {};
         it.dismissedBy[name] = nowIso();
@@ -286,6 +297,117 @@
     return true;
   }
 
+  function presenceSid() {
+    try {
+      var v = sessionStorage.getItem("hk-front-presence-sid");
+      if (v) return v;
+      v = "ps-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+      sessionStorage.setItem("hk-front-presence-sid", v);
+      return v;
+    } catch (e) {
+      return "ps-tmp";
+    }
+  }
+
+  function getOnlineFrontNames() {
+    var pack = getPack();
+    var seen = {};
+    var names = [];
+    var now = Date.now();
+    var map = pack.presence || {};
+    Object.keys(map).forEach(function (sid) {
+      var row = map[sid];
+      if (!row || !row.name) return;
+      var t = new Date(row.at || 0).getTime();
+      if (!isFinite(t) || now - t > 20000) return;
+      var name = String(row.name).trim();
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      names.push(name);
+    });
+    names.sort(function (a, b) {
+      return a.localeCompare(b, "ko");
+    });
+    return names;
+  }
+
+  function touchPresence(force) {
+    if (!isFront()) {
+      if (presenceWasOn) dropPresence();
+      return;
+    }
+    var name = operatorName();
+    if (!name) return;
+    var now = Date.now();
+    if (!force && lastPresencePush && now - lastPresencePush < 8000) return;
+    var pack = getPack();
+    if (!pack.presence) pack.presence = {};
+    pack.presence[presenceSid()] = { name: name, at: nowIso() };
+    lastPresencePush = now;
+    presenceWasOn = true;
+    savePack(pack);
+  }
+
+  function dropPresence() {
+    var pack = getPack();
+    if (pack.presence && pack.presence[presenceSid()]) {
+      delete pack.presence[presenceSid()];
+      savePack(pack);
+    }
+    presenceWasOn = false;
+    lastPresencePush = 0;
+  }
+
+  function sendDirectAlerts(from, text, tos) {
+    from = String(from || "").trim();
+    text = String(text || "").trim() || "(사진)";
+    if (!from) return [];
+    var seen = {};
+    var ids = [];
+    var pack = getPack();
+    if (!pack.directs) pack.directs = [];
+    (tos || []).forEach(function (toRaw) {
+      var to = String(toRaw || "").trim();
+      if (!to || to === from || seen[to]) return;
+      seen[to] = true;
+      var id = newId("dm-");
+      pack.directs.push({
+        id: id,
+        kind: "direct",
+        text: text,
+        to: to,
+        from: from,
+        createdAt: nowIso(),
+        dayKey: todayKey(),
+        cancelled: false,
+        cancelledAt: "",
+        dismissedBy: {},
+      });
+      ids.push(id);
+    });
+    if (ids.length) savePack(pack);
+    return ids;
+  }
+
+  function cancelDirects(ids) {
+    if (!ids || !ids.length) return false;
+    var want = {};
+    ids.forEach(function (id) {
+      if (id) want[String(id)] = true;
+    });
+    var pack = getPack();
+    var changed = false;
+    (pack.directs || []).forEach(function (it) {
+      if (it && want[it.id] && !it.cancelled) {
+        it.cancelled = true;
+        it.cancelledAt = nowIso();
+        changed = true;
+      }
+    });
+    if (changed) savePack(pack);
+    return changed;
+  }
+
   function addPollItem(pollId, text) {
     var name = operatorName() || adminName();
     text = String(text || "").trim();
@@ -315,7 +437,7 @@
     card.innerHTML = "";
     var kicker = document.createElement("p");
     kicker.className = "hk-broadcast__kicker";
-    kicker.textContent = "알럿";
+    kicker.textContent = row.kind === "direct" ? "1:1 알럿" : "알럿";
     var body = document.createElement("p");
     body.className = "hk-broadcast__text";
     body.textContent = row.text;
@@ -330,6 +452,13 @@
     card.appendChild(body);
     card.appendChild(hint);
     card.appendChild(ok);
+    var fromName = String(row.from || row.createdBy || "").trim();
+    if (fromName) {
+      var fromEl = document.createElement("p");
+      fromEl.className = "hk-broadcast__from";
+      fromEl.textContent = fromName;
+      card.appendChild(fromEl);
+    }
     function dismiss() {
       persistDismiss(row);
       hideOverlay();
@@ -517,6 +646,7 @@
     clearLocalDismiss();
     pollUi = { id: "", selected: {}, showCounts: false };
     showingId = "";
+    touchPresence(true);
     refreshFront();
   }
 
@@ -530,11 +660,13 @@
 
   function refreshFront() {
     if (!isFront()) {
+      if (presenceWasOn) dropPresence();
       hideOverlay();
       return;
     }
     noteOperatorChange();
     ensureSessionStarted();
+    touchPresence(false);
     var next = pickNext();
     if (!next) {
       hideOverlay();
@@ -817,7 +949,10 @@
   function ensureTick() {
     if (tickTimer) return;
     tickTimer = setInterval(function () {
-      if (frontCtx) refreshFront();
+      if (frontCtx) {
+        refreshFront();
+        if (typeof frontCtx.onPresence === "function") frontCtx.onPresence();
+      }
       if (adminCtx) renderAdminList();
     }, 4000);
   }
@@ -840,6 +975,9 @@
     },
     onFrontEnabled: onFrontEnabled,
     onOperatorChange: onOperatorChange,
+    getOnlineFrontNames: getOnlineFrontNames,
+    sendDirectAlerts: sendDirectAlerts,
+    cancelDirects: cancelDirects,
     renderAdminList: renderAdminList,
   };
 })(typeof window !== "undefined" ? window : this);

@@ -1151,7 +1151,7 @@
   }
 
   function defaultStaffBroadcasts() {
-    return { updatedAt: "", alerts: [], polls: [], deletedIds: {} };
+    return { updatedAt: "", alerts: [], polls: [], directs: [], presence: {}, deletedIds: {} };
   }
 
   function normalizeStrMap(raw) {
@@ -1224,6 +1224,46 @@
     return out;
   }
 
+  function normalizeDirectBroadcast(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = raw.id != null ? String(raw.id).trim() : "";
+    var to = raw.to != null ? String(raw.to).trim() : "";
+    var from = raw.from != null ? String(raw.from).trim() : "";
+    if (!id || !to || !from) return null;
+    var text = raw.text != null ? String(raw.text).trim() : "";
+    if (!text) text = "(사진)";
+    return {
+      id: id,
+      kind: "direct",
+      text: text,
+      to: to,
+      from: from,
+      createdAt: raw.createdAt != null ? String(raw.createdAt) : "",
+      dayKey: raw.dayKey != null ? String(raw.dayKey) : "",
+      cancelled: !!raw.cancelled,
+      cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : "",
+      dismissedBy: normalizeStrMap(raw.dismissedBy),
+    };
+  }
+
+  function normalizePresenceMap(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    var now = Date.now();
+    Object.keys(raw).forEach(function (sid) {
+      var id = String(sid || "").trim();
+      var row = raw[sid];
+      if (!id || !row || typeof row !== "object") return;
+      var name = row.name != null ? String(row.name).trim() : "";
+      var at = row.at != null ? String(row.at) : "";
+      if (!name || !at) return;
+      var t = new Date(at).getTime();
+      if (!isFinite(t) || now - t > 30000) return;
+      out[id] = { name: name, at: at };
+    });
+    return out;
+  }
+
   function normalizePollBroadcast(raw) {
     if (!raw || typeof raw !== "object") return null;
     var id = raw.id != null ? String(raw.id).trim() : "";
@@ -1267,8 +1307,14 @@
       var n = normalizePollBroadcast(row);
       if (n && !d.deletedIds[n.id]) d.polls.push(n);
     });
+    (Array.isArray(raw.directs) ? raw.directs : []).forEach(function (row) {
+      var n = normalizeDirectBroadcast(row);
+      if (n && !d.deletedIds[n.id]) d.directs.push(n);
+    });
+    d.presence = normalizePresenceMap(raw.presence);
     if (d.alerts.length > 80) d.alerts = d.alerts.slice(-80);
     if (d.polls.length > 80) d.polls = d.polls.slice(-80);
+    if (d.directs.length > 80) d.directs = d.directs.slice(-80);
     return d;
   }
 
@@ -1356,6 +1402,41 @@
     (base.polls || []).forEach(takePoll);
     (inc.polls || []).forEach(takePoll);
 
+    var directsById = {};
+    function takeDirect(row) {
+      if (!row || deleted[row.id]) return;
+      var prevD = directsById[row.id];
+      if (!prevD) {
+        directsById[row.id] = row;
+        return;
+      }
+      prevD.dismissedBy = Object.assign({}, prevD.dismissedBy || {}, row.dismissedBy || {});
+      if (row.cancelled) {
+        prevD.cancelled = true;
+        if (row.cancelledAt) prevD.cancelledAt = row.cancelledAt;
+      }
+      if (String(row.createdAt || "") > String(prevD.createdAt || "")) {
+        prevD.text = row.text;
+        prevD.to = row.to;
+        prevD.from = row.from;
+        prevD.dayKey = row.dayKey;
+        prevD.createdAt = row.createdAt;
+      }
+      directsById[row.id] = prevD;
+    }
+    (base.directs || []).forEach(takeDirect);
+    (inc.directs || []).forEach(takeDirect);
+
+    var presence = {};
+    [base.presence || {}, inc.presence || {}].forEach(function (m) {
+      Object.keys(m).forEach(function (sid) {
+        var row = m[sid];
+        if (!row) return;
+        var prevP = presence[sid];
+        if (!prevP || String(row.at || "") >= String(prevP.at || "")) presence[sid] = row;
+      });
+    });
+
     var out = defaultStaffBroadcasts();
     var baseAt = base.updatedAt || "";
     var incAt = inc.updatedAt || "";
@@ -1375,8 +1456,17 @@
       .sort(function (a, b) {
         return String(a.createdAt).localeCompare(String(b.createdAt));
       });
+    out.directs = Object.keys(directsById)
+      .map(function (k) {
+        return directsById[k];
+      })
+      .sort(function (a, b) {
+        return String(a.createdAt).localeCompare(String(b.createdAt));
+      });
+    out.presence = normalizePresenceMap(presence);
     if (out.alerts.length > 80) out.alerts = out.alerts.slice(-80);
     if (out.polls.length > 80) out.polls = out.polls.slice(-80);
+    if (out.directs.length > 80) out.directs = out.directs.slice(-80);
     return out;
   }
 

@@ -1844,6 +1844,64 @@
       height: 40px;
     }
 
+    .hk-broadcast__from {
+      margin: 10px 0 0;
+      text-align: right;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #475569;
+    }
+
+    .front-chat-online {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border: 1px solid #99f6e4;
+      border-radius: 8px;
+      background: #f0fdfa;
+    }
+
+    .front-chat-online[hidden] {
+      display: none !important;
+    }
+
+    .front-chat-online__label {
+      margin: 0 0 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #0f766e;
+    }
+
+    .front-chat-online__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .front-chat-online__btn {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #5eead4;
+      border-radius: 999px;
+      background: #fff;
+      color: #0f766e;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .front-chat-online__btn.is-on {
+      background: #0f766e;
+      color: #fff;
+      border-color: #0f766e;
+    }
+
+    .front-chat-online__empty {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
     .hk-confirm {
       position: fixed;
       inset: 0;
@@ -12535,6 +12593,10 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckFrontChatPanel" hidden>확인</button>
         </div>
         <p class="front-chat-panel__hint" id="frontChatPanelHint">정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.</p>
+        <div class="front-chat-online" id="frontChatOnline" hidden>
+          <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿</div>
+          <div class="front-chat-online__list" id="frontChatOnlineList"></div>
+        </div>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
         <p class="front-chat__empty" id="frontChatEmpty" hidden></p>
         <form class="front-chat__form" id="frontChatForm">
@@ -14367,7 +14429,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-24"></script>
+  <script src="hk-storage.js?v=bydate-25"></script>
   <script src="hk-sync.js?v=force-sync-5"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -14380,7 +14442,7 @@
   <script src="hk-track-it.js?v=bydate-19"></script>
   <script src="hk-night-handover.js?v=bydate-16"></script>
   <script src="hk-vip-checkin.js?v=table-fit-1"></script>
-  <script src="hk-staff-broadcast.js?v=resume-all-1"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -14954,6 +15016,14 @@
         msg.deletedAt = new Date().toISOString();
         msg.text = "";
         msg.image = "";
+        if (
+          kind === "front" &&
+          Array.isArray(msg.alertIds) &&
+          typeof HKStaffBroadcast !== "undefined" &&
+          HKStaffBroadcast.cancelDirects
+        ) {
+          HKStaffBroadcast.cancelDirects(msg.alertIds);
+        }
         saveChatMessages(kind);
         syncAllChatFromServer();
         renderFrontChatPanel();
@@ -16467,6 +16537,85 @@
         syncAllChatFromServer();
       }
 
+      function escapeChatMention(name) {
+        return String(name || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      function parseChatMentions(text) {
+        var out = [];
+        var seen = {};
+        String(text || "").replace(/#([^\s#]+)/g, function (_, raw) {
+          var name = String(raw || "").trim();
+          if (!name || seen[name]) return "";
+          seen[name] = true;
+          out.push(name);
+          return "";
+        });
+        return out;
+      }
+
+      function inputHasChatMention(text, name) {
+        var re = new RegExp("(^|\\s)#" + escapeChatMention(name) + "(?=\\s|$)");
+        return re.test(String(text || ""));
+      }
+
+      function toggleChatMention(name) {
+        var inp = document.getElementById("frontChatInput");
+        if (!inp || !name) return;
+        var text = String(inp.value || "");
+        var token = "#" + name;
+        if (inputHasChatMention(text, name)) {
+          inp.value = text
+            .replace(new RegExp("(^|\\s)#" + escapeChatMention(name) + "(?=\\s|$)", "g"), function (m, sp) {
+              return sp ? sp : "";
+            })
+            .replace(/\s{2,}/g, " ")
+            .replace(/^\s+|\s+$/g, "");
+        } else {
+          inp.value = (text.replace(/\s+$/g, "") + " " + token).replace(/^\s+/, "");
+        }
+        inp.focus();
+        renderFrontChatOnline();
+      }
+
+      function renderFrontChatOnline() {
+        var wrap = document.getElementById("frontChatOnline");
+        var list = document.getElementById("frontChatOnlineList");
+        if (!wrap || !list) return;
+        var show = frontMode && getActiveChatKind() === "front";
+        wrap.hidden = !show;
+        if (!show) {
+          list.innerHTML = "";
+          return;
+        }
+        var names =
+          typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.getOnlineFrontNames
+            ? HKStaffBroadcast.getOnlineFrontNames()
+            : [];
+        var me = getOperatorName();
+        var inp = document.getElementById("frontChatInput");
+        var typed = inp ? inp.value : "";
+        list.innerHTML = "";
+        if (!names.length) {
+          var empty = document.createElement("p");
+          empty.className = "front-chat-online__empty";
+          empty.textContent = "접속 중인 프론트가 없습니다.";
+          list.appendChild(empty);
+          return;
+        }
+        names.forEach(function (name) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "front-chat-online__btn";
+          if (inputHasChatMention(typed, name)) btn.classList.add("is-on");
+          btn.textContent = name === me ? name + " (나)" : name;
+          btn.addEventListener("click", function () {
+            toggleChatMention(name);
+          });
+          list.appendChild(btn);
+        });
+      }
+
       function updateChatPanelChrome() {
         var title = document.getElementById("frontChatPanelTitle");
         var hint = document.getElementById("frontChatPanelHint");
@@ -16475,7 +16624,7 @@
           if (title) title.textContent = "프론트 채팅방";
           if (hint) {
             hint.textContent =
-              "프론트 전용 대화방입니다. 정비 입력에서는 보이지 않으며, 프론트 모드끼리만 동기화됩니다. 관리자 마감 후에도 계속 보관됩니다.";
+              "프론트 전용 대화방입니다. 접속 중인 근무자를 누르거나 #이름 을 적으면 1:1 알럿이 갑니다. 다시 누르면 취소됩니다.";
           }
         } else {
           if (title) title.textContent = "채팅방";
@@ -16484,6 +16633,7 @@
               "정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.";
           }
         }
+        renderFrontChatOnline();
       }
 
       function saveRequestLog() {
@@ -17842,6 +17992,7 @@
             if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
               HKStaffBroadcast.refresh();
             }
+            renderFrontChatOnline();
           }
           applyFrontEmbedStatesFromStorage({ force: true });
         }
@@ -30733,6 +30884,20 @@
               });
               actions.appendChild(editBtn);
               actions.appendChild(delBtn);
+              if (Array.isArray(msg.alertIds) && msg.alertIds.length) {
+                var cancelAlertBtn = document.createElement("button");
+                cancelAlertBtn.type = "button";
+                cancelAlertBtn.className = "front-chat__msg-action front-chat__msg-action--danger";
+                cancelAlertBtn.textContent = "알럿 취소";
+                cancelAlertBtn.addEventListener("click", function (e) {
+                  e.stopPropagation();
+                  if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.cancelDirects) {
+                    HKStaffBroadcast.cancelDirects(msg.alertIds);
+                  }
+                  li.classList.remove("is-selected");
+                });
+                actions.appendChild(cancelAlertBtn);
+              }
               li.appendChild(actions);
             }
 
@@ -30970,6 +31135,15 @@
           return;
         }
         if (typeof HKSync === "undefined" || !HKSync.appendFrontChatMessage) return;
+        var mentions = parseChatMentions(msgText);
+        var alertIds = [];
+        if (
+          typeof HKStaffBroadcast !== "undefined" &&
+          HKStaffBroadcast.sendDirectAlerts &&
+          mentions.length
+        ) {
+          alertIds = HKStaffBroadcast.sendDirectAlerts(getOperatorName(), msgText, mentions) || [];
+        }
         var newId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         knownFrontChatIds[newId] = true;
         HKSync.appendFrontChatMessage({
@@ -30979,6 +31153,8 @@
           by: getOperatorName(),
           text: msgText,
           image: msgImage || "",
+          alertIds: alertIds,
+          alertTo: mentions,
         });
         hkClearPhoto("frontChat");
         syncFrontChatFromServer();
@@ -31850,6 +32026,7 @@
             return frontMode;
           },
           getOperatorName: getOperatorName,
+          onPresence: renderFrontChatOnline,
         });
       }
       if (typeof HKTrackIt !== "undefined") {
@@ -32776,6 +32953,15 @@
           if (kind === "team") submitTeamChatMessage(text, image);
           else submitFrontChatMessage(text, image);
           if (inp) inp.value = "";
+          renderFrontChatOnline();
+        });
+      }
+
+      var frontChatInputEl = document.getElementById("frontChatInput");
+      if (frontChatInputEl && !frontChatInputEl.__hkMentionBound) {
+        frontChatInputEl.__hkMentionBound = true;
+        frontChatInputEl.addEventListener("input", function () {
+          if (getActiveChatKind() === "front") renderFrontChatOnline();
         });
       }
 
