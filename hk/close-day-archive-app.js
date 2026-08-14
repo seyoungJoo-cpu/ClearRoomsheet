@@ -699,15 +699,38 @@
     if (view === "ai") setupAi();
   }
 
-  function aiAppend(role, text) {
+  function aiAppend(role, text, html) {
     var chat = document.getElementById("archiveAiChat");
     if (!chat) return;
     var div = document.createElement("div");
     div.className = "ai-msg ai-msg--" + role;
-    div.style.whiteSpace = "pre-wrap";
-    div.textContent = text;
+    if (html) {
+      div.innerHTML = html;
+    } else {
+      div.style.whiteSpace = "pre-wrap";
+      div.textContent = text;
+    }
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
+  }
+
+  function archiveOrderCardsHtml(list, title) {
+    if (!list || !list.length) {
+      return "<p>" + esc(title || "해당 오더") + "가 없습니다.</p>";
+    }
+    return (
+      "<p><b>" +
+      esc(title || "오더") +
+      " " +
+      list.length +
+      "건</b></p><div class=\"cards\">" +
+      list
+        .map(function (e) {
+          return orderCard(e, phaseOf(e));
+        })
+        .join("") +
+      "</div>"
+    );
   }
 
   function aiSummary() {
@@ -795,35 +818,20 @@
       return;
     }
     var roomM = s.match(/(\d{3,4})/);
-    if (roomM && /오더|시설|요청|상태/.test(s)) {
+    if (roomM && /오더|시설/.test(s)) {
       var rn = roomM[1];
       var hits = (A.orderLog || []).filter(function (e) {
-        return String(e.room || "").indexOf(rn) >= 0;
-      });
-      var reqHits = (A.requestLog || []).filter(function (e) {
-        return String(e.room || "").indexOf(rn) >= 0;
+        if (!e) return false;
+        var room = String(e.room || "");
+        if (room.indexOf(rn) < 0) return false;
+        if (/시설/.test(s) && !/오더/.test(s)) return isFacilityOrder(e);
+        if (/오더/.test(s) && !/시설/.test(s)) return !isFacilityOrder(e);
+        return true;
       });
       aiAppend(
         "bot",
-        rn +
-          " 관련\n· 오더 " +
-          hits.length +
-          "건\n" +
-          hits
-            .slice(0, 8)
-            .map(function (e) {
-              return (
-                "  - [" +
-                phaseOf(e) +
-                "] " +
-                (isFacilityOrder(e) ? "시설 " : "") +
-                (e.memo || "")
-              );
-            })
-            .join("\n") +
-          "\n· 요청 " +
-          reqHits.length +
-          "건"
+        "",
+        archiveOrderCardsHtml(hits, rn + "호 " + (/시설/.test(s) && !/오더/.test(s) ? "시설" : "오더"))
       );
       return;
     }
@@ -849,23 +857,14 @@
         : list;
       aiAppend(
         "bot",
-        "오더 " +
-          (want || "전체") +
-          " " +
-          filtered.length +
-          "건\n" +
-          filtered
-            .slice(0, 15)
-            .map(function (e) {
-              return "· " + roomNo(e.room) + " [" + phaseOf(e) + "] " + (e.memo || "");
-            })
-            .join("\n")
+        "",
+        archiveOrderCardsHtml(filtered, "오더 " + (want || "전체"))
       );
       return;
     }
     if (/시설/.test(s)) {
       var fl = (A.orderLog || []).filter(isFacilityOrder);
-      aiAppend("bot", "시설 오더 " + fl.length + "건");
+      aiAppend("bot", "", archiveOrderCardsHtml(fl, "시설 오더"));
       return;
     }
     if (/정비|요청|예정/.test(s)) {

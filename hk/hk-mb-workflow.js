@@ -687,6 +687,20 @@
     var list = document.getElementById("mbCheckFeedbackList");
     var empty = document.getElementById("mbCheckFeedbackEmpty");
     if (!list) return;
+    var ae = document.activeElement;
+    if (
+      ae &&
+      ae.closest &&
+      (ae.closest(".mb-check__memo-editor-wrap") ||
+        ae.classList.contains("mb-check__memo-input"))
+    ) {
+      return;
+    }
+    var drafts = {};
+    list.querySelectorAll(".mb-check__memo-input").forEach(function (ta) {
+      var id = ta.getAttribute("data-mb-check-id") || "";
+      if (id) drafts[id] = ta.value;
+    });
     list.innerHTML = "";
     var entries = mbCheckLogEntries.filter(function (e) {
       return getPhase(e) === "alert";
@@ -720,6 +734,7 @@
         ta.placeholder = "메모 입력";
         ta.rows = 2;
         ta.setAttribute("data-mb-check-id", entry.id || "");
+        if (drafts[entry.id || ""]) ta.value = drafts[entry.id || ""];
         wrap.appendChild(ta);
         var maintActs = document.createElement("div");
         maintActs.className = "order-feedback__maint-actions mb-check__alert-actions";
@@ -887,6 +902,14 @@
   }
 
   function renderMbCheckWorkPanels() {
+    var ae = document.activeElement;
+    if (
+      ae &&
+      ae.closest &&
+      ae.closest(".mb-check__memo-editor-wrap")
+    ) {
+      return;
+    }
     var acceptedList = document.getElementById("mbCheckAcceptedList");
     var acceptedEmpty = document.getElementById("mbCheckAcceptedEmpty");
     var gstList = document.getElementById("mbCheckGstList");

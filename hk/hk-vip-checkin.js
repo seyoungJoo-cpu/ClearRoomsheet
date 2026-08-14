@@ -1159,6 +1159,9 @@
     }
     fillDay(dayFromPack(pack, currentDateKey, true));
     applyGuestColWidthsFromPack();
+    if (window.HKTableColResize && window.HKTableColResize.bind) {
+      window.HKTableColResize.bind(document.getElementById("vipCheckInPanel"));
+    }
   }
 
   function onSave() {

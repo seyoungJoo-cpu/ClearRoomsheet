@@ -3415,14 +3415,24 @@
       gap: 12px 16px;
       align-items: start;
       margin-top: 14px;
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
     }
 
     .facility-stay-col {
       min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 12px 8px;
       background: #fafbfc;
+    }
+
+    .facility-stay-col .order-work-item {
+      max-width: 100%;
+      overflow: hidden;
     }
 
     .facility-stay-col--occ {
@@ -3483,7 +3493,7 @@
       border: 1px solid #5eead4;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: 1280px) {
       .facility-stay-cols {
         grid-template-columns: 1fr;
       }
@@ -3776,7 +3786,7 @@
     .main.main--mb-inv .order-work-item .request-feedback__item-room,
     .main.main--mb-check .order-work-item .request-feedback__item-room,
     .facility-log-panel .facility-log-card .request-feedback__item-room {
-      font-size: 1.65rem;
+      font-size: 1.12rem;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.2;
@@ -3786,7 +3796,7 @@
     .main.main--facility .order-work-item .order-feedback__item-memo,
     .main.main--mb-inv .order-work-item .order-feedback__item-memo,
     .main.main--mb-check .order-work-item .order-feedback__item-memo {
-      font-size: 1.35rem;
+      font-size: 0.95rem;
       font-weight: 700;
       line-height: 1.4;
     }
@@ -7216,11 +7226,12 @@
 
     .hk-room-board-frame {
       position: relative;
-      display: inline-block;
+      display: block;
+      width: 100%;
       max-width: 100%;
       vertical-align: top;
-      padding-right: 14px;
-      padding-bottom: 14px;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     .hk-room-board-panel .sheet-outer {
@@ -7229,8 +7240,13 @@
       border: 1px solid var(--border);
       padding: 0.5rem;
       background: #f3f4f6;
-      transform-origin: top left;
-      will-change: transform;
+      transform: none !important;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .hk-room-board-resize-handle {
+      display: none !important;
     }
 
     .hk-room-board-resize-handle {
@@ -7301,7 +7317,8 @@
       flex-direction: row;
       align-items: stretch;
       gap: 0.5rem;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      width: 100%;
     }
 
     .hk-room-board-panel .wing-panel {
@@ -8320,22 +8337,39 @@
       margin-bottom: 6px;
     }
 
-    /* 정비관리: 입력폼만 스크롤해도 상단 고정 */
-    .request-main-stack > .request-panel,
+    /* 정비관리: 입력 + 미니채팅 상단 고정, 좌우 반반 */
     .request-main-stack > .request-panel > .request-panel__body {
-      display: contents;
-    }
-
-    .request-main-stack .request-panel__main {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 0;
       position: sticky;
       top: 0;
       z-index: 24;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 8px 14px 12px;
+      padding: 4px 6px 12px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      height: var(--hk-sticky-h, 220px);
+      min-height: 140px;
+      max-height: min(62vh, 480px);
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .request-main-stack .request-panel__main {
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: auto;
+      position: static;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 2px 6px 4px;
+      box-shadow: none;
+      margin: 0;
     }
 
     .request-main-stack .request-type-filters {
@@ -8698,21 +8732,127 @@
       margin-bottom: 6px;
     }
 
-    /* 오더·시설: 입력폼만 스크롤해도 상단 고정 (채팅·작업목록은 흐름 유지) */
+    /* 오더·시설: 입력 + 미니채팅 상단 고정, 좌우 반반 */
     .main.main--order #orderPanel > .order-panel__body,
     .main.main--facility #facilityPanel > .order-panel__body {
-      display: contents;
-    }
-
-    .main.main--order #orderPanel .order-panel__main,
-    .main.main--facility #facilityPanel .order-panel__main {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 0;
       position: sticky;
       top: 0;
       z-index: 24;
       background: var(--bg-card);
-      padding: 6px 0 10px;
-      margin: 0 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 6px 12px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
+      margin-bottom: 8px;
+      height: var(--hk-sticky-h, 200px);
+      min-height: 132px;
+      max-height: min(62vh, 480px);
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .main.main--order #orderPanel .order-panel__main,
+    .main.main--facility #facilityPanel .order-panel__main {
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: auto;
+      position: static;
+      background: transparent;
+      padding: 2px 6px 4px;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .request-main-stack .request-panel__body > .request-desk-chat,
+    .main.main--order #orderPanel .order-panel__body > .order-desk-chat,
+    .main.main--facility #facilityPanel .order-panel__body > .order-desk-chat {
+      flex: 1 1 0;
+      width: auto !important;
+      max-width: none !important;
+      height: 100% !important;
+      min-height: 0;
+      min-width: 140px;
+      margin: 0;
+      align-self: stretch;
+    }
+
+    .request-main-stack .request-panel__main h2,
+    .main.main--order #orderPanel .order-panel__main h2,
+    .main.main--facility #facilityPanel .order-panel__main h2 {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .hk-sticky-split-handle {
+      flex: 0 0 8px;
+      width: 8px;
+      cursor: ew-resize;
+      border: none;
+      padding: 0;
+      align-self: stretch;
+      z-index: 6;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0 4px,
+        #94a3b8 4px 6px,
+        transparent 6px 10px
+      );
+    }
+
+    .hk-sticky-height-handle {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 0;
+      height: 10px;
+      cursor: ns-resize;
+      border: none;
+      padding: 0;
+      z-index: 6;
+      background: repeating-linear-gradient(
+        to right,
+        transparent 0 4px,
+        #94a3b8 4px 6px,
+        transparent 6px 10px
+      );
+    }
+
+    .order-memo-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin: 0 0 4px;
+    }
+
+    .order-memo-quick button {
+      height: 22px;
+      padding: 0 6px;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #f8fafc;
+      color: var(--accent);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .order-memo-quick button:hover {
+      border-color: var(--accent);
+      background: #ecfeff;
+    }
+
+    .desk-chat-room-hit {
+      background: #facc15;
+      color: #111;
+      font-weight: 800;
+      padding: 0 1px;
+      border-radius: 2px;
     }
 
     .complaint-panel {
@@ -9238,11 +9378,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 16px 20px;
+      padding: 8px 10px 12px;
       margin-bottom: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
       min-height: 0;
       box-sizing: border-box;
     }
@@ -9261,19 +9401,19 @@
       align-items: center;
       gap: 4px;
       margin: 0;
-      font-size: 1.35rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--accent);
     }
 
     .nh-title-date {
-      width: 5.25rem;
-      height: 42px;
+      width: 4.5rem;
+      height: 32px;
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0 6px;
       font: inherit;
-      font-size: 1.4rem;
+      font-size: 1.05rem;
       font-weight: 800;
       text-align: center;
       color: var(--accent);
@@ -9570,11 +9710,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 16px 20px;
+      padding: 8px 10px 12px;
       margin-bottom: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
       min-height: 0;
       box-sizing: border-box;
     }
@@ -9594,30 +9734,30 @@
       align-items: center;
       gap: 4px;
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1rem;
       font-weight: 800;
       color: #1e3a8a;
     }
 
     .vip-title-date {
-      width: 4.5rem;
-      height: 40px;
+      width: 4.25rem;
+      height: 32px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
-      font-size: 1.3rem;
+      font-size: 1.05rem;
       font-weight: 800;
     }
 
     .vip-title-year {
-      width: 4.5rem;
-      height: 40px;
+      width: 4.25rem;
+      height: 32px;
       border: 1px solid var(--border);
       border-radius: 6px;
       text-align: center;
       font: inherit;
-      font-size: 1.3rem;
+      font-size: 1.05rem;
       font-weight: 800;
     }
 
@@ -9660,7 +9800,8 @@
       position: relative;
     }
 
-    .vip-col-resizer {
+    .vip-col-resizer,
+    .hk-col-resizer {
       position: absolute;
       top: 0;
       right: -3px;
@@ -9669,6 +9810,27 @@
       cursor: col-resize;
       user-select: none;
       z-index: 2;
+    }
+
+    table.hk-table-resizable,
+    table.nh-table,
+    table.vip-table,
+    table.complaint-table {
+      table-layout: fixed;
+    }
+
+    table.hk-table-resizable th,
+    table.nh-table th,
+    table.vip-table th,
+    table.complaint-table th {
+      position: relative;
+    }
+
+    .vip-conn-wrap .nh-row-addbar,
+    #btnVipConnAdd,
+    .vip-table--connecting .nh-row-actions,
+    [data-vip-conn-remove-row] {
+      display: none !important;
     }
 
     .vip-table input[type="text"],
@@ -10551,7 +10713,7 @@
     }
 
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
-    /* 오더·시설: 객실 | 동 | 메모 | 이름 | 상태 | 오더 시간 | 접수 | 버튼 */
+    /* 오더·시설: 객실 | 동 | 메모 | 이름 | 상태 | 오더 시간 | 접수 | 버튼 | 근무자 */
     .main .order-work-item.is-strip-cols {
       display: grid;
       grid-template-columns:
@@ -10562,7 +10724,8 @@
         minmax(3.5rem, 0.7fr)
         minmax(4.5rem, 0.9fr)
         minmax(4.5rem, 1fr)
-        auto;
+        auto
+        minmax(4.2rem, 0.85fr);
       gap: 6px 12px;
       align-items: center;
       width: 100%;
@@ -10607,7 +10770,8 @@
         minmax(3.5rem, 0.7fr)
         minmax(4.5rem, 0.9fr)
         minmax(4.5rem, 1fr)
-        auto;
+        auto
+        minmax(4.2rem, 0.85fr);
     }
 
     .hk-strip-sort[data-sort-list="schedCards"] {
@@ -10624,7 +10788,7 @@
     .main .order-work-item.is-strip-cols > .hk-strip-cell--room {
       grid-column: 1;
       grid-row: 1;
-      font-size: 1.7rem;
+      font-size: 1.12rem;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.15;
@@ -10691,20 +10855,21 @@
     }
 
     .main .order-work-item.is-strip-cols > .order-feedback__item-by {
-      grid-column: 4;
+      grid-column: 9;
       grid-row: 1;
-      justify-self: start;
+      justify-self: end;
       align-self: center;
       position: static;
       right: auto;
       bottom: auto;
       left: auto;
       width: auto;
-      max-width: none;
+      max-width: 100%;
       margin: 0;
-      overflow: visible;
-      text-overflow: unset;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
+      text-align: right;
       font-size: 0.8125rem;
       font-weight: 700;
       color: var(--text);
@@ -10738,9 +10903,7 @@
     .main .order-work-item.is-strip-cols > .order-chat,
     .main .order-work-item.is-strip-cols > .order-work__facility-time-wrap,
     .main .order-work-item.is-strip-cols > .order-work__facility-time-display,
-    .main .order-work-item.is-strip-cols > .hk-accepter-label,
     .main .order-work-item.is-strip-cols > .order-work__facility-denied-label,
-    .main .order-work-item.is-strip-cols > .order-work-item__chat-hint,
     .main .order-work-item.is-strip-cols > .order-work-item__x,
     .main .order-work-item.is-strip-cols > .order-feedback__item-memo {
       grid-column: 1 / -1;
@@ -10748,11 +10911,27 @@
       margin-top: 4px;
     }
 
+    .main .order-work-item.is-strip-cols > .hk-accepter-label {
+      grid-column: 9;
+      grid-row: 1;
+      justify-self: end;
+      align-self: center;
+      width: auto;
+      max-width: 100%;
+      margin: 0;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .order-work-item__chat-hint {
+      display: none !important;
+    }
+
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--room {
       grid-column: 1;
       grid-row: 1;
-      font-size: 1.7rem;
+      font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.15;
@@ -10785,7 +10964,7 @@
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--memo {
       grid-column: 5;
       grid-row: 1;
-      font-size: 1.4rem;
+      font-size: 0.95rem;
       font-weight: 800;
       line-height: 1.35;
       min-width: 0;
@@ -10849,7 +11028,7 @@
 
     .main.main--request .sched-cards-list > .sched-req-card.is-strip-cols > .hk-strip-cell--room,
     .main.main--request .sched-type-group__list > .sched-req-card.is-strip-cols > .hk-strip-cell--room {
-      font-size: 1.7rem;
+      font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: -0.02em;
     }
@@ -10888,11 +11067,11 @@
       display: grid;
       /* 객실 · 동 · 시간 · 상태 · 메모 · 버튼 (정렬 헤더와 동일) */
       grid-template-columns:
-        minmax(2.5rem, 0.6fr)
+        minmax(2.2rem, 0.3fr)
         3.5rem
-        minmax(5rem, 1fr)
+        minmax(2.4rem, 0.33fr)
         minmax(3.8rem, 0.75fr)
-        minmax(6rem, 1.8fr)
+        minmax(8rem, 2.4fr)
         auto;
       gap: 6px 12px;
       align-items: center;
@@ -10904,12 +11083,26 @@
       line-height: 1.4;
     }
 
+    .main .room-list-main > .room-card.is-strip-cols[data-zone="RC"] {
+      grid-template-columns:
+        minmax(2.5rem, 0.6fr)
+        3.5rem
+        minmax(2.4rem, 0.33fr)
+        minmax(3.8rem, 0.75fr)
+        minmax(8rem, 2.4fr)
+        auto;
+    }
+
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--room {
-      font-size: 1.7rem;
+      font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.15;
       min-width: 0;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols[data-zone="RC"] > .hk-strip-cell--room {
+      font-size: 1.7rem;
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--wing {
@@ -10943,6 +11136,17 @@
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--memo {
+      min-width: 0;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      align-items: flex-start;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--memo .room-card__memo-block {
+      margin-top: 0;
+      flex: 1 1 7.5rem;
       min-width: 0;
     }
 
@@ -11088,7 +11292,7 @@
     /* 정비관리: 객실번호·정비시간·시설시간 강조 */
     .main.main--request .sched-cards-list > .sched-req-card .room-card__no,
     .main.main--request .sched-type-group__list > .sched-req-card .room-card__no {
-      font-size: 1.4rem;
+      font-size: 1.05rem;
       font-weight: 900;
       letter-spacing: -0.02em;
     }
@@ -11124,12 +11328,12 @@
       font-weight: 900;
     }
 
-    /* 오더·시설·MB: 객실번호·메모 초대형 */
+    /* 오더·시설·MB: 객실번호·메모 */
     .main.main--order .order-work-item .request-feedback__item-room,
     .main.main--facility .order-work-item .request-feedback__item-room,
     .main.main--mb-inv .order-work-item .request-feedback__item-room,
     .main.main--mb-check .order-work-item .request-feedback__item-room {
-      font-size: 1.7rem !important;
+      font-size: 1.12rem !important;
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1.15;
@@ -11139,7 +11343,7 @@
     .main.main--facility .order-work-item .order-feedback__item-memo,
     .main.main--mb-inv .order-work-item .order-feedback__item-memo,
     .main.main--mb-check .order-work-item .order-feedback__item-memo {
-      font-size: 1.4rem !important;
+      font-size: 0.95rem !important;
       font-weight: 800;
       line-height: 1.4;
     }
@@ -12395,6 +12599,17 @@
               </div>
               <div class="field field--memo">
                 <label for="orderMemo">메모</label>
+                <div class="order-memo-quick" id="orderMemoQuickBar" role="group" aria-label="오더 메모 빠른 입력">
+                  <button type="button" data-order-quick="재실정비요청">재실정비</button>
+                  <button type="button" data-order-quick="생수">생수</button>
+                  <button type="button" data-order-quick="페이스타올">F</button>
+                  <button type="button" data-order-quick="바스타올">B</button>
+                  <button type="button" data-order-quick="식용얼음">얼음</button>
+                  <button type="button" data-order-quick="성인가운">성.가</button>
+                  <button type="button" data-order-quick="성인슬리퍼">성.슬</button>
+                  <button type="button" data-order-quick="소인가운">소.가</button>
+                  <button type="button" data-order-quick="소인슬리퍼">소.슬</button>
+                </div>
                 <div class="hk-compose-row">
                   <input
                     type="text"
@@ -12462,14 +12677,6 @@
           <p class="order-work-empty" id="orderAcceptedEmpty">접수완료 건이 없습니다.</p>
         </section>
 
-        <section class="order-work-section order-work-section--cancelled" id="orderCancelledSection" aria-labelledby="orderCancelledTitle">
-          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderCancelledTitle" aria-expanded="true" aria-controls="orderCancelledList" data-order-section-toggle="orderCancelledSection">
-            취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
-          </button>
-          <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
-          <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
-        </section>
-
         <section class="order-work-section order-work-section--doorhandle" id="orderDoorhandleSection" aria-labelledby="orderDoorhandleTitle">
           <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderDoorhandleTitle" aria-expanded="true" aria-controls="orderDoorhandleList" data-order-section-toggle="orderDoorhandleSection">
             문고리 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
@@ -12484,6 +12691,14 @@
           </button>
           <ul class="order-work-list order-work-list--deployed" id="orderDeployedList" aria-live="polite"></ul>
           <p class="order-work-empty" id="orderDeployedEmpty">투입완료 건이 없습니다.</p>
+        </section>
+
+        <section class="order-work-section order-work-section--cancelled" id="orderCancelledSection" aria-labelledby="orderCancelledTitle">
+          <button type="button" class="order-work-section__title order-work-section__title-btn" id="orderCancelledTitle" aria-expanded="true" aria-controls="orderCancelledList" data-order-section-toggle="orderCancelledSection">
+            취소 <span class="order-work-section__chevron" aria-hidden="true">▼</span>
+          </button>
+          <ul class="order-work-list" id="orderCancelledList" aria-live="polite"></ul>
+          <p class="order-work-empty" id="orderCancelledEmpty">취소된 오더가 없습니다.</p>
         </section>
       </section>
 
@@ -12959,6 +13174,13 @@
           <div class="vip-specials">
             <div class="vip-specials__title">특이사항</div>
 
+            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="특이사항 구분">
+              <tbody id="vipRemarksBody"></tbody>
+            </table>
+            <div class="nh-row-addbar">
+              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipRemarkAdd" title="특이사항 행 추가">+</button>
+            </div>
+
             <div class="vip-conn-block">
               <div class="vip-conn-label">커넥팅 객실</div>
               <div class="vip-conn-wrap">
@@ -12969,13 +13191,6 @@
                   <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipConnAdd" title="커넥팅 행 추가">+</button>
                 </div>
               </div>
-            </div>
-
-            <table class="vip-table vip-table--remarks vip-table--ajmb" aria-label="특이사항 구분">
-              <tbody id="vipRemarksBody"></tbody>
-            </table>
-            <div class="nh-row-addbar">
-              <button type="button" class="nh-row-btn nh-row-btn--plus" id="btnVipRemarkAdd" title="특이사항 행 추가">+</button>
             </div>
           </div>
         </div>
@@ -13943,15 +14158,15 @@
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-  <script src="hk-mb-workflow.js?v=inv-memo-2"></script>
+  <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
   <script src="hk-inven-notify.js?v=xlsx-real-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
-  <script src="hk-night-handover.js?v=bydate-15"></script>
-  <script src="hk-vip-checkin.js?v=bydate-15"></script>
+  <script src="hk-night-handover.js?v=bydate-16"></script>
+  <script src="hk-vip-checkin.js?v=bydate-16"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-37"></script>
+  <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
   <script>
     (function () {
@@ -16312,6 +16527,13 @@
         DESK_CHAT_IDS.forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
+          if (el.closest(".order-panel__body, .request-panel__body") &&
+              (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat")) {
+            el.style.width = "";
+            el.style.maxWidth = "";
+            el.style.height = "";
+            return;
+          }
           var maxW = getDeskChatMaxWidth(el);
           el.style.maxWidth = maxW + "px";
           var userSet = el.getAttribute("data-desk-width-user") === "1";
@@ -16392,6 +16614,9 @@
         DESK_CHAT_IDS.forEach(function (id) {
           var el = document.getElementById(id);
           if (!el || el.__hkDeskSizeHandles) return;
+          if (id === "orderDeskChat" || id === "facilityDeskChat" || id === "requestDeskChat") {
+            return;
+          }
           el.__hkDeskSizeHandles = true;
           function makeHandle(axis, label) {
             var handle = document.createElement("button");
@@ -16467,6 +16692,280 @@
         mount.addEventListener("click", handleChatReactionClick);
       }
 
+      var STICKY_LAYOUT_KEY = "hk-sticky-desk-layout-v1";
+
+      function loadStickyDeskLayout() {
+        try {
+          return JSON.parse(localStorage.getItem(STICKY_LAYOUT_KEY) || "{}") || {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveStickyDeskLayout(id, patch) {
+        var all = loadStickyDeskLayout();
+        all[id] = Object.assign({ split: 0.5, h: 200 }, all[id] || {}, patch || {});
+        try {
+          localStorage.setItem(STICKY_LAYOUT_KEY, JSON.stringify(all));
+        } catch (e) {}
+      }
+
+      function applyStickyDeskLayout(body, conf) {
+        if (!body || !conf) return;
+        var split = Number(conf.split);
+        if (!isFinite(split)) split = 0.5;
+        split = Math.max(0.22, Math.min(0.78, split));
+        var h = Number(conf.h);
+        if (!isFinite(h)) h = 200;
+        h = Math.max(132, Math.min(Math.min(window.innerHeight * 0.62 || 480, 480), h));
+        body.style.setProperty("--hk-sticky-h", h + "px");
+        var form = body.querySelector(":scope > .order-panel__main, :scope > .request-panel__main");
+        var chat = body.querySelector(":scope > .order-desk-chat, :scope > .request-desk-chat");
+        if (form) form.style.flex = split + " 1 0";
+        if (chat) chat.style.flex = 1 - split + " 1 0";
+      }
+
+      function bindStickyInputChatLayout() {
+        if (window.__hkStickyDeskBound) return;
+        window.__hkStickyDeskBound = true;
+        var items = [
+          { id: "orderSticky", el: document.querySelector("#orderPanel > .order-panel__body"), h: 200 },
+          { id: "facilitySticky", el: document.querySelector("#facilityPanel > .order-panel__body"), h: 220 },
+          { id: "requestSticky", el: document.querySelector("#requestMainStack .request-panel__body"), h: 220 },
+        ];
+        var saved = loadStickyDeskLayout();
+        items.forEach(function (item) {
+          var body = item.el;
+          if (!body || body.__hkStickyBound) return;
+          body.__hkStickyBound = true;
+          body.classList.add("hk-sticky-input-chat");
+          var chat = body.querySelector(":scope > .order-desk-chat, :scope > .request-desk-chat");
+          var split = document.createElement("button");
+          split.type = "button";
+          split.className = "hk-sticky-split-handle";
+          split.title = "좌우로 드래그하여 입력/채팅 크기 조절";
+          split.setAttribute("aria-label", "입력과 채팅 가로 크기 조절");
+          if (chat) body.insertBefore(split, chat);
+          var bot = document.createElement("button");
+          bot.type = "button";
+          bot.className = "hk-sticky-height-handle";
+          bot.title = "위아래로 드래그하여 높이 조절";
+          bot.setAttribute("aria-label", "입력 섹션 높이 조절");
+          body.appendChild(bot);
+          var conf = Object.assign({ split: 0.5, h: item.h }, saved[item.id] || {});
+          applyStickyDeskLayout(body, conf);
+
+          function bindDrag(handle, mode) {
+            var dragging = false;
+            var startY = 0;
+            var startH = 0;
+            handle.addEventListener("pointerdown", function (e) {
+              if (e.button != null && e.button !== 0) return;
+              e.preventDefault();
+              e.stopPropagation();
+              dragging = true;
+              startY = e.clientY;
+              startH = body.offsetHeight;
+              try {
+                handle.setPointerCapture(e.pointerId);
+              } catch (_) {}
+            });
+            handle.addEventListener("pointermove", function (e) {
+              if (!dragging) return;
+              if (mode === "x") {
+                var rect = body.getBoundingClientRect();
+                var next = (e.clientX - rect.left) / Math.max(1, rect.width);
+                applyStickyDeskLayout(body, { split: next, h: body.offsetHeight });
+              } else {
+                var maxH = Math.min(window.innerHeight * 0.62 || 480, 480);
+                var nextH = Math.max(132, Math.min(maxH, startH + (e.clientY - startY)));
+                var curSplit = 0.5;
+                var form = body.querySelector(":scope > .order-panel__main, :scope > .request-panel__main");
+                if (form && body.clientWidth) {
+                  curSplit = form.offsetWidth / body.clientWidth;
+                }
+                applyStickyDeskLayout(body, { split: curSplit, h: nextH });
+              }
+            });
+            handle.addEventListener("pointerup", function () {
+              dragging = false;
+              var form = body.querySelector(":scope > .order-panel__main, :scope > .request-panel__main");
+              saveStickyDeskLayout(item.id, {
+                split: form && body.clientWidth ? form.offsetWidth / body.clientWidth : 0.5,
+                h: body.offsetHeight,
+              });
+            });
+            handle.addEventListener("pointercancel", function () {
+              dragging = false;
+            });
+          }
+          bindDrag(split, "x");
+          bindDrag(bot, "y");
+        });
+      }
+
+      function getDeskChatRoomFilterForMount(mount) {
+        if (!mount || !mount.id) return "";
+        var id = mount.id;
+        var el = null;
+        if (id === "orderDeskChatMessages") el = document.getElementById("orderRoomNo");
+        else if (id === "facilityDeskChatMessages") el = document.getElementById("facilityOrderRoomNo");
+        else if (id === "requestDeskChatMessages") el = document.getElementById("roomNo");
+        else if (id === "mbCheckDeskChatMessages") el = document.getElementById("mbCheckRoomNo");
+        return el && el.value ? String(el.value).replace(/\s/g, "") : "";
+      }
+
+      function highlightDeskChatRoomMatches(mount) {
+        if (!mount) return;
+        var filterRaw = getDeskChatRoomFilterForMount(mount);
+        var digits = typeof roomDigitsLoose === "function" ? roomDigitsLoose(filterRaw) : String(filterRaw || "").replace(/\D/g, "");
+        mount.querySelectorAll(".order-desk-chat__msg-text, .request-desk-chat__msg-text").forEach(function (el) {
+          var raw = el.getAttribute("data-desk-raw");
+          if (raw == null) {
+            raw = el.textContent || "";
+            el.setAttribute("data-desk-raw", raw);
+          }
+          el.textContent = raw;
+          if (!digits) return;
+          var re = /(\d{3,4})/g;
+          var src = raw;
+          var last = 0;
+          var m;
+          var frag = document.createDocumentFragment();
+          var any = false;
+          while ((m = re.exec(src))) {
+            if (m.index > last) frag.appendChild(document.createTextNode(src.slice(last, m.index)));
+            var span = document.createElement("span");
+            var hit =
+              typeof roomMatchesSchedSearch === "function"
+                ? roomMatchesSchedSearch(m[1], filterRaw)
+                : String(m[1]).indexOf(digits) >= 0 || digits.indexOf(m[1]) >= 0;
+            if (hit) {
+              span.className = "desk-chat-room-hit";
+              any = true;
+            }
+            span.textContent = m[1];
+            frag.appendChild(span);
+            last = m.index + m[1].length;
+          }
+          if (!any) return;
+          if (last < src.length) frag.appendChild(document.createTextNode(src.slice(last)));
+          el.textContent = "";
+          el.appendChild(frag);
+        });
+      }
+
+      function refreshAllDeskChatRoomHighlights() {
+        highlightDeskChatRoomMatches(document.getElementById("orderDeskChatMessages"));
+        highlightDeskChatRoomMatches(document.getElementById("facilityDeskChatMessages"));
+        highlightDeskChatRoomMatches(document.getElementById("requestDeskChatMessages"));
+        highlightDeskChatRoomMatches(document.getElementById("mbCheckDeskChatMessages"));
+      }
+
+      function bindHkTableColResize(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        var tables = scope.querySelectorAll
+          ? scope.querySelectorAll("table.nh-table, table.vip-table, table.complaint-table")
+          : [];
+        Array.prototype.forEach.call(tables, function (table) {
+          if (!table) return;
+          table.classList.add("hk-table-resizable");
+          var key =
+            "hk-table-cols:" +
+            (table.getAttribute("aria-label") || table.id || table.className || "table");
+          var saved = null;
+          try {
+            saved = JSON.parse(localStorage.getItem(key) || "null");
+          } catch (e) {}
+          var cells = table.querySelectorAll("thead tr:first-child > *");
+          if (!cells.length) {
+            var first = table.querySelector("tr");
+            if (first) cells = first.children;
+          }
+          Array.prototype.forEach.call(cells, function (th, idx) {
+            if (!th || th.querySelector(".hk-col-resizer, .vip-col-resizer")) return;
+            th.style.position = "relative";
+            if (saved && saved[idx]) th.style.width = saved[idx] + "px";
+            var handle = document.createElement("span");
+            handle.className = "hk-col-resizer";
+            handle.title = "열 너비 조절";
+            th.appendChild(handle);
+            handle.addEventListener("mousedown", function (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              var startX = ev.clientX;
+              var startW = th.getBoundingClientRect().width;
+              function onMove(e2) {
+                var next = Math.max(36, startW + (e2.clientX - startX));
+                th.style.width = next + "px";
+              }
+              function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                var widths = [];
+                Array.prototype.forEach.call(cells, function (c) {
+                  widths.push(Math.round(c.getBoundingClientRect().width));
+                });
+                try {
+                  localStorage.setItem(key, JSON.stringify(widths));
+                } catch (e) {}
+              }
+              document.addEventListener("mousemove", onMove);
+              document.addEventListener("mouseup", onUp);
+            });
+          });
+        });
+      }
+      window.HKTableColResize = { bind: bindHkTableColResize };
+
+      function applyOrderMemoQuickDelta(itemText, delta) {
+        var el = document.getElementById("orderMemo");
+        if (!el || !itemText) return;
+        var text = String(el.value || "").trim();
+        var parts = text ? text.split(/\s*,\s*/) : [];
+        var found = -1;
+        var count = 0;
+        var re = new RegExp("^" + itemText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?:\\s+(\\d+))?$");
+        for (var i = 0; i < parts.length; i++) {
+          var m = String(parts[i] || "").trim().match(re);
+          if (m) {
+            found = i;
+            count = m[1] ? parseInt(m[1], 10) : 1;
+            if (!isFinite(count) || count < 1) count = 1;
+            break;
+          }
+        }
+        count += delta;
+        if (count <= 0) {
+          if (found >= 0) parts.splice(found, 1);
+        } else {
+          var next = count === 1 ? itemText : itemText + " " + count;
+          if (found >= 0) parts[found] = next;
+          else parts.push(next);
+        }
+        el.value = parts.filter(Boolean).join(", ");
+        try {
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        } catch (e) {}
+      }
+
+      function bindOrderMemoQuickButtons() {
+        var bar = document.getElementById("orderMemoQuickBar");
+        if (!bar || bar.__hkQuickBound) return;
+        bar.__hkQuickBound = true;
+        bar.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-order-quick]");
+          if (!btn) return;
+          e.preventDefault();
+          applyOrderMemoQuickDelta(btn.getAttribute("data-order-quick"), 1);
+        });
+        bar.addEventListener("contextmenu", function (e) {
+          var btn = e.target.closest("[data-order-quick]");
+          if (!btn) return;
+          e.preventDefault();
+          applyOrderMemoQuickDelta(btn.getAttribute("data-order-quick"), -1);
+        });
+      }
 
       function styleDeskChatTextEl(textEl, msg) {
         if (!textEl) return;
@@ -16528,6 +17027,7 @@
           var text = document.createElement("div");
           text.className = "request-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
+          text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "request-desk-chat__msg-text");
@@ -16535,6 +17035,7 @@
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
         });
+        highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
@@ -16630,6 +17131,7 @@
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
+          text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
@@ -16637,6 +17139,7 @@
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
         });
+        highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
@@ -16732,6 +17235,7 @@
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
+          text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
@@ -16739,6 +17243,7 @@
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
         });
+        highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
@@ -16834,6 +17339,7 @@
           var text = document.createElement("div");
           text.className = "order-desk-chat__msg-text";
           text.textContent = m.text != null ? String(m.text) : "";
+          text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
           applyChatBubbleColors(row, by, meta, "order-desk-chat__msg-text");
@@ -16841,6 +17347,7 @@
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
         });
+        highlightDeskChatRoomMatches(mount);
         requestAnimationFrame(function () {
           if (stick) mount.scrollTop = mount.scrollHeight;
           else mount.scrollTop = savedTop;
@@ -19465,7 +19972,7 @@
         var buckets = {};
         flat.forEach(function (rec) {
           var cl = hkBoardClassifyRoom(rec.room);
-          if (!cl || cl.wing === "extra") return;
+          if (!cl) return;
           var key =
             cl.wing === "villa"
               ? hkBoardBucketKey("villa", cl.villaNum)
@@ -19702,92 +20209,39 @@
       }
 
       function hkBoardMountResizableSheet(mount, triple, scaleState) {
-        var frame = document.createElement("div");
-        frame.className = "hk-room-board-frame";
         var outer = document.createElement("div");
-        outer.className = "sheet-outer";
+        outer.className = "sheet-outer hk-room-board-fill";
         outer.appendChild(triple);
+        mount.appendChild(outer);
+        return outer;
+      }
 
-        function makeHandle(axis, label) {
-          var handle = document.createElement("button");
-          handle.type = "button";
-          handle.className = "hk-room-board-resize-handle hk-room-board-resize-handle--" + axis;
-          handle.title =
-            axis === "right"
-              ? "좌우로 드래그하여 가로 크기 조절"
-              : axis === "bottom"
-                ? "위아래로 드래그하여 세로 크기 조절"
-                : "모서리를 드래그하여 가로·세로 크기 조절";
-          handle.setAttribute("aria-label", label);
-          handle.setAttribute("data-resize-axis", axis);
-          return handle;
-        }
-
-        var handleRight = makeHandle("right", "층별보기 가로 크기 조절");
-        var handleBottom = makeHandle("bottom", "층별보기 세로 크기 조절");
-        var handleCorner = makeHandle("corner", "층별보기 가로·세로 크기 조절");
-        frame.appendChild(outer);
-        frame.appendChild(handleRight);
-        frame.appendChild(handleBottom);
-        frame.appendChild(handleCorner);
-        mount.appendChild(frame);
-
-        function applyScale(next) {
-          var s = hkBoardNormalizeScale(next);
-          scaleState.x = s.x;
-          scaleState.y = s.y;
-          outer.style.transform = "scale(" + s.x + ", " + s.y + ")";
-          var baseW = outer.offsetWidth;
-          var baseH = outer.offsetHeight;
-          outer.style.marginRight = Math.max(0, Math.ceil(baseW * (s.x - 1))) + "px";
-          outer.style.marginBottom = Math.max(0, Math.ceil(baseH * (s.y - 1)) + 18) + "px";
-        }
-        applyScale({
-          x: scaleState.x,
-          y: scaleState.y,
+      function hkBoardExtraFloorNums(buckets) {
+        var floors = [];
+        Object.keys(buckets || {}).forEach(function (k) {
+          if (k.indexOf("extra-") !== 0) return;
+          var n = parseInt(k.slice(6), 10);
+          if (isFinite(n) && floors.indexOf(n) < 0) floors.push(n);
         });
+        floors.sort(function (a, b) {
+          return a - b;
+        });
+        return floors;
+      }
 
-        function bindHandle(handle, mode) {
-          var dragging = false;
-          var startX = 0;
-          var startY = 0;
-          var startScale = { x: 1, y: 1 };
-          handle.addEventListener("pointerdown", function (e) {
-            if (e.button != null && e.button !== 0) return;
-            e.preventDefault();
-            dragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startScale = hkBoardNormalizeScale({
-              x: scaleState.x,
-              y: scaleState.y,
-            });
-            try {
-              handle.setPointerCapture(e.pointerId);
-            } catch (_) {}
-          });
-          handle.addEventListener("pointermove", function (e) {
-            if (!dragging) return;
-            var next = { x: startScale.x, y: startScale.y };
-            if (mode === "x" || mode === "both") {
-              next.x = startScale.x + (e.clientX - startX) / 260;
-            }
-            if (mode === "y" || mode === "both") {
-              next.y = startScale.y + (e.clientY - startY) / 220;
-            }
-            applyScale(next);
-          });
-          function endDrag() {
-            dragging = false;
-          }
-          handle.addEventListener("pointerup", endDrag);
-          handle.addEventListener("pointercancel", endDrag);
-        }
-
-        bindHandle(handleRight, "x");
-        bindHandle(handleBottom, "y");
-        bindHandle(handleCorner, "both");
-        return frame;
+      function hkBoardAppendExtraPanel(triple, buckets) {
+        var extraFloors = hkBoardExtraFloorNums(buckets);
+        if (!extraFloors.length) return;
+        triple.appendChild(
+          hkBoardRenderWingPanel(
+            "기타",
+            "기타",
+            "extra",
+            extraFloors,
+            buckets,
+            "wing-panel-annex"
+          )
+        );
       }
 
       function renderRequestRoomBoard() {
@@ -19795,8 +20249,7 @@
         if (!mount || !requestRoomBoardOpen) return;
         mount.innerHTML = "";
         var boardRows = buildScheduledRequestBoardRows().filter(function (rec) {
-          var cl = hkBoardClassifyRoom(rec.room);
-          return cl && cl.wing !== "extra";
+          return !!hkBoardClassifyRoom(rec.room);
         });
         if (!boardRows.length) {
           var emptyF = document.createElement("div");
@@ -19841,6 +20294,7 @@
             "wing-panel-annex"
           )
         );
+        hkBoardAppendExtraPanel(triple, buckets);
         hkBoardMountResizableSheet(mount, triple, requestRoomBoardScale);
       }
 
@@ -19912,8 +20366,7 @@
           return;
         }
         var boardRows = buildZoneRoomBoardRows(zone).filter(function (rec) {
-          var cl = hkBoardClassifyRoom(rec.room);
-          return cl && cl.wing !== "extra";
+          return !!hkBoardClassifyRoom(rec.room);
         });
         if (!boardRows.length) {
           var emptyF = document.createElement("div");
@@ -19952,6 +20405,7 @@
             "wing-panel-annex"
           )
         );
+        hkBoardAppendExtraPanel(triple, buckets);
         hkBoardMountResizableSheet(mount, triple, zoneRoomBoardScale);
       }
 
@@ -21830,11 +22284,42 @@
           t3.textContent = "요청자 " + entry.by;
           li.appendChild(t3);
         }
+        if (entry.acceptedBy) {
+          var tAcc = document.createElement("p");
+          tAcc.className = "ai-mode-entry-card__line";
+          tAcc.textContent = "접수자 " + entry.acceptedBy;
+          li.appendChild(tAcc);
+        }
+        if (entry.deployedBy) {
+          var tDep = document.createElement("p");
+          tDep.className = "ai-mode-entry-card__line";
+          tDep.textContent = (isFacilityOrder(entry) ? "처리완료 " : "투입 ") + entry.deployedBy;
+          li.appendChild(tDep);
+        }
+        if (entry.cancelledBy) {
+          var tCan = document.createElement("p");
+          tCan.className = "ai-mode-entry-card__line";
+          tCan.textContent = "취소 " + entry.cancelledBy;
+          li.appendChild(tCan);
+        }
         if (entry.memo) {
           var memo = document.createElement("p");
           memo.className = "ai-mode-entry-card__memo";
           memo.textContent = entry.memo;
           li.appendChild(memo);
+        }
+        if (Array.isArray(entry.chat) && entry.chat.length) {
+          entry.chat.slice(0, 8).forEach(function (m) {
+            if (!m) return;
+            var chatLine = document.createElement("p");
+            chatLine.className = "ai-mode-entry-card__line";
+            chatLine.textContent =
+              "채팅 " +
+              (m.by || "—") +
+              " : " +
+              (m.deleted ? "삭제하였습니다." : m.text || "");
+            li.appendChild(chatLine);
+          });
         }
         return li;
       }
@@ -21914,12 +22399,29 @@
         var list = orderLogEntries.filter(function (e) {
           return e && scopeMatch(e) && (!filterFn || filterFn(e));
         });
+        var rooms = parseAiRoomNumberList(q);
+        if (rooms.length) {
+          list = list.filter(function (e) {
+            return rooms.some(function (r) {
+              return roomMatchesSchedSearch(e.room, r);
+            });
+          });
+        }
         return sortEntriesByAtDesc(list);
       }
 
       function queryAiOrdersByTime(timeFilter, q) {
         var list = filterEntriesByTimeToday(orderLogEntries, timeFilter, "at");
-        return sortEntriesByAtAsc(filterAiOrdersForScope(list, q));
+        list = filterAiOrdersForScope(list, q);
+        var rooms = parseAiRoomNumberList(q);
+        if (rooms.length) {
+          list = list.filter(function (e) {
+            return rooms.some(function (r) {
+              return roomMatchesSchedSearch(e.room, r);
+            });
+          });
+        }
+        return sortEntriesByAtAsc(list);
       }
 
       function queryAiRequestsFiltered(filterFn) {
@@ -22448,9 +22950,19 @@
 
         if (intent.type === "orders_all") {
           var ordersAll = queryAiOrdersFiltered(null, q);
+          var roomsAll = parseAiRoomNumberList(q);
+          var shownAll = roomsAll.length ? ordersAll : ordersAll.slice(0, 80);
           appendAiChatBotResult(
-            formatAiOrderScopeLabel(q) + "전체 오더 " + ordersAll.length + "건 (최신순)",
-            ordersAll.slice(0, 40).map(buildAiOrderCard)
+            formatAiOrderScopeLabel(q) +
+              (roomsAll.length
+                ? roomsAll.map(function (r) {
+                    return formatRoomNoDisplay(r);
+                  }).join(", ") + " 오더 "
+                : "전체 오더 ") +
+              ordersAll.length +
+              "건" +
+              (roomsAll.length ? "" : " (최신순)"),
+            shownAll.map(buildAiOrderCard)
           );
           return;
         }
@@ -22987,6 +23499,7 @@
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.onViewActivated) {
           HKNightHandover.onViewActivated();
         }
+        bindHkTableColResize(document.getElementById("nightHandoverPanel"));
       }
 
       function showSidebarVipCheckInView(opts) {
@@ -22996,6 +23509,7 @@
         if (typeof HKVipCheckIn !== "undefined" && HKVipCheckIn.onViewActivated) {
           HKVipCheckIn.onViewActivated();
         }
+        bindHkTableColResize(document.getElementById("vipCheckInPanel"));
       }
 
       function showSidebarFacilityView(opts) {
@@ -26637,12 +27151,7 @@
             }
           }
           if (!chatOpen) {
-            var chatCount = Array.isArray(entry.chat) ? entry.chat.length : 0;
-            var hint = document.createElement("div");
-            hint.className = "order-work-item__chat-hint";
-            hint.textContent =
-              chatCount > 0 ? "대화 " + chatCount + "건 · 클릭하여 보기" : "클릭하여 대화";
-            li.appendChild(hint);
+            /* 클릭하여 대화 힌트 문구 제거 */
           } else {
             appendOrderChatUi(li, entry, {
               chatLabel: isFacilityPanel ? "처리완료 오더 채팅 메시지" : "투입완료 오더 채팅 메시지",
@@ -28429,6 +28938,7 @@
           (canHistory ? " is-history-toggle" : "") +
           (historyOpen ? " is-history-open" : "") +
           (multiRoom ? " is-multi-room" : "");
+        li.setAttribute("data-zone", zone || "");
         if (!multiRoom) {
           var stTint = hkStatusSuffix(st);
           if (stTint && stTint !== "none") {
@@ -30764,6 +31274,9 @@
       applyDeskChatFontLevel(getDeskChatFontLevel());
       bindDeskChatResponsiveWidth();
       bindDeskChatSizeHandles();
+      bindStickyInputChatLayout();
+      bindOrderMemoQuickButtons();
+      bindHkTableColResize(document);
       bindMinibarXmlUploadUi();
       bindZoneResetUi();
       bindStripSortUi();
@@ -31655,6 +32168,7 @@
         orderRoomEl.addEventListener("input", function () {
           updateOrderFoDisplay();
           renderOrderPanels({ force: true });
+          refreshAllDeskChatRoomHighlights();
         });
         orderRoomEl.addEventListener("change", updateOrderFoDisplay);
         updateOrderFoDisplay();
@@ -31666,6 +32180,7 @@
         facilityRoomEl.addEventListener("input", function () {
           updateFacilityOrderFoDisplay();
           renderOrderPanels({ force: true });
+          refreshAllDeskChatRoomHighlights();
         });
         facilityRoomEl.addEventListener("change", updateFacilityOrderFoDisplay);
         updateFacilityOrderFoDisplay();
@@ -32007,6 +32522,14 @@
       if (roomNoInput) {
         roomNoInput.addEventListener("input", function () {
           refreshRequestTypeFilterViews();
+          refreshAllDeskChatRoomHighlights();
+        });
+      }
+
+      var mbCheckRoomInput = document.getElementById("mbCheckRoomNo");
+      if (mbCheckRoomInput) {
+        mbCheckRoomInput.addEventListener("input", function () {
+          refreshAllDeskChatRoomHighlights();
         });
       }
 

@@ -636,6 +636,9 @@
       currentDateKey = opsDateKey();
     }
     fillDay(dayFromPack(pack, currentDateKey, true));
+    if (window.HKTableColResize && window.HKTableColResize.bind) {
+      window.HKTableColResize.bind(document.getElementById("nightHandoverPanel"));
+    }
   }
 
   function onSave() {

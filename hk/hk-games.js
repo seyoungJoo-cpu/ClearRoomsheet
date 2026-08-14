@@ -806,12 +806,15 @@
       var g = gridCanvas.getContext('2d');
       g.fillStyle = '#07171c';
       g.fillRect(0, 0, MAP, MAP);
-      g.strokeStyle = '#0e292c';
+      g.strokeStyle = '#1d4e52';
       g.lineWidth = 1;
       for (var i = 0; i <= COLS; i++) {
         g.beginPath(); g.moveTo(i * CELL, 0); g.lineTo(i * CELL, MAP); g.stroke();
         g.beginPath(); g.moveTo(0, i * CELL); g.lineTo(MAP, i * CELL); g.stroke();
       }
+      g.strokeStyle = '#ffd54a';
+      g.lineWidth = 6;
+      g.strokeRect(3, 3, MAP - 6, MAP - 6);
     })();
     function spawn() { do { food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) }; } while (snake.some(function (p) { return p.x === food.x && p.y === food.y; }) || hazards.some(function (h) { return h.body.some(function (p) { return p.x === food.x && p.y === food.y; }); })); }
     function hazardCap() {
@@ -849,8 +852,10 @@
       hazards.forEach(function (h) {
         h.body.forEach(function (p, i) {
           if (p.x < 0 || p.x >= COLS) return;
-          ctx.fillStyle = i ? '#7a3f52' : '#c45a72';
-          ctx.beginPath(); ctx.roundRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4, 7); ctx.fill();
+          ctx.fillStyle = i ? '#ff8a00' : '#ffe14d';
+          ctx.strokeStyle = '#fff8e1';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(p.x * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2, 6); ctx.fill(); ctx.stroke();
         });
       });
       snake.forEach(function (p, i) {

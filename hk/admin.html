@@ -986,6 +986,7 @@
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 읽기 모드 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>시설 관리 알림</strong>·<strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
+        <strong>오더/정비/시설 작은 채팅창</strong>은 마감 시 초기화합니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
         되돌릴 수 없으니 마감 시점에만 사용하세요.
@@ -4468,7 +4469,9 @@
           ".ai-chat{min-height:220px;max-height:55vh;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#f8fafc;margin:10px 0;}",
           ".ai-msg{margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:.875rem;}",
           ".ai-msg--user{background:#dbeafe;margin-left:18%;}",
-          ".ai-msg--bot{background:#fff;border:1px solid var(--border);margin-right:18%;}",
+          ".ai-msg--bot{background:#fff;border:1px solid var(--border);margin-right:8%;}",
+          ".ai-msg .cards{display:flex;flex-direction:column;gap:8px;margin-top:8px;}",
+          ".ai-msg .card{margin:0;}",
           ".ai-form{display:flex;gap:8px;}",
           ".ai-form input{flex:1;min-height:42px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font:inherit;}",
           ".ai-form button{min-height:42px;padding:0 16px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;}",
@@ -4665,24 +4668,11 @@
           cards: [],
           changeDone: {},
         };
-        // 오더/정비 작은 채팅창은 7일 보관 (마감해도 유지)
-        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
-          reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
-          reset.orderDeskChat = HKStorage.normalizeRequestDeskChat(prev.orderDeskChat);
-          reset.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(prev.mbCheckDeskChat);
-          reset.facilityDeskChat = HKStorage.normalizeRequestDeskChat(prev.facilityDeskChat);
-        } else {
-          reset.requestDeskChat = Array.isArray(prev.requestDeskChat)
-            ? prev.requestDeskChat.slice()
-            : [];
-          reset.orderDeskChat = Array.isArray(prev.orderDeskChat) ? prev.orderDeskChat.slice() : [];
-          reset.mbCheckDeskChat = Array.isArray(prev.mbCheckDeskChat)
-            ? prev.mbCheckDeskChat.slice()
-            : [];
-          reset.facilityDeskChat = Array.isArray(prev.facilityDeskChat)
-            ? prev.facilityDeskChat.slice()
-            : [];
-        }
+        // 오더/정비 작은 채팅창은 마감 시 초기화
+        reset.requestDeskChat = [];
+        reset.orderDeskChat = [];
+        reset.mbCheckDeskChat = [];
+        reset.facilityDeskChat = [];
         if (preservedFacility) {
           if (preservedFacility.facilityMiscLog) {
             reset.facilityMiscLog = preservedFacility.facilityMiscLog;
@@ -4835,7 +4825,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 초기화 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
           });
           return;
         }
@@ -4854,7 +4844,7 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 초기화 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
       }
 
       function performCloseDay() {
