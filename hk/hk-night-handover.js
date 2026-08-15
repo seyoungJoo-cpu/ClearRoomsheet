@@ -394,6 +394,9 @@
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-note-remove="' +
         i +
         '" title="행 삭제" aria-label="구분 행 삭제">−</button>' +
+        '<button type="button" class="nh-row-btn nh-row-btn--plus" data-nh-note-insert="' +
+        i +
+        '" title="아래에 행 추가" aria-label="구분 행 삽입">+</button>' +
         "</td>";
       tbody.appendChild(tr);
       setVal("nhNoteCat_" + i, n.category);
@@ -431,6 +434,9 @@
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-nh-inc-remove="' +
         i +
         '" title="행 삭제" aria-label="이슈 행 삭제">−</button>' +
+        '<button type="button" class="nh-row-btn nh-row-btn--plus" data-nh-inc-insert="' +
+        i +
+        '" title="아래에 행 추가" aria-label="이슈 행 삽입">+</button>' +
         "</td>";
       tbody.appendChild(tr);
       setVal("nhIncRoom_" + i, inc.room);
@@ -542,6 +548,17 @@
     syncEditLock();
   }
 
+  function insertNoteRow(idx) {
+    if (!canEdit()) return;
+    var notes = collectFromDom().notes;
+    var at = Math.max(0, Number(idx) || 0) + 1;
+    if (at > notes.length) at = notes.length;
+    notes.splice(at, 0, emptyNote());
+    rebuildNotesBody(notes);
+    markDirty();
+    syncEditLock();
+  }
+
   function addIncidentRow() {
     if (!canEdit()) return;
     var incidents = collectFromDom().incidents;
@@ -563,6 +580,17 @@
       return;
     }
     incidents.splice(idx, 1);
+    rebuildIncidentsBody(incidents);
+    markDirty();
+    syncEditLock();
+  }
+
+  function insertIncidentRow(idx) {
+    if (!canEdit()) return;
+    var incidents = collectFromDom().incidents;
+    var at = Math.max(0, Number(idx) || 0) + 1;
+    if (at > incidents.length) at = incidents.length;
+    incidents.splice(at, 0, emptyIncident());
     rebuildIncidentsBody(incidents);
     markDirty();
     syncEditLock();
@@ -592,7 +620,9 @@
         el.id === "btnNhIncAdd" ||
         el.id === "btnNhDateCal" ||
         el.hasAttribute("data-nh-note-remove") ||
-        el.hasAttribute("data-nh-inc-remove")
+        el.hasAttribute("data-nh-note-insert") ||
+        el.hasAttribute("data-nh-inc-remove") ||
+        el.hasAttribute("data-nh-inc-insert")
       ) {
         if (el.id === "btnNightHandoverExcel" || el.id === "btnNhDateCal") {
           el.disabled = false;
@@ -807,10 +837,22 @@
           removeNoteRow(Number(noteRm.getAttribute("data-nh-note-remove")));
           return;
         }
+        var noteIns = e.target.closest("[data-nh-note-insert]");
+        if (noteIns) {
+          e.preventDefault();
+          insertNoteRow(Number(noteIns.getAttribute("data-nh-note-insert")));
+          return;
+        }
         var incRm = e.target.closest("[data-nh-inc-remove]");
         if (incRm) {
           e.preventDefault();
           removeIncidentRow(Number(incRm.getAttribute("data-nh-inc-remove")));
+          return;
+        }
+        var incIns = e.target.closest("[data-nh-inc-insert]");
+        if (incIns) {
+          e.preventDefault();
+          insertIncidentRow(Number(incIns.getAttribute("data-nh-inc-insert")));
         }
       });
     }

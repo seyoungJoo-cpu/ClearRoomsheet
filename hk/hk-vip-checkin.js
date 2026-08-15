@@ -253,7 +253,7 @@
     for (i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (!r) continue;
-      if (filledStr(r.value)) return true;
+      if (filledStr(r.value) || filledStr(r.main) || filledStr(r.annex)) return true;
       var def = DEFAULT_REMARK_ROWS[i];
       if (!def && filledStr(r.label)) return true;
       if (def && filledStr(r.label) && String(r.label).trim() !== String(def.label || "").trim()) {
@@ -493,12 +493,28 @@
     var rows = [];
     var i;
     for (i = 0; i < remarkCount; i++) {
-      rows.push({
-        id: val("vipRemarkId_" + i) || "extra_" + i,
-        label: val("vipRemarkLabel_" + i),
-        value: val("vipRemarkValue_" + i),
+      var id = val("vipRemarkId_" + i) || "extra_" + i;
+      var label = val("vipRemarkLabel_" + i);
+      var isAj = id === "aj" || String(label || "").trim() === "AJ";
+      var row = {
+        id: id,
+        label: label,
+        value: "",
         highlight: val("vipRemarkHighlight_" + i) || "",
-      });
+      };
+      if (isAj) {
+        row.main = val("vipRemarkMain_" + i);
+        row.annex = val("vipRemarkAnnex_" + i);
+        row.value = [row.main, row.annex]
+          .map(function (s) {
+            return String(s || "").trim();
+          })
+          .filter(Boolean)
+          .join(" / ");
+      } else {
+        row.value = val("vipRemarkValue_" + i);
+      }
+      rows.push(row);
     }
     if (!rows.length) rows = defaultRemarkRows();
     return rows;
@@ -508,13 +524,28 @@
     var remarks = {};
     var ajList = [];
     var mbList = [];
+    var ajWing = { main: "", annex: "" };
     (rows || []).forEach(function (r) {
       if (!r) return;
       var id = r.id || "";
       var label = String(r.label || "").trim();
       var value = r.value != null ? String(r.value) : "";
       if (id === "aj" || label === "AJ") {
-        ajList.push(value);
+        var main = r.main != null ? String(r.main) : "";
+        var annex = r.annex != null ? String(r.annex) : "";
+        if (!(main || annex) && value) {
+          var parts = value.split(/\s*\/\s*/);
+          main = parts[0] || "";
+          annex = parts.length > 1 ? parts.slice(1).join(" / ") : "";
+        }
+        ajWing = { main: main, annex: annex };
+        var joined = [main, annex]
+          .map(function (s) {
+            return String(s || "").trim();
+          })
+          .filter(Boolean)
+          .join(" / ");
+        ajList.push(joined || value);
         remarks.aj = ajList.filter(Boolean).join("\n");
       } else if (id === "mb" || label === "MB") {
         mbList.push(value);
@@ -535,7 +566,7 @@
       remarks: remarks,
       ajList: ajList,
       mbList: mbList,
-      aj: { main: remarks.aj || "", annex: "" },
+      aj: ajWing,
       mb: remarks.mb || "",
     };
   }
@@ -652,6 +683,9 @@
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-guest-remove="' +
         i +
         '" title="행 삭제" aria-label="행 삭제">−</button>' +
+        '<button type="button" class="nh-row-btn nh-row-btn--plus" data-vip-guest-insert="' +
+        i +
+        '" title="아래에 행 추가" aria-label="행 삽입">+</button>' +
         "</td>";
       tr.innerHTML = cells;
       tbody.appendChild(tr);
@@ -712,6 +746,9 @@
         '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-conn-remove-row="' +
         rowIdx +
         '" title="행 삭제" aria-label="커넥팅 행 삭제">−</button>' +
+        '<button type="button" class="nh-row-btn nh-row-btn--plus" data-vip-conn-insert-row="' +
+        rowIdx +
+        '" title="아래에 행 추가" aria-label="커넥팅 행 삽입">+</button>' +
         "</td>";
       tr.innerHTML = html;
       tbody.appendChild(tr);
@@ -735,8 +772,19 @@
       var r = rows[i] || emptyRemarkRow();
       var fixed = !!(r.id && FIXED_REMARK_IDS[r.id]);
       if (fixed && r.id === "specialNote") r.label = "특이사항";
+      var isAj = r.id === "aj" || String(r.label || "").trim() === "AJ";
       var tr = document.createElement("tr");
       if (r.highlight === "green") tr.className = "vip-row--green";
+      var valueCells = isAj
+        ? '<td><textarea id="vipRemarkMain_' +
+          i +
+          '" class="nh-autosize" rows="1" placeholder="본관" autocomplete="off" aria-label="AJ 본관"></textarea></td>' +
+          '<td><textarea id="vipRemarkAnnex_' +
+          i +
+          '" class="nh-autosize" rows="1" placeholder="별관" autocomplete="off" aria-label="AJ 별관"></textarea></td>'
+        : '<td colspan="2"><textarea id="vipRemarkValue_' +
+          i +
+          '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>';
       tr.innerHTML =
         '<th scope="row" class="vip-remark-label">' +
         '<input type="hidden" id="vipRemarkId_' +
@@ -753,21 +801,34 @@
         (fixed ? " readonly" : "") +
         "></textarea>" +
         "</th>" +
-        '<td><textarea id="vipRemarkValue_' +
-        i +
-        '" class="nh-autosize" rows="1" autocomplete="off"></textarea></td>' +
+        valueCells +
         '<td class="nh-row-actions">' +
         (fixed
           ? ""
           : '<button type="button" class="nh-row-btn nh-row-btn--minus" data-vip-remark-remove="' +
             i +
-            '" title="행 삭제" aria-label="특이사항 행 삭제">−</button>') +
+            '" title="행 삭제" aria-label="특이사항 행 삭제">−</button>' +
+            '<button type="button" class="nh-row-btn nh-row-btn--plus" data-vip-remark-insert="' +
+            i +
+            '" title="아래에 행 추가" aria-label="특이사항 행 삽입">+</button>') +
         "</td>";
       tbody.appendChild(tr);
       setVal("vipRemarkId_" + i, r.id || "");
       setVal("vipRemarkHighlight_" + i, r.highlight || "");
       setVal("vipRemarkLabel_" + i, r.label || "");
-      setVal("vipRemarkValue_" + i, r.value || "");
+      if (isAj) {
+        var main = r.main != null ? String(r.main) : "";
+        var annex = r.annex != null ? String(r.annex) : "";
+        if (!(main || annex) && r.value) {
+          var parts = String(r.value).split(/\s*\/\s*/);
+          main = parts[0] || "";
+          annex = parts.length > 1 ? parts.slice(1).join(" / ") : "";
+        }
+        setVal("vipRemarkMain_" + i, main);
+        setVal("vipRemarkAnnex_" + i, annex);
+      } else {
+        setVal("vipRemarkValue_" + i, r.value || "");
+      }
     }
     autosizeAllIn(tbody);
   }
@@ -775,12 +836,15 @@
   function ensureSpecialNoteRow(rows) {
     rows = (rows || []).map(function (r) {
       r = r || {};
-      return {
+      var out = {
         id: r.id != null ? String(r.id) : "",
         label: r.label != null ? String(r.label) : "",
         value: r.value != null ? String(r.value) : "",
         highlight: r.highlight != null ? String(r.highlight) : "",
       };
+      if (r.main != null) out.main = String(r.main);
+      if (r.annex != null) out.annex = String(r.annex);
+      return out;
     });
     var has = rows.some(function (r) {
       return r && (r.id === "specialNote" || String(r.label || "").trim() === "특이사항");
@@ -816,12 +880,33 @@
       return ensureSpecialNoteRow(
         pack.remarkRows.map(function (r) {
           r = r || {};
-          return {
+          var out = {
             id: r.id != null ? String(r.id) : "",
             label: r.label != null ? String(r.label) : "",
             value: r.value != null ? String(r.value) : "",
             highlight: r.highlight != null ? String(r.highlight) : "",
           };
+          if (r.main != null) out.main = String(r.main);
+          if (r.annex != null) out.annex = String(r.annex);
+          if (out.id === "aj" || String(out.label || "").trim() === "AJ") {
+            if (out.main == null && out.annex == null) {
+              if (pack.aj && (pack.aj.main || pack.aj.annex)) {
+                out.main = String(pack.aj.main || "");
+                out.annex = String(pack.aj.annex || "");
+              } else if (out.value) {
+                var splitParts = String(out.value).split(/\s*\/\s*/);
+                out.main = splitParts[0] || "";
+                out.annex = splitParts.length > 1 ? splitParts.slice(1).join(" / ") : "";
+              } else {
+                out.main = "";
+                out.annex = "";
+              }
+            }
+            if (!out.value) {
+              out.value = [out.main, out.annex].filter(Boolean).join(" / ");
+            }
+          }
+          return out;
         })
       );
     }
@@ -829,10 +914,21 @@
     var remarks = pack.remarks || {};
     rows.forEach(function (r) {
       if (r.id === "aj") {
-        if (Array.isArray(pack.ajList) && pack.ajList.length) {
+        if (pack.aj) {
+          r.main = String(pack.aj.main || "");
+          r.annex = String(pack.aj.annex || "");
+          r.value = [r.main, r.annex].filter(Boolean).join(" / ");
+        }
+        if (Array.isArray(pack.ajList) && pack.ajList.length && !(r.main || r.annex)) {
           r.value = pack.ajList.filter(Boolean).join("\n") || String(pack.ajList[0] || "");
-        } else if (remarks.aj) r.value = remarks.aj;
-        else if (pack.aj) r.value = [pack.aj.main, pack.aj.annex].filter(Boolean).join(" / ");
+        } else if (!(r.main || r.annex) && remarks.aj) {
+          r.value = remarks.aj;
+        }
+        if (!(r.main || r.annex) && r.value) {
+          var parts = String(r.value).split(/\s*\/\s*/);
+          r.main = parts[0] || "";
+          r.annex = parts.length > 1 ? parts.slice(1).join(" / ") : "";
+        }
       } else if (r.id === "mb") {
         if (Array.isArray(pack.mbList) && pack.mbList.length) {
           r.value = pack.mbList.filter(Boolean).join("\n") || String(pack.mbList[0] || "");
@@ -879,6 +975,17 @@
     syncEditLock();
   }
 
+  function insertRemarkRow(idx) {
+    if (!canEdit()) return;
+    var rows = collectRemarkRowsFromDom();
+    var at = Math.max(0, Number(idx) || 0) + 1;
+    if (at > rows.length) at = rows.length;
+    rows.splice(at, 0, emptyRemarkRow());
+    rebuildRemarksBody(rows);
+    markDirty();
+    syncEditLock();
+  }
+
   function addGuestRow() {
     if (!canEdit()) return;
     var guests = collectGuestsFromDom();
@@ -904,6 +1011,20 @@
       /* keep */
     }
     if (guests[0]) guests[0].mergePrev = false;
+    rebuildGuestsBody(guests);
+    markDirty();
+    syncEditLock();
+  }
+
+  function insertGuestRow(idx) {
+    if (!canEdit()) return;
+    var guests = collectGuestsFromDom();
+    var at = Math.max(0, Number(idx) || 0) + 1;
+    if (at > guests.length) at = guests.length;
+    var section = "";
+    if (guests[idx] && !guests[idx].mergePrev) section = guests[idx].section || "";
+    else if (guests[idx]) section = guests[idx].section || "";
+    guests.splice(at, 0, emptyGuest(section));
     rebuildGuestsBody(guests);
     markDirty();
     syncEditLock();
@@ -1021,6 +1142,17 @@
     syncEditLock();
   }
 
+  function insertConnectingRow(startIdx) {
+    if (!canEdit()) return;
+    var list = collectConnectingFromDom();
+    var at = Math.max(0, Number(startIdx) || 0) + CONNECTING_PER_ROW;
+    if (at > list.length) at = list.length;
+    list.splice(at, 0, emptyConnecting(), emptyConnecting());
+    rebuildConnectingBody(list);
+    markDirty();
+    syncEditLock();
+  }
+
   function toggleConnectingStatus(btn) {
     if (!canEdit() || !btn) return;
     var cur = btn.getAttribute("data-status") === "OPEN" ? "OPEN" : "CLOSE";
@@ -1065,8 +1197,11 @@
         el.classList.contains("vip-conn-status") ||
         el.classList.contains("vip-row-check") ||
         el.hasAttribute("data-vip-guest-remove") ||
+        el.hasAttribute("data-vip-guest-insert") ||
         el.hasAttribute("data-vip-conn-remove-row") ||
-        el.hasAttribute("data-vip-remark-remove")
+        el.hasAttribute("data-vip-conn-insert-row") ||
+        el.hasAttribute("data-vip-remark-remove") ||
+        el.hasAttribute("data-vip-remark-insert")
       ) {
         el.disabled = !editable;
         return;
@@ -1569,16 +1704,34 @@
           removeGuestRow(Number(guestRm.getAttribute("data-vip-guest-remove")));
           return;
         }
+        var guestIns = e.target.closest("[data-vip-guest-insert]");
+        if (guestIns) {
+          e.preventDefault();
+          insertGuestRow(Number(guestIns.getAttribute("data-vip-guest-insert")));
+          return;
+        }
         var connRm = e.target.closest("[data-vip-conn-remove-row]");
         if (connRm) {
           e.preventDefault();
           removeConnectingRow(Number(connRm.getAttribute("data-vip-conn-remove-row")));
           return;
         }
+        var connIns = e.target.closest("[data-vip-conn-insert-row]");
+        if (connIns) {
+          e.preventDefault();
+          insertConnectingRow(Number(connIns.getAttribute("data-vip-conn-insert-row")));
+          return;
+        }
         var remarkRm = e.target.closest("[data-vip-remark-remove]");
         if (remarkRm) {
           e.preventDefault();
           removeRemarkRow(Number(remarkRm.getAttribute("data-vip-remark-remove")));
+          return;
+        }
+        var remarkIns = e.target.closest("[data-vip-remark-insert]");
+        if (remarkIns) {
+          e.preventDefault();
+          insertRemarkRow(Number(remarkIns.getAttribute("data-vip-remark-insert")));
         }
       });
     }

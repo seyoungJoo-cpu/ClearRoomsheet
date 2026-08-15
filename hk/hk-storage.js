@@ -296,6 +296,12 @@
     }
     return {
       number: incoming.number || prev.number,
+      prevNumber:
+        incoming.prevNumber != null
+          ? String(incoming.prevNumber)
+          : prev.prevNumber != null
+            ? String(prev.prevNumber)
+            : "",
       status: incoming.status != null ? String(incoming.status).trim() : prev.status,
       memo1: incoming.memo1 != null ? String(incoming.memo1) : prev.memo1,
       memo2: incoming.memo2 != null ? String(incoming.memo2) : prev.memo2,
@@ -2071,7 +2077,13 @@
       d.remarks.aj = [d.aj.main, d.aj.annex].filter(Boolean).join(" / ");
     }
     if (!d.remarks.mb && d.mb) d.remarks.mb = d.mb;
-    if (d.remarks.aj && !d.aj.main) d.aj = { main: d.remarks.aj, annex: "" };
+    if (d.remarks.aj && !d.aj.main && !d.aj.annex) {
+      var ajParts = String(d.remarks.aj).split(/\s*\/\s*/);
+      d.aj = {
+        main: ajParts[0] || "",
+        annex: ajParts.length > 1 ? ajParts.slice(1).join(" / ") : "",
+      };
+    }
     if (d.remarks.mb && !d.mb) d.mb = d.remarks.mb;
 
     function normList(arr, fallback) {
@@ -2104,12 +2116,15 @@
     if (Array.isArray(raw.remarkRows) && raw.remarkRows.length) {
       d.remarkRows = raw.remarkRows.map(function (r) {
         r = r || {};
-        return {
+        var row = {
           id: r.id != null ? String(r.id) : "",
           label: r.label != null ? String(r.label) : "",
           value: r.value != null ? String(r.value) : "",
           highlight: r.highlight != null ? String(r.highlight) : "",
         };
+        if (r.main != null) row.main = String(r.main);
+        if (r.annex != null) row.annex = String(r.annex);
+        return row;
       });
     } else {
       d.remarkRows = defaultRemarkDefs.map(function (def) {
@@ -2465,6 +2480,7 @@
       d.memo2 = x.memo2 != null ? String(x.memo2) : "";
       d.memo2Image = x.memo2Image != null ? String(x.memo2Image) : "";
       d.memo3 = x.memo3 != null ? String(x.memo3) : "";
+      d.prevNumber = x.prevNumber != null ? String(x.prevNumber).trim() : "";
       d.time = x.time != null ? normalizeTimeField(x.time) : "";
       d.tray = x.tray != null ? String(x.tray).trim() : "";
       d.trayUpdatedAt =

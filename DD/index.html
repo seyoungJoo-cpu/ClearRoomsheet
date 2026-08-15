@@ -615,6 +615,7 @@
       const existing = parseRooms(ddRooms.value);
       const merged = Array.from(new Set([...existing, ...newRooms]));
       ddRooms.value = merged.join(", ");
+      saveDdEmbedState();
       return {
         addedCount: merged.length - existing.length,
         totalCount: merged.length
@@ -976,8 +977,13 @@
 
     function applyDdEmbedState(saved) {
       if (!saved || typeof saved !== "object") return;
-      if (saved.ddRooms != null) ddRooms.value = saved.ddRooms;
-      if (saved.template != null) template.value = saved.template;
+      // Keep in-progress edits while the field is focused
+      if (saved.ddRooms != null && document.activeElement !== ddRooms) {
+        ddRooms.value = saved.ddRooms;
+      }
+      if (saved.template != null && document.activeElement !== template) {
+        template.value = saved.template;
+      }
       if (Array.isArray(saved.currentRows) && saved.currentRows.length) {
         currentRows = saved.currentRows;
         if (saved.sortState) {
@@ -1255,6 +1261,20 @@
       copyText(text, "전화번호만 복사했습니다.");
     });
     bindSortHandlers();
+
+    let ddEmbedSaveTimer = null;
+    function scheduleSaveDdEmbedState() {
+      if (ddEmbedSaveTimer) clearTimeout(ddEmbedSaveTimer);
+      ddEmbedSaveTimer = setTimeout(function () {
+        ddEmbedSaveTimer = null;
+        saveDdEmbedState();
+      }, 300);
+    }
+    ddRooms.addEventListener("input", scheduleSaveDdEmbedState);
+    ddRooms.addEventListener("change", scheduleSaveDdEmbedState);
+    template.addEventListener("input", scheduleSaveDdEmbedState);
+    template.addEventListener("change", scheduleSaveDdEmbedState);
+
     // 프론트 임베드는 부모(HK) 상태가 기준 — 로컬 잔여 XML을 기본값으로 되살리지 않음
     if (!isHkFrontEmbed()) {
       restoreDdEmbedState();

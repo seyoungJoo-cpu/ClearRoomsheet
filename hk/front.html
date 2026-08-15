@@ -1902,6 +1902,51 @@
       color: #64748b;
     }
 
+    .front-chat-recent-directs {
+      margin-top: 10px;
+    }
+
+    .front-chat-recent-directs[hidden] {
+      display: none !important;
+    }
+
+    .front-chat-recent-directs__list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .front-chat-recent-directs__row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .front-chat-recent-directs__text {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.75rem;
+      color: #334155;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .front-chat-recent-directs__cancel {
+      flex: none;
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid #fda4af;
+      border-radius: 6px;
+      background: #fff;
+      color: #be123c;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     .hk-confirm {
       position: fixed;
       inset: 0;
@@ -8284,6 +8329,17 @@
       box-sizing: border-box;
     }
 
+    .hk-strip-sort__static {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 2px;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
     .hk-strip-sort__btn {
       display: inline-flex;
       align-items: center;
@@ -8451,6 +8507,14 @@
     .confirming-cards-panel .request-feedback__item.is-chat-open .order-chat__msg {
       font-size: 0.75rem;
       max-width: 95%;
+      color: #0f172a;
+    }
+
+    .confirming-cards-panel .order-chat__msg,
+    #confirmingCardsPanel .order-chat__msg-text,
+    .confirming-cards-panel .order-chat__msg-text,
+    .confirming-cards-panel .order-chat__msg-by {
+      color: #0f172a !important;
     }
 
     .confirming-cards-panel .request-feedback__item.is-chat-open .order-chat__form input {
@@ -8704,6 +8768,25 @@
       font-weight: 700;
       color: var(--accent);
       border-bottom: 2px solid #334155;
+    }
+
+    .desk-chat-room-search {
+      width: 6.5rem;
+      min-width: 0;
+      height: 26px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    .desk-chat-room-search:focus {
+      outline: 2px solid #93c5fd;
+      outline-offset: 0;
+      border-color: #60a5fa;
     }
 
     .desk-chat-font-controls {
@@ -9561,11 +9644,16 @@
     .track-it-panel .complaint-table td {
       padding: 6px 8px;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 12rem;
     }
 
     .track-it-panel .complaint-table td.complaint-td-memo {
       white-space: nowrap;
-      max-width: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 18rem;
     }
 
     .track-it-panel .complaint-table thead th {
@@ -9894,9 +9982,17 @@
 
     .nh-th-actions,
     .nh-row-actions {
-      width: 3.25rem;
+      width: 5.25rem;
       padding: 4px !important;
       background: #f8fafc;
+    }
+
+    .nh-row-actions {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
     }
 
     .nh-row-btn {
@@ -9919,6 +10015,12 @@
       width: 2.75rem;
       height: 2.75rem;
       font-size: 1.75rem;
+    }
+
+    .nh-row-actions .nh-row-btn--plus {
+      width: 2.25rem;
+      height: 2.25rem;
+      font-size: 1.35rem;
     }
 
     .nh-row-btn--minus {
@@ -11351,8 +11453,9 @@
 
     .main .room-list-main > .room-card.is-strip-cols {
       display: grid;
-      /* 객실 · 동 · 시간 · 상태 · 메모 · 버튼 (정렬 헤더와 동일) */
+      /* NO. · 객실 · 동 · 시간 · 상태 · 메모 · 버튼 (정렬 헤더와 동일) */
       grid-template-columns:
+        2.2rem
         minmax(2.2rem, 0.3fr)
         3.5rem
         minmax(2.4rem, 0.33fr)
@@ -11429,7 +11532,7 @@
     }
 
     .main .room-list-main > .room-card.is-strip-cols > .room-card__actions {
-      grid-column: 6;
+      grid-column: 7;
       grid-row: 1;
       justify-self: end;
       width: auto;
@@ -11449,12 +11552,30 @@
 
     .hk-strip-sort[data-sort-list="zoneRooms"] {
       grid-template-columns:
+        2.2rem
         minmax(2.2rem, 0.3fr)
         3.5rem
         minmax(2.4rem, 0.33fr)
         minmax(3.8rem, 0.75fr)
         minmax(8rem, 2.4fr)
         auto;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--no {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #64748b;
+      justify-self: center;
+      text-align: center;
+    }
+
+    .main .room-list-main > .room-card.is-strip-cols > .hk-strip-cell--room .room-card__prev-number {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #b45309;
+      line-height: 1.2;
+      margin-bottom: 2px;
     }
 
     .main .order-work-item .request-feedback__item-room,
@@ -12596,6 +12717,10 @@
         <div class="front-chat-online" id="frontChatOnline" hidden>
           <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿</div>
           <div class="front-chat-online__list" id="frontChatOnlineList"></div>
+          <div class="front-chat-recent-directs" id="frontChatRecentDirects" hidden>
+            <div class="front-chat-online__label">보낸 알럿</div>
+            <div class="front-chat-recent-directs__list" id="frontChatRecentDirectsList"></div>
+          </div>
         </div>
         <ul class="front-chat__messages" id="frontChatMessages" aria-live="polite"></ul>
         <p class="front-chat__empty" id="frontChatEmpty" hidden></p>
@@ -12907,6 +13032,7 @@
             <div class="order-desk-chat__head">
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <input type="search" class="desk-chat-search desk-chat-room-search" id="orderDeskChatRoomSearch" placeholder="검색" autocomplete="off" aria-label="오더 채팅 검색" />
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
                 <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
@@ -13536,6 +13662,7 @@
             <div class="order-desk-chat__head">
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <input type="search" class="desk-chat-search desk-chat-room-search" id="facilityDeskChatRoomSearch" placeholder="검색" autocomplete="off" aria-label="시설 채팅 검색" />
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
                 <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
@@ -13942,6 +14069,7 @@
             <div class="order-desk-chat__head">
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <input type="search" class="desk-chat-search desk-chat-room-search" id="mbCheckDeskChatRoomSearch" placeholder="검색" autocomplete="off" aria-label="MB CHECK 채팅 검색" />
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
                 <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
@@ -14052,6 +14180,7 @@
             <div class="request-desk-chat__head">
               <span>채팅</span>
               <div class="desk-chat-font-controls" role="group" aria-label="채팅 글씨 크기">
+                <input type="search" class="desk-chat-search desk-chat-room-search" id="requestDeskChatRoomSearch" placeholder="검색" autocomplete="off" aria-label="정비 채팅 검색" />
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="-1" title="글씨 작게">A-</button>
                 <span class="desk-chat-font-level" data-desk-font-label>1</span>
                 <button type="button" class="desk-chat-font-btn" data-desk-font-delta="1" title="글씨 크게">A+</button>
@@ -14429,19 +14558,19 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-25"></script>
+  <script src="hk-storage.js?v=bydate-26"></script>
   <script src="hk-sync.js?v=force-sync-5"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-push.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
-  <script src="hk-inven-notify.js?v=xlsx-real-2"></script>
+  <script src="hk-inven-notify.js?v=xlsx-real-3"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-19"></script>
-  <script src="hk-night-handover.js?v=bydate-16"></script>
-  <script src="hk-vip-checkin.js?v=table-fit-1"></script>
+  <script src="hk-night-handover.js?v=bydate-17"></script>
+  <script src="hk-vip-checkin.js?v=table-fit-2"></script>
   <script src="hk-staff-broadcast.js?v=dm-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
@@ -16043,6 +16172,7 @@
 
       var stripSortStateByList = Object.create(null);
       var STRIP_SORT_COLS = [
+        { id: "no", label: "NO." },
         { id: "room", label: "객실" },
         { id: "wing", label: "동" },
         { id: "time", label: "시간" },
@@ -16162,8 +16292,7 @@
           prev.classList.contains("hk-strip-sort") &&
           prev.getAttribute("data-sort-list") === listKey
         ) {
-          var existingBtns = prev.querySelectorAll(".hk-strip-sort__btn");
-          if (existingBtns.length !== sortCols.length) {
+          if (prev.children.length !== sortCols.length) {
             prev.parentNode.removeChild(prev);
             head = null;
           } else {
@@ -16176,6 +16305,13 @@
           head.setAttribute("data-sort-list", listKey);
           head.setAttribute("role", "row");
           sortCols.forEach(function (c) {
+            if (c.id === "no") {
+              var staticCell = document.createElement("span");
+              staticCell.className = "hk-strip-sort__static";
+              staticCell.textContent = c.label;
+              head.appendChild(staticCell);
+              return;
+            }
             var btn = document.createElement("button");
             btn.type = "button";
             btn.className = "hk-strip-sort__btn";
@@ -16257,7 +16393,8 @@
           var tb = new Date(fieldFn(b) || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          // 기본: 최신순 (새 항목이 위)
+          return tb - ta;
         };
       }
 
@@ -16578,6 +16715,52 @@
         renderFrontChatOnline();
       }
 
+      var hkRecentDirectAlerts = [];
+
+      function renderFrontRecentDirects() {
+        var box = document.getElementById("frontChatRecentDirects");
+        var list = document.getElementById("frontChatRecentDirectsList");
+        if (!box || !list) return;
+        var show = frontMode && getActiveChatKind() === "front";
+        var openItems = hkRecentDirectAlerts.filter(function (it) {
+          return it && !it.cancelled && it.ids && it.ids.length;
+        });
+        if (!show || !openItems.length) {
+          box.hidden = true;
+          list.innerHTML = "";
+          return;
+        }
+        box.hidden = false;
+        list.innerHTML = "";
+        openItems.forEach(function (it) {
+          var row = document.createElement("div");
+          row.className = "front-chat-recent-directs__row";
+          var text = document.createElement("span");
+          text.className = "front-chat-recent-directs__text";
+          var toLabel = Array.isArray(it.to) ? it.to.join(", ") : String(it.to || "");
+          text.textContent = toLabel ? "#" + toLabel + " · " + (it.text || "") : it.text || "1:1 알럿";
+          text.title = text.textContent;
+          var cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "front-chat-recent-directs__cancel";
+          cancel.textContent = "취소";
+          cancel.setAttribute("aria-label", "보낸 1:1 알럿 취소");
+          cancel.addEventListener("click", function () {
+            if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.cancelDirects) {
+              HKStaffBroadcast.cancelDirects(it.ids);
+            }
+            it.cancelled = true;
+            if (typeof showHkActionToast === "function") {
+              showHkActionToast("1:1 알럿을 취소했습니다.");
+            }
+            renderFrontRecentDirects();
+          });
+          row.appendChild(text);
+          row.appendChild(cancel);
+          list.appendChild(row);
+        });
+      }
+
       function renderFrontChatOnline() {
         var wrap = document.getElementById("frontChatOnline");
         var list = document.getElementById("frontChatOnlineList");
@@ -16586,6 +16769,7 @@
         wrap.hidden = !show;
         if (!show) {
           list.innerHTML = "";
+          renderFrontRecentDirects();
           return;
         }
         var names =
@@ -16601,6 +16785,7 @@
           empty.className = "front-chat-online__empty";
           empty.textContent = "접속 중인 프론트가 없습니다.";
           list.appendChild(empty);
+          renderFrontRecentDirects();
           return;
         }
         names.forEach(function (name) {
@@ -16614,6 +16799,7 @@
           });
           list.appendChild(btn);
         });
+        renderFrontRecentDirects();
       }
 
       function updateChatPanelChrome() {
@@ -17175,20 +17361,37 @@
       }
 
       function getDeskChatRoomFilterForMount(mount) {
-        if (!mount || !mount.id) return "";
-        var id = mount.id;
-        var el = null;
-        if (id === "orderDeskChatMessages") el = document.getElementById("orderRoomNo");
-        else if (id === "facilityDeskChatMessages") el = document.getElementById("facilityOrderRoomNo");
-        else if (id === "requestDeskChatMessages") el = document.getElementById("roomNo");
-        else if (id === "mbCheckDeskChatMessages") el = document.getElementById("mbCheckRoomNo");
-        return el && el.value ? String(el.value).replace(/\s/g, "") : "";
+        if (!mount) return "";
+        var aside = mount.closest ? mount.closest("aside") : null;
+        var searchEl = aside
+          ? aside.querySelector(".desk-chat-search, .desk-chat-room-search")
+          : null;
+        var formEl = null;
+        var id = mount.id || "";
+        if (id === "orderDeskChatMessages") {
+          if (!searchEl) searchEl = document.getElementById("orderDeskChatRoomSearch");
+          formEl = document.getElementById("orderRoomNo");
+        } else if (id === "facilityDeskChatMessages") {
+          if (!searchEl) searchEl = document.getElementById("facilityDeskChatRoomSearch");
+          formEl = document.getElementById("facilityOrderRoomNo");
+        } else if (id === "requestDeskChatMessages") {
+          if (!searchEl) searchEl = document.getElementById("requestDeskChatRoomSearch");
+          formEl = document.getElementById("roomNo");
+        } else if (id === "mbCheckDeskChatMessages") {
+          if (!searchEl) searchEl = document.getElementById("mbCheckDeskChatRoomSearch");
+          formEl = document.getElementById("mbCheckRoomNo");
+        }
+        var searchVal = searchEl && searchEl.value ? String(searchEl.value).trim() : "";
+        if (searchVal) return searchVal;
+        return formEl && formEl.value ? String(formEl.value).replace(/\s/g, "") : "";
       }
 
       function highlightDeskChatRoomMatches(mount) {
         if (!mount) return null;
         var filterRaw = getDeskChatRoomFilterForMount(mount);
+        var filterText = String(filterRaw || "").trim();
         var digits = typeof roomDigitsLoose === "function" ? roomDigitsLoose(filterRaw) : String(filterRaw || "").replace(/\D/g, "");
+        var letterish = /[^\d\s호,-/]/.test(filterText);
         var firstHit = null;
         mount.querySelectorAll(".order-desk-chat__msg-text, .request-desk-chat__msg-text").forEach(function (el) {
           var raw = el.getAttribute("data-desk-raw");
@@ -17197,30 +17400,51 @@
             el.setAttribute("data-desk-raw", raw);
           }
           el.textContent = raw;
-          if (!digits) return;
-          var re = /(\d{3,4})/g;
+          if (!filterText) return;
           var src = raw;
           var last = 0;
           var m;
           var frag = document.createDocumentFragment();
           var any = false;
-          while ((m = re.exec(src))) {
-            if (m.index > last) frag.appendChild(document.createTextNode(src.slice(last, m.index)));
-            var span = document.createElement("span");
-            var hit =
-              typeof roomMatchesSchedSearch === "function"
-                ? roomMatchesSchedSearch(m[1], filterRaw)
-                : String(m[1]).indexOf(digits) >= 0 || digits.indexOf(m[1]) >= 0;
-            if (hit) {
-              span.className = "desk-chat-room-hit";
+          var re;
+          if (letterish) {
+            re = new RegExp(
+              filterText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              "gi"
+            );
+            while ((m = re.exec(src))) {
+              if (m.index > last) frag.appendChild(document.createTextNode(src.slice(last, m.index)));
+              var spanT = document.createElement("span");
+              spanT.className = "desk-chat-room-hit";
+              spanT.textContent = m[0];
+              frag.appendChild(spanT);
               any = true;
               if (!firstHit) {
                 firstHit = el.closest(".order-desk-chat__msg, .request-desk-chat__msg") || el;
               }
+              last = m.index + m[0].length;
+              if (!m[0].length) re.lastIndex++;
             }
-            span.textContent = m[1];
-            frag.appendChild(span);
-            last = m.index + m[1].length;
+          } else if (digits) {
+            re = /(\d{3,4})/g;
+            while ((m = re.exec(src))) {
+              if (m.index > last) frag.appendChild(document.createTextNode(src.slice(last, m.index)));
+              var span = document.createElement("span");
+              var hit =
+                typeof roomMatchesSchedSearch === "function"
+                  ? roomMatchesSchedSearch(m[1], filterRaw)
+                  : String(m[1]).indexOf(digits) >= 0 || digits.indexOf(m[1]) >= 0;
+              if (hit) {
+                span.className = "desk-chat-room-hit";
+                any = true;
+                if (!firstHit) {
+                  firstHit = el.closest(".order-desk-chat__msg, .request-desk-chat__msg") || el;
+                }
+              }
+              span.textContent = m[1];
+              frag.appendChild(span);
+              last = m.index + m[1].length;
+            }
           }
           if (!any) return;
           if (last < src.length) frag.appendChild(document.createTextNode(src.slice(last)));
@@ -17232,6 +17456,17 @@
         }
         return firstHit;
       }
+
+      function bindDeskChatRoomSearchInputs() {
+        if (document.documentElement.__hkDeskChatRoomSearchBound) return;
+        document.documentElement.__hkDeskChatRoomSearchBound = true;
+        document.querySelectorAll(".desk-chat-search, .desk-chat-room-search").forEach(function (el) {
+          el.addEventListener("input", function () {
+            refreshAllDeskChatRoomHighlights();
+          });
+        });
+      }
+      bindDeskChatRoomSearchInputs();
 
       function refreshAllDeskChatRoomHighlights() {
         highlightDeskChatRoomMatches(document.getElementById("orderDeskChatMessages"));
@@ -18458,12 +18693,15 @@
             ? data.frontEmbedStates
             : {};
         var sig = frontEmbedStateSig(states);
+        var sigUnchanged = lastAppliedFrontEmbedSig !== "" && sig === lastAppliedFrontEmbedSig;
         if (!opts.force && sig === lastAppliedFrontEmbedSig) return;
         lastAppliedFrontEmbedSig = sig;
         ["dd", "inven", "chichi"].forEach(function (key) {
           var state = effectiveFrontEmbedState(states[key] || null);
           writeFrontEmbedLocalStorage(key, state);
-          if (opts.notifyFrames !== false) postFrontEmbedStateToFrame(key, state);
+          // force여도 내용이 같으면 iframe에 다시 보내지 않음 (입력 중이던 값이 지워지는 것 방지)
+          if (opts.notifyFrames === false || sigUnchanged) return;
+          postFrontEmbedStateToFrame(key, state);
         });
       }
 
@@ -21629,6 +21867,15 @@
           .replace(/\s*(찾아줘|알려줘|보여줘|몇개|몇\s*개|개수|몇\s*건)[?.!]*$/gi, "")
           .trim();
         if (!item || /^(전체|모든|대기|긴급|문제|접수|취소|오늘|금일|오더)$/i.test(item)) return "";
+        // "1201호 오더" / "0000호 오더" 처럼 객실만 있는 경우 메모 검색이 아님
+        var roomsOnly = parseAiRoomNumberList(item);
+        if (roomsOnly.length) {
+          var stripped = String(item)
+            .replace(/\d{3,4}\s*호?/g, " ")
+            .replace(/[,，\s/|·]+/g, " ")
+            .trim();
+          if (!stripped) return "";
+        }
         return item;
       }
 
@@ -24829,19 +25076,27 @@
       function openFacilityOrderMemoEditor(orderId) {
         if (!maintenanceMode && !frontMode) return;
         var entry = findOrderEntry(orderId);
-        if (!entry || !isFacilityOrder(entry)) return;
+        if (!entry) return;
+        var isFac = isFacilityOrder(entry);
+        if (!isFac && !isRegularOrder(entry)) return;
         var phase = getOrderPhase(entry);
         if (phase === "cancelled" || phase === "deployed" || phase === "doorhandle") return;
         var li =
+          document.querySelector(
+            '#orderFeedbackList .order-feedback__item[data-order-id="' + orderId + '"]'
+          ) ||
           document.querySelector(
             '#facilityFeedbackList .order-feedback__item[data-order-id="' + orderId + '"]'
           ) ||
           document.querySelector(
             '#facilityPanel .order-work-item[data-order-id="' + orderId + '"]'
+          ) ||
+          document.querySelector(
+            '#orderPanel .order-work-item[data-order-id="' + orderId + '"]'
           );
         if (!li) return;
         var hideSel =
-          ".order-feedback__memo-btn, .order-feedback__accept-btn, .order-work__wan-btn, .order-work__issue-btn, .order-work__facility-time-btn, .order-work__facility-time-input";
+          ".order-feedback__memo-btn, .order-feedback__accept-btn, .request-feedback__cancel-btn, .order-work__wan-btn, .order-work__issue-btn, .order-work__facility-time-btn, .order-work__facility-time-input";
         var oldWrap = li.querySelector(".order-feedback__memo-editor-wrap");
         if (oldWrap) {
           oldWrap.remove();
@@ -24855,7 +25110,7 @@
         });
         document
           .querySelectorAll(
-            "#facilityFeedbackList .order-feedback__memo-btn, #facilityFeedbackList .order-feedback__accept-btn, #facilityPanel .order-feedback__memo-btn"
+            "#orderFeedbackList .order-feedback__memo-btn, #orderFeedbackList .order-feedback__accept-btn, #facilityFeedbackList .order-feedback__memo-btn, #facilityFeedbackList .order-feedback__accept-btn, #facilityPanel .order-feedback__memo-btn, #orderPanel .order-feedback__memo-btn"
           )
           .forEach(function (b) {
             b.style.visibility = "";
@@ -24871,8 +25126,8 @@
         var ed = document.createElement("div");
         ed.className = "request-feedback__memo-editor";
         var ta = document.createElement("textarea");
-        ta.setAttribute("aria-label", "시설 오더 메모");
-        ta.placeholder = "시설 오더 메모를 입력하세요.";
+        ta.setAttribute("aria-label", "오더 메모");
+        ta.placeholder = "오더 메모를 입력하세요.";
         ta.value = entry.memo != null ? String(entry.memo) : "";
         var act = document.createElement("div");
         act.className = "request-feedback__memo-editor-actions";
@@ -27717,7 +27972,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return ta - tb;
+          return tb - ta;
         });
         entries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -27763,7 +28018,7 @@
             maintAcceptBtn.setAttribute("data-order-id", entry.id || "");
             maintAcceptBtn.textContent = "접수";
             maintAcceptActs.appendChild(maintAcceptBtn);
-            if (isFacilityOrder(entry)) {
+            if (isFacilityOrder(entry) || isRegularOrder(entry)) {
               var memoStrFac = entry.memo != null ? String(entry.memo).trim() : "";
               var facilityMemoBtn = document.createElement("button");
               facilityMemoBtn.type = "button";
@@ -27772,7 +28027,7 @@
               facilityMemoBtn.textContent = memoStrFac ? "메모 수정" : "메모 입력";
               facilityMemoBtn.setAttribute(
                 "aria-label",
-                memoStrFac ? "시설 오더 메모 수정" : "시설 오더 메모 입력"
+                memoStrFac ? "오더 메모 수정" : "오더 메모 입력"
               );
               maintAcceptActs.appendChild(facilityMemoBtn);
             }
@@ -27810,6 +28065,17 @@
           } else if (frontMode && !entry.fromMaint && !isAutoRobotOrder(entry)) {
             var frontActs = document.createElement("div");
             frontActs.className = "order-feedback__front-actions";
+            var memoStrOrder = entry.memo != null ? String(entry.memo).trim() : "";
+            var orderMemoBtn = document.createElement("button");
+            orderMemoBtn.type = "button";
+            orderMemoBtn.className = "request-feedback__memo-btn order-feedback__memo-btn";
+            orderMemoBtn.setAttribute("data-order-id", entry.id || "");
+            orderMemoBtn.textContent = memoStrOrder ? "메모 수정" : "메모 입력";
+            orderMemoBtn.setAttribute(
+              "aria-label",
+              memoStrOrder ? "오더 메모 수정" : "오더 메모 입력"
+            );
+            frontActs.appendChild(orderMemoBtn);
             var cancelOrderBtn = document.createElement("button");
             cancelOrderBtn.type = "button";
             cancelOrderBtn.className = "request-feedback__cancel-btn";
@@ -29425,9 +29691,24 @@
           wingCell.textContent = "—";
         }
 
+        var noCell = document.createElement("span");
+        noCell.className = "hk-strip-cell hk-strip-cell--no";
+        noCell.textContent = String(
+          cardOpts && cardOpts.displayNo != null ? cardOpts.displayNo : (Number(idx) || 0) + 1
+        );
+
         var roomCell = document.createElement("span");
         roomCell.className = "hk-strip-cell hk-strip-cell--room";
-        roomCell.textContent = formatRoomNoDisplay(room.number || "");
+        var prevNoRaw = room.prevNumber != null ? String(room.prevNumber).trim() : "";
+        if (prevNoRaw && !roomsAreSame(prevNoRaw, room.number || "")) {
+          var prevEl = document.createElement("span");
+          prevEl.className = "room-card__prev-number";
+          prevEl.textContent = formatRoomNoDisplay(prevNoRaw) + " →";
+          roomCell.appendChild(prevEl);
+        }
+        var roomNoText = document.createElement("span");
+        roomNoText.textContent = formatRoomNoDisplay(room.number || "");
+        roomCell.appendChild(roomNoText);
 
         var statusCell = document.createElement("div");
         statusCell.className = "hk-strip-cell hk-strip-cell--status";
@@ -29479,6 +29760,7 @@
         setLineWithEmTime(timeDisp, "시간 · ", tm || "");
         timeCell.appendChild(timeDisp);
 
+        li.appendChild(noCell);
         li.appendChild(roomCell);
         li.appendChild(wingCell);
         li.appendChild(timeCell);
@@ -29552,6 +29834,13 @@
           typeof HKStorage.unmarkRoomDeleted === "function"
         ) {
           HKStorage.unmarkRoomDeleted(dataSave, zone, next.number);
+        }
+        if (prevNo && next.number && !roomsAreSame(prevNo, next.number)) {
+          next.prevNumber = prevNo;
+        } else if (prevRow && prevRow.prevNumber != null) {
+          next.prevNumber = String(prevRow.prevNumber);
+        } else {
+          next.prevNumber = "";
         }
         next.time = prevRow && prevRow.time != null ? prevRow.time : "";
         next.memo2Image = prevRow && prevRow.memo2Image != null ? prevRow.memo2Image : "";
@@ -29639,8 +29928,7 @@
         var room = data.rooms[zone] && data.rooms[zone][idx];
         if (!room) return;
         li.classList.add("is-inline-editing");
-        var surface = li.querySelector(".room-card__surface");
-        if (!surface) return;
+        var mount = li.querySelector(".room-card__surface") || li;
         var editor = document.createElement("div");
         editor.className = "room-card__inline-editor";
         var numLabel = document.createElement("label");
@@ -29688,7 +29976,7 @@
         editActions.appendChild(btnSave);
         editActions.appendChild(btnCancel);
         editor.appendChild(editActions);
-        surface.appendChild(editor);
+        mount.appendChild(editor);
         inNum.focus();
         inNum.select();
       }
@@ -30548,6 +30836,7 @@
             if (srcIdx < 0) srcIdx = idx;
             var li = buildZoneRoomCardLi(zone, room, srcIdx, {
               showCheckIn: true,
+              displayNo: shownCount,
             });
             roomList.appendChild(li);
           });
@@ -31134,7 +31423,6 @@
           });
           return;
         }
-        if (typeof HKSync === "undefined" || !HKSync.appendFrontChatMessage) return;
         var mentions = parseChatMentions(msgText);
         var alertIds = [];
         if (
@@ -31143,7 +31431,31 @@
           mentions.length
         ) {
           alertIds = HKStaffBroadcast.sendDirectAlerts(getOperatorName(), msgText, mentions) || [];
+          // 1:1 멘션은 알럿만 보내고 공용 채팅에는 올리지 않음
+          hkClearPhoto("frontChat");
+          if (alertIds.length) {
+            hkRecentDirectAlerts.unshift({
+              ids: alertIds,
+              to: mentions.slice(),
+              text: msgText,
+              at: Date.now(),
+              cancelled: false,
+            });
+            if (hkRecentDirectAlerts.length > 12) hkRecentDirectAlerts.length = 12;
+          }
+          if (typeof showHkActionToast === "function") {
+            showHkActionToast(
+              alertIds.length
+                ? "1:1 알럿을 보냈습니다. (" + mentions.join(", ") + ")"
+                : "1:1 알림 전송에 실패했습니다."
+            );
+          }
+          var frontChatInput = document.getElementById("frontChatInput");
+          if (frontChatInput) frontChatInput.value = "";
+          renderFrontRecentDirects();
+          return;
         }
+        if (typeof HKSync === "undefined" || !HKSync.appendFrontChatMessage) return;
         var newId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
         knownFrontChatIds[newId] = true;
         HKSync.appendFrontChatMessage({

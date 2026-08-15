@@ -11,6 +11,7 @@
   var lastPublished = null;
   var uiReady = false;
   var draftDirty = false;
+  var lastGoodPublished = null;
   var publishFeedbackTimer = null;
   var uiHooks = {};
   var state = defaultInvenNotify();
@@ -335,7 +336,16 @@
   }
 
   function loadPublishedState() {
-    return reconcileWithPublished(cloneState(loadInvenNotify()));
+    var stored = reconcileWithPublished(cloneState(loadInvenNotify()));
+    if (hasContent(stored)) {
+      lastGoodPublished = cloneState(stored);
+      return stored;
+    }
+    // 저장 후 원격/동기화로 빈 값이 덮여도 마감 전까지는 마지막 저장본 유지
+    if (lastGoodPublished && hasContent(lastGoodPublished)) {
+      return cloneState(lastGoodPublished);
+    }
+    return stored;
   }
 
   function getPublishedSignature() {
@@ -519,6 +529,7 @@
     state.table.updatedAt = nextUpdatedAt();
     state.clearReason = "";
     saveInvenNotify(state, { pushNow: true });
+    lastGoodPublished = cloneState(state);
     draftDirty = false;
     clearDraftLocal();
     updateSaveButton();
@@ -555,6 +566,7 @@
     state.clearReason = "userReset";
     draftDirty = false;
     clearDraftLocal();
+    lastGoodPublished = null;
     saveInvenNotify(state, { pushNow: true });
     renderCards();
     updateEmpty();
@@ -565,6 +577,7 @@
 
   function resetOnCloseDay() {
     clearDraftLocal();
+    lastGoodPublished = null;
     var empty = cloneState(defaultInvenNotify());
     empty.clearReason = "closeDay";
     // 마감 스냅샷에 이미 빈 표(+updatedAt)가 있으면 그 시각을 유지해 merge 우선순위 보존
@@ -1549,15 +1562,23 @@
     if (!force && skipNextRemoteRender) {
       skipNextRemoteRender = false;
     }
-    if (!force && editable && draftDirty) {
-      /* keep draft */
+    if (!force && editable && draftDirty && hasContent(state)) {
+      /* keep in-memory draft with content */
     } else if (editable) {
       var pending = loadDraftLocal();
-      if (pending && ((pending.cards && pending.cards.length) || draftDirty)) {
+      var published = loadPublishedState();
+      if (draftDirty && pending && hasContent(pending)) {
+        state = pending;
+        draftDirty = true;
+      } else if (hasContent(published)) {
+        // 빈 초안이 저장된 통보를 덮지 않음
+        state = published;
+        draftDirty = false;
+      } else if (pending && ((pending.cards && pending.cards.length) || draftDirty)) {
         state = pending;
         draftDirty = true;
       } else {
-        state = loadPublishedState();
+        state = published;
         draftDirty = false;
       }
     } else {
@@ -1590,9 +1611,13 @@
   function onFrontModeChanged() {
     if (isFrontModeActive()) {
       var pending = loadDraftLocal();
-      if (pending && pending.cards && pending.cards.length) {
+      var published = loadPublishedState();
+      if (pending && hasContent(pending)) {
         state = pending;
         draftDirty = true;
+      } else if (hasContent(published)) {
+        state = published;
+        draftDirty = false;
       }
     } else if (!draftDirty) {
       state = loadPublishedState();

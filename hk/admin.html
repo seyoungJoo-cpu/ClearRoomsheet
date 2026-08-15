@@ -1162,7 +1162,7 @@
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>시설 관리 알림</strong>·<strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
         <strong>오더/정비/시설 작은 채팅창</strong>은 마감 후에도 <strong>7일간 보관</strong>합니다.
-        <strong>알럿·투표</strong>는 마감 시 초기화합니다. 아직 시각이 안 된 <strong>예약 알럿·투표</strong>는 남깁니다.
+        <strong>알럿</strong>은 마감 시 초기화합니다. 아직 시각이 안 된 <strong>예약 알럿</strong>은 남깁니다. <strong>투표</strong>는 마감해도 모두 유지됩니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
         되돌릴 수 없으니 마감 시점에만 사용하세요.
@@ -4924,13 +4924,8 @@
           });
           (Array.isArray(prevPack.polls) ? prevPack.polls : []).forEach(function (p) {
             if (!p || !p.id) return;
-            var t = p.startsAt ? new Date(p.startsAt).getTime() : 0;
-            if (isFinite(t) && t > now) {
-              keptPolls.push(p);
-              delete deletedIds[p.id];
-            } else {
-              deletedIds[p.id] = closeAt;
-            }
+            keptPolls.push(p);
+            delete deletedIds[p.id];
           });
           reset.staffBroadcasts.alerts = keptAlerts;
           reset.staffBroadcasts.polls = keptPolls;
