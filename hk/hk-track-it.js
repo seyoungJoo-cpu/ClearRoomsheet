@@ -443,11 +443,20 @@
       if (!lost && row.shippedOk && !row.discarded) tr.classList.add("is-shipped-ok");
       if (isRowVoided(row)) tr.classList.add("is-voided");
 
+      function fillCellText(cell, text) {
+        var span = document.createElement("span");
+        span.className = "track-it-cell-text";
+        var v = text || "—";
+        span.textContent = v;
+        if (v && v !== "—") span.title = v;
+        cell.appendChild(span);
+        return cell;
+      }
+
       function td(text, className) {
         var cell = document.createElement("td");
         if (className) cell.className = className;
-        cell.textContent = text || "—";
-        return cell;
+        return fillCellText(cell, text);
       }
 
       tr.appendChild(td(formatDateDisplay(row.createdAt), "complaint-td-date complaint-td-narrow"));
@@ -463,25 +472,25 @@
       tr.appendChild(td(row.phone, "complaint-td-narrow"));
       tr.appendChild(td(row.item, "complaint-td-memo"));
       tr.appendChild(td(row.checkoutDate ? formatDateDisplay(row.checkoutDate) : "", "complaint-td-narrow"));
-      tr.appendChild(td(row.roomNo, "complaint-td-narrow"));
+      tr.appendChild(td(row.roomNo, "complaint-td-narrow track-it-col-room"));
 
       var tdShip = document.createElement("td");
-      tdShip.className = "complaint-td-narrow track-it-ship-status";
+      tdShip.className = "complaint-td-narrow track-it-ship-status track-it-col-ship";
       if (!lost) {
         if (row.discarded) {
-          tdShip.textContent = "폐기";
+          fillCellText(tdShip, "폐기");
           tdShip.classList.add("is-discarded");
         } else if (row.shippedOk) {
-          tdShip.textContent = "발송 OK";
+          fillCellText(tdShip, "발송 OK");
           tdShip.classList.add("is-ok");
         } else {
-          tdShip.textContent = "—";
+          fillCellText(tdShip, "—");
         }
       } else if (row.noneMarked) {
-        tdShip.textContent = "없음";
+        fillCellText(tdShip, "없음");
         tdShip.classList.add("is-discarded");
       } else {
-        tdShip.textContent = "—";
+        fillCellText(tdShip, "—");
       }
       tr.appendChild(tdShip);
 
@@ -982,6 +991,20 @@
     if (excelBtn) {
       excelBtn.addEventListener("click", downloadExcel);
     }
+
+    function syncWindowMaximizedClass() {
+      try {
+        var gap = 24;
+        var maxed =
+          !!document.fullscreenElement ||
+          (window.outerWidth >= screen.availWidth - gap &&
+            window.outerHeight >= screen.availHeight - gap);
+        document.documentElement.classList.toggle("is-window-maximized", maxed);
+      } catch (e) {}
+    }
+    syncWindowMaximizedClass();
+    window.addEventListener("resize", syncWindowMaximizedClass);
+    document.addEventListener("fullscreenchange", syncWindowMaximizedClass);
 
     var table = document.querySelector("#trackItPanel .complaint-table");
     if (table) {

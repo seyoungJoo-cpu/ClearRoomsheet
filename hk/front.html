@@ -9273,14 +9273,16 @@
       display: none !important;
     }
 
+    .track-it-panel.track-it-page--lost col.track-it-col-zip,
     .track-it-panel.track-it-page--lost td.track-it-col-zip {
       display: none !important;
+      width: 0 !important;
     }
 
     .track-it-panel .complaint-table thead th[data-sort-key] {
       cursor: pointer;
       user-select: none;
-      white-space: nowrap;
+      white-space: normal;
     }
 
     .track-it-panel .complaint-table thead th[data-sort-key]:hover {
@@ -9594,6 +9596,18 @@
       min-width: 8.5rem;
     }
 
+    .track-it-panel #trackItFieldZip {
+      flex: 0.5 1 4.25rem;
+      min-width: 4.25rem;
+      max-width: 6.5rem;
+    }
+
+    .track-it-panel #trackItFieldRoom {
+      flex: 0.33 1 3.25rem;
+      min-width: 3.25rem;
+      max-width: 5.5rem;
+    }
+
     .track-it-panel .complaint-form__fields .field label {
       font-size: 0.8rem;
     }
@@ -9603,7 +9617,7 @@
       height: 36px;
       padding: 0 10px;
       font-size: 0.875rem;
-      min-width: 9rem;
+      min-width: 0;
       width: 100%;
       box-sizing: border-box;
     }
@@ -9640,25 +9654,88 @@
       font-size: 0.875rem;
     }
 
+    .track-it-panel .complaint-table col.track-it-col-created {
+      width: 8%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-shiptype {
+      width: 6%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-address {
+      width: 18%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-zip {
+      width: 4.5%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-name {
+      width: 8%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-phone {
+      width: 10%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-item {
+      width: 18%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-checkout {
+      width: 8%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-room {
+      width: 3%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-ship {
+      width: 3%;
+    }
+    .track-it-panel .complaint-table col.track-it-col-act {
+      width: 13.5%;
+    }
+
     .track-it-panel .complaint-table th,
     .track-it-panel .complaint-table td {
-      padding: 6px 8px;
-      white-space: nowrap;
+      padding: 6px 6px;
+      white-space: normal;
       overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 12rem;
+      text-overflow: clip;
+      max-width: none;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      vertical-align: middle;
     }
 
     .track-it-panel .complaint-table td.complaint-td-memo {
-      white-space: nowrap;
+      white-space: pre-wrap;
       overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 18rem;
+      text-overflow: clip;
+      max-width: none;
+      vertical-align: top;
+    }
+
+    .track-it-panel .complaint-table .track-it-cell-text {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: inherit;
+    }
+
+    html.is-window-maximized .track-it-panel .complaint-table .track-it-cell-text {
+      display: block;
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
+      overflow: visible;
+    }
+
+    .track-it-panel .complaint-table td.complaint-td-actions {
+      white-space: nowrap;
+      overflow: visible;
     }
 
     .track-it-panel .complaint-table thead th {
       font-size: 0.8rem;
-      padding: 6px 8px;
+      padding: 6px 6px;
+      line-height: 1.25;
     }
 
     .track-it-panel .complaint-row-edit,
@@ -9699,7 +9776,6 @@
     .track-it-panel .track-it-ship-status.is-ok {
       color: #15803d;
       font-weight: 800;
-      white-space: nowrap;
     }
 
     .track-it-panel .complaint-table tbody tr.is-shipped-ok {
@@ -13319,7 +13395,7 @@
               <label for="trackItCheckoutDate">체크아웃 날짜</label>
               <input type="date" id="trackItCheckoutDate" />
             </div>
-            <div class="field">
+            <div class="field" id="trackItFieldRoom">
               <label for="trackItRoomNo">객실번호 (검색)</label>
               <input
                 type="text"
@@ -13337,7 +13413,20 @@
         </form>
 
         <div class="complaint-table-wrap">
-          <table class="complaint-table" aria-label="Track IT 등록 목록">
+          <table class="complaint-table" aria-label="Track IT 등록 목록" data-hk-cols-key="track-it-v2">
+            <colgroup>
+              <col class="track-it-col-created" />
+              <col class="track-it-col-shiptype" />
+              <col class="track-it-col-address" />
+              <col class="track-it-col-zip" />
+              <col class="track-it-col-name" />
+              <col class="track-it-col-phone" />
+              <col class="track-it-col-item" />
+              <col class="track-it-col-checkout" />
+              <col class="track-it-col-room" />
+              <col class="track-it-col-ship" />
+              <col class="track-it-col-act" />
+            </colgroup>
             <thead>
               <tr>
                 <th data-sort-key="createdAt">등록일</th>
@@ -14568,7 +14657,7 @@
   <script src="hk-inven-notify.js?v=xlsx-real-3"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
-  <script src="hk-track-it.js?v=bydate-19"></script>
+  <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-2"></script>
   <script src="hk-staff-broadcast.js?v=dm-alert-1"></script>
@@ -17520,7 +17609,11 @@
           table.classList.add("hk-table-resizable");
           var key =
             "hk-table-cols:" +
-            (table.getAttribute("aria-label") || table.id || table.className || "table");
+            (table.getAttribute("data-hk-cols-key") ||
+              table.getAttribute("aria-label") ||
+              table.id ||
+              table.className ||
+              "table");
           var saved = null;
           try {
             saved = JSON.parse(localStorage.getItem(key) || "null");
