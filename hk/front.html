@@ -2284,6 +2284,14 @@
       color: var(--accent);
     }
 
+    .sidebar-section--primary .sidebar-title,
+    .sidebar-section--handover .sidebar-title {
+      padding: 8px 10px 2px;
+      font-weight: 800;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+    }
+
     .sidebar-nav {
       display: flex;
       flex-direction: column;
@@ -2765,6 +2773,11 @@
       align-items: center;
       gap: 8px 12px;
       margin-bottom: 10px;
+    }
+
+    .zone-main-head-row .minibar-xml-upload {
+      margin: 0;
+      max-width: none;
     }
 
     .zone-main-head {
@@ -4908,6 +4921,10 @@
     }
 
     .sidebar-section--front .sidebar-title {
+      padding: 8px 10px 2px;
+      font-weight: 800;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
       color: #0f766e;
     }
 
@@ -7461,6 +7478,7 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+      justify-content: flex-start;
     }
 
     .request-type-filters__toggle {
@@ -7488,7 +7506,7 @@
     }
 
     .request-type-filters__toggle--view {
-      margin-left: auto;
+      margin-left: 0;
     }
 
     .hk-room-board-panel {
@@ -7967,7 +7985,7 @@
     }
 
     .confirming-cards-panel__wing .sched-cards-list {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: 1fr;
     }
 
     .sched-req-card--confirming-compact {
@@ -8960,6 +8978,11 @@
       background: #1e293b;
       color: #fff;
       border-color: #1e293b;
+    }
+    .desk-chat-strong-btn.is-on {
+      background: #e11d48;
+      color: #fff;
+      border-color: #e11d48;
     }
     .desk-chat-write-font-level {
       min-width: 14px;
@@ -10111,6 +10134,10 @@
       padding: 4px 0 8px;
     }
 
+    .night-handover-panel .nh-row-addbar {
+      display: none !important;
+    }
+
     .night-handover-panel.is-readonly .nh-table input,
     .night-handover-panel.is-readonly .nh-table textarea,
     .night-handover-panel.is-readonly .nh-title-date {
@@ -10634,15 +10661,29 @@
       font-size: 0.78rem;
     }
 
-    .complaint-table col.c-date,
-    .complaint-table col.c-res,
-    .complaint-table col.c-name,
-    .complaint-table col.c-room,
-    .complaint-table col.c-memo,
-    .complaint-table col.c-type,
-    .complaint-table col.c-change,
+    .complaint-table col.c-date {
+      width: 7%;
+    }
+    .complaint-table col.c-res {
+      width: 9%;
+    }
+    .complaint-table col.c-name {
+      width: 8%;
+    }
+    .complaint-table col.c-room {
+      width: 7%;
+    }
+    .complaint-table col.c-memo {
+      width: 46%;
+    }
+    .complaint-table col.c-type {
+      width: 10%;
+    }
+    .complaint-table col.c-change {
+      width: 6%;
+    }
     .complaint-table col.c-act {
-      width: auto;
+      width: 7%;
     }
 
     .complaint-table th,
@@ -10660,7 +10701,7 @@
     .complaint-table th:nth-child(5) {
       white-space: pre-wrap;
       word-break: break-word;
-      max-width: 28rem;
+      max-width: none;
       vertical-align: top;
     }
 
@@ -11156,20 +11197,20 @@
     }
 
     /* ── 작업·객실카드: 가로 한줄 스트립 (사이드바 알림 제외) ── */
-    /* 오더·시설: 객실 | 동 | 메모 | 이름 | 상태 | 오더 시간 | 접수 | 버튼 | 근무자 */
+    /* 오더·시설: 객실 | 동 | 메모 | 상태 | 오더 시간 | 접수 | 요청이름 | 버튼 | 투입이름 */
     .main .order-work-item.is-strip-cols {
       display: grid;
       grid-template-columns:
-        minmax(2.5rem, 0.6fr)
-        3.5rem
-        minmax(5rem, 1.5fr)
-        minmax(4.2rem, 0.9fr)
-        minmax(3.5rem, 0.7fr)
-        minmax(4.5rem, 0.9fr)
-        minmax(4.5rem, 1fr)
+        minmax(2.5rem, 0.55fr)
+        3.2rem
+        minmax(9rem, 2.6fr)
+        minmax(2.6rem, 0.45fr)
+        minmax(3rem, 0.5fr)
+        minmax(3rem, 0.5fr)
+        minmax(3rem, 0.5fr)
         auto
-        minmax(4.2rem, 0.85fr);
-      gap: 6px 12px;
+        minmax(3rem, 0.5fr);
+      gap: 6px 8px;
       align-items: center;
       width: 100%;
       box-sizing: border-box;
@@ -11206,15 +11247,15 @@
 
     .hk-strip-sort--work {
       grid-template-columns:
-        minmax(2.5rem, 0.6fr)
-        3.5rem
-        minmax(5rem, 1.5fr)
-        minmax(4.2rem, 0.9fr)
-        minmax(3.5rem, 0.7fr)
-        minmax(4.5rem, 0.9fr)
-        minmax(4.5rem, 1fr)
+        minmax(2.5rem, 0.55fr)
+        3.2rem
+        minmax(9rem, 2.6fr)
+        minmax(2.6rem, 0.45fr)
+        minmax(3rem, 0.5fr)
+        minmax(3rem, 0.5fr)
+        minmax(3rem, 0.5fr)
         auto
-        minmax(4.2rem, 0.85fr);
+        minmax(3rem, 0.5fr);
     }
 
     .hk-strip-sort[data-sort-list="schedCards"] {
@@ -11245,14 +11286,14 @@
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--time {
-      grid-column: 6;
+      grid-column: 5;
       grid-row: 1;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       min-width: 0;
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--status {
-      grid-column: 5;
+      grid-column: 4;
       grid-row: 1;
       min-width: 0;
     }
@@ -11260,7 +11301,7 @@
     .main .order-work-item.is-strip-cols > .hk-strip-cell--memo {
       grid-column: 3;
       grid-row: 1;
-      font-size: 1.4rem;
+      font-size: 1.45rem;
       font-weight: 800;
       line-height: 1.35;
       min-width: 0;
@@ -11276,9 +11317,9 @@
     }
 
     .main .order-work-item.is-strip-cols > .hk-strip-cell--received {
-      grid-column: 7;
+      grid-column: 6;
       grid-row: 1;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       min-width: 0;
       line-height: 1.35;
     }
@@ -11298,7 +11339,7 @@
     }
 
     .main .order-work-item.is-strip-cols > .order-feedback__item-by {
-      grid-column: 4;
+      grid-column: 7;
       grid-row: 1;
       justify-self: start;
       align-self: center;
@@ -11313,7 +11354,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       text-align: left;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: var(--text);
     }
@@ -11469,7 +11510,9 @@
     }
 
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
-    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions {
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .sched-req-card__actions,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__maint-actions,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__front-actions {
       grid-column: 7;
       grid-row: 1;
       justify-self: end;
@@ -12618,33 +12661,34 @@
         <h1 class="sidebar-brand__title">House Keeping</h1>
       </div>
       <nav class="sidebar-section sidebar-section--primary" aria-label="House Keeping 메뉴">
+        <div class="sidebar-title">HOUSE KEEPING</div>
         <div class="sidebar-nav">
           <button
             type="button"
             class="sidebar-nav__btn"
             id="sidebarBtnOrder"
             aria-pressed="true"
-            title="오더 관리 (Ctrl+1)"
+            title="오더 (Ctrl+1)"
           >
-            오더 관리
+            오더
           </button>
           <button
             type="button"
             class="sidebar-nav__btn"
             id="sidebarBtnRequest"
             aria-pressed="false"
-            title="정비 관리 (Ctrl+2)"
+            title="정비 (Ctrl+2)"
           >
-            정비 관리
+            정비
           </button>
           <button
             type="button"
             class="sidebar-nav__btn"
             id="sidebarBtnFacility"
             aria-pressed="false"
-            title="시설 관리 (Ctrl+3)"
+            title="시설 (Ctrl+3)"
           >
-            시설 관리
+            시설
           </button>
           <button
             type="button"
@@ -12661,67 +12705,41 @@
             class="sidebar-nav__btn"
             id="sidebarBtnMbCheck"
             aria-pressed="false"
-            title="MB CHECK (Ctrl+5)"
+            title="MB확인 (Ctrl+5)"
           >
-            MB CHECK
+            MB확인
           </button>
         </div>
       </nav>
       <div class="sidebar-section--bottom">
-        <nav class="sidebar-section sidebar-section--chat" id="sidebarChatSection" hidden aria-label="채팅">
+        <nav class="sidebar-section sidebar-section--handover" id="sidebarHandoverSection" aria-label="인계사항">
+          <div class="sidebar-title">인계사항</div>
           <div class="sidebar-nav">
-            <button
-              type="button"
-              class="sidebar-nav__btn"
-              id="sidebarBtnFront"
-              aria-pressed="false"
-              hidden
-            >
-              프론트 채팅방
-            </button>
-          </div>
-        </nav>
-        <nav class="sidebar-section sidebar-section--secondary" aria-label="부가 메뉴">
-          <div class="sidebar-nav">
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
-              id="sidebarBtnTrackIt"
-              aria-pressed="false"
-            >
-              Track IT
-            </button>
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
               id="sidebarBtnInvenNotify"
               aria-pressed="false"
             >
-              인벤 통보
+              인벤통보
             </button>
-          </div>
-        </nav>
-        <nav class="sidebar-section sidebar-section--handover" id="sidebarHandoverSection" hidden aria-label="야간 인계사항">
-          <div class="sidebar-nav">
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
               id="sidebarBtnNightHandover"
               aria-pressed="false"
+              hidden
             >
-              야간 인계사항
+              야간인계
             </button>
-          </div>
-        </nav>
-        <nav class="sidebar-section sidebar-section--vip-notes" id="sidebarVipCheckInSection" hidden aria-label="VIP 체크인 리스트">
-          <div class="sidebar-nav">
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
               id="sidebarBtnVipCheckIn"
               aria-pressed="false"
+              hidden
             >
-              VIP 체크인 리스트
+              VIP&amp;특이사항
             </button>
           </div>
         </nav>
@@ -12740,14 +12758,32 @@
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
           </div>
         </nav>
-        <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" hidden aria-label="프론트">
-          <div class="sidebar-title">프론트</div>
+        <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" aria-label="FRONT">
+          <div class="sidebar-title">FRONT</div>
           <div class="sidebar-nav">
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
+              id="sidebarBtnTrackIt"
+              aria-pressed="false"
+            >
+              Track IT
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn"
+              id="sidebarBtnFront"
+              aria-pressed="false"
+              hidden
+            >
+              FD 챗
+            </button>
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--multiline"
               id="sidebarBtnFrontEmbed"
               aria-pressed="false"
+              hidden
             >
               DD·인벤·취향
             </button>
@@ -12757,6 +12793,7 @@
               id="sidebarBtnComplaint"
               aria-pressed="false"
               title="고객불편사항 유형분석"
+              hidden
             >
               고객불편사항 유형분석
             </button>
@@ -12953,7 +12990,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO / 모바일체크인 / AJ객실 / 미니바 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO / MCI / AJ / MB 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -12970,24 +13007,24 @@
                 role="group"
                 aria-label="객실 상태 필터"
               ></div>
+              <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="미니바 XML 업로드">
+                <div class="minibar-xml-upload__row">
+                  <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
+                    XML
+                  </div>
+                  <div class="minibar-xml-upload__actions">
+                    <input
+                      type="file"
+                      id="minibarXmlFile"
+                      accept=".xml,text/xml,application/xml"
+                      aria-label="미니바 pkgforecast XML 파일"
+                    />
+                    <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
+                  </div>
+                </div>
+                <p class="minibar-xml-upload__status" id="minibarXmlStatus" hidden></p>
+              </section>
             </div>
-            <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="미니바 XML 업로드">
-              <div class="minibar-xml-upload__row">
-                <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
-                  XML
-                </div>
-                <div class="minibar-xml-upload__actions">
-                  <input
-                    type="file"
-                    id="minibarXmlFile"
-                    accept=".xml,text/xml,application/xml"
-                    aria-label="미니바 pkgforecast XML 파일"
-                  />
-                  <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
-                </div>
-              </div>
-              <p class="minibar-xml-upload__status" id="minibarXmlStatus" hidden></p>
-            </section>
             <div class="request-type-filters zone-type-filters" id="zoneTypeFilters" aria-label="특이객실 TYPE 필터">
               <div class="request-type-filters__actions">
                 <button
@@ -13049,7 +13086,7 @@
         <div class="order-panel__body">
           <div class="order-panel__main">
             <div class="panel-head-row">
-              <h2 id="orderPanelTitle">오더 관리</h2>
+              <h2 id="orderPanelTitle">오더</h2>
               <button type="button" class="panel-alert-ack-btn" id="btnAckOrderPanel" hidden>확인</button>
             </div>
             <form class="order-row" id="orderForm">
@@ -13118,6 +13155,7 @@
             <form class="order-desk-chat__form" id="orderDeskChatForm">
               <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
                 <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-strong-btn" title="강조 말풍선" aria-pressed="false">강</button>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
                 <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
@@ -13641,13 +13679,13 @@
               <tr>
                 <th class="vip-th-check">선택</th>
                 <th>구분</th>
-                <th>Guest Name</th>
-                <th>Room No.</th>
-                <th>Room 상태</th>
-                <th>Room Type</th>
+                <th>성함</th>
+                <th>RM NO.</th>
+                <th>상태</th>
+                <th>TYPE</th>
                 <th>RSV No.</th>
-                <th>도착 예정 시간</th>
-                <th>Check Out</th>
+                <th>ETA</th>
+                <th>C/O</th>
                 <th>비고</th>
                 <th class="nh-th-actions">삭제</th>
               </tr>
@@ -13687,7 +13725,7 @@
         <div class="order-panel__body">
           <div class="order-panel__main">
             <div class="panel-head-row">
-              <h2 id="facilityPanelTitle">시설 관리</h2>
+              <h2 id="facilityPanelTitle">시설</h2>
               <button type="button" class="panel-alert-ack-btn" id="btnAckFacilityPanel" hidden>확인</button>
             </div>
             <form class="order-row" id="facilityOrderForm">
@@ -13761,6 +13799,7 @@
             <form class="order-desk-chat__form" id="facilityDeskChatForm">
               <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
                 <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-strong-btn" title="강조 말풍선" aria-pressed="false">강</button>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
                 <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
@@ -14119,7 +14158,7 @@
         aria-labelledby="invenNotifyPanelTitle"
       >
         <div class="panel-head-row">
-          <h2 id="invenNotifyPanelTitle">인벤 통보</h2>
+          <h2 id="invenNotifyPanelTitle">인벤통보</h2>
           <button type="button" class="panel-alert-ack-btn" id="btnAckInvenNotifyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
@@ -14132,7 +14171,7 @@
         <div class="order-panel__body">
           <div class="order-panel__main">
             <div class="panel-head-row">
-              <h2 id="mbCheckPanelTitle">MB CHECK</h2>
+              <h2 id="mbCheckPanelTitle">MB확인</h2>
               <button type="button" class="panel-alert-ack-btn" id="btnAckMbCheckPanel" hidden>확인</button>
             </div>
             <form class="mb-check-change-form" id="mbCheckForm">
@@ -14168,6 +14207,7 @@
             <form class="order-desk-chat__form" id="mbCheckDeskChatForm">
               <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
                 <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-strong-btn" title="강조 말풍선" aria-pressed="false">강</button>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
                 <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
@@ -14210,7 +14250,7 @@
         <div class="request-panel__body">
           <div class="request-panel__main">
             <div class="panel-head-row">
-              <h2 id="requestTitle">정비 관리</h2>
+              <h2 id="requestTitle">정비</h2>
               <button type="button" class="panel-alert-ack-btn" id="btnAckRequestPanel" hidden>확인</button>
             </div>
             <form class="request-row" id="requestForm">
@@ -14279,6 +14319,7 @@
             <form class="request-desk-chat__form" id="requestDeskChatForm">
               <div class="desk-chat-compose-tools" role="group" aria-label="글씨 서식">
                 <button type="button" class="desk-chat-bold-btn" title="굵게" aria-pressed="false">B</button>
+                <button type="button" class="desk-chat-strong-btn" title="강조 말풍선" aria-pressed="false">강</button>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="-1" title="쓰는 글씨 작게">A-</button>
                 <span class="desk-chat-write-font-level" data-desk-write-font-label>2</span>
                 <button type="button" class="desk-chat-write-font-btn desk-chat-font-btn" data-desk-write-font-delta="1" title="쓰는 글씨 크게">A+</button>
@@ -14647,10 +14688,10 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-26"></script>
+  <script src="hk-storage.js?v=bydate-27"></script>
   <script src="hk-sync.js?v=force-sync-5"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
-  <script src="hk-chat-colors.js?v=gradient-1"></script>
+  <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
@@ -14659,7 +14700,7 @@
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
-  <script src="hk-vip-checkin.js?v=table-fit-2"></script>
+  <script src="hk-vip-checkin.js?v=table-fit-3"></script>
   <script src="hk-staff-broadcast.js?v=dm-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
@@ -14676,9 +14717,9 @@
         VIP: "VIP",
         RC: "R/C",
         CASINO: "CASINO",
-        MOBILE_CI: "모바일체크인",
-        AJ: "AJ객실",
-        MINIBAR: "미니바",
+        MOBILE_CI: "MCI",
+        AJ: "AJ",
+        MINIBAR: "MB",
       };
       var currentZone = null;
       var maintenanceMode = false;
@@ -14934,6 +14975,16 @@
 
       function isRegularOrder(entry) {
         return entry && !isFacilityOrder(entry) && !isAutoRobotOrder(entry);
+      }
+
+      function isOrderAlertEntry(entry) {
+        if (!entry || isFacilityOrder(entry)) return false;
+        if (isAutoRobotOrder(entry)) {
+          if (entry.fromMaint) return false;
+          if (entry.autoOrderKind === "rpa_check") return false;
+          return true;
+        }
+        return true;
       }
 
       function isZoneRoomManageEditing() {
@@ -15268,9 +15319,9 @@
         saveChatMessageEdit(getActiveChatKind() || "front", id, newText);
       }
 
-      function applyChatBubbleColors(li, byName, byEl, textClass) {
+      function applyChatBubbleColors(li, byName, byEl, textClass, colorId) {
         if (typeof HKChatColors === "undefined" || !HKChatColors.applyBubbleColors) return;
-        HKChatColors.applyBubbleColors(li, byName, byEl, textClass);
+        HKChatColors.applyBubbleColors(li, byName, byEl, textClass, colorId);
       }
 
       function applyChatBubbleAlign(li, byName) {
@@ -16272,10 +16323,12 @@
         { id: "room", label: "객실" },
         { id: "wing", label: "동" },
         { id: "memo", label: "메모" },
-        { id: "by", label: "요청" },
         { id: "status", label: "상태" },
         { id: "time", label: "오더 시간" },
         { id: "received", label: "접수 시간" },
+        { id: "by", label: "요청이름" },
+        { id: "no", label: "" },
+        { id: "no", label: "투입이름" },
       ];
       var SCHED_STRIP_SORT_COLS = [
         { id: "room", label: "객실" },
@@ -16963,6 +17016,7 @@
 
       var DESK_WRITE_FONT_KEY = "hk-desk-chat-write-font-v1";
       var DESK_WRITE_BOLD_KEY = "hk-desk-chat-write-bold-v1";
+      var DESK_WRITE_STRONG_KEY = "hk-desk-chat-write-strong-v1";
 
       function getDeskWriteFontLevel() {
         var level = 2;
@@ -16981,9 +17035,25 @@
         }
       }
 
+      function getDeskWriteStrong() {
+        try {
+          return localStorage.getItem(DESK_WRITE_STRONG_KEY) === "1";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function getDeskWriteBubbleColor() {
+        if (getDeskWriteStrong()) return "rose";
+        if (maintenanceMode) return "slate";
+        if (frontMode) return "indigo";
+        return "";
+      }
+
       function applyDeskWriteComposeUi() {
         var level = getDeskWriteFontLevel();
         var bold = getDeskWriteBold();
+        var strong = getDeskWriteStrong();
         DESK_CHAT_IDS.forEach(function (id) {
           var aside = document.getElementById(id);
           if (!aside) return;
@@ -16994,11 +17064,15 @@
             btn.classList.toggle("is-on", !!bold);
             btn.setAttribute("aria-pressed", bold ? "true" : "false");
           });
+          aside.querySelectorAll(".desk-chat-strong-btn").forEach(function (btn) {
+            btn.classList.toggle("is-on", !!strong);
+            btn.setAttribute("aria-pressed", strong ? "true" : "false");
+          });
           var inp = aside.querySelector("input[type='text']");
           if (inp) {
             inp.style.fontWeight = bold ? "800" : "";
             inp.style.fontSize = level === 1 ? "0.8rem" : level === 3 ? "1.1rem" : "0.95rem";
-            inp.style.color = "#111";
+            inp.style.color = strong ? "#be123c" : "#111";
           }
         });
       }
@@ -17016,6 +17090,15 @@
         var next = !getDeskWriteBold();
         try {
           localStorage.setItem(DESK_WRITE_BOLD_KEY, next ? "1" : "0");
+        } catch (e) {}
+        applyDeskWriteComposeUi();
+        return next;
+      }
+
+      function toggleDeskWriteStrong() {
+        var next = !getDeskWriteStrong();
+        try {
+          localStorage.setItem(DESK_WRITE_STRONG_KEY, next ? "1" : "0");
         } catch (e) {}
         applyDeskWriteComposeUi();
         return next;
@@ -17121,6 +17204,13 @@
           btn.__hkDeskBoldBound = true;
           btn.addEventListener("click", function () {
             toggleDeskWriteBold();
+          });
+        });
+        document.querySelectorAll(".desk-chat-strong-btn").forEach(function (btn) {
+          if (btn.__hkDeskStrongBound) return;
+          btn.__hkDeskStrongBound = true;
+          btn.addEventListener("click", function () {
+            toggleDeskWriteStrong();
           });
         });
         applyDeskWriteComposeUi();
@@ -17790,7 +17880,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "request-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "request-desk-chat__msg-text", m.bubbleColor);
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
@@ -17807,6 +17897,7 @@
       function appendRequestDeskChatMessage(text) {
         var msg = String(text || "").trim();
         if (!msg) return false;
+        if (!requireSelectedMode()) return false;
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
@@ -17826,6 +17917,7 @@
           text: msg,
           bold: getDeskWriteBold(),
           fontLevel: getDeskWriteFontLevel(),
+          bubbleColor: getDeskWriteBubbleColor(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.requestDeskChat = HKStorage.normalizeRequestDeskChat(data.requestDeskChat);
@@ -17895,7 +17987,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
@@ -17912,6 +18004,7 @@
       function appendOrderDeskChatMessage(text) {
         var msg = String(text || "").trim();
         if (!msg) return false;
+        if (!requireSelectedMode()) return false;
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
@@ -17931,6 +18024,7 @@
           text: msg,
           bold: getDeskWriteBold(),
           fontLevel: getDeskWriteFontLevel(),
+          bubbleColor: getDeskWriteBubbleColor(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.orderDeskChat = HKStorage.normalizeRequestDeskChat(data.orderDeskChat);
@@ -18000,7 +18094,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
@@ -18017,6 +18111,7 @@
       function appendMbCheckDeskChatMessage(text) {
         var msg = String(text || "").trim();
         if (!msg) return false;
+        if (!requireSelectedMode()) return false;
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
@@ -18036,6 +18131,7 @@
           text: msg,
           bold: getDeskWriteBold(),
           fontLevel: getDeskWriteFontLevel(),
+          bubbleColor: getDeskWriteBubbleColor(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(data.mbCheckDeskChat);
@@ -18105,7 +18201,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text");
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
@@ -18122,6 +18218,7 @@
       function appendFacilityDeskChatMessage(text) {
         var msg = String(text || "").trim();
         if (!msg) return false;
+        if (!requireSelectedMode()) return false;
         var name = getOperatorName();
         if (!name) {
           showOperatorGate({
@@ -18141,6 +18238,7 @@
           text: msg,
           bold: getDeskWriteBold(),
           fontLevel: getDeskWriteFontLevel(),
+          bubbleColor: getDeskWriteBubbleColor(),
         });
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           data.facilityDeskChat = HKStorage.normalizeRequestDeskChat(data.facilityDeskChat);
@@ -18642,6 +18740,53 @@
         }, 2200);
       }
 
+      function requireSelectedMode() {
+        if (maintenanceMode || frontMode) return true;
+        showHkActionToast("우측 상단 모드를 선택하세요");
+        return false;
+      }
+
+      function getKstMinutesOfDay() {
+        try {
+          var parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: "Asia/Seoul",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).formatToParts(new Date());
+          var map = {};
+          parts.forEach(function (p) {
+            map[p.type] = p.value;
+          });
+          var hour = parseInt(map.hour, 10);
+          var minute = parseInt(map.minute, 10);
+          if (!isFinite(hour) || !isFinite(minute)) return 0;
+          return hour * 60 + minute;
+        } catch (e) {
+          var d = new Date();
+          return d.getHours() * 60 + d.getMinutes();
+        }
+      }
+
+      function isOrderInputClosed() {
+        return getKstMinutesOfDay() >= 17 * 60;
+      }
+
+      function syncOrderInputClosedUi() {
+        var closed = isOrderInputClosed();
+        var memo = document.getElementById("orderMemo");
+        var urgent = document.getElementById("btnOrderUrgent");
+        var submit = document.querySelector("#orderForm button[type='submit']");
+        var photo = document.getElementById("btnPhotoOrderMemo");
+        if (memo) memo.disabled = closed;
+        if (urgent) urgent.disabled = closed;
+        if (submit) {
+          submit.disabled = closed;
+          submit.title = closed ? "17:00 이후에는 오더를 입력할 수 없습니다." : "";
+        }
+        if (photo) photo.disabled = closed;
+      }
+
       function parseBulkRoomNumbers(raw) {
         var out = [];
         String(raw || "")
@@ -18657,6 +18802,35 @@
             if (dup) return;
             out.push(canon);
           });
+        return out;
+      }
+
+      function parseAjRoomTeams(raw) {
+        var s = String(raw || "")
+          .replace(/[\[\]【】]/g, "")
+          .trim();
+        if (!s) return [];
+        var out = [];
+        s.split(/[/／]+/).forEach(function (chunk) {
+          var t = String(chunk || "").trim();
+          if (!t) return;
+          if (/[,，]/.test(t)) {
+            var nums = [];
+            t.split(/[,，]+/).forEach(function (part) {
+              var n = String(part || "").trim();
+              if (!n) return;
+              var canon = normalizeRoomDigits(n) || n;
+              if (canon) nums.push(canon);
+            });
+            if (!nums.length) return;
+            var joined = nums.join(",");
+            if (!out.some(function (x) { return roomsAreSame(x, joined); })) out.push(joined);
+            return;
+          }
+          parseBulkRoomNumbers(t).forEach(function (n) {
+            if (!out.some(function (x) { return roomsAreSame(x, n); })) out.push(n);
+          });
+        });
         return out;
       }
 
@@ -19186,7 +19360,10 @@
           var numInput = document.createElement("textarea");
           numInput.className = "af-num";
           numInput.rows = 2;
-          numInput.placeholder = "객실번호 (쉼표·공백·줄바꿈으로 여러 개)";
+          numInput.placeholder =
+            zone === "AJ"
+              ? "205,206 / 1010,1011  (쉼표=한팀, / =다른팀)"
+              : "객실번호 (쉼표·공백·줄바꿈으로 여러 개)";
           numInput.autocomplete = "off";
           stack.appendChild(numInput);
         }
@@ -19493,7 +19670,8 @@
               showHkActionToast("객실번호를 입력하세요.");
               return;
             }
-            var numbers = parseBulkRoomNumbers(numRaw);
+            var numbers =
+              zone === "AJ" ? parseAjRoomTeams(numRaw) : parseBulkRoomNumbers(numRaw);
             if (!numbers.length) {
               showHkActionToast("객실번호를 입력하세요.");
               return;
@@ -21414,10 +21592,7 @@
       }
 
       function syncTeamChatSidebarUi() {
-        var section = document.getElementById("sidebarChatSection");
         var frontChatNav = document.getElementById("sidebarBtnFront");
-        var showSection = !!frontMode;
-        if (section) section.hidden = !showSection;
         if (frontChatNav) frontChatNav.hidden = !frontMode;
         if (sidebarMainView === "chat") {
           showSidebarRequestView({ skipDirtyConfirm: true });
@@ -24677,9 +24852,13 @@
         return "객실 " + base + (entry && entry.quick ? " 중 빠른거" : "");
       }
 
-      function buildRequestFeedbackItemLi(entry) {
+      function buildRequestFeedbackItemLi(entry, opts) {
+        opts = opts || {};
+        var confirmingStrip = !!opts.confirmingStrip;
         var li = document.createElement("li");
-        li.className = "request-feedback__item";
+        li.className = confirmingStrip
+          ? "request-feedback__item sched-req-card is-strip-cols"
+          : "request-feedback__item";
         li.setAttribute("data-req-id", entry.id);
         if (entry.urgent) li.classList.add("is-urgent");
         var multi = isMultiRoomRequest(entry);
@@ -24687,6 +24866,75 @@
         var stKey = hkStatusSuffix(liveSt);
         if (!multi && stKey !== "none") li.classList.add("hk-st--" + stKey);
 
+        var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
+        var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
+        var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
+        var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
+
+        if (confirmingStrip) {
+          var roomCell = document.createElement("span");
+          roomCell.className = "hk-strip-cell hk-strip-cell--room";
+          roomCell.textContent = entry.room
+            ? formatRoomNoDisplay(String(entry.room)) + (entry.quick ? " 중 빠른거" : "")
+            : "—";
+          if (entry.urgent) {
+            var ubStrip = document.createElement("span");
+            ubStrip.className = "request-feedback__item-urgent-badge";
+            ubStrip.textContent = "긴급";
+            ubStrip.setAttribute("aria-label", "긴급");
+            roomCell.appendChild(ubStrip);
+          }
+          var wingCell = document.createElement("span");
+          wingCell.className = "hk-strip-cell hk-strip-cell--wing";
+          if (!appendRoomWingBadge(wingCell, entry.room)) wingCell.textContent = "—";
+          var timeCell = document.createElement("div");
+          timeCell.className = "hk-strip-cell hk-strip-cell--time";
+          var timeDisp = document.createElement("div");
+          timeDisp.className = "room-card__time-display";
+          if (entry.sched && String(entry.sched).trim()) {
+            appendSchedTimeDisplay(timeDisp, entry, { label: "예정" });
+          } else {
+            timeDisp.textContent = "—";
+          }
+          timeCell.appendChild(timeDisp);
+          var statusCell = document.createElement("div");
+          statusCell.className = "hk-strip-cell hk-strip-cell--status";
+          if (!multi) appendRoomTypeToCardHead(statusCell, entry.room);
+          if (multi) statusCell.appendChild(buildRequestRoomChips(entry));
+          else {
+            statusCell.appendChild(
+              buildRoomStatusGroup(liveSt, entry.room, { statusClass: "room-card__status" })
+            );
+          }
+          var memoCell = document.createElement("div");
+          memoCell.className = "hk-strip-cell hk-strip-cell--memo";
+          if (memoStr || memoImg) {
+            hkAppendMemoBlock(memoCell, "FD", memoStr, memoImg, "room-card__memo");
+          }
+          if (memo2Str || memo2Img) {
+            var m2P = document.createElement("p");
+            m2P.className = "room-card__memo";
+            if (memo2Str) m2P.textContent = "정비 : " + memo2Str;
+            hkAppendImageEl(m2P, memo2Img);
+            memoCell.appendChild(m2P);
+          }
+          var receivedCell = document.createElement("div");
+          receivedCell.className = "hk-strip-cell hk-strip-cell--received";
+          if (entry.at) {
+            var recEl = document.createElement("p");
+            recEl.className = "sched-req-card__received";
+            setLineWithEmTime(recEl, "접수 ", formatReqAt(entry.at));
+            receivedCell.appendChild(recEl);
+          } else {
+            receivedCell.textContent = "—";
+          }
+          li.appendChild(roomCell);
+          li.appendChild(wingCell);
+          li.appendChild(timeCell);
+          li.appendChild(statusCell);
+          li.appendChild(memoCell);
+          li.appendChild(receivedCell);
+        } else {
         var t = document.createElement("div");
         t.className = "request-feedback__item-time";
         setLineWithEmTime(t, "접수 ", formatReqAt(entry.at));
@@ -24718,14 +24966,10 @@
         li.appendChild(row);
         if (multi) li.appendChild(buildRequestRoomChips(entry));
 
-        var memoStr = entry.memo != null ? String(entry.memo).trim() : "";
-        var memoImg = entry.memoImage != null ? String(entry.memoImage).trim() : "";
         if (memoStr || memoImg) {
           hkAppendMemoBlock(li, "FD", memoStr, memoImg, "request-feedback__item-memo");
         }
 
-        var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
-        var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
         if (memo2Str || memo2Img) {
           var m2Box = document.createElement("div");
           m2Box.className = "request-feedback__item-memo2";
@@ -24740,22 +24984,25 @@
           m2Box.appendChild(m2Body);
           li.appendChild(m2Box);
         }
+        }
 
         if (maintenanceMode) {
           var hasMaintSched = !!(entry.sched && String(entry.sched).trim());
           var isConfirming = isRequestConfirmingEntry(entry);
           var showFullMaintActions = hasMaintSched || isConfirming;
           if (showFullMaintActions) {
-            var schedEl = document.createElement("div");
-            schedEl.className =
-              "request-feedback__sched" + (hasMaintSched ? "" : " is-empty");
-            if (hasMaintSched) {
-              appendSchedTimeDisplay(schedEl, entry, { label: "정비" });
-            } else {
-              schedEl.textContent = "처리·예정 —";
+            if (!confirmingStrip) {
+              var schedEl = document.createElement("div");
+              schedEl.className =
+                "request-feedback__sched" + (hasMaintSched ? "" : " is-empty");
+              if (hasMaintSched) {
+                appendSchedTimeDisplay(schedEl, entry, { label: "정비" });
+              } else {
+                schedEl.textContent = "처리·예정 —";
+              }
+              li.appendChild(schedEl);
+              appendFacilityPendingSchedEl(li, entry);
             }
-            li.appendChild(schedEl);
-            appendFacilityPendingSchedEl(li, entry);
             var maintActs = document.createElement("div");
             maintActs.className = "request-feedback__maint-actions";
             var schedBtn = document.createElement("button");
@@ -24844,13 +25091,15 @@
             li.appendChild(ackActs);
           }
         } else if (frontMode) {
-          if (entry.sched && String(entry.sched).trim()) {
-            var frontSchedEl = document.createElement("div");
-            frontSchedEl.className = "request-feedback__sched";
-            appendSchedTimeDisplay(frontSchedEl, entry, { label: "정비" });
-            li.appendChild(frontSchedEl);
+          if (!confirmingStrip) {
+            if (entry.sched && String(entry.sched).trim()) {
+              var frontSchedEl = document.createElement("div");
+              frontSchedEl.className = "request-feedback__sched";
+              appendSchedTimeDisplay(frontSchedEl, entry, { label: "정비" });
+              li.appendChild(frontSchedEl);
+            }
+            appendFacilityPendingSchedEl(li, entry);
           }
-          appendFacilityPendingSchedEl(li, entry);
         }
 
         if (frontMode) {
@@ -25111,7 +25360,7 @@
         var mainCount = 0;
         var annexCount = 0;
         confirming.forEach(function (entry) {
-          var card = buildRequestFeedbackItemLi(entry);
+          var card = buildRequestFeedbackItemLi(entry, { confirmingStrip: true });
           if (wingSplit) {
             if (requestAlertWingBucket(entry.room) === "annex") {
               listAnnex.appendChild(card);
@@ -28185,7 +28434,7 @@
       }
 
       function renderOrderLogPanel(opts) {
-        renderOrderAlertFeedbackPanel("orderFeedbackList", "orderFeedbackEmpty", isRegularOrder, opts);
+        renderOrderAlertFeedbackPanel("orderFeedbackList", "orderFeedbackEmpty", isOrderAlertEntry, opts);
       }
 
       function renderFacilityOrderLogPanel(opts) {
@@ -31011,10 +31260,10 @@
 
       function syncNightVipSidebarUi() {
         var canView = !!(frontMode || maintenanceMode);
-        var sidebarHandoverSection = document.getElementById("sidebarHandoverSection");
-        if (sidebarHandoverSection) sidebarHandoverSection.hidden = !canView;
-        var sidebarVipCheckInSection = document.getElementById("sidebarVipCheckInSection");
-        if (sidebarVipCheckInSection) sidebarVipCheckInSection.hidden = !canView;
+        var nhBtn = document.getElementById("sidebarBtnNightHandover");
+        var vipBtn = document.getElementById("sidebarBtnVipCheckIn");
+        if (nhBtn) nhBtn.hidden = !canView;
+        if (vipBtn) vipBtn.hidden = !canView;
         if (!canView) {
           if (sidebarMainView === "nightHandover" || sidebarMainView === "vipCheckIn") {
             showSidebarOrderView({ skipDirtyConfirm: true });
@@ -31062,7 +31311,11 @@
         if (!frontMode) closeZoneRoomManagePanel();
         updateZoneAddRoomBtnUi();
         renderRoomsForZone(getActiveZone(), { force: true });
-        if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
+        if (sidebarFrontSection) sidebarFrontSection.hidden = false;
+        var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
+        var complaintNav = document.getElementById("sidebarBtnComplaint");
+        if (frontEmbedNav) frontEmbedNav.hidden = !frontMode;
+        if (complaintNav) complaintNav.hidden = !frontMode;
         syncNightVipSidebarUi();
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
@@ -32147,6 +32400,33 @@
       loadOrderLog();
       loadFrontChat();
       bindDeskChatFontControls();
+      syncOrderInputClosedUi();
+      setInterval(syncOrderInputClosedUi, 30000);
+      document.addEventListener(
+        "pointerdown",
+        function (e) {
+          if (maintenanceMode || frontMode) return;
+          var t = e.target;
+          if (!t || !t.closest) return;
+          if (
+            t.closest(
+              "#btnMaint, #btnFront, #operator-gate, .sidebar, .topbar-actions, .topbar-quick-nav, #btnSidebarCollapse, #btnRefreshApp, #btnPushAlarm, #btnAdmin, #sidebarBtnShiftChange, #btnAdminInquiry, #brandGamesBtn"
+            )
+          ) {
+            return;
+          }
+          if (
+            t.closest(
+              "input, textarea, button, select, [contenteditable], .hk-photo-btn, .desk-chat-bold-btn, .desk-chat-strong-btn"
+            )
+          ) {
+            e.preventDefault();
+            e.stopPropagation();
+            showHkActionToast("우측 상단 모드를 선택하세요");
+          }
+        },
+        true
+      );
       bindDeskChatScrollControl();
       applyDeskChatFontLevel(getDeskChatFontLevel());
       bindDeskChatResponsiveWidth();
@@ -32752,6 +33032,11 @@
       }
 
       function processOrderFormSubmit() {
+        if (!requireSelectedMode()) return;
+        if (isOrderInputClosed()) {
+          showHkActionToast("17:00 이후에는 오더를 입력할 수 없습니다.");
+          return;
+        }
         var roomEl = document.getElementById("orderRoomNo");
         var memoEl = document.getElementById("orderMemo");
         var btnOrderUrgentEl = document.getElementById("btnOrderUrgent");
@@ -32783,6 +33068,7 @@
       }
 
       function processFacilityOrderFormSubmit(stayType, guestPresence) {
+        if (!requireSelectedMode()) return;
         var roomEl = document.getElementById("facilityOrderRoomNo");
         var memoEl = document.getElementById("facilityOrderMemo");
         var btnUrgentEl = document.getElementById("btnFacilityOrderUrgent");
@@ -32883,6 +33169,7 @@
       }
 
       function processRequestFormSubmit() {
+        if (!requireSelectedMode()) return;
         hideRequestHint();
         var roomEl = document.getElementById("roomNo");
         var room = roomEl && roomEl.value.trim();

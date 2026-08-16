@@ -11,9 +11,9 @@
     VIP: "VIP",
     RC: "R/C",
     CASINO: "CASINO",
-    MOBILE_CI: "모바일체크인",
-    AJ: "AJ객실",
-    MINIBAR: "미니바",
+    MOBILE_CI: "MCI",
+    AJ: "AJ",
+    MINIBAR: "MB",
   };
 
   function defaultRoom() {
@@ -635,6 +635,8 @@
         text: m.text != null ? String(m.text) : "",
       };
       if (m.bold) row.bold = true;
+      var bubble = m.bubbleColor != null ? String(m.bubbleColor).trim() : "";
+      if (bubble) row.bubbleColor = bubble;
       var fl = m.fontLevel != null ? parseInt(m.fontLevel, 10) : 0;
       if (fl >= 1 && fl <= 3) row.fontLevel = fl;
       if (m.reactions && typeof m.reactions === "object") {

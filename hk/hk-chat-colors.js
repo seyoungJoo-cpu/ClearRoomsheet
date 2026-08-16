@@ -183,9 +183,10 @@
     return applyTheme(getThemeIdForUser(name));
   }
 
-  function applyBubbleColors(li, byName, byEl, textClass) {
+  function applyBubbleColors(li, byName, byEl, textClass, colorId) {
     if (!li) return;
-    var palette = getPaletteById(getColorIdForUser(byName));
+    var id = colorId && isValidColorId(colorId) ? colorId : getColorIdForUser(byName);
+    var palette = getPaletteById(id);
     li.style.background = palette.bg;
     li.style.borderColor = palette.border;
     if (byEl) byEl.style.color = palette.by;

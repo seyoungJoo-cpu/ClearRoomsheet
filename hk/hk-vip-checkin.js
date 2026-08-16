@@ -1338,13 +1338,13 @@
     var aoa = [
       [
         "구분",
-        "Guest Name",
-        "Room No.",
-        "Room 상태",
-        "Room Type",
+        "성함",
+        "RM NO.",
+        "상태",
+        "TYPE",
         "RSV No.",
-        "도착 예정 시간",
-        "Check Out",
+        "ETA",
+        "C/O",
         "비고",
       ],
     ];

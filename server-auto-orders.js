@@ -142,14 +142,14 @@ function startAutoOrderScheduler(ctx) {
 
       const st = getAutoOrderState();
 
-      // 휴무 종료 시각(06:40)에 RPA 실행 안내
-      if (kst.hour === 6 && kst.minute === 40 && st.rpaRunDate !== kst.dateKey) {
+      // 휴무 종료 시각(06:40) 이후 RPA 실행 안내 — 분 단위 누락 없이 하루 1회
+      if (kst.minutesOfDay >= QUIET_END_MIN && st.rpaRunDate !== kst.dateKey) {
         if (appendAutoOrder("rpa_run", MSG_RPA_RUN)) {
           st.rpaRunDate = kst.dateKey;
         }
       }
 
-      if (kst.hour === 17 && kst.minute === 1 && st.insAfter17Date !== kst.dateKey) {
+      if (kst.minutesOfDay >= 17 * 60 + 1 && st.insAfter17Date !== kst.dateKey) {
         if (appendAutoOrder("ins_after_17", MSG_INS_AFTER_17)) {
           st.insAfter17Date = kst.dateKey;
         }
