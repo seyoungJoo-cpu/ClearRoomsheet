@@ -136,7 +136,7 @@ function findNewOrderAlerts(prevLog, nextLog) {
 }
 
 function normalizePersonName(name) {
-  return name != null ? String(name).trim().toLowerCase() : "";
+  return name != null ? String(name).trim().replace(/\s+/g, "").toLowerCase() : "";
 }
 
 function shouldSkipPushToSubscriber(sub, order) {
@@ -144,6 +144,64 @@ function shouldSkipPushToSubscriber(sub, order) {
   var subBy = normalizePersonName(sub && sub.operatorName);
   if (!orderBy || !subBy) return false;
   return orderBy === subBy;
+}
+
+function findNewDirectAlerts(prevPack, nextPack) {
+  var prevIds = {};
+  var prevList = prevPack && Array.isArray(prevPack.directs) ? prevPack.directs : [];
+  prevList.forEach(function (row) {
+    if (row && row.id) prevIds[String(row.id)] = true;
+  });
+  var out = [];
+  var nextList = nextPack && Array.isArray(nextPack.directs) ? nextPack.directs : [];
+  nextList.forEach(function (row) {
+    if (!row || !row.id || prevIds[String(row.id)]) return;
+    if (row.cancelled) return;
+    var to = row.to != null ? String(row.to).trim() : "";
+    if (!to) return;
+    out.push(row);
+  });
+  return out;
+}
+
+function sendDirectPushNotifications(directs) {
+  if (!directs.length || !pushSubscriptions.size) return Promise.resolve();
+  var tasks = [];
+  directs.forEach(function (row) {
+    var to = normalizePersonName(row.to);
+    if (!to) return;
+    var from = row.from != null ? String(row.from).trim() : "";
+    var text = row.text != null ? String(row.text).trim() : "";
+    var body = from ? from + " · " + (text || "1:1 알럿") : text || "1:1 알럿";
+    if (body.length > 120) body = body.slice(0, 120) + "…";
+    var payload = JSON.stringify({
+      title: "1:1 알럿",
+      body: body,
+      tag: "hk-direct-" + String(row.id),
+      url: "/hk/front.html?from=direct",
+    });
+    pushSubscriptions.forEach(function (sub, endpoint) {
+      if (normalizePersonName(sub && sub.operatorName) !== to) return;
+      tasks.push(
+        webpush.sendNotification(toWebPushSubscription(sub), payload).then(function () {
+          console.log("Web Push: 1:1 delivered to " + endpoint.slice(0, 48) + "…");
+        }).catch(function (err) {
+          logPushSendError(endpoint, err);
+          if (
+            err &&
+            (err.statusCode === 404 ||
+              err.statusCode === 410 ||
+              err.statusCode === 401 ||
+              err.statusCode === 403)
+          ) {
+            pushSubscriptions.delete(endpoint);
+            savePushSubscriptions();
+          }
+        })
+      );
+    });
+  });
+  return Promise.all(tasks);
 }
 
 function toWebPushSubscription(stored) {
@@ -2636,6 +2694,12 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     sharedState.payload && Array.isArray(sharedState.payload.hkOrderLog)
       ? sharedState.payload.hkOrderLog
       : [];
+  const prevDirectPack =
+    sharedState.payload &&
+    sharedState.payload.hkStorage &&
+    sharedState.payload.hkStorage.staffBroadcasts
+      ? sharedState.payload.hkStorage.staffBroadcasts
+      : null;
   const nextPayload = mergeSyncPayload(sharedState.payload, req.body);
   sharedState.payload = nextPayload;
   sharedState.version += 1;
@@ -2649,6 +2713,17 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     if (newAlerts.length) {
       Promise.resolve(sendOrderPushNotifications(newAlerts)).catch(function (err) {
         console.warn("Web Push send failed:", err && err.message ? err.message : err);
+      });
+    }
+  }
+  if (req.body && Object.prototype.hasOwnProperty.call(req.body, "hkStorage")) {
+    const newDirects = findNewDirectAlerts(
+      prevDirectPack,
+      nextPayload && nextPayload.hkStorage && nextPayload.hkStorage.staffBroadcasts
+    );
+    if (newDirects.length) {
+      Promise.resolve(sendDirectPushNotifications(newDirects)).catch(function (err) {
+        console.warn("Web Push 1:1 send failed:", err && err.message ? err.message : err);
       });
     }
   }

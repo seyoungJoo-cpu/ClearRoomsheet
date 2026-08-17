@@ -14736,8 +14736,8 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-28"></script>
-  <script src="hk-sync.js?v=force-sync-5"></script>
+  <script src="hk-storage.js?v=bydate-29"></script>
+  <script src="hk-sync.js?v=force-sync-6"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js"></script>
@@ -14749,7 +14749,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-1"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-2"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -16872,8 +16872,15 @@
       function parseChatMentions(text) {
         var out = [];
         var seen = {};
+        var online =
+          typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.getOnlineFrontNames
+            ? HKStaffBroadcast.getOnlineFrontNames()
+            : [];
         String(text || "").replace(/#([^\s#]+)/g, function (_, raw) {
-          var name = String(raw || "").trim();
+          var name =
+            typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.resolveMentionName
+              ? HKStaffBroadcast.resolveMentionName(raw, online)
+              : String(raw || "").trim();
           if (!name || seen[name]) return "";
           seen[name] = true;
           out.push(name);
@@ -18470,6 +18477,12 @@
             renderFrontChatOnline();
           }
           applyFrontEmbedStatesFromStorage({ force: true });
+        }
+        if (changed.indexOf("staffBroadcasts") >= 0) {
+          if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+            HKStaffBroadcast.refresh();
+          }
+          renderFrontChatOnline();
         }
         if (changed.indexOf("hkCloseDayAt") >= 0 || changed.indexOf("hkClearLocalCaches") >= 0) {
           handleCloseDayFromSync(payload);
@@ -31840,6 +31853,9 @@
           mentions.length
         ) {
           alertIds = HKStaffBroadcast.sendDirectAlerts(getOperatorName(), msgText, mentions) || [];
+          if (alertIds.length && typeof HKSync !== "undefined" && HKSync.flushPending) {
+            HKSync.flushPending();
+          }
           // 1:1 멘션은 알럿만 보내고 공용 채팅에는 올리지 않음
           hkClearPhoto("frontChat");
           if (alertIds.length) {

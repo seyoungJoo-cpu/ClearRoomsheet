@@ -192,6 +192,19 @@
     return false;
   }
 
+  function namesNorm(s) {
+    return String(s || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .toLowerCase();
+  }
+
+  function namesMatch(a, b) {
+    var na = namesNorm(a);
+    var nb = namesNorm(b);
+    return !!(na && nb && na === nb);
+  }
+
   function canSee(row) {
     if (!row || !isActiveToday(row)) return false;
     if (row.kind !== "poll" && !alertReady(row)) return false;
@@ -202,8 +215,10 @@
       if (localDismissed()[row.id]) return false;
     } else if (row.kind === "direct") {
       if (row.cancelled) return false;
-      if (!name || name !== String(row.to || "").trim()) return false;
-      if (row.dismissedBy && row.dismissedBy[name]) return false;
+      if (!name || !namesMatch(name, row.to)) return false;
+      if (row.dismissedBy && (row.dismissedBy[name] || row.dismissedBy[String(row.to || "").trim()])) {
+        return false;
+      }
     } else {
       if (name && row.dismissedBy && row.dismissedBy[name]) return false;
       else if (!name && localDismissed()[row.id]) return false;
@@ -366,10 +381,11 @@
     var ids = [];
     var pack = getPack();
     if (!pack.directs) pack.directs = [];
+    var online = getOnlineFrontNames();
     (tos || []).forEach(function (toRaw) {
-      var to = String(toRaw || "").trim();
-      if (!to || to === from || seen[to]) return;
-      seen[to] = true;
+      var to = resolveMentionName(toRaw, online);
+      if (!to || namesMatch(to, from) || seen[namesNorm(to)]) return;
+      seen[namesNorm(to)] = true;
       var id = newId("dm-");
       pack.directs.push({
         id: id,
@@ -387,6 +403,23 @@
     });
     if (ids.length) savePack(pack);
     return ids;
+  }
+
+  function resolveMentionName(raw, onlineNames) {
+    var token = String(raw || "").trim();
+    if (!token) return "";
+    var names = Array.isArray(onlineNames) ? onlineNames : [];
+    var i;
+    for (i = 0; i < names.length; i++) {
+      if (namesMatch(names[i], token)) return String(names[i]).trim();
+    }
+    var best = "";
+    for (i = 0; i < names.length; i++) {
+      var n = String(names[i] || "").trim();
+      if (!n) continue;
+      if (token.indexOf(n) === 0 && n.length > best.length) best = n;
+    }
+    return best || token;
   }
 
   function cancelDirects(ids) {
@@ -659,15 +692,15 @@
   }
 
   function refreshFront() {
-    if (!isFront()) {
-      if (presenceWasOn) dropPresence();
-      hideOverlay();
-      return;
-    }
     noteOperatorChange();
     ensureSessionStarted();
-    touchPresence(false);
+    if (isFront()) {
+      touchPresence(false);
+    } else if (presenceWasOn) {
+      dropPresence();
+    }
     var next = pickNext();
+    if (!isFront() && next && next.kind !== "direct") next = pickNextDirect();
     if (!next) {
       hideOverlay();
       return;
@@ -683,6 +716,15 @@
       return;
     }
     showRow(next);
+  }
+
+  function pickNextDirect() {
+    var pack = getPack();
+    var i;
+    for (i = 0; i < (pack.directs || []).length; i++) {
+      if (canSee(pack.directs[i])) return pack.directs[i];
+    }
+    return null;
   }
 
   function toLocalInput(iso, endOfDay) {
@@ -954,7 +996,13 @@
         if (typeof frontCtx.onPresence === "function") frontCtx.onPresence();
       }
       if (adminCtx) renderAdminList();
-    }, 4000);
+    }, 1500);
+    if (typeof document !== "undefined" && !document.__hkBroadcastVisBound) {
+      document.__hkBroadcastVisBound = true;
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") refreshFront();
+      });
+    }
   }
 
   global.HKStaffBroadcast = {
@@ -977,6 +1025,7 @@
     onOperatorChange: onOperatorChange,
     getOnlineFrontNames: getOnlineFrontNames,
     sendDirectAlerts: sendDirectAlerts,
+    resolveMentionName: resolveMentionName,
     cancelDirects: cancelDirects,
     renderAdminList: renderAdminList,
   };

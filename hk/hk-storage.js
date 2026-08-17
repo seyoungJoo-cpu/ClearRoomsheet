@@ -1324,7 +1324,16 @@
     d.presence = normalizePresenceMap(raw.presence);
     if (d.alerts.length > 80) d.alerts = d.alerts.slice(-80);
     if (d.polls.length > 80) d.polls = d.polls.slice(-80);
-    if (d.directs.length > 80) d.directs = d.directs.slice(-80);
+    if (d.directs.length > 120) {
+      var liveDirects = d.directs.filter(function (row) {
+        return row && !row.cancelled;
+      });
+      var oldDirects = d.directs.filter(function (row) {
+        return row && row.cancelled;
+      });
+      if (liveDirects.length > 80) liveDirects = liveDirects.slice(-80);
+      d.directs = oldDirects.slice(-40).concat(liveDirects);
+    }
     return d;
   }
 
@@ -1476,7 +1485,16 @@
     out.presence = normalizePresenceMap(presence);
     if (out.alerts.length > 80) out.alerts = out.alerts.slice(-80);
     if (out.polls.length > 80) out.polls = out.polls.slice(-80);
-    if (out.directs.length > 80) out.directs = out.directs.slice(-80);
+    if (out.directs.length > 120) {
+      var liveD = out.directs.filter(function (row) {
+        return row && !row.cancelled;
+      });
+      var oldD = out.directs.filter(function (row) {
+        return row && row.cancelled;
+      });
+      if (liveD.length > 80) liveD = liveD.slice(-80);
+      out.directs = oldD.slice(-40).concat(liveD);
+    }
     return out;
   }
 

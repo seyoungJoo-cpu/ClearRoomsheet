@@ -950,10 +950,10 @@
   }
 
   function schedulePush(fields) {
-    if (isApplyingRemote) return;
     Object.keys(fields).forEach(function (k) {
       pendingPush[k] = true;
     });
+    if (isApplyingRemote) return;
     if (pushTimer) clearTimeout(pushTimer);
     pushTimer = setTimeout(function () {
       pushTimer = null;
@@ -1227,13 +1227,14 @@
   }
 
   function pushStorageNow() {
-    if (isApplyingRemote || !global.HKStorage) return Promise.resolve(false);
+    if (!global.HKStorage) return Promise.resolve(false);
     markDirty("hkStorage");
+    pendingPush.hkStorage = true;
     if (pushTimer) {
       clearTimeout(pushTimer);
       pushTimer = null;
     }
-    pendingPush.hkStorage = true;
+    if (isApplyingRemote) return Promise.resolve(true);
     return queueScheduledFlush();
   }
 
@@ -1252,7 +1253,7 @@
       }
     }
     isApplyingRemote = true;
-
+    try {
     var isCloseDayReplace = payload.hkCloseDayReset === true;
     var isNewCloseDay =
       !!payload.hkCloseDayAt &&
@@ -1492,8 +1493,9 @@
     xmlChangedKeys(payload).forEach(function (k) {
       if (changed.indexOf(k) < 0) changed.push(k);
     });
-
-    isApplyingRemote = false;
+    } finally {
+      isApplyingRemote = false;
+    }
     if (hasPendingPushWork()) queueScheduledFlush();
     if (changed.length) {
       emitChange(changed, Object.assign({}, payload, xmlPayloadForListeners()));
