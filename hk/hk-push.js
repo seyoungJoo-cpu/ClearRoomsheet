@@ -2,7 +2,7 @@
  * House Keeping — Web Push 구독 (오더 알림, 앱 백그라운드·화면 꺼짐)
  */
 (function (global) {
-  var SW_URL = "/hk/sw.js?v=direct-focus-1";
+  var SW_URL = "/hk/sw.js?v=direct-focus-2";
   var SW_SCOPE = "/hk/";
   var ORDER_PUSH_ENABLED_LS = "lotte-hk-order-push-enabled-v1";
   var ORDER_PUSH_VAPID_LS = "lotte-hk-order-push-vapid-v1";

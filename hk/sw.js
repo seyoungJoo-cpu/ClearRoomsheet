@@ -59,7 +59,7 @@ self.addEventListener("push", function (event) {
         tag: payload.tag,
         renotify: true,
         requireInteraction: isDirect,
-        vibrate: isDirect ? [180, 80, 180, 80, 220] : undefined,
+        silent: isDirect,
         data: { url: payload.url, kind: isDirect ? "direct" : "order" },
       }),
       isDirect ? tryFocusFrontClients("direct") : Promise.resolve(),

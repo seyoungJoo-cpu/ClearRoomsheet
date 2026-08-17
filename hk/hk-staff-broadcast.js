@@ -333,36 +333,6 @@
     }, 700);
   }
 
-  function playDirectBeep() {
-    try {
-      var Ctx = global.AudioContext || global.webkitAudioContext;
-      if (!Ctx) return;
-      var ctx = new Ctx();
-      function tone(at, freq, dur) {
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, at);
-        gain.gain.exponentialRampToValueAtTime(0.14, at + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(at);
-        osc.stop(at + dur + 0.02);
-      }
-      var t0 = ctx.currentTime;
-      tone(t0, 880, 0.14);
-      tone(t0 + 0.18, 1175, 0.16);
-      tone(t0 + 0.38, 880, 0.2);
-      setTimeout(function () {
-        try {
-          ctx.close();
-        } catch (e) {}
-      }, 900);
-    } catch (e) {}
-  }
-
   function windowIsInForeground() {
     try {
       if (document.hidden) return false;
@@ -386,6 +356,7 @@
         tag: "hk-direct-" + String(row.id),
         renotify: true,
         requireInteraction: true,
+        silent: true,
       });
       n.onclick = function () {
         try {
@@ -403,6 +374,7 @@
               tag: "hk-direct-" + String(row.id),
               renotify: true,
               requireInteraction: true,
+              silent: true,
               data: { url: "/hk/front.html?from=direct", kind: "direct" },
             });
           });
@@ -419,12 +391,6 @@
       window.focus();
     } catch (e) {}
     startTitleFlash("【1:1 알럿】");
-    playDirectBeep();
-    try {
-      if (global.navigator && typeof global.navigator.vibrate === "function") {
-        global.navigator.vibrate([180, 80, 180, 80, 220]);
-      }
-    } catch (e) {}
     if (!windowIsInForeground()) showDirectOsNotification(row);
   }
 
