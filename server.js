@@ -795,9 +795,18 @@ function pickInvenNotifyForServer(prev, incoming) {
   var incAt = getInvenNotifyUpdatedAtForServer(inc);
   function hasContent(inv) {
     if (!inv || typeof inv !== "object") return false;
-    if (Array.isArray(inv.cards) && inv.cards.length > 0) return true;
-    if (inv.table && Array.isArray(inv.table.rows) && inv.table.rows.length > 0) {
+    if (Array.isArray(inv.cards) && inv.cards.some(function (c) {
+      return c && String(c.room || "").trim();
+    })) {
       return true;
+    }
+    if (inv.table && Array.isArray(inv.table.rows)) {
+      return inv.table.rows.some(function (row) {
+        if (!row || typeof row !== "object") return false;
+        var main = row.main || {};
+        var annex = row.annex || {};
+        return !!(String(main.room || "").trim() || String(annex.room || "").trim());
+      });
     }
     return false;
   }
@@ -956,7 +965,7 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
 function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
   function asPack(raw) {
     if (!raw || typeof raw !== "object") {
-      return { updatedAt: "", alerts: [], polls: [], directs: [], presence: {}, deletedIds: {} };
+      return { updatedAt: "", alerts: [], polls: [], directs: [], presence: {}, presenceKicks: {}, deletedIds: {} };
     }
     var deletedIds = {};
     if (raw.deletedIds && typeof raw.deletedIds === "object" && !Array.isArray(raw.deletedIds)) {
@@ -971,6 +980,7 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
       polls: Array.isArray(raw.polls) ? raw.polls.filter(function (p) { return p && p.id; }) : [],
       directs: Array.isArray(raw.directs) ? raw.directs.filter(function (d) { return d && d.id; }) : [],
       presence: raw.presence && typeof raw.presence === "object" && !Array.isArray(raw.presence) ? raw.presence : {},
+      presenceKicks: raw.presenceKicks && typeof raw.presenceKicks === "object" && !Array.isArray(raw.presenceKicks) ? raw.presenceKicks : {},
       deletedIds: deletedIds,
     };
   }
@@ -1089,7 +1099,19 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
   var nowMs = Date.now();
   Object.keys(presence).forEach(function (sid) {
     var t = presence[sid] && presence[sid].at ? new Date(presence[sid].at).getTime() : 0;
-    if (!isFinite(t) || nowMs - t > 30000) delete presence[sid];
+    if (!isFinite(t) || nowMs - t > 45000) delete presence[sid];
+  });
+  var presenceKicks = {};
+  [prev.presenceKicks || {}, inc.presenceKicks || {}].forEach(function (m) {
+    if (!m || typeof m !== "object") return;
+    Object.keys(m).forEach(function (key) {
+      var row = m[key];
+      if (!row) return;
+      var k = String(key || "").trim().toLowerCase();
+      if (!k) return;
+      var prevK = presenceKicks[k];
+      if (!prevK || String(row.at || "") >= String(prevK.at || "")) presenceKicks[k] = row;
+    });
   });
   var updatedAt =
     inc.updatedAt && (!prev.updatedAt || String(inc.updatedAt) >= String(prev.updatedAt))
@@ -1108,6 +1130,7 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
       return directsById[k];
     }),
     presence: presence,
+    presenceKicks: presenceKicks,
   };
 }
 

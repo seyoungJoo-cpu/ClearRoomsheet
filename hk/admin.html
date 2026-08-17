@@ -996,7 +996,7 @@
       <p style="margin: 0 0 12px; font-size: 0.8125rem; color: var(--muted); line-height: 1.45;">
         프론트 모드 화면에 창을 띄웁니다. <strong>온라인</strong>은 띄우는 순간에 열려 있는 탭만,
         <strong>ALL</strong>은 오늘 열려 있는 사람과 이후에 프론트 모드로 들어오는 사람까지 보여 줍니다.
-        알럿은 예약 시각을 비우면 바로 띄우고, 시각을 넣으면 그 시간에 띄웁니다. 창을 클릭하면 닫힙니다.
+        알럿은 예약 시각을 비우면 바로 띄우고, 시각을 넣으면 그 시간에 띄웁니다. <strong>확인</strong>을 눌러야 닫힙니다.
       </p>
       <div class="admin-broadcast-split">
         <div>
@@ -1178,12 +1178,12 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-30"></script>
+  <script src="hk-storage.js?v=rooms-kick-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=force-sync-7"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
-  <script src="hk-inven-notify.js?v=view2-cols-fluid"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-6"></script>
+  <script src="hk-inven-notify.js?v=autosave-2"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-7"></script>
   <script>
     (function () {
       var authGate = document.getElementById("auth-gate");
@@ -4844,7 +4844,15 @@
           },
           cards: [],
           changeDone: {},
+          clearReason: "closeDay",
         };
+        reset.zoneRoomClearAt = {};
+        (HKStorage.STANDARD_ZONE_IDS || ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR", "SHUTTLE"]).forEach(function (z) {
+          reset.zoneRoomClearAt[z] = closeAt;
+        });
+        (reset.customZones || []).forEach(function (z) {
+          if (z && z.id) reset.zoneRoomClearAt[z.id] = closeAt;
+        });
         // 오더/정비/시설/MB 작은 채팅창은 마감 후 7일 보관
         if (typeof HKStorage.normalizeRequestDeskChat === "function") {
           reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);

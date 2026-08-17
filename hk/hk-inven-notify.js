@@ -517,7 +517,7 @@
   function updateHint() {
     if (!els.hint) return;
     els.hint.textContent = isFrontModeActive()
-      ? "인벤「만들기」로 가져온 대여 오더를 객실별로 묶습니다. 저장 후 공유됩니다."
+      ? "인벤「만들기」로 가져온 대여 오더를 객실별로 묶습니다. 만들기 시 자동 저장됩니다."
       : "같은 객실·예약번호는 한 카드로 묶여 표시됩니다. 정비오더 모드에서 투입완료할 수 있습니다.";
   }
 
@@ -613,7 +613,17 @@
 
   function hasContent(data) {
     var n = normalizeInvenNotify(data);
-    return n.cards.length > 0 || (n.table.rows && n.table.rows.length > 0);
+    if (n.cards && n.cards.some(function (c) {
+      return c && String(c.room || "").trim();
+    })) {
+      return true;
+    }
+    return (n.table.rows || []).some(function (row) {
+      if (!row || typeof row !== "object") return false;
+      var main = row.main || {};
+      var annex = row.annex || {};
+      return !!(String(main.room || "").trim() || String(annex.room || "").trim());
+    });
   }
 
   function importInvenTable(rows, meta) {
@@ -645,6 +655,9 @@
     renderCards();
     updateEmpty();
     updateToolbarHint();
+    if (isFrontModeActive()) {
+      publishInvenNotify();
+    }
     return true;
   }
 

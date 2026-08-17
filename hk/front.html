@@ -1907,6 +1907,49 @@
       border-color: #0f766e;
     }
 
+    .front-chat-online__btn.is-all {
+      background: #0f766e;
+      color: #fff;
+      border-color: #0f766e;
+    }
+
+    .front-chat-online__btn.is-all.is-on {
+      background: #134e4a;
+    }
+
+    .hk-broadcast__reply {
+      display: flex;
+      gap: 8px;
+      margin: 10px 0 12px;
+      align-items: center;
+    }
+
+    .hk-broadcast__reply-input {
+      flex: 1;
+      min-width: 0;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    .hk-broadcast__reply-send {
+      height: 36px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .hk-broadcast__backdrop {
+      cursor: default;
+    }
+
     .front-chat-online__empty {
       margin: 0;
       font-size: 0.75rem;
@@ -2249,8 +2292,11 @@
     }
 
     .sidebar-brand {
-      padding: 10px 10px 8px;
-      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+
+    .sidebar-section--primary .sidebar-title {
+      display: none;
     }
 
     .sidebar-brand__title {
@@ -7933,6 +7979,10 @@
       color: #6d28d9;
     }
 
+    .main.main--request {
+      overflow: hidden;
+    }
+
     /* 정비요청 아래 · 약속 시간 카드 */
     .request-main-stack {
       flex: 1;
@@ -8722,6 +8772,10 @@
     }
 
     /* 정비관리: 입력 + 미니채팅 상단 고정, 좌우 반반 */
+    .request-main-stack > .request-panel {
+      flex: 0 0 auto;
+    }
+
     .request-main-stack > .request-panel > .request-panel__body {
       display: flex;
       flex-wrap: nowrap;
@@ -12009,6 +12063,10 @@
         overflow: visible;
       }
 
+      .main.main--request {
+        overflow-y: auto;
+      }
+
       .sched-cards-list {
         flex: none;
         overflow: visible;
@@ -12822,14 +12880,6 @@
           <div class="sidebar-nav">
             <button
               type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
-              id="sidebarBtnTrackIt"
-              aria-pressed="false"
-            >
-              Track IT
-            </button>
-            <button
-              type="button"
               class="sidebar-nav__btn"
               id="sidebarBtnFront"
               aria-pressed="false"
@@ -12839,12 +12889,38 @@
             </button>
             <button
               type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--multiline"
-              id="sidebarBtnFrontEmbed"
+              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
+              id="sidebarBtnTrackIt"
+              aria-pressed="false"
+            >
+              Track IT
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnFrontDd"
               aria-pressed="false"
               hidden
             >
-              DD·인벤·취향
+              DD
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnFrontInven"
+              aria-pressed="false"
+              hidden
+            >
+              인벤
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--compact"
+              id="sidebarBtnFrontChichi"
+              aria-pressed="false"
+              hidden
+            >
+              취향
             </button>
             <button
               type="button"
@@ -12854,7 +12930,16 @@
               title="고객불편사항 유형분석"
               hidden
             >
-              고객불편사항 유형분석
+              불편사항
+            </button>
+            <button
+              type="button"
+              class="sidebar-nav__btn sidebar-nav__btn--multiline"
+              id="sidebarBtnFrontEmbed"
+              aria-pressed="false"
+              hidden
+            >
+              DD·인벤·취향
             </button>
           </div>
         </nav>
@@ -14221,7 +14306,7 @@
           <button type="button" class="panel-alert-ack-btn" id="btnAckInvenNotifyPanel" hidden>확인</button>
         </div>
         <p class="order-panel__hint" id="invenNotifyHint">
-          인벤「만들기」후 프론트에서 저장해야 동기화됩니다. 객실변경(102→103)·트레이스·삭제는 저장 후 공유. 상단 검색 가능.
+          인벤「만들기」하면 자동 저장됩니다. 객실변경(102→103)·트레이스·삭제는 저장 후 공유. 상단 검색 가능.
         </p>
         <div class="inven-notify-mount" id="invenNotifyMount"></div>
       </section>
@@ -14747,20 +14832,20 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-30"></script>
+  <script src="hk-storage.js?v=rooms-kick-1"></script>
   <script src="hk-sync.js?v=force-sync-7"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
-  <script src="hk-inven-notify.js?v=xlsx-real-3"></script>
+  <script src="hk-inven-notify.js?v=autosave-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-14"></script>
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-6"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-7"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -14837,6 +14922,8 @@
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var OPERATOR_MODE_PICK_KEY = "lotte-hk-pending-mode-pick-v1";
       var operatorNameModalMode = "initial";
+      var operatorGateForceDifferent = false;
+      var operatorGateBlockedName = "";
       var pendingOperatorNameCallback = null;
       var pendingFacilityConfirmReqId = null;
       var SCHED_PANEL_HINT_EMPTY =
@@ -15500,9 +15587,12 @@
       function showOperatorGate(opts) {
         opts = opts || {};
         operatorNameModalMode = opts.mode || "initial";
+        operatorGateForceDifferent = !!opts.requireDifferentName;
+        operatorGateBlockedName = opts.blockedName != null ? String(opts.blockedName).trim() : getOperatorName();
         pendingOperatorNameCallback =
           typeof opts.onSaved === "function" ? opts.onSaved : null;
         var isShift = operatorNameModalMode === "shift";
+        var forceShift = isShift && (operatorGateForceDifferent || !!opts.force);
         var gate = document.getElementById("operator-gate");
         var title = document.getElementById("operatorGateTitle");
         var hint = document.getElementById("operatorGateHint");
@@ -15513,15 +15603,17 @@
           title.textContent = isShift ? "교대 · 이름 변경" : "정비오더 · 이름 입력";
         }
         if (hint) {
-          hint.textContent = isShift
+          hint.textContent = forceShift
+            ? "다른 근무자가 같은 이름으로 로그인했습니다. 새 이름을 입력하세요."
+            : isShift
             ? "새 근무자 이름을 입력하세요."
             : "이름을 입력해야 화면을 사용할 수 있습니다.";
         }
         if (inp) {
-          inp.value = isShift ? getOperatorName() : "";
+          inp.value = isShift && !forceShift ? getOperatorName() : "";
         }
         if (cancelBtn) {
-          cancelBtn.hidden = !isShift;
+          cancelBtn.hidden = !isShift || forceShift;
         }
         if (modePick) modePick.hidden = true;
         if (gate) {
@@ -15529,7 +15621,7 @@
           gate.setAttribute("aria-hidden", "false");
           gate.classList.toggle("is-shift-overlay", isShift);
         }
-        if (isShift) {
+        if (isShift && !forceShift) {
           document.body.classList.remove("operator-locked");
         } else {
           document.body.classList.add("operator-locked");
@@ -15597,6 +15689,16 @@
           if (inp) inp.focus();
           return;
         }
+        if (operatorGateForceDifferent) {
+          var blocked = String(operatorGateBlockedName || "").replace(/\s+/g, "").toLowerCase();
+          var next = name.replace(/\s+/g, "").toLowerCase();
+          if (blocked && next === blocked) {
+            var hintEl = document.getElementById("operatorGateHint");
+            if (hintEl) hintEl.textContent = "같은 이름은 사용할 수 없습니다. 다른 이름을 입력하세요.";
+            if (inp) inp.focus();
+            return;
+          }
+        }
         if (operatorNameModalMode === "initial") {
           // 인벤/인벤통보 데이터는 서버 동기화로 복구. UI 캐시만 가볍게 정리.
           clearHkSessionUiCaches();
@@ -15611,7 +15713,15 @@
         }
         setOperatorName(name);
         setOperatorSessionUnlocked();
+        operatorGateForceDifferent = false;
+        operatorGateBlockedName = "";
         hideOperatorGate();
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.claimNameAndKickOthers) {
+          HKStaffBroadcast.claimNameAndKickOthers();
+        }
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.onOperatorChange) {
+          HKStaffBroadcast.onOperatorChange();
+        }
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
           pendingOperatorNameCallback = null;
@@ -16991,6 +17101,18 @@
         var inp = document.getElementById("frontChatInput");
         var typed = inp ? inp.value : "";
         list.innerHTML = "";
+        function addNameBtn(label, name, extraClass) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "front-chat-online__btn" + (extraClass ? " " + extraClass : "");
+          if (inputHasChatMention(typed, name)) btn.classList.add("is-on");
+          btn.textContent = label;
+          btn.addEventListener("click", function () {
+            toggleChatMention(name);
+          });
+          list.appendChild(btn);
+        }
+        addNameBtn("ALL", "ALL", "is-all");
         if (!names.length) {
           var empty = document.createElement("p");
           empty.className = "front-chat-online__empty";
@@ -17000,15 +17122,7 @@
           return;
         }
         names.forEach(function (name) {
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "front-chat-online__btn";
-          if (inputHasChatMention(typed, name)) btn.classList.add("is-on");
-          btn.textContent = name === me ? name + " (나)" : name;
-          btn.addEventListener("click", function () {
-            toggleChatMention(name);
-          });
-          list.appendChild(btn);
+          addNameBtn(name === me ? name + " (나)" : name, name);
         });
         renderFrontRecentDirects();
       }
@@ -20744,16 +20858,7 @@
         hkBindPhotoButton(document.getElementById("btnPhotoRequestMemo"), "requestMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoMbMemo"), "mbMemo");
         hkBindPhotoButton(document.getElementById("btnPhotoInvMemo"), "invMemo");
-        hkBindPhotoPaste(document.getElementById("frontChatInput"), "frontChat", {
-          autoSend: function (text, image) {
-            var kind = getActiveChatKind();
-            if (kind === "team" && canUseTeamChat()) {
-              submitTeamChatMessage(text, image);
-            } else if (kind === "front" && frontMode) {
-              submitFrontChatMessage(text, image);
-            }
-          },
-        });
+        hkBindPhotoPaste(document.getElementById("frontChatInput"), "frontChat");
         if (!document.__hkFrontChatPanelPasteBound) {
           document.__hkFrontChatPanelPasteBound = true;
           document.addEventListener("paste", function (ev) {
@@ -20769,11 +20874,9 @@
             if (!file) return;
             ev.preventDefault();
             hkCompressImage(file, function (url) {
+              hkSetPhotoPreview("frontChat", url);
               var inp = document.getElementById("frontChatInput");
-              var text = inp ? String(inp.value || "").trim() : "";
-              submitFrontChatMessage(text, url);
-              if (inp) inp.value = "";
-              hkClearPhoto("frontChat");
+              if (inp) inp.focus();
             });
           });
         }
@@ -21724,6 +21827,9 @@
         var vipCheckInNav = document.getElementById("sidebarBtnVipCheckIn");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
+        var frontDdNav = document.getElementById("sidebarBtnFrontDd");
+        var frontInvenNav = document.getElementById("sidebarBtnFrontInven");
+        var frontChichiNav = document.getElementById("sidebarBtnFrontChichi");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
         var aiNav = document.getElementById("sidebarBtnAi");
         if (chatNav) {
@@ -21801,10 +21907,37 @@
           frontNav.setAttribute("aria-pressed", sidebarMainView === "front" ? "true" : "false");
         }
         if (frontEmbedNav) {
-          frontEmbedNav.classList.toggle("is-active", sidebarMainView === "frontEmbed");
-          frontEmbedNav.setAttribute(
+          frontEmbedNav.hidden = true;
+          frontEmbedNav.classList.toggle("is-active", false);
+        }
+        if (frontDdNav) {
+          frontDdNav.classList.toggle(
+            "is-active",
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "dd"
+          );
+          frontDdNav.setAttribute(
             "aria-pressed",
-            sidebarMainView === "frontEmbed" ? "true" : "false"
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "dd" ? "true" : "false"
+          );
+        }
+        if (frontInvenNav) {
+          frontInvenNav.classList.toggle(
+            "is-active",
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "inven"
+          );
+          frontInvenNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "inven" ? "true" : "false"
+          );
+        }
+        if (frontChichiNav) {
+          frontChichiNav.classList.toggle(
+            "is-active",
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "chichi"
+          );
+          frontChichiNav.setAttribute(
+            "aria-pressed",
+            sidebarMainView === "frontEmbed" && frontEmbedTab === "chichi" ? "true" : "false"
           );
         }
         if (complaintNav) {
@@ -24671,6 +24804,7 @@
       function applyFrontEmbedTab(tab) {
         if (tab === "dd" || tab === "inven" || tab === "chichi") frontEmbedTab = tab;
         syncFrontEmbedTabUi();
+        updateSidebarPrimaryNavActive();
       }
 
       function showSidebarFrontEmbedView(tab, opts) {
@@ -24913,9 +25047,9 @@
         if (m) {
           return [m[1].trim(), m[2].trim()].filter(Boolean);
         }
-        if (/[,，]/.test(s)) {
+        if (/[,，/]/.test(s) || /^\d{3,5}\s+\d{3,5}/.test(s)) {
           return s
-            .split(/[,，]/)
+            .split(/[,，/\s]+/)
             .map(function (part) {
               return part.trim();
             })
@@ -24946,11 +25080,18 @@
         wrap.className = "request-feedback__chips";
         (rooms || []).forEach(function (room) {
           var st = lookupRoomStatusFromXml(room) || "";
+          var fo = lookupRoomResvDisplay(room);
           var chip = document.createElement("span");
           chip.className = "request-quick-chip " + hkStatusBadgeClasses(st);
-          chip.textContent = formatRoomNoDisplay(room) + (st ? " " + st : "");
+          chip.textContent =
+            formatRoomNoDisplay(room) +
+            (st ? " " + st : "") +
+            (fo === "IN" ? " IN" : "");
           chip.title =
-            "객실 " + formatRoomNoDisplay(room) + (st ? " · " + st : " · 상태 없음");
+            "객실 " +
+            formatRoomNoDisplay(room) +
+            (st ? " · " + st : " · 상태 없음") +
+            (fo === "IN" ? " · FO IN" : "");
           wrap.appendChild(chip);
         });
         return wrap;
@@ -25446,6 +25587,11 @@
           );
         });
         confirming.sort(function (a, b) {
+          var ca = new Date(a.lastChatAt || 0).getTime();
+          var cb = new Date(b.lastChatAt || 0).getTime();
+          if (isNaN(ca)) ca = 0;
+          if (isNaN(cb)) cb = 0;
+          if (cb !== ca) return cb - ca;
           var ta = new Date(a.ackedAt || a.at || 0).getTime();
           var tb = new Date(b.ackedAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
@@ -25616,6 +25762,8 @@
           ev.stopPropagation();
           entry.memo = String(ta.value || "").trim();
           entry.memoImage = hkGetPhoto(memoEditKey) || "";
+          entry.updatedAt = new Date().toISOString();
+          entry.memoUpdatedAt = entry.updatedAt;
           saveOrderLog();
           done();
         });
@@ -27774,6 +27922,7 @@
           image: msgImage || "",
         });
         entry.updatedAt = new Date().toISOString();
+        entry.lastChatAt = entry.updatedAt;
         hkClearPhoto("schedReqChat:" + reqId);
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
@@ -27826,6 +27975,8 @@
           text: msgText,
           image: msgImage || "",
         });
+        entry.updatedAt = new Date().toISOString();
+        entry.lastChatAt = entry.updatedAt;
         hkClearPhoto("orderChat:" + orderId);
         // 리렌더 전 입력값을 비움 — captureOrderChatComposeDraft가 방금 보낸 글을 다시 넣지 않게
         try {
@@ -28120,7 +28271,7 @@
             return e.issueAt || e.at;
           }),
           stripOldestCmp(function (e) {
-            return e.issueAt || e.at;
+            return e.lastChatAt || e.issueAt || e.at;
           })
         );
         applyStripSort(
@@ -28427,7 +28578,7 @@
           var tb = new Date(b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
-          return tb - ta;
+          return ta - tb;
         });
         entries.forEach(function (entry) {
           var li = document.createElement("li");
@@ -28623,7 +28774,7 @@
             },
           },
           stripOldestCmp(function (e) {
-            return e && e.at;
+            return e.lastChatAt || e.at;
           })
         );
         if (ipPanel && ipList) {
@@ -31426,8 +31577,14 @@
         renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = false;
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
+        var frontDdNav = document.getElementById("sidebarBtnFrontDd");
+        var frontInvenNav = document.getElementById("sidebarBtnFrontInven");
+        var frontChichiNav = document.getElementById("sidebarBtnFrontChichi");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
-        if (frontEmbedNav) frontEmbedNav.hidden = !frontMode;
+        if (frontEmbedNav) frontEmbedNav.hidden = true;
+        if (frontDdNav) frontDdNav.hidden = !frontMode;
+        if (frontInvenNav) frontInvenNav.hidden = !frontMode;
+        if (frontChichiNav) frontChichiNav.hidden = !frontMode;
         if (complaintNav) complaintNav.hidden = !frontMode;
         syncNightVipSidebarUi();
         applyFacilityLogSidebarUi();
@@ -32840,6 +32997,14 @@
           },
           getOperatorName: getOperatorName,
           onPresence: renderFrontChatOnline,
+          onDuplicateLogin: function () {
+            showOperatorGate({
+              mode: "shift",
+              force: true,
+              requireDifferentName: true,
+              blockedName: getOperatorName(),
+            });
+          },
         });
       }
       if (typeof HKTrackIt !== "undefined") {
@@ -32910,9 +33075,7 @@
           showSidebarInvenNotifyView();
           HKInvenNotify.render(true);
           if (rowCount > 0) {
-            showHkActionToast(
-              "인벤 표 " + rowCount + "행 반영 · 「저장」을 눌러 공유하세요."
-            );
+            showHkActionToast("인벤 표 " + rowCount + "행 반영 · 자동 저장했습니다.");
           } else {
             showHkActionToast("오늘 날짜 인벤 행이 없어 표가 비었습니다.");
           }
@@ -33870,6 +34033,9 @@
         var bVipCheckIn = document.getElementById("sidebarBtnVipCheckIn");
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
+        var bFrontDd = document.getElementById("sidebarBtnFrontDd");
+        var bFrontInven = document.getElementById("sidebarBtnFrontInven");
+        var bFrontChichi = document.getElementById("sidebarBtnFrontChichi");
         var bAi = document.getElementById("sidebarBtnAi");
         if (bChat) {
           bChat.addEventListener("click", function () {
@@ -33985,6 +34151,24 @@
               return;
             }
             showSidebarFrontView();
+          });
+        }
+        if (bFrontDd) {
+          bFrontDd.addEventListener("click", function () {
+            if (!frontMode) return;
+            showSidebarFrontEmbedView("dd");
+          });
+        }
+        if (bFrontInven) {
+          bFrontInven.addEventListener("click", function () {
+            if (!frontMode) return;
+            showSidebarFrontEmbedView("inven");
+          });
+        }
+        if (bFrontChichi) {
+          bFrontChichi.addEventListener("click", function () {
+            if (!frontMode) return;
+            showSidebarFrontEmbedView("chichi");
           });
         }
         if (bFrontEmbed) {

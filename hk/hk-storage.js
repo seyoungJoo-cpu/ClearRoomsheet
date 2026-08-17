@@ -199,8 +199,8 @@
   function roomNumberKey(number) {
     var s = String(number == null ? "" : number).trim();
     if (!s) return "";
-    if (/->/.test(s) || /에서/.test(s)) {
-      return s.replace(/\s+/g, " ");
+    if (/->/.test(s) || /에서/.test(s) || /[,，/]/.test(s) || /\s/.test(s)) {
+      return s.replace(/\s+/g, " ").toLowerCase();
     }
     var d = s.replace(/\D/g, "");
     if (!d) return s;
@@ -535,9 +535,18 @@
 
   function invenNotifyHasContent(inv) {
     if (!inv || typeof inv !== "object") return false;
-    if (Array.isArray(inv.cards) && inv.cards.length > 0) return true;
-    if (inv.table && Array.isArray(inv.table.rows) && inv.table.rows.length > 0) {
+    if (Array.isArray(inv.cards) && inv.cards.some(function (c) {
+      return c && String(c.room || "").trim();
+    })) {
       return true;
+    }
+    if (inv.table && Array.isArray(inv.table.rows)) {
+      return inv.table.rows.some(function (row) {
+        if (!row || typeof row !== "object") return false;
+        var main = row.main || {};
+        var annex = row.annex || {};
+        return !!(String(main.room || "").trim() || String(annex.room || "").trim());
+      });
     }
     return false;
   }
@@ -1161,7 +1170,15 @@
   }
 
   function defaultStaffBroadcasts() {
-    return { updatedAt: "", alerts: [], polls: [], directs: [], presence: {}, deletedIds: {} };
+    return {
+      updatedAt: "",
+      alerts: [],
+      polls: [],
+      directs: [],
+      presence: {},
+      presenceKicks: {},
+      deletedIds: {},
+    };
   }
 
   function normalizeStrMap(raw) {
@@ -1254,8 +1271,30 @@
       dayKey: raw.dayKey != null ? String(raw.dayKey) : "",
       cancelled: !!raw.cancelled,
       cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : "",
+      replyTo: raw.replyTo != null ? String(raw.replyTo).trim() : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
+  }
+
+  function normalizePresenceKicks(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    var now = Date.now();
+    Object.keys(raw).forEach(function (key) {
+      var k = String(key || "").trim().toLowerCase();
+      var row = raw[key];
+      if (!k || !row || typeof row !== "object") return;
+      var sid = row.sid != null ? String(row.sid).trim() : "";
+      var at = row.at != null ? String(row.at) : "";
+      if (!sid || !at) return;
+      var t = new Date(at).getTime();
+      if (!isFinite(t) || now - t > 12 * 3600 * 1000) return;
+      var prev = out[k];
+      if (!prev || String(at) >= String(prev.at || "")) {
+        out[k] = { sid: sid, at: at };
+      }
+    });
+    return out;
   }
 
   function normalizePresenceMap(raw) {
@@ -1270,7 +1309,7 @@
       var at = row.at != null ? String(row.at) : "";
       if (!name || !at) return;
       var t = new Date(at).getTime();
-      if (!isFinite(t) || now - t > 30000) return;
+      if (!isFinite(t) || now - t > 45000) return;
       out[id] = { name: name, at: at };
     });
     return out;
@@ -1324,6 +1363,7 @@
       if (n && !d.deletedIds[n.id]) d.directs.push(n);
     });
     d.presence = normalizePresenceMap(raw.presence);
+    d.presenceKicks = normalizePresenceKicks(raw.presenceKicks);
     if (d.alerts.length > 80) d.alerts = d.alerts.slice(-80);
     if (d.polls.length > 80) d.polls = d.polls.slice(-80);
     if (d.directs.length > 120) {
@@ -1443,9 +1483,11 @@
         prevD.dayKey = row.dayKey;
         prevD.createdAt = row.createdAt;
         if (row.image) prevD.image = row.image;
+        if (row.replyTo) prevD.replyTo = row.replyTo;
       } else if (!prevD.image && row.image) {
         prevD.image = row.image;
       }
+      if (!prevD.replyTo && row.replyTo) prevD.replyTo = row.replyTo;
       directsById[row.id] = prevD;
     }
     (base.directs || []).forEach(takeDirect);
@@ -1458,6 +1500,17 @@
         if (!row) return;
         var prevP = presence[sid];
         if (!prevP || String(row.at || "") >= String(prevP.at || "")) presence[sid] = row;
+      });
+    });
+    var presenceKicks = {};
+    [base.presenceKicks || {}, inc.presenceKicks || {}].forEach(function (m) {
+      Object.keys(m).forEach(function (key) {
+        var row = m[key];
+        if (!row) return;
+        var k = String(key || "").trim().toLowerCase();
+        if (!k) return;
+        var prevK = presenceKicks[k];
+        if (!prevK || String(row.at || "") >= String(prevK.at || "")) presenceKicks[k] = row;
       });
     });
 
@@ -1488,6 +1541,7 @@
         return String(a.createdAt).localeCompare(String(b.createdAt));
       });
     out.presence = normalizePresenceMap(presence);
+    out.presenceKicks = normalizePresenceKicks(presenceKicks);
     if (out.alerts.length > 80) out.alerts = out.alerts.slice(-80);
     if (out.polls.length > 80) out.polls = out.polls.slice(-80);
     if (out.directs.length > 120) {
@@ -2595,8 +2649,10 @@
           : [];
     });
 
-    // 스탬프가 마감 이전이거나 없으면 제외 (마감 후 되살림 방지)
+    // 마감 이전 객실만 제외. 스탬프 없는 현재 등록분은 지금 찍고 유지
+    // (저장/프리즌스 하트비트가 특이객실을 통째로 지우는 것 방지)
     if (d.closeDayAt) {
+      var stampNow = new Date().toISOString();
       var zoneIds = STANDARD_ZONE_IDS.concat(
         customZones.map(function (z) {
           return z.id;
@@ -2604,10 +2660,19 @@
       );
       zoneIds.forEach(function (zone) {
         var list = Array.isArray(d.rooms[zone]) ? d.rooms[zone] : [];
+        var clearAt =
+          d.zoneRoomClearAt && d.zoneRoomClearAt[zone]
+            ? String(d.zoneRoomClearAt[zone])
+            : "";
         d.rooms[zone] = list.filter(function (room) {
           if (!room || !room.number) return false;
           var at = roomActivityAt(room);
-          if (!at) return false;
+          if (!at) {
+            if (clearAt) return false;
+            if (!room.createdAt) room.createdAt = stampNow;
+            if (!room.updatedAt) room.updatedAt = stampNow;
+            return true;
+          }
           return isRoomAfterCloseDay(room, d.closeDayAt);
         });
       });
@@ -2999,6 +3064,7 @@
 
   global.HKStorage = {
     key: STORAGE_KEY,
+    STANDARD_ZONE_IDS: STANDARD_ZONE_IDS,
     load: load,
     save: save,
     applyRemote: applyRemote,

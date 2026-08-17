@@ -18,6 +18,7 @@
   var titleFlashTimer = null;
   var titleFlashOrig = "";
   var lastAttentionId = "";
+  var lastKickHandled = "";
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -471,7 +472,7 @@
       var row = map[sid];
       if (!row || !row.name) return;
       var t = new Date(row.at || 0).getTime();
-      if (!isFinite(t) || now - t > 20000) return;
+      if (!isFinite(t) || now - t > 25000) return;
       var name = String(row.name).trim();
       if (!name || seen[name]) return;
       seen[name] = true;
@@ -483,6 +484,47 @@
     return names;
   }
 
+  function pruneStalePresence(pack) {
+    if (!pack || !pack.presence) return false;
+    var now = Date.now();
+    var changed = false;
+    Object.keys(pack.presence).forEach(function (sid) {
+      var row = pack.presence[sid];
+      var t = row && row.at ? new Date(row.at).getTime() : 0;
+      if (!isFinite(t) || now - t > 25000) {
+        delete pack.presence[sid];
+        changed = true;
+      }
+    });
+    return changed;
+  }
+
+  function namesKey(s) {
+    return namesNorm(s);
+  }
+
+  function wasKickedForMyName() {
+    var name = operatorName();
+    if (!name) return false;
+    var pack = getPack();
+    var kicks = pack.presenceKicks || {};
+    var kick = kicks[namesKey(name)];
+    if (!kick || !kick.sid) return false;
+    if (kick.sid === presenceSid()) return false;
+    var t = new Date(kick.at || 0).getTime();
+    if (!isFinite(t) || Date.now() - t > 12 * 3600 * 1000) return false;
+    return true;
+  }
+
+  function claimNameAndKickOthers() {
+    var name = operatorName();
+    if (!name) return;
+    var pack = getPack();
+    if (!pack.presenceKicks) pack.presenceKicks = {};
+    pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIso() };
+    savePack(pack);
+  }
+
   function touchPresence(force) {
     if (!isFront()) {
       if (presenceWasOn) dropPresence();
@@ -490,11 +532,18 @@
     }
     var name = operatorName();
     if (!name) return;
+    if (wasKickedForMyName()) return;
     var now = Date.now();
-    if (!force && lastPresencePush && now - lastPresencePush < 8000) return;
+    if (!force && lastPresencePush && now - lastPresencePush < 4000) return;
     var pack = getPack();
+    pruneStalePresence(pack);
     if (!pack.presence) pack.presence = {};
+    var firstClaim = !presenceWasOn;
     pack.presence[presenceSid()] = { name: name, at: nowIso() };
+    if (firstClaim) {
+      if (!pack.presenceKicks) pack.presenceKicks = {};
+      pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIso() };
+    }
     lastPresencePush = now;
     presenceWasOn = true;
     savePack(pack);
@@ -510,7 +559,7 @@
     lastPresencePush = 0;
   }
 
-  function sendDirectAlerts(from, text, tos, image) {
+  function sendDirectAlerts(from, text, tos, image, opts) {
     from = String(from || "").trim();
     image = image != null ? String(image).trim() : "";
     text = String(text || "").trim() || (image ? "(사진)" : "");
@@ -520,7 +569,19 @@
     var pack = getPack();
     if (!pack.directs) pack.directs = [];
     var online = getOnlineFrontNames();
+    var targets = [];
     (tos || []).forEach(function (toRaw) {
+      var token = String(toRaw || "").trim();
+      if (!token) return;
+      if (namesNorm(token) === "all") {
+        online.forEach(function (n) {
+          if (n && !namesMatch(n, from)) targets.push(n);
+        });
+        return;
+      }
+      targets.push(token);
+    });
+    (targets || []).forEach(function (toRaw) {
       var to = resolveMentionName(toRaw, online);
       if (!to || namesMatch(to, from) || seen[namesNorm(to)]) return;
       seen[namesNorm(to)] = true;
@@ -536,6 +597,7 @@
         dayKey: todayKey(),
         cancelled: false,
         cancelledAt: "",
+        replyTo: opts && opts.replyTo ? String(opts.replyTo) : "",
         dismissedBy: {},
       });
       ids.push(id);
@@ -615,7 +677,7 @@
     body.textContent = row.text;
     var hint = document.createElement("p");
     hint.className = "hk-broadcast__hint";
-    hint.textContent = "클릭하면 닫힙니다";
+    hint.textContent = "확인을 눌러 닫습니다";
     var ok = document.createElement("button");
     ok.type = "button";
     ok.className = "hk-broadcast__ok";
@@ -643,8 +705,6 @@
       });
       card.appendChild(img);
     }
-    card.appendChild(hint);
-    card.appendChild(ok);
     var fromName = String(row.from || row.createdBy || "").trim();
     if (fromName) {
       var fromEl = document.createElement("p");
@@ -661,7 +721,54 @@
       e.stopPropagation();
       dismiss();
     });
-    card.onclick = dismiss;
+    card.onclick = function (e) {
+      e.stopPropagation();
+    };
+    if (row.kind === "direct" && fromName && !namesMatch(fromName, operatorName())) {
+      var replyWrap = document.createElement("div");
+      replyWrap.className = "hk-broadcast__reply";
+      var replyInp = document.createElement("input");
+      replyInp.type = "text";
+      replyInp.className = "hk-broadcast__reply-input";
+      replyInp.maxLength = 200;
+      replyInp.placeholder = fromName + "에게 답장";
+      replyInp.setAttribute("aria-label", "1:1 알럿 답장");
+      var replyBtn = document.createElement("button");
+      replyBtn.type = "button";
+      replyBtn.className = "hk-broadcast__reply-send";
+      replyBtn.textContent = "답장";
+      function sendReply() {
+        var me = operatorName();
+        var replyText = String(replyInp.value || "").trim();
+        if (!me || !replyText) {
+          if (replyInp) replyInp.focus();
+          return;
+        }
+        sendDirectAlerts(me, replyText, [fromName], "", { replyTo: row.id });
+        persistDismiss(row);
+        hideOverlay();
+        refreshFront();
+      }
+      replyBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        sendReply();
+      });
+      replyInp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          sendReply();
+        }
+      });
+      replyInp.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+      replyWrap.appendChild(replyInp);
+      replyWrap.appendChild(replyBtn);
+      card.appendChild(replyWrap);
+    }
+    card.appendChild(hint);
+    card.appendChild(ok);
   }
 
   function renderPollCard(row, card) {
@@ -812,13 +919,9 @@
     } else renderAlertCard(row, card);
     if (backdrop && !backdrop.__hkBound) {
       backdrop.__hkBound = true;
-      backdrop.addEventListener("click", function () {
-        var cur = pickNext();
-        if (cur && cur.id === showingId) {
-          persistDismiss(cur);
-          hideOverlay();
-          refreshFront();
-        }
+      backdrop.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
       });
     }
     wrap.hidden = false;
@@ -851,6 +954,7 @@
     pollUi = { id: "", selected: {}, showCounts: false };
     showingId = "";
     lastAttentionId = "";
+    lastKickHandled = "";
     lastSeenOperatorName = operatorName();
     refreshFront();
   }
@@ -859,6 +963,19 @@
     noteOperatorChange();
     ensureSessionStarted();
     if (isFront()) {
+      if (wasKickedForMyName()) {
+        dropPresence();
+        var packKick = getPack();
+        var kn = namesKey(operatorName());
+        var kickRow = packKick.presenceKicks && packKick.presenceKicks[kn];
+        var kickKey = kn + ":" + (kickRow && kickRow.sid ? kickRow.sid : "");
+        if (kickKey && lastKickHandled !== kickKey && frontCtx && typeof frontCtx.onDuplicateLogin === "function") {
+          lastKickHandled = kickKey;
+          frontCtx.onDuplicateLogin();
+        }
+        hideOverlay();
+        return;
+      }
       touchPresence(false);
     } else if (presenceWasOn) {
       dropPresence();
@@ -1217,6 +1334,7 @@
     sendDirectAlerts: sendDirectAlerts,
     resolveMentionName: resolveMentionName,
     cancelDirects: cancelDirects,
+    claimNameAndKickOthers: claimNameAndKickOthers,
     renderAdminList: renderAdminList,
   };
 })(typeof window !== "undefined" ? window : this);
