@@ -13,6 +13,7 @@
   var lastSeenOperatorName = "";
   var lastPresencePush = 0;
   var presenceWasOn = false;
+  var syncChangeBound = false;
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -69,6 +70,7 @@
 
   function alertReady(row) {
     if (!row) return false;
+    if (row.kind === "direct") return true;
     var iso = fireAtOf(row);
     if (!iso) return true;
     var t = new Date(iso).getTime();
@@ -82,10 +84,31 @@
 
   function getPack() {
     var data = global.HKStorage ? global.HKStorage.load() : null;
+    var local;
     if (global.HKStorage && typeof global.HKStorage.normalizeStaffBroadcasts === "function") {
-      return global.HKStorage.normalizeStaffBroadcasts(data && data.staffBroadcasts);
+      local = global.HKStorage.normalizeStaffBroadcasts(data && data.staffBroadcasts);
+    } else {
+      local =
+        (data && data.staffBroadcasts) || {
+          alerts: [],
+          polls: [],
+          directs: [],
+          presence: {},
+          deletedIds: {},
+          updatedAt: "",
+        };
     }
-    return (data && data.staffBroadcasts) || { alerts: [], polls: [], deletedIds: {}, updatedAt: "" };
+    try {
+      var last =
+        global.HKSync && typeof global.HKSync.getLastServerPayload === "function"
+          ? global.HKSync.getLastServerPayload()
+          : null;
+      var remotePack = last && last.hkStorage && last.hkStorage.staffBroadcasts;
+      if (remotePack && global.HKStorage && typeof global.HKStorage.mergeStaffBroadcasts === "function") {
+        return global.HKStorage.mergeStaffBroadcasts(local, remotePack);
+      }
+    } catch (ePack) {}
+    return local;
   }
 
   function savePack(pack, thenToast) {
@@ -167,6 +190,13 @@
 
   function isActiveToday(row) {
     if (!row) return false;
+    if (row.kind === "direct") {
+      var created = row.createdAt ? new Date(row.createdAt).getTime() : 0;
+      if (isFinite(created) && created > 0 && Date.now() - created > 36 * 3600 * 1000) {
+        return false;
+      }
+      return true;
+    }
     if (isScheduledPending(row)) return true;
     var day = row.dayKey || "";
     if (day && day !== todayKey()) return false;
@@ -205,9 +235,20 @@
     return !!(na && nb && na === nb);
   }
 
+  function isDismissedByMe(row, name) {
+    if (!row || !row.dismissedBy || !name) return false;
+    if (row.dismissedBy[name]) return true;
+    var keys = Object.keys(row.dismissedBy);
+    var i;
+    for (i = 0; i < keys.length; i++) {
+      if (namesMatch(keys[i], name)) return true;
+    }
+    return false;
+  }
+
   function canSee(row) {
     if (!row || !isActiveToday(row)) return false;
-    if (row.kind !== "poll" && !alertReady(row)) return false;
+    if (row.kind !== "poll" && row.kind !== "direct" && !alertReady(row)) return false;
     if (row.kind === "poll" && !pollInWindow(row)) return false;
     var name = operatorName();
     if (row.kind === "poll") {
@@ -216,9 +257,7 @@
     } else if (row.kind === "direct") {
       if (row.cancelled) return false;
       if (!name || !namesMatch(name, row.to)) return false;
-      if (row.dismissedBy && (row.dismissedBy[name] || row.dismissedBy[String(row.to || "").trim()])) {
-        return false;
-      }
+      if (isDismissedByMe(row, name)) return false;
     } else {
       if (name && row.dismissedBy && row.dismissedBy[name]) return false;
       else if (!name && localDismissed()[row.id]) return false;
@@ -1010,6 +1049,13 @@
       frontCtx = ctx || {};
       ensureSessionStarted();
       ensureTick();
+      if (!syncChangeBound && global.HKSync && typeof global.HKSync.onChange === "function") {
+        syncChangeBound = true;
+        global.HKSync.onChange(function () {
+          refreshFront();
+          if (frontCtx && typeof frontCtx.onPresence === "function") frontCtx.onPresence();
+        });
+      }
       refreshFront();
     },
     initAdmin: function (ctx) {

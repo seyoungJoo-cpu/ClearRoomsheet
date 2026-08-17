@@ -1145,7 +1145,27 @@
     if (changed.length) emitChange(changed, payload);
   }
 
-  /** 버전 동일해도 서버에 있는 관리자 문의가 로컬에 빠지지 않게 병합 */
+  /** 버전 동일해도 서버에 있는 1:1 알럿이 로컬에 빠지지 않게 병합 */
+  function reconcileStaffBroadcastsFromRemote(payload) {
+    if (!payload || !payload.hkStorage || !global.HKStorage) return false;
+    if (typeof global.HKStorage.mergeStaffBroadcasts !== "function") return false;
+    var remotePack = payload.hkStorage.staffBroadcasts;
+    if (!remotePack || typeof remotePack !== "object") return false;
+    try {
+      var data = global.HKStorage.load();
+      var prev = JSON.stringify((data && data.staffBroadcasts) || {});
+      var merged = global.HKStorage.mergeStaffBroadcasts(
+        data && data.staffBroadcasts,
+        remotePack
+      );
+      if (JSON.stringify(merged) === prev) return false;
+      data.staffBroadcasts = merged;
+      global.localStorage.setItem(global.HKStorage.key, JSON.stringify(data));
+      return true;
+    } catch (eReconBc) {
+      return false;
+    }
+  }
   function reconcileAdminInquiriesFromRemote(remoteList) {
     if (!Array.isArray(remoteList)) return false;
     var merged = mergeAdminInquiriesLocal(cache.adminInquiries, remoteList);
@@ -1584,15 +1604,18 @@
           applyRemotePayload(data.payload);
           return true;
         }
-        // 폴링: 버전이 같아도 관리자 문의는 서버와 재병합 (빈 로컬 캐시에 갇히는 문제 방지)
+        // 폴링: 버전이 같아도 1:1 알럿·관리자 문의는 서버와 재병합
+        lastServerPayload = Object.assign({}, lastServerPayload || {}, data.payload);
         var reconChanged = [];
+        if (reconcileStaffBroadcastsFromRemote(data.payload)) {
+          reconChanged.push("staffBroadcasts");
+          reconChanged.push("hkStorage");
+        }
         if (reconcileAdminInquiriesFromRemote(data.payload.hkAdminInquiries)) {
           reconChanged.push("hkAdminInquiries");
         }
         if (reconChanged.length) {
-          emitChange(reconChanged, {
-            hkAdminInquiries: cache.adminInquiries.slice(),
-          });
+          emitChange(reconChanged, Object.assign({}, data.payload));
         }
         return true;
       })

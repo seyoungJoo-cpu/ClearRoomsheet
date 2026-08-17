@@ -14737,7 +14737,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=bydate-29"></script>
-  <script src="hk-sync.js?v=force-sync-6"></script>
+  <script src="hk-sync.js?v=force-sync-7"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js"></script>
@@ -14749,7 +14749,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-2"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-3"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -32373,6 +32373,9 @@
           deferHkSyncUiApply(function () {
             refreshMain();
           });
+          if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+            HKStaffBroadcast.refresh();
+          }
         }
       });
 
@@ -32394,12 +32397,15 @@
           return;
         }
         if (document.visibilityState !== "visible") return;
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+          HKStaffBroadcast.refresh();
+        }
         if (typeof HKSync === "undefined") return;
-        var hiddenFor = hkPageHiddenAt ? Date.now() - hkPageHiddenAt : 0;
         hkPageHiddenAt = 0;
-        // 짧은 앱 전환은 건너뛰고, 15초 이상 숨겨졌을 때만 강제 동기화
-        if (hiddenFor < HK_RESUME_FORCE_SYNC_MS) return;
-        HKSync.pull(false).finally(function () {
+        HKSync.pull(true).finally(function () {
+          if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+            HKStaffBroadcast.refresh();
+          }
           refreshSyncedPanelsFromCache();
         });
       });
