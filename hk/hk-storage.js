@@ -6,7 +6,7 @@
  */
 (function (global) {
   var STORAGE_KEY = "lotte-hk-v1";
-  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR"];
+  var STANDARD_ZONE_IDS = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR", "SHUTTLE"];
   var STANDARD_ZONE_LABELS = {
     VIP: "VIP",
     RC: "R/C",
@@ -14,6 +14,7 @@
     MOBILE_CI: "MCI",
     AJ: "AJ",
     MINIBAR: "MB",
+    SHUTTLE: "셔틀",
   };
 
   function defaultRoom() {
@@ -846,6 +847,7 @@
         MOBILE_CI: [],
         AJ: [],
         MINIBAR: [],
+        SHUTTLE: [],
       },
     };
   }

@@ -86,7 +86,7 @@
     if (typeof window.HK_ARCHIVE_ZONE_LABELS === "object" && window.HK_ARCHIVE_ZONE_LABELS[id]) {
       return window.HK_ARCHIVE_ZONE_LABELS[id];
     }
-    var map = { VIP: "VIP", RC: "R/C", CASINO: "CASINO", MOBILE_CI: "MCI", AJ: "AJ", MINIBAR: "MB" };
+    var map = { VIP: "VIP", RC: "R/C", CASINO: "CASINO", MOBILE_CI: "MCI", AJ: "AJ", MINIBAR: "MB", SHUTTLE: "셔틀" };
     if (map[id]) return map[id];
     var cz = data.customZones || [];
     for (var i = 0; i < cz.length; i++) {
@@ -96,7 +96,7 @@
   }
 
   function zoneOrder() {
-    var base = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR"];
+    var base = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR", "SHUTTLE"];
     var out = base.slice();
     (data.customZones || []).forEach(function (z) {
       if (z && z.id && out.indexOf(z.id) < 0) out.push(z.id);

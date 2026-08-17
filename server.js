@@ -406,7 +406,7 @@ app.post("/api/push/unsubscribe", checkSyncAuth, function (req, res) {
   res.json({ ok: true });
 });
 
-var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR"];
+var HK_STANDARD_ZONES = ["VIP", "RC", "CASINO", "MOBILE_CI", "AJ", "MINIBAR", "SHUTTLE"];
 
 function copyHkRoomArray(rooms, zone) {
   if (rooms && Array.isArray(rooms[zone])) return rooms[zone].slice();
@@ -1296,7 +1296,7 @@ function mergeHkStorage(prev, incoming) {
         ? incoming.facilityDailyFoundLog
         : null
       : prev.facilityDailyFoundLog || null,
-    rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [], MINIBAR: [] },
+    rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [], MINIBAR: [], SHUTTLE: [] },
     deletedRooms: {},
     requestDeskChat: (function () {
       function normChat(arr) {

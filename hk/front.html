@@ -2554,12 +2554,13 @@
 
     .zone-room-manage-panel {
       margin-bottom: 14px;
-      padding: 14px;
-      width: min(100%, 280px);
-      max-width: 280px;
+      padding: 16px 18px;
+      width: 100%;
+      max-width: 720px;
       border: 1px solid var(--border);
       border-radius: 10px;
       background: var(--surface-inset);
+      box-sizing: border-box;
     }
 
     .zone-room-manage-panel .add-stack {
@@ -2567,10 +2568,17 @@
       flex-direction: column;
       gap: 10px;
       margin-bottom: 12px;
-      padding: 12px;
+      padding: 14px;
       background: var(--surface-raised);
       border: 1px solid var(--border);
       border-radius: 8px;
+    }
+
+    .zone-room-manage-panel .add-stack__title {
+      margin: 0 0 2px;
+      font-size: 0.9375rem;
+      font-weight: 800;
+      color: var(--accent);
     }
 
     .zone-room-manage-panel .add-stack input {
@@ -2680,11 +2688,51 @@
       border-bottom: none;
     }
 
+    .zone-room-edit-list .room-editor__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .zone-room-edit-list .room-editor__no {
+      font-weight: 800;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+
     .zone-room-edit-list .re-grid {
       display: flex;
       flex-direction: column;
       gap: 8px;
       margin-bottom: 10px;
+    }
+
+    .zone-room-edit-list .re-num,
+    .zone-room-edit-list .re-memo1,
+    .zone-room-edit-list .re-memo3 {
+      width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+    }
+
+    .zone-room-edit-list .re-memo2 {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+      resize: vertical;
+      line-height: 1.35;
     }
 
     .zone-room-edit-list .re-grid input {
@@ -12990,7 +13038,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO / MCI / AJ / MB 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바에서 VIP / R/C / CASINO / MCI / AJ / MB / 셔틀 특이객실을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -14688,7 +14736,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-27"></script>
+  <script src="hk-storage.js?v=bydate-28"></script>
   <script src="hk-sync.js?v=force-sync-5"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
@@ -14720,6 +14768,7 @@
         MOBILE_CI: "MCI",
         AJ: "AJ",
         MINIBAR: "MB",
+        SHUTTLE: "셔틀",
       };
       var currentZone = null;
       var maintenanceMode = false;
@@ -19326,6 +19375,11 @@
         stack.className = "add-stack";
         stack.setAttribute("aria-label", label + " 객실 추가");
 
+        var title = document.createElement("p");
+        title.className = "add-stack__title";
+        title.textContent = (label || "특이객실") + " 객실 추가";
+        stack.appendChild(title);
+
         if (zoneId === "RC") {
           var pair = document.createElement("div");
           pair.className = "rc-num-pair";
@@ -19361,7 +19415,7 @@
           numInput.className = "af-num";
           numInput.rows = 2;
           numInput.placeholder =
-            zone === "AJ"
+            zoneId === "AJ"
               ? "205,206 / 1010,1011  (쉼표=한팀, / =다른팀)"
               : "객실번호 (쉼표·공백·줄바꿈으로 여러 개)";
           numInput.autocomplete = "off";
@@ -19598,36 +19652,42 @@
             delBtn.textContent = "삭제";
             head.appendChild(delBtn);
             li.appendChild(head);
+            var grid = document.createElement("div");
+            grid.className = "re-grid";
             var inNum = document.createElement("input");
             inNum.type = "text";
             inNum.className = "re-num";
             inNum.value = formatRoomNoDisplay(room.number || "");
             inNum.placeholder = "객실번호";
-            li.appendChild(inNum);
+            grid.appendChild(inNum);
             var inM1 = document.createElement("input");
             inM1.type = "text";
             inM1.className = "re-memo1";
             inM1.value = room.memo1 || "";
             inM1.placeholder = "FD";
-            li.appendChild(inM1);
+            grid.appendChild(inM1);
             var inM2 = document.createElement("textarea");
             inM2.className = "re-memo2";
             inM2.rows = 2;
             inM2.value = room.memo2 || "";
             inM2.placeholder = "정비";
-            li.appendChild(inM2);
+            grid.appendChild(inM2);
             var inM3 = document.createElement("input");
             inM3.type = "text";
             inM3.className = "re-memo3";
             inM3.value = room.memo3 || "";
             inM3.placeholder = "키핑";
-            li.appendChild(inM3);
+            grid.appendChild(inM3);
+            li.appendChild(grid);
+            var actions = document.createElement("div");
+            actions.className = "re-actions";
             var saveBtn = document.createElement("button");
             saveBtn.type = "button";
             saveBtn.className = "btn-save-row";
             saveBtn.setAttribute("data-index", String(idx));
             saveBtn.textContent = "저장";
-            li.appendChild(saveBtn);
+            actions.appendChild(saveBtn);
+            li.appendChild(actions);
             editList.appendChild(li);
           });
         }
@@ -22267,6 +22327,9 @@
         if (/R\s*\/?\s*C\b|\bRC\b/i.test(q)) return "RC";
         if (/CASINO|카지노/i.test(q)) return "CASINO";
         if (/모바일|MOBILE/i.test(q)) return "MOBILE_CI";
+        if (/\bAJ\b/i.test(q)) return "AJ";
+        if (/셔틀|SHUTTLE/i.test(q)) return "SHUTTLE";
+        if (/미니바|MINIBAR/i.test(q)) return "MINIBAR";
         var data = HKStorage.load();
         var found = null;
         (data.customZones || []).forEach(function (z) {
