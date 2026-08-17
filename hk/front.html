@@ -1706,8 +1706,8 @@
 
     .hk-broadcast__card {
       position: relative;
-      width: min(440px, 100%);
-      max-height: min(82vh, 640px);
+      width: min(520px, 100%);
+      max-height: min(86vh, 720px);
       overflow: auto;
       padding: 22px 20px 16px;
       background: #fff;
@@ -1715,6 +1715,17 @@
       border-radius: 12px;
       box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28);
       box-sizing: border-box;
+    }
+
+    .hk-broadcast-image {
+      display: block;
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      margin: 0 0 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      cursor: zoom-in;
     }
 
     .hk-broadcast__kicker {
@@ -12876,7 +12887,7 @@
         </div>
         <p class="front-chat-panel__hint" id="frontChatPanelHint">정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.</p>
         <div class="front-chat-online" id="frontChatOnline" hidden>
-          <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿</div>
+          <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿 · Ctrl+V 사진</div>
           <div class="front-chat-online__list" id="frontChatOnlineList"></div>
           <div class="front-chat-recent-directs" id="frontChatRecentDirects" hidden>
             <div class="front-chat-online__label">보낸 알럿</div>
@@ -12890,11 +12901,11 @@
             <input
               type="text"
               id="frontChatInput"
-              placeholder="메시지 입력"
+              placeholder="메시지 입력 · Ctrl+V 사진"
               autocomplete="off"
               aria-label="채팅 메시지"
             />
-            <button type="button" class="hk-photo-btn" id="btnPhotoFrontChat" title="사진 첨부">사진</button>
+            <button type="button" class="hk-photo-btn" id="btnPhotoFrontChat" title="사진 첨부 · Ctrl+V">사진</button>
             <button type="submit" class="front-chat__send">전송</button>
           </div>
           <div class="hk-photo-preview" data-photo-key="frontChat" hidden></div>
@@ -14736,7 +14747,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=bydate-29"></script>
+  <script src="hk-storage.js?v=bydate-30"></script>
   <script src="hk-sync.js?v=force-sync-7"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
@@ -14749,7 +14760,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-3"></script>
+  <script src="hk-staff-broadcast.js?v=dm-alert-4"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -16936,7 +16947,9 @@
           var text = document.createElement("span");
           text.className = "front-chat-recent-directs__text";
           var toLabel = Array.isArray(it.to) ? it.to.join(", ") : String(it.to || "");
-          text.textContent = toLabel ? "#" + toLabel + " · " + (it.text || "") : it.text || "1:1 알럿";
+          text.textContent = toLabel
+            ? "#" + toLabel + " · " + (it.text || (it.image ? "(사진)" : "1:1 알럿"))
+            : it.text || (it.image ? "(사진)" : "1:1 알럿");
           text.title = text.textContent;
           var cancel = document.createElement("button");
           cancel.type = "button";
@@ -17008,7 +17021,7 @@
           if (title) title.textContent = "프론트 채팅방";
           if (hint) {
             hint.textContent =
-              "프론트 전용 대화방입니다. 접속 중인 근무자를 누르거나 #이름 을 적으면 1:1 알럿이 갑니다. 다시 누르면 취소됩니다.";
+              "프론트 전용 대화방입니다. 접속 중인 근무자를 누르거나 #이름 을 적으면 1:1 알럿이 갑니다. 캡처는 Ctrl+V 로 붙여넣으세요. 다시 누르면 취소됩니다.";
           }
         } else {
           if (title) title.textContent = "채팅방";
@@ -20684,7 +20697,8 @@
           var isNotice = img.classList.contains("notice-thumb-image");
           var isZoneMemo = img.classList.contains("zone-memo-image");
           var isMbInvMemo = img.classList.contains("mb-inv-notice-image");
-          if (!isMsg && !isPreview && !isNotice && !isZoneMemo && !isMbInvMemo) return;
+          var isBroadcast = img.classList.contains("hk-broadcast-image");
+          if (!isMsg && !isPreview && !isNotice && !isZoneMemo && !isMbInvMemo && !isBroadcast) return;
           e.preventDefault();
           e.stopPropagation();
           openLightbox(img.src);
@@ -20740,6 +20754,29 @@
             }
           },
         });
+        if (!document.__hkFrontChatPanelPasteBound) {
+          document.__hkFrontChatPanelPasteBound = true;
+          document.addEventListener("paste", function (ev) {
+            if (!frontMode || getActiveChatKind() !== "front") return;
+            var t = ev.target;
+            if (t && (t.id === "frontChatInput" || (t.closest && t.closest("#frontChatInput")))) {
+              return;
+            }
+            if (t && t.closest && t.closest("input, textarea, [contenteditable='true']")) return;
+            var panel = document.getElementById("frontChatPanel");
+            if (!panel || panel.hidden) return;
+            var file = hkExtractImageFileFromPaste(ev);
+            if (!file) return;
+            ev.preventDefault();
+            hkCompressImage(file, function (url) {
+              var inp = document.getElementById("frontChatInput");
+              var text = inp ? String(inp.value || "").trim() : "";
+              submitFrontChatMessage(text, url);
+              if (inp) inp.value = "";
+              hkClearPhoto("frontChat");
+            });
+          });
+        }
         hkBindPhotoPaste(document.getElementById("orderMemo"), "orderMemo");
         hkBindPhotoPaste(document.getElementById("facilityOrderMemo"), "facilityOrderMemo");
         hkBindPhotoPaste(document.getElementById("facilityMiscMemo"), "facilityMiscOrderMemo");
@@ -31852,7 +31889,12 @@
           HKStaffBroadcast.sendDirectAlerts &&
           mentions.length
         ) {
-          alertIds = HKStaffBroadcast.sendDirectAlerts(getOperatorName(), msgText, mentions) || [];
+          alertIds = HKStaffBroadcast.sendDirectAlerts(
+            getOperatorName(),
+            msgText,
+            mentions,
+            msgImage
+          ) || [];
           if (alertIds.length && typeof HKSync !== "undefined" && HKSync.flushPending) {
             HKSync.flushPending();
           }
@@ -31863,6 +31905,7 @@
               ids: alertIds,
               to: mentions.slice(),
               text: msgText,
+              image: msgImage || "",
               at: Date.now(),
               cancelled: false,
             });

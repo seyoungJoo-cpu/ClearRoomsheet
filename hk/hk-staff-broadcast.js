@@ -412,9 +412,10 @@
     lastPresencePush = 0;
   }
 
-  function sendDirectAlerts(from, text, tos) {
+  function sendDirectAlerts(from, text, tos, image) {
     from = String(from || "").trim();
-    text = String(text || "").trim() || "(사진)";
+    image = image != null ? String(image).trim() : "";
+    text = String(text || "").trim() || (image ? "(사진)" : "");
     if (!from) return [];
     var seen = {};
     var ids = [];
@@ -430,6 +431,7 @@
         id: id,
         kind: "direct",
         text: text,
+        image: image,
         to: to,
         from: from,
         createdAt: nowIso(),
@@ -521,7 +523,28 @@
     ok.className = "hk-broadcast__ok";
     ok.textContent = "확인";
     card.appendChild(kicker);
-    card.appendChild(body);
+    var onlyPhoto = !!(row.image && String(row.text || "").trim() === "(사진)");
+    if (!onlyPhoto) {
+      card.appendChild(body);
+    }
+    if (row.image) {
+      var img = document.createElement("img");
+      img.className = "hk-broadcast-image";
+      img.src = row.image;
+      img.alt = "첨부 사진";
+      img.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var lightbox = document.getElementById("hkImageLightbox");
+        var lightboxImg = document.getElementById("hkImageLightboxImg");
+        if (!lightbox || !lightboxImg) return;
+        lightboxImg.src = row.image;
+        lightbox.hidden = false;
+        lightbox.setAttribute("aria-hidden", "false");
+        document.body.classList.add("hk-image-lightbox-open");
+      });
+      card.appendChild(img);
+    }
     card.appendChild(hint);
     card.appendChild(ok);
     var fromName = String(row.from || row.createdBy || "").trim();

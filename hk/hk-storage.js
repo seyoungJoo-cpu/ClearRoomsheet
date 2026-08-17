@@ -1241,11 +1241,13 @@
     var from = raw.from != null ? String(raw.from).trim() : "";
     if (!id || !to || !from) return null;
     var text = raw.text != null ? String(raw.text).trim() : "";
+    var image = raw.image != null ? String(raw.image).trim() : "";
     if (!text) text = "(사진)";
     return {
       id: id,
       kind: "direct",
       text: text,
+      image: image,
       to: to,
       from: from,
       createdAt: raw.createdAt != null ? String(raw.createdAt) : "",
@@ -1440,6 +1442,9 @@
         prevD.from = row.from;
         prevD.dayKey = row.dayKey;
         prevD.createdAt = row.createdAt;
+        if (row.image) prevD.image = row.image;
+      } else if (!prevD.image && row.image) {
+        prevD.image = row.image;
       }
       directsById[row.id] = prevD;
     }
