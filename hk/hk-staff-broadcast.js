@@ -14,6 +14,10 @@
   var lastPresencePush = 0;
   var presenceWasOn = false;
   var syncChangeBound = false;
+  var swMessageBound = false;
+  var titleFlashTimer = null;
+  var titleFlashOrig = "";
+  var lastAttentionId = "";
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -294,6 +298,134 @@
     }
     showingId = "";
     pollUi = { id: "", selected: {}, showCounts: false };
+    stopTitleFlash();
+  }
+
+  function stopTitleFlash() {
+    if (titleFlashTimer) {
+      clearInterval(titleFlashTimer);
+      titleFlashTimer = null;
+    }
+    if (titleFlashOrig) {
+      try {
+        document.title = titleFlashOrig;
+      } catch (e) {}
+      titleFlashOrig = "";
+    }
+  }
+
+  function startTitleFlash(label) {
+    stopTitleFlash();
+    try {
+      titleFlashOrig = document.title || "ClearRoomsheet";
+    } catch (e) {
+      titleFlashOrig = "ClearRoomsheet";
+    }
+    var on = true;
+    try {
+      document.title = label;
+    } catch (e) {}
+    titleFlashTimer = setInterval(function () {
+      try {
+        document.title = on ? titleFlashOrig : label;
+      } catch (err) {}
+      on = !on;
+    }, 700);
+  }
+
+  function playDirectBeep() {
+    try {
+      var Ctx = global.AudioContext || global.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      function tone(at, freq, dur) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, at);
+        gain.gain.exponentialRampToValueAtTime(0.14, at + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(at);
+        osc.stop(at + dur + 0.02);
+      }
+      var t0 = ctx.currentTime;
+      tone(t0, 880, 0.14);
+      tone(t0 + 0.18, 1175, 0.16);
+      tone(t0 + 0.38, 880, 0.2);
+      setTimeout(function () {
+        try {
+          ctx.close();
+        } catch (e) {}
+      }, 900);
+    } catch (e) {}
+  }
+
+  function windowIsInForeground() {
+    try {
+      if (document.hidden) return false;
+      if (typeof document.hasFocus === "function" && !document.hasFocus()) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function showDirectOsNotification(row) {
+    if (!row || typeof Notification === "undefined") return;
+    if (Notification.permission !== "granted") return;
+    var from = row.from ? String(row.from) : "";
+    var text = row.text ? String(row.text) : "1:1 알럿";
+    var body = from ? from + " · " + text : text;
+    if (body.length > 120) body = body.slice(0, 120) + "…";
+    try {
+      var n = new Notification("1:1 알럿", {
+        body: body,
+        tag: "hk-direct-" + String(row.id),
+        renotify: true,
+        requireInteraction: true,
+      });
+      n.onclick = function () {
+        try {
+          window.focus();
+        } catch (e) {}
+        n.close();
+      };
+    } catch (e) {
+      try {
+        if (global.navigator && global.navigator.serviceWorker) {
+          global.navigator.serviceWorker.ready.then(function (reg) {
+            if (!reg || !reg.showNotification) return;
+            return reg.showNotification("1:1 알럿", {
+              body: body,
+              tag: "hk-direct-" + String(row.id),
+              renotify: true,
+              requireInteraction: true,
+              data: { url: "/hk/front.html?from=direct", kind: "direct" },
+            });
+          });
+        }
+      } catch (err) {}
+    }
+  }
+
+  function attentionForDirect(row) {
+    if (!row || row.kind !== "direct" || !row.id) return;
+    if (lastAttentionId === row.id) return;
+    lastAttentionId = row.id;
+    try {
+      window.focus();
+    } catch (e) {}
+    startTitleFlash("【1:1 알럿】");
+    playDirectBeep();
+    try {
+      if (global.navigator && typeof global.navigator.vibrate === "function") {
+        global.navigator.vibrate([180, 80, 180, 80, 220]);
+      }
+    } catch (e) {}
+    if (!windowIsInForeground()) showDirectOsNotification(row);
   }
 
   function persistDismiss(row) {
@@ -725,6 +857,7 @@
     }
     wrap.hidden = false;
     wrap.setAttribute("aria-hidden", "false");
+    if (row.kind === "direct") attentionForDirect(row);
   }
 
   function noteOperatorChange() {
@@ -733,6 +866,7 @@
       clearLocalDismiss();
       pollUi = { id: "", selected: {}, showCounts: false };
       showingId = "";
+      lastAttentionId = "";
     }
     if (name) lastSeenOperatorName = name;
   }
@@ -741,6 +875,7 @@
     clearLocalDismiss();
     pollUi = { id: "", selected: {}, showCounts: false };
     showingId = "";
+    lastAttentionId = "";
     touchPresence(true);
     refreshFront();
   }
@@ -749,6 +884,7 @@
     clearLocalDismiss();
     pollUi = { id: "", selected: {}, showCounts: false };
     showingId = "";
+    lastAttentionId = "";
     lastSeenOperatorName = operatorName();
     refreshFront();
   }
@@ -1062,7 +1198,26 @@
     if (typeof document !== "undefined" && !document.__hkBroadcastVisBound) {
       document.__hkBroadcastVisBound = true;
       document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "visible") refreshFront();
+        if (document.visibilityState === "visible") {
+          stopTitleFlash();
+          refreshFront();
+        }
+      });
+    }
+    if (
+      !swMessageBound &&
+      global.navigator &&
+      global.navigator.serviceWorker &&
+      typeof global.navigator.serviceWorker.addEventListener === "function"
+    ) {
+      swMessageBound = true;
+      global.navigator.serviceWorker.addEventListener("message", function (ev) {
+        var data = ev && ev.data;
+        if (!data || data.type !== "HK_DIRECT_ALERT") return;
+        try {
+          window.focus();
+        } catch (e) {}
+        refreshFront();
       });
     }
   }

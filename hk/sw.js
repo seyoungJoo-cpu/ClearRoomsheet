@@ -1,4 +1,37 @@
-/* House Keeping — Web Push (오더 알림) */
+/* House Keeping — Web Push (오더 알림 · 1:1 알럿) */
+self.addEventListener("install", function () {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", function (event) {
+  event.waitUntil(self.clients.claim());
+});
+
+function tryFocusFrontClients(kind) {
+  return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+    var jobs = [];
+    var i;
+    var client;
+    for (i = 0; i < list.length; i++) {
+      client = list[i];
+      if (client.url.indexOf("/hk/front") < 0) continue;
+      try {
+        if (client.postMessage) {
+          client.postMessage({ type: "HK_DIRECT_ALERT", kind: kind || "" });
+        }
+      } catch (e) {}
+      if ("focus" in client) {
+        jobs.push(
+          Promise.resolve(client.focus()).catch(function () {
+            return null;
+          })
+        );
+      }
+    }
+    return Promise.all(jobs);
+  });
+}
+
 self.addEventListener("push", function (event) {
   var payload = {
     title: "오더 알림",
@@ -18,13 +51,19 @@ self.addEventListener("push", function (event) {
     }
   } catch (e) {}
 
+  var isDirect = String(payload.tag || "").indexOf("hk-direct-") === 0;
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      tag: payload.tag,
-      renotify: true,
-      data: { url: payload.url },
-    })
+    Promise.all([
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        tag: payload.tag,
+        renotify: true,
+        requireInteraction: isDirect,
+        vibrate: isDirect ? [180, 80, 180, 80, 220] : undefined,
+        data: { url: payload.url, kind: isDirect ? "direct" : "order" },
+      }),
+      isDirect ? tryFocusFrontClients("direct") : Promise.resolve(),
+    ])
   );
 });
 
