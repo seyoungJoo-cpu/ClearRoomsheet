@@ -12897,30 +12897,12 @@
             </button>
             <button
               type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnFrontDd"
+              class="sidebar-nav__btn sidebar-nav__btn--multiline"
+              id="sidebarBtnFrontEmbed"
               aria-pressed="false"
               hidden
             >
-              DD
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnFrontInven"
-              aria-pressed="false"
-              hidden
-            >
-              인벤
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnFrontChichi"
-              aria-pressed="false"
-              hidden
-            >
-              취향
+              DD·인벤·취향
             </button>
             <button
               type="button"
@@ -12931,15 +12913,6 @@
               hidden
             >
               불편사항
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--multiline"
-              id="sidebarBtnFrontEmbed"
-              aria-pressed="false"
-              hidden
-            >
-              DD·인벤·취향
             </button>
           </div>
         </nav>
@@ -21827,9 +21800,6 @@
         var vipCheckInNav = document.getElementById("sidebarBtnVipCheckIn");
         var frontNav = document.getElementById("sidebarBtnFront");
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
-        var frontDdNav = document.getElementById("sidebarBtnFrontDd");
-        var frontInvenNav = document.getElementById("sidebarBtnFrontInven");
-        var frontChichiNav = document.getElementById("sidebarBtnFrontChichi");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
         var aiNav = document.getElementById("sidebarBtnAi");
         if (chatNav) {
@@ -21907,37 +21877,10 @@
           frontNav.setAttribute("aria-pressed", sidebarMainView === "front" ? "true" : "false");
         }
         if (frontEmbedNav) {
-          frontEmbedNav.hidden = true;
-          frontEmbedNav.classList.toggle("is-active", false);
-        }
-        if (frontDdNav) {
-          frontDdNav.classList.toggle(
-            "is-active",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "dd"
-          );
-          frontDdNav.setAttribute(
+          frontEmbedNav.classList.toggle("is-active", sidebarMainView === "frontEmbed");
+          frontEmbedNav.setAttribute(
             "aria-pressed",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "dd" ? "true" : "false"
-          );
-        }
-        if (frontInvenNav) {
-          frontInvenNav.classList.toggle(
-            "is-active",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "inven"
-          );
-          frontInvenNav.setAttribute(
-            "aria-pressed",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "inven" ? "true" : "false"
-          );
-        }
-        if (frontChichiNav) {
-          frontChichiNav.classList.toggle(
-            "is-active",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "chichi"
-          );
-          frontChichiNav.setAttribute(
-            "aria-pressed",
-            sidebarMainView === "frontEmbed" && frontEmbedTab === "chichi" ? "true" : "false"
+            sidebarMainView === "frontEmbed" ? "true" : "false"
           );
         }
         if (complaintNav) {
@@ -31577,14 +31520,8 @@
         renderRoomsForZone(getActiveZone(), { force: true });
         if (sidebarFrontSection) sidebarFrontSection.hidden = false;
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
-        var frontDdNav = document.getElementById("sidebarBtnFrontDd");
-        var frontInvenNav = document.getElementById("sidebarBtnFrontInven");
-        var frontChichiNav = document.getElementById("sidebarBtnFrontChichi");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
-        if (frontEmbedNav) frontEmbedNav.hidden = true;
-        if (frontDdNav) frontDdNav.hidden = !frontMode;
-        if (frontInvenNav) frontInvenNav.hidden = !frontMode;
-        if (frontChichiNav) frontChichiNav.hidden = !frontMode;
+        if (frontEmbedNav) frontEmbedNav.hidden = !frontMode;
         if (complaintNav) complaintNav.hidden = !frontMode;
         syncNightVipSidebarUi();
         applyFacilityLogSidebarUi();
@@ -34033,9 +33970,6 @@
         var bVipCheckIn = document.getElementById("sidebarBtnVipCheckIn");
         var bFront = document.getElementById("sidebarBtnFront");
         var bFrontEmbed = document.getElementById("sidebarBtnFrontEmbed");
-        var bFrontDd = document.getElementById("sidebarBtnFrontDd");
-        var bFrontInven = document.getElementById("sidebarBtnFrontInven");
-        var bFrontChichi = document.getElementById("sidebarBtnFrontChichi");
         var bAi = document.getElementById("sidebarBtnAi");
         if (bChat) {
           bChat.addEventListener("click", function () {
@@ -34151,24 +34085,6 @@
               return;
             }
             showSidebarFrontView();
-          });
-        }
-        if (bFrontDd) {
-          bFrontDd.addEventListener("click", function () {
-            if (!frontMode) return;
-            showSidebarFrontEmbedView("dd");
-          });
-        }
-        if (bFrontInven) {
-          bFrontInven.addEventListener("click", function () {
-            if (!frontMode) return;
-            showSidebarFrontEmbedView("inven");
-          });
-        }
-        if (bFrontChichi) {
-          bFrontChichi.addEventListener("click", function () {
-            if (!frontMode) return;
-            showSidebarFrontEmbedView("chichi");
           });
         }
         if (bFrontEmbed) {
