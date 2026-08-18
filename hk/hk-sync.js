@@ -1120,7 +1120,7 @@
         changed.push("hkRequestLog");
       }
       if (Array.isArray(payload.hkOrderLog)) {
-        cache.orderLog = payload.hkOrderLog.slice();
+        cache.orderLog = mergeOrderLogsLocal(cache.orderLog, payload.hkOrderLog);
         writeJsonArray(ORDER_LOG_KEY, cache.orderLog);
         changed.push("hkOrderLog");
       }

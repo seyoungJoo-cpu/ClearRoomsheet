@@ -597,19 +597,48 @@ function hkFilterLogAfterCloseDay(arr, closeDayAt) {
   });
 }
 
-function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, incomingDeletedRooms) {
-  var map = {};
-  var incomingKeys = {};
-  (incomingArr || []).forEach(function (room) {
-    if (!room || !room.number) return;
-    var k = hkRoomNumberKey(room.number);
-    if (k) incomingKeys[k] = true;
+function hkMergeZoneRoomClearAt(a, b) {
+  var out = {};
+  [a, b].forEach(function (src) {
+    if (!src || typeof src !== "object") return;
+    Object.keys(src).forEach(function (z) {
+      var at = src[z] != null ? String(src[z]).trim() : "";
+      if (!at) return;
+      if (!out[z] || at > out[z]) out[z] = at;
+    });
   });
+  return out;
+}
+
+function hkMergeRoomArraysByNumber(
+  prevArr,
+  incomingArr,
+  zone,
+  deletedRooms,
+  incomingDeletedRooms,
+  zoneClearAtMap,
+  prevDeletedRooms
+) {
+  var map = {};
   function incomingClaimsDeleted(k) {
     return hkIsRoomMarkedDeleted(incomingDeletedRooms, zone, k);
   }
-  function canReviveFromIncoming(k) {
-    return !!incomingKeys[k] && !incomingClaimsDeleted(k);
+  function prevClaimsDeleted(k) {
+    return hkIsRoomMarkedDeleted(prevDeletedRooms, zone, k);
+  }
+  function canReviveByStamp(room) {
+    var clearAt =
+      zoneClearAtMap && zoneClearAtMap[zone] ? String(zoneClearAtMap[zone]) : "";
+    if (!clearAt) return true;
+    var roomAt = hkRoomActivityAt(room);
+    return !!(roomAt && roomAt >= clearAt);
+  }
+  function unmarkDeleted(k) {
+    if (deletedRooms && deletedRooms[zone]) {
+      deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+        return hkRoomNumberKey(n) !== k;
+      });
+    }
   }
   function ingest(room, fromIncoming) {
     if (!room || !room.number) return;
@@ -622,12 +651,9 @@ function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, inc
       return;
     }
     if (hkIsRoomMarkedDeleted(deletedRooms, zone, k)) {
-      if (fromIncoming && canReviveFromIncoming(k)) {
-        if (deletedRooms && deletedRooms[zone]) {
-          deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-            return hkRoomNumberKey(n) !== k;
-          });
-        }
+      var sourceDeleted = fromIncoming ? incomingClaimsDeleted(k) : prevClaimsDeleted(k);
+      if (!sourceDeleted && canReviveByStamp(room)) {
+        unmarkDeleted(k);
       } else {
         return;
       }
@@ -650,7 +676,15 @@ function hkMergeRoomArraysByNumber(prevArr, incomingArr, zone, deletedRooms, inc
   });
 }
 
-function hkMergeZoneRooms(prevRooms, incomingRooms, zone, deletedRooms, incomingDeletedRooms) {
+function hkMergeZoneRooms(
+  prevRooms,
+  incomingRooms,
+  zone,
+  deletedRooms,
+  incomingDeletedRooms,
+  zoneClearAtMap,
+  prevDeletedRooms
+) {
   var prev = prevRooms && Array.isArray(prevRooms[zone]) ? prevRooms[zone] : [];
   var inc =
     incomingRooms && Array.isArray(incomingRooms[zone]) ? incomingRooms[zone] : [];
@@ -659,7 +693,9 @@ function hkMergeZoneRooms(prevRooms, incomingRooms, zone, deletedRooms, incoming
     inc,
     zone,
     deletedRooms,
-    incomingDeletedRooms
+    incomingDeletedRooms,
+    zoneClearAtMap,
+    prevDeletedRooms
   );
 }
 
@@ -1615,6 +1651,12 @@ function mergeHkStorage(prev, incoming) {
   var incomingDeleted = Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
     ? incoming.deletedRooms
     : null;
+  out.zoneRoomClearAt = hkMergeZoneRoomClearAt(
+    prev.zoneRoomClearAt,
+    Object.prototype.hasOwnProperty.call(incoming, "zoneRoomClearAt")
+      ? incoming.zoneRoomClearAt
+      : null
+  );
 
   HK_STANDARD_ZONES.forEach(function (zone) {
     out.rooms[zone] = hkMergeZoneRooms(
@@ -1622,7 +1664,9 @@ function mergeHkStorage(prev, incoming) {
       incoming.rooms,
       zone,
       mergedDeleted,
-      incomingDeleted
+      incomingDeleted,
+      out.zoneRoomClearAt,
+      prev.deletedRooms
     );
   });
 
@@ -1632,7 +1676,9 @@ function mergeHkStorage(prev, incoming) {
       incoming.rooms,
       zone,
       mergedDeleted,
-      incomingDeleted
+      incomingDeleted,
+      out.zoneRoomClearAt,
+      prev.deletedRooms
     );
   });
 
