@@ -4020,21 +4020,22 @@
         }
       }
 
-      function isIndiPendingOutCategory(rec) {
+      function isIndiDepOutFamily(rec) {
         var cat = indiCategoryForRec(rec);
-        return cat === "OUT_SCHED" || cat === "OUT_A" || cat === "OUT_IN";
+        return cat === "OUT_SCHED" || cat === "OUT_A" || cat === "OUT_IN" || cat === "OUT";
       }
 
+      /** (OUT예정+(O예정,A)+(Out,IN)+OUT) − 보라색 OUT(Departed 포함) */
       function countNotIndiOutItems(items) {
         var n = 0;
         (items || []).forEach(function (it) {
-          if (isIndiPendingOutCategory(it)) n++;
+          if (isIndiDepOutFamily(it) && !isOutDepartedResv(it)) n++;
         });
         return n;
       }
 
       function isIndiOutFilterActive() {
-        return !!indiCategoryFilters.OUT;
+        return !!outDepartedHighlight;
       }
 
       function renderFloorColumn(headLabel, items, roomFormatter, boardMode, notOutCount) {
@@ -4077,7 +4078,8 @@
           var foot = document.createElement("div");
           foot.className = "floor-foot";
           foot.textContent = String(notOutCount);
-          foot.title = "이 층 OUT예정+(O예정,A)+(Out,IN) 객실 수 (OUT 제외)";
+          foot.title =
+            "이 층 (OUT예정+(O예정,A)+(Out,IN)+OUT) − 보라색 OUT(Departed 포함)";
           col.appendChild(foot);
         }
         return col;
@@ -4153,7 +4155,9 @@
           var banMeta = document.createElement("span");
           banMeta.className = "wing-banner__not-out";
           banMeta.textContent = String(wingNotOut);
-          banMeta.title = titleText + " OUT예정+(O예정,A)+(Out,IN) 객실 수 (OUT 제외)";
+          banMeta.title =
+            titleText +
+            " (OUT예정+(O예정,A)+(Out,IN)+OUT) − 보라색 OUT(Departed 포함)";
           ban.appendChild(banMeta);
         }
         panel.appendChild(ban);
