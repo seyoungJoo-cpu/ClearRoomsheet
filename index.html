@@ -774,6 +774,22 @@
       border-bottom: none;
       background: #e5e7eb;
       color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .wing-banner__not-out {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #9a3412;
+      background: #ffedd5;
+      border: 1px solid #fdba74;
+      border-radius: 999px;
+      padding: 0.08rem 0.45rem;
+      line-height: 1.2;
+      white-space: nowrap;
     }
     .wing-banner-villa {
       background: #dbeafe;
@@ -808,6 +824,18 @@
       background: #f9fafb;
       border-bottom: 1px solid #9ca3af;
       color: #111827;
+      white-space: nowrap;
+    }
+    .floor-foot {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.58rem;
+      font-weight: 800;
+      padding: 0.2rem 0.08rem;
+      border-top: 1px solid #fdba74;
+      background: #fff7ed;
+      color: #9a3412;
+      line-height: 1.2;
       white-space: nowrap;
     }
     .pair-stack {
@@ -3992,7 +4020,19 @@
         }
       }
 
-      function renderFloorColumn(headLabel, items, roomFormatter, boardMode) {
+      function countNotIndiOutItems(items) {
+        var n = 0;
+        (items || []).forEach(function (it) {
+          if (indiCategoryForRec(it) !== "OUT") n++;
+        });
+        return n;
+      }
+
+      function isIndiOutFilterActive() {
+        return !!indiCategoryFilters.OUT;
+      }
+
+      function renderFloorColumn(headLabel, items, roomFormatter, boardMode, notOutCount) {
         boardMode = boardMode || "499";
         var rf =
           typeof roomFormatter === "function" ? roomFormatter : formatRoomDisplay;
@@ -4028,6 +4068,13 @@
           });
         }
         col.appendChild(stack);
+        if (notOutCount != null) {
+          var foot = document.createElement("div");
+          foot.className = "floor-foot";
+          foot.textContent = "OUT아님 " + notOutCount;
+          foot.title = "이 층에서 OUT(Departed)이 아닌 객실 수";
+          col.appendChild(foot);
+        }
         return col;
       }
 
@@ -4078,24 +4125,49 @@
         floorNums,
         buckets,
         panelClass,
-        boardMode
+        boardMode,
+        notOutBuckets
       ) {
         var panel = document.createElement("div");
         panel.className = "wing-panel " + panelClass;
         var ban = document.createElement("div");
         ban.className = "wing-banner";
-        ban.textContent = titleText;
+        var banTitle = document.createElement("span");
+        banTitle.textContent = titleText;
+        ban.appendChild(banTitle);
+        var showNotOut = !!(boardMode === "indi" && notOutBuckets && isIndiOutFilterActive());
+        var useMainMerge = wingKey === "main";
+        var wingNotOut = 0;
+        if (showNotOut) {
+          floorNums.forEach(function (f) {
+            var allItems = useMainMerge
+              ? getMainFloorItems(notOutBuckets, f)
+              : notOutBuckets[bucketKey(wingKey, f)] || [];
+            wingNotOut += countNotIndiOutItems(allItems);
+          });
+          var banMeta = document.createElement("span");
+          banMeta.className = "wing-banner__not-out";
+          banMeta.textContent = "OUT아님 " + wingNotOut;
+          banMeta.title = titleText + "에서 OUT(Departed)이 아닌 객실 수";
+          ban.appendChild(banMeta);
+        }
         panel.appendChild(ban);
         var colsWrap = document.createElement("div");
         colsWrap.className = "sheet-block-cols floor-columns";
-        var useMainMerge = wingKey === "main";
         floorNums.forEach(function (f) {
           var items = useMainMerge
             ? getMainFloorItems(buckets, f)
             : buckets[bucketKey(wingKey, f)] || [];
           var label = floorPrefix + String(f).padStart(2, "0");
+          var footCount = null;
+          if (showNotOut) {
+            var allItems = useMainMerge
+              ? getMainFloorItems(notOutBuckets, f)
+              : notOutBuckets[bucketKey(wingKey, f)] || [];
+            footCount = countNotIndiOutItems(allItems);
+          }
           colsWrap.appendChild(
-            renderFloorColumn(label, items, undefined, boardMode)
+            renderFloorColumn(label, items, undefined, boardMode, footCount)
           );
         });
         panel.appendChild(colsWrap);
@@ -4457,6 +4529,10 @@
         }
 
         var buckets = buildBuckets(displayRows);
+        var notOutBuckets =
+          mode === "indi" && isIndiOutFilterActive()
+            ? buildBuckets(get499BoardRows(workRows))
+            : null;
         var stray = displayRows.filter(function (rec) {
           var cl = classifyRoom(rec.room);
           return !cl || cl.wing === "extra";
@@ -4476,7 +4552,8 @@
             MAIN_FLOOR_ORDER,
             buckets,
             "wing-panel-main",
-            mode
+            mode,
+            notOutBuckets
           )
         );
         var annexFloors = [];
@@ -4489,7 +4566,8 @@
             annexFloors,
             buckets,
             "wing-panel-annex",
-            mode
+            mode,
+            notOutBuckets
           )
         );
         outer.appendChild(triple);
