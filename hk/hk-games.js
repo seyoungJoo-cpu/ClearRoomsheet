@@ -1,7 +1,7 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
@@ -16,6 +16,13 @@
     mines: { icon: '🛎️', name: '딜리버리하는 벨맨', desc: 'Space 점프 · Shift 와이어 · 고군분투 러닝' },
     reaction: { icon: '🔔', name: '벨 리액션', desc: '종을 빠르게 눌러 반응 속도 겨루기' },
     dodge: { icon: '🧳', name: '러기지 닷지', desc: '떨어지는 짐을 피하며 버티기' },
+    suika: { icon: '🍉', name: '미니바 과일', desc: '같은 과일을 붙여 수박까지' },
+    stack: { icon: '🧺', name: '타월 타워', desc: '타이밍에 맞춰 타월을 쌓기' },
+    crossy: { icon: '🚶', name: '로비 무단횡단', desc: '캐리어·카트를 피해 로비를 건너기' },
+    simon: { icon: '🔔', name: '벨 시퀀스', desc: '종 순서를 기억해 따라 누르기' },
+    cleanroute: { icon: '🧹', name: '청소 루트', desc: '복도 먼지를 쓸고 컴플레인을 피하기' },
+    invaders: { icon: '😠', name: '컴플레인 인베이더', desc: '내려오는 컴플레인을 격추' },
+    putting: { icon: '⛳', name: '퍼팅 골프', desc: '홀까지 힘과 각도로 굴리기' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '싱글/FFA/팀전 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '싱글/대결 · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '싱글/대결 · 시대 진화 라인전' },
@@ -2544,6 +2551,709 @@
     setup(); draw(); c.raf(loop);
     actions(function () { startGame('dodge'); }, function () { return score; }, '별 3개를 모으면 러기지 가 코인으로 바뀝니다. 코인을 먹으면 점수가 올라갑니다.');
     return { id: 'dodge', destroy: c.destroy };
+  };
+
+  games.suika = function () {
+    var W = 420, H = 620, WALL = 22, LINE = 112;
+    var TYPES = [
+      { r: 16, color: '#f8c8c8' }, { r: 20, color: '#f4a7c3' }, { r: 24, color: '#f0dfa8' },
+      { r: 30, color: '#c9e4a8' }, { r: 36, color: '#f4b183' }, { r: 44, color: '#e07a5f' },
+      { r: 52, color: '#81b29a' }, { r: 62, color: '#3d5a80' }, { r: 74, color: '#ee6c4d' },
+      { r: 88, color: '#98c1d9' }, { r: 102, color: '#2a9d8f' }
+    ];
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var fruits = [], score = 0, running = true, last = 0, aimX = W / 2, nextType = 0, cool = 0, overT = 0, holding = false;
+    setHud([['점수', '0', 'score'], ['최고', formatScore(best('suika', name())), 'best']]);
+    function rndNext() { return Math.min(4, (Math.random() * 3.4) | 0); }
+    nextType = rndNext();
+    function addFruit(x, y, type, vx, vy) {
+      var t = TYPES[type];
+      fruits.push({ x: x, y: y, vx: vx || 0, vy: vy || 0, type: type, r: t.r, dead: false, drop: false });
+    }
+    function pointer(e) {
+      var r = cv.canvas.getBoundingClientRect();
+      var x = ((e.touches ? e.touches[0].clientX : e.clientX) - r.left) * W / r.width;
+      aimX = Math.max(WALL + 18, Math.min(W - WALL - 18, x));
+    }
+    function drop() {
+      if (!running || cool > 0 || holding) return;
+      holding = true;
+      var t = TYPES[nextType];
+      addFruit(aimX, LINE - t.r - 6, nextType, 0, 20);
+      fruits[fruits.length - 1].drop = true;
+      nextType = rndNext();
+      cool = 0.42;
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      if (cool > 0) cool -= dt;
+      var i, j, f, g, k;
+      for (k = 0; k < 3; k++) {
+        for (i = 0; i < fruits.length; i++) {
+          f = fruits[i];
+          if (f.dead) continue;
+          f.vy += 980 * dt / 3;
+          f.x += f.vx * dt / 3;
+          f.y += f.vy * dt / 3;
+          f.vx *= 0.992;
+          var left = WALL + f.r, right = W - WALL - f.r, bot = H - WALL - f.r;
+          if (f.x < left) { f.x = left; f.vx = Math.abs(f.vx) * 0.28; }
+          if (f.x > right) { f.x = right; f.vx = -Math.abs(f.vx) * 0.28; }
+          if (f.y > bot) { f.y = bot; f.vy = 0; f.vx *= 0.9; f.drop = false; }
+        }
+        for (i = 0; i < fruits.length; i++) {
+          f = fruits[i];
+          if (f.dead) continue;
+          for (j = i + 1; j < fruits.length; j++) {
+            g = fruits[j];
+            if (g.dead) continue;
+            var dx = g.x - f.x, dy = g.y - f.y, dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+            var min = f.r + g.r;
+            if (dist >= min) continue;
+            if (f.type === g.type && f.type < TYPES.length - 1) {
+              var nx = (f.x + g.x) / 2, ny = (f.y + g.y) / 2, nt = f.type + 1;
+              f.dead = g.dead = true;
+              addFruit(nx, ny, nt, (f.vx + g.vx) * 0.2, Math.min(0, (f.vy + g.vy) * 0.2));
+              score += (nt + 1) * (nt + 1) * 8;
+              hud('score', formatScore(score));
+              fx.burst(nx, ny, TYPES[nt].color, 10, 180);
+              floatScore(nx, ny - 10, '+' + ((nt + 1) * (nt + 1) * 8), refs.stage);
+              continue;
+            }
+            var ox = dx / dist, oy = dy / dist, push = (min - dist) / 2;
+            f.x -= ox * push; f.y -= oy * push;
+            g.x += ox * push; g.y += oy * push;
+            var rel = (g.vx - f.vx) * ox + (g.vy - f.vy) * oy;
+            if (rel < 0) {
+              f.vx += ox * rel; f.vy += oy * rel;
+              g.vx -= ox * rel; g.vy -= oy * rel;
+            }
+            f.drop = g.drop = false;
+          }
+        }
+      }
+      fruits = fruits.filter(function (x) { return !x.dead; });
+      if (!fruits.some(function (x) { return x.drop; })) holding = false;
+      var danger = fruits.some(function (x) { return !x.drop && x.y - x.r < LINE && Math.abs(x.vy) < 28; });
+      if (danger) overT += dt; else overT = 0;
+      if (overT > 1.15) {
+        running = false;
+        gameOver('미니바 가득', formatScore(score) + '점', function () { startGame('suika'); }, score);
+        return;
+      }
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#122a2d'; ctx.fillRect(0, 0, WALL, H); ctx.fillRect(W - WALL, 0, WALL, H); ctx.fillRect(0, H - WALL, W, WALL);
+      ctx.strokeStyle = '#ef535088'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(WALL, LINE); ctx.lineTo(W - WALL, LINE); ctx.stroke(); ctx.setLineDash([]);
+      if (!holding && cool <= 0) {
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = TYPES[nextType].color;
+        ctx.beginPath(); ctx.arc(aimX, LINE - 18, TYPES[nextType].r, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      fruits.forEach(function (x) {
+        ctx.fillStyle = TYPES[x.type].color;
+        ctx.beginPath(); ctx.arc(x.x, x.y, x.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.beginPath(); ctx.arc(x.x - x.r * 0.28, x.y - x.r * 0.28, x.r * 0.28, 0, Math.PI * 2); ctx.fill();
+      });
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    c.on(cv.canvas, 'pointermove', pointer);
+    c.on(cv.canvas, 'pointerdown', function (e) { e.preventDefault(); pointer(e); drop(); });
+    c.on(document, 'keydown', function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } });
+    c.raf(loop);
+    actions(function () { startGame('suika'); }, function () { return score; }, '클릭으로 과일을 떨어뜨려 같은 것끼리 붙이세요. 빨간 선 위로 쌓이면 종료.');
+    return { id: 'suika', destroy: c.destroy };
+  };
+
+  games.stack = function () {
+    var W = 420, H = 620, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var layers = [], score = 0, combo = 0, running = true, last = 0, cam = 0;
+    var cur = { x: 40, y: H - 90, w: 220, h: 22, dir: 1, spd: 210 };
+    layers.push({ x: 100, y: H - 68, w: 220, h: 22 });
+    setHud([['층', '0', 'score'], ['콤보', '0', 'combo'], ['최고', formatScore(best('stack', name())), 'best']]);
+    function hue(i) { return 'hsl(' + ((42 + i * 17) % 360) + ' 62% 62%)'; }
+    function drop() {
+      if (!running) return;
+      var base = layers[layers.length - 1];
+      var left = Math.max(cur.x, base.x);
+      var right = Math.min(cur.x + cur.w, base.x + base.w);
+      var ov = right - left;
+      if (ov < 8) {
+        running = false;
+        shakeStage();
+        gameOver('타월이 무너졌어요', score + '층', function () { startGame('stack'); }, score);
+        return;
+      }
+      var perfect = Math.abs(ov - base.w) < 6;
+      if (perfect) { combo++; ov = base.w; left = base.x; score += 2; floatScore(W / 2, 80, 'PERFECT', refs.stage); }
+      else { combo = 0; score += 1; }
+      layers.push({ x: left, y: base.y - 22, w: ov, h: 22 });
+      cur = { x: 16, y: base.y - 44, w: ov, h: 22, dir: layers.length % 2 ? 1 : -1, spd: 200 + Math.min(260, score * 9) };
+      cam = Math.max(0, (H - 120) - (base.y - 44));
+      hud('score', score); hud('combo', combo);
+      fx.burst(left + ov / 2, base.y - 10, '#efd28a', 8, 140);
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      cur.x += cur.dir * cur.spd * dt;
+      if (cur.x <= WALL_PAD()) { cur.x = WALL_PAD(); cur.dir = 1; }
+      if (cur.x + cur.w >= W - WALL_PAD()) { cur.x = W - WALL_PAD() - cur.w; cur.dir = -1; }
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      ctx.save(); ctx.translate(0, cam);
+      layers.forEach(function (L, i) {
+        ctx.fillStyle = hue(i);
+        ctx.beginPath(); ctx.roundRect(L.x, L.y, L.w, L.h, 5); ctx.fill();
+      });
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = '#fff6dc';
+      ctx.beginPath(); ctx.roundRect(cur.x, cur.y, cur.w, cur.h, 5); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    function WALL_PAD() { return 18; }
+    c.on(cv.canvas, 'pointerdown', function (e) { e.preventDefault(); drop(); });
+    c.on(document, 'keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); drop(); } });
+    c.raf(loop);
+    actions(function () { startGame('stack'); }, function () { return score; }, '클릭 또는 Space로 타월을 쌓으세요. 정확히 맞추면 PERFECT.');
+    return { id: 'stack', destroy: c.destroy };
+  };
+
+  games.crossy = function () {
+    var COLS = 11, CELL = 38, W = COLS * CELL, VIEW = 16, H = VIEW * CELL;
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var px = 5, py = 0, hop = 0, hx = 5, hy = 0, score = 0, bestRow = 0, running = true, last = 0, world = [];
+    setHud([['건너기', '0', 'score'], ['최고', formatScore(best('crossy', name())), 'best']]);
+    function laneType(row) {
+      if (row < 3) return 'lobby';
+      var m = row % 7;
+      if (m === 0) return 'lobby';
+      if (m === 3) return 'cart';
+      return 'road';
+    }
+    function ensure(row) {
+      while (world.length <= row + 18) {
+        var r = world.length;
+        var kind = laneType(r);
+        var cars = [];
+        if (kind !== 'lobby') {
+          var n = 1 + ((r / 9) | 0) % 3;
+          var dir = r % 2 ? 1 : -1;
+          var spd = (70 + (r % 5) * 18 + Math.min(90, r * 1.6)) * dir;
+          for (var i = 0; i < n; i++) cars.push({ x: Math.random() * W, w: kind === 'cart' ? 52 : 44, spd: spd });
+        }
+        world.push({ kind: kind, cars: cars });
+      }
+    }
+    ensure(20);
+    function tryHop(dx, dy) {
+      if (!running || hop > 0) return;
+      var nx = px + dx, ny = py + dy;
+      if (nx < 0 || nx >= COLS || ny < 0) return;
+      hop = 1; hx = nx; hy = ny;
+    }
+    function hitCars(cx, cy) {
+      var lane = world[cy];
+      if (!lane || lane.kind === 'lobby') return false;
+      var x = cx * CELL + CELL / 2, pad = 12;
+      return lane.cars.some(function (car) {
+        return x > car.x - pad && x < car.x + car.w + pad;
+      });
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      ensure(py + 20);
+      world.forEach(function (lane) {
+        lane.cars.forEach(function (car) {
+          car.x += car.spd * dt;
+          if (car.spd > 0 && car.x > W + 80) car.x = -car.w - 20;
+          if (car.spd < 0 && car.x < -80) car.x = W + 20;
+        });
+      });
+      if (hop > 0) {
+        hop -= dt * 7.2;
+        if (hop <= 0) {
+          hop = 0; px = hx; py = hy;
+          if (py > bestRow) { bestRow = py; score = bestRow; hud('score', score); }
+          if (hitCars(px, py)) {
+            running = false;
+            gameOver('부딪혔어요', score + '칸 전진', function () { startGame('crossy'); }, score);
+            return;
+          }
+        }
+      } else if (hitCars(px, py)) {
+        running = false;
+        gameOver('부딪혔어요', score + '칸 전진', function () { startGame('crossy'); }, score);
+        return;
+      }
+      var camY = Math.max(0, (py - 3) * CELL);
+      var drawY = hop > 0 ? py + (hy - py) * (1 - hop) : py;
+      var drawX = hop > 0 ? px + (hx - px) * (1 - hop) : px;
+      function rowY(row) { return H - (row + 1) * CELL + camY; }
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      for (var row = 0; row < world.length; row++) {
+        var y = rowY(row);
+        if (y < -CELL || y > H) continue;
+        var lane = world[row];
+        ctx.fillStyle = lane.kind === 'lobby' ? '#12343a' : lane.kind === 'cart' ? '#1b3340' : '#1a2a30';
+        ctx.fillRect(0, y, W, CELL);
+        if (lane.kind !== 'lobby') {
+          ctx.fillStyle = '#efd28a33';
+          ctx.fillRect(0, y + CELL / 2 - 1, W, 2);
+        }
+        lane.cars.forEach(function (car) {
+          ctx.fillStyle = lane.kind === 'cart' ? '#c9a06a' : '#d97b6a';
+          ctx.beginPath(); ctx.roundRect(car.x, y + 7, car.w, CELL - 14, 6); ctx.fill();
+        });
+      }
+      drawHeroShape(ctx, drawX * CELL + 6, rowY(drawY) + 5, CELL - 12, CELL - 10, { radius: 8, font: 10 });
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    function key(e) {
+      var map = { ArrowUp: [0, 1], w: [0, 1], W: [0, 1], ArrowDown: [0, -1], s: [0, -1], S: [0, -1], ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0] };
+      var d = map[e.key]; if (!d) return; e.preventDefault(); tryHop(d[0], d[1]);
+    }
+    c.on(document, 'keydown', key);
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      var cam = Math.max(0, (py - 3) * CELL);
+      var cx = (px + 0.5) * CELL, cy = H - (py + 0.5) * CELL + cam;
+      var dx = x - cx, dy = y - cy;
+      if (Math.abs(dy) > Math.abs(dx)) tryHop(0, dy < 0 ? 1 : -1);
+      else tryHop(dx < 0 ? -1 : 1, 0);
+    });
+    c.raf(loop);
+    actions(function () { startGame('crossy'); }, function () { return score; }, '방향키·WASD 또는 화면 탭으로 한 칸씩 건너세요. 위가 전진입니다.');
+    return { id: 'crossy', destroy: c.destroy };
+  };
+
+  games.simon = function () {
+    var W = 420, H = 420, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx;
+    var pads = [
+      { x: 40, y: 40, color: '#d97b6a', lit: '#ffb4a8', key: '1' },
+      { x: 230, y: 40, color: '#3d9b8f', lit: '#8ee0d3', key: '2' },
+      { x: 40, y: 230, color: '#c9a06a', lit: '#efd28a', key: '3' },
+      { x: 230, y: 230, color: '#4c7bd9', lit: '#9bb6ff', key: '4' }
+    ];
+    var seq = [], step = 0, mode = 'watch', flash = -1, flashT = 0, playI = 0, score = 0, running = true, last = 0, wait = 0.55;
+    setHud([['라운드', '0', 'score'], ['최고', formatScore(best('simon', name())), 'best']]);
+    function addStep() {
+      seq.push((Math.random() * 4) | 0);
+      step = 0; mode = 'watch'; playI = -1; wait = 0.42; hud('score', seq.length);
+    }
+    addStep();
+    function press(i) {
+      if (!running || mode !== 'input') return;
+      flash = i; flashT = 0.18;
+      if (i !== seq[step]) {
+        running = false;
+        gameOver('순서 틀림', seq.length - 1 + '라운드', function () { startGame('simon'); }, Math.max(0, seq.length - 1));
+        return;
+      }
+      step++;
+      score = seq.length;
+      if (step >= seq.length) {
+        score = seq.length;
+        hud('score', score);
+        mode = 'wait';
+        c.timer(addStep, 520);
+      }
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t;
+      if (flashT > 0) flashT -= dt; else flash = -1;
+      if (mode === 'watch') {
+        wait -= dt;
+        if (wait <= 0) {
+          playI++;
+          if (playI >= seq.length) { mode = 'input'; step = 0; }
+          else { flash = seq[playI]; flashT = Math.max(0.18, 0.42 - seq.length * 0.012); wait = flashT + 0.12; }
+        }
+      }
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      pads.forEach(function (p, i) {
+        ctx.fillStyle = flash === i ? p.lit : p.color;
+        ctx.beginPath(); ctx.roundRect(p.x, p.y, 150, 150, 22); ctx.fill();
+        ctx.fillStyle = '#122'; ctx.font = '700 28px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.key, p.x + 75, p.y + 75);
+      });
+      ctx.fillStyle = '#efd28a'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(mode === 'watch' ? '기억하세요' : '따라 누르세요', W / 2, H - 16);
+      c.raf(loop);
+    }
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      pads.forEach(function (p, i) {
+        if (x >= p.x && x <= p.x + 150 && y >= p.y && y <= p.y + 150) press(i);
+      });
+    });
+    c.on(document, 'keydown', function (e) {
+      var n = ({ '1': 0, '2': 1, '3': 2, '4': 3 })[e.key];
+      if (n == null) return; e.preventDefault(); press(n);
+    });
+    c.raf(loop);
+    actions(function () { startGame('simon'); }, function () { return score; }, '종 순서를 외운 뒤 클릭 또는 1·2·3·4 키로 따라 누르세요.');
+    return { id: 'simon', destroy: c.destroy };
+  };
+
+  games.cleanroute = function () {
+    var MAP = [
+      '###################',
+      '#........#........#',
+      '#o##.###.#.###.##o#',
+      '#.................#',
+      '###.#.#####.#.#####',
+      '#...#...#...#.....#',
+      '#.##.##.#.##.##.#.#',
+      '#........G........#',
+      '#.##.##.#.##.##.#.#',
+      '#...#...#...#.....#',
+      '###.#.#####.#.#####',
+      '#.................#',
+      '#o##.###.#.###.##o#',
+      '#........#........#',
+      '###################'
+    ];
+    var ROWS = MAP.length, COLS = MAP[0].length, CELL = 24, W = COLS * CELL, H = ROWS * CELL;
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var tiles = MAP.map(function (row) { return row.split(''); });
+    tiles.forEach(function (row) {
+      for (var i = 0; i < row.length; i++) if (row[i] === 'G') row[i] = ' ';
+    });
+    var px = 1, py = 7, pvx = 0, pvy = 0, wantX = 0, wantY = 0;
+    var ghosts = [{ x: 9, y: 7, vx: 1, vy: 0, color: '#ef5350' }, { x: 17, y: 7, vx: -1, vy: 0, color: '#55a9e8' }];
+    var score = 0, dots = 0, power = 0, running = true, last = 0, lives = 3;
+    tiles.forEach(function (row) { row.forEach(function (ch) { if (ch === '.' || ch === 'o') dots++; }); });
+    var totalDots = dots;
+    setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('cleanroute', name())), 'best']]);
+    function wall(x, y) {
+      if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return true;
+      return tiles[y][x] === '#';
+    }
+    function centerish(v) { return Math.abs(v - Math.round(v)) < 0.12; }
+    function tryDir(ent, dx, dy) {
+      if (!centerish(ent.x) && dx === 0) return false;
+      if (!centerish(ent.y) && dy === 0) return false;
+      var nx = Math.round(ent.x) + dx, ny = Math.round(ent.y) + dy;
+      if (wall(nx, ny)) return false;
+      ent.x = Math.round(ent.x); ent.y = Math.round(ent.y);
+      ent.vx = dx; ent.vy = dy;
+      return true;
+    }
+    function moveEnt(ent, spd, dt) {
+      if (ent.vx && wall(Math.round(ent.x + Math.sign(ent.vx) * 0.51), Math.round(ent.y))) { ent.vx = 0; ent.x = Math.round(ent.x); }
+      if (ent.vy && wall(Math.round(ent.x), Math.round(ent.y + Math.sign(ent.vy) * 0.51))) { ent.vy = 0; ent.y = Math.round(ent.y); }
+      ent.x += ent.vx * spd * dt;
+      ent.y += ent.vy * spd * dt;
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      if (power > 0) power -= dt;
+      var player = { x: px, y: py, vx: pvx, vy: pvy };
+      if (wantX || wantY) tryDir(player, wantX, wantY);
+      moveEnt(player, 6.1, dt);
+      px = player.x; py = player.y; pvx = player.vx; pvy = player.vy;
+      var cx = Math.round(px), cy = Math.round(py);
+      if (tiles[cy] && (tiles[cy][cx] === '.' || tiles[cy][cx] === 'o')) {
+        if (tiles[cy][cx] === 'o') { power = 6; score += 40; }
+        else score += 10;
+        tiles[cy][cx] = ' ';
+        dots--;
+        hud('score', formatScore(score));
+        if (dots <= 0) {
+          running = false;
+          gameOver('복도 완료', formatScore(score) + '점', function () { startGame('cleanroute'); }, score);
+          return;
+        }
+      }
+      ghosts.forEach(function (g) {
+        if (centerish(g.x) && centerish(g.y)) {
+          var opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(function (d) {
+            return !wall(Math.round(g.x) + d[0], Math.round(g.y) + d[1]);
+          });
+          if (opts.length) {
+            var chase = power > 0 ? -1 : 1;
+            opts.sort(function (a, b) {
+              var da = Math.abs(Math.round(g.x) + a[0] - px) + Math.abs(Math.round(g.y) + a[1] - py);
+              var db = Math.abs(Math.round(g.x) + b[0] - px) + Math.abs(Math.round(g.y) + b[1] - py);
+              return (da - db) * chase;
+            });
+            var pick = Math.random() < 0.72 ? opts[0] : opts[(Math.random() * opts.length) | 0];
+            g.vx = pick[0]; g.vy = pick[1];
+          }
+        }
+        moveEnt(g, power > 0 ? 3.4 : 4.8, dt);
+        if (Math.hypot(g.x - px, g.y - py) < 0.55) {
+          if (power > 0) {
+            score += 120; hud('score', formatScore(score));
+            g.x = 9; g.y = 7; fx.burst(px * CELL, py * CELL, '#efd28a', 10, 160);
+          } else {
+            lives--; hud('lives', lives);
+            if (lives <= 0) {
+              running = false;
+              gameOver('컴플레인에 걸렸어요', formatScore(score) + '점', function () { startGame('cleanroute'); }, score);
+              return;
+            }
+            px = 1; py = 7; pvx = 0; pvy = 0;
+            g.x = 9; g.y = 7;
+            shakeStage();
+          }
+        }
+      });
+      if (!running) return;
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+          var ch = tiles[y][x];
+          if (ch === '#') {
+            ctx.fillStyle = '#1f5650';
+            ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+          } else if (ch === '.') {
+            ctx.fillStyle = '#f0dfa8';
+            ctx.beginPath(); ctx.arc(x * CELL + CELL / 2, y * CELL + CELL / 2, 2.4, 0, Math.PI * 2); ctx.fill();
+          } else if (ch === 'o') {
+            ctx.fillStyle = '#efd28a';
+            ctx.beginPath(); ctx.arc(x * CELL + CELL / 2, y * CELL + CELL / 2, 5, 0, Math.PI * 2); ctx.fill();
+          }
+        }
+      }
+      drawHeroShape(ctx, px * CELL + 3, py * CELL + 3, CELL - 6, CELL - 6, { radius: 8, font: 9 });
+      ghosts.forEach(function (g) {
+        ctx.fillStyle = power > 0 ? '#9bb6ff' : g.color;
+        ctx.beginPath(); ctx.arc(g.x * CELL + CELL / 2, g.y * CELL + CELL / 2, 8, 0, Math.PI * 2); ctx.fill();
+      });
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    function key(e) {
+      var map = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
+      var d = map[e.key]; if (!d) return; e.preventDefault(); wantX = d[0]; wantY = d[1];
+    }
+    c.on(document, 'keydown', key);
+    c.raf(loop);
+    actions(function () { startGame('cleanroute'); }, function () { return score; }, 'WASD·방향키로 먼지를 쓸세요. 큰 점은 잠시 컴플레인을 밀어냅니다.');
+    return { id: 'cleanroute', destroy: c.destroy };
+  };
+
+  games.invaders = function () {
+    var W = 480, H = 560, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var player = { x: 210, y: 512, w: 54, h: 22 }, keys = {}, shots = [], aliens = [], score = 0, lives = 3, running = true, last = 0, dir = 1, acc = 0, cool = 0;
+    setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('invaders', name())), 'best']]);
+    function spawn() {
+      aliens = [];
+      for (var r = 0; r < 4; r++) for (var col = 0; col < 8; col++) {
+        aliens.push({ x: 46 + col * 48, y: 46 + r * 40, w: 32, h: 22, alive: true });
+      }
+      dir = 1;
+    }
+    spawn();
+    function fire() {
+      if (cool > 0 || !running) return;
+      cool = 0.28;
+      shots.push({ x: player.x + player.w / 2, y: player.y, vy: -420, from: 'p' });
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      if (cool > 0) cool -= dt;
+      var steer = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
+      player.x = Math.max(8, Math.min(W - player.w - 8, player.x + steer * 310 * dt));
+      if (keys[' '] || keys.ArrowUp) fire();
+      acc += dt;
+      var step = Math.max(0.28, 0.72 - (32 - aliens.filter(function (a) { return a.alive; }).length) * 0.012);
+      var edge = false;
+      if (acc >= step) {
+        acc = 0;
+        aliens.forEach(function (a) { if (a.alive) { a.x += dir * 16; if (a.x < 12 || a.x + a.w > W - 12) edge = true; } });
+        if (edge) {
+          dir *= -1;
+          aliens.forEach(function (a) { if (a.alive) { a.x += dir * 16; a.y += 18; } });
+        }
+      }
+      if (Math.random() < 0.012) {
+        var shooters = aliens.filter(function (a) { return a.alive; });
+        if (shooters.length) {
+          var s = shooters[(Math.random() * shooters.length) | 0];
+          shots.push({ x: s.x + s.w / 2, y: s.y + s.h, vy: 220, from: 'a' });
+        }
+      }
+      shots.forEach(function (b) { b.y += b.vy * dt; });
+      shots = shots.filter(function (b) { return b.y > -20 && b.y < H + 20; });
+      shots.forEach(function (b) {
+        if (b.from === 'p') {
+          aliens.forEach(function (a) {
+            if (!a.alive) return;
+            if (b.x > a.x && b.x < a.x + a.w && b.y > a.y && b.y < a.y + a.h) {
+              a.alive = false; b.y = -99; score += 25; hud('score', formatScore(score)); fx.burst(a.x + 16, a.y + 10, '#ef5350', 8, 140);
+            }
+          });
+        } else if (b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
+          b.y = H + 99; lives--; hud('lives', lives); shakeStage();
+          if (lives <= 0) {
+            running = false;
+            gameOver('컴플레인 폭주', formatScore(score) + '점', function () { startGame('invaders'); }, score);
+          }
+        }
+      });
+      if (!running) return;
+      if (!aliens.some(function (a) { return a.alive; })) {
+        score += 150; hud('score', formatScore(score)); spawn();
+      }
+      if (aliens.some(function (a) { return a.alive && a.y + a.h >= player.y; })) {
+        running = false;
+        gameOver('로비 점령', formatScore(score) + '점', function () { startGame('invaders'); }, score);
+        return;
+      }
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      aliens.forEach(function (a) {
+        if (!a.alive) return;
+        ctx.fillStyle = '#d97b6a';
+        ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 5); ctx.fill();
+        ctx.fillStyle = '#122'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('!', a.x + a.w / 2, a.y + 16);
+      });
+      drawHeroShape(ctx, player.x, player.y, player.w, player.h, { radius: 6, font: 10 });
+      shots.forEach(function (b) {
+        ctx.fillStyle = b.from === 'p' ? '#efd28a' : '#ef5350';
+        ctx.fillRect(b.x - 2, b.y - 8, 4, 10);
+      });
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    function key(e) {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D', ' ', 'ArrowUp'].indexOf(e.key) < 0) return;
+      e.preventDefault();
+      keys[e.key] = e.type === 'keydown';
+      if (e.key === 'a' || e.key === 'A') keys.a = e.type === 'keydown';
+      if (e.key === 'd' || e.key === 'D') keys.d = e.type === 'keydown';
+    }
+    c.on(document, 'keydown', key); c.on(document, 'keyup', key);
+    c.on(cv.canvas, 'pointermove', function (e) {
+      var r = cv.canvas.getBoundingClientRect();
+      player.x = Math.max(8, Math.min(W - player.w - 8, (e.clientX - r.left) * W / r.width - player.w / 2));
+    });
+    c.on(cv.canvas, 'pointerdown', function (e) { e.preventDefault(); fire(); });
+    c.raf(loop);
+    actions(function () { startGame('invaders'); }, function () { return score; }, '←→ 또는 마우스로 이동, Space·클릭으로 컴플레인을 격추하세요.');
+    return { id: 'invaders', destroy: c.destroy };
+  };
+
+  games.putting = function () {
+    var W = 420, H = 620, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var holes = [
+      { ball: [80, 540], hole: [320, 120], par: 2, walls: [{ x: 170, y: 280, w: 80, h: 24 }] },
+      { ball: [60, 560], hole: [340, 90], par: 3, walls: [{ x: 40, y: 300, w: 220, h: 22 }, { x: 200, y: 180, w: 22, h: 140 }] },
+      { ball: [210, 560], hole: [210, 80], par: 3, walls: [{ x: 90, y: 250, w: 240, h: 22 }, { x: 40, y: 380, w: 160, h: 22 }, { x: 220, y: 140, w: 160, h: 22 }] },
+      { ball: [50, 500], hole: [360, 80], par: 4, walls: [{ x: 140, y: 420, w: 22, h: 160 }, { x: 250, y: 220, w: 22, h: 200 }, { x: 80, y: 160, w: 180, h: 22 }] }
+    ];
+    var hi = 0, strokes = 0, total = 0, running = true, last = 0, ball, hole, walls, charging = false, power = 0, aim = { x: 0, y: -1 };
+    setHud([['홀', '1/4', 'hole'], ['타수', '0', 'strokes'], ['점수', '0', 'score']]);
+    function loadHole() {
+      var h = holes[hi];
+      ball = { x: h.ball[0], y: h.ball[1], vx: 0, vy: 0, r: 9 };
+      hole = { x: h.hole[0], y: h.hole[1], r: 14 };
+      walls = h.walls; strokes = 0; charging = false; power = 0;
+      hud('hole', (hi + 1) + '/4'); hud('strokes', 0);
+    }
+    loadHole();
+    function moving() { return Math.hypot(ball.vx, ball.vy) > 8; }
+    function aimAt(e) {
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      var dx = x - ball.x, dy = y - ball.y, mag = Math.hypot(dx, dy) || 1;
+      aim.x = dx / mag; aim.y = dy / mag;
+    }
+    function bounceWalls() {
+      walls.forEach(function (w) {
+        var nx = Math.max(w.x, Math.min(ball.x, w.x + w.w));
+        var ny = Math.max(w.y, Math.min(ball.y, w.y + w.h));
+        var dx = ball.x - nx, dy = ball.y - ny, d = Math.hypot(dx, dy);
+        if (d < ball.r && d > 0) {
+          var ox = dx / d, oy = dy / d;
+          ball.x = nx + ox * ball.r; ball.y = ny + oy * ball.r;
+          var rel = ball.vx * ox + ball.vy * oy;
+          if (rel < 0) { ball.vx -= 1.7 * rel * ox; ball.vy -= 1.7 * rel * oy; }
+        }
+      });
+      if (ball.x < ball.r || ball.x > W - ball.r) { ball.vx *= -0.85; ball.x = Math.max(ball.r, Math.min(W - ball.r, ball.x)); }
+      if (ball.y < ball.r || ball.y > H - ball.r) { ball.vy *= -0.85; ball.y = Math.max(ball.r, Math.min(H - ball.r, ball.y)); }
+    }
+    function nextHole() {
+      var par = holes[hi].par;
+      var gained = Math.max(10, (par - strokes + 4) * 25);
+      total += gained; hud('score', formatScore(total));
+      floatScore(ball.x, ball.y - 16, '+' + gained, refs.stage);
+      hi++;
+      if (hi >= holes.length) {
+        running = false;
+        gameOver('라운드 종료', formatScore(total) + '점', function () { startGame('putting'); }, total);
+        return;
+      }
+      loadHole();
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      if (charging && !moving()) power = Math.min(1, power + dt * 0.9);
+      ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+      ball.vx *= Math.pow(0.985, dt * 60); ball.vy *= Math.pow(0.985, dt * 60);
+      if (Math.hypot(ball.vx, ball.vy) < 8) { ball.vx = 0; ball.vy = 0; }
+      bounceWalls();
+      var dist = Math.hypot(ball.x - hole.x, ball.y - hole.y);
+      if (dist < hole.r - 2 && Math.hypot(ball.vx, ball.vy) < 90) {
+        fx.burst(hole.x, hole.y, '#efd28a', 12, 160);
+        nextHole();
+        if (!running) return;
+      }
+      ctx.fillStyle = '#0d3b32'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#0a2f28';
+      for (var g = 0; g < 12; g++) ctx.fillRect(0, g * 54, W, 2);
+      walls.forEach(function (w) { ctx.fillStyle = '#1f5650'; ctx.fillRect(w.x, w.y, w.w, w.h); });
+      ctx.fillStyle = '#123'; ctx.beginPath(); ctx.arc(hole.x, hole.y, hole.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#efd28a'; ctx.beginPath(); ctx.arc(hole.x, hole.y, hole.r + 2, 0, Math.PI * 2); ctx.stroke();
+      if (!moving()) {
+        ctx.strokeStyle = '#fff6dc88'; ctx.beginPath();
+        ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x + aim.x * (40 + power * 90), ball.y + aim.y * (40 + power * 90)); ctx.stroke();
+      }
+      ctx.fillStyle = '#f5f0df'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+      if (charging) {
+        ctx.fillStyle = '#122a2d'; ctx.fillRect(24, H - 28, W - 48, 10);
+        ctx.fillStyle = '#efd28a'; ctx.fillRect(24, H - 28, (W - 48) * power, 10);
+      }
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    c.on(cv.canvas, 'pointermove', function (e) { if (!moving()) aimAt(e); });
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      if (moving()) return;
+      aimAt(e); charging = true; power = 0.12;
+    });
+    c.on(window, 'pointerup', function () {
+      if (!charging || !running) return;
+      charging = false;
+      var p = 90 + power * 520;
+      ball.vx = aim.x * p; ball.vy = aim.y * p;
+      strokes++; hud('strokes', strokes);
+      power = 0;
+      if (strokes >= 8) nextHole();
+    });
+    c.raf(loop);
+    actions(function () { startGame('putting'); }, function () { return total; }, '조준 후 누르고 있으면 힘이 찹니다. 떼서 퍼팅하세요. 4홀.');
+    return { id: 'putting', destroy: c.destroy };
   };
 
   window.HKGames = {
