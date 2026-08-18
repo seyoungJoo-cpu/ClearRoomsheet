@@ -12930,19 +12930,19 @@
             </button>
           </div>
         </nav>
-        <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="특이객실 선택">
+        <nav class="sidebar-section sidebar-section--zones is-collapsed" aria-label="Room Assign 선택">
           <button
             type="button"
             class="sidebar-section__toggle"
             id="sidebarZonesToggle"
             aria-expanded="false"
             aria-controls="sidebarZoneNav"
-            title="특이객실 (Ctrl+` — 누를 때마다 다음 구역)"
+            title="Room Assign (Ctrl+` — 누를 때마다 다음 구역)"
           >
-            <span class="sidebar-section__toggle-label">특이객실</span>
+            <span class="sidebar-section__toggle-label">Room Assign</span>
             <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
           </button>
-          <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="특이객실 구역 (Ctrl+`)">
+          <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="Room Assign 구역 (Ctrl+`)">
           </div>
         </nav>
         <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" aria-label="FRONT">
@@ -13177,7 +13177,7 @@
         </div>
         <div class="zone-block__body" id="zoneBlockBody">
           <p class="zone-panel-hint" id="zonePanelHint">
-            왼쪽 사이드바에서 VIP / R/C / CASINO / MCI / AJ / MB / 셔틀 특이객실을 선택하면 객실 목록이 표시됩니다.
+            왼쪽 사이드바 Room Assign에서 VIP / R/C / CASINO / MCI / AJ / MB / 셔틀을 선택하면 객실 목록이 표시됩니다.
           </p>
           <div class="zone-room-manage-panel" id="zoneRoomManagePanel" hidden aria-label="객실 등록·수정">
             <div id="zoneRoomAddMount"></div>
@@ -13194,7 +13194,7 @@
                 role="group"
                 aria-label="객실 상태 필터"
               ></div>
-              <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="미니바 XML 업로드">
+              <section class="minibar-xml-upload" id="minibarXmlUpload" hidden aria-label="pkgforecast XML 업로드">
                 <div class="minibar-xml-upload__row">
                   <div class="minibar-xml-upload__drop" id="minibarXmlDrop" aria-label="XML 드래그앤드롭 영역">
                     XML
@@ -13204,7 +13204,7 @@
                       type="file"
                       id="minibarXmlFile"
                       accept=".xml,text/xml,application/xml"
-                      aria-label="미니바 pkgforecast XML 파일"
+                      aria-label="pkgforecast XML 파일"
                     />
                     <button type="button" class="btn-order" id="btnMinibarXmlUpload">업로드</button>
                   </div>
@@ -19684,11 +19684,20 @@
         };
       }
 
+      var pendingPkgXmlRooms = { MINIBAR: null, SHUTTLE: null };
+      function isPkgXmlZone(zone) {
+        return zone === "MINIBAR" || zone === "SHUTTLE";
+      }
+      function getPendingPkgXmlRooms(zone) {
+        var list = zone && pendingPkgXmlRooms[zone];
+        return list && list.length ? list : null;
+      }
+
       function updateZoneAddRoomBtnUi() {
         var btn = document.getElementById("zoneAddRoomBtn");
         var zone = getActiveZone();
         if (!btn) return;
-        var show = frontMode && !!zone && !(zone === "MINIBAR" && pendingMinibarRooms);
+        var show = frontMode && !!zone && !(isPkgXmlZone(zone) && getPendingPkgXmlRooms(zone));
         btn.hidden = !show;
         btn.classList.toggle("is-open", zoneRoomManageOpen);
         btn.setAttribute("aria-expanded", zoneRoomManageOpen ? "true" : "false");
@@ -19731,8 +19740,8 @@
         if (typeof HKStorage.markZoneRoomsCleared === "function") {
           HKStorage.markZoneRoomsCleared(data, zone);
         }
-        if (zone === "MINIBAR") {
-          pendingMinibarRooms = null;
+        if (isPkgXmlZone(zone)) {
+          pendingPkgXmlRooms[zone] = null;
           syncMinibarSaveUi();
           setMinibarUploadStatus("", false);
         }
@@ -19765,8 +19774,8 @@
 
       function openZoneRoomManagePanel() {
         if (!frontMode || !getActiveZone()) return;
-        if (getActiveZone() === "MINIBAR" && pendingMinibarRooms) {
-          showHkActionToast("미니바 미리보기 중입니다. 저장 후 수정하세요.");
+        if (isPkgXmlZone(getActiveZone()) && getPendingPkgXmlRooms(getActiveZone())) {
+          showHkActionToast("XML 미리보기 중입니다. 저장 후 수정하세요.");
           return;
         }
         if (!getOperatorName()) {
@@ -31043,11 +31052,16 @@
       function syncMinibarUploadUi(zone) {
         var panel = document.getElementById("minibarXmlUpload");
         if (!panel) return;
-        panel.hidden = zone !== "MINIBAR";
+        var show = isPkgXmlZone(zone);
+        panel.hidden = !show;
+        var kind = zone === "SHUTTLE" ? "셔틀" : "미니바";
+        panel.setAttribute("aria-label", kind + " XML 업로드");
+        var input = document.getElementById("minibarXmlFile");
+        if (input) {
+          input.setAttribute("aria-label", kind + " pkgforecast XML 파일");
+        }
         syncMinibarSaveUi();
       }
-
-      var pendingMinibarRooms = null;
 
       var MINIBAR_PRODUCT_GROUP = {
         MB0008: "B2D1S1",
@@ -31101,13 +31115,49 @@
         return MINIBAR_GROUP_LABELS[groupId] || MINIBAR_GROUP_LABELS.OTHER;
       }
 
+      function pkgXmlGroupId(zone, productId) {
+        var id = String(productId || "")
+          .trim()
+          .toUpperCase();
+        if (zone === "SHUTTLE") return id || "OTHER";
+        return getMinibarGroupId(id);
+      }
+
+      function pkgXmlGroupLabel(zone, groupId) {
+        if (zone === "SHUTTLE") {
+          return groupId && groupId !== "OTHER" ? groupId : "기타";
+        }
+        return getMinibarGroupLabel(groupId);
+      }
+
+      function comparePkgXmlRooms(zone, a, b) {
+        var ga = (a && (a.mbGroup || a.groupId)) || "";
+        var gb = (b && (b.mbGroup || b.groupId)) || "";
+        if (zone === "MINIBAR") {
+          var ia = MINIBAR_GROUP_ORDER.indexOf(ga);
+          var ib = MINIBAR_GROUP_ORDER.indexOf(gb);
+          if (ia < 0) ia = 999;
+          if (ib < 0) ib = 999;
+          if (ia !== ib) return ia - ib;
+        } else {
+          var aOther = !ga || ga === "OTHER";
+          var bOther = !gb || gb === "OTHER";
+          if (aOther !== bOther) return aOther ? 1 : -1;
+          if (ga !== gb) return String(ga).localeCompare(String(gb));
+        }
+        return String((a && a.number) || "").localeCompare(String((b && b.number) || ""), undefined, {
+          numeric: true,
+        });
+      }
+
       function syncMinibarSaveUi() {
         var btn = document.getElementById("btnMinibarXmlSave");
         if (!btn) return;
-        btn.disabled = !(frontMode && pendingMinibarRooms && pendingMinibarRooms.length);
+        var zone = getActiveZone();
+        btn.disabled = !(frontMode && getPendingPkgXmlRooms(zone));
       }
 
-      function buildMinibarRoomsFromRows(rows) {
+      function buildPkgXmlRoomsFromRows(zone, rows) {
         var nextRooms = [];
         var stamp = new Date().toISOString();
         (rows || []).forEach(function (row) {
@@ -31119,9 +31169,9 @@
             memo2: "",
             time: "",
             mbProductId: row.productId || "",
-            mbGroup: row.groupId || getMinibarGroupId(row.productId),
+            mbGroup: row.groupId || pkgXmlGroupId(zone, row.productId),
           };
-          stampRoomRow(room, "MINIBAR");
+          stampRoomRow(room, zone);
           room.createdAt = stamp;
           room.updatedAt = stamp;
           nextRooms.push(room);
@@ -31129,14 +31179,14 @@
         return nextRooms;
       }
 
-      function getMinibarDisplayRooms(data) {
-        if (pendingMinibarRooms && pendingMinibarRooms.length) {
-          return pendingMinibarRooms.slice();
-        }
-        return ((data && data.rooms && data.rooms.MINIBAR) || []).slice();
+      function getPkgXmlDisplayRooms(zone, data) {
+        var pending = getPendingPkgXmlRooms(zone);
+        if (pending) return pending.slice();
+        return ((data && data.rooms && data.rooms[zone]) || []).slice();
       }
 
-      function parseMinibarPkgForecastXml(xmlText) {
+      function parseMinibarPkgForecastXml(xmlText, zone) {
+        zone = zone || "MINIBAR";
         var parser = new DOMParser();
         var doc = parser.parseFromString(String(xmlText || ""), "text/xml");
         if (doc.querySelector("parsererror")) {
@@ -31148,7 +31198,7 @@
           var pidEl = groupEl.querySelector("PRODUCT_ID1");
           var productId = pidEl ? String(pidEl.textContent || "").trim().toUpperCase() : "";
           if (!productId) return;
-          var groupId = getMinibarGroupId(productId);
+          var groupId = pkgXmlGroupId(zone, productId);
           groupEl.querySelectorAll("G_RESV_DETAILS").forEach(function (rowEl) {
             var roomEl = rowEl.querySelector("ROOM");
             var rawRoom = roomEl ? String(roomEl.textContent || "").trim() : "";
@@ -31170,31 +31220,25 @@
             return byRoom[k];
           })
           .sort(function (a, b) {
-            var ga = MINIBAR_GROUP_ORDER.indexOf(a.groupId);
-            var gb = MINIBAR_GROUP_ORDER.indexOf(b.groupId);
-            if (ga < 0) ga = 999;
-            if (gb < 0) gb = 999;
-            if (ga !== gb) return ga - gb;
-            return String(a.number).localeCompare(String(b.number), undefined, {
-              numeric: true,
-            });
+            return comparePkgXmlRooms(zone, a, b);
           });
       }
 
-      function commitPendingMinibarRooms() {
-        if (!pendingMinibarRooms || !pendingMinibarRooms.length) return 0;
+      function commitPendingPkgXmlRooms(zone) {
+        var pending = getPendingPkgXmlRooms(zone);
+        if (!pending) return 0;
         var data = HKStorage.load();
         if (!data.rooms || typeof data.rooms !== "object") data.rooms = {};
-        pendingMinibarRooms.forEach(function (row) {
+        pending.forEach(function (row) {
           if (!row || !row.number) return;
           if (typeof HKStorage.unmarkRoomDeleted === "function") {
-            HKStorage.unmarkRoomDeleted(data, "MINIBAR", row.number);
+            HKStorage.unmarkRoomDeleted(data, zone, row.number);
           }
-          stampRoomRow(row, "MINIBAR", data);
+          stampRoomRow(row, zone, data);
         });
-        var count = pendingMinibarRooms.length;
-        data.rooms.MINIBAR = pendingMinibarRooms.slice();
-        pendingMinibarRooms = null;
+        var count = pending.length;
+        data.rooms[zone] = pending.slice();
+        pendingPkgXmlRooms[zone] = null;
         HKStorage.save(data);
         syncMinibarSaveUi();
         if (typeof HKSync !== "undefined" && HKSync.pushStorageNow) {
@@ -31264,18 +31308,23 @@
           setMinibarUploadStatus("프론트 모드에서 업로드할 수 있습니다.", true);
           return;
         }
+        var zone = getActiveZone();
+        if (!isPkgXmlZone(zone)) {
+          setMinibarUploadStatus("MB 또는 셔틀 화면에서 업로드하세요.", true);
+          return;
+        }
         var file = input.files[0];
         var reader = new FileReader();
         reader.onload = function () {
           try {
-            var rows = parseMinibarPkgForecastXml(String(reader.result || ""));
+            var rows = parseMinibarPkgForecastXml(String(reader.result || ""), zone);
             if (!rows.length) {
               setMinibarUploadStatus("ROOM 객실을 찾지 못했습니다.", true);
               return;
             }
-            pendingMinibarRooms = buildMinibarRoomsFromRows(rows);
+            pendingPkgXmlRooms[zone] = buildPkgXmlRoomsFromRows(zone, rows);
             closeZoneRoomManagePanel();
-            currentZone = "MINIBAR";
+            currentZone = zone;
             setZonePanelOpen(true);
             expandZoneBlock();
             renderSidebarZoneTabs();
@@ -31304,22 +31353,28 @@
           setMinibarUploadStatus("프론트 모드에서 저장할 수 있습니다.", true);
           return;
         }
-        if (!pendingMinibarRooms || !pendingMinibarRooms.length) {
+        var zone = currentZone || getActiveZone();
+        if (!isPkgXmlZone(zone)) {
+          setMinibarUploadStatus("MB 또는 셔틀 화면에서 저장하세요.", true);
+          return;
+        }
+        if (!getPendingPkgXmlRooms(zone)) {
           setMinibarUploadStatus("먼저 XML을 업로드하세요.", true);
           return;
         }
-        var count = commitPendingMinibarRooms();
-        currentZone = "MINIBAR";
+        var count = commitPendingPkgXmlRooms(zone);
+        currentZone = zone;
         setZonePanelOpen(true);
         expandZoneBlock();
         renderSidebarZoneTabs();
         updateZoneAddRoomBtnUi();
-        renderRoomsForZone("MINIBAR", { force: true });
+        renderRoomsForZone(zone, { force: true });
+        var kind = zone === "SHUTTLE" ? "셔틀" : "미니바";
         setMinibarUploadStatus(
           "저장 완료 · 객실 " + count + "개 서버 동기화됨 (PRODUCT_ID1 분류)",
           false
         );
-        showHkActionToast("미니바 저장 · " + count + "개 객실 동기화");
+        showHkActionToast(kind + " 저장 · " + count + "개 객실 동기화");
       }
 
       function bindMinibarXmlUploadUi() {
@@ -31410,24 +31465,14 @@
           return;
         }
         var data = HKStorage.load();
-        var rooms =
-          zone === "MINIBAR"
-            ? getMinibarDisplayRooms(data)
-            : ((data.rooms && data.rooms[zone]) || []).slice();
+        var rooms = isPkgXmlZone(zone)
+          ? getPkgXmlDisplayRooms(zone, data)
+          : ((data.rooms && data.rooms[zone]) || []).slice();
         var zoneSortState = getStripSortState("zoneRooms");
         var zoneSortActive = !!(zoneSortState.col && zoneSortState.dir);
-        if (zone === "MINIBAR" && !zoneSortActive) {
+        if (isPkgXmlZone(zone) && !zoneSortActive) {
           rooms.sort(function (a, b) {
-            var ga = MINIBAR_GROUP_ORDER.indexOf(a && a.mbGroup);
-            var gb = MINIBAR_GROUP_ORDER.indexOf(b && b.mbGroup);
-            if (ga < 0) ga = 999;
-            if (gb < 0) gb = 999;
-            if (ga !== gb) return ga - gb;
-            return String((a && a.number) || "").localeCompare(
-              String((b && b.number) || ""),
-              undefined,
-              { numeric: true }
-            );
+            return comparePkgXmlRooms(zone, a, b);
           });
         } else {
           applyStripSort(
@@ -31470,7 +31515,7 @@
         if (rooms.length === 0) {
           roomEmpty.hidden = false;
           roomEmpty.textContent =
-            zone === "MINIBAR"
+            isPkgXmlZone(zone)
               ? frontMode
                 ? "등록된 객실이 없습니다. pkgforecast XML을 업로드한 뒤 저장하세요."
                 : "등록된 객실이 없습니다. 프론트 모드에서 XML을 업로드하세요."
@@ -31481,28 +31526,27 @@
           var shownCount = 0;
           var statusPassCount = 0;
           var lastGroup = null;
-          var useMinibarGroups = zone === "MINIBAR" && !zoneSortActive;
+          var usePkgXmlGroups = isPkgXmlZone(zone) && !zoneSortActive;
           rooms.forEach(function (room, idx) {
             if (getRoomTray(room) && getRoomTray(room) !== "in") return;
             var st = lookupRoomStatusFromXml(room.number || "").trim();
             if (!matchesZoneStatusFilter(st)) return;
             statusPassCount += 1;
             if (!roomPassesSchedTypeFilter(room.number)) return;
-            if (useMinibarGroups) {
-              var groupId = room.mbGroup || getMinibarGroupId(room.mbProductId);
+            if (usePkgXmlGroups) {
+              var groupId = room.mbGroup || pkgXmlGroupId(zone, room.mbProductId);
               if (groupId !== lastGroup) {
                 lastGroup = groupId;
                 var head = document.createElement("li");
                 head.className = "minibar-group-head";
-                head.textContent = getMinibarGroupLabel(groupId);
+                head.textContent = pkgXmlGroupLabel(zone, groupId);
                 roomList.appendChild(head);
               }
             }
             shownCount += 1;
-            // MINIBAR rooms array was sorted copy — resolve original index for editors
             var srcList =
-              zone === "MINIBAR" && pendingMinibarRooms
-                ? pendingMinibarRooms
+              isPkgXmlZone(zone) && getPendingPkgXmlRooms(zone)
+                ? getPendingPkgXmlRooms(zone)
                 : (data.rooms && data.rooms[zone]) || [];
             var srcIdx = srcList.indexOf(room);
             if (srcIdx < 0) srcIdx = idx;
