@@ -4020,10 +4020,15 @@
         }
       }
 
+      function isIndiPendingOutCategory(rec) {
+        var cat = indiCategoryForRec(rec);
+        return cat === "OUT_SCHED" || cat === "OUT_A" || cat === "OUT_IN";
+      }
+
       function countNotIndiOutItems(items) {
         var n = 0;
         (items || []).forEach(function (it) {
-          if (indiCategoryForRec(it) !== "OUT") n++;
+          if (isIndiPendingOutCategory(it)) n++;
         });
         return n;
       }
@@ -4072,7 +4077,7 @@
           var foot = document.createElement("div");
           foot.className = "floor-foot";
           foot.textContent = String(notOutCount);
-          foot.title = "이 층에서 OUT(Departed)이 아닌 객실 수";
+          foot.title = "이 층 OUT예정+(O예정,A)+(Out,IN) 객실 수 (OUT 제외)";
           col.appendChild(foot);
         }
         return col;
@@ -4148,7 +4153,7 @@
           var banMeta = document.createElement("span");
           banMeta.className = "wing-banner__not-out";
           banMeta.textContent = String(wingNotOut);
-          banMeta.title = titleText + "에서 OUT(Departed)이 아닌 객실 수";
+          banMeta.title = titleText + " OUT예정+(O예정,A)+(Out,IN) 객실 수 (OUT 제외)";
           ban.appendChild(banMeta);
         }
         panel.appendChild(ban);
