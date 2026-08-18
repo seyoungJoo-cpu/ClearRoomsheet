@@ -1,7 +1,7 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
@@ -23,6 +23,7 @@
     cleanroute: { icon: '🧹', name: '청소 루트', desc: '복도 먼지를 쓸고 컴플레인을 피하기' },
     invaders: { icon: '😠', name: '컴플레인 인베이더', desc: '내려오는 컴플레인을 격추' },
     putting: { icon: '⛳', name: '퍼팅 골프', desc: '홀까지 힘과 각도로 굴리기' },
+    crossland: { icon: '✚', name: '십자 땅따먹기', desc: '십자로 칸을 차지해 CPU보다 많이 먹기' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '싱글/FFA/팀전 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '싱글/대결 · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '싱글/대결 · 시대 진화 라인전' },
@@ -3254,6 +3255,151 @@
     c.raf(loop);
     actions(function () { startGame('putting'); }, function () { return total; }, '조준 후 누르고 있으면 힘이 찹니다. 떼서 퍼팅하세요. 4홀.');
     return { id: 'putting', destroy: c.destroy };
+  };
+
+  games.crossland = function () {
+    var N = 9, CELL = 46, PAD = 18, W = PAD * 2 + N * CELL, H = PAD * 2 + N * CELL + 36;
+    var PLUS = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var board = [], hover = null, turn = 'me', running = true, last = 0, score = 0;
+    setHud([['나', '0', 'me'], ['CPU', '0', 'cpu'], ['점수', '0', 'score'], ['최고', formatScore(best('crossland', name())), 'best']]);
+    function emptyBoard() {
+      board = [];
+      for (var r = 0; r < N; r++) {
+        board[r] = [];
+        for (var col = 0; col < N; col++) board[r][col] = 0;
+      }
+    }
+    function inb(r, col) { return r >= 0 && r < N && col >= 0 && col < N; }
+    function cloneBoard(src) {
+      return src.map(function (row) { return row.slice(); });
+    }
+    function applyPlus(src, r, col, who) {
+      PLUS.forEach(function (d) {
+        var nr = r + d[0], nc = col + d[1];
+        if (inb(nr, nc)) src[nr][nc] = who;
+      });
+    }
+    function counts(src) {
+      var me = 0, cpu = 0, empty = 0;
+      for (var r = 0; r < N; r++) for (var col = 0; col < N; col++) {
+        if (src[r][col] === 1) me++;
+        else if (src[r][col] === 2) cpu++;
+        else empty++;
+      }
+      return { me: me, cpu: cpu, empty: empty };
+    }
+    function empties() {
+      var list = [];
+      for (var r = 0; r < N; r++) for (var col = 0; col < N; col++) {
+        if (board[r][col] === 0) list.push({ r: r, c: col });
+      }
+      return list;
+    }
+    function syncHud() {
+      var n = counts(board);
+      score = n.me * 10 + Math.max(0, n.me - n.cpu) * 4;
+      hud('me', n.me);
+      hud('cpu', n.cpu);
+      hud('score', formatScore(score));
+      return n;
+    }
+    function finish() {
+      if (!running) return;
+      running = false;
+      var n = syncHud();
+      var title = n.me > n.cpu ? '구역 확보!' : n.me === n.cpu ? '무승부' : 'CPU 승리';
+      gameOver(title, '나 ' + n.me + ' · CPU ' + n.cpu, function () { startGame('crossland'); }, score);
+    }
+    function cpuMove() {
+      if (!running) return;
+      var opts = empties();
+      if (!opts.length) { finish(); return; }
+      var bestList = [];
+      var bestVal = -1e9;
+      opts.forEach(function (p) {
+        var next = cloneBoard(board);
+        applyPlus(next, p.r, p.c, 2);
+        var n = counts(next);
+        var val = n.cpu * 3 - n.me * 2 + ((Math.abs(p.r - 4) + Math.abs(p.c - 4)) < 3 ? 1 : 0) + Math.random() * 0.3;
+        if (val > bestVal + 0.01) { bestVal = val; bestList = [p]; }
+        else if (Math.abs(val - bestVal) < 0.01) bestList.push(p);
+      });
+      var pick = bestList[(Math.random() * bestList.length) | 0] || opts[0];
+      applyPlus(board, pick.r, pick.c, 2);
+      fx.burst(PAD + pick.c * CELL + CELL / 2, PAD + pick.r * CELL + CELL / 2, '#d97b6a', 10, 150);
+      var n = syncHud();
+      if (!n.empty) { finish(); return; }
+      turn = 'me';
+    }
+    function playAt(r, col) {
+      if (!running || turn !== 'me') return;
+      if (!inb(r, col) || board[r][col] !== 0) return;
+      applyPlus(board, r, col, 1);
+      fx.burst(PAD + col * CELL + CELL / 2, PAD + r * CELL + CELL / 2, '#efd28a', 10, 150);
+      var n = syncHud();
+      if (!n.empty) { finish(); return; }
+      turn = 'cpu';
+      c.timer(cpuMove, 280);
+    }
+    function cellAt(e) {
+      var rect = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - rect.left) * W / rect.width - PAD;
+      var y = (e.clientY - rect.top) * H / rect.height - PAD;
+      var col = Math.floor(x / CELL), r = Math.floor(y / CELL);
+      if (!inb(r, col)) return null;
+      return { r: r, c: col };
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#efd28a'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(turn === 'cpu' ? 'CPU 차례' : '빈 칸을 눌러 십자로 차지하세요', W / 2, H - 14);
+      var r, col, x, y, v;
+      for (r = 0; r < N; r++) {
+        for (col = 0; col < N; col++) {
+          x = PAD + col * CELL; y = PAD + r * CELL;
+          v = board[r][col];
+          ctx.fillStyle = v === 1 ? '#d4b36a' : v === 2 ? '#c47b7b' : '#0e2a30';
+          ctx.beginPath(); ctx.roundRect(x + 2, y + 2, CELL - 4, CELL - 4, 8); ctx.fill();
+        }
+      }
+      if (turn === 'me' && hover && board[hover.r][hover.c] === 0) {
+        PLUS.forEach(function (d) {
+          var nr = hover.r + d[0], nc = hover.c + d[1];
+          if (!inb(nr, nc)) return;
+          ctx.fillStyle = 'rgba(239,210,138,0.32)';
+          ctx.beginPath();
+          ctx.roundRect(PAD + nc * CELL + 2, PAD + nr * CELL + 2, CELL - 4, CELL - 4, 8);
+          ctx.fill();
+        });
+      }
+      for (r = 0; r < N; r++) {
+        for (col = 0; col < N; col++) {
+          if (!board[r][col]) continue;
+          ctx.fillStyle = board[r][col] === 1 ? '#1a302c' : '#fff6dc';
+          ctx.font = '700 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(board[r][col] === 1 ? '나' : 'CPU', PAD + col * CELL + CELL / 2, PAD + r * CELL + CELL / 2);
+        }
+      }
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    c.on(cv.canvas, 'pointermove', function (e) { hover = cellAt(e); });
+    c.on(cv.canvas, 'pointerleave', function () { hover = null; });
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      var p = cellAt(e);
+      if (p) playAt(p.r, p.c);
+    });
+    emptyBoard();
+    syncHud();
+    c.raf(loop);
+    actions(function () { startGame('crossland'); }, function () { return score; }, '빈 칸을 누르면 그 칸과 상하좌우가 내 땅이 됩니다. CPU보다 칸을 많이 차지하세요.');
+    return { id: 'crossland', destroy: c.destroy };
   };
 
   window.HKGames = {
