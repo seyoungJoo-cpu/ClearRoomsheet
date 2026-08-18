@@ -113,6 +113,7 @@
   var selectIds = [], drag = null, pendingBuild = null;
   var canvasW = 800, canvasH = 600, fireLatch = false;
   var gamePaused = false;
+  var stashedBehindOrders = false;
   var hockeySmooth = null;
   var hockeyRaf = 0;
   var hockeyLastScore = '';
@@ -224,12 +225,6 @@
   function onGlobalKey(e) {
     if (!root || !root.classList.contains('open')) return;
     if (isTypingTarget(e.target)) return;
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'q' || e.key === 'Q' || e.code === 'KeyQ')) {
-      e.preventDefault();
-      e.stopPropagation();
-      exitToOrders();
-      return;
-    }
     if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP')) {
       if (view === 'play') {
         e.preventDefault();
@@ -257,7 +252,23 @@
     closeOverlay();
   }
 
+  function hideBehindOrders() {
+    if (!root || !root.classList.contains('open')) return;
+    if (view === 'play') setGamePaused(true);
+    stashedBehindOrders = true;
+    root.classList.remove('open');
+  }
+  function resumeFromOrders() {
+    inject();
+    stashedBehindOrders = false;
+    root.classList.add('open');
+    if (view === 'play' && gamePaused) toast('일시정지된 게임 · P로 계속 · 로컬');
+  }
+  function isOverlayOpen() {
+    return !!(root && root.classList.contains('open'));
+  }
   function closeOverlay() {
+    stashedBehindOrders = false;
     pendingCreate = false;
     if (createWatchTimer) clearTimeout(createWatchTimer);
     stopInput();
@@ -282,6 +293,7 @@
     idleCloseTimer = setTimeout(function () {
       idleCloseTimer = 0;
       if (root && root.classList.contains('open')) return;
+      if (stashedBehindOrders && (view === 'play' || view === 'room')) return;
       if (room) return;
       disconnect(true);
     }, 600000);
@@ -3162,6 +3174,10 @@
       return this;
     },
     openLobby: openLobby,
-    close: closeOverlay
+    close: closeOverlay,
+    hideBehindOrders: hideBehindOrders,
+    resumeFromOrders: resumeFromOrders,
+    isOpen: isOverlayOpen,
+    isStashed: function () { return !!stashedBehindOrders; }
   };
 })(window, document);

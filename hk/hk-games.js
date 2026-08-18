@@ -28,6 +28,7 @@
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;
   var gamePaused = false;
+  var stashedBehindOrders = false;
 
   function isTypingTarget(el) {
     if (!el || !el.tagName) return false;
@@ -46,14 +47,62 @@
     setGamePaused(!gamePaused);
     toast(gamePaused ? '일시정지 (P로 계속)' : '게임 재개');
   }
-  function exitToOrders() {
-    close();
-    if (window.HKMpGames && typeof HKMpGames.close === 'function') {
-      try { HKMpGames.close(); } catch (_) {}
-    }
+  function isOverlayOpen() {
+    return !!(root && root.classList.contains('open'));
+  }
+  function callExitToOrders() {
     if (typeof config.onExitToOrders === 'function') {
       try { config.onExitToOrders(); } catch (_) {}
     }
+  }
+  function hideBehindOrders() {
+    if (!isOverlayOpen()) return;
+    if (active && refs.game && refs.game.classList.contains('show')) {
+      setGamePaused(true);
+    }
+    stashedBehindOrders = true;
+    root.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function resumeFromOrders() {
+    inject();
+    stashedBehindOrders = false;
+    root.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function toggleOrdersShortcut() {
+    var mp = window.HKMpGames;
+    var mpOpen = !!(mp && typeof mp.isOpen === 'function' && mp.isOpen());
+    var mpStashed = !!(mp && typeof mp.isStashed === 'function' && mp.isStashed());
+    if (mpOpen) {
+      if (typeof mp.hideBehindOrders === 'function') {
+        try { mp.hideBehindOrders(); } catch (_) {}
+      }
+      hideBehindOrders();
+      callExitToOrders();
+      return;
+    }
+    if (isOverlayOpen()) {
+      hideBehindOrders();
+      callExitToOrders();
+      return;
+    }
+    if (mpStashed) {
+      resumeFromOrders();
+      if (typeof mp.resumeFromOrders === 'function') {
+        try { mp.resumeFromOrders(); } catch (_) {}
+      }
+      return;
+    }
+    if (stashedBehindOrders) {
+      resumeFromOrders();
+      if (active && refs.game && refs.game.classList.contains('show') && gamePaused) {
+        toast('일시정지된 게임 · P로 계속');
+      }
+    }
+  }
+  function exitToOrders() {
+    toggleOrdersShortcut();
   }
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -205,14 +254,19 @@
     showResetModal();
   }
   function globalKey(e) {
-    if (!root || !root.classList.contains('open')) return;
-    if (isTypingTarget(e.target)) return;
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'q' || e.key === 'Q' || e.code === 'KeyQ')) {
+    var isQ = (e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'q' || e.key === 'Q' || e.code === 'KeyQ');
+    if (isQ) {
+      var mp = window.HKMpGames;
+      var canToggle = isOverlayOpen() || stashedBehindOrders ||
+        !!(mp && ((typeof mp.isOpen === 'function' && mp.isOpen()) || (typeof mp.isStashed === 'function' && mp.isStashed())));
+      if (!canToggle) return;
       e.preventDefault();
       e.stopPropagation();
-      exitToOrders();
+      toggleOrdersShortcut();
       return;
     }
+    if (!root || !root.classList.contains('open')) return;
+    if (isTypingTarget(e.target)) return;
     if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP')) {
       if (active && refs.game && refs.game.classList.contains('show')) {
         e.preventDefault();
@@ -229,12 +283,28 @@
   }
   function open() {
     inject();
+    var mp = window.HKMpGames;
+    if (mp && typeof mp.isStashed === 'function' && mp.isStashed()) {
+      resumeFromOrders();
+      if (typeof mp.resumeFromOrders === 'function') {
+        try { mp.resumeFromOrders(); } catch (_) {}
+      }
+      return;
+    }
+    if (stashedBehindOrders) {
+      resumeFromOrders();
+      if (active && refs.game && refs.game.classList.contains('show') && gamePaused) {
+        toast('일시정지된 게임 · P로 계속');
+      }
+      return;
+    }
     root.classList.add('open');
     document.body.style.overflow = 'hidden';
     setGamePaused(false);
     showHub();
   }
   function close() {
+    stashedBehindOrders = false;
     if (!root) return;
     cleanup();
     setGamePaused(false);
@@ -1649,17 +1719,19 @@
         paddle.w = Math.max(54, paddle.w - 22); powerT = 6;
         floatScore(paddle.x + paddle.w / 2, paddle.y - 18, 'SLIM', refs.stage);
       } else if (kind === 'fast') {
-        speed = Math.min(2.4, speed * 1.12); powerT = 5;
+        speed *= 1.12; powerT = 5;
         floatScore(paddle.x + paddle.w / 2, paddle.y - 18, 'FAST', refs.stage);
       }
     }
     function clampBall(b) {
       var mag = Math.sqrt(b.vx * b.vx + b.vy * b.vy) || 1;
-      var minV = 260 * speed, maxV = 540 * speed;
-      var nextV = Math.max(minV, Math.min(maxV, mag));
-      b.vx = (b.vx / mag) * nextV;
-      b.vy = (b.vy / mag) * nextV;
-      if (Math.abs(b.vy) < minV * 0.4) b.vy = (b.vy < 0 ? -1 : 1) * minV * 0.55;
+      var minV = 260 * speed;
+      if (mag < minV) {
+        b.vx = (b.vx / mag) * minV;
+        b.vy = (b.vy / mag) * minV;
+        mag = minV;
+      }
+      if (Math.abs(b.vy) < minV * 0.22) b.vy = (b.vy < 0 ? -1 : 1) * minV * 0.4;
     }
     function draw() {
       ctx.fillStyle = '#07171c'; ctx.fillRect(0, 0, 640, 420);
@@ -1691,6 +1763,7 @@
       });
       var lostOne = false;
       balls.forEach(function (ball) {
+        var prevY = ball.y;
         ball.x += ball.vx * dt; ball.y += ball.vy * dt;
         if (ball.x < ball.r || ball.x > 640 - ball.r) {
           ball.vx *= -1;
@@ -1699,16 +1772,26 @@
         }
         if (ball.y < ball.r) {
           ball.y = ball.r; ball.vy = Math.abs(ball.vy);
-          score += 8; rally++; speed = Math.min(2.35, speed + 0.03 + rally * 0.0025);
+          score += 8; rally++; speed += 0.03 + rally * 0.0025;
           hud('score', score); clampBall(ball); fx.spark(ball.x, ball.y, '#9ad2a9');
         }
-        if (ball.vy > 0 && ball.y + ball.r >= paddle.y && ball.x >= paddle.x - 4 && ball.x <= paddle.x + paddle.w + 4) {
+        if (
+          ball.vy > 0 &&
+          prevY + ball.r <= paddle.y + paddle.h &&
+          ball.y + ball.r >= paddle.y &&
+          ball.x >= paddle.x - 4 &&
+          ball.x <= paddle.x + paddle.w + 4
+        ) {
           ball.y = paddle.y - ball.r;
           var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
           hit = Math.max(-1, Math.min(1, hit));
-          ball.vx = hit * (340 + speed * 70) + (Math.random() - 0.5) * 30;
-          ball.vy = -Math.abs(ball.vy) * 1.04;
-          score += 12; rally++; speed = Math.min(2.2, speed + 0.028);
+          var mag = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy) || (260 * speed);
+          mag *= 1.04;
+          var ang = hit * 0.65 + (Math.random() * 2 - 1) * 1.1;
+          ang = Math.max(-1.22, Math.min(1.22, ang));
+          ball.vx = Math.sin(ang) * mag;
+          ball.vy = -Math.abs(Math.cos(ang)) * mag;
+          score += 12; rally++; speed += 0.028;
           hud('score', score); clampBall(ball); fx.burst(ball.x, ball.y, '#efd28a', 10, 160);
         }
         if (ball.y > 430) lostOne = true;
@@ -2466,6 +2549,10 @@
   window.HKGames = {
     init: function (options) { config = options || {}; inject(); return this; },
     open: open,
-    close: close
+    close: close,
+    hideBehindOrders: hideBehindOrders,
+    resumeFromOrders: resumeFromOrders,
+    isOpen: isOverlayOpen,
+    isStashed: function () { return !!stashedBehindOrders; }
   };
 })(window, document);
