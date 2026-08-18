@@ -4071,7 +4071,7 @@
         if (notOutCount != null) {
           var foot = document.createElement("div");
           foot.className = "floor-foot";
-          foot.textContent = "OUT아님 " + notOutCount;
+          foot.textContent = String(notOutCount);
           foot.title = "이 층에서 OUT(Departed)이 아닌 객실 수";
           col.appendChild(foot);
         }
@@ -4147,7 +4147,7 @@
           });
           var banMeta = document.createElement("span");
           banMeta.className = "wing-banner__not-out";
-          banMeta.textContent = "OUT아님 " + wingNotOut;
+          banMeta.textContent = String(wingNotOut);
           banMeta.title = titleText + "에서 OUT(Departed)이 아닌 객실 수";
           ban.appendChild(banMeta);
         }
