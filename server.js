@@ -9,6 +9,11 @@ const fs = require("fs");
 const webpush = require("web-push");
 
 const app = express();
+try {
+  app.use(require("compression")());
+} catch (eComp) {
+  console.warn("compression: not installed — outbound JSON will be uncompressed");
+}
 const PORT = process.env.PORT || 3000;
 const SYNC_PASSWORD = process.env.SYNC_PASSWORD || "74321";
 const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
@@ -309,6 +314,73 @@ function saveSharedStateToDisk() {
   }
 }
 
+/** 접속 표시만 메모리에 둠 — 전체 sync version/디스크를 올리지 않음 */
+var liveStaffPresence = {
+  presence: {},
+  presenceKicks: {},
+};
+
+function namesKeyPresence(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function pruneLivePresence() {
+  var now = Date.now();
+  Object.keys(liveStaffPresence.presence).forEach(function (sid) {
+    var row = liveStaffPresence.presence[sid];
+    var t = row && row.at ? Date.parse(String(row.at)) : NaN;
+    if (!isFinite(t) || now - t > 25000) {
+      delete liveStaffPresence.presence[sid];
+    }
+  });
+  var sids = Object.keys(liveStaffPresence.presence);
+  if (sids.length > 200) {
+    sids.sort(function (a, b) {
+      var ta = Date.parse(String((liveStaffPresence.presence[a] && liveStaffPresence.presence[a].at) || 0));
+      var tb = Date.parse(String((liveStaffPresence.presence[b] && liveStaffPresence.presence[b].at) || 0));
+      return (isFinite(ta) ? ta : 0) - (isFinite(tb) ? tb : 0);
+    });
+    sids.slice(0, sids.length - 200).forEach(function (sid) {
+      delete liveStaffPresence.presence[sid];
+    });
+  }
+}
+
+function staffPresenceSnapshot() {
+  pruneLivePresence();
+  return {
+    presence: Object.assign({}, liveStaffPresence.presence),
+    presenceKicks: Object.assign({}, liveStaffPresence.presenceKicks),
+  };
+}
+
+function overlayLivePresenceOnPayload(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+  var snap = staffPresenceSnapshot();
+  var hs = payload.hkStorage && typeof payload.hkStorage === "object" ? payload.hkStorage : {};
+  var bc = hs.staffBroadcasts && typeof hs.staffBroadcasts === "object" ? hs.staffBroadcasts : {};
+  return Object.assign({}, payload, {
+    hkStorage: Object.assign({}, hs, {
+      staffBroadcasts: Object.assign({}, bc, {
+        presence: snap.presence,
+        presenceKicks: snap.presenceKicks,
+      }),
+    }),
+  });
+}
+
+function parseSyncSinceVersion(req) {
+  var q = req.query && req.query.since != null ? String(req.query.since).trim() : "";
+  var h = req.get("x-sync-version");
+  var raw = q || (h != null ? String(h).trim() : "");
+  if (!raw) return null;
+  var n = parseInt(raw, 10);
+  return isFinite(n) ? n : null;
+}
+
 loadSharedStateFromDisk();
 
 function chatMsgFingerprint(m) {
@@ -433,11 +505,49 @@ app.get("/ping", function (req, res) {
 });
 
 app.get("/api/sync", checkSyncAuth, function (req, res) {
+  res.set("Cache-Control", "no-store");
+  var version = sharedState.version;
+  var updatedAt = sharedState.updatedAt;
+  res.set("ETag", '"' + String(version) + '"');
+  var since = parseSyncSinceVersion(req);
+  if (since != null && since === version) {
+    res.json({
+      version: version,
+      updatedAt: updatedAt,
+      unchanged: true,
+      staffPresence: staffPresenceSnapshot(),
+    });
+    return;
+  }
   res.json({
-    version: sharedState.version,
-    updatedAt: sharedState.updatedAt,
-    payload: sharedState.payload,
+    version: version,
+    updatedAt: updatedAt,
+    payload: overlayLivePresenceOnPayload(sharedState.payload),
+    staffPresence: staffPresenceSnapshot(),
   });
+});
+
+app.post("/api/presence", checkSyncAuth, function (req, res) {
+  var body = req.body && typeof req.body === "object" ? req.body : {};
+  var sid = String(body.sid || "").trim().slice(0, 80);
+  if (!sid) {
+    res.status(400).json({ error: "sid required" });
+    return;
+  }
+  if (body.leave) {
+    delete liveStaffPresence.presence[sid];
+    res.json({ ok: true, staffPresence: staffPresenceSnapshot() });
+    return;
+  }
+  var name = String(body.name || "").trim().slice(0, 80);
+  var at = body.at ? String(body.at).slice(0, 40) : new Date().toISOString();
+  if (name) {
+    liveStaffPresence.presence[sid] = { name: name, at: at };
+  }
+  if (body.kick && name) {
+    liveStaffPresence.presenceKicks[namesKeyPresence(name)] = { sid: sid, at: at };
+  }
+  res.json({ ok: true, staffPresence: staffPresenceSnapshot() });
 });
 
 app.get("/api/push/vapid-public-key", checkSyncAuth, function (req, res) {

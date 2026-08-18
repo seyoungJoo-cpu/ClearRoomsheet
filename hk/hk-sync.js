@@ -1591,12 +1591,67 @@
     return false;
   }
 
-  function pull(isPoll) {
-    return fetch("/api/sync", {
+  function applyStaffPresenceFromSync(data) {
+    var sp = data && data.staffPresence;
+    if (!sp || typeof sp !== "object") return false;
+    if (!lastServerPayload) lastServerPayload = {};
+    if (!lastServerPayload.hkStorage) lastServerPayload.hkStorage = {};
+    var prev = lastServerPayload.hkStorage.staffBroadcasts;
+    if (!prev || typeof prev !== "object") prev = {};
+    var next = Object.assign({}, prev);
+    if (sp.presence && typeof sp.presence === "object") next.presence = sp.presence;
+    if (sp.presenceKicks && typeof sp.presenceKicks === "object") {
+      next.presenceKicks = sp.presenceKicks;
+    }
+    lastServerPayload.hkStorage.staffBroadcasts = next;
+    return true;
+  }
+
+  function pushPresence(opts) {
+    opts = opts || {};
+    var sid = String(opts.sid || "").trim();
+    if (!sid) return Promise.resolve(false);
+    var body = { sid: sid };
+    if (opts.leave) {
+      body.leave = true;
+    } else {
+      if (opts.name) body.name = String(opts.name);
+      if (opts.at) body.at = String(opts.at);
+      if (opts.kick) body.kick = true;
+    }
+    return fetch("/api/presence", {
+      method: "POST",
       headers: {
+        "Content-Type": "application/json",
         "X-Sync-Password": getSyncPassword(),
-        "Cache-Control": "no-cache",
       },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(function (data) {
+        if (data && data.staffPresence) applyStaffPresenceFromSync(data);
+        return !!data;
+      })
+      .catch(function () {
+        return false;
+      });
+  }
+
+  function pull(isPoll) {
+    var headers = {
+      "X-Sync-Password": getSyncPassword(),
+      "Cache-Control": "no-cache",
+    };
+    var url = "/api/sync";
+    if (isPoll && syncVersion > 0) {
+      headers["X-Sync-Version"] = String(syncVersion);
+      url += "?since=" + encodeURIComponent(String(syncVersion));
+    }
+    return fetch(url, {
+      headers: headers,
       cache: "no-store",
     })
       .then(function (r) {
@@ -1605,6 +1660,12 @@
       })
       .then(function (data) {
         if (!data) return false;
+        applyStaffPresenceFromSync(data);
+        if (data.unchanged) {
+          if (data.version != null) saveSyncVersion(data.version);
+          if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+          return true;
+        }
         if (!data.payload) {
           if (data.version != null && data.version < syncVersion) {
             saveSyncVersion(data.version);
@@ -2019,6 +2080,7 @@
       schedulePush({ hkStorage: true });
     },
     pushStorageNow: pushStorageNow,
+    pushPresence: pushPresence,
     flushPending: function () {
       if (pushTimer) {
         clearTimeout(pushTimer);

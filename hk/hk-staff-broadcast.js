@@ -116,7 +116,7 @@
     return local;
   }
 
-  function savePack(pack, thenToast) {
+  function savePackLocal(pack) {
     if (!global.HKStorage) return;
     var data = global.HKStorage.load();
     pack.updatedAt = nowIso();
@@ -125,10 +125,21 @@
     }
     data.staffBroadcasts = pack;
     global.HKStorage.save(data, { skipSync: true });
+  }
+
+  function savePack(pack, thenToast) {
+    savePackLocal(pack);
     if (global.HKSync && typeof global.HKSync.pushStorageNow === "function") {
       global.HKSync.pushStorageNow();
     }
     if (thenToast && adminCtx && adminCtx.toast) adminCtx.toast(thenToast);
+  }
+
+  function postPresence(opts) {
+    if (global.HKSync && typeof global.HKSync.pushPresence === "function") {
+      return global.HKSync.pushPresence(opts);
+    }
+    return Promise.resolve(false);
   }
 
   function ensureSessionStarted() {
@@ -535,7 +546,8 @@
     var pack = getPack();
     if (!pack.presenceKicks) pack.presenceKicks = {};
     pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIso() };
-    savePack(pack);
+    savePackLocal(pack);
+    postPresence({ sid: presenceSid(), name: name, at: nowIso(), kick: true });
   }
 
   function touchPresence(force) {
@@ -559,17 +571,24 @@
     }
     lastPresencePush = now;
     presenceWasOn = true;
-    savePack(pack);
+    savePackLocal(pack);
+    postPresence({
+      sid: presenceSid(),
+      name: name,
+      at: pack.presence[presenceSid()].at,
+      kick: firstClaim,
+    });
   }
 
   function dropPresence() {
     var pack = getPack();
     if (pack.presence && pack.presence[presenceSid()]) {
       delete pack.presence[presenceSid()];
-      savePack(pack);
+      savePackLocal(pack);
     }
     presenceWasOn = false;
     lastPresencePush = 0;
+    postPresence({ sid: presenceSid(), leave: true });
   }
 
   function sendDirectAlerts(from, text, tos, image, opts) {

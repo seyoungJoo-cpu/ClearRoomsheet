@@ -2527,8 +2527,15 @@
       }
 
       function pullSharedState(isPoll) {
-        return fetch("/api/sync", {
-          headers: { "X-Sync-Password": getSyncPassword() },
+        var headers = { "X-Sync-Password": getSyncPassword() };
+        var url = "/api/sync";
+        if (isPoll && sharedStateVersion > 0) {
+          headers["X-Sync-Version"] = String(sharedStateVersion);
+          url += "?since=" + encodeURIComponent(String(sharedStateVersion));
+        }
+        return fetch(url, {
+          headers: headers,
+          cache: "no-store",
         })
           .then(function (r) {
             if (!r.ok) return null;
@@ -2540,6 +2547,11 @@
                 updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
               }
               return false;
+            }
+            if (data.unchanged) {
+              if (data.version != null) saveSharedStateVersion(data.version);
+              if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+              return hasLocalRoomingData() || hasLocalFasnData();
             }
             if (!data.payload) {
               if (!isPoll) {

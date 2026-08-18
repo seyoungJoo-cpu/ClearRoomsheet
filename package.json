@@ -11,6 +11,7 @@
     "node": "20.x"
   },
   "dependencies": {
+    "compression": "^1.8.1",
     "express": "^4.21.2",
     "web-push": "^3.6.7",
     "ws": "^8.18.0"
