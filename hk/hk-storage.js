@@ -326,22 +326,17 @@
     zone,
     deletedRooms,
     incomingDeletedRooms,
-    zoneClearAtMap
+    zoneClearAtMap,
+    prevDeletedRooms
   ) {
     var map = {};
-    var incomingKeys = {};
-    (incomingArr || []).forEach(function (room) {
-      if (!room || !room.number) return;
-      var k = roomNumberKey(room.number);
-      if (k) incomingKeys[k] = true;
-    });
     function incomingClaimsDeleted(k) {
       return isRoomMarkedDeleted(incomingDeletedRooms, zone, k);
     }
-    function canReviveFromIncoming(k, room) {
-      // 같은 페이로드에 객실이 있고, 그 페이로드의 deletedRooms에 없으면 재등록으로 본다
-      if (!incomingKeys[k] || incomingClaimsDeleted(k)) return false;
-      // 구역 초기화 시각보다 오래된 객실은 되살리지 않음 (다른 PC 잔존 배열 방지)
+    function prevClaimsDeleted(k) {
+      return isRoomMarkedDeleted(prevDeletedRooms, zone, k);
+    }
+    function canReviveByStamp(room) {
       var clearAt =
         zoneClearAtMap && zoneClearAtMap[zone] ? String(zoneClearAtMap[zone]) : "";
       if (!clearAt) return true;
@@ -350,6 +345,13 @@
           ? String(room.updatedAt || room.createdAt)
           : "";
       return !!(roomAt && roomAt >= clearAt);
+    }
+    function unmarkDeleted(k) {
+      if (deletedRooms && deletedRooms[zone]) {
+        deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
+          return roomNumberKey(n) !== k;
+        });
+      }
     }
     function ingest(room, fromIncoming) {
       if (!room || !room.number) return;
@@ -362,12 +364,10 @@
         return;
       }
       if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
-        if (fromIncoming && canReviveFromIncoming(k, room)) {
-          if (deletedRooms && deletedRooms[zone]) {
-            deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-              return roomNumberKey(n) !== k;
-            });
-          }
+        var sourceDeleted = fromIncoming ? incomingClaimsDeleted(k) : prevClaimsDeleted(k);
+        // 로컬/원격이 tombstone을 지우고 다시 넣은 객실은 초기화 시각 이후면 되살린다
+        if (!sourceDeleted && canReviveByStamp(room)) {
+          unmarkDeleted(k);
         } else {
           // tombstone 유지 — 다른 PC의 잔존 배열로 삭제 객실이 되살아나지 않게 함
           return;
@@ -2668,10 +2668,10 @@
           if (!room || !room.number) return false;
           var at = roomActivityAt(room);
           if (!at) {
-            if (clearAt) return false;
             if (!room.createdAt) room.createdAt = stampNow;
             if (!room.updatedAt) room.updatedAt = stampNow;
-            return true;
+            if (clearAt && String(room.updatedAt) < String(clearAt)) return false;
+            return isRoomAfterCloseDay(room, d.closeDayAt);
           }
           return isRoomAfterCloseDay(room, d.closeDayAt);
         });
@@ -2828,7 +2828,8 @@
     customZones,
     deletedRooms,
     incomingDeletedRooms,
-    zoneClearAtMap
+    zoneClearAtMap,
+    prevDeletedRooms
   ) {
     var out = {};
     STANDARD_ZONE_IDS.forEach(function (zone) {
@@ -2842,7 +2843,8 @@
           zone,
           deletedRooms,
           incomingDeletedRooms,
-          zoneClearAtMap
+          zoneClearAtMap,
+          prevDeletedRooms
         ),
         zone,
         deletedRooms
@@ -2861,7 +2863,8 @@
           zone,
           deletedRooms,
           incomingDeletedRooms,
-          zoneClearAtMap
+          zoneClearAtMap,
+          prevDeletedRooms
         ),
         zone,
         deletedRooms
@@ -2984,7 +2987,8 @@
           Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")
             ? incoming.deletedRooms
             : null,
-          merged.zoneRoomClearAt
+          merged.zoneRoomClearAt,
+          base.deletedRooms
         );
       } else if (!Object.prototype.hasOwnProperty.call(incoming, "rooms")) {
         merged.rooms = base.rooms;

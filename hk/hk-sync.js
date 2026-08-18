@@ -295,6 +295,25 @@
     return out;
   }
 
+  function applyNewerMemoFields(merged, a, b) {
+    if (!merged) return merged;
+    function memoClock(entry) {
+      if (!entry) return 0;
+      var t = new Date(entry.memoUpdatedAt || 0).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    var ta = memoClock(a);
+    var tb = memoClock(b);
+    var src = null;
+    if (tb > ta) src = b;
+    else if (ta > tb) src = a;
+    if (!src) return merged;
+    if (src.memo != null) merged.memo = src.memo;
+    if (Object.prototype.hasOwnProperty.call(src, "memoImage")) merged.memoImage = src.memoImage;
+    merged.memoUpdatedAt = src.memoUpdatedAt;
+    return merged;
+  }
+
   /** 동시 편집 시 새 오더/접수/투입완료가 서로 지워지지 않도록 ID 기준 병합 */
   function mergeOrderLogsLocal(local, remote) {
     var map = {};
@@ -317,6 +336,7 @@
         ? Object.assign({}, other, entry)
         : Object.assign({}, entry, other);
       merged.chat = mergeOrderChats(other.chat, entry.chat);
+      applyNewerMemoFields(merged, other, entry);
       map[entry.id] = merged;
     });
     return Object.keys(map)

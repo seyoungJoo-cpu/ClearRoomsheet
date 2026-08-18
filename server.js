@@ -1748,6 +1748,25 @@ function orderPhaseRank(entry) {
   return 1;
 }
 
+function applyNewerMemoFields(merged, a, b) {
+  if (!merged) return merged;
+  function memoClock(entry) {
+    if (!entry) return 0;
+    var t = new Date(entry.memoUpdatedAt || 0).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  var ta = memoClock(a);
+  var tb = memoClock(b);
+  var src = null;
+  if (tb > ta) src = b;
+  else if (ta > tb) src = a;
+  if (!src) return merged;
+  if (src.memo != null) merged.memo = src.memo;
+  if (Object.prototype.hasOwnProperty.call(src, "memoImage")) merged.memoImage = src.memoImage;
+  merged.memoUpdatedAt = src.memoUpdatedAt;
+  return merged;
+}
+
 function mergeChatReactions(ra, rb) {
   var out = {};
   [ra, rb].forEach(function (src) {
@@ -1821,6 +1840,7 @@ function mergeOrderLogs(prev, incoming) {
       ? Object.assign({}, old, entry)
       : Object.assign({}, entry, old);
     merged.chat = mergeOrderChats(old.chat, entry.chat);
+    applyNewerMemoFields(merged, old, entry);
     map[entry.id] = merged;
   });
   return Object.keys(map)

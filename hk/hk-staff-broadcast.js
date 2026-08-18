@@ -179,6 +179,15 @@
     return !!(frontCtx && typeof frontCtx.isFrontMode === "function" && frontCtx.isFrontMode());
   }
 
+  function isPresenceMode() {
+    if (!frontCtx) return false;
+    if (typeof frontCtx.isFrontMode === "function" && frontCtx.isFrontMode()) return true;
+    if (typeof frontCtx.isMaintenanceMode === "function" && frontCtx.isMaintenanceMode()) {
+      return true;
+    }
+    return false;
+  }
+
   function operatorName() {
     if (frontCtx && typeof frontCtx.getOperatorName === "function") {
       return String(frontCtx.getOperatorName() || "").trim();
@@ -513,6 +522,10 @@
     if (kick.sid === presenceSid()) return false;
     var t = new Date(kick.at || 0).getTime();
     if (!isFinite(t) || Date.now() - t > 12 * 3600 * 1000) return false;
+    var kicker = pack.presence && pack.presence[kick.sid];
+    if (!kicker || !namesMatch(kicker.name, name)) return false;
+    var kickerAt = new Date(kicker.at || 0).getTime();
+    if (!isFinite(kickerAt) || Date.now() - kickerAt > 25000) return false;
     return true;
   }
 
@@ -526,7 +539,7 @@
   }
 
   function touchPresence(force) {
-    if (!isFront()) {
+    if (!isPresenceMode()) {
       if (presenceWasOn) dropPresence();
       return;
     }
@@ -962,7 +975,7 @@
   function refreshFront() {
     noteOperatorChange();
     ensureSessionStarted();
-    if (isFront()) {
+    if (isPresenceMode()) {
       if (wasKickedForMyName()) {
         dropPresence();
         var packKick = getPack();

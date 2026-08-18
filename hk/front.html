@@ -11637,6 +11637,76 @@
       gap: 6px;
     }
 
+    .confirming-cards-panel .sched-cards-list > .sched-req-card.is-strip-cols,
+    .confirming-cards-panel .request-feedback__item.sched-req-card.is-strip-cols {
+      padding: 3px 8px;
+      gap: 2px 8px;
+      min-height: 0;
+      height: auto;
+      line-height: 1.2;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--room,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--wing,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--time,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--status,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--received {
+      writing-mode: horizontal-tb;
+      text-orientation: mixed;
+      white-space: nowrap;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .hk-strip-cell--memo {
+      writing-mode: horizontal-tb;
+      text-orientation: mixed;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols .request-feedback__sched-btn,
+    .confirming-cards-panel .sched-req-card.is-strip-cols .request-feedback__ip-btn,
+    .confirming-cards-panel .sched-req-card.is-strip-cols .request-feedback__memo2-btn,
+    .confirming-cards-panel .sched-req-card.is-strip-cols .request-feedback__facility-btn,
+    .confirming-cards-panel .sched-req-card.is-strip-cols .sched-card__chat-btn {
+      writing-mode: horizontal-tb;
+      text-orientation: mixed;
+      white-space: nowrap;
+      margin-top: 0;
+      padding: 2px 6px;
+      font-size: 0.68rem;
+      min-height: 0;
+      height: auto;
+      line-height: 1.2;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__maint-actions,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__front-actions {
+      gap: 4px;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__memo2-editor-wrap,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__memo-editor-wrap,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__sched-editor-wrap,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__memo2-editor-wrap,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__memo-editor-wrap,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__sched-editor-wrap,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__memo2-editor-wrap,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__memo-editor-wrap,
+    .main .sched-type-group__list > .sched-req-card.is-strip-cols > .request-feedback__sched-editor-wrap {
+      grid-column: 1 / -1;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__memo2-editor-wrap textarea,
+    .confirming-cards-panel .sched-req-card.is-strip-cols > .request-feedback__memo-editor-wrap textarea,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__memo2-editor-wrap textarea,
+    .main .sched-cards-list > .sched-req-card.is-strip-cols > .request-feedback__memo-editor-wrap textarea {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .order-chat,
     .main .sched-cards-list > .sched-req-card.is-strip-cols > .sched-req-card__x,
     .main .sched-type-group__list > .sched-req-card.is-strip-cols > .order-chat,
@@ -12835,10 +12905,11 @@
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnInvenNotify"
+              id="sidebarBtnVipCheckIn"
               aria-pressed="false"
+              hidden
             >
-              인벤통보
+              VIP&amp;특이사항
             </button>
             <button
               type="button"
@@ -12852,11 +12923,10 @@
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnVipCheckIn"
+              id="sidebarBtnInvenNotify"
               aria-pressed="false"
-              hidden
             >
-              VIP&amp;특이사항
+              인벤통보
             </button>
           </div>
         </nav>
@@ -14805,8 +14875,8 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=rooms-kick-1"></script>
-  <script src="hk-sync.js?v=force-sync-7"></script>
+  <script src="hk-storage.js?v=rooms-revive-2"></script>
+  <script src="hk-sync.js?v=order-memo-8"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -14818,7 +14888,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=dm-alert-7"></script>
+  <script src="hk-staff-broadcast.js?v=kick-online-8"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-38"></script>
   <script src="hk-mp-games.js?v=mp-39"></script>
@@ -15441,7 +15511,11 @@
 
       function applyChatBubbleColors(li, byName, byEl, textClass, colorId) {
         if (typeof HKChatColors === "undefined" || !HKChatColors.applyBubbleColors) return;
-        HKChatColors.applyBubbleColors(li, byName, byEl, textClass, colorId);
+        var id = colorId;
+        if (!id && textClass !== "front-chat__msg-text") {
+          id = typeof getDeskViewBubbleColor === "function" ? getDeskViewBubbleColor() : "";
+        }
+        HKChatColors.applyBubbleColors(li, byName, byEl, textClass, id);
       }
 
       function applyChatBubbleAlign(li, byName) {
@@ -17202,8 +17276,15 @@
       function getDeskWriteBubbleColor() {
         if (getDeskWriteStrong()) return "rose";
         if (maintenanceMode) return "slate";
-        if (frontMode) return "indigo";
-        return "";
+        if (frontMode) return "blue";
+        return "blue";
+      }
+
+      function getDeskViewBubbleColor(msg) {
+        if (msg && (msg.strong || msg.bubbleColor === "rose")) return "rose";
+        if (maintenanceMode) return "slate";
+        if (frontMode) return "blue";
+        return "blue";
       }
 
       function applyDeskWriteComposeUi() {
@@ -18036,7 +18117,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "request-desk-chat__msg-text", m.bubbleColor);
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "request-desk-chat__msg-text", getDeskViewBubbleColor(m));
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-request");
           mount.appendChild(row);
@@ -18143,7 +18224,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", getDeskViewBubbleColor(m));
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-order");
           mount.appendChild(row);
@@ -18250,7 +18331,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", getDeskViewBubbleColor(m));
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-mbcheck");
           mount.appendChild(row);
@@ -18357,7 +18438,7 @@
           text.setAttribute("data-desk-raw", m.text != null ? String(m.text) : "");
           row.appendChild(meta);
           row.appendChild(text);
-          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", m.bubbleColor);
+          applyChatBubbleColors(row, by, meta.querySelector(".desk-chat-msg-by"), "order-desk-chat__msg-text", getDeskViewBubbleColor(m));
           styleDeskChatTextEl(text, m);
           attachDeskChatMsgReactionUi(row, m, "desk-facility");
           mount.appendChild(row);
@@ -18449,7 +18530,11 @@
             syncRequestLogFromServer();
           }
         }
-        if (changed.indexOf("hkOrderLog") >= 0) syncOrderLogFromServer();
+        if (changed.indexOf("hkOrderLog") >= 0) {
+          if (!document.querySelector(".order-feedback__memo-editor-wrap")) {
+            syncOrderLogFromServer();
+          }
+        }
         deferHkSyncUiApply(function () {
           handleHkSyncChangeApply(changed, payload);
         });
@@ -18471,11 +18556,13 @@
           checkAndAutoDeployFacilityOrders();
         }
         if (changed.indexOf("hkOrderLog") >= 0) {
-          syncOrderLogFromServer();
-          detectNewOrderIssues();
-          detectNewOrderAlerts();
-          if (!checkAndAutoDeployFacilityOrders()) {
-            renderOrderPanels();
+          if (!document.querySelector(".order-feedback__memo-editor-wrap")) {
+            syncOrderLogFromServer();
+            detectNewOrderIssues();
+            detectNewOrderAlerts();
+            if (!checkAndAutoDeployFacilityOrders()) {
+              renderOrderPanels();
+            }
           }
         }
         if (changed.indexOf("hkMbInvLog") >= 0) {
@@ -19398,14 +19485,29 @@
         }
       }
 
-      function stampRoomRow(row) {
+      function stampRoomRow(row, zone, data) {
         if (!row || typeof row !== "object") return row;
         if (typeof HKStorage !== "undefined" && typeof HKStorage.stampRoom === "function") {
-          return HKStorage.stampRoom(row);
+          HKStorage.stampRoom(row);
+        } else {
+          var stamp = new Date().toISOString();
+          if (!row.createdAt) row.createdAt = stamp;
+          row.updatedAt = stamp;
         }
-        var stamp = new Date().toISOString();
-        if (!row.createdAt) row.createdAt = stamp;
-        row.updatedAt = stamp;
+        var clearAt =
+          data &&
+          data.zoneRoomClearAt &&
+          zone &&
+          data.zoneRoomClearAt[zone]
+            ? String(data.zoneRoomClearAt[zone])
+            : "";
+        if (clearAt && String(row.updatedAt || "") < clearAt) {
+          var bumped = new Date(new Date(clearAt).getTime() + 1).toISOString();
+          if (!isNaN(new Date(bumped).getTime())) {
+            if (!row.createdAt || String(row.createdAt) < bumped) row.createdAt = bumped;
+            row.updatedAt = bumped;
+          }
+        }
         return row;
       }
 
@@ -19889,7 +19991,7 @@
                 memo3: memo3Bulk,
                 time: "",
               };
-              stampRoomRow(row);
+              stampRoomRow(row, zone, dataBulk);
               dataBulk.rooms[zone].push(row);
               var entry = buildRoomChangeEntry(zone, null, row);
               if (entry) changeEntries.push(entry);
@@ -19950,7 +20052,7 @@
             memo3: memo3,
             time: "",
           };
-          stampRoomRow(newRow);
+          stampRoomRow(newRow, zone, data);
           var addEntry = buildRoomChangeEntry(zone, null, newRow);
           if (!data.rooms[zone]) data.rooms[zone] = [];
           if (typeof HKStorage.unmarkRoomDeleted === "function") {
@@ -25206,7 +25308,11 @@
             schedBtn.type = "button";
             schedBtn.className = "request-feedback__sched-btn";
             schedBtn.setAttribute("data-req-id", entry.id);
-            schedBtn.textContent = hasMaintSched ? "시간 수정" : "시간 입력";
+            schedBtn.textContent = isConfirming
+              ? "시간"
+              : hasMaintSched
+                ? "시간 수정"
+                : "시간 입력";
             maintActs.appendChild(schedBtn);
             var ipBtn = document.createElement("button");
             ipBtn.type = "button";
@@ -25220,8 +25326,15 @@
             memo2BtnP.type = "button";
             memo2BtnP.className = "request-feedback__memo2-btn";
             memo2BtnP.setAttribute("data-req-id", entry.id);
-            memo2BtnP.textContent = memo2Str ? "메모2 수정" : "메모2 입력";
-            memo2BtnP.setAttribute("aria-label", memo2Str ? "메모2 수정" : "메모2 입력");
+            memo2BtnP.textContent = isConfirming
+              ? "메모"
+              : memo2Str
+                ? "메모2 수정"
+                : "메모2 입력";
+            memo2BtnP.setAttribute(
+              "aria-label",
+              isConfirming ? "메모" : memo2Str ? "메모2 수정" : "메모2 입력"
+            );
             maintActs.appendChild(memo2BtnP);
             var facilityBtn = document.createElement("button");
             facilityBtn.type = "button";
@@ -25703,10 +25816,19 @@
 
         ok.addEventListener("click", function (ev) {
           ev.stopPropagation();
-          entry.memo = String(ta.value || "").trim();
-          entry.memoImage = hkGetPhoto(memoEditKey) || "";
-          entry.updatedAt = new Date().toISOString();
-          entry.memoUpdatedAt = entry.updatedAt;
+          var live = findOrderEntry(orderId) || entry;
+          live.memo = String(ta.value || "").trim();
+          live.memoImage = hkGetPhoto(memoEditKey) || "";
+          live.updatedAt = new Date().toISOString();
+          live.memoUpdatedAt = live.updatedAt;
+          if (orderLogEntries.indexOf(live) < 0) {
+            for (var oi = 0; oi < orderLogEntries.length; oi++) {
+              if (orderLogEntries[oi] && orderLogEntries[oi].id === live.id) {
+                orderLogEntries[oi] = live;
+                break;
+              }
+            }
+          }
           saveOrderLog();
           done();
         });
@@ -30400,7 +30522,7 @@
           prevRow && prevRow.createdAt != null ? String(prevRow.createdAt) : "";
         if (prevRow && prevRow.mbProductId != null) next.mbProductId = String(prevRow.mbProductId);
         if (prevRow && prevRow.mbGroup != null) next.mbGroup = String(prevRow.mbGroup);
-        stampRoomRow(next);
+        stampRoomRow(next, zone, dataSave);
         var changeEntry = buildRoomChangeEntry(zone, prevRow, next);
         if (!changeEntry) {
           showHkActionToast("변경된 내용이 없습니다.");
@@ -30999,7 +31121,7 @@
             mbProductId: row.productId || "",
             mbGroup: row.groupId || getMinibarGroupId(row.productId),
           };
-          stampRoomRow(room);
+          stampRoomRow(room, "MINIBAR");
           room.createdAt = stamp;
           room.updatedAt = stamp;
           nextRooms.push(room);
@@ -31068,6 +31190,7 @@
           if (typeof HKStorage.unmarkRoomDeleted === "function") {
             HKStorage.unmarkRoomDeleted(data, "MINIBAR", row.number);
           }
+          stampRoomRow(row, "MINIBAR", data);
         });
         var count = pendingMinibarRooms.length;
         data.rooms.MINIBAR = pendingMinibarRooms.slice();
@@ -31498,6 +31621,9 @@
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
             HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
           }
+          if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.onFrontEnabled) {
+            HKStaffBroadcast.onFrontEnabled();
+          }
         }
         renderRoomsForZone(getActiveZone());
         renderRequestLogPanel();
@@ -31563,7 +31689,7 @@
           HKInvenNotify.onFrontModeChanged();
         }
         if (typeof HKStaffBroadcast !== "undefined") {
-          if (frontMode && HKStaffBroadcast.onFrontEnabled) {
+          if ((frontMode || maintenanceMode) && HKStaffBroadcast.onFrontEnabled) {
             HKStaffBroadcast.onFrontEnabled();
           } else if (HKStaffBroadcast.refresh) {
             HKStaffBroadcast.refresh();
@@ -32931,6 +33057,9 @@
         HKStaffBroadcast.initFront({
           isFrontMode: function () {
             return frontMode;
+          },
+          isMaintenanceMode: function () {
+            return maintenanceMode;
           },
           getOperatorName: getOperatorName,
           onPresence: renderFrontChatOnline,
