@@ -15015,7 +15015,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=game-ranks-9"></script>
-  <script src="hk-sync.js?v=bw-sync-5"></script>
+  <script src="hk-sync.js?v=bw-sync-6"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -15190,18 +15190,38 @@
       }
 
       var schedChatComposeDraftById = {};
+      function schedChatFormSurface(form) {
+        if (!form || !form.closest) return "sched";
+        if (form.closest("#requestFeedback")) return "feedback";
+        if (form.closest("#confirmingCardsPanel")) return "confirming";
+        return "sched";
+      }
       function captureSchedChatComposeDrafts() {
         var next = {};
         document.querySelectorAll(".sched-req-chat-form").forEach(function (form) {
           var id = String(form.getAttribute("data-req-id") || "");
           var inp = form.querySelector("input");
           if (!id || !inp) return;
-          next[id] = {
-            value: String(inp.value || ""),
-            restoreFocus: document.activeElement === inp,
+          var value = String(inp.value || "");
+          var focused = document.activeElement === inp;
+          var row = {
+            value: value,
+            restoreFocus: focused,
             selectionStart: inp.selectionStart,
             selectionEnd: inp.selectionEnd,
+            surface: schedChatFormSurface(form),
           };
+          var prev = next[id];
+          if (!prev) {
+            next[id] = row;
+            return;
+          }
+          if (focused) {
+            next[id] = row;
+            return;
+          }
+          if (prev.restoreFocus) return;
+          if (value && !prev.value) next[id] = row;
         });
         schedChatComposeDraftById = next;
       }
@@ -15210,13 +15230,13 @@
         if (!d || !form) return;
         var inp = form.querySelector("input");
         if (!inp) return;
-        if (d.value) inp.value = d.value;
-        if (!d.restoreFocus) return;
+        inp.value = d.value != null ? String(d.value) : "";
+        if (!d.restoreFocus || d.surface !== schedChatFormSurface(form)) return;
         try {
           inp.focus({ preventScroll: true });
           if (typeof inp.setSelectionRange === "function") {
-            var start = d.selectionStart != null ? d.selectionStart : d.value.length;
-            var end = d.selectionEnd != null ? d.selectionEnd : d.value.length;
+            var start = d.selectionStart != null ? d.selectionStart : inp.value.length;
+            var end = d.selectionEnd != null ? d.selectionEnd : inp.value.length;
             inp.setSelectionRange(start, end);
           }
         } catch (eDraft) {}
@@ -17194,14 +17214,11 @@
           return arr;
         }
         // 마감 등으로 서버가 빈 배열이면 로컬도 비움 (병합으로 되살리지 않음)
-        if (
-          opts.replace ||
-          opts.allowEmptyReplace ||
-          (remote.length === 0 && !opts.keepLocalWhenRemoteEmpty)
-        ) {
+        if (opts.replace || opts.allowEmptyReplace) {
           requestLogEntries = dropPreClose(remote.slice());
           return;
         }
+        if (!remote.length) return;
         if (!requestLogEntries || !requestLogEntries.length) {
           requestLogEntries = dropPreClose(remote.slice());
           return;
@@ -17212,6 +17229,25 @@
         }
         function isCancelled(entry) {
           return !!(entry && (entry.cancelled === true || entry.canceled === true));
+        }
+        function mergeEntryChat(older, newer) {
+          if (typeof HKSync !== "undefined" && typeof HKSync.mergeOrderChats === "function") {
+            return HKSync.mergeOrderChats(older && older.chat, newer && newer.chat);
+          }
+          var out = [];
+          var seen = {};
+          [older && older.chat, newer && newer.chat].forEach(function (list) {
+            (Array.isArray(list) ? list : []).forEach(function (msg) {
+              if (!msg) return;
+              var key =
+                (msg.id != null ? String(msg.id) : "") ||
+                [msg.at || "", msg.by || "", msg.text || msg.message || ""].join("|");
+              if (Object.prototype.hasOwnProperty.call(seen, key)) return;
+              seen[key] = true;
+              out.push(msg);
+            });
+          });
+          return out;
         }
         function consider(entry) {
           if (!entry || !entry.id) return;
@@ -17225,19 +17261,26 @@
           var rt = new Date(entry.updatedAt || entry.at || 0).getTime();
           if (isNaN(lt)) lt = 0;
           if (isNaN(rt)) rt = 0;
-          if (rt > lt) {
-            byId[id] = entry;
-            return;
+          var older = rt >= lt ? cur : entry;
+          var newer = rt >= lt ? entry : cur;
+          if (rt === lt) {
+            if (isCancelled(entry) && !isCancelled(cur)) {
+              newer = entry;
+              older = cur;
+            } else if (!isCancelled(entry) && isCancelled(cur)) {
+              newer = cur;
+              older = entry;
+            } else if (hasSched(entry) && !hasSched(cur)) {
+              newer = entry;
+              older = cur;
+            } else if (!hasSched(entry) && hasSched(cur)) {
+              newer = cur;
+              older = entry;
+            }
           }
-          if (lt > rt) return;
-          if (isCancelled(entry) && !isCancelled(cur)) {
-            byId[id] = entry;
-            return;
-          }
-          if (!isCancelled(entry) && isCancelled(cur)) return;
-          if (hasSched(entry) && !hasSched(cur)) byId[id] = entry;
-          else if (!hasSched(entry) && hasSched(cur)) return;
-          else byId[id] = entry;
+          var merged = Object.assign({}, older, newer);
+          merged.chat = mergeEntryChat(older, newer);
+          byId[id] = merged;
         }
         requestLogEntries.forEach(consider);
         remote.forEach(consider);
@@ -25996,6 +26039,7 @@
         var splitEl = document.getElementById("confirmingCardsSplit");
         var hint = document.getElementById("confirmingCardsHint");
         if (!panel || !list) return;
+        captureSchedChatComposeDrafts();
         if (!maintenanceMode && !frontMode) {
           panel.hidden = true;
           panel.classList.remove("confirming-cards-panel--front", "confirming-cards-panel--wing-split");

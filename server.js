@@ -3164,10 +3164,16 @@ function mergeSyncPayload(prev, incoming) {
         : replaceLogArray(incoming.hkMbCheckLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
-    out.hkFrontChat = capChatArray(replaceLogArray(incoming.hkFrontChat));
+    out.hkFrontChat =
+      incoming.hkCloseDayReset === true
+        ? capChatArray(replaceLogArray(incoming.hkFrontChat))
+        : capChatArray(mergeOrderChats(prev.hkFrontChat, incoming.hkFrontChat));
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkTeamChat")) {
-    out.hkTeamChat = capChatArray(replaceLogArray(incoming.hkTeamChat));
+    out.hkTeamChat =
+      incoming.hkCloseDayReset === true
+        ? capChatArray(replaceLogArray(incoming.hkTeamChat))
+        : capChatArray(mergeOrderChats(prev.hkTeamChat, incoming.hkTeamChat));
   }
   // 두 채팅은 절대 서로 복사하지 않음 — 키만 없으면 빈 배열로 유지
   if (!Array.isArray(out.hkTeamChat)) out.hkTeamChat = [];

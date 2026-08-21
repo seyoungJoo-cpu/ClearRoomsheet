@@ -1137,7 +1137,7 @@
         changed.push("hkAdminInquiries");
       }
       if (Array.isArray(payload.hkRequestLog)) {
-        cache.requestLog = payload.hkRequestLog.slice();
+        cache.requestLog = mergeRequestLogEntries(cache.requestLog, payload.hkRequestLog);
         writeJsonArray(REQUEST_LOG_KEY, cache.requestLog);
         changed.push("hkRequestLog");
       }
@@ -1172,12 +1172,14 @@
         changed.push("hkMbCheckLog");
       }
       if (Array.isArray(payload.hkFrontChat)) {
-        cache.frontChat = payload.hkFrontChat.slice();
+        cache.frontChat = mergeOrderChats(cache.frontChat, payload.hkFrontChat);
+        if (cache.frontChat.length > 300) cache.frontChat = cache.frontChat.slice(-300);
         writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
         changed.push("hkFrontChat");
       }
       if (Array.isArray(payload.hkTeamChat)) {
-        cache.teamChat = payload.hkTeamChat.slice();
+        cache.teamChat = mergeOrderChats(cache.teamChat, payload.hkTeamChat);
+        if (cache.teamChat.length > 300) cache.teamChat = cache.teamChat.slice(-300);
         writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
         changed.push("hkTeamChat");
       }
@@ -1521,13 +1523,15 @@
       clearDirty("hkMbCheckLog");
     }
     if (Array.isArray(payload.hkFrontChat) && !dirty.hkFrontChat) {
-      cache.frontChat = payload.hkFrontChat.slice();
+      cache.frontChat = mergeOrderChats(cache.frontChat, payload.hkFrontChat);
+      if (cache.frontChat.length > 300) cache.frontChat = cache.frontChat.slice(-300);
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       changed.push("hkFrontChat");
       clearDirty("hkFrontChat");
     }
     if (Array.isArray(payload.hkTeamChat) && !dirty.hkTeamChat) {
-      cache.teamChat = payload.hkTeamChat.slice();
+      cache.teamChat = mergeOrderChats(cache.teamChat, payload.hkTeamChat);
+      if (cache.teamChat.length > 300) cache.teamChat = cache.teamChat.slice(-300);
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       changed.push("hkTeamChat");
       clearDirty("hkTeamChat");
@@ -1803,6 +1807,7 @@
     onChange: onChange,
     pull: pull,
     hydrateFromLocal: hydrateFromLocal,
+    mergeOrderChats: mergeOrderChats,
     clearLocalCaches: clearLocalCaches,
     clearDayLocalCachesOnCloseDay: clearDayLocalCachesOnCloseDay,
     getCloseDayAt: getCloseDayAtLocal,
