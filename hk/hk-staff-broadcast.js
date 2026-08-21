@@ -192,6 +192,9 @@
 
   function isPresenceMode() {
     if (!frontCtx) return false;
+    if (typeof frontCtx.isSessionActive === "function" && !frontCtx.isSessionActive()) {
+      return false;
+    }
     if (typeof frontCtx.isFrontMode === "function" && frontCtx.isFrontMode()) return true;
     if (typeof frontCtx.isMaintenanceMode === "function" && frontCtx.isMaintenanceMode()) {
       return true;

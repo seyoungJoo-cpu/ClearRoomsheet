@@ -1787,11 +1787,19 @@
     });
   }
 
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   loadSyncVersionFromLocal();
   loadCachesFromLocal();
 
   global.HKSync = {
     start: startPolling,
+    stop: stopPolling,
     onChange: onChange,
     pull: pull,
     hydrateFromLocal: hydrateFromLocal,

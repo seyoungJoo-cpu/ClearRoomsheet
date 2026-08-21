@@ -1403,19 +1403,6 @@
     </div>
   </div>
 
-  <div id="shift-gate" class="auth-gate hidden" aria-hidden="true">
-    <div class="auth-card">
-      <h2>근무자 교대</h2>
-      <p>15분 동안 사용이 없어 로그아웃되었습니다. 이름을 입력하면 화면을 다시 쓰고 동기화합니다.</p>
-      <form id="shift-form" autocomplete="off">
-        <label for="shift-name" class="sr-only">근무자 이름</label>
-        <input id="shift-name" type="text" placeholder="근무자 이름" required>
-        <button type="submit">확인</button>
-      </form>
-      <div id="shift-error" class="auth-error" role="alert"></div>
-    </div>
-  </div>
-
   <div class="wrap app-main">
     <header class="app-header">
       <button type="button" class="btn-rooming-file-find" id="btnRoomingFileFind" title="파일 찾기 (F4)">파일 찾기</button>
@@ -1619,19 +1606,10 @@
     (function () {
       var ACCESS_PASSWORD = "74321";
       var AUTH_STORAGE_KEY = "clear_html_unlocked";
-      var SHIFT_LOCK_KEY = "makeroom-rooming-shift-lock-v1";
       var authGate = document.getElementById("auth-gate");
       var authForm = document.getElementById("auth-form");
       var authPassword = document.getElementById("auth-password");
       var authError = document.getElementById("auth-error");
-
-      function isShiftLocked() {
-        try {
-          return sessionStorage.getItem(SHIFT_LOCK_KEY) === "1";
-        } catch (e) {
-          return false;
-        }
-      }
 
       function hidePasswordGate() {
         authGate.classList.add("hidden");
@@ -1681,9 +1659,6 @@
         } catch (e) {}
         sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
         sessionStorage.setItem("clear_html_sync_pwd", ACCESS_PASSWORD);
-        try {
-          sessionStorage.removeItem(SHIFT_LOCK_KEY);
-        } catch (eShift) {}
         if (typeof window.__onRoomingUnlocked === "function") {
           window.__onRoomingUnlocked();
         } else if (typeof window.__startRoomSync === "function") {
@@ -1706,13 +1681,7 @@
       });
 
       if (isUnlockedToday()) {
-        if (isShiftLocked()) {
-          hidePasswordGate();
-          document.body.classList.add("locked", "shift-locked");
-          window.__roomingAwaitingShiftName = true;
-        } else {
-          unlockApp();
-        }
+        unlockApp();
       }
     })();
 
@@ -1781,12 +1750,7 @@
       var syncPollTimer = null;
       var syncPushTimer = null;
       var isApplyingRemote = false;
-      var ROOMING_IDLE_MS = 15 * 60 * 1000;
-      var SHIFT_LOCK_KEY = "makeroom-rooming-shift-lock-v1";
-      var ROOMING_OPERATOR_KEY = "makeroom-rooming-operator-name-v1";
       var roomingSessionActive = false;
-      var roomingIdleTimer = null;
-      var roomingIdleEventsBound = false;
 
       function loadSharedStateVersion() {
         try {
@@ -2647,13 +2611,6 @@
           });
       }
 
-      function stopRoomSync() {
-        if (syncPollTimer) {
-          clearInterval(syncPollTimer);
-          syncPollTimer = null;
-        }
-      }
-
       function startRoomSyncPolling() {
         if (syncPollTimer) return;
         loadSharedStateVersion();
@@ -2670,87 +2627,15 @@
         }, 3000);
       }
 
-      function clearRoomingIdleTimer() {
-        if (roomingIdleTimer) {
-          clearTimeout(roomingIdleTimer);
-          roomingIdleTimer = null;
-        }
-      }
-
-      function bumpRoomingIdle() {
-        if (!roomingSessionActive) return;
-        clearRoomingIdleTimer();
-        roomingIdleTimer = setTimeout(lockRoomingForShiftChange, ROOMING_IDLE_MS);
-      }
-
-      function showShiftGate() {
-        var gate = document.getElementById("shift-gate");
-        var nameEl = document.getElementById("shift-name");
-        var errEl = document.getElementById("shift-error");
-        if (errEl) errEl.textContent = "";
-        if (gate) {
-          gate.classList.remove("hidden");
-          gate.setAttribute("aria-hidden", "false");
-        }
-        if (nameEl) {
-          nameEl.value = "";
-          setTimeout(function () {
-            try {
-              nameEl.focus();
-            } catch (eF) {}
-          }, 50);
-        }
-      }
-
-      function hideShiftGate() {
-        var gate = document.getElementById("shift-gate");
-        if (!gate) return;
-        gate.classList.add("hidden");
-        gate.setAttribute("aria-hidden", "true");
-      }
-
-      function lockRoomingForShiftChange() {
-        roomingSessionActive = false;
-        clearRoomingIdleTimer();
-        stopRoomSync();
-        try {
-          sessionStorage.setItem(SHIFT_LOCK_KEY, "1");
-        } catch (eLock) {}
-        document.body.classList.add("locked", "shift-locked");
-        showShiftGate();
-        updateSyncStatus("");
-      }
-
-      function bindRoomingIdleEvents() {
-        if (roomingIdleEventsBound) return;
-        roomingIdleEventsBound = true;
-        ["pointerdown", "keydown", "click", "touchstart", "scroll", "wheel"].forEach(function (ev) {
-          document.addEventListener(
-            ev,
-            function () {
-              bumpRoomingIdle();
-            },
-            { capture: true, passive: true }
-          );
-        });
-      }
-
       function beginRoomingSession() {
         roomingSessionActive = true;
-        try {
-          sessionStorage.removeItem(SHIFT_LOCK_KEY);
-        } catch (eClr) {}
-        window.__roomingAwaitingShiftName = false;
         document.body.classList.remove("locked", "shift-locked");
-        hideShiftGate();
         var authGateEl = document.getElementById("auth-gate");
         if (authGateEl) {
           authGateEl.classList.add("hidden");
           authGateEl.setAttribute("aria-hidden", "true");
         }
         startRoomSyncPolling();
-        bumpRoomingIdle();
-        bindRoomingIdleEvents();
       }
 
       window.__startRoomSync = function () {
@@ -2760,27 +2645,6 @@
       window.__onRoomingUnlocked = function () {
         beginRoomingSession();
       };
-
-      (function bindShiftNameForm() {
-        var form = document.getElementById("shift-form");
-        var nameEl = document.getElementById("shift-name");
-        var errEl = document.getElementById("shift-error");
-        if (!form || !nameEl) return;
-        form.addEventListener("submit", function (e) {
-          e.preventDefault();
-          var name = String(nameEl.value || "").trim();
-          if (!name) {
-            if (errEl) errEl.textContent = "근무자 이름을 입력하세요.";
-            nameEl.focus();
-            return;
-          }
-          if (errEl) errEl.textContent = "";
-          try {
-            sessionStorage.setItem(ROOMING_OPERATOR_KEY, name);
-          } catch (eName) {}
-          beginRoomingSession();
-        });
-      })();
 
       function loadBlockAliasesFromStorage() {
         try {
@@ -5711,11 +5575,6 @@
           var link = document.getElementById("linkToHkFront");
           if (link) link.click();
         });
-        if (window.__roomingAwaitingShiftName) {
-          document.body.classList.add("locked", "shift-locked");
-          showShiftGate();
-          return;
-        }
         var unlockedToday =
           typeof window.__isRoomingUnlockedToday === "function"
             ? window.__isRoomingUnlockedToday()

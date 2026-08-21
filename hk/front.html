@@ -15015,7 +15015,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=game-ranks-9"></script>
-  <script src="hk-sync.js?v=bw-sync-4"></script>
+  <script src="hk-sync.js?v=bw-sync-5"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -15027,7 +15027,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=bw-presence-3"></script>
+  <script src="hk-staff-broadcast.js?v=bw-presence-4"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-41"></script>
   <script src="hk-mp-games.js?v=mp-40"></script>
@@ -15103,6 +15103,9 @@
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var OPERATOR_MODE_PICK_KEY = "lotte-hk-pending-mode-pick-v1";
+      var OPERATOR_IDLE_MS = 15 * 60 * 1000;
+      var operatorIdleTimer = null;
+      var operatorIdleEventsBound = false;
       var operatorNameModalMode = "initial";
       var operatorGateForceDifferent = false;
       var operatorGateBlockedName = "";
@@ -15537,6 +15540,65 @@
         } catch (e) {}
       }
 
+      function clearOperatorSessionUnlocked() {
+        try {
+          sessionStorage.removeItem(OPERATOR_UNLOCK_KEY);
+        } catch (e) {}
+      }
+
+      function clearOperatorIdleTimer() {
+        if (operatorIdleTimer) {
+          clearTimeout(operatorIdleTimer);
+          operatorIdleTimer = null;
+        }
+      }
+
+      function bumpOperatorIdle() {
+        if (!isOperatorSessionUnlocked()) return;
+        if (document.body.classList.contains("operator-locked")) return;
+        clearOperatorIdleTimer();
+        operatorIdleTimer = setTimeout(lockOperatorForIdleLogout, OPERATOR_IDLE_MS);
+      }
+
+      function bindOperatorIdleEvents() {
+        if (operatorIdleEventsBound) return;
+        operatorIdleEventsBound = true;
+        ["pointerdown", "pointermove", "keydown", "click", "touchstart", "scroll", "wheel"].forEach(function (ev) {
+          document.addEventListener(
+            ev,
+            function () {
+              bumpOperatorIdle();
+            },
+            { capture: true, passive: true }
+          );
+        });
+      }
+
+      function resumeHkSyncAfterIdleLogin() {
+        if (typeof HKSync === "undefined" || typeof HKSync.start !== "function") return;
+        var startResult = HKSync.start();
+        if (startResult && typeof startResult.finally === "function") {
+          startResult.finally(function () {
+            if (typeof refreshSyncedPanelsFromCache === "function") {
+              refreshSyncedPanelsFromCache();
+            }
+          });
+        }
+      }
+
+      function lockOperatorForIdleLogout() {
+        if (!isOperatorSessionUnlocked()) return;
+        clearOperatorIdleTimer();
+        clearOperatorSessionUnlocked();
+        if (typeof HKSync !== "undefined" && typeof HKSync.stop === "function") {
+          HKSync.stop();
+        }
+        showOperatorGate({ mode: "idle" });
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+          HKStaffBroadcast.refresh();
+        }
+      }
+
       function isModePickPending() {
         try {
           return sessionStorage.getItem(OPERATOR_MODE_PICK_KEY) === "1";
@@ -15725,6 +15787,7 @@
         if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
           HKPush.refreshOrderPushSubscription().then(refreshPushAlarmButtonUi);
         }
+        bumpOperatorIdle();
       }
 
       var pushAlarmToastHideTimer = null;
@@ -15814,6 +15877,7 @@
         pendingOperatorNameCallback =
           typeof opts.onSaved === "function" ? opts.onSaved : null;
         var isShift = operatorNameModalMode === "shift";
+        var isIdle = operatorNameModalMode === "idle";
         var forceShift = isShift && (operatorGateForceDifferent || !!opts.force);
         var gate = document.getElementById("operator-gate");
         var title = document.getElementById("operatorGateTitle");
@@ -15822,10 +15886,16 @@
         var cancelBtn = document.getElementById("operatorGateCancel");
         var modePick = document.getElementById("operatorGateModePick");
         if (title) {
-          title.textContent = isShift ? "교대 · 이름 변경" : "정비오더 · 이름 입력";
+          title.textContent = isIdle
+            ? "근무자 로그아웃"
+            : isShift
+            ? "교대 · 이름 변경"
+            : "정비오더 · 이름 입력";
         }
         if (hint) {
-          hint.textContent = forceShift
+          hint.textContent = isIdle
+            ? "15분 동안 사용이 없어 로그아웃되었습니다. 이름을 입력하면 화면을 다시 씁니다."
+            : forceShift
             ? "다른 근무자가 같은 이름으로 로그인했습니다. 새 이름을 입력하세요."
             : isShift
             ? "새 근무자 이름을 입력하세요."
@@ -15892,6 +15962,7 @@
       }
 
       function ensureOperatorNameOnLoad() {
+        bindOperatorIdleEvents();
         if (isOperatorSessionUnlocked()) {
           updateOperatorNameDisplay();
           if (isModePickPending()) {
@@ -15939,11 +16010,15 @@
           location.reload();
           return;
         }
+        var wasIdleLogout = operatorNameModalMode === "idle";
         setOperatorName(name);
         setOperatorSessionUnlocked();
         operatorGateForceDifferent = false;
         operatorGateBlockedName = "";
         hideOperatorGate();
+        if (wasIdleLogout) {
+          resumeHkSyncAfterIdleLogin();
+        }
         if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.markExplicitNameClaim) {
           HKStaffBroadcast.markExplicitNameClaim();
         } else if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.claimNameAndKickOthers) {
@@ -16092,6 +16167,9 @@
         }
         if (shiftBtn) {
           shiftBtn.addEventListener("click", function () {
+            if (!isOperatorSessionUnlocked() || document.body.classList.contains("operator-locked")) {
+              return;
+            }
             showOperatorGate({ mode: "shift" });
           });
         }
@@ -16099,6 +16177,9 @@
           if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
           if (e.key === "F8" || e.code === "F8") {
             e.preventDefault();
+            if (!isOperatorSessionUnlocked() || document.body.classList.contains("operator-locked")) {
+              return;
+            }
             showOperatorGate({ mode: "shift" });
             return;
           }
@@ -33149,6 +33230,7 @@
       });
 
       window.addEventListener("pageshow", function () {
+        if (!isOperatorSessionUnlocked()) return;
         if (typeof HKSync !== "undefined") {
           HKSync.pull(false).finally(function () {
             refreshSyncedPanelsFromCache();
@@ -33166,6 +33248,7 @@
           return;
         }
         if (document.visibilityState !== "visible") return;
+        if (!isOperatorSessionUnlocked()) return;
         if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
           HKStaffBroadcast.refresh();
         }
@@ -33567,6 +33650,7 @@
           isMaintenanceMode: function () {
             return maintenanceMode;
           },
+          isSessionActive: isOperatorSessionUnlocked,
           getOperatorName: getOperatorName,
           onPresence: renderFrontChatOnline,
           onDuplicateLogin: function () {
