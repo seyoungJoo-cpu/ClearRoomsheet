@@ -10053,6 +10053,12 @@
       -webkit-user-select: text;
     }
 
+    .nh-table.is-excel-selected,
+    .vip-table.is-excel-selected {
+      outline: 2px solid #0f766e;
+      outline-offset: 1px;
+    }
+
     .nh-table {
       width: 100%;
       border-collapse: collapse;
@@ -15120,6 +15126,7 @@
       var forcedOpenDeployedOrderChatIds = {};
       var closedSchedRequestChatIds = {};
       var forcedOpenSchedRequestChatIds = {};
+      var pinnedSchedChatFeedbackIds = {};
       var prevDeployedChatCountById = {};
       var prevSchedChatCountById = {};
       var orderChatComposeDraft = null;
@@ -25465,10 +25472,14 @@
         }
         }
 
+        var pinChat =
+          !!opts.forceChat ||
+          !!(entry && entry.id && pinnedSchedChatFeedbackIds[String(entry.id)]);
         if (maintenanceMode) {
           var hasMaintSched = !!(entry.sched && String(entry.sched).trim());
           var isConfirming = isRequestConfirmingEntry(entry);
-          var showFullMaintActions = hasMaintSched || isConfirming;
+          var showItemChat = isConfirming || pinChat;
+          var showFullMaintActions = hasMaintSched || isConfirming || pinChat;
           if (showFullMaintActions) {
             if (!confirmingStrip) {
               var schedEl = document.createElement("div");
@@ -25541,7 +25552,7 @@
               facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
             }
             maintActs.appendChild(facilityBtn);
-            if (isConfirming) {
+            if (showItemChat) {
               noteChatAutoOpenFromFirstMessage(
                 entry.id,
                 Array.isArray(entry.chat) ? entry.chat.length : 0,
@@ -25565,7 +25576,7 @@
               if (confirmingChatOpen) li.classList.add("is-chat-open");
             }
             li.appendChild(maintActs);
-            if (isConfirming && isSchedRequestChatOpen(entry)) {
+            if (showItemChat && isSchedRequestChatOpen(entry)) {
               appendSchedRequestChatUi(li, entry);
             }
           } else {
@@ -25620,7 +25631,7 @@
           if (getFacilityRequestStatus(entry.id) !== "none") {
             appendFacilityRequestStatusBtn(frontActs, entry.id);
           }
-          var frontConfirming = isRequestConfirmingEntry(entry);
+          var frontConfirming = isRequestConfirmingEntry(entry) || pinChat;
           if (frontConfirming) {
             noteChatAutoOpenFromFirstMessage(
               entry.id,
@@ -25764,6 +25775,27 @@
             list.appendChild(li);
           }
         });
+        var pinnedChatCount = 0;
+        Object.keys(pinnedSchedChatFeedbackIds).forEach(function (id) {
+          if (!pinnedSchedChatFeedbackIds[id]) return;
+          var pinEntry = findRequestEntry(id);
+          if (!pinEntry) return;
+          if (isRequestPendingAlert(pinEntry) || isRequestConfirmingEntry(pinEntry)) return;
+          var pinLi = buildRequestFeedbackItemLi(pinEntry, { forceChat: true });
+          pinLi.classList.add("is-sched-chat-pin");
+          pinnedChatCount++;
+          if (wingSplit) {
+            if (requestAlertWingBucket(pinEntry.room) === "annex") {
+              listAnnex.appendChild(pinLi);
+              annexCount++;
+            } else {
+              listMain.appendChild(pinLi);
+              mainCount++;
+            }
+          } else {
+            list.appendChild(pinLi);
+          }
+        });
         var filterRestricted = allPending.length > 0 && isSchedTypeFilterRestricted();
         var filterMsg = filterRestricted
           ? "선택한 TYPE에 해당하는 요청 알림이 없습니다."
@@ -25782,7 +25814,7 @@
             emptyAnnex.hidden = annexCount > 0;
           }
         } else if (empty) {
-          if (pending.length > 0 || (typeof rpaOrders !== "undefined" && rpaOrders.length > 0)) {
+          if (pending.length > 0 || (typeof rpaOrders !== "undefined" && rpaOrders.length > 0) || pinnedChatCount > 0) {
             empty.hidden = true;
           } else if (allPending.length > 0 && isSchedTypeFilterRestricted()) {
             empty.textContent = filterMsg;
@@ -28054,22 +28086,80 @@
         });
       }
 
-      function toggleSchedRequestChat(reqId) {
+      function pinSchedChatInFeedback(reqId, on) {
+        var id = String(reqId || "");
+        if (!id) return;
+        if (on) pinnedSchedChatFeedbackIds[id] = true;
+        else delete pinnedSchedChatFeedbackIds[id];
+      }
+
+      function scrollToRequestFeedbackChat(reqId) {
+        var id = String(reqId || "");
+        var feedback = document.getElementById("requestFeedback");
+        if (feedback && typeof feedback.scrollIntoView === "function") {
+          try {
+            feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          } catch (eFb) {}
+        }
+        var card = document.querySelector(
+          '#requestFeedback .request-feedback__item[data-req-id="' + id + '"]'
+        );
+        if (card && typeof card.scrollIntoView === "function") {
+          try {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (eCard) {}
+        }
+        if (!card) return;
+        var chatInput = card.querySelector(".order-chat__form input");
+        if (chatInput) chatInput.focus({ preventScroll: true });
+      }
+
+      function scrollToSchedResultCard(reqId) {
+        var id = String(reqId || "");
+        var panel = document.getElementById("schedCardsPanel");
+        if (panel && typeof panel.scrollIntoView === "function") {
+          try {
+            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+          } catch (eP) {}
+        }
+        var card = document.querySelector(
+          '#schedCardsPanel .sched-req-card[data-req-id="' +
+            id +
+            '"], #schedRequestCardList .sched-req-card[data-req-id="' +
+            id +
+            '"]'
+        );
+        if (card && typeof card.scrollIntoView === "function") {
+          try {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (eC) {}
+        }
+        if (!card) return;
+        var chatInput = card.querySelector(".order-chat__form input");
+        if (chatInput) chatInput.focus({ preventScroll: true });
+      }
+
+      function toggleSchedRequestChat(reqId, opts) {
         if (!reqId) return;
         var id = String(reqId);
+        opts = opts || {};
         var entry = findRequestEntry(reqId) || { id: id, chat: [] };
         if (isSchedRequestChatOpen(entry)) {
           closedSchedRequestChatIds[id] = true;
           delete forcedOpenSchedRequestChatIds[id];
+          pinSchedChatInFeedback(id, false);
           renderSchedRequestCards();
+          renderRequestLogPanel({ force: true });
           return;
         }
         delete closedSchedRequestChatIds[id];
         forcedOpenSchedRequestChatIds[id] = true;
+        if (opts.fromSched) pinSchedChatInFeedback(id, true);
         if (typeof showSidebarRequestView === "function") {
           showSidebarRequestView({ skipDirtyConfirm: true });
         }
         var roomNo = entry.roomNo != null ? String(entry.roomNo).trim() : "";
+        if (!roomNo && entry.room) roomNo = String(entry.room).trim();
         var deskSearch = document.getElementById("requestDeskChatRoomSearch");
         if (deskSearch && roomNo) {
           deskSearch.value = roomNo;
@@ -28080,11 +28170,9 @@
         renderSchedRequestCards();
         renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
-          var feedback = document.getElementById("requestFeedback");
-          if (feedback && typeof feedback.scrollIntoView === "function") {
-            try {
-              feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            } catch (eFb) {}
+          if (opts.fromSched || pinnedSchedChatFeedbackIds[id]) {
+            scrollToRequestFeedbackChat(id);
+            return;
           }
           var card = document.querySelector(
             '.sched-req-card.is-chat-open[data-req-id="' +
@@ -28164,9 +28252,10 @@
         hkChatApplyStick(msgList, stickInfo);
       }
 
-      function appendSchedRequestChat(reqId, text, image) {
+      function appendSchedRequestChat(reqId, text, image, opts) {
         var entry = findRequestEntry(reqId);
         if (!entry || isRequestCancelled(entry)) return;
+        opts = opts || {};
         var msgText = String(text || "").trim();
         var msgImage = image != null ? String(image).trim() : "";
         if (!msgText && !msgImage) return;
@@ -28174,7 +28263,7 @@
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
-              appendSchedRequestChat(reqId, msgText, msgImage);
+              appendSchedRequestChat(reqId, msgText, msgImage, opts);
             },
           });
           return;
@@ -28201,8 +28290,15 @@
         }
         delete closedSchedRequestChatIds[String(reqId)];
         forcedOpenSchedRequestChatIds[String(reqId)] = true;
+        var fromFeedback = !!opts.fromFeedback;
+        if (fromFeedback) pinSchedChatInFeedback(reqId, false);
         renderSchedRequestCards();
+        renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
+          if (fromFeedback) {
+            scrollToSchedResultCard(reqId);
+            return;
+          }
           var card = document.querySelector(
             '.sched-req-card.is-chat-open[data-req-id="' +
               reqId +
@@ -32448,12 +32544,32 @@
 
       var requestFeedbackEl = document.getElementById("requestFeedback");
       if (requestFeedbackEl) {
+        requestFeedbackEl.addEventListener("submit", function (e) {
+          var chatForm = e.target.closest(".sched-req-chat-form");
+          if (!chatForm) return;
+          e.preventDefault();
+          e.stopPropagation();
+          var reqId = chatForm.getAttribute("data-req-id");
+          var chatInput = chatForm.querySelector("input");
+          var text = chatInput ? chatInput.value : "";
+          if (reqId) appendSchedRequestChat(reqId, text, "", { fromFeedback: true });
+          if (chatInput) chatInput.value = "";
+        });
         requestFeedbackEl.addEventListener("click", function (e) {
           var robotAccept = e.target.closest(".order-feedback__accept-btn");
           if (robotAccept && robotAccept.closest("[data-robot-order=\"1\"]")) {
             e.preventDefault();
             var oid = robotAccept.getAttribute("data-order-id");
             if (oid) acceptOrderEntry(oid);
+            return;
+          }
+          var chatElFb = e.target.closest(".sched-card__chat-btn");
+          if (chatElFb) {
+            if (!frontMode && !maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridChatFb = chatElFb.getAttribute("data-req-id");
+            if (ridChatFb) toggleSchedRequestChat(ridChatFb);
             return;
           }
           var cancelReqB = e.target.closest(".request-feedback__cancel-btn");
@@ -32657,7 +32773,7 @@
             e.preventDefault();
             e.stopPropagation();
             var ridChat = chatEl.getAttribute("data-req-id");
-            if (ridChat) toggleSchedRequestChat(ridChat);
+            if (ridChat) toggleSchedRequestChat(ridChat, { fromSched: true });
             return;
           }
           var useEl = e.target.closest(".sched-card__use-btn");
@@ -33430,6 +33546,72 @@
           showHkActionToast("표를 엑셀용으로 복사했습니다.");
         }
       });
+
+      (function bindExcelTableDragCopy() {
+        var drag = null;
+        function clearExcelTableSelect() {
+          document.querySelectorAll(".nh-table.is-excel-selected, .vip-table.is-excel-selected").forEach(function (el) {
+            el.classList.remove("is-excel-selected");
+          });
+        }
+        function copyTableTsv(table) {
+          var tsv = hkExcelTableToTsv(table);
+          if (!tsv) return;
+          function ok() {
+            if (typeof showHkActionToast === "function") {
+              showHkActionToast("표를 엑셀용으로 복사했습니다.");
+            }
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(tsv).then(ok).catch(function () {
+              ok();
+            });
+            return;
+          }
+          try {
+            var ta = document.createElement("textarea");
+            ta.value = tsv;
+            ta.setAttribute("readonly", "");
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            ok();
+          } catch (errCopy) {}
+        }
+        document.addEventListener("mousedown", function (e) {
+          if (e.button !== 0) return;
+          var table =
+            e.target && e.target.closest
+              ? e.target.closest("#nightHandoverPanel .nh-table, #vipCheckInPanel .vip-table")
+              : null;
+          if (!table) return;
+          if (e.target.closest("button, .nh-row-btn, a, .nh-th-actions, .vip-th-check")) return;
+          if (e.target.closest("input, textarea, select")) return;
+          clearExcelTableSelect();
+          drag = { table: table, x: e.clientX, y: e.clientY, moved: false };
+        });
+        document.addEventListener("mousemove", function (e) {
+          if (!drag) return;
+          if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 8) return;
+          drag.moved = true;
+          drag.table.classList.add("is-excel-selected");
+        });
+        document.addEventListener("mouseup", function () {
+          if (!drag) return;
+          var table = drag.table;
+          var moved = drag.moved;
+          drag = null;
+          if (!moved) {
+            clearExcelTableSelect();
+            return;
+          }
+          copyTableTsv(table);
+          setTimeout(clearExcelTableSelect, 900);
+        });
+      })();
       if (typeof HKAdminInquiry !== "undefined") {
         HKAdminInquiry.init({
           formatAt: formatReqAt,
