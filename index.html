@@ -1741,8 +1741,10 @@
 
       var AUTH_UNLOCK_KEY = "clear_html_unlocked";
       var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
+      var ROOMING_PART_KEY = "lotte-hk-rooming-part-v1";
       var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
       var sharedStateVersion = 0;
+      var lastAppliedRoomingPart = 0;
       var sharedRoomingClearedAt = "";
       var lastAppliedSyncUpdatedAt = "";
       var lastRoomingUploadedAt = "";
@@ -1766,6 +1768,25 @@
         sharedStateVersion = version;
         try {
           localStorage.setItem(SYNC_VERSION_KEY, String(version));
+        } catch (e) {}
+      }
+
+      function loadRoomingPartVersion() {
+        try {
+          var raw = localStorage.getItem(ROOMING_PART_KEY);
+          if (raw == null || raw === "") return;
+          var v = parseInt(raw, 10);
+          if (!isNaN(v) && v >= 0) lastAppliedRoomingPart = v;
+        } catch (e) {}
+      }
+
+      function markRoomingPartApplied(data) {
+        if (!data || !data.partVersions) return;
+        var n = Number(data.partVersions.rooming);
+        if (!isFinite(n)) return;
+        lastAppliedRoomingPart = n;
+        try {
+          localStorage.setItem(ROOMING_PART_KEY, String(n));
         } catch (e) {}
       }
 
@@ -2519,11 +2540,12 @@
             return r.json();
           })
           .then(function (data) {
-            if (data && data.version != null) saveSharedStateVersion(data.version);
             if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
             saveRoomingStateToLocal();
             var label = opts.syncLabel || "다른 PC와 공유됨";
             updateSyncStatus(label + " · " + formatSyncTime(data.updatedAt), true);
+            // POST로 version만 맞추면 다른 PC의 루밍 업로드를 건너뛰므로, 이어서 GET으로 확정
+            pullSharedState(true);
           })
           .catch(function () {
             updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
@@ -2537,13 +2559,22 @@
         }, 400);
       }
 
-      function pullSharedState(isPoll) {
+      function pullSharedState(isPoll, opts) {
         if (!roomingSessionActive) return Promise.resolve(false);
+        opts = opts || {};
         var headers = { "X-Sync-Password": getSyncPassword() };
         var url = "/api/sync?scope=rooming";
-        if (sharedStateVersion > 0 && (isPoll || hasLocalRoomingData() || hasLocalFasnData())) {
-          headers["X-Sync-Version"] = String(sharedStateVersion);
-          url += "&since=" + encodeURIComponent(String(sharedStateVersion));
+        var sinceSend = opts.since;
+        if (
+          sinceSend == null &&
+          sharedStateVersion > 0 &&
+          (isPoll || hasLocalRoomingData() || hasLocalFasnData())
+        ) {
+          sinceSend = sharedStateVersion;
+        }
+        if (sinceSend != null) {
+          headers["X-Sync-Version"] = String(sinceSend);
+          url += "&since=" + encodeURIComponent(String(sinceSend));
         }
         return fetch(url, {
           headers: headers,
@@ -2560,10 +2591,27 @@
               }
               return false;
             }
+            function catchUpIfNeeded() {
+              if (opts.catchUp) return Promise.resolve(null);
+              var serverPart =
+                data.partVersions && data.partVersions.rooming != null
+                  ? Number(data.partVersions.rooming)
+                  : NaN;
+              if (!isFinite(serverPart) || serverPart <= lastAppliedRoomingPart) {
+                return Promise.resolve(null);
+              }
+              return pullSharedState(isPoll, {
+                since: lastAppliedRoomingPart,
+                catchUp: true,
+              });
+            }
             if (data.unchanged) {
               if (data.version != null) saveSharedStateVersion(data.version);
               if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-              return hasLocalRoomingData() || hasLocalFasnData();
+              return catchUpIfNeeded().then(function (caught) {
+                if (caught != null) return caught;
+                return hasLocalRoomingData() || hasLocalFasnData();
+              });
             }
             if (!data.payload) {
               if (!isPoll) {
@@ -2573,15 +2621,20 @@
                 saveSharedStateVersion(data.version);
                 if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
               }
-              return hasLocalRoomingData() || hasLocalFasnData();
+              return catchUpIfNeeded().then(function (caught) {
+                if (caught != null) return caught;
+                return hasLocalRoomingData() || hasLocalFasnData();
+              });
             }
 
             var applied = applyRemoteSyncFromServer(data, {
               forceApply:
-                !isPoll &&
-                !lastAppliedSyncUpdatedAt &&
-                hasPayloadRoomingSyncData(data.payload),
+                opts.catchUp ||
+                (!isPoll &&
+                  !lastAppliedSyncUpdatedAt &&
+                  hasPayloadRoomingSyncData(data.payload)),
             });
+            if (applied) markRoomingPartApplied(data);
 
             if (applied) {
               updateSyncStatus(
@@ -2589,7 +2642,10 @@
                   formatSyncTime(data.updatedAt),
                 true
               );
-              return true;
+              return catchUpIfNeeded().then(function (caught) {
+                if (caught != null) return caught;
+                return true;
+              });
             }
 
             if (!isPoll) {
@@ -2599,11 +2655,14 @@
                 updateSyncStatus("공유 데이터 없음 — XML 업로드 시 다른 PC에 전달됩니다");
               }
             }
-            return (
-              hasPayloadRoomingSyncData(data.payload) ||
-              hasLocalRoomingData() ||
-              hasLocalFasnData()
-            );
+            return catchUpIfNeeded().then(function (caught) {
+              if (caught != null) return caught;
+              return (
+                hasPayloadRoomingSyncData(data.payload) ||
+                hasLocalRoomingData() ||
+                hasLocalFasnData()
+              );
+            });
           })
           .catch(function () {
             if (!isPoll) updateSyncStatus("동기화 서버 없음 — 이 브라우저에만 표시됩니다");
@@ -2614,6 +2673,7 @@
       function startRoomSyncPolling() {
         if (syncPollTimer) return;
         loadSharedStateVersion();
+        loadRoomingPartVersion();
         pullSharedState(false).then(function (hasRemote) {
           if (!hasRemote) {
             if (!hasLocalRoomingData()) loadRoomingStateFromLocal();

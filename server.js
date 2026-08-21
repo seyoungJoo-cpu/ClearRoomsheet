@@ -437,6 +437,11 @@ function parseSyncSinceVersion(req) {
   return isFinite(n) ? n : null;
 }
 
+function syncPartVersionsSnapshot() {
+  ensureSyncPartVersions();
+  return Object.assign({}, sharedState.partVersions);
+}
+
 loadSharedStateFromDisk();
 
 function chatMsgFingerprint(m) {
@@ -574,6 +579,7 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
           version: version,
           updatedAt: updatedAt,
           unchanged: true,
+          partVersions: syncPartVersionsSnapshot(),
         },
         req,
         scope
@@ -589,6 +595,7 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
           version: version,
           updatedAt: updatedAt,
           unchanged: true,
+          partVersions: syncPartVersionsSnapshot(),
         },
         req,
         scope
@@ -603,6 +610,7 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
         updatedAt: updatedAt,
         payload: built.payload,
         partial: built.partial || undefined,
+        partVersions: syncPartVersionsSnapshot(),
       },
       req,
       scope
@@ -2934,7 +2942,12 @@ function isNewerOrEqualUploadedAt(incomingAt, prevAt) {
 function canApplyRoomingMainSync(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return false;
   if (incoming.roomingClearedAt) return true;
-  return isNewerOrEqualUploadedAt(incoming.roomingUploadedAt, prev && prev.roomingUploadedAt);
+  if (isNewerOrEqualUploadedAt(incoming.roomingUploadedAt, prev && prev.roomingUploadedAt)) {
+    return true;
+  }
+  // 루밍 XML 업로드는 PC 시계가 늦어도 적용한다. 타임스탬프만 보면
+  // 루밍 화면은 새 상태인데 서버·정비 오더는 옛 vacRows를 유지한다.
+  return Array.isArray(incoming.vacRows) && incoming.vacRows.length > 0;
 }
 
 function canApplyFasnRoomingSync(prev, incoming) {
@@ -3042,11 +3055,18 @@ function mergeSyncPayload(prev, incoming) {
   if (Object.prototype.hasOwnProperty.call(incoming, "uploadSummary") && applyMainRooming) {
     out.uploadSummary = incoming.uploadSummary;
   }
-  if (Object.prototype.hasOwnProperty.call(incoming, "roomingUploadedAt") && applyMainRooming) {
+  if (
+    applyMainRooming &&
+    (Object.prototype.hasOwnProperty.call(incoming, "roomingUploadedAt") ||
+      (Array.isArray(incoming.vacRows) && incoming.vacRows.length > 0))
+  ) {
     var prevUploadAt = prev.roomingUploadedAt != null ? String(prev.roomingUploadedAt) : "";
     var nextUploadAt =
-      incoming.roomingUploadedAt != null ? String(incoming.roomingUploadedAt) : "";
-    out.roomingUploadedAt = incoming.roomingUploadedAt;
+      incoming.roomingUploadedAt != null ? String(incoming.roomingUploadedAt).trim() : "";
+    if (!nextUploadAt || (prevUploadAt && nextUploadAt < prevUploadAt)) {
+      nextUploadAt = new Date().toISOString();
+    }
+    out.roomingUploadedAt = nextUploadAt;
     if (nextUploadAt && nextUploadAt !== prevUploadAt) {
       out.__hkClearRpaOnUpload = nextUploadAt;
     }
@@ -3321,6 +3341,7 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     ok: true,
     version: sharedState.version,
     updatedAt: sharedState.updatedAt,
+    partVersions: syncPartVersionsSnapshot(),
     // 클라이언트가 보낸 키의 서버 merge 결과를 돌려줘 로컬이 빈/부분 상태로 version만 맞추지 않게 함
     payload: (function () {
       var body = req.body && typeof req.body === "object" ? req.body : {};

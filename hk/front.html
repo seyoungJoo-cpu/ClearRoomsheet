@@ -17095,6 +17095,22 @@
         return normalizeRoomDigits(s);
       }
 
+      function patchLiveXmlStatusOnOrderCards() {
+        document.querySelectorAll(".order-work-item[data-order-id]").forEach(function (li) {
+          var entry = findOrderEntry(li.getAttribute("data-order-id"));
+          if (!entry) return;
+          var statusCell = li.querySelector(".hk-strip-cell--status");
+          if (!statusCell) return;
+          statusCell.innerHTML = "";
+          appendRoomTypeToCardHead(statusCell, entry.room);
+          statusCell.appendChild(
+            buildRoomStatusGroup(lookupRoomStatusFromXml(entry.room), entry.room, {
+              statusClass: "room-card__status",
+            })
+          );
+        });
+      }
+
       function applyXmlRoomStatusPayload(payload) {
         if (!payload) return;
         if (payload.vacRows && payload.vacRows.length) {
@@ -17120,6 +17136,18 @@
           updateRoomStatusDisplay();
           updateOrderFoDisplay();
           updateRequestAlertLiveStatuses();
+          patchLiveXmlStatusOnOrderCards();
+          deferHkSyncUiApply(function () {
+            renderAllTypeFilterCheckboxes();
+            updateRoomStatusDisplay();
+            renderRequestLogPanel({ force: true });
+            renderOrderPanels({ force: true });
+            refreshMain({ force: true });
+            updateOrderFoDisplay();
+            if (requestRoomBoardOpen) renderRequestRoomBoard();
+            if (zoneRoomBoardOpen) renderZoneRoomBoard();
+            renderSchedRequestCards();
+          });
           return;
         }
         renderAllTypeFilterCheckboxes();

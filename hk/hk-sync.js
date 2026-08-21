@@ -14,8 +14,42 @@
   var TEAM_CHAT_KEY = "lotte-hk-team-chat-v1";
   var ADMIN_INQUIRY_KEY = "lotte-hk-admin-inquiries-v1";
   var SYNC_VERSION_KEY = "lotte-hk-sync-version-v1";
+  var APPLIED_PARTS_KEY = "lotte-hk-sync-parts-v1";
   var CLOSE_DAY_KEY = "lotte-hk-close-day-at-v1";
   var ROOMING_XML_LS_KEY = "lotte-hk-rooming-xml-v1";
+  var SYNC_PART_FIELDS = {
+    rooming: [
+      "blockMap",
+      "vacRows",
+      "roomResvMap",
+      "excelResvMap",
+      "arrResvTotals",
+      "allStatusRooms",
+      "extendedStayRooms",
+      "extendedStayUpdatedAt",
+      "blockDisplayAliases",
+      "uploadSummary",
+      "roomingUploadedAt",
+      "fasnBlockMap",
+      "fasnVacRows",
+      "fasnAllStatusRooms",
+      "fasnUploadSummary",
+      "fasnUploadedAt",
+      "roomingClearedAt",
+    ],
+    hkStorage: ["hkStorage"],
+    hkRequestLog: ["hkRequestLog"],
+    hkOrderLog: ["hkOrderLog"],
+    hkCancelLog: ["hkCancelLog"],
+    hkUseLog: ["hkUseLog"],
+    hkChangeLog: ["hkChangeLog"],
+    hkMbInvLog: ["hkMbInvLog"],
+    hkMbCheckLog: ["hkMbCheckLog"],
+    hkFrontChat: ["hkFrontChat"],
+    hkTeamChat: ["hkTeamChat"],
+    hkAdminInquiries: ["hkAdminInquiries"],
+    hkMeta: ["hkCloseDayAt", "hkLastRoomChange", "hkAutoOrderState"],
+  };
   var ROOMING_EXTRA_KEYS = [
     "blockMap",
     "allStatusRooms",
@@ -33,6 +67,8 @@
   ];
 
   var syncVersion = 0;
+  var appliedPartVersions = {};
+  var catchUpPull = null;
   var lastAppliedSyncUpdatedAt = "";
   var lastPresenceIdent = "";
   var pollTimer = null;
@@ -364,6 +400,67 @@
     try {
       global.localStorage.setItem(SYNC_VERSION_KEY, String(version));
     } catch (e) {}
+  }
+
+  function loadAppliedPartVersions() {
+    try {
+      var raw = global.localStorage.getItem(APPLIED_PARTS_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        appliedPartVersions = parsed;
+      }
+    } catch (e) {}
+  }
+
+  function persistAppliedPartVersions() {
+    try {
+      global.localStorage.setItem(APPLIED_PARTS_KEY, JSON.stringify(appliedPartVersions));
+    } catch (e) {}
+  }
+
+  function markAppliedPartsFromPayload(payload, partVersions, version, partial) {
+    if (!payload || typeof payload !== "object") return;
+    var pv = partVersions && typeof partVersions === "object" ? partVersions : {};
+    var ver = version != null ? Number(version) : syncVersion;
+    Object.keys(SYNC_PART_FIELDS).forEach(function (part) {
+      var keys = SYNC_PART_FIELDS[part];
+      var hit = false;
+      for (var i = 0; i < keys.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(payload, keys[i])) {
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) return;
+      var n = pv[part] != null ? Number(pv[part]) : ver;
+      if (isFinite(n)) appliedPartVersions[part] = n;
+    });
+    if (!partial && pv && Object.keys(pv).length) {
+      Object.keys(pv).forEach(function (part) {
+        var n = Number(pv[part]);
+        if (isFinite(n)) appliedPartVersions[part] = n;
+      });
+    }
+    persistAppliedPartVersions();
+  }
+
+  function missedPartsSince(serverParts) {
+    if (!serverParts || typeof serverParts !== "object") return null;
+    var minLv = Infinity;
+    var missed = false;
+    Object.keys(serverParts).forEach(function (part) {
+      var sv = Number(serverParts[part]);
+      if (!isFinite(sv)) return;
+      var lv = Number(appliedPartVersions[part]);
+      if (!isFinite(lv)) lv = 0;
+      if (sv > lv) {
+        missed = true;
+        if (lv < minLv) minLv = lv;
+      }
+    });
+    if (!missed) return null;
+    return isFinite(minLv) ? minLv : 0;
   }
 
   var EMBED_STATE_KEYS = [
@@ -1112,11 +1209,11 @@
         return r.json();
       })
       .then(function (data) {
-        if (data && data.version != null) saveSyncVersion(data.version);
+        // POST는 보낸 필드만 echo 하므로 여기서 version을 올리면
+        // 그 사이 올라온 루밍 XML 등을 since 폴링이 건너뛴다.
         if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-        // 서버 merge 결과를 즉시 반영 — 빈 로컬을 보낸 뒤 version만 맞춰 문의가 안 보이는 문제 방지
         if (data && data.payload) {
-          applyPostEchoPayload(data.payload);
+          applyPostEchoPayload(data.payload, data.partVersions, data.version);
         }
         return data;
       })
@@ -1126,7 +1223,7 @@
   }
 
   /** POST 응답에 실려 온 서버 merge 결과를 로컬에 적용 */
-  function applyPostEchoPayload(payload) {
+  function applyPostEchoPayload(payload, partVersions, version) {
     if (!payload || typeof payload !== "object") return;
     var changed = [];
     isApplyingRemote = true;
@@ -1186,6 +1283,7 @@
     } finally {
       isApplyingRemote = false;
     }
+    markAppliedPartsFromPayload(payload, partVersions, version, true);
     if (changed.length) emitChange(changed, payload);
   }
 
@@ -1302,8 +1400,9 @@
     return queueScheduledFlush();
   }
 
-  function applyRemotePayload(payload) {
+  function applyRemotePayload(payload, meta) {
     if (!payload || typeof payload !== "object") return;
+    meta = meta || {};
     lastServerPayload = Object.assign({}, lastServerPayload || {}, payload);
     var changed = [];
     var prevCloseDayAt = "";
@@ -1562,6 +1661,7 @@
     } finally {
       isApplyingRemote = false;
     }
+    markAppliedPartsFromPayload(payload, meta.partVersions, meta.version, meta.partial);
     if (hasPendingPushWork()) queueScheduledFlush();
     if (changed.length) {
       emitChange(changed, Object.assign({}, payload, xmlPayloadForListeners()));
@@ -1703,16 +1803,20 @@
       });
   }
 
-  function pull(isPoll) {
+  function pull(isPoll, opts) {
+    opts = opts || {};
     var headers = {
       "X-Sync-Password": getSyncPassword(),
       "Cache-Control": "no-cache",
     };
     var url = "/api/sync?scope=hk";
-    var sendSince = syncVersion > 0 && (isPoll || hasLocalHkHydration());
+    var sinceOverride = opts.since;
+    var sendSince =
+      sinceOverride != null || (syncVersion > 0 && (isPoll || hasLocalHkHydration()));
     if (sendSince) {
-      headers["X-Sync-Version"] = String(syncVersion);
-      url += "&since=" + encodeURIComponent(String(syncVersion));
+      var sinceVal = sinceOverride != null ? sinceOverride : syncVersion;
+      headers["X-Sync-Version"] = String(sinceVal);
+      url += "&since=" + encodeURIComponent(String(sinceVal));
     }
     if (lastPresenceIdent) {
       url += "&presenceIdent=" + encodeURIComponent(lastPresenceIdent);
@@ -1728,10 +1832,20 @@
       .then(function (data) {
         if (!data) return false;
         applyPresenceFromSyncResponse(data);
+        function catchUpIfNeeded() {
+          if (opts.catchUp) return Promise.resolve(true);
+          var sinceMissed = missedPartsSince(data.partVersions);
+          if (sinceMissed == null) return Promise.resolve(true);
+          if (catchUpPull) return catchUpPull;
+          catchUpPull = pull(isPoll, { since: sinceMissed, catchUp: true }).finally(function () {
+            catchUpPull = null;
+          });
+          return catchUpPull;
+        }
         if (data.unchanged) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-          return true;
+          return catchUpIfNeeded();
         }
         if (!data.payload) {
           if (data.version != null && data.version < syncVersion) {
@@ -1742,15 +1856,22 @@
             loadCachesFromLocal();
             emitLocalCacheHydrate();
           }
-          return false;
+          return catchUpIfNeeded().then(function () {
+            return false;
+          });
         }
-        var forceFullApply = !isPoll && !data.partial && !sendSince;
+        var forceFullApply =
+          (!isPoll && !data.partial && !sendSince) || !!opts.catchUp;
         if (shouldApplyRemoteSync(data) || forceFullApply) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-          applyRemotePayload(data.payload);
+          applyRemotePayload(data.payload, {
+            partVersions: data.partVersions,
+            version: data.version,
+            partial: !!data.partial,
+          });
           applyPresenceFromSyncResponse(data);
-          return true;
+          return catchUpIfNeeded();
         }
         lastServerPayload = Object.assign({}, lastServerPayload || {}, data.payload);
         var reconChanged = [];
@@ -1765,7 +1886,7 @@
           emitChange(reconChanged, Object.assign({}, data.payload));
         }
         applyPresenceFromSyncResponse(data);
-        return true;
+        return catchUpIfNeeded();
       })
       .catch(function () {
         if (!isPoll) {
@@ -1778,6 +1899,7 @@
 
   function startPolling() {
     loadSyncVersionFromLocal();
+    loadAppliedPartVersions();
     loadCachesFromLocal();
     var pullPromise = pull(false);
     if (!pollTimer) {
@@ -1799,6 +1921,7 @@
   }
 
   loadSyncVersionFromLocal();
+  loadAppliedPartVersions();
   loadCachesFromLocal();
 
   global.HKSync = {
@@ -2078,7 +2201,6 @@
       clearAllDirty();
       pendingPush = {};
       return postPayload(payload).then(function (data) {
-        if (data && data.version != null) saveSyncVersion(data.version);
         var closeChanged = [
           "hkCloseDayAt",
           "hkClearLocalCaches",
