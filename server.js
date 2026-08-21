@@ -377,6 +377,42 @@ function staffPresenceSnapshot() {
   };
 }
 
+function presenceIdentityFingerprint(snap) {
+  snap = snap || {};
+  var p = snap.presence || {};
+  var kicks = snap.presenceKicks || {};
+  var people = Object.keys(p)
+    .sort()
+    .map(function (sid) {
+      var row = p[sid] || {};
+      return sid + "\t" + String(row.name || "") + "\t" + (row.front === true ? "1" : "0");
+    })
+    .join("\n");
+  var kickStr = Object.keys(kicks)
+    .sort()
+    .map(function (k) {
+      var row = kicks[k] || {};
+      return k + "\t" + String(row.sid || "") + "\t" + String(row.at || "");
+    })
+    .join("\n");
+  return crypto.createHash("sha1").update(people + "\n#\n" + kickStr).digest("hex").slice(0, 16);
+}
+
+function attachStaffPresenceToSyncBody(body, req, scope) {
+  if (!body || scope === "rooming") return body;
+  var snap = staffPresenceSnapshot();
+  var ident = presenceIdentityFingerprint(snap);
+  body.presenceIdent = ident;
+  var clientIdent =
+    req.query && req.query.presenceIdent != null ? String(req.query.presenceIdent).trim() : "";
+  if (clientIdent && clientIdent === ident) {
+    body.presenceAlive = Object.keys(snap.presence || {});
+  } else {
+    body.staffPresence = snap;
+  }
+  return body;
+}
+
 function overlayLivePresenceOnPayload(payload) {
   if (!payload || typeof payload !== "object") return payload;
   var snap = staffPresenceSnapshot();
@@ -532,31 +568,46 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   var since = parseSyncSinceVersion(req);
   var scope = parseSyncScope(req);
   if (since != null && since === version) {
-    res.json({
-      version: version,
-      updatedAt: updatedAt,
-      unchanged: true,
-      staffPresence: staffPresenceSnapshot(),
-    });
+    res.json(
+      attachStaffPresenceToSyncBody(
+        {
+          version: version,
+          updatedAt: updatedAt,
+          unchanged: true,
+        },
+        req,
+        scope
+      )
+    );
     return;
   }
   var built = buildSyncGetPayload(since, scope);
   if (built.unchanged) {
-    res.json({
-      version: version,
-      updatedAt: updatedAt,
-      unchanged: true,
-      staffPresence: staffPresenceSnapshot(),
-    });
+    res.json(
+      attachStaffPresenceToSyncBody(
+        {
+          version: version,
+          updatedAt: updatedAt,
+          unchanged: true,
+        },
+        req,
+        scope
+      )
+    );
     return;
   }
-  res.json({
-    version: version,
-    updatedAt: updatedAt,
-    payload: built.payload,
-    partial: built.partial || undefined,
-    staffPresence: staffPresenceSnapshot(),
-  });
+  res.json(
+    attachStaffPresenceToSyncBody(
+      {
+        version: version,
+        updatedAt: updatedAt,
+        payload: built.payload,
+        partial: built.partial || undefined,
+      },
+      req,
+      scope
+    )
+  );
 });
 
 app.post("/api/presence", checkSyncAuth, function (req, res) {
@@ -740,7 +791,16 @@ function hkFilterRoomsAfterCloseDay(rooms, closeDayAt, prevRooms) {
 function hkFilterLogAfterCloseDay(arr, closeDayAt) {
   if (!Array.isArray(arr)) return [];
   var closeMs = hkParseIsoMs(closeDayAt);
-  if (!closeMs) return arr.slice();
+  if (!closeMs) return arr;
+  var kept = 0;
+  for (var i = 0; i < arr.length; i++) {
+    var entry = arr[i];
+    if (!entry || typeof entry !== "object") continue;
+    var at = entry.updatedAt || entry.at || entry.createdAt || "";
+    var ms = hkParseIsoMs(at);
+    if (ms > 0 && ms >= closeMs) kept++;
+  }
+  if (kept === arr.length) return arr;
   return arr.filter(function (entry) {
     if (!entry || typeof entry !== "object") return false;
     var at = entry.updatedAt || entry.at || entry.createdAt || "";
@@ -1226,25 +1286,51 @@ function ensureSyncPartVersions() {
   });
 }
 
-function syncPartChanged(prev, next, keys) {
-  prev = prev && typeof prev === "object" ? prev : {};
-  next = next && typeof next === "object" ? next : {};
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    var hasP = Object.prototype.hasOwnProperty.call(prev, k);
-    var hasN = Object.prototype.hasOwnProperty.call(next, k);
-    if (hasP !== hasN) return true;
-    if (hasN && prev[k] !== next[k]) return true;
+function fingerprintSyncPartSlice(payload, keys) {
+  var slice = {};
+  var has = false;
+  (keys || []).forEach(function (k) {
+    if (payload && Object.prototype.hasOwnProperty.call(payload, k)) {
+      slice[k] = payload[k];
+      has = true;
+    }
+  });
+  if (!has) return "";
+  if (slice.hkStorage && typeof slice.hkStorage === "object") {
+    slice.hkStorage = Object.assign({}, slice.hkStorage);
+    if (slice.hkStorage.staffBroadcasts && typeof slice.hkStorage.staffBroadcasts === "object") {
+      slice.hkStorage.staffBroadcasts = Object.assign({}, slice.hkStorage.staffBroadcasts);
+      delete slice.hkStorage.staffBroadcasts.presence;
+      delete slice.hkStorage.staffBroadcasts.presenceKicks;
+    }
   }
-  return false;
+  return crypto.createHash("sha1").update(JSON.stringify(slice)).digest("hex");
 }
 
 function bumpChangedSyncParts(prevPayload, nextPayload, version) {
   ensureSyncPartVersions();
   Object.keys(SYNC_PART_KEYS).forEach(function (part) {
-    if (syncPartChanged(prevPayload, nextPayload, SYNC_PART_KEYS[part])) {
-      sharedState.partVersions[part] = version;
+    var keys = SYNC_PART_KEYS[part];
+    var sameRef = true;
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var hasP = !!(prevPayload && Object.prototype.hasOwnProperty.call(prevPayload, k));
+      var hasN = !!(nextPayload && Object.prototype.hasOwnProperty.call(nextPayload, k));
+      if (hasP !== hasN || (hasN && prevPayload[k] !== nextPayload[k])) {
+        sameRef = false;
+        break;
+      }
     }
+    if (sameRef) return;
+    if (fingerprintSyncPartSlice(prevPayload, keys) === fingerprintSyncPartSlice(nextPayload, keys)) {
+      keys.forEach(function (k) {
+        if (prevPayload && nextPayload && Object.prototype.hasOwnProperty.call(prevPayload, k)) {
+          nextPayload[k] = prevPayload[k];
+        }
+      });
+      return;
+    }
+    sharedState.partVersions[part] = version;
   });
 }
 
@@ -2301,7 +2387,12 @@ function hkOrderSurvivesCloseDay(entry, closeDayAt) {
 
 function hkFilterOrdersAfterCloseDay(arr, closeDayAt) {
   if (!Array.isArray(arr)) return [];
-  if (!closeDayAt) return arr.slice();
+  if (!closeDayAt) return arr;
+  var kept = 0;
+  for (var i = 0; i < arr.length; i++) {
+    if (hkOrderSurvivesCloseDay(arr[i], closeDayAt)) kept++;
+  }
+  if (kept === arr.length) return arr;
   return arr.filter(function (entry) {
     return hkOrderSurvivesCloseDay(entry, closeDayAt);
   });
@@ -3060,9 +3151,7 @@ function mergeSyncPayload(prev, incoming) {
   }
   // 두 채팅은 절대 서로 복사하지 않음 — 키만 없으면 빈 배열로 유지
   if (!Array.isArray(out.hkTeamChat)) out.hkTeamChat = [];
-  else out.hkTeamChat = capChatArray(out.hkTeamChat);
   if (!Array.isArray(out.hkFrontChat)) out.hkFrontChat = [];
-  else out.hkFrontChat = capChatArray(out.hkFrontChat);
   if (Object.prototype.hasOwnProperty.call(incoming, "hkAdminInquiries")) {
     out.hkAdminInquiries = mergeAdminInquiries(
       prev.hkAdminInquiries,

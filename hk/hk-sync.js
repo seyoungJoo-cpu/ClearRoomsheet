@@ -34,6 +34,7 @@
 
   var syncVersion = 0;
   var lastAppliedSyncUpdatedAt = "";
+  var lastPresenceIdent = "";
   var pollTimer = null;
   var pushTimer = null;
   var pendingPush = {};
@@ -840,6 +841,27 @@
     loadRoomingXmlFromLocal();
   }
 
+  function hasLocalHkHydration() {
+    try {
+      if (xmlSyncCache.vacRows && xmlSyncCache.vacRows.length) return true;
+      if (xmlSyncCache.roomResvMap && Object.keys(xmlSyncCache.roomResvMap).length) return true;
+      if (cache.requestLog && cache.requestLog.length) return true;
+      if (cache.orderLog && cache.orderLog.length) return true;
+      if (cache.frontChat && cache.frontChat.length) return true;
+      if (cache.teamChat && cache.teamChat.length) return true;
+      if (global.HKStorage && typeof global.HKStorage.load === "function") {
+        var d = global.HKStorage.load();
+        if (d && d.rooms && typeof d.rooms === "object") {
+          var zones = Object.keys(d.rooms);
+          for (var i = 0; i < zones.length; i++) {
+            if (Array.isArray(d.rooms[zones[i]]) && d.rooms[zones[i]].length) return true;
+          }
+        }
+      }
+    } catch (eHydrate) {}
+    return false;
+  }
+
   function orderSurvivesCloseDay(entry, closeAt) {
     if (!entry) return false;
     if (!closeAt) return true;
@@ -1591,6 +1613,38 @@
     return false;
   }
 
+  function applyPresenceAlive(sids) {
+    var alive = {};
+    (Array.isArray(sids) ? sids : []).forEach(function (sid) {
+      var id = String(sid || "").trim();
+      if (id) alive[id] = true;
+    });
+    if (!lastServerPayload) lastServerPayload = {};
+    if (!lastServerPayload.hkStorage) lastServerPayload.hkStorage = {};
+    var prev = lastServerPayload.hkStorage.staffBroadcasts;
+    if (!prev || typeof prev !== "object") prev = {};
+    var prevMap = prev.presence && typeof prev.presence === "object" ? prev.presence : {};
+    var nextMap = {};
+    var now = new Date().toISOString();
+    Object.keys(alive).forEach(function (sid) {
+      var row = prevMap[sid];
+      if (!row || typeof row !== "object") return;
+      nextMap[sid] = Object.assign({}, row, { at: now });
+    });
+    lastServerPayload.hkStorage.staffBroadcasts = Object.assign({}, prev, {
+      presence: nextMap,
+    });
+    return true;
+  }
+
+  function applyPresenceFromSyncResponse(data) {
+    if (!data || typeof data !== "object") return false;
+    if (data.presenceIdent) lastPresenceIdent = String(data.presenceIdent);
+    if (data.staffPresence) return applyStaffPresenceFromSync(data);
+    if (Array.isArray(data.presenceAlive)) return applyPresenceAlive(data.presenceAlive);
+    return false;
+  }
+
   function applyStaffPresenceFromSync(data) {
     var sp = data && data.staffPresence;
     if (!sp || typeof sp !== "object") return false;
@@ -1648,9 +1702,13 @@
       "Cache-Control": "no-cache",
     };
     var url = "/api/sync?scope=hk";
-    if (isPoll && syncVersion > 0) {
+    var sendSince = syncVersion > 0 && (isPoll || hasLocalHkHydration());
+    if (sendSince) {
       headers["X-Sync-Version"] = String(syncVersion);
       url += "&since=" + encodeURIComponent(String(syncVersion));
+    }
+    if (lastPresenceIdent) {
+      url += "&presenceIdent=" + encodeURIComponent(lastPresenceIdent);
     }
     return fetch(url, {
       headers: headers,
@@ -1662,7 +1720,7 @@
       })
       .then(function (data) {
         if (!data) return false;
-        applyStaffPresenceFromSync(data);
+        applyPresenceFromSyncResponse(data);
         if (data.unchanged) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
@@ -1679,16 +1737,14 @@
           }
           return false;
         }
-        // 페이지 진입·재진입(!isPoll)은 버전 같아도 서버 기준으로 강제 적용
-        // (이름 입력 없이 세션 유지로 들어와도 옛 로컬 캐시에 갇히지 않음)
-        if (shouldApplyRemoteSync(data) || !isPoll) {
+        var forceFullApply = !isPoll && !data.partial && !sendSince;
+        if (shouldApplyRemoteSync(data) || forceFullApply) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
           applyRemotePayload(data.payload);
-          applyStaffPresenceFromSync(data);
+          applyPresenceFromSyncResponse(data);
           return true;
         }
-        // 폴링: 버전이 같아도 1:1 알럿·관리자 문의는 서버와 재병합
         lastServerPayload = Object.assign({}, lastServerPayload || {}, data.payload);
         var reconChanged = [];
         if (reconcileStaffBroadcastsFromRemote(data.payload)) {
@@ -1701,7 +1757,7 @@
         if (reconChanged.length) {
           emitChange(reconChanged, Object.assign({}, data.payload));
         }
-        applyStaffPresenceFromSync(data);
+        applyPresenceFromSyncResponse(data);
         return true;
       })
       .catch(function () {

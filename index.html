@@ -2577,7 +2577,7 @@
         if (!roomingSessionActive) return Promise.resolve(false);
         var headers = { "X-Sync-Password": getSyncPassword() };
         var url = "/api/sync?scope=rooming";
-        if (isPoll && sharedStateVersion > 0) {
+        if (sharedStateVersion > 0 && (isPoll || hasLocalRoomingData() || hasLocalFasnData())) {
           headers["X-Sync-Version"] = String(sharedStateVersion);
           url += "&since=" + encodeURIComponent(String(sharedStateVersion));
         }
