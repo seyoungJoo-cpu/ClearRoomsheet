@@ -21202,10 +21202,17 @@
         return { ok: true, value: s.replace(/\s+/g, " ") };
       }
 
+      function afterRequestSchedCommitted(entryId) {
+        renderRequestLogPanel({ force: true });
+        requestAnimationFrame(function () {
+          scrollToSchedResultCard(entryId);
+        });
+      }
+
       function applyRequestIpSched(entryId) {
         if ((!maintenanceMode && !frontMode) || !entryId) return;
         if (!commitRequestSched(entryId, "IP")) return;
-        renderRequestLogPanel({ force: true });
+        afterRequestSchedCommitted(entryId);
       }
 
       function appendSchedTimeDisplay(containerEl, entry, opts) {
@@ -21878,6 +21885,8 @@
         }
         if (!live) return null;
         applyRequestSchedChange(live, newSched);
+        delete live.chatAlertAt;
+        delete pinnedSchedChatFeedbackIds[want];
         markRequestEntrySavedLocally(live);
         // 배열 안 동일 id 항목이 여러 참조면 모두 맞춤
         requestLogEntries.forEach(function (e) {
@@ -21886,6 +21895,8 @@
             if (live.schedPrev != null) e.schedPrev = live.schedPrev;
             else delete e.schedPrev;
             e.updatedAt = live.updatedAt;
+            if (live.chatAlertAt) e.chatAlertAt = live.chatAlertAt;
+            else delete e.chatAlertAt;
           }
         });
         saveRequestLog();
@@ -25482,7 +25493,7 @@
 
         var pinChat =
           !!opts.forceChat ||
-          !!(entry && entry.id && pinnedSchedChatFeedbackIds[String(entry.id)]);
+          hasSchedChatAlert(entry);
         if (maintenanceMode) {
           var hasMaintSched = !!(entry.sched && String(entry.sched).trim());
           var isConfirming = isRequestConfirmingEntry(entry);
@@ -25584,8 +25595,9 @@
               if (confirmingChatOpen) li.classList.add("is-chat-open");
             }
             li.appendChild(maintActs);
-            if (showItemChat && isSchedRequestChatOpen(entry)) {
+            if (showItemChat && (confirmingChatOpen || pinChat)) {
               appendSchedRequestChatUi(li, entry);
+              li.classList.add("is-chat-open");
             }
           } else {
             var ackActs = document.createElement("div");
@@ -25664,8 +25676,9 @@
             if (frontChatOpen) li.classList.add("is-chat-open");
           }
           li.appendChild(frontActs);
-          if (frontConfirming && isSchedRequestChatOpen(entry)) {
+          if (frontConfirming && (frontChatOpen || pinChat)) {
             appendSchedRequestChatUi(li, entry);
+            li.classList.add("is-chat-open");
           }
         }
 
@@ -25784,11 +25797,30 @@
           }
         });
         var pinnedChatCount = 0;
+        var pinnedSeen = {};
+        var pinnedEntries = [];
+        requestLogEntries.forEach(function (pinEntry) {
+          if (!hasSchedChatAlert(pinEntry)) return;
+          var pid = String(pinEntry.id || "");
+          if (!pid || pinnedSeen[pid]) return;
+          pinnedSeen[pid] = true;
+          pinnedEntries.push(pinEntry);
+        });
         Object.keys(pinnedSchedChatFeedbackIds).forEach(function (id) {
-          if (!pinnedSchedChatFeedbackIds[id]) return;
+          if (!pinnedSchedChatFeedbackIds[id] || pinnedSeen[id]) return;
           var pinEntry = findRequestEntry(id);
-          if (!pinEntry) return;
-          if (isRequestPendingAlert(pinEntry) || isRequestConfirmingEntry(pinEntry)) return;
+          if (!pinEntry || !hasSchedChatAlert(pinEntry)) return;
+          pinnedSeen[id] = true;
+          pinnedEntries.push(pinEntry);
+        });
+        pinnedEntries.sort(function (a, b) {
+          var ca = new Date(a.lastChatAt || a.chatAlertAt || 0).getTime();
+          var cb = new Date(b.lastChatAt || b.chatAlertAt || 0).getTime();
+          if (isNaN(ca)) ca = 0;
+          if (isNaN(cb)) cb = 0;
+          return ca - cb;
+        });
+        pinnedEntries.forEach(function (pinEntry) {
           var pinLi = buildRequestFeedbackItemLi(pinEntry, { forceChat: true });
           pinLi.classList.add("is-sched-chat-pin");
           pinnedChatCount++;
@@ -26109,6 +26141,13 @@
         if (entry.sched && String(entry.sched).trim()) return false;
         if (isRequestLiveIp(entry)) return false;
         return true;
+      }
+
+      function hasSchedChatAlert(entry) {
+        if (!entry || entry.used || isRequestCancelled(entry)) return false;
+        if (isRequestPendingAlert(entry) || isRequestConfirmingEntry(entry)) return false;
+        if (entry.chatAlertAt) return true;
+        return !!(entry.id && pinnedSchedChatFeedbackIds[String(entry.id)]);
       }
 
       function ackRequestEntryConfirming(id) {
@@ -28097,8 +28136,30 @@
       function pinSchedChatInFeedback(reqId, on) {
         var id = String(reqId || "");
         if (!id) return;
-        if (on) pinnedSchedChatFeedbackIds[id] = true;
-        else delete pinnedSchedChatFeedbackIds[id];
+        if (on) {
+          pinnedSchedChatFeedbackIds[id] = true;
+          var entry = findRequestEntry(id);
+          if (entry) {
+            var now = new Date().toISOString();
+            entry.chatAlertAt = now;
+            entry.updatedAt = now;
+            markRequestEntrySavedLocally(entry);
+            saveRequestLog();
+          }
+          return;
+        }
+        delete pinnedSchedChatFeedbackIds[id];
+      }
+
+      function markSchedChatAlert(reqId) {
+        var id = String(reqId || "");
+        if (!id) return;
+        pinnedSchedChatFeedbackIds[id] = true;
+        var entry = findRequestEntry(id);
+        if (!entry) return;
+        var now = new Date().toISOString();
+        entry.chatAlertAt = now;
+        entry.updatedAt = now;
       }
 
       function scrollToRequestFeedbackChat(reqId) {
@@ -28155,7 +28216,6 @@
         if (isSchedRequestChatOpen(entry)) {
           closedSchedRequestChatIds[id] = true;
           delete forcedOpenSchedRequestChatIds[id];
-          pinSchedChatInFeedback(id, false);
           renderSchedRequestCards();
           renderRequestLogPanel({ force: true });
           return;
@@ -28290,6 +28350,8 @@
         });
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
+        entry.chatAlertAt = entry.updatedAt;
+        markSchedChatAlert(reqId);
         hkClearPhoto("schedReqChat:" + reqId);
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
@@ -28299,7 +28361,6 @@
         delete closedSchedRequestChatIds[String(reqId)];
         forcedOpenSchedRequestChatIds[String(reqId)] = true;
         var fromFeedback = !!opts.fromFeedback;
-        if (fromFeedback) pinSchedChatInFeedback(reqId, false);
         renderSchedRequestCards();
         renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
@@ -29580,9 +29641,13 @@
         wrap.appendChild(row);
         li.appendChild(wrap);
 
-        function done() {
+        function done(opts) {
           if (btn) btn.style.visibility = "";
           wrap.remove();
+          if (opts && opts.scrollToSched) {
+            afterRequestSchedCommitted(entryId);
+            return;
+          }
           renderRequestLogPanel({ force: true });
         }
 
@@ -29597,7 +29662,7 @@
             alert("요청을 찾지 못했습니다. 화면을 새로고침 후 다시 시도해 주세요.");
             return;
           }
-          done();
+          done({ scrollToSched: true });
         });
 
         cancel.addEventListener("click", function (ev) {
@@ -29617,7 +29682,7 @@
             alert("요청을 찾지 못했습니다. 화면을 새로고침 후 다시 시도해 주세요.");
             return;
           }
-          done();
+          done({ scrollToSched: true });
         });
         row.insertBefore(ipQuick, ok);
 
