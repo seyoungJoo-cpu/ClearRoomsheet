@@ -1834,7 +1834,7 @@
         ? entries.map(function (m) {
             if (m && typeof m === "object") m.channel = "front";
             return m;
-          }).slice()
+          }).slice(-300)
         : [];
       writeJsonArray(FRONT_CHAT_KEY, cache.frontChat);
       markDirty("hkFrontChat");
@@ -1866,7 +1866,7 @@
         ? entries.map(function (m) {
             if (m && typeof m === "object") m.channel = "team";
             return m;
-          }).slice()
+          }).slice(-300)
         : [];
       writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
       markDirty("hkTeamChat");

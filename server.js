@@ -3,6 +3,7 @@
 const { startAutoOrderScheduler } = require("./server-auto-orders");
 
 const http = require("http");
+const crypto = require("crypto");
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -327,6 +328,18 @@ function namesKeyPresence(s) {
     .toLowerCase();
 }
 
+function prunePresenceKicksMap(kicks, maxAgeMs) {
+  kicks = kicks && typeof kicks === "object" ? kicks : {};
+  maxAgeMs = maxAgeMs != null ? maxAgeMs : 12 * 3600 * 1000;
+  var now = Date.now();
+  Object.keys(kicks).forEach(function (k) {
+    var row = kicks[k];
+    var t = row && row.at ? Date.parse(String(row.at)) : NaN;
+    if (!isFinite(t) || now - t > maxAgeMs) delete kicks[k];
+  });
+  return kicks;
+}
+
 function pruneLivePresence() {
   var now = Date.now();
   Object.keys(liveStaffPresence.presence).forEach(function (sid) {
@@ -347,6 +360,7 @@ function pruneLivePresence() {
       delete liveStaffPresence.presence[sid];
     });
   }
+  prunePresenceKicksMap(liveStaffPresence.presenceKicks);
 }
 
 function staffPresenceSnapshot() {
@@ -488,6 +502,13 @@ function chatMsgFingerprint(m) {
     );
   }
 })();
+
+if (trimSharedStatePayload()) {
+  sharedState.version += 1;
+  sharedState.updatedAt = new Date().toISOString();
+  saveSharedStateToDisk();
+  console.log("Sync: trimmed stored payload, now v" + sharedState.version);
+}
 
 function checkSyncAuth(req, res, next) {
   const password = req.get("x-sync-password");
@@ -1108,6 +1129,88 @@ function pickMbInvNoticeFieldsForServer(prev, incoming) {
   };
 }
 
+var STAFF_BROADCAST_ALERT_MAX = 80;
+var STAFF_BROADCAST_POLL_MAX = 80;
+var STAFF_BROADCAST_DIRECT_LIVE_MAX = 80;
+var STAFF_BROADCAST_DIRECT_OLD_MAX = 40;
+var HK_CHAT_MAX = 300;
+
+function broadcastRowTime(row) {
+  return String((row && (row.createdAt || row.at || row.cancelledAt)) || "");
+}
+
+function sortBroadcastOldestFirst(arr) {
+  return (Array.isArray(arr) ? arr : []).slice().sort(function (a, b) {
+    var ta = broadcastRowTime(a);
+    var tb = broadcastRowTime(b);
+    if (ta < tb) return -1;
+    if (ta > tb) return 1;
+    return 0;
+  });
+}
+
+/** Client normalizeStaffBroadcasts 와 같은 상한 — 서버 merge 가 잘라낸 1:1 사진 알럿을 되살리지 않게 */
+function capStaffBroadcastLists(pack) {
+  if (!pack || typeof pack !== "object") return pack;
+  var alerts = sortBroadcastOldestFirst(pack.alerts);
+  var polls = sortBroadcastOldestFirst(pack.polls);
+  var directs = sortBroadcastOldestFirst(pack.directs);
+  if (alerts.length > STAFF_BROADCAST_ALERT_MAX) {
+    alerts = alerts.slice(-STAFF_BROADCAST_ALERT_MAX);
+  }
+  if (polls.length > STAFF_BROADCAST_POLL_MAX) {
+    polls = polls.slice(-STAFF_BROADCAST_POLL_MAX);
+  }
+  var liveDirects = directs.filter(function (row) {
+    return row && !row.cancelled;
+  });
+  var oldDirects = directs.filter(function (row) {
+    return row && row.cancelled;
+  });
+  if (liveDirects.length > STAFF_BROADCAST_DIRECT_LIVE_MAX) {
+    liveDirects = liveDirects.slice(-STAFF_BROADCAST_DIRECT_LIVE_MAX);
+  }
+  if (oldDirects.length > STAFF_BROADCAST_DIRECT_OLD_MAX) {
+    oldDirects = oldDirects.slice(-STAFF_BROADCAST_DIRECT_OLD_MAX);
+  }
+  pack.alerts = alerts;
+  pack.polls = polls;
+  pack.directs = oldDirects.concat(liveDirects);
+  prunePresenceKicksMap(pack.presenceKicks);
+  return pack;
+}
+
+function capChatArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.length > HK_CHAT_MAX ? arr.slice(-HK_CHAT_MAX) : arr;
+}
+
+function payloadVersionFingerprint(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  var copy = Object.assign({}, payload);
+  if (copy.hkStorage && typeof copy.hkStorage === "object") {
+    copy.hkStorage = Object.assign({}, copy.hkStorage);
+    if (copy.hkStorage.staffBroadcasts && typeof copy.hkStorage.staffBroadcasts === "object") {
+      copy.hkStorage.staffBroadcasts = Object.assign({}, copy.hkStorage.staffBroadcasts);
+      delete copy.hkStorage.staffBroadcasts.presence;
+      delete copy.hkStorage.staffBroadcasts.presenceKicks;
+    }
+  }
+  return crypto.createHash("sha1").update(JSON.stringify(copy)).digest("hex");
+}
+
+function trimSharedStatePayload() {
+  var p = sharedState.payload;
+  if (!p || typeof p !== "object") return false;
+  var before = payloadVersionFingerprint(p);
+  if (p.hkStorage && p.hkStorage.staffBroadcasts) {
+    p.hkStorage.staffBroadcasts = capStaffBroadcastLists(p.hkStorage.staffBroadcasts);
+  }
+  if (Array.isArray(p.hkFrontChat)) p.hkFrontChat = capChatArray(p.hkFrontChat);
+  if (Array.isArray(p.hkTeamChat)) p.hkTeamChat = capChatArray(p.hkTeamChat);
+  return payloadVersionFingerprint(p) !== before;
+}
+
 function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
   function asPack(raw) {
     if (!raw || typeof raw !== "object") {
@@ -1263,7 +1366,7 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
     inc.updatedAt && (!prev.updatedAt || String(inc.updatedAt) >= String(prev.updatedAt))
       ? inc.updatedAt
       : prev.updatedAt || inc.updatedAt;
-  return {
+  return capStaffBroadcastLists({
     updatedAt: updatedAt,
     deletedIds: deleted,
     alerts: Object.keys(alertsById).map(function (k) {
@@ -1277,7 +1380,7 @@ function mergeStaffBroadcastsForServer(prevRaw, incomingRaw, hasIncoming) {
     }),
     presence: presence,
     presenceKicks: presenceKicks,
-  };
+  });
 }
 
 function mergeGameRanksForServer(prev, incoming) {
@@ -2787,14 +2890,16 @@ function mergeSyncPayload(prev, incoming) {
         : replaceLogArray(incoming.hkMbCheckLog);
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkFrontChat")) {
-    out.hkFrontChat = replaceLogArray(incoming.hkFrontChat);
+    out.hkFrontChat = capChatArray(replaceLogArray(incoming.hkFrontChat));
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkTeamChat")) {
-    out.hkTeamChat = replaceLogArray(incoming.hkTeamChat);
+    out.hkTeamChat = capChatArray(replaceLogArray(incoming.hkTeamChat));
   }
   // 두 채팅은 절대 서로 복사하지 않음 — 키만 없으면 빈 배열로 유지
   if (!Array.isArray(out.hkTeamChat)) out.hkTeamChat = [];
+  else out.hkTeamChat = capChatArray(out.hkTeamChat);
   if (!Array.isArray(out.hkFrontChat)) out.hkFrontChat = [];
+  else out.hkFrontChat = capChatArray(out.hkFrontChat);
   if (Object.prototype.hasOwnProperty.call(incoming, "hkAdminInquiries")) {
     out.hkAdminInquiries = mergeAdminInquiries(
       prev.hkAdminInquiries,
@@ -2900,9 +3005,14 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
       ? sharedState.payload.hkStorage.staffBroadcasts
       : null;
   const nextPayload = mergeSyncPayload(sharedState.payload, req.body);
+  const prevFp = payloadVersionFingerprint(sharedState.payload);
+  const nextFp = payloadVersionFingerprint(nextPayload);
   sharedState.payload = nextPayload;
-  sharedState.version += 1;
-  sharedState.updatedAt = new Date().toISOString();
+  if (prevFp !== nextFp) {
+    sharedState.version += 1;
+    sharedState.updatedAt = new Date().toISOString();
+    saveSharedStateToDisk();
+  }
 
   if (req.body && Object.prototype.hasOwnProperty.call(req.body, "hkOrderLog")) {
     const newAlerts = findNewOrderAlerts(
@@ -2956,7 +3066,6 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
       return Object.keys(echo).length ? echo : undefined;
     })(),
   });
-  saveSharedStateToDisk();
 });
 
 app.get("/health", function (req, res) {
