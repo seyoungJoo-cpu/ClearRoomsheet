@@ -28567,7 +28567,6 @@
           return;
         }
         if (!Array.isArray(entry.chat)) entry.chat = [];
-        var prevChatCount = entry.chat.length;
         entry.chat.push({
           id:
             "c" +
@@ -28582,10 +28581,9 @@
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
         var fromFeedback = !!(opts && opts.fromFeedback);
-        if (fromFeedback || prevChatCount > 0) {
+        if (maintenanceMode) {
           clearSchedChatAlert(reqId);
         } else {
-          entry.chatAlertAt = entry.updatedAt;
           markSchedChatAlert(reqId);
         }
         hkClearPhoto("schedReqChat:" + reqId);
@@ -28599,6 +28597,24 @@
         renderSchedRequestCards();
         renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
+          if (maintenanceMode) {
+            if (typeof showSidebarRequestView === "function") {
+              showSidebarRequestView({ skipDirtyConfirm: true });
+            }
+            requestAnimationFrame(function () {
+              scrollToSchedResultCard(reqId);
+            });
+            return;
+          }
+          if (frontMode) {
+            if (typeof showSidebarRequestView === "function") {
+              showSidebarRequestView({ skipDirtyConfirm: true });
+            }
+            requestAnimationFrame(function () {
+              scrollToRequestFeedbackChat(reqId);
+            });
+            return;
+          }
           if (fromFeedback) {
             if (typeof showSidebarRequestView === "function") {
               showSidebarRequestView({ skipDirtyConfirm: true });
