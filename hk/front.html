@@ -21885,7 +21885,7 @@
         }
         if (!live) return null;
         applyRequestSchedChange(live, newSched);
-        delete live.chatAlertAt;
+        live.chatAlertAt = "";
         delete pinnedSchedChatFeedbackIds[want];
         markRequestEntrySavedLocally(live);
         // 배열 안 동일 id 항목이 여러 참조면 모두 맞춤
@@ -21895,8 +21895,7 @@
             if (live.schedPrev != null) e.schedPrev = live.schedPrev;
             else delete e.schedPrev;
             e.updatedAt = live.updatedAt;
-            if (live.chatAlertAt) e.chatAlertAt = live.chatAlertAt;
-            else delete e.chatAlertAt;
+            e.chatAlertAt = live.chatAlertAt || "";
           }
         });
         saveRequestLog();
@@ -25596,7 +25595,7 @@
             }
             li.appendChild(maintActs);
             if (showItemChat && (confirmingChatOpen || pinChat)) {
-              appendSchedRequestChatUi(li, entry);
+              appendSchedRequestChatUi(li, entry, { fromFeedback: true });
               li.classList.add("is-chat-open");
             }
           } else {
@@ -25677,7 +25676,7 @@
           }
           li.appendChild(frontActs);
           if (frontConfirming && (frontChatOpen || pinChat)) {
-            appendSchedRequestChatUi(li, entry);
+            appendSchedRequestChatUi(li, entry, { fromFeedback: true });
             li.classList.add("is-chat-open");
           }
         }
@@ -28162,6 +28161,15 @@
         entry.updatedAt = now;
       }
 
+      function clearSchedChatAlert(reqId) {
+        var id = String(reqId || "");
+        if (!id) return;
+        delete pinnedSchedChatFeedbackIds[id];
+        var entry = findRequestEntry(id);
+        if (!entry) return;
+        entry.chatAlertAt = "";
+      }
+
       function scrollToRequestFeedbackChat(reqId) {
         var id = String(reqId || "");
         var feedback = document.getElementById("requestFeedback");
@@ -28262,7 +28270,7 @@
         });
       }
 
-      function appendSchedRequestChatUi(li, entry) {
+      function appendSchedRequestChatUi(li, entry, opts) {
         if (!li || !entry) return;
         var stickInfo = hkChatTakeStick("sched", entry.id, true);
         var chatWrap = document.createElement("div");
@@ -28318,6 +28326,30 @@
         chatWrap.appendChild(chatForm);
         li.appendChild(chatWrap);
         hkChatApplyStick(msgList, stickInfo);
+        if ((opts && opts.fromFeedback) || (li.closest && li.closest("#requestFeedback"))) {
+          chatForm.setAttribute("data-from-feedback", "1");
+        }
+      }
+
+      function handleSchedChatFormSubmit(e) {
+        var t = e && e.target;
+        var chatForm = t && t.closest ? t.closest(".sched-req-chat-form") : null;
+        if (!chatForm && t && t.classList && t.classList.contains("sched-req-chat-form")) {
+          chatForm = t;
+        }
+        if (!chatForm) return false;
+        e.preventDefault();
+        e.stopPropagation();
+        var reqId = chatForm.getAttribute("data-req-id");
+        var chatInput = chatForm.querySelector("input");
+        var text = chatInput ? chatInput.value : "";
+        var fromFeedback = !!(
+          (chatForm.closest && chatForm.closest("#requestFeedback")) ||
+          chatForm.getAttribute("data-from-feedback") === "1"
+        );
+        if (reqId) appendSchedRequestChat(reqId, text, "", { fromFeedback: fromFeedback });
+        if (chatInput) chatInput.value = "";
+        return true;
       }
 
       function appendSchedRequestChat(reqId, text, image, opts) {
@@ -28350,8 +28382,13 @@
         });
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
-        entry.chatAlertAt = entry.updatedAt;
-        markSchedChatAlert(reqId);
+        var fromFeedback = !!(opts && opts.fromFeedback);
+        if (fromFeedback) {
+          clearSchedChatAlert(reqId);
+        } else {
+          entry.chatAlertAt = entry.updatedAt;
+          markSchedChatAlert(reqId);
+        }
         hkClearPhoto("schedReqChat:" + reqId);
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
@@ -28360,12 +28397,16 @@
         }
         delete closedSchedRequestChatIds[String(reqId)];
         forcedOpenSchedRequestChatIds[String(reqId)] = true;
-        var fromFeedback = !!opts.fromFeedback;
         renderSchedRequestCards();
         renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
           if (fromFeedback) {
-            scrollToSchedResultCard(reqId);
+            if (typeof showSidebarRequestView === "function") {
+              showSidebarRequestView({ skipDirtyConfirm: true });
+            }
+            requestAnimationFrame(function () {
+              scrollToSchedResultCard(reqId);
+            });
             return;
           }
           var card = document.querySelector(
@@ -32618,15 +32659,7 @@
       var requestFeedbackEl = document.getElementById("requestFeedback");
       if (requestFeedbackEl) {
         requestFeedbackEl.addEventListener("submit", function (e) {
-          var chatForm = e.target.closest(".sched-req-chat-form");
-          if (!chatForm) return;
-          e.preventDefault();
-          e.stopPropagation();
-          var reqId = chatForm.getAttribute("data-req-id");
-          var chatInput = chatForm.querySelector("input");
-          var text = chatInput ? chatInput.value : "";
-          if (reqId) appendSchedRequestChat(reqId, text, "", { fromFeedback: true });
-          if (chatInput) chatInput.value = "";
+          handleSchedChatFormSubmit(e);
         });
         requestFeedbackEl.addEventListener("click", function (e) {
           var robotAccept = e.target.closest(".order-feedback__accept-btn");
@@ -32723,15 +32756,7 @@
       var confirmingCardsPanelEl = document.getElementById("confirmingCardsPanel");
       if (confirmingCardsPanelEl) {
         confirmingCardsPanelEl.addEventListener("submit", function (e) {
-          var chatForm = e.target.closest(".sched-req-chat-form");
-          if (!chatForm) return;
-          e.preventDefault();
-          e.stopPropagation();
-          var reqId = chatForm.getAttribute("data-req-id");
-          var chatInput = chatForm.querySelector("input");
-          var text = chatInput ? chatInput.value : "";
-          if (reqId) appendSchedRequestChat(reqId, text, "");
-          if (chatInput) chatInput.value = "";
+          handleSchedChatFormSubmit(e);
         });
         confirmingCardsPanelEl.addEventListener("click", function (e) {
           if (handleChatReactionClick(e)) return;
@@ -32813,15 +32838,7 @@
       var schedCardsPanelEl = document.getElementById("schedCardsPanel");
       if (schedCardsPanelEl) {
         schedCardsPanelEl.addEventListener("submit", function (e) {
-          var chatForm = e.target.closest(".sched-req-chat-form");
-          if (!chatForm) return;
-          e.preventDefault();
-          e.stopPropagation();
-          var reqId = chatForm.getAttribute("data-req-id");
-          var chatInput = chatForm.querySelector("input");
-          var text = chatInput ? chatInput.value : "";
-          if (reqId) appendSchedRequestChat(reqId, text, "");
-          if (chatInput) chatInput.value = "";
+          handleSchedChatFormSubmit(e);
         });
         schedCardsPanelEl.addEventListener("click", function (e) {
           if (handleChatReactionClick(e)) return;
