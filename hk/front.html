@@ -17214,11 +17214,13 @@
         // 마감 등으로 서버가 빈 배열이면 로컬도 비움 (병합으로 되살리지 않음)
         if (opts.replace || opts.allowEmptyReplace) {
           requestLogEntries = dropPreClose(remote.slice());
+          syncSchedChatAlertPinsFromEntries(requestLogEntries);
           return;
         }
         if (!remote.length) return;
         if (!requestLogEntries || !requestLogEntries.length) {
           requestLogEntries = dropPreClose(remote.slice());
+          syncSchedChatAlertPinsFromEntries(requestLogEntries);
           return;
         }
         var byId = {};
@@ -17278,6 +17280,9 @@
           }
           var merged = Object.assign({}, older, newer);
           merged.chat = mergeEntryChat(older, newer);
+          if (Object.prototype.hasOwnProperty.call(newer, "chatAlertAt")) {
+            merged.chatAlertAt = newer.chatAlertAt || "";
+          }
           byId[id] = merged;
         }
         requestLogEntries.forEach(consider);
@@ -17287,6 +17292,7 @@
             return byId[id];
           })
         );
+        syncSchedChatAlertPinsFromEntries(requestLogEntries);
       }
 
       function syncOrderLogFromServer() {
@@ -26312,8 +26318,23 @@
       function hasSchedChatAlert(entry) {
         if (!entry || entry.used || isRequestCancelled(entry)) return false;
         if (isRequestPendingAlert(entry) || isRequestConfirmingEntry(entry)) return false;
+        // 정비 입력이 답을 보내 chatAlertAt을 비우면 모든 화면에서 내려간다
+        if (Object.prototype.hasOwnProperty.call(entry, "chatAlertAt") && !entry.chatAlertAt) {
+          return false;
+        }
         if (entry.chatAlertAt) return true;
         return !!(entry.id && pinnedSchedChatFeedbackIds[String(entry.id)]);
+      }
+
+      function syncSchedChatAlertPinsFromEntries(entries) {
+        var list = Array.isArray(entries) ? entries : requestLogEntries;
+        if (!Array.isArray(list)) return;
+        list.forEach(function (entry) {
+          if (!entry || entry.id == null) return;
+          var id = String(entry.id);
+          if (entry.chatAlertAt) pinnedSchedChatFeedbackIds[id] = true;
+          else delete pinnedSchedChatFeedbackIds[id];
+        });
       }
 
       function ackRequestEntryConfirming(id) {
@@ -28336,6 +28357,7 @@
         var entry = findRequestEntry(id);
         if (!entry) return;
         entry.chatAlertAt = "";
+        entry.updatedAt = new Date().toISOString();
       }
 
       function scrollToRequestFeedbackChat(reqId) {
