@@ -15191,10 +15191,16 @@
 
       var schedChatComposeDraftById = {};
       function schedChatFormSurface(form) {
-        if (!form || !form.closest) return "sched";
+        if (!form) return "sched";
+        var attr = form.getAttribute && form.getAttribute("data-chat-surface");
+        if (attr === "feedback" || attr === "confirming" || attr === "sched") return attr;
+        if (!form.closest) return "sched";
         if (form.closest("#requestFeedback")) return "feedback";
         if (form.closest("#confirmingCardsPanel")) return "confirming";
         return "sched";
+      }
+      function schedChatDraftKey(reqId, surface) {
+        return String(reqId || "") + ":" + String(surface || "sched");
       }
       function captureSchedChatComposeDrafts() {
         var next = {};
@@ -15202,36 +15208,25 @@
           var id = String(form.getAttribute("data-req-id") || "");
           var inp = form.querySelector("input");
           if (!id || !inp) return;
-          var value = String(inp.value || "");
-          var focused = document.activeElement === inp;
-          var row = {
-            value: value,
-            restoreFocus: focused,
+          var surface = schedChatFormSurface(form);
+          var key = schedChatDraftKey(id, surface);
+          next[key] = {
+            value: String(inp.value || ""),
+            restoreFocus: document.activeElement === inp,
             selectionStart: inp.selectionStart,
             selectionEnd: inp.selectionEnd,
-            surface: schedChatFormSurface(form),
           };
-          var prev = next[id];
-          if (!prev) {
-            next[id] = row;
-            return;
-          }
-          if (focused) {
-            next[id] = row;
-            return;
-          }
-          if (prev.restoreFocus) return;
-          if (value && !prev.value) next[id] = row;
         });
         schedChatComposeDraftById = next;
       }
       function applySchedChatComposeDraft(form, reqId) {
-        var d = schedChatComposeDraftById[String(reqId || "")];
-        if (!d || !form) return;
+        if (!form) return;
+        var d = schedChatComposeDraftById[schedChatDraftKey(reqId, schedChatFormSurface(form))];
+        if (!d) return;
         var inp = form.querySelector("input");
         if (!inp) return;
         inp.value = d.value != null ? String(d.value) : "";
-        if (!d.restoreFocus || d.surface !== schedChatFormSurface(form)) return;
+        if (!d.restoreFocus) return;
         try {
           inp.focus({ preventScroll: true });
           if (typeof inp.setSelectionRange === "function") {
@@ -15240,6 +15235,9 @@
             inp.setSelectionRange(start, end);
           }
         } catch (eDraft) {}
+      }
+      function clearSchedChatComposeDraft(reqId, surface) {
+        delete schedChatComposeDraftById[schedChatDraftKey(reqId, surface)];
       }
       try {
         window.hkChatNearBottom = hkChatNearBottom;
@@ -25755,7 +25753,10 @@
             }
             li.appendChild(maintActs);
             if (showItemChat && (confirmingChatOpen || pinChat)) {
-              appendSchedRequestChatUi(li, entry, { fromFeedback: true });
+              appendSchedRequestChatUi(li, entry, {
+                fromFeedback: true,
+                confirming: confirmingStrip,
+              });
               li.classList.add("is-chat-open");
             }
           } else {
@@ -25837,7 +25838,10 @@
           }
           li.appendChild(frontActs);
           if (frontConfirming && (frontChatOpen || pinChat)) {
-            appendSchedRequestChatUi(li, entry, { fromFeedback: true });
+            appendSchedRequestChatUi(li, entry, {
+              fromFeedback: true,
+              confirming: confirmingStrip,
+            });
             li.classList.add("is-chat-open");
           }
         }
@@ -28475,6 +28479,14 @@
         var chatForm = document.createElement("form");
         chatForm.className = "order-chat__form hk-compose-row sched-req-chat-form";
         chatForm.setAttribute("data-req-id", entry.id || "");
+        var surface = "sched";
+        if (opts && opts.confirming) surface = "confirming";
+        else if (opts && opts.fromFeedback) surface = "feedback";
+        else if (li && li.closest) {
+          if (li.closest("#requestFeedback")) surface = "feedback";
+          else if (li.closest("#confirmingCardsPanel")) surface = "confirming";
+        }
+        chatForm.setAttribute("data-chat-surface", surface);
         var chatInput = document.createElement("input");
         chatInput.type = "text";
         chatInput.placeholder = "메시지 입력";
@@ -28491,7 +28503,7 @@
         li.appendChild(chatWrap);
         hkChatApplyStick(msgList, stickInfo);
         applySchedChatComposeDraft(chatForm, entry.id || "");
-        if ((opts && opts.fromFeedback) || (li.closest && li.closest("#requestFeedback"))) {
+        if (surface === "feedback" || surface === "confirming") {
           chatForm.setAttribute("data-from-feedback", "1");
         }
       }
@@ -28508,12 +28520,11 @@
         var reqId = chatForm.getAttribute("data-req-id");
         var chatInput = chatForm.querySelector("input");
         var text = chatInput ? chatInput.value : "";
-        var fromFeedback = !!(
-          (chatForm.closest && chatForm.closest("#requestFeedback")) ||
-          chatForm.getAttribute("data-from-feedback") === "1"
-        );
-        if (reqId) appendSchedRequestChat(reqId, text, "", { fromFeedback: fromFeedback });
+        var surface = schedChatFormSurface(chatForm);
+        var fromFeedback = surface !== "sched";
         if (chatInput) chatInput.value = "";
+        if (reqId) clearSchedChatComposeDraft(reqId, surface);
+        if (reqId) appendSchedRequestChat(reqId, text, "", { fromFeedback: fromFeedback });
         return true;
       }
 
