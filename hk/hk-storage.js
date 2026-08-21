@@ -1272,6 +1272,7 @@
       cancelled: !!raw.cancelled,
       cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : "",
       replyTo: raw.replyTo != null ? String(raw.replyTo).trim() : "",
+      scheduledAt: raw.scheduledAt != null ? String(raw.scheduledAt) : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
   }
@@ -1310,7 +1311,7 @@
       if (!name || !at) return;
       var t = new Date(at).getTime();
       if (!isFinite(t) || now - t > 45000) return;
-      out[id] = { name: name, at: at };
+      out[id] = { name: name, at: at, front: row.front === true };
     });
     return out;
   }
@@ -1484,10 +1485,12 @@
         prevD.createdAt = row.createdAt;
         if (row.image) prevD.image = row.image;
         if (row.replyTo) prevD.replyTo = row.replyTo;
+        if (row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       } else if (!prevD.image && row.image) {
         prevD.image = row.image;
       }
       if (!prevD.replyTo && row.replyTo) prevD.replyTo = row.replyTo;
+      if (!prevD.scheduledAt && row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       directsById[row.id] = prevD;
     }
     (base.directs || []).forEach(takeDirect);

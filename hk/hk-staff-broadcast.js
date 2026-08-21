@@ -75,7 +75,6 @@
 
   function alertReady(row) {
     if (!row) return false;
-    if (row.kind === "direct") return true;
     var iso = fireAtOf(row);
     if (!iso) return true;
     var t = new Date(iso).getTime();
@@ -273,7 +272,7 @@
 
   function canSee(row) {
     if (!row || !isActiveToday(row)) return false;
-    if (row.kind !== "poll" && row.kind !== "direct" && !alertReady(row)) return false;
+    if (row.kind !== "poll" && !alertReady(row)) return false;
     if (row.kind === "poll" && !pollInWindow(row)) return false;
     var name = operatorName();
     if (row.kind === "poll") {
@@ -287,7 +286,8 @@
       if (name && row.dismissedBy && row.dismissedBy[name]) return false;
       else if (!name && localDismissed()[row.id]) return false;
     }
-    if (row.kind === "direct") return true;
+    if (row.kind === "direct") return isFront();
+    if (!isFront()) return false;
     if (row.audience === "all") return true;
     return wasOpenAt(fireAtOf(row));
   }
@@ -495,6 +495,7 @@
       if (!isFinite(t) || now - t > 25000) return;
       var name = String(row.name).trim();
       if (!name || seen[name]) return;
+      if (row.front !== true) return;
       seen[name] = true;
       names.push(name);
     });
@@ -523,6 +524,23 @@
     return namesNorm(s);
   }
 
+  var CLAIM_AT_LS = "hk-front-presence-claim-at";
+
+  function myClaimAt() {
+    try {
+      return sessionStorage.getItem(CLAIM_AT_LS) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function setMyClaimAt(iso) {
+    try {
+      if (iso) sessionStorage.setItem(CLAIM_AT_LS, iso);
+      else sessionStorage.removeItem(CLAIM_AT_LS);
+    } catch (e) {}
+  }
+
   function wasKickedForMyName() {
     var name = operatorName();
     if (!name) return false;
@@ -531,23 +549,33 @@
     var kick = kicks[namesKey(name)];
     if (!kick || !kick.sid) return false;
     if (kick.sid === presenceSid()) return false;
-    var t = new Date(kick.at || 0).getTime();
-    if (!isFinite(t) || Date.now() - t > 12 * 3600 * 1000) return false;
-    var kicker = pack.presence && pack.presence[kick.sid];
-    if (!kicker || !namesMatch(kicker.name, name)) return false;
-    var kickerAt = new Date(kicker.at || 0).getTime();
-    if (!isFinite(kickerAt) || Date.now() - kickerAt > 25000) return false;
+    var kickAt = new Date(kick.at || 0).getTime();
+    if (!isFinite(kickAt) || Date.now() - kickAt > 12 * 3600 * 1000) return false;
+    var mine = new Date(myClaimAt() || 0).getTime();
+    if (isFinite(mine) && mine > 0 && kickAt < mine) return false;
     return true;
+  }
+
+  function presenceFrontFlag() {
+    return isFront();
   }
 
   function claimNameAndKickOthers() {
     var name = operatorName();
     if (!name) return;
+    var now = nowIso();
+    setMyClaimAt(now);
     var pack = getPack();
     if (!pack.presenceKicks) pack.presenceKicks = {};
-    pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIso() };
+    pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: now };
     savePackLocal(pack);
-    postPresence({ sid: presenceSid(), name: name, at: nowIso(), kick: true });
+    postPresence({
+      sid: presenceSid(),
+      name: name,
+      at: now,
+      kick: true,
+      front: presenceFrontFlag(),
+    });
   }
 
   function touchPresence(force) {
@@ -564,11 +592,30 @@
     pruneStalePresence(pack);
     if (!pack.presence) pack.presence = {};
     var firstClaim = !presenceWasOn;
-    pack.presence[presenceSid()] = { name: name, at: nowIso() };
-    if (firstClaim) {
-      if (!pack.presenceKicks) pack.presenceKicks = {};
-      pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIso() };
+    var nowIsoStr = nowIso();
+    var existingKick = pack.presenceKicks && pack.presenceKicks[namesKey(name)];
+    if (
+      existingKick &&
+      existingKick.sid &&
+      existingKick.sid !== presenceSid()
+    ) {
+      var existingAt = new Date(existingKick.at || 0).getTime();
+      var mine = new Date(myClaimAt() || 0).getTime();
+      if (isFinite(mine) && mine > 0 && isFinite(existingAt) && existingAt > mine) {
+        return;
+      }
     }
+    var shouldKick = firstClaim || !myClaimAt();
+    if (shouldKick) {
+      setMyClaimAt(nowIsoStr);
+      if (!pack.presenceKicks) pack.presenceKicks = {};
+      pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIsoStr };
+    }
+    pack.presence[presenceSid()] = {
+      name: name,
+      at: nowIsoStr,
+      front: presenceFrontFlag(),
+    };
     lastPresencePush = now;
     presenceWasOn = true;
     savePackLocal(pack);
@@ -576,7 +623,8 @@
       sid: presenceSid(),
       name: name,
       at: pack.presence[presenceSid()].at,
-      kick: firstClaim,
+      kick: shouldKick,
+      front: presenceFrontFlag(),
     });
   }
 
@@ -600,7 +648,8 @@
     var ids = [];
     var pack = getPack();
     if (!pack.directs) pack.directs = [];
-    var online = getOnlineFrontNames();
+    var online = getOnlineFrontNames().slice();
+    if (opts && opts.allowSelf && from && online.indexOf(from) < 0) online.push(from);
     var targets = [];
     (tos || []).forEach(function (toRaw) {
       var token = String(toRaw || "").trim();
@@ -615,7 +664,8 @@
     });
     (targets || []).forEach(function (toRaw) {
       var to = resolveMentionName(toRaw, online);
-      if (!to || namesMatch(to, from) || seen[namesNorm(to)]) return;
+      if (!to || seen[namesNorm(to)]) return;
+      if (namesMatch(to, from) && !(opts && opts.allowSelf)) return;
       seen[namesNorm(to)] = true;
       var id = newId("dm-");
       pack.directs.push({
@@ -627,6 +677,7 @@
         from: from,
         createdAt: nowIso(),
         dayKey: todayKey(),
+        scheduledAt: opts && opts.scheduledAt ? String(opts.scheduledAt) : "",
         cancelled: false,
         cancelledAt: "",
         replyTo: opts && opts.replyTo ? String(opts.replyTo) : "",
@@ -1012,8 +1063,11 @@
     } else if (presenceWasOn) {
       dropPresence();
     }
+    if (!isFront()) {
+      hideOverlay();
+      return;
+    }
     var next = pickNext();
-    if (!isFront() && next && next.kind !== "direct") next = pickNextDirect();
     if (!next) {
       hideOverlay();
       return;

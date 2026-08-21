@@ -163,6 +163,8 @@ function findNewDirectAlerts(prevPack, nextPack) {
   nextList.forEach(function (row) {
     if (!row || !row.id || prevIds[String(row.id)]) return;
     if (row.cancelled) return;
+    var sched = row.scheduledAt ? Date.parse(String(row.scheduledAt)) : 0;
+    if (isFinite(sched) && sched > Date.now() + 400) return;
     var to = row.to != null ? String(row.to).trim() : "";
     if (!to) return;
     out.push(row);
@@ -571,12 +573,22 @@ app.post("/api/presence", checkSyncAuth, function (req, res) {
   }
   var name = String(body.name || "").trim().slice(0, 80);
   var at = body.at ? String(body.at).slice(0, 40) : new Date().toISOString();
-  if (name) {
-    liveStaffPresence.presence[sid] = { name: name, at: at };
-  }
-  if (body.kick && name) {
-    liveStaffPresence.presenceKicks[namesKeyPresence(name)] = { sid: sid, at: at };
-  }
+      if (name) {
+        liveStaffPresence.presence[sid] = {
+          name: name,
+          at: at,
+          front: body.front === true,
+        };
+      }
+      if (body.kick && name) {
+        var kickKey = namesKeyPresence(name);
+        var prevKick = liveStaffPresence.presenceKicks[kickKey];
+        var incomingAt = Date.parse(String(at)) || Date.now();
+        var prevKickAt = prevKick && prevKick.at ? Date.parse(String(prevKick.at)) : 0;
+        if (!prevKick || !isFinite(prevKickAt) || incomingAt >= prevKickAt) {
+          liveStaffPresence.presenceKicks[kickKey] = { sid: sid, at: at };
+        }
+      }
   res.json({ ok: true, staffPresence: staffPresenceSnapshot() });
 });
 

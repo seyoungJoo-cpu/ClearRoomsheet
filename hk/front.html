@@ -95,9 +95,9 @@
     }
 
     .brand-operator {
-      font-size: 0.6875rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
       line-height: 1.2;
       white-space: nowrap;
     }
@@ -1954,6 +1954,33 @@
       margin: 0;
       font-size: 0.75rem;
       color: #64748b;
+    }
+
+    .front-chat-self-alert {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .front-chat-self-alert[hidden] {
+      display: none !important;
+    }
+
+    .front-chat-self-alert label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #0f766e;
+    }
+
+    .front-chat-self-alert input[type="datetime-local"] {
+      height: 30px;
+      border: 1px solid #99f6e4;
+      border-radius: 8px;
+      padding: 0 8px;
+      font: inherit;
+      font-size: 0.78rem;
     }
 
     .front-chat-recent-directs {
@@ -10020,6 +10047,12 @@
       overflow: auto;
     }
 
+    .nh-table,
+    .vip-table {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
     .nh-table {
       width: 100%;
       border-collapse: collapse;
@@ -13111,8 +13144,12 @@
         </div>
         <p class="front-chat-panel__hint" id="frontChatPanelHint">정비 입력·프론트 공용 대화방입니다. 메시지는 모든 화면에 동기화되며, 관리자 마감 후에도 계속 보관됩니다.</p>
         <div class="front-chat-online" id="frontChatOnline" hidden>
-          <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿 · Ctrl+V 사진</div>
+          <div class="front-chat-online__label">접속 중 · 클릭하면 #이름 알럿 · (나)는 예약 알럿 · Ctrl+V 사진</div>
           <div class="front-chat-online__list" id="frontChatOnlineList"></div>
+          <div class="front-chat-self-alert" id="frontChatSelfAlertWhenWrap" hidden>
+            <label for="frontChatSelfAlertWhen">나에게 예약 알럿</label>
+            <input type="datetime-local" id="frontChatSelfAlertWhen" aria-label="예약 시각" />
+          </div>
           <div class="front-chat-recent-directs" id="frontChatRecentDirects" hidden>
             <div class="front-chat-online__label">보낸 알럿</div>
             <div class="front-chat-recent-directs__list" id="frontChatRecentDirectsList"></div>
@@ -14971,8 +15008,8 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=game-ranks-8"></script>
-  <script src="hk-sync.js?v=bw-sync-1"></script>
+  <script src="hk-storage.js?v=game-ranks-9"></script>
+  <script src="hk-sync.js?v=bw-sync-2"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -14984,7 +15021,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=bw-presence-1"></script>
+  <script src="hk-staff-broadcast.js?v=bw-presence-2"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-41"></script>
   <script src="hk-mp-games.js?v=mp-40"></script>
@@ -17138,8 +17175,10 @@
         var seen = {};
         var online =
           typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.getOnlineFrontNames
-            ? HKStaffBroadcast.getOnlineFrontNames()
+            ? HKStaffBroadcast.getOnlineFrontNames().slice()
             : [];
+        var me = getOperatorName();
+        if (me && online.indexOf(me) < 0) online.push(me);
         String(text || "").replace(/#([^\s#]+)/g, function (_, raw) {
           var name =
             typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.resolveMentionName
@@ -17156,6 +17195,37 @@
       function inputHasChatMention(text, name) {
         var re = new RegExp("(^|\\s)#" + escapeChatMention(name) + "(?=\\s|$)");
         return re.test(String(text || ""));
+      }
+
+      function toLocalDateTimeValue(d) {
+        d = d instanceof Date ? d : new Date();
+        if (isNaN(d.getTime())) d = new Date();
+        function pad(n) {
+          return n < 10 ? "0" + n : String(n);
+        }
+        return (
+          d.getFullYear() +
+          "-" +
+          pad(d.getMonth() + 1) +
+          "-" +
+          pad(d.getDate()) +
+          "T" +
+          pad(d.getHours()) +
+          ":" +
+          pad(d.getMinutes())
+        );
+      }
+
+      function syncSelfAlertWhenWrap() {
+        var wrap = document.getElementById("frontChatSelfAlertWhenWrap");
+        var whenEl = document.getElementById("frontChatSelfAlertWhen");
+        var me = getOperatorName();
+        var inp = document.getElementById("frontChatInput");
+        var on = !!(me && inp && inputHasChatMention(inp.value, me));
+        if (wrap) wrap.hidden = !on;
+        if (on && whenEl && !whenEl.value) {
+          whenEl.value = toLocalDateTimeValue(new Date(Date.now() + 5 * 60 * 1000));
+        }
       }
 
       function toggleChatMention(name) {
@@ -17175,6 +17245,7 @@
         }
         inp.focus();
         renderFrontChatOnline();
+        syncSelfAlertWhenWrap();
       }
 
       var hkRecentDirectAlerts = [];
@@ -17233,6 +17304,8 @@
         wrap.hidden = !show;
         if (!show) {
           list.innerHTML = "";
+          var selfWrapOff = document.getElementById("frontChatSelfAlertWhenWrap");
+          if (selfWrapOff) selfWrapOff.hidden = true;
           renderFrontRecentDirects();
           return;
         }
@@ -17256,17 +17329,19 @@
           list.appendChild(btn);
         }
         addNameBtn("ALL", "ALL", "is-all");
+        if (me) addNameBtn(me + " (나)", me, "is-me");
         if (!names.length) {
           var empty = document.createElement("p");
           empty.className = "front-chat-online__empty";
           empty.textContent = "접속 중인 프론트가 없습니다.";
           list.appendChild(empty);
-          renderFrontRecentDirects();
-          return;
+        } else {
+          names.forEach(function (name) {
+            if (me && name === me) return;
+            addNameBtn(name, name);
+          });
         }
-        names.forEach(function (name) {
-          addNameBtn(name === me ? name + " (나)" : name, name);
-        });
+        syncSelfAlertWhenWrap();
         renderFrontRecentDirects();
       }
 
@@ -17278,7 +17353,7 @@
           if (title) title.textContent = "프론트 채팅방";
           if (hint) {
             hint.textContent =
-              "프론트 전용 대화방입니다. 접속 중인 근무자를 누르거나 #이름 을 적으면 1:1 알럿이 갑니다. 캡처는 Ctrl+V 로 붙여넣으세요. 다시 누르면 취소됩니다.";
+              "프론트 전용 대화방입니다. 접속 중인 근무자를 누르면 1:1 알럿, ALL은 프론트만, (나)는 예약 알럿입니다. 캡처는 Ctrl+V 로 붙여넣으세요.";
           }
         } else {
           if (title) title.textContent = "채팅방";
@@ -27991,15 +28066,40 @@
         }
         delete closedSchedRequestChatIds[id];
         forcedOpenSchedRequestChatIds[id] = true;
+        if (typeof showSidebarRequestView === "function") {
+          showSidebarRequestView({ skipDirtyConfirm: true });
+        }
+        var roomNo = entry.roomNo != null ? String(entry.roomNo).trim() : "";
+        var deskSearch = document.getElementById("requestDeskChatRoomSearch");
+        if (deskSearch && roomNo) {
+          deskSearch.value = roomNo;
+        }
+        if (typeof renderRequestDeskChat === "function") {
+          renderRequestDeskChat({ force: true, scrollToBottom: true });
+        }
         renderSchedRequestCards();
+        renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
+          var feedback = document.getElementById("requestFeedback");
+          if (feedback && typeof feedback.scrollIntoView === "function") {
+            try {
+              feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            } catch (eFb) {}
+          }
           var card = document.querySelector(
             '.sched-req-card.is-chat-open[data-req-id="' +
               id +
               '"], #confirmingCardsPanel .request-feedback__item.is-chat-open[data-req-id="' +
               id +
+              '"], #requestFeedback .request-feedback__item[data-req-id="' +
+              id +
               '"]'
           );
+          if (card && typeof card.scrollIntoView === "function") {
+            try {
+              card.scrollIntoView({ behavior: "smooth", block: "center" });
+            } catch (eCard) {}
+          }
           if (!card) return;
           var chatInput = card.querySelector(".order-chat__form input");
           if (chatInput) chatInput.focus({ preventScroll: true });
@@ -32244,16 +32344,29 @@
         }
         var mentions = parseChatMentions(msgText);
         var alertIds = [];
+        var meName = getOperatorName();
+        var selfMentioned = !!(meName && mentions.some(function (n) {
+          return String(n || "").trim() === meName;
+        }));
+        var whenEl = document.getElementById("frontChatSelfAlertWhen");
+        var scheduledAt = "";
+        if (selfMentioned && whenEl && whenEl.value) {
+          var whenMs = new Date(whenEl.value).getTime();
+          if (isFinite(whenMs) && whenMs > Date.now() + 400) {
+            scheduledAt = new Date(whenMs).toISOString();
+          }
+        }
         if (
           typeof HKStaffBroadcast !== "undefined" &&
           HKStaffBroadcast.sendDirectAlerts &&
           mentions.length
         ) {
           alertIds = HKStaffBroadcast.sendDirectAlerts(
-            getOperatorName(),
+            meName,
             msgText,
             mentions,
-            msgImage
+            msgImage,
+            { allowSelf: selfMentioned, scheduledAt: scheduledAt }
           ) || [];
           if (alertIds.length && typeof HKSync !== "undefined" && HKSync.flushPending) {
             HKSync.flushPending();
@@ -32274,7 +32387,9 @@
           if (typeof showHkActionToast === "function") {
             showHkActionToast(
               alertIds.length
-                ? "1:1 알럿을 보냈습니다. (" + mentions.join(", ") + ")"
+                ? scheduledAt
+                  ? "예약 알럿을 설정했습니다. (" + mentions.join(", ") + ")"
+                  : "1:1 알럿을 보냈습니다. (" + mentions.join(", ") + ")"
                 : "1:1 알림 전송에 실패했습니다."
             );
           }
@@ -33249,6 +33364,72 @@
           },
         });
       }
+
+      function hkExcelTableCellText(td) {
+        if (!td) return "";
+        var inp = td.querySelector("input, textarea, select");
+        var raw = inp
+          ? inp.tagName === "SELECT"
+            ? inp.options[inp.selectedIndex]
+              ? inp.options[inp.selectedIndex].text
+              : inp.value
+            : inp.type === "checkbox"
+              ? inp.checked
+                ? "Y"
+                : ""
+              : inp.value
+          : td.textContent;
+        return String(raw == null ? "" : raw)
+          .replace(/\u00a0/g, " ")
+          .replace(/\t/g, " ")
+          .replace(/\r?\n/g, " ")
+          .trim();
+      }
+
+      function hkExcelTableToTsv(table) {
+        if (!table) return "";
+        var rows = [];
+        table.querySelectorAll("tr").forEach(function (tr) {
+          var cells = [];
+          tr.querySelectorAll("th, td").forEach(function (td) {
+            if (
+              td.classList.contains("nh-th-actions") ||
+              td.classList.contains("vip-th-check") ||
+              td.classList.contains("nh-row-actions")
+            ) {
+              return;
+            }
+            cells.push(hkExcelTableCellText(td));
+          });
+          if (cells.length) rows.push(cells.join("\t"));
+        });
+        return rows.join("\r\n");
+      }
+
+      document.addEventListener("copy", function (e) {
+        var ae = document.activeElement;
+        var table =
+          (ae && ae.closest && ae.closest(".nh-table, .vip-table")) ||
+          (e.target && e.target.closest && e.target.closest(".nh-table, .vip-table"));
+        if (!table) return;
+        var sel = "";
+        try {
+          sel = String(window.getSelection ? window.getSelection() : "");
+        } catch (errSel) {}
+        var inField = ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName);
+        if (inField && sel && sel.length > 0 && ae.selectionStart !== ae.selectionEnd) {
+          return;
+        }
+        var tsv = hkExcelTableToTsv(table);
+        if (!tsv) return;
+        e.preventDefault();
+        try {
+          e.clipboardData.setData("text/plain", tsv);
+        } catch (errClip) {}
+        if (typeof showHkActionToast === "function") {
+          showHkActionToast("표를 엑셀용으로 복사했습니다.");
+        }
+      });
       if (typeof HKAdminInquiry !== "undefined") {
         HKAdminInquiry.init({
           formatAt: formatReqAt,

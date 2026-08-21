@@ -1618,6 +1618,8 @@
       if (opts.name) body.name = String(opts.name);
       if (opts.at) body.at = String(opts.at);
       if (opts.kick) body.kick = true;
+      if (opts.front === true) body.front = true;
+      else if (opts.front === false) body.front = false;
     }
     return fetch("/api/presence", {
       method: "POST",
