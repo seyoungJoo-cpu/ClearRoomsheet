@@ -2576,10 +2576,10 @@
       function pullSharedState(isPoll) {
         if (!roomingSessionActive) return Promise.resolve(false);
         var headers = { "X-Sync-Password": getSyncPassword() };
-        var url = "/api/sync";
+        var url = "/api/sync?scope=rooming";
         if (isPoll && sharedStateVersion > 0) {
           headers["X-Sync-Version"] = String(sharedStateVersion);
-          url += "?since=" + encodeURIComponent(String(sharedStateVersion));
+          url += "&since=" + encodeURIComponent(String(sharedStateVersion));
         }
         return fetch(url, {
           headers: headers,

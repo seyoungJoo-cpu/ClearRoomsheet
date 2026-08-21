@@ -284,6 +284,7 @@ const sharedState = {
   version: 0,
   updatedAt: null,
   payload: null,
+  partVersions: {},
 };
 
 const SYNC_STATE_FILE = path.join(__dirname, "sync-state.json");
@@ -297,6 +298,9 @@ function loadSharedStateFromDisk() {
     if (data.version != null && !isNaN(data.version)) sharedState.version = data.version;
     if (data.updatedAt != null) sharedState.updatedAt = data.updatedAt;
     if (data.payload && typeof data.payload === "object") sharedState.payload = data.payload;
+    if (data.partVersions && typeof data.partVersions === "object") {
+      sharedState.partVersions = data.partVersions;
+    }
     console.log(
       "Sync: loaded state v" +
         sharedState.version +
@@ -503,13 +507,6 @@ function chatMsgFingerprint(m) {
   }
 })();
 
-if (trimSharedStatePayload()) {
-  sharedState.version += 1;
-  sharedState.updatedAt = new Date().toISOString();
-  saveSharedStateToDisk();
-  console.log("Sync: trimmed stored payload, now v" + sharedState.version);
-}
-
 function checkSyncAuth(req, res, next) {
   const password = req.get("x-sync-password");
   if (password !== SYNC_PASSWORD) {
@@ -531,7 +528,18 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   var updatedAt = sharedState.updatedAt;
   res.set("ETag", '"' + String(version) + '"');
   var since = parseSyncSinceVersion(req);
+  var scope = parseSyncScope(req);
   if (since != null && since === version) {
+    res.json({
+      version: version,
+      updatedAt: updatedAt,
+      unchanged: true,
+      staffPresence: staffPresenceSnapshot(),
+    });
+    return;
+  }
+  var built = buildSyncGetPayload(since, scope);
+  if (built.unchanged) {
     res.json({
       version: version,
       updatedAt: updatedAt,
@@ -543,7 +551,8 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   res.json({
     version: version,
     updatedAt: updatedAt,
-    payload: overlayLivePresenceOnPayload(sharedState.payload),
+    payload: built.payload,
+    partial: built.partial || undefined,
     staffPresence: staffPresenceSnapshot(),
   });
 });
@@ -1134,6 +1143,148 @@ var STAFF_BROADCAST_POLL_MAX = 80;
 var STAFF_BROADCAST_DIRECT_LIVE_MAX = 80;
 var STAFF_BROADCAST_DIRECT_OLD_MAX = 40;
 var HK_CHAT_MAX = 300;
+
+var SYNC_PART_KEYS = {
+  rooming: [
+    "blockMap",
+    "vacRows",
+    "roomResvMap",
+    "excelResvMap",
+    "arrResvTotals",
+    "allStatusRooms",
+    "extendedStayRooms",
+    "extendedStayUpdatedAt",
+    "blockDisplayAliases",
+    "uploadSummary",
+    "roomingUploadedAt",
+    "fasnBlockMap",
+    "fasnVacRows",
+    "fasnAllStatusRooms",
+    "fasnUploadSummary",
+    "fasnUploadedAt",
+    "roomingClearedAt",
+  ],
+  hkStorage: ["hkStorage"],
+  hkRequestLog: ["hkRequestLog"],
+  hkOrderLog: ["hkOrderLog"],
+  hkCancelLog: ["hkCancelLog"],
+  hkUseLog: ["hkUseLog"],
+  hkChangeLog: ["hkChangeLog"],
+  hkMbInvLog: ["hkMbInvLog"],
+  hkMbCheckLog: ["hkMbCheckLog"],
+  hkFrontChat: ["hkFrontChat"],
+  hkTeamChat: ["hkTeamChat"],
+  hkAdminInquiries: ["hkAdminInquiries"],
+  hkMeta: ["hkCloseDayAt", "hkLastRoomChange", "hkAutoOrderState"],
+};
+
+var SYNC_SCOPE_PARTS = {
+  rooming: ["rooming"],
+  hk: [
+    "rooming",
+    "hkStorage",
+    "hkRequestLog",
+    "hkOrderLog",
+    "hkCancelLog",
+    "hkUseLog",
+    "hkChangeLog",
+    "hkMbInvLog",
+    "hkMbCheckLog",
+    "hkFrontChat",
+    "hkTeamChat",
+    "hkAdminInquiries",
+    "hkMeta",
+  ],
+};
+
+function parseSyncScope(req) {
+  var raw = req.query && req.query.scope != null ? String(req.query.scope).trim().toLowerCase() : "";
+  if (raw === "rooming" || raw === "hk") return raw;
+  return "all";
+}
+
+function ensureSyncPartVersions() {
+  if (!sharedState.partVersions || typeof sharedState.partVersions !== "object") {
+    sharedState.partVersions = {};
+  }
+  Object.keys(SYNC_PART_KEYS).forEach(function (part) {
+    if (sharedState.partVersions[part] == null || isNaN(sharedState.partVersions[part])) {
+      sharedState.partVersions[part] = sharedState.version;
+    }
+  });
+}
+
+function syncPartChanged(prev, next, keys) {
+  prev = prev && typeof prev === "object" ? prev : {};
+  next = next && typeof next === "object" ? next : {};
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var hasP = Object.prototype.hasOwnProperty.call(prev, k);
+    var hasN = Object.prototype.hasOwnProperty.call(next, k);
+    if (hasP !== hasN) return true;
+    if (hasN && prev[k] !== next[k]) return true;
+  }
+  return false;
+}
+
+function bumpChangedSyncParts(prevPayload, nextPayload, version) {
+  ensureSyncPartVersions();
+  Object.keys(SYNC_PART_KEYS).forEach(function (part) {
+    if (syncPartChanged(prevPayload, nextPayload, SYNC_PART_KEYS[part])) {
+      sharedState.partVersions[part] = version;
+    }
+  });
+}
+
+function buildSyncGetPayload(since, scope) {
+  var payload = sharedState.payload;
+  if (!payload || typeof payload !== "object") {
+    return { payload: null, unchanged: false, partial: false };
+  }
+  ensureSyncPartVersions();
+  var parts =
+    scope && SYNC_SCOPE_PARTS[scope]
+      ? SYNC_SCOPE_PARTS[scope]
+      : Object.keys(SYNC_PART_KEYS);
+  var includeParts = parts;
+  var partial = false;
+  if (since != null) {
+    partial = true;
+    includeParts = parts.filter(function (part) {
+      var pv = Number(sharedState.partVersions[part]);
+      return isFinite(pv) && pv > since;
+    });
+  }
+  if (!includeParts.length) {
+    return { unchanged: true, payload: null, partial: true };
+  }
+  var out = {};
+  includeParts.forEach(function (part) {
+    (SYNC_PART_KEYS[part] || []).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(payload, k)) {
+        out[k] = payload[k];
+      }
+    });
+  });
+  if (!Object.keys(out).length) {
+    return { unchanged: true, payload: null, partial: true };
+  }
+  if (Object.prototype.hasOwnProperty.call(out, "hkStorage")) {
+    out = overlayLivePresenceOnPayload(out);
+  }
+  return { payload: out, unchanged: false, partial: partial };
+}
+
+ensureSyncPartVersions();
+if (trimSharedStatePayload()) {
+  sharedState.version += 1;
+  sharedState.updatedAt = new Date().toISOString();
+  sharedState.partVersions.hkStorage = sharedState.version;
+  sharedState.partVersions.hkFrontChat = sharedState.version;
+  sharedState.partVersions.hkTeamChat = sharedState.version;
+  saveSharedStateToDisk();
+  console.log("Sync: trimmed stored payload, now v" + sharedState.version);
+}
 
 function broadcastRowTime(row) {
   return String((row && (row.createdAt || row.at || row.cancelledAt)) || "");
@@ -3004,13 +3155,15 @@ app.post("/api/sync", checkSyncAuth, function (req, res) {
     sharedState.payload.hkStorage.staffBroadcasts
       ? sharedState.payload.hkStorage.staffBroadcasts
       : null;
-  const nextPayload = mergeSyncPayload(sharedState.payload, req.body);
-  const prevFp = payloadVersionFingerprint(sharedState.payload);
+  const prevPayload = sharedState.payload;
+  const nextPayload = mergeSyncPayload(prevPayload, req.body);
+  const prevFp = payloadVersionFingerprint(prevPayload);
   const nextFp = payloadVersionFingerprint(nextPayload);
   sharedState.payload = nextPayload;
   if (prevFp !== nextFp) {
     sharedState.version += 1;
     sharedState.updatedAt = new Date().toISOString();
+    bumpChangedSyncParts(prevPayload, nextPayload, sharedState.version);
     saveSharedStateToDisk();
   }
 

@@ -1645,10 +1645,10 @@
       "X-Sync-Password": getSyncPassword(),
       "Cache-Control": "no-cache",
     };
-    var url = "/api/sync";
+    var url = "/api/sync?scope=hk";
     if (isPoll && syncVersion > 0) {
       headers["X-Sync-Version"] = String(syncVersion);
-      url += "?since=" + encodeURIComponent(String(syncVersion));
+      url += "&since=" + encodeURIComponent(String(syncVersion));
     }
     return fetch(url, {
       headers: headers,
@@ -1683,6 +1683,7 @@
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
           applyRemotePayload(data.payload);
+          applyStaffPresenceFromSync(data);
           return true;
         }
         // 폴링: 버전이 같아도 1:1 알럿·관리자 문의는 서버와 재병합
@@ -1698,6 +1699,7 @@
         if (reconChanged.length) {
           emitChange(reconChanged, Object.assign({}, data.payload));
         }
+        applyStaffPresenceFromSync(data);
         return true;
       })
       .catch(function () {
