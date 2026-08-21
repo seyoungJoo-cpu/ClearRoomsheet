@@ -15185,6 +15185,39 @@
           else el.scrollTop = stickInfo.top || 0;
         });
       }
+
+      var schedChatComposeDraftById = {};
+      function captureSchedChatComposeDrafts() {
+        var next = {};
+        document.querySelectorAll(".sched-req-chat-form").forEach(function (form) {
+          var id = String(form.getAttribute("data-req-id") || "");
+          var inp = form.querySelector("input");
+          if (!id || !inp) return;
+          next[id] = {
+            value: String(inp.value || ""),
+            restoreFocus: document.activeElement === inp,
+            selectionStart: inp.selectionStart,
+            selectionEnd: inp.selectionEnd,
+          };
+        });
+        schedChatComposeDraftById = next;
+      }
+      function applySchedChatComposeDraft(form, reqId) {
+        var d = schedChatComposeDraftById[String(reqId || "")];
+        if (!d || !form) return;
+        var inp = form.querySelector("input");
+        if (!inp) return;
+        if (d.value) inp.value = d.value;
+        if (!d.restoreFocus) return;
+        try {
+          inp.focus({ preventScroll: true });
+          if (typeof inp.setSelectionRange === "function") {
+            var start = d.selectionStart != null ? d.selectionStart : d.value.length;
+            var end = d.selectionEnd != null ? d.selectionEnd : d.value.length;
+            inp.setSelectionRange(start, end);
+          }
+        } catch (eDraft) {}
+      }
       try {
         window.hkChatNearBottom = hkChatNearBottom;
         window.hkChatScrollToBottom = hkChatScrollToBottom;
@@ -15221,7 +15254,9 @@
           if (ae.id === "orderDeskChatInput") return true;
           if (ae.id === "mbCheckDeskChatInput") return true;
           if (ae.id === "facilityDeskChatInput") return true;
-          if (ae.closest && ae.closest(".order-chat__form")) return true;
+          if (ae.closest && ae.closest(".order-chat__form") && !ae.closest(".sched-req-chat-form")) {
+            return true;
+          }
           if (ae.id === "adminInquiryNewText") return true;
           if (ae.classList && ae.classList.contains("admin-inquiry-card__reply-input")) {
             return true;
@@ -25574,8 +25609,9 @@
               noteChatAutoOpenFromFirstMessage(
                 entry.id,
                 Array.isArray(entry.chat) ? entry.chat.length : 0,
-                prevSchedChatCountById,
-                closedSchedRequestChatIds
+            prevSchedChatCountById,
+            closedSchedRequestChatIds,
+            forcedOpenSchedRequestChatIds
               );
               var confirmingChatOpen = isSchedRequestChatOpen(entry);
               var confirmingChatBtn = document.createElement("button");
@@ -25655,8 +25691,9 @@
             noteChatAutoOpenFromFirstMessage(
               entry.id,
               Array.isArray(entry.chat) ? entry.chat.length : 0,
-              prevSchedChatCountById,
-              closedSchedRequestChatIds
+            prevSchedChatCountById,
+            closedSchedRequestChatIds,
+            forcedOpenSchedRequestChatIds
             );
             var frontChatOpen = isSchedRequestChatOpen(entry);
             var frontChatBtn = document.createElement("button");
@@ -25740,6 +25777,7 @@
       function renderRequestLogPanel(opts) {
         opts = opts || {};
         if (!opts.force && isHkUserEditing()) return;
+        captureSchedChatComposeDrafts();
         syncRequestFeedbackLayoutUi();
         var list = document.getElementById("requestFeedbackList");
         var listMain = document.getElementById("requestFeedbackListMain");
@@ -28080,13 +28118,14 @@
         return !!(entry && Array.isArray(entry.chat) && entry.chat.length);
       }
 
-      function noteChatAutoOpenFromFirstMessage(id, count, prevMap, closedMap) {
+      function noteChatAutoOpenFromFirstMessage(id, count, prevMap, closedMap, forcedMap) {
         var key = String(id || "");
         if (!key) return;
         var n = count > 0 ? count : 0;
         var prev = prevMap[key] || 0;
-        if (prev === 0 && n > 0) {
+        if (n > prev) {
           delete closedMap[key];
+          if (forcedMap) forcedMap[key] = true;
         }
         prevMap[key] = n;
       }
@@ -28326,6 +28365,7 @@
         chatWrap.appendChild(chatForm);
         li.appendChild(chatWrap);
         hkChatApplyStick(msgList, stickInfo);
+        applySchedChatComposeDraft(chatForm, entry.id || "");
         if ((opts && opts.fromFeedback) || (li.closest && li.closest("#requestFeedback"))) {
           chatForm.setAttribute("data-from-feedback", "1");
         }
@@ -28369,6 +28409,7 @@
           return;
         }
         if (!Array.isArray(entry.chat)) entry.chat = [];
+        var prevChatCount = entry.chat.length;
         entry.chat.push({
           id:
             "c" +
@@ -28383,7 +28424,7 @@
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
         var fromFeedback = !!(opts && opts.fromFeedback);
-        if (fromFeedback) {
+        if (fromFeedback || prevChatCount > 0) {
           clearSchedChatAlert(reqId);
         } else {
           entry.chatAlertAt = entry.updatedAt;
@@ -28915,7 +28956,8 @@
             entry.id,
             Array.isArray(entry.chat) ? entry.chat.length : 0,
             prevDeployedChatCountById,
-            closedDeployedOrderChatIds
+            closedDeployedOrderChatIds,
+            forcedOpenDeployedOrderChatIds
           );
           var li = document.createElement("li");
           var chatOpen = isDeployedOrderChatOpen(entry);
@@ -29193,6 +29235,7 @@
         var ipList = document.getElementById("schedIpCardList");
         var ipEmpty = document.getElementById("schedIpEmpty");
         if (!ul) return;
+        captureSchedChatComposeDrafts();
         ensureStripSortHead(ul, "schedCards", function () {
           renderSchedRequestCards();
         }, SCHED_STRIP_SORT_COLS);
@@ -29440,8 +29483,9 @@
               noteChatAutoOpenFromFirstMessage(
                 entry.id,
                 Array.isArray(entry.chat) ? entry.chat.length : 0,
-                prevSchedChatCountById,
-                closedSchedRequestChatIds
+            prevSchedChatCountById,
+            closedSchedRequestChatIds,
+            forcedOpenSchedRequestChatIds
               );
               var schedChatOpen = isSchedRequestChatOpen(entry);
               var chatBtn = document.createElement("button");
@@ -29479,8 +29523,9 @@
             noteChatAutoOpenFromFirstMessage(
               entry.id,
               Array.isArray(entry.chat) ? entry.chat.length : 0,
-              prevSchedChatCountById,
-              closedSchedRequestChatIds
+            prevSchedChatCountById,
+            closedSchedRequestChatIds,
+            forcedOpenSchedRequestChatIds
             );
           }
 
