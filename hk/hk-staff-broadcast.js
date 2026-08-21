@@ -19,6 +19,7 @@
   var titleFlashOrig = "";
   var lastAttentionId = "";
   var lastKickHandled = "";
+  var lastClaimReassert = 0;
 
   function pad2(n) {
     return String(n).padStart ? String(n).padStart(2, "0") : (n < 10 ? "0" + n : String(n));
@@ -525,6 +526,7 @@
   }
 
   var CLAIM_AT_LS = "hk-front-presence-claim-at";
+  var PENDING_CLAIM_LS = "hk-front-presence-pending-claim";
 
   function myClaimAt() {
     try {
@@ -538,6 +540,26 @@
     try {
       if (iso) sessionStorage.setItem(CLAIM_AT_LS, iso);
       else sessionStorage.removeItem(CLAIM_AT_LS);
+    } catch (e) {}
+  }
+
+  function markPendingNameClaim() {
+    try {
+      sessionStorage.setItem(PENDING_CLAIM_LS, "1");
+    } catch (e) {}
+  }
+
+  function hasPendingNameClaim() {
+    try {
+      return sessionStorage.getItem(PENDING_CLAIM_LS) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function consumePendingNameClaim() {
+    try {
+      sessionStorage.removeItem(PENDING_CLAIM_LS);
     } catch (e) {}
   }
 
@@ -563,8 +585,11 @@
   function claimNameAndKickOthers() {
     var name = operatorName();
     if (!name) return;
+    consumePendingNameClaim();
     var now = nowIso();
     setMyClaimAt(now);
+    lastKickHandled = "";
+    lastClaimReassert = Date.now();
     var pack = getPack();
     if (!pack.presenceKicks) pack.presenceKicks = {};
     pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: now };
@@ -574,8 +599,59 @@
       name: name,
       at: now,
       kick: true,
+      claim: true,
+      claimAt: now,
       front: presenceFrontFlag(),
     });
+  }
+
+  function markExplicitNameClaim() {
+    markPendingNameClaim();
+    claimNameAndKickOthers();
+  }
+
+  function takePendingNameClaim() {
+    if (!hasPendingNameClaim()) return false;
+    if (!operatorName()) return false;
+    claimNameAndKickOthers();
+    return true;
+  }
+
+  function reassertExistingClaim(force) {
+    var name = operatorName();
+    var at = myClaimAt();
+    if (!name || !at) return;
+    if (wasKickedForMyName()) return;
+    var now = Date.now();
+    if (!force && lastClaimReassert && now - lastClaimReassert < 8000) return;
+    lastClaimReassert = now;
+    postPresence({
+      sid: presenceSid(),
+      name: name,
+      at: nowIso(),
+      kick: true,
+      claimAt: at,
+      front: presenceFrontFlag(),
+    });
+  }
+
+  function handleDuplicateLoginIfNeeded() {
+    if (!wasKickedForMyName()) return false;
+    dropPresence();
+    var packKick = getPack();
+    var kn = namesKey(operatorName());
+    var kickRow = packKick.presenceKicks && packKick.presenceKicks[kn];
+    var kickKey = kn + ":" + (kickRow && kickRow.sid ? kickRow.sid : "");
+    if (
+      kickKey &&
+      lastKickHandled !== kickKey &&
+      frontCtx &&
+      typeof frontCtx.onDuplicateLogin === "function"
+    ) {
+      lastKickHandled = kickKey;
+      frontCtx.onDuplicateLogin();
+    }
+    return true;
   }
 
   function touchPresence(force) {
@@ -591,26 +667,7 @@
     var pack = getPack();
     pruneStalePresence(pack);
     if (!pack.presence) pack.presence = {};
-    var firstClaim = !presenceWasOn;
     var nowIsoStr = nowIso();
-    var existingKick = pack.presenceKicks && pack.presenceKicks[namesKey(name)];
-    if (
-      existingKick &&
-      existingKick.sid &&
-      existingKick.sid !== presenceSid()
-    ) {
-      var existingAt = new Date(existingKick.at || 0).getTime();
-      var mine = new Date(myClaimAt() || 0).getTime();
-      if (isFinite(mine) && mine > 0 && isFinite(existingAt) && existingAt > mine) {
-        return;
-      }
-    }
-    var shouldKick = firstClaim || !myClaimAt();
-    if (shouldKick) {
-      setMyClaimAt(nowIsoStr);
-      if (!pack.presenceKicks) pack.presenceKicks = {};
-      pack.presenceKicks[namesKey(name)] = { sid: presenceSid(), at: nowIsoStr };
-    }
     pack.presence[presenceSid()] = {
       name: name,
       at: nowIsoStr,
@@ -622,8 +679,8 @@
     postPresence({
       sid: presenceSid(),
       name: name,
-      at: pack.presence[presenceSid()].at,
-      kick: shouldKick,
+      at: nowIsoStr,
+      kick: false,
       front: presenceFrontFlag(),
     });
   }
@@ -1033,32 +1090,29 @@
   }
 
   function onOperatorChange() {
+    var name = operatorName();
+    if (lastSeenOperatorName && name && lastSeenOperatorName !== name) {
+      setMyClaimAt("");
+    }
     clearLocalDismiss();
     pollUi = { id: "", selected: {}, showCounts: false };
     showingId = "";
     lastAttentionId = "";
     lastKickHandled = "";
-    lastSeenOperatorName = operatorName();
+    lastSeenOperatorName = name;
     refreshFront();
   }
 
   function refreshFront() {
     noteOperatorChange();
     ensureSessionStarted();
+    takePendingNameClaim();
+    if (handleDuplicateLoginIfNeeded()) {
+      hideOverlay();
+      return;
+    }
+    reassertExistingClaim(false);
     if (isPresenceMode()) {
-      if (wasKickedForMyName()) {
-        dropPresence();
-        var packKick = getPack();
-        var kn = namesKey(operatorName());
-        var kickRow = packKick.presenceKicks && packKick.presenceKicks[kn];
-        var kickKey = kn + ":" + (kickRow && kickRow.sid ? kickRow.sid : "");
-        if (kickKey && lastKickHandled !== kickKey && frontCtx && typeof frontCtx.onDuplicateLogin === "function") {
-          lastKickHandled = kickKey;
-          frontCtx.onDuplicateLogin();
-        }
-        hideOverlay();
-        return;
-      }
       touchPresence(false);
     } else if (presenceWasOn) {
       dropPresence();
@@ -1395,6 +1449,8 @@
     initFront: function (ctx) {
       frontCtx = ctx || {};
       ensureSessionStarted();
+      takePendingNameClaim();
+      reassertExistingClaim(true);
       ensureTick();
       if (!syncChangeBound && global.HKSync && typeof global.HKSync.onChange === "function") {
         syncChangeBound = true;
@@ -1421,6 +1477,8 @@
     resolveMentionName: resolveMentionName,
     cancelDirects: cancelDirects,
     claimNameAndKickOthers: claimNameAndKickOthers,
+    markNameClaimPending: markPendingNameClaim,
+    markExplicitNameClaim: markExplicitNameClaim,
     renderAdminList: renderAdminList,
   };
 })(typeof window !== "undefined" ? window : this);

@@ -1672,6 +1672,8 @@
       if (opts.name) body.name = String(opts.name);
       if (opts.at) body.at = String(opts.at);
       if (opts.kick) body.kick = true;
+      if (opts.claim) body.claim = true;
+      if (opts.claimAt) body.claimAt = String(opts.claimAt);
       if (opts.front === true) body.front = true;
       else if (opts.front === false) body.front = false;
     }
@@ -1681,6 +1683,7 @@
         "Content-Type": "application/json",
         "X-Sync-Password": getSyncPassword(),
       },
+      keepalive: true,
       body: JSON.stringify(body),
     })
       .then(function (r) {

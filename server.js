@@ -624,22 +624,42 @@ app.post("/api/presence", checkSyncAuth, function (req, res) {
   }
   var name = String(body.name || "").trim().slice(0, 80);
   var at = body.at ? String(body.at).slice(0, 40) : new Date().toISOString();
-      if (name) {
-        liveStaffPresence.presence[sid] = {
-          name: name,
-          at: at,
-          front: body.front === true,
-        };
+  if (name) {
+    liveStaffPresence.presence[sid] = {
+      name: name,
+      at: at,
+      front: body.front === true,
+    };
+  }
+  var claimAt = body.claimAt ? String(body.claimAt).slice(0, 40) : "";
+  var kickStamp = claimAt || (body.claim ? at : "");
+  if (name && (body.claim || body.kick)) {
+    var kickKey = namesKeyPresence(name);
+    var prevKick = liveStaffPresence.presenceKicks[kickKey];
+    var incomingStamp = kickStamp || at;
+    var incomingAt = Date.parse(String(incomingStamp)) || Date.now();
+    var prevKickAt = prevKick && prevKick.at ? Date.parse(String(prevKick.at)) : 0;
+    var sameSid = !!(prevKick && prevKick.sid === sid);
+    var takeOver = false;
+    if (body.claim) {
+      takeOver = !prevKick || !isFinite(prevKickAt) || incomingAt >= prevKickAt;
+    } else if (kickStamp) {
+      takeOver =
+        !prevKick ||
+        !isFinite(prevKickAt) ||
+        sameSid ||
+        incomingAt > prevKickAt;
+    } else {
+      takeOver = !prevKick || !isFinite(prevKickAt) || sameSid;
+    }
+    if (takeOver) {
+      var nextAt = incomingStamp;
+      if (sameSid && isFinite(prevKickAt) && incomingAt > prevKickAt && !body.claim) {
+        nextAt = prevKick.at;
       }
-      if (body.kick && name) {
-        var kickKey = namesKeyPresence(name);
-        var prevKick = liveStaffPresence.presenceKicks[kickKey];
-        var incomingAt = Date.parse(String(at)) || Date.now();
-        var prevKickAt = prevKick && prevKick.at ? Date.parse(String(prevKick.at)) : 0;
-        if (!prevKick || !isFinite(prevKickAt) || incomingAt >= prevKickAt) {
-          liveStaffPresence.presenceKicks[kickKey] = { sid: sid, at: at };
-        }
-      }
+      liveStaffPresence.presenceKicks[kickKey] = { sid: sid, at: nextAt };
+    }
+  }
   res.json({ ok: true, staffPresence: staffPresenceSnapshot() });
 });
 

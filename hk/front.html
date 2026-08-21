@@ -15015,7 +15015,7 @@
 
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=game-ranks-9"></script>
-  <script src="hk-sync.js?v=bw-sync-3"></script>
+  <script src="hk-sync.js?v=bw-sync-4"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -15027,7 +15027,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=bw-presence-2"></script>
+  <script src="hk-staff-broadcast.js?v=bw-presence-3"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-41"></script>
   <script src="hk-mp-games.js?v=mp-40"></script>
@@ -15886,6 +15886,9 @@
             return;
           }
         }
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.markNameClaimPending) {
+          HKStaffBroadcast.markNameClaimPending();
+        }
         if (operatorNameModalMode === "initial") {
           // 인벤/인벤통보 데이터는 서버 동기화로 복구. UI 캐시만 가볍게 정리.
           clearHkSessionUiCaches();
@@ -15895,6 +15898,9 @@
           try {
             sessionStorage.setItem("hk-keep-inven-chrome", "1");
           } catch (eKeep) {}
+          if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.markNameClaimPending) {
+            HKStaffBroadcast.markNameClaimPending();
+          }
           location.reload();
           return;
         }
@@ -15903,11 +15909,13 @@
         operatorGateForceDifferent = false;
         operatorGateBlockedName = "";
         hideOperatorGate();
-        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.claimNameAndKickOthers) {
+        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.markExplicitNameClaim) {
+          HKStaffBroadcast.markExplicitNameClaim();
+        } else if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.claimNameAndKickOthers) {
           HKStaffBroadcast.claimNameAndKickOthers();
         }
-        if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.onOperatorChange) {
-          HKStaffBroadcast.onOperatorChange();
+        if (isModePickPending()) {
+          showModePickGate();
         }
         if (pendingOperatorNameCallback) {
           var cb = pendingOperatorNameCallback;
