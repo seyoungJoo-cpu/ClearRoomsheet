@@ -318,6 +318,14 @@
       empty.textContent = "등록된 불편사항이 없습니다.";
     }
     var editable = canEdit();
+    filtered.sort(function (a, b) {
+      var ta = new Date(a && a.createdAt ? a.createdAt : 0).getTime();
+      var tb = new Date(b && b.createdAt ? b.createdAt : 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb !== ta) return tb - ta;
+      return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
+    });
     filtered.forEach(function (row) {
       var tr = document.createElement("tr");
       tr.setAttribute("data-id", row.id);
@@ -492,6 +500,16 @@
 
     var months = grid.months;
     var counts = grid.counts;
+    var grand = 0;
+    TYPE_OPTIONS.forEach(function (t) {
+      months.forEach(function (m) {
+        grand += counts[t.id][m] || 0;
+      });
+    });
+    function pctOfGrand(n) {
+      if (!grand) return "0%";
+      return Math.round((n / grand) * 1000) / 10 + "%";
+    }
     var html = [
       '<table class="complaint-stats-table" aria-label="유형별 월별 현황">',
       "<thead><tr><th>유형</th>",
@@ -499,7 +517,7 @@
     months.forEach(function (m) {
       html.push("<th>" + esc(m) + "</th>");
     });
-    html.push("<th>합계</th></tr></thead><tbody>");
+    html.push("<th>합계</th><th>%</th></tr></thead><tbody>");
     TYPE_OPTIONS.forEach(function (t) {
       var rowTotal = 0;
       html.push("<tr><th scope=\"row\">" + esc(t.label) + "</th>");
@@ -508,19 +526,18 @@
         rowTotal += n;
         html.push("<td>" + (n || "") + "</td>");
       });
-      html.push("<td class=\"is-total\">" + rowTotal + "</td></tr>");
+      html.push("<td class=\"is-total\">" + rowTotal + "</td>");
+      html.push("<td class=\"is-total\">" + pctOfGrand(rowTotal) + "</td></tr>");
     });
     html.push('<tr class="complaint-stats-foot"><th scope="row">합계</th>');
-    var grand = 0;
     months.forEach(function (m) {
       var col = 0;
       TYPE_OPTIONS.forEach(function (t) {
         col += counts[t.id][m] || 0;
       });
-      grand += col;
       html.push("<td class=\"is-total\">" + col + "</td>");
     });
-    html.push("<td class=\"is-total\">" + grand + "</td></tr>");
+    html.push("<td class=\"is-total\">" + grand + "</td><td class=\"is-total\">100%</td></tr>");
     var rcCounts = grid.roomChangeCounts || {};
     var rcTotal = 0;
     html.push(
@@ -531,7 +548,13 @@
       rcTotal += n;
       html.push("<td>" + (n || "") + "</td>");
     });
-    html.push("<td class=\"is-total\">" + rcTotal + "</td></tr>");
+    html.push(
+      "<td class=\"is-total\">" +
+        rcTotal +
+        '</td><td class="is-total">' +
+        pctOfGrand(rcTotal) +
+        "</td></tr>"
+    );
     html.push("</tbody></table>");
     tableWrap.innerHTML = html.join("");
   }
@@ -548,8 +571,18 @@
       alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
       return;
     }
+    var grand = 0;
+    TYPE_OPTIONS.forEach(function (t) {
+      grid.months.forEach(function (m) {
+        grand += (grid.counts[t.id] && grid.counts[t.id][m]) || 0;
+      });
+    });
+    function pctOfGrand(n) {
+      if (!grand) return "0%";
+      return Math.round((n / grand) * 1000) / 10 + "%";
+    }
     var aoa = [];
-    var header = ["유형"].concat(grid.months).concat(["합계"]);
+    var header = ["유형"].concat(grid.months).concat(["합계", "%"]);
     aoa.push(header);
     TYPE_OPTIONS.forEach(function (t) {
       var row = [t.label];
@@ -560,19 +593,19 @@
         row.push(n || 0);
       });
       row.push(rowTotal);
+      row.push(pctOfGrand(rowTotal));
       aoa.push(row);
     });
     var foot = ["합계"];
-    var grand = 0;
     grid.months.forEach(function (m) {
       var col = 0;
       TYPE_OPTIONS.forEach(function (t) {
         col += (grid.counts[t.id] && grid.counts[t.id][m]) || 0;
       });
-      grand += col;
       foot.push(col);
     });
     foot.push(grand);
+    foot.push("100%");
     aoa.push(foot);
 
     var rcRow = ["룸체인지 (O)"];
@@ -584,6 +617,7 @@
       rcRow.push(n || 0);
     });
     rcRow.push(rcTotal);
+    rcRow.push(pctOfGrand(rcTotal));
     aoa.push(rcRow);
 
     var wb = global.XLSX.utils.book_new();
@@ -592,7 +626,7 @@
       grid.months.map(function () {
         return { wch: 10 };
       }),
-      [{ wch: 8 }]
+      [{ wch: 8 }, { wch: 8 }]
     );
     global.XLSX.utils.book_append_sheet(wb, ws, "유형별현황");
     var now = new Date();
@@ -609,6 +643,64 @@
     var yearPart = statsYear === "all" ? "전체" : String(statsYear);
     global.XLSX.writeFile(wb, "고객불편사항_유형별현황_" + yearPart + "_" + stamp + ".xlsx");
     opts.toast("엑셀 다운로드 · " + yearPart);
+  }
+
+  function downloadRecordsExcel() {
+    var pack = loadPack();
+    var records = (pack.records || []).slice();
+    if (!records.length) {
+      opts.toast("다운로드할 등록 데이터가 없습니다.");
+      return;
+    }
+    if (typeof global.XLSX === "undefined" || !global.XLSX.utils || !global.XLSX.writeFile) {
+      alert("엑셀 라이브러리를 불러오지 못했습니다. 페이지를 새로고침 후 다시 시도해 주세요.");
+      return;
+    }
+    records.sort(function (a, b) {
+      var ta = new Date(a && a.createdAt ? a.createdAt : 0).getTime();
+      var tb = new Date(b && b.createdAt ? b.createdAt : 0).getTime();
+      if (isNaN(ta)) ta = 0;
+      if (isNaN(tb)) tb = 0;
+      if (tb !== ta) return tb - ta;
+      return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
+    });
+    var aoa = [["날짜", "예약번호", "이름", "객실번호", "메모", "유형", "룸체인지"]];
+    records.forEach(function (row) {
+      aoa.push([
+        formatDateDisplay(row.createdAt),
+        row.reservationNo || "",
+        row.guestName || "",
+        row.roomNo || "",
+        row.memo || "",
+        typeLabelById[row.typeId] || "",
+        row.roomChange ? "O" : "X",
+      ]);
+    });
+    var wb = global.XLSX.utils.book_new();
+    var ws = global.XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 36 },
+      { wch: 16 },
+      { wch: 8 },
+    ];
+    global.XLSX.utils.book_append_sheet(wb, ws, "등록목록");
+    var now = new Date();
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+    var stamp =
+      now.getFullYear() +
+      pad(now.getMonth() + 1) +
+      pad(now.getDate()) +
+      "_" +
+      pad(now.getHours()) +
+      pad(now.getMinutes());
+    global.XLSX.writeFile(wb, "고객불편사항_등록목록_" + stamp + ".xlsx");
+    opts.toast("엑셀 다운로드 · 등록목록 " + records.length + "건");
   }
 
   function updateEntryControls() {
@@ -864,6 +956,14 @@
       excelBtn.__hkComplaintExcelBound = true;
       excelBtn.addEventListener("click", function () {
         downloadStatsExcel();
+      });
+    }
+
+    var recordsExcelBtn = document.getElementById("btnComplaintRecordsExcel");
+    if (recordsExcelBtn && !recordsExcelBtn.__hkComplaintRecordsExcelBound) {
+      recordsExcelBtn.__hkComplaintRecordsExcelBound = true;
+      recordsExcelBtn.addEventListener("click", function () {
+        downloadRecordsExcel();
       });
     }
 

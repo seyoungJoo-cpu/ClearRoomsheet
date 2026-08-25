@@ -8127,6 +8127,134 @@
       grid-template-columns: 1fr;
     }
 
+    .hk-strip-cell--room .hk-mb-resv,
+    .room-card__no-box .hk-mb-resv {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1px solid transparent;
+      vertical-align: middle;
+    }
+
+    .hk-mb-resv--rsv {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #f59e0b;
+    }
+
+    .hk-mb-resv--ckin {
+      background: #dbeafe;
+      color: #1e40af;
+      border-color: #3b82f6;
+    }
+
+    .confirming-cards-panel--tile .confirming-cards-panel__split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .confirming-cards-panel--tile .confirming-cards-panel__wing .sched-cards-list,
+    .confirming-cards-panel--tile > .sched-cards-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+      gap: 6px;
+      align-content: start;
+    }
+
+    .sched-req-card--confirming-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      min-width: 0;
+      width: 100%;
+      aspect-ratio: 1 / 1.05;
+      max-height: 9.5rem;
+      margin: 0;
+      padding: 6px 7px;
+      border-radius: 8px;
+      border: 1px solid #a5b4fc;
+      background: #eef2ff;
+      box-shadow: none;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .sched-req-card--confirming-tile .confirming-tile__room {
+      font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #1e1b4b;
+      line-height: 1.15;
+      text-align: center;
+      word-break: break-all;
+    }
+
+    .sched-req-card--confirming-tile .confirming-tile__meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2px 4px;
+      min-height: 1.1rem;
+    }
+
+    .sched-req-card--confirming-tile .confirming-tile__meta .hk-st-badge,
+    .sched-req-card--confirming-tile .confirming-tile__meta .room-card__status,
+    .sched-req-card--confirming-tile .confirming-tile__meta .hk-resv-badge {
+      font-size: 0.62rem;
+      min-width: 1.4em;
+      padding: 1px 4px;
+    }
+
+    .sched-req-card--confirming-tile .request-feedback__maint-actions,
+    .sched-req-card--confirming-tile .request-feedback__front-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 3px;
+      margin-top: auto;
+    }
+
+    .sched-req-card--confirming-tile .request-feedback__sched-btn,
+    .sched-req-card--confirming-tile .request-feedback__ip-btn,
+    .sched-req-card--confirming-tile .request-feedback__memo2-btn,
+    .sched-req-card--confirming-tile .request-feedback__facility-btn,
+    .sched-req-card--confirming-tile .sched-card__chat-btn,
+    .sched-req-card--confirming-tile .request-feedback__chat-drop-btn {
+      font-size: 0.62rem;
+      padding: 2px 5px;
+      min-height: 0;
+      line-height: 1.2;
+    }
+
+    .sched-req-card--confirming-tile .order-chat {
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: 40%;
+    }
+
+    .request-feedback__chat-drop-btn {
+      border: 1px solid #94a3b8;
+      background: #f8fafc;
+      color: #334155;
+      border-radius: 5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .request-feedback__chat-drop-btn:hover {
+      background: #e2e8f0;
+    }
+
     .sched-req-card--confirming-compact {
       display: inline-flex;
       align-items: center;
@@ -13228,7 +13356,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.html?embed=hkFront&v=clear-guard-1"
+          src="/DD/index.html?embed=hkFront&v=edit-cols-1"
           loading="eager"
         ></iframe>
       </section>
@@ -13653,6 +13781,9 @@
           </div>
           <p class="complaint-table-empty" id="complaintTableEmpty">등록된 불편사항이 없습니다.</p>
           <div class="complaint-reset-row">
+            <button type="button" class="btn-order" id="btnComplaintRecordsExcel" title="등록 목록 엑셀 다운로드">
+              엑셀 다운로드
+            </button>
             <button type="button" class="btn-order complaint-reset-btn" id="btnComplaintResetAll" title="등록된 불편사항 유형분석만 비웁니다 (마감과 별개)">
               불편사항 초기화
             </button>
@@ -15023,7 +15154,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
   <script src="hk-inven-notify.js?v=autosave-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-14"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-15"></script>
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
@@ -15127,10 +15258,11 @@
       var OPEN_ROOM_HISTORY_LS = "lotte-hk-open-room-history-v1";
       var closedDeployedOrderChatIds = {};
       var forcedOpenDeployedOrderChatIds = {};
+      var pinnedOrderChatFeedbackIds = {};
+      var prevDeployedChatCountById = {};
       var closedSchedRequestChatIds = {};
       var forcedOpenSchedRequestChatIds = {};
       var pinnedSchedChatFeedbackIds = {};
-      var prevDeployedChatCountById = {};
       var prevSchedChatCountById = {};
       var orderChatComposeDraft = null;
       var facilityTimeEditIds = {};
@@ -15275,7 +15407,8 @@
           if (ae.id === "orderDeskChatInput") return true;
           if (ae.id === "mbCheckDeskChatInput") return true;
           if (ae.id === "facilityDeskChatInput") return true;
-          if (ae.closest && ae.closest(".order-chat__form") && !ae.closest(".sched-req-chat-form")) {
+          // 정비·오더 인라인 채팅 입력 중에는 동기화 리렌더로 포커스가 끊기지 않게 함
+          if (ae.closest && ae.closest(".order-chat__form")) {
             return true;
           }
           if (ae.id === "adminInquiryNewText") return true;
@@ -25550,10 +25683,13 @@
       function buildRequestFeedbackItemLi(entry, opts) {
         opts = opts || {};
         var confirmingStrip = !!opts.confirmingStrip;
+        var confirmingTile = !!(confirmingStrip && maintenanceMode);
         var li = document.createElement("li");
-        li.className = confirmingStrip
-          ? "request-feedback__item sched-req-card is-strip-cols"
-          : "request-feedback__item";
+        li.className = confirmingTile
+          ? "request-feedback__item sched-req-card sched-req-card--confirming-tile"
+          : confirmingStrip
+            ? "request-feedback__item sched-req-card is-strip-cols"
+            : "request-feedback__item";
         li.setAttribute("data-req-id", entry.id);
         if (entry.urgent) li.classList.add("is-urgent");
         var multi = isMultiRoomRequest(entry);
@@ -25566,7 +25702,32 @@
         var memo2Str = entry.memo2 != null ? String(entry.memo2).trim() : "";
         var memo2Img = entry.memo2Image != null ? String(entry.memo2Image).trim() : "";
 
-        if (confirmingStrip) {
+        if (confirmingTile) {
+          var tileRoom = document.createElement("div");
+          tileRoom.className = "confirming-tile__room";
+          tileRoom.textContent = entry.room
+            ? formatRoomNoDisplay(String(entry.room)) + (entry.quick ? " 빠른" : "")
+            : "—";
+          li.appendChild(tileRoom);
+          var tileMeta = document.createElement("div");
+          tileMeta.className = "confirming-tile__meta";
+          if (!appendRoomWingBadge(tileMeta, entry.room) && !multi) {
+            /* wing optional */
+          }
+          if (multi) tileMeta.appendChild(buildRequestRoomChips(entry));
+          else {
+            tileMeta.appendChild(
+              buildRoomStatusGroup(liveSt, entry.room, { statusClass: "room-card__status" })
+            );
+          }
+          if (entry.urgent) {
+            var ubTile = document.createElement("span");
+            ubTile.className = "request-feedback__item-urgent-badge";
+            ubTile.textContent = "긴급";
+            tileMeta.appendChild(ubTile);
+          }
+          li.appendChild(tileMeta);
+        } else if (confirmingStrip) {
           var roomCell = document.createElement("span");
           roomCell.className = "hk-strip-cell hk-strip-cell--room";
           roomCell.textContent = entry.room
@@ -25690,7 +25851,7 @@
           var showItemChat = isConfirming || pinChat;
           var showFullMaintActions = hasMaintSched || isConfirming || pinChat;
           if (showFullMaintActions) {
-            if (!confirmingStrip) {
+            if (!confirmingStrip && !confirmingTile) {
               var schedEl = document.createElement("div");
               schedEl.className =
                 "request-feedback__sched" + (hasMaintSched ? "" : " is-empty");
@@ -25784,12 +25945,22 @@
                   : "채팅";
               maintActs.appendChild(confirmingChatBtn);
               if (confirmingChatOpen) li.classList.add("is-chat-open");
+              if (hasSchedChatAlert(entry) || pinChat) {
+                var dropBtn = document.createElement("button");
+                dropBtn.type = "button";
+                dropBtn.className = "request-feedback__chat-drop-btn";
+                dropBtn.setAttribute("data-req-id", entry.id);
+                dropBtn.setAttribute("data-chat-drop", "1");
+                dropBtn.textContent = "내리기";
+                dropBtn.title = "알림에서 내리기";
+                maintActs.appendChild(dropBtn);
+              }
             }
             li.appendChild(maintActs);
             if (showItemChat && (confirmingChatOpen || pinChat)) {
               appendSchedRequestChatUi(li, entry, {
                 fromFeedback: true,
-                confirming: confirmingStrip,
+                confirming: confirmingStrip || confirmingTile,
               });
               li.classList.add("is-chat-open");
             }
@@ -25869,12 +26040,22 @@
                 : "채팅";
             frontActs.appendChild(frontChatBtn);
             if (frontChatOpen) li.classList.add("is-chat-open");
+            if (hasSchedChatAlert(entry) || pinChat) {
+              var frontDropBtn = document.createElement("button");
+              frontDropBtn.type = "button";
+              frontDropBtn.className = "request-feedback__chat-drop-btn";
+              frontDropBtn.setAttribute("data-req-id", entry.id);
+              frontDropBtn.setAttribute("data-chat-drop", "1");
+              frontDropBtn.textContent = "내리기";
+              frontDropBtn.title = "알림에서 내리기";
+              frontActs.appendChild(frontDropBtn);
+            }
           }
           li.appendChild(frontActs);
           if (frontConfirming && (frontChatOpen || pinChat)) {
             appendSchedRequestChatUi(li, entry, {
               fromFeedback: true,
-              confirming: confirmingStrip,
+              confirming: confirmingStrip || confirmingTile,
             });
             li.classList.add("is-chat-open");
           }
@@ -26109,6 +26290,7 @@
         var wingSplit = !!(maintenanceMode && listMain && listAnnex);
         panel.classList.toggle("confirming-cards-panel--front", !!frontMode && !maintenanceMode);
         panel.classList.toggle("confirming-cards-panel--wing-split", wingSplit);
+        panel.classList.toggle("confirming-cards-panel--tile", !!maintenanceMode);
         if (splitEl) splitEl.hidden = !wingSplit;
         if (hint) {
           hint.textContent = maintenanceMode
@@ -26346,7 +26528,6 @@
       function hasSchedChatAlert(entry) {
         if (!entry || entry.used || isRequestCancelled(entry)) return false;
         if (isRequestPendingAlert(entry) || isRequestConfirmingEntry(entry)) return false;
-        // 정비 입력이 답을 보내 chatAlertAt을 비우면 모든 화면에서 내려간다
         if (Object.prototype.hasOwnProperty.call(entry, "chatAlertAt") && !entry.chatAlertAt) {
           return false;
         }
@@ -28336,10 +28517,16 @@
         }
         delete closedDeployedOrderChatIds[id];
         forcedOpenDeployedOrderChatIds[id] = true;
+        markOrderChatAlert(id);
+        saveOrderLog();
         renderOrderPanels();
+        renderOrderLogPanel({ force: true });
+        renderFacilityOrderLogPanel({ force: true });
         requestAnimationFrame(function () {
           var card = document.querySelector(
             '.order-work-section--deployed .order-work-item.is-chat-open[data-order-id="' +
+              id +
+              '"], #orderFeedback .order-feedback__item.is-chat-open[data-order-id="' +
               id +
               '"]'
           );
@@ -28347,6 +28534,63 @@
           var chatInput = card.querySelector(".order-chat__form input");
           if (chatInput) chatInput.focus({ preventScroll: true });
         });
+      }
+
+      function hasOrderChatAlert(entry) {
+        if (!entry || getOrderPhase(entry) === "cancelled") return false;
+        if (Object.prototype.hasOwnProperty.call(entry, "chatAlertAt") && !entry.chatAlertAt) {
+          return false;
+        }
+        if (entry.chatAlertAt) return true;
+        return !!(entry.id && pinnedOrderChatFeedbackIds[String(entry.id)]);
+      }
+
+      function markOrderChatAlert(orderId) {
+        var id = String(orderId || "");
+        if (!id) return;
+        pinnedOrderChatFeedbackIds[id] = true;
+        var entry = findOrderEntry(id);
+        if (!entry) return;
+        var now = new Date().toISOString();
+        entry.chatAlertAt = now;
+        entry.updatedAt = now;
+      }
+
+      function clearOrderChatAlert(orderId) {
+        var id = String(orderId || "");
+        if (!id) return;
+        delete pinnedOrderChatFeedbackIds[id];
+        var entry = findOrderEntry(id);
+        if (!entry) return;
+        entry.chatAlertAt = "";
+        entry.updatedAt = new Date().toISOString();
+      }
+
+      function notifyOrderChatToRequester(entry, msgText, senderName) {
+        if (!entry) return;
+        var requester = entry.by != null ? String(entry.by).trim() : "";
+        if (!requester) return;
+        var me = senderName != null ? String(senderName).trim() : getOperatorName() || "";
+        if (me && requester.toLowerCase() === me.toLowerCase()) return;
+        var roomLabel = entry.room
+          ? formatRoomNoDisplay(String(entry.room))
+          : "";
+        var preview = String(msgText || "").trim() || "(사진)";
+        if (preview.length > 80) preview = preview.slice(0, 78) + "…";
+        var alertText =
+          (roomLabel ? roomLabel + " " : "") +
+          "오더 채팅 · " +
+          (me || "상대") +
+          ": " +
+          preview;
+        if (
+          typeof HKStaffBroadcast !== "undefined" &&
+          typeof HKStaffBroadcast.sendDirectAlerts === "function"
+        ) {
+          try {
+            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "");
+          } catch (eDm) {}
+        }
       }
 
       function pinSchedChatInFeedback(reqId, on) {
@@ -28448,7 +28692,8 @@
         }
         delete closedSchedRequestChatIds[id];
         forcedOpenSchedRequestChatIds[id] = true;
-        if (opts.fromSched) pinSchedChatInFeedback(id, true);
+        // 채팅창을 열면 알림으로 올림 (정비/프론트 공통)
+        pinSchedChatInFeedback(id, true);
         if (typeof showSidebarRequestView === "function") {
           showSidebarRequestView({ skipDirtyConfirm: true });
         }
@@ -28578,6 +28823,33 @@
         return true;
       }
 
+      function notifyRequestChatToRequester(entry, msgText, senderName) {
+        if (!entry) return;
+        var requester = entry.by != null ? String(entry.by).trim() : "";
+        if (!requester) return;
+        var me = senderName != null ? String(senderName).trim() : getOperatorName() || "";
+        if (me && requester.toLowerCase() === me.toLowerCase()) return;
+        var roomLabel = entry.room
+          ? formatRoomNoDisplay(String(entry.room))
+          : "";
+        var preview = String(msgText || "").trim() || "(사진)";
+        if (preview.length > 80) preview = preview.slice(0, 78) + "…";
+        var alertText =
+          (roomLabel ? roomLabel + " " : "") +
+          "채팅 · " +
+          (me || "상대") +
+          ": " +
+          preview;
+        if (
+          typeof HKStaffBroadcast !== "undefined" &&
+          typeof HKStaffBroadcast.sendDirectAlerts === "function"
+        ) {
+          try {
+            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "");
+          } catch (eDm) {}
+        }
+      }
+
       function appendSchedRequestChat(reqId, text, image, opts) {
         var entry = findRequestEntry(reqId);
         if (!entry || isRequestCancelled(entry)) return;
@@ -28595,6 +28867,7 @@
           return;
         }
         if (!Array.isArray(entry.chat)) entry.chat = [];
+        var senderName = getOperatorName();
         entry.chat.push({
           id:
             "c" +
@@ -28602,18 +28875,16 @@
             "-" +
             Math.random().toString(36).slice(2, 8),
           at: new Date().toISOString(),
-          by: getOperatorName(),
+          by: senderName,
           text: msgText,
           image: msgImage || "",
         });
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
         var fromFeedback = !!(opts && opts.fromFeedback);
-        if (maintenanceMode) {
-          clearSchedChatAlert(reqId);
-        } else {
-          markSchedChatAlert(reqId);
-        }
+        // 채팅을 치면 알림으로 올림 (정비/프론트 공통, 내리기 버튼으로만 내림)
+        markSchedChatAlert(reqId);
+        notifyRequestChatToRequester(entry, msgText || msgImage, senderName);
         hkClearPhoto("schedReqChat:" + reqId);
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
@@ -28625,30 +28896,12 @@
         renderSchedRequestCards();
         renderRequestLogPanel({ force: true });
         requestAnimationFrame(function () {
-          if (maintenanceMode) {
-            if (typeof showSidebarRequestView === "function") {
-              showSidebarRequestView({ skipDirtyConfirm: true });
-            }
-            requestAnimationFrame(function () {
-              scrollToSchedResultCard(reqId);
-            });
-            return;
-          }
-          if (frontMode) {
+          if (fromFeedback || hasSchedChatAlert(entry)) {
             if (typeof showSidebarRequestView === "function") {
               showSidebarRequestView({ skipDirtyConfirm: true });
             }
             requestAnimationFrame(function () {
               scrollToRequestFeedbackChat(reqId);
-            });
-            return;
-          }
-          if (fromFeedback) {
-            if (typeof showSidebarRequestView === "function") {
-              showSidebarRequestView({ skipDirtyConfirm: true });
-            }
-            requestAnimationFrame(function () {
-              scrollToSchedResultCard(reqId);
             });
             return;
           }
@@ -28696,6 +28949,8 @@
         });
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
+        markOrderChatAlert(orderId);
+        notifyOrderChatToRequester(entry, msgText || msgImage, getOperatorName());
         hkClearPhoto("orderChat:" + orderId);
         // 리렌더 전 입력값을 비움 — captureOrderChatComposeDraft가 방금 보낸 글을 다시 넣지 않게
         try {
@@ -28717,6 +28972,8 @@
         forcedOpenDeployedOrderChatIds[String(orderId)] = true;
         saveOrderLog();
         renderOrderPanels({ force: true, skipOrderChatDraftCapture: true });
+        renderOrderLogPanel({ force: true });
+        renderFacilityOrderLogPanel({ force: true });
         requestAnimationFrame(function () {
           var card =
             document.querySelector(
@@ -29293,9 +29550,20 @@
         var entries = orderLogEntries.filter(function (entry) {
           return entryFilter(entry) && getOrderPhase(entry) === "alert";
         });
+        var pinnedOrderChat = [];
+        var pinnedOrderSeen = {};
+        orderLogEntries.forEach(function (entry) {
+          if (!entryFilter(entry) || !hasOrderChatAlert(entry)) return;
+          if (getOrderPhase(entry) === "alert") return;
+          var oid = String(entry.id || "");
+          if (!oid || pinnedOrderSeen[oid]) return;
+          pinnedOrderSeen[oid] = true;
+          pinnedOrderChat.push(entry);
+        });
+        entries = entries.concat(pinnedOrderChat);
         entries.sort(function (a, b) {
-          var ta = new Date(a.at || 0).getTime();
-          var tb = new Date(b.at || 0).getTime();
+          var ta = new Date(a.lastChatAt || a.chatAlertAt || a.at || 0).getTime();
+          var tb = new Date(b.lastChatAt || b.chatAlertAt || b.at || 0).getTime();
           if (isNaN(ta)) ta = 0;
           if (isNaN(tb)) tb = 0;
           return ta - tb;
@@ -29307,10 +29575,46 @@
           if (entry.urgent) li.classList.add("order-feedback__item--urgent");
           if (entry.fromMaint) li.classList.add("order-feedback__item--from-maint");
           if (isFacilityOrder(entry)) li.classList.add("order-feedback__item--facility");
+          if (hasOrderChatAlert(entry) && getOrderPhase(entry) !== "alert") {
+            li.classList.add("is-order-chat-pin");
+          }
 
           appendOrderItemCommon(li, entry);
 
           var isFacilityAlertList = listId === "facilityFeedbackList";
+          var isChatPin = hasOrderChatAlert(entry) && getOrderPhase(entry) !== "alert";
+
+          if (isChatPin) {
+            var chatPinActs = document.createElement("div");
+            chatPinActs.className = "order-feedback__maint-actions";
+            var orderChatOpen = isDeployedOrderChatOpen(entry);
+            var orderChatBtn = document.createElement("button");
+            orderChatBtn.type = "button";
+            orderChatBtn.className =
+              "sched-card__chat-btn" + (orderChatOpen ? " is-on" : "");
+            orderChatBtn.setAttribute("data-order-id", entry.id || "");
+            orderChatBtn.setAttribute("data-order-chat-toggle", "1");
+            orderChatBtn.textContent = orderChatOpen
+              ? "채팅 닫기"
+              : Array.isArray(entry.chat) && entry.chat.length
+                ? "채팅(" + entry.chat.length + ")"
+                : "채팅";
+            chatPinActs.appendChild(orderChatBtn);
+            var orderDropBtn = document.createElement("button");
+            orderDropBtn.type = "button";
+            orderDropBtn.className = "request-feedback__chat-drop-btn";
+            orderDropBtn.setAttribute("data-order-id", entry.id || "");
+            orderDropBtn.setAttribute("data-order-chat-drop", "1");
+            orderDropBtn.textContent = "내리기";
+            chatPinActs.appendChild(orderDropBtn);
+            li.appendChild(chatPinActs);
+            if (orderChatOpen) {
+              li.classList.add("is-chat-open");
+              appendOrderChatUi(li, entry);
+            }
+            list.appendChild(li);
+            return;
+          }
 
           if (isAutoRobotOrder(entry) && (frontMode || maintenanceMode)) {
             var robotAcceptActs = document.createElement("div");
@@ -31042,6 +31346,16 @@
         var roomNoText = document.createElement("span");
         roomNoText.textContent = formatRoomNoDisplay(room.number || "");
         roomCell.appendChild(roomNoText);
+        if (isPkgXmlZone(zone) && zone === "MINIBAR") {
+          var mbBadge = formatMbResvStatusBadge(room.mbResvStatus);
+          if (mbBadge) {
+            var mbEl = document.createElement("span");
+            mbEl.className = mbBadge.cls;
+            mbEl.textContent = mbBadge.label;
+            mbEl.title = "RESV_STATUS: " + String(room.mbResvStatus || "");
+            roomCell.appendChild(mbEl);
+          }
+        }
 
         var statusCell = document.createElement("div");
         statusCell.className = "hk-strip-cell hk-strip-cell--status";
@@ -31823,6 +32137,7 @@
             time: "",
             mbProductId: row.productId || "",
             mbGroup: row.groupId || pkgXmlGroupId(zone, row.productId),
+            mbResvStatus: row.resvStatus != null ? String(row.resvStatus).trim() : "",
           };
           stampRoomRow(room, zone);
           room.createdAt = stamp;
@@ -31830,6 +32145,18 @@
           nextRooms.push(room);
         });
         return nextRooms;
+      }
+
+      function formatMbResvStatusBadge(raw) {
+        var key = String(raw || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toUpperCase();
+        if (key === "RESERVED") return { label: "RSV", cls: "hk-mb-resv hk-mb-resv--rsv" };
+        if (key === "CHECKED IN" || key === "CHECKEDIN") {
+          return { label: "CKIN", cls: "hk-mb-resv hk-mb-resv--ckin" };
+        }
+        return null;
       }
 
       function getPkgXmlDisplayRooms(zone, data) {
@@ -31860,11 +32187,14 @@
             if (!roomNo) return;
             var guestEl = rowEl.querySelector("DISPLAY_NAME") || rowEl.querySelector("GUEST_NAME");
             var guest = guestEl ? String(guestEl.textContent || "").trim() : "";
+            var resvEl = rowEl.querySelector("RESV_STATUS");
+            var resvStatus = resvEl ? String(resvEl.textContent || "").trim() : "";
             byRoom[roomNo] = {
               number: roomNo,
               productId: productId,
               groupId: groupId,
               guest: guest,
+              resvStatus: resvStatus,
             };
           });
         });
@@ -32925,6 +33255,21 @@
             if (ridChatFb) toggleSchedRequestChat(ridChatFb);
             return;
           }
+          var dropElFb = e.target.closest(".request-feedback__chat-drop-btn");
+          if (dropElFb) {
+            if (!frontMode && !maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridDrop = dropElFb.getAttribute("data-req-id");
+            if (ridDrop) {
+              clearSchedChatAlert(ridDrop);
+              markRequestEntrySavedLocally(findRequestEntry(ridDrop) || { id: ridDrop });
+              saveRequestLog();
+              renderRequestLogPanel({ force: true });
+              renderSchedRequestCards();
+            }
+            return;
+          }
           var cancelReqB = e.target.closest(".request-feedback__cancel-btn");
           if (cancelReqB) {
             if (!frontMode && !maintenanceMode) return;
@@ -33014,6 +33359,21 @@
             e.stopPropagation();
             var ridChatC = chatElC.getAttribute("data-req-id");
             if (ridChatC) toggleSchedRequestChat(ridChatC);
+            return;
+          }
+          var dropElC = e.target.closest(".request-feedback__chat-drop-btn");
+          if (dropElC) {
+            if (!frontMode && !maintenanceMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridDropC = dropElC.getAttribute("data-req-id");
+            if (ridDropC) {
+              clearSchedChatAlert(ridDropC);
+              markRequestEntrySavedLocally(findRequestEntry(ridDropC) || { id: ridDropC });
+              saveRequestLog();
+              renderRequestLogPanel({ force: true });
+              renderSchedRequestCards();
+            }
             return;
           }
           var cancelReqC = e.target.closest(".request-feedback__cancel-btn");
@@ -34577,6 +34937,28 @@
       function bindOrderFeedbackUi(feedbackEl) {
         if (!feedbackEl) return;
         feedbackEl.addEventListener("click", function (e) {
+          var orderChatToggle = e.target.closest("[data-order-chat-toggle]");
+          if (orderChatToggle) {
+            e.preventDefault();
+            e.stopPropagation();
+            var toggleId = orderChatToggle.getAttribute("data-order-id");
+            if (toggleId) toggleDeployedOrderChat(toggleId);
+            return;
+          }
+          var orderChatDrop = e.target.closest("[data-order-chat-drop]");
+          if (orderChatDrop) {
+            e.preventDefault();
+            e.stopPropagation();
+            var dropId = orderChatDrop.getAttribute("data-order-id");
+            if (dropId) {
+              clearOrderChatAlert(dropId);
+              saveOrderLog();
+              renderOrderLogPanel({ force: true });
+              renderFacilityOrderLogPanel({ force: true });
+              renderOrderPanels({ force: true });
+            }
+            return;
+          }
           var cancelOrderBtn = e.target.closest(".request-feedback__cancel-btn");
           if (cancelOrderBtn && cancelOrderBtn.hasAttribute("data-order-id")) {
             if (!frontMode) return;

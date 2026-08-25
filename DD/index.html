@@ -232,6 +232,30 @@
       vertical-align: middle;
       white-space: nowrap;
     }
+    .col-del-btn {
+      margin-left: 4px;
+      border: 1px solid #f5c2c2;
+      background: #fff5f5;
+      color: #b42318;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .result-table th.is-col-hidden,
+    .result-table td.is-col-hidden {
+      display: none;
+    }
+    .result-table td[contenteditable="true"] {
+      outline: none;
+      cursor: text;
+    }
+    .result-table td[contenteditable="true"]:focus {
+      box-shadow: inset 0 0 0 2px #93c5fd;
+      background: #f8fbff;
+    }
     .ok { color: var(--ok); font-weight: 600; }
     .warn { color: var(--danger); font-weight: 600; }
     .hint {
@@ -477,18 +501,19 @@
         <div class="status" id="status">XML을 드롭(또는 선택)한 뒤 "DD 대상 추출"을 눌러주세요.</div>
         <div class="btn-row" style="margin: 0 0 8px;">
           <button class="ghost" id="copyPhoneOnlyBtn">전화번호만 복사</button>
+          <button class="ghost" id="restoreColsBtn" type="button" title="삭제한 열을 다시 표시">열 복원</button>
         </div>
 
         <table class="result-table">
           <thead>
             <tr>
-              <th class="sortable" data-sort-key="idx" data-label="구분">구분</th>
-              <th class="sortable" data-sort-key="room" data-label="객실번호">객실번호</th>
-              <th class="sortable" data-sort-key="contact" data-label="연락처">연락처</th>
-              <th class="copy-head">복사</th>
-              <th class="c171-head sortable" data-sort-key="c171" data-label="상태">상태</th>
-              <th class="trace-head sortable" data-sort-key="trace" data-label="TRACE">TRACE</th>
-              <th class="room-status-head sortable" data-sort-key="roomStatus" data-label="객실정비상태">객실정비상태</th>
+              <th class="sortable" data-sort-key="idx" data-label="구분" data-col="idx">구분</th>
+              <th class="sortable" data-sort-key="room" data-label="객실번호" data-col="room">객실번호 <button type="button" class="col-del-btn" data-col-del="room" title="열 삭제">×</button></th>
+              <th class="sortable" data-sort-key="contact" data-label="연락처" data-col="contact">연락처 <button type="button" class="col-del-btn" data-col-del="contact" title="열 삭제">×</button></th>
+              <th class="copy-head" data-col="copy">복사 <button type="button" class="col-del-btn" data-col-del="copy" title="열 삭제">×</button></th>
+              <th class="c171-head sortable" data-sort-key="c171" data-label="상태" data-col="c171">상태 <button type="button" class="col-del-btn" data-col-del="c171" title="열 삭제">×</button></th>
+              <th class="trace-head sortable" data-sort-key="trace" data-label="TRACE" data-col="trace">TRACE <button type="button" class="col-del-btn" data-col-del="trace" title="열 삭제">×</button></th>
+              <th class="room-status-head sortable" data-sort-key="roomStatus" data-label="객실정비상태" data-col="roomStatus">객실정비상태 <button type="button" class="col-del-btn" data-col-del="roomStatus" title="열 삭제">×</button></th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -578,6 +603,7 @@
     let currentRows = [];
     // 1순위·2순위 정렬 (둘 다 오름차순 등 중복 방향 가능)
     let sortState = { levels: [] };
+    let hiddenCols = {};
     let pastedImageBlob1 = null;
     let pastedImageBlob2 = null;
     function normalizeRoom(value) {
@@ -819,10 +845,24 @@
       return map;
     }
 
+    function applyHiddenColsUi() {
+      document.querySelectorAll(".result-table [data-col]").forEach((el) => {
+        const col = el.getAttribute("data-col");
+        if (!col) return;
+        el.classList.toggle("is-col-hidden", !!hiddenCols[col]);
+      });
+      document.querySelectorAll(".result-table td[data-col]").forEach((el) => {
+        const col = el.getAttribute("data-col");
+        if (!col) return;
+        el.classList.toggle("is-col-hidden", !!hiddenCols[col]);
+      });
+    }
+
     function renderRows(rows) {
       tbody.innerHTML = "";
       rows.forEach((r, idx) => {
         const tr = document.createElement("tr");
+        tr.dataset.sourceIndex = String(r.sourceIndex != null ? r.sourceIndex : idx);
         const contactText = r.contactText || r.phone || "전화번호 없음";
         const contactHtml = (contactText === "전화번호 없음" || contactText === "당일 체크아웃 예정")
           ? `<span class="no-phone-text">${contactText}</span>`
@@ -841,13 +881,13 @@
           : roomStatusText;
         const traceText = r.traceText || "-";
         tr.innerHTML = `
-          <td class="idx-cell">${idx + 1}</td>
-          <td class="room-cell">${Number(r.room)}</td>
-          <td class="phone-cell">${contactHtml}</td>
-          <td class="copy-cell">${r.phone ? `<button class="phone-copy-btn" data-phone="${r.phone}">복사</button>` : "-"}</td>
-          <td class="c171-cell">${c171Text}</td>
-          <td class="trace-cell">${traceText}</td>
-          <td class="room-status-cell">${roomStatusHtml}</td>
+          <td class="idx-cell" data-col="idx">${idx + 1}</td>
+          <td class="room-cell" data-col="room" contenteditable="true" data-edit="room">${Number(r.room) || r.room || ""}</td>
+          <td class="phone-cell" data-col="contact" contenteditable="true" data-edit="contact">${contactHtml}</td>
+          <td class="copy-cell" data-col="copy">${r.phone ? `<button class="phone-copy-btn" data-phone="${r.phone}">복사</button>` : "-"}</td>
+          <td class="c171-cell" data-col="c171" contenteditable="true" data-edit="c171">${c171Text}</td>
+          <td class="trace-cell" data-col="trace" contenteditable="true" data-edit="trace">${traceText}</td>
+          <td class="room-status-cell" data-col="roomStatus" contenteditable="true" data-edit="roomStatus">${roomStatusHtml}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -857,6 +897,56 @@
           btn.textContent = "재복사";
         });
       });
+      tbody.querySelectorAll("[data-edit]").forEach((cell) => {
+        cell.addEventListener("blur", () => {
+          const field = cell.getAttribute("data-edit");
+          const sourceIndex = Number(cell.closest("tr")?.dataset.sourceIndex);
+          const row = currentRows.find((r) => Number(r.sourceIndex) === sourceIndex);
+          if (!row || !field) return;
+          const raw = (cell.innerText || "").trim();
+          if (field === "room") {
+            const nextRoom = normalizeRoom(raw) || raw;
+            row.room = nextRoom;
+            cell.textContent = Number(nextRoom) || nextRoom || "";
+          } else if (field === "contact") {
+            const phone = normalizePhone(raw);
+            if (phone) {
+              row.phone = phone;
+              row.contactText = phone;
+              cell.textContent = phone;
+              const copyCell = cell.parentElement?.querySelector(".copy-cell");
+              if (copyCell) {
+                copyCell.innerHTML = `<button class="phone-copy-btn" data-phone="${phone}">복사</button>`;
+                copyCell.querySelector(".phone-copy-btn")?.addEventListener("click", () => {
+                  copyText(phone, "전화번호를 복사했습니다.");
+                });
+              }
+            } else {
+              row.phone = "";
+              row.contactText = raw || "전화번호 없음";
+              cell.innerHTML =
+                row.contactText === "전화번호 없음" || row.contactText === "당일 체크아웃 예정"
+                  ? `<span class="no-phone-text">${row.contactText}</span>`
+                  : row.contactText;
+            }
+          } else if (field === "c171") {
+            row.c171Value = raw || "-";
+            cell.textContent = row.c171Value;
+          } else if (field === "trace") {
+            row.traceText = raw || "-";
+            cell.textContent = row.traceText;
+          } else if (field === "roomStatus") {
+            row.roomStatus = raw || "-";
+            const key = row.roomStatus.toUpperCase();
+            const cls = { IP: "room-status-ip", DI: "room-status-di", PU: "room-status-pu", CL: "room-status-cl" }[key] || "";
+            cell.innerHTML = cls
+              ? `<span class="room-status-badge ${cls}">${row.roomStatus}</span>`
+              : row.roomStatus;
+          }
+          saveDdEmbedState();
+        });
+      });
+      applyHiddenColsUi();
     }
 
     function normalizeSortText(value) {
@@ -922,19 +1012,25 @@
     function updateSortHeaderUi() {
       const levels = normalizeSortLevels(sortState);
       sortHeaders.forEach((th) => {
-        const label = th.dataset.label || th.textContent || "";
+        const label = th.dataset.label || "";
         const rank = levels.findIndex((lv) => lv.key === th.dataset.sortKey);
         let mark = "";
         if (rank >= 0) {
           const arrow = levels[rank].direction === "asc" ? "▲" : "▼";
           mark = ` ${rank + 1}${arrow}`;
         }
-        th.textContent = `${label}${mark}`;
+        const col = th.getAttribute("data-col");
+        const delBtn =
+          col && col !== "idx"
+            ? ` <button type="button" class="col-del-btn" data-col-del="${col}" title="열 삭제">×</button>`
+            : "";
+        th.innerHTML = `${label}${mark}${delBtn}`;
         th.title =
           rank >= 0
             ? `정렬 ${rank + 1}순위 (${levels[rank].direction === "asc" ? "오름차순" : "내림차순"}) · 클릭하면 전환`
             : "클릭: 정렬 추가(최대 2순위) · 같은 열 재클릭: 오름→내림→해제";
       });
+      applyHiddenColsUi();
     }
 
     function renderCurrentRows() {
@@ -952,6 +1048,7 @@
         ddRooms: ddRooms.value,
         currentRows,
         sortState,
+        hiddenCols,
         template: template.value,
         updatedAt: new Date().toISOString(),
       };
@@ -986,8 +1083,11 @@
       }
       if (Array.isArray(saved.currentRows) && saved.currentRows.length) {
         currentRows = saved.currentRows;
-        if (saved.sortState) {
+      if (saved.sortState) {
           sortState = { levels: normalizeSortLevels(saved.sortState) };
+        }
+        if (saved.hiddenCols && typeof saved.hiddenCols === "object") {
+          hiddenCols = Object.assign({}, saved.hiddenCols);
         }
         renderRows(sortRows(currentRows));
         updateSortHeaderUi();
@@ -1039,8 +1139,33 @@
     });
 
     function bindSortHandlers() {
+      const table = document.querySelector(".result-table");
+      if (table && !table.__ddColDelBound) {
+        table.__ddColDelBound = true;
+        table.addEventListener("click", (ev) => {
+          const delBtn = ev.target.closest("[data-col-del]");
+          if (!delBtn) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const col = delBtn.getAttribute("data-col-del");
+          if (!col) return;
+          hiddenCols[col] = true;
+          applyHiddenColsUi();
+          saveDdEmbedState();
+        });
+      }
+      const restoreBtn = document.getElementById("restoreColsBtn");
+      if (restoreBtn && !restoreBtn.__ddBound) {
+        restoreBtn.__ddBound = true;
+        restoreBtn.addEventListener("click", () => {
+          hiddenCols = {};
+          applyHiddenColsUi();
+          saveDdEmbedState();
+        });
+      }
       sortHeaders.forEach((th) => {
-        th.addEventListener("click", () => {
+        th.addEventListener("click", (ev) => {
+          if (ev.target.closest("[data-col-del]")) return;
           const clickedKey = th.dataset.sortKey;
           if (!clickedKey) return;
           let levels = normalizeSortLevels(sortState);

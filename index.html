@@ -2630,6 +2630,11 @@
             var applied = applyRemoteSyncFromServer(data, {
               forceApply:
                 opts.catchUp ||
+                // 정비→루밍 이동 시 메모리는 비어 있고 part 버전만 앞선 경우에도 반영
+                (!isPoll &&
+                  !hasLocalRoomingData() &&
+                  !hasLocalFasnData() &&
+                  hasPayloadRoomingSyncData(data.payload)) ||
                 (!isPoll &&
                   !lastAppliedSyncUpdatedAt &&
                   hasPayloadRoomingSyncData(data.payload)),
@@ -2674,11 +2679,10 @@
         if (syncPollTimer) return;
         loadSharedStateVersion();
         loadRoomingPartVersion();
-        pullSharedState(false).then(function (hasRemote) {
-          if (!hasRemote) {
-            if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
-            if (!hasLocalFasnData()) loadFasnStateFromLocal();
-          }
+        pullSharedState(false).then(function () {
+          // 서버가 unchanged여도 메모리가 비면 로컬 캐시로 복구 (정비→루밍 이동)
+          if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+          if (!hasLocalFasnData()) loadFasnStateFromLocal();
           if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
         syncPollTimer = setInterval(function () {
@@ -5646,11 +5650,9 @@
 
       window.addEventListener("pageshow", function () {
         if (!roomingSessionActive) return;
-        pullSharedState(false).then(function (hasRemote) {
-          if (!hasRemote) {
-            if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
-            if (!hasLocalFasnData()) loadFasnStateFromLocal();
-          }
+        pullSharedState(false).then(function () {
+          if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+          if (!hasLocalFasnData()) loadFasnStateFromLocal();
           if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
         });
       });
