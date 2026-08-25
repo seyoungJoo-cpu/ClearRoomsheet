@@ -2998,42 +2998,79 @@
       }
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
-      merged.requestDeskChat = mergeRequestDeskChat(
-        base.requestDeskChat,
-        incoming.requestDeskChat
-      );
+      // 마감으로 비운 경우(빈 배열 + 최신/동일 closeDay)는 병합하지 않고 교체
+      if (
+        Array.isArray(incoming.requestDeskChat) &&
+        !incoming.requestDeskChat.length &&
+        incCd &&
+        (!baseCd || String(incCd) >= String(baseCd))
+      ) {
+        merged.requestDeskChat = [];
+      } else if (incomingIsStaleClose) {
+        merged.requestDeskChat = base.requestDeskChat || [];
+      } else {
+        merged.requestDeskChat = mergeRequestDeskChat(
+          base.requestDeskChat,
+          incoming.requestDeskChat
+        );
+      }
     } else {
       merged.requestDeskChat = base.requestDeskChat || [];
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat")) {
-      merged.orderDeskChat = mergeRequestDeskChat(
-        base.orderDeskChat,
-        incoming.orderDeskChat
-      );
+      if (
+        Array.isArray(incoming.orderDeskChat) &&
+        !incoming.orderDeskChat.length &&
+        incCd &&
+        (!baseCd || String(incCd) >= String(baseCd))
+      ) {
+        merged.orderDeskChat = [];
+      } else if (incomingIsStaleClose) {
+        merged.orderDeskChat = base.orderDeskChat || [];
+      } else {
+        merged.orderDeskChat = mergeRequestDeskChat(
+          base.orderDeskChat,
+          incoming.orderDeskChat
+        );
+      }
     } else {
       merged.orderDeskChat = base.orderDeskChat || [];
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat")) {
-      merged.mbCheckDeskChat = mergeRequestDeskChat(
-        base.mbCheckDeskChat,
-        incoming.mbCheckDeskChat
-      );
+      if (
+        Array.isArray(incoming.mbCheckDeskChat) &&
+        !incoming.mbCheckDeskChat.length &&
+        incCd &&
+        (!baseCd || String(incCd) >= String(baseCd))
+      ) {
+        merged.mbCheckDeskChat = [];
+      } else if (incomingIsStaleClose) {
+        merged.mbCheckDeskChat = base.mbCheckDeskChat || [];
+      } else {
+        merged.mbCheckDeskChat = mergeRequestDeskChat(
+          base.mbCheckDeskChat,
+          incoming.mbCheckDeskChat
+        );
+      }
     } else {
       merged.mbCheckDeskChat = base.mbCheckDeskChat || [];
     }
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
-      merged.facilityDeskChat = mergeRequestDeskChat(
-        base.facilityDeskChat,
-        incoming.facilityDeskChat
-      );
-    } else {
-      merged.facilityDeskChat = base.facilityDeskChat || [];
-    }
-    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
-      merged.facilityDeskChat = mergeRequestDeskChat(
-        base.facilityDeskChat,
-        incoming.facilityDeskChat
-      );
+      if (
+        Array.isArray(incoming.facilityDeskChat) &&
+        !incoming.facilityDeskChat.length &&
+        incCd &&
+        (!baseCd || String(incCd) >= String(baseCd))
+      ) {
+        merged.facilityDeskChat = [];
+      } else if (incomingIsStaleClose) {
+        merged.facilityDeskChat = base.facilityDeskChat || [];
+      } else {
+        merged.facilityDeskChat = mergeRequestDeskChat(
+          base.facilityDeskChat,
+          incoming.facilityDeskChat
+        );
+      }
     } else {
       merged.facilityDeskChat = base.facilityDeskChat || [];
     }

@@ -1161,7 +1161,7 @@
         전체 기록을 <strong>HTML 보고서 + 엑셀 파일 + 읽기 모드 HTML</strong>로 저장한 뒤 <strong>초기화</strong>합니다.
         읽기 모드 HTML은 사이드바로 전체 화면을 넘기며 볼 수 있고, AI 채팅으로 마감 데이터를 조회할 수 있습니다.
         <strong>채팅·관리자 문의</strong>는 파일에도 저장하고 화면에도 유지합니다. <strong>오더 알림</strong>·시설업무(컴플레인·당일습득물)는 저장 후 화면에 유지(시설은 10일)합니다. <strong>시설 관리 알림</strong>·<strong>문제발생</strong>은 마감 시 초기화합니다. 공지 <strong>문구는 유지</strong>하고 공지 <strong>사진만 초기화</strong>합니다.
-        <strong>오더/정비/시설 작은 채팅창</strong>은 마감 후에도 <strong>7일간 보관</strong>합니다.
+        <strong>오더/정비/시설/MB 확인 미니채팅</strong>은 마감 시 <strong>전부 삭제</strong>합니다.
         <strong>알럿</strong>은 마감 시 초기화합니다. 아직 시각이 안 된 <strong>예약 알럿</strong>은 남깁니다. <strong>투표</strong>는 마감해도 모두 유지됩니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
         <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
@@ -1178,7 +1178,7 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=game-ranks-8"></script>
+  <script src="hk-storage.js?v=desk-chat-close-1"></script>
   <script src="hk-facility-logs.js"></script>
   <script src="hk-sync.js?v=bw-sync-6"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
@@ -4853,18 +4853,11 @@
         (reset.customZones || []).forEach(function (z) {
           if (z && z.id) reset.zoneRoomClearAt[z.id] = closeAt;
         });
-        // 오더/정비/시설/MB 작은 채팅창은 마감 후 7일 보관
-        if (typeof HKStorage.normalizeRequestDeskChat === "function") {
-          reset.requestDeskChat = HKStorage.normalizeRequestDeskChat(prev.requestDeskChat);
-          reset.orderDeskChat = HKStorage.normalizeRequestDeskChat(prev.orderDeskChat);
-          reset.mbCheckDeskChat = HKStorage.normalizeRequestDeskChat(prev.mbCheckDeskChat);
-          reset.facilityDeskChat = HKStorage.normalizeRequestDeskChat(prev.facilityDeskChat);
-        } else {
-          reset.requestDeskChat = Array.isArray(prev.requestDeskChat) ? prev.requestDeskChat : [];
-          reset.orderDeskChat = Array.isArray(prev.orderDeskChat) ? prev.orderDeskChat : [];
-          reset.mbCheckDeskChat = Array.isArray(prev.mbCheckDeskChat) ? prev.mbCheckDeskChat : [];
-          reset.facilityDeskChat = Array.isArray(prev.facilityDeskChat) ? prev.facilityDeskChat : [];
-        }
+        // 오더/정비/시설/MB 확인 미니채팅은 마감 시 전부 삭제
+        reset.requestDeskChat = [];
+        reset.orderDeskChat = [];
+        reset.mbCheckDeskChat = [];
+        reset.facilityDeskChat = [];
         if (preservedFacility) {
           if (preservedFacility.facilityMiscLog) {
             reset.facilityMiscLog = preservedFacility.facilityMiscLog;
@@ -5047,7 +5040,7 @@
             adminHotelInfoDirty = false;
             refresh({ force: true });
             loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 보관 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
+            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비/시설/MB 미니채팅 삭제 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
           });
           return;
         }
@@ -5066,13 +5059,13 @@
         adminHotelInfoDirty = false;
         refresh({ force: true });
         loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비 작은채팅 7일 보관 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
+        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비/시설/MB 미니채팅 삭제 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
       }
 
       function performCloseDay() {
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편·Track IT·야간인계·VIP체크인 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생·시설 관리 알림 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편·Track IT·야간인계·VIP체크인은 유지 (초기화 버튼으로만 삭제)\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편·Track IT·야간인계·VIP체크인 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생·시설 관리 알림·오더/정비/시설/MB 미니채팅 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편·Track IT·야간인계·VIP체크인은 유지 (초기화 버튼으로만 삭제)\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;

@@ -1786,18 +1786,7 @@ function mergeHkStorage(prev, incoming) {
     if (Object.prototype.hasOwnProperty.call(incoming, "facilityDailyFoundLog")) {
       staleOut.facilityDailyFoundLog = incoming.facilityDailyFoundLog;
     }
-    if (Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat")) {
-      staleOut.requestDeskChat = incoming.requestDeskChat;
-    }
-    if (Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat")) {
-      staleOut.orderDeskChat = incoming.orderDeskChat;
-    }
-    if (Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat")) {
-      staleOut.mbCheckDeskChat = incoming.mbCheckDeskChat;
-    }
-    if (Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat")) {
-      staleOut.facilityDeskChat = incoming.facilityDeskChat;
-    }
+    // 마감 전 클라이언트의 미니채팅은 반영하지 않음 (마감 시 비운 내용을 되살리지 않음)
     if (Object.prototype.hasOwnProperty.call(incoming, "hotelInfo")) {
       staleOut.hotelInfo = incoming.hotelInfo;
     } else if (prev.hotelInfo) {
@@ -1906,6 +1895,15 @@ function mergeHkStorage(prev, incoming) {
     rooms: { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [], MINIBAR: [], SHUTTLE: [] },
     deletedRooms: {},
     requestDeskChat: (function () {
+      if (
+        Object.prototype.hasOwnProperty.call(incoming, "requestDeskChat") &&
+        Array.isArray(incoming.requestDeskChat) &&
+        !incoming.requestDeskChat.length &&
+        incCd &&
+        (!prevCd || String(incCd) >= String(prevCd))
+      ) {
+        return [];
+      }
       function normChat(arr) {
         if (!Array.isArray(arr)) return [];
         var out = [];
@@ -1954,6 +1952,15 @@ function mergeHkStorage(prev, incoming) {
         .slice(-120);
     })(),
     orderDeskChat: (function () {
+      if (
+        Object.prototype.hasOwnProperty.call(incoming, "orderDeskChat") &&
+        Array.isArray(incoming.orderDeskChat) &&
+        !incoming.orderDeskChat.length &&
+        incCd &&
+        (!prevCd || String(incCd) >= String(prevCd))
+      ) {
+        return [];
+      }
       function normChat(arr) {
         if (!Array.isArray(arr)) return [];
         var out = [];
@@ -2002,6 +2009,15 @@ function mergeHkStorage(prev, incoming) {
         .slice(-120);
     })(),
     mbCheckDeskChat: (function () {
+      if (
+        Object.prototype.hasOwnProperty.call(incoming, "mbCheckDeskChat") &&
+        Array.isArray(incoming.mbCheckDeskChat) &&
+        !incoming.mbCheckDeskChat.length &&
+        incCd &&
+        (!prevCd || String(incCd) >= String(prevCd))
+      ) {
+        return [];
+      }
       function normChat(arr) {
         if (!Array.isArray(arr)) return [];
         var out = [];
@@ -2050,6 +2066,15 @@ function mergeHkStorage(prev, incoming) {
         .slice(-120);
     })(),
     facilityDeskChat: (function () {
+      if (
+        Object.prototype.hasOwnProperty.call(incoming, "facilityDeskChat") &&
+        Array.isArray(incoming.facilityDeskChat) &&
+        !incoming.facilityDeskChat.length &&
+        incCd &&
+        (!prevCd || String(incCd) >= String(prevCd))
+      ) {
+        return [];
+      }
       function normChat(arr) {
         if (!Array.isArray(arr)) return [];
         var out = [];
