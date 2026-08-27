@@ -161,9 +161,9 @@
 
     .topbar-head-tools {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
       position: relative;
       flex-shrink: 0;
       margin-left: auto;
@@ -207,25 +207,29 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex-wrap: nowrap;
       max-width: 100%;
+      flex-shrink: 0;
     }
 
     .topbar-date-chip {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
+      gap: 3px;
+      padding: 3px 8px;
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 999px;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: #334155;
       box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
       cursor: pointer;
       font: inherit;
+      font-size: 0.7rem;
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
     .topbar-date-chip:hover {
@@ -233,8 +237,12 @@
       background: var(--accent-soft);
     }
 
+    .topbar-date-chip__icon {
+      font-size: 0.75rem;
+    }
+
     .topbar-date-chip__chev {
-      font-size: 0.7rem;
+      font-size: 0.6rem;
       color: #94a3b8;
     }
 
@@ -995,18 +1003,11 @@
 
     .topbar-head-tools {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    .topbar-head-tools__row {
-      display: flex;
+      flex-direction: row;
       align-items: center;
       gap: 8px;
       position: relative;
+      flex-shrink: 0;
     }
 
     .topbar-user-btn {
@@ -1086,18 +1087,18 @@
       top: calc(100% + 6px);
       right: 0;
       z-index: 80;
-      min-width: 320px;
-      max-width: min(92vw, 320px);
+      min-width: 220px;
+      max-width: min(92vw, 220px);
       max-height: min(70vh, 520px);
       overflow: auto;
-      padding: 6px;
+      padding: 8px;
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .topbar-user-menu[hidden] {
@@ -1108,14 +1109,16 @@
       display: block;
       width: 100%;
       text-align: left;
-      padding: 8px 10px;
+      padding: 11px 12px;
+      min-height: 42px;
       border: none;
       border-radius: 8px;
       background: transparent;
       color: #334155;
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       font-weight: 600;
+      line-height: 1.25;
       text-decoration: none;
       cursor: pointer;
       box-sizing: border-box;
@@ -1145,11 +1148,11 @@
       align-items: unset;
       justify-content: unset;
       width: 100%;
-      min-height: 36px;
+      min-height: 42px;
       height: auto;
-      padding: 8px 10px;
+      padding: 11px 12px;
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       font-weight: 600;
       line-height: 1.25;
       text-align: left;
@@ -1230,27 +1233,30 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex-wrap: nowrap;
       max-width: 100%;
+      flex-shrink: 0;
     }
 
     .topbar-date-chip {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
+      gap: 3px;
+      padding: 3px 8px;
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 999px;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: #334155;
       box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
     .topbar-date-chip__icon {
-      font-size: 0.9rem;
+      font-size: 0.75rem;
     }
 
     .topbar-main {
@@ -13286,16 +13292,12 @@
       }
 
       .topbar-head-tools {
-        flex-direction: column;
-        align-items: flex-end;
-        margin-left: auto;
-        gap: 6px;
-      }
-
-      .topbar-head-tools__row {
-        display: flex;
+        flex-direction: row;
         align-items: center;
+        margin-left: auto;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
       .topbar-collapse-btn {
@@ -13362,9 +13364,9 @@
       .topbar-user-menu__item.btn-front,
       .topbar-user-menu__item.btn-room {
         flex: none;
-        min-height: 36px;
-        padding: 8px 10px;
-        font-size: 0.8125rem;
+        min-height: 42px;
+        padding: 11px 12px;
+        font-size: 0.875rem;
         line-height: 1.25;
       }
 
@@ -13891,63 +13893,60 @@
         <span class="brand-sub">Room Operation Dashboard</span>
       </div>
       <div class="topbar-head-tools">
-        <div class="topbar-head-tools__row">
-          <button
-            type="button"
-            class="btn-push-alarm"
-            id="btnPushAlarm"
-            aria-pressed="false"
-            aria-label="오더 알림 끔"
-            title="오더 알림 끔 — 탭하여 켜기"
-          >
-            <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-              <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="btn-refresh-app"
-            id="btnRefreshApp"
-            title="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
-            aria-label="새로고침"
-          >
-            ↻
-          </button>
-          <button
-            type="button"
-            class="topbar-user-btn"
-            id="topbarUserMenuBtn"
-            aria-expanded="false"
-            aria-haspopup="true"
-            aria-controls="topbarUserMenu"
-            title="계정 · 모드"
-          >
-            <span class="topbar-user-btn__meta">
-              <span class="topbar-user-btn__mode" id="topbarActiveModeLabel" hidden></span>
-              <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
-            </span>
-            <span class="topbar-user-btn__avatar" aria-hidden="true">👤</span>
-            <span class="topbar-user-btn__chev" aria-hidden="true">▾</span>
-            <span class="admin-inquiry-btn__badge topbar-user-btn__badge" id="adminInquiryBadge" hidden></span>
-          </button>
-          <div class="topbar-user-menu" id="topbarUserMenu" hidden role="menu" aria-label="계정 메뉴">
-            <button type="button" class="topbar-user-menu__item" id="sidebarBtnShiftChange" role="menuitem" title="근무자 이름 변경 (F8)">교대</button>
-            <div class="topbar-user-menu__sep" role="separator"></div>
-            <div class="topbar-user-menu__label">모드</div>
-            <a class="topbar-user-menu__item topbar-user-menu__item--mode" id="btnAdmin" href="admin.html" role="menuitem">관리자</a>
-            <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-maint" id="btnMaint" role="menuitem" aria-pressed="false">정비 입력</button>
-            <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-front" id="btnFront" role="menuitem" aria-pressed="false">프론트</button>
-            <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-room" id="btnRoom" role="menuitem" aria-pressed="false">객실</button>
-            <div class="topbar-user-menu__sep" role="separator"></div>
-            <button type="button" class="topbar-user-menu__item" id="btnAdminInquiry" role="menuitem" title="관리자에게 문의·건의">관리자 문의</button>
-            <div class="topbar-user-menu__sep" role="separator"></div>
-            <div class="topbar-user-menu__label">테마</div>
-            <div class="topbar-user-menu__theme" id="topbarMenuThemeMount">
-              <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
-            </div>
+        <button
+          type="button"
+          class="btn-push-alarm"
+          id="btnPushAlarm"
+          aria-pressed="false"
+          aria-label="오더 알림 끔"
+          title="오더 알림 끔 — 탭하여 켜기"
+        >
+          <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="btn-refresh-app"
+          id="btnRefreshApp"
+          title="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
+          aria-label="새로고침"
+        >
+          ↻
+        </button>
+        <button
+          type="button"
+          class="topbar-user-btn"
+          id="topbarUserMenuBtn"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="topbarUserMenu"
+          title="계정 · 모드"
+        >
+          <span class="topbar-user-btn__meta">
+            <span class="topbar-user-btn__mode" id="topbarActiveModeLabel" hidden></span>
+            <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
+          </span>
+          <span class="topbar-user-btn__avatar" aria-hidden="true">👤</span>
+          <span class="topbar-user-btn__chev" aria-hidden="true">▾</span>
+          <span class="admin-inquiry-btn__badge topbar-user-btn__badge" id="adminInquiryBadge" hidden></span>
+        </button>
+        <div class="topbar-user-menu" id="topbarUserMenu" hidden role="menu" aria-label="계정 메뉴">
+          <button type="button" class="topbar-user-menu__item" id="sidebarBtnShiftChange" role="menuitem" title="근무자 이름 변경 (F8)">교대</button>
+          <div class="topbar-user-menu__sep" role="separator"></div>
+          <div class="topbar-user-menu__label">모드</div>
+          <a class="topbar-user-menu__item topbar-user-menu__item--mode" id="btnAdmin" href="admin.html" role="menuitem">관리자</a>
+          <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-maint" id="btnMaint" role="menuitem" aria-pressed="false">정비 입력</button>
+          <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-front" id="btnFront" role="menuitem" aria-pressed="false">프론트</button>
+          <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-room" id="btnRoom" role="menuitem" aria-pressed="false">객실</button>
+          <div class="topbar-user-menu__sep" role="separator"></div>
+          <button type="button" class="topbar-user-menu__item" id="btnAdminInquiry" role="menuitem" title="관리자에게 문의·건의">관리자 문의</button>
+          <div class="topbar-user-menu__sep" role="separator"></div>
+          <div class="topbar-user-menu__label">테마</div>
+          <div class="topbar-user-menu__theme" id="topbarMenuThemeMount">
+            <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
           </div>
-          <button type="button" class="topbar-collapse-btn" id="btnTopbarCollapse" hidden>접기</button>
         </div>
         <div class="topbar-date-row">
           <button type="button" class="topbar-date-chip" id="topbarDateChip" title="날짜 선택">
@@ -13971,6 +13970,7 @@
             hidden
           >마감 보관본 보기</a>
         </div>
+        <button type="button" class="topbar-collapse-btn" id="btnTopbarCollapse" hidden>접기</button>
       </div>
     </div>
   </header>
@@ -14129,8 +14129,8 @@
         <div class="notice-board__body">
           <div class="notice-board__label">공지사항</div>
           <div class="notice-board__content">
-            <div class="notice-board__text" id="noticeText"></div>
             <div class="notice-board__images" id="noticeImagesMount" hidden></div>
+            <div class="notice-board__text" id="noticeText"></div>
           </div>
         </div>
       </div>
