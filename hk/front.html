@@ -16967,6 +16967,7 @@
         });
         menu.addEventListener("click", function (e) {
           if (e.target.closest("#topbarMenuThemeMount")) return;
+          if (e.target.closest("#topbarDateRow")) return;
           var item = e.target.closest(".topbar-user-menu__item");
           if (!item) return;
           if (item.id === "btnAdmin") {
