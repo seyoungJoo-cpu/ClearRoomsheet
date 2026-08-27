@@ -129,7 +129,8 @@
       align-items: baseline;
       gap: 6px;
       min-width: 0;
-      flex: 1;
+      flex: 0 1 auto;
+      max-width: 42%;
     }
 
     .topbar-title-block .brand {
@@ -159,6 +160,17 @@
       line-height: 1.15;
     }
 
+    @media (max-width: 1100px) {
+      .topbar-title-block .brand-sub,
+      .topbar-title-sep {
+        display: none;
+      }
+      .topbar-title-block {
+        max-width: none;
+        flex: 0 0 auto;
+      }
+    }
+
     .topbar-collapse-btn {
       display: none;
     }
@@ -182,12 +194,22 @@
 
     .main-notice-wrap {
       flex-shrink: 0;
-      padding: 10px 14px 8px;
+      padding: 0 14px;
       background: var(--bg-page, #eef1f6);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
+      border-bottom: none;
+    }
+
+    .main-notice-wrap:has(#pastDayReadonlyBanner:not([hidden])) {
+      padding: 6px 14px 0;
       border-bottom: 1px solid var(--border);
+    }
+
+    .main-notice-wrap:not(:has(#pastDayReadonlyBanner:not([hidden]))) {
+      padding: 0;
+      min-height: 0;
     }
 
     .layout-main-area {
@@ -1353,6 +1375,77 @@
       box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
       box-sizing: border-box;
       position: relative;
+    }
+
+    .notice-board--topbar {
+      flex: 1 1 auto;
+      align-self: stretch;
+      max-width: none;
+      min-width: 140px;
+      max-height: 44px;
+      min-height: 32px;
+      height: 36px;
+      padding: 3px 28px 3px 8px;
+      border-radius: 8px;
+      gap: 6px;
+      overflow: hidden;
+      align-items: center;
+    }
+
+    .notice-board--topbar .notice-board__body {
+      padding-right: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .notice-board--topbar .notice-board__label {
+      display: inline;
+      margin: 0 6px 0 0;
+      font-size: 0.62rem;
+      vertical-align: middle;
+    }
+
+    .notice-board--topbar .notice-board__text {
+      display: inline;
+      font-size: 0.72rem;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      vertical-align: middle;
+    }
+
+    .notice-board--topbar .notice-board__images {
+      float: right;
+      margin: 0 0 0 6px;
+      max-width: 40%;
+      gap: 2px;
+    }
+
+    .notice-board--topbar .notice-thumb-image {
+      max-width: 28px;
+      max-height: 22px;
+      border-radius: 3px;
+    }
+
+    .notice-board--topbar .notice-board__collapse {
+      top: 4px;
+      right: 4px;
+      padding: 1px 5px;
+      font-size: 0.6rem;
+    }
+
+    .notice-board--topbar.is-collapsed {
+      max-height: 28px;
+      height: 28px;
+      min-height: 28px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+
+    .notice-board--topbar.is-collapsed .notice-board__label {
+      display: inline;
     }
 
     .notice-board.is-collapsed {
@@ -13448,9 +13541,16 @@
         padding: 12px 14px;
       }
 
-      .notice-board__text,
-      #noticeText {
-        font-size: 1rem;
+      .notice-board.notice-board--topbar {
+        min-height: 32px;
+        max-height: 44px;
+        height: 36px;
+        padding: 3px 28px 3px 8px;
+      }
+
+      .notice-board.notice-board--topbar .notice-board__text,
+      .notice-board.notice-board--topbar #noticeText {
+        font-size: 0.72rem;
       }
 
       .layout {
@@ -13958,6 +14058,14 @@
         <span class="topbar-title-sep" aria-hidden="true">-</span>
         <span class="brand-sub">Room Operation Dashboard</span>
       </div>
+      <div class="notice-board notice-board--topbar" id="noticeBoard" role="region" aria-label="공지">
+        <button type="button" class="notice-board__collapse" id="btnNoticeCollapse" aria-expanded="true" title="공지 접기">접기</button>
+        <div class="notice-board__body">
+          <div class="notice-board__images" id="noticeImagesMount" hidden></div>
+          <div class="notice-board__label">공지</div>
+          <div class="notice-board__text" id="noticeText"></div>
+        </div>
+      </div>
       <div class="topbar-head-tools">
         <button
           type="button"
@@ -14191,14 +14299,6 @@
     <div class="main-notice-wrap" id="mainNoticeWrap">
       <div class="past-day-readonly-banner" id="pastDayReadonlyBanner" hidden>
         과거 날짜 · 읽기 전용 (AI 모드만 입력 가능)
-      </div>
-      <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
-        <button type="button" class="notice-board__collapse" id="btnNoticeCollapse" aria-expanded="true" title="공지 접기">접기</button>
-        <div class="notice-board__body">
-          <div class="notice-board__images" id="noticeImagesMount" hidden></div>
-          <div class="notice-board__label">공지사항</div>
-          <div class="notice-board__text" id="noticeText"></div>
-        </div>
       </div>
     </div>
     <main class="main">
