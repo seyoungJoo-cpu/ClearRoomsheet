@@ -68,6 +68,7 @@
       width: 100%;
       padding: 10px 14px;
       box-sizing: border-box;
+      position: relative;
     }
 
     .topbar-hamburger {
@@ -85,6 +86,8 @@
       cursor: pointer;
       flex-shrink: 0;
       padding: 0;
+      position: relative;
+      z-index: 2;
     }
 
     .topbar-hamburger span {
@@ -95,8 +98,29 @@
       border-radius: 2px;
     }
 
-    .topbar-hamburger:hover {
+    .topbar-hamburger:hover,
+    .topbar-hamburger[aria-expanded="true"] {
       background: var(--accent-dim);
+    }
+
+    .topbar-ham-menu {
+      position: absolute;
+      top: calc(100% - 4px);
+      left: 14px;
+      z-index: 90;
+      min-width: 140px;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .topbar-ham-menu[hidden] {
+      display: none !important;
     }
 
     .topbar-title-block {
@@ -1009,6 +1033,26 @@
       white-space: nowrap;
     }
 
+    .topbar-user-btn__meta {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0;
+      min-width: 0;
+      line-height: 1.15;
+    }
+
+    .topbar-user-btn__mode {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--accent-deep, #1d4ed8);
+      letter-spacing: 0.02em;
+      max-width: 7.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .topbar-user-btn__chev {
       font-size: 0.7rem;
       color: #94a3b8;
@@ -1024,7 +1068,10 @@
       top: calc(100% + 6px);
       right: 0;
       z-index: 80;
-      min-width: 168px;
+      min-width: 220px;
+      max-width: min(92vw, 280px);
+      max-height: min(70vh, 520px);
+      overflow: auto;
       padding: 6px;
       background: #fff;
       border: 1px solid var(--border);
@@ -1083,6 +1130,38 @@
       color: #94a3b8;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+    }
+
+    .topbar-user-menu__sublabel {
+      margin: 4px 8px 2px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .topbar-user-menu__theme {
+      padding: 2px 6px 8px;
+    }
+
+    .topbar-user-menu__theme .chat-color-picker__swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .topbar-user-menu__theme .chat-color-picker__swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .topbar-user-menu__theme .chat-color-picker__swatch.is-selected {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
     }
 
     .topbar-date-row {
@@ -1156,20 +1235,38 @@
       overflow: auto;
       box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
       box-sizing: border-box;
+      position: relative;
     }
 
-    .notice-board__megaphone {
-      width: 2.4rem;
-      height: 2.4rem;
-      border-radius: 12px;
-      background: #fff;
+    .notice-board.is-collapsed {
+      max-height: none;
+      overflow: hidden;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .notice-board.is-collapsed .notice-board__content {
+      display: none;
+    }
+
+    .notice-board__collapse {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
       border: 1px solid #fcd34d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      flex-shrink: 0;
-      box-shadow: 0 1px 2px rgba(146, 64, 14, 0.08);
+      border-radius: 6px;
+      background: #fff;
+      color: #92400e;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .notice-board__collapse:hover {
+      background: #fffbeb;
     }
 
     .notice-board__body {
@@ -1178,11 +1275,13 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      padding-right: 48px;
     }
 
     .notice-board__content {
       display: flex;
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: stretch;
       gap: 8px;
       min-width: 0;
       flex: 1;
@@ -1203,37 +1302,36 @@
       -webkit-line-clamp: unset;
       line-clamp: unset;
       word-break: break-word;
-      column-count: 2;
-      column-gap: 16px;
-      column-fill: auto;
+      column-count: 1;
+      column-gap: normal;
+      column-fill: balance;
       height: auto;
       max-height: none;
-    }
-
-    @media (max-width: 700px) {
-      .notice-board__text {
-        column-count: 1;
-      }
     }
 
     .notice-board__images {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
       margin-top: 0;
       flex-shrink: 0;
-      max-width: 36%;
-      max-height: 100%;
-      overflow: hidden;
+      max-width: 100%;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .notice-board__images[hidden] {
+      display: none !important;
     }
 
     .notice-thumb-image {
       display: block;
-      width: 36px;
-      max-height: 36px;
-      height: 36px;
-      object-fit: cover;
-      border-radius: 4px;
+      width: auto;
+      max-width: min(100%, 220px);
+      max-height: 120px;
+      height: auto;
+      object-fit: contain;
+      border-radius: 6px;
       border: 1px solid #fbbf24;
       cursor: zoom-in;
       flex-shrink: 0;
@@ -1248,6 +1346,37 @@
       flex-shrink: 0;
       line-height: 1.2;
       padding-top: 0;
+    }
+
+    .fnb-ready-panel {
+      display: none;
+      flex: 1;
+      min-height: 240px;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+
+    .main.main--fnb .fnb-ready-panel {
+      display: flex;
+    }
+
+    .fnb-ready-panel__inner {
+      text-align: center;
+    }
+
+    .fnb-ready-panel__inner h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .fnb-ready-panel__msg {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #64748b;
     }
 
     .notice-board.is-notice-alert {
@@ -13594,10 +13723,7 @@
     aria-label="채팅 색상 · 테마 선택"
     hidden
   >
-    <p class="chat-color-picker__label">채팅 말풍선 색상</p>
-    <div class="chat-color-picker__swatches" id="chatColorPickerSwatches"></div>
-    <p class="chat-color-picker__label chat-color-picker__label--theme">테마</p>
-    <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
+    <p class="chat-color-picker__label">채팅 말풍선 · 테마는 이름 메뉴에서 선택</p>
   </div>
 
   <div id="operator-gate" class="operator-gate" aria-hidden="false">
@@ -13648,13 +13774,20 @@
         type="button"
         class="topbar-hamburger"
         id="btnSidebarHamburger"
-        aria-label="사이드바 접기/펼치기"
-        title="사이드바"
+        aria-label="루밍 · F&B"
+        title="루밍 · F&B"
+        aria-expanded="false"
+        aria-haspopup="true"
+        aria-controls="topbarHamMenu"
       >
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
       </button>
+      <div class="topbar-ham-menu" id="topbarHamMenu" hidden role="menu" aria-label="바로가기">
+        <a class="topbar-user-menu__item" href="/" id="linkRoomingFromFront" role="menuitem" title="루밍 (F9)">루밍</a>
+        <button type="button" class="topbar-user-menu__item" id="btnOpenFnB" role="menuitem">F&amp;B</button>
+      </div>
       <div class="topbar-title-block">
         <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="ROD 미니게임">ROD</span>
         <span class="topbar-title-sep" aria-hidden="true">-</span>
@@ -13692,15 +13825,25 @@
           aria-controls="topbarUserMenu"
           title="계정 · 모드"
         >
+          <span class="topbar-user-btn__meta">
+            <span class="topbar-user-btn__mode" id="topbarActiveModeLabel" hidden></span>
+            <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
+          </span>
           <span class="topbar-user-btn__avatar" aria-hidden="true">👤</span>
-          <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
           <span class="topbar-user-btn__chev" aria-hidden="true">▾</span>
           <span class="admin-inquiry-btn__badge topbar-user-btn__badge" id="adminInquiryBadge" hidden></span>
         </button>
         <div class="topbar-user-menu" id="topbarUserMenu" hidden role="menu" aria-label="계정 메뉴">
           <button type="button" class="topbar-user-menu__item" id="sidebarBtnShiftChange" role="menuitem" title="근무자 이름 변경 (F8)">교대</button>
-          <a class="topbar-user-menu__item" href="/" id="linkRoomingFromFront" role="menuitem" title="루밍 (F9)">루밍</a>
           <button type="button" class="topbar-user-menu__item" id="btnAdminInquiry" role="menuitem" title="관리자에게 문의·건의">관리자 문의</button>
+          <div class="topbar-user-menu__sep" role="separator"></div>
+          <div class="topbar-user-menu__label">테마 · 말풍선</div>
+          <div class="topbar-user-menu__theme" id="topbarMenuThemeMount">
+            <p class="topbar-user-menu__sublabel">말풍선</p>
+            <div class="chat-color-picker__swatches" id="chatColorPickerSwatches"></div>
+            <p class="topbar-user-menu__sublabel">테마</p>
+            <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
+          </div>
           <div class="topbar-user-menu__sep" role="separator"></div>
           <div class="topbar-user-menu__label">모드</div>
           <a class="topbar-user-menu__item topbar-user-menu__item--mode" id="btnAdmin" href="admin.html" role="menuitem">관리자</a>
@@ -13827,7 +13970,7 @@
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="Room Assign 구역 (Ctrl+`)">
           </div>
         </nav>
-        <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" aria-label="FRONT">
+        <nav class="sidebar-section sidebar-section--front" id="sidebarFrontSection" aria-label="FRONT" hidden>
           <div class="sidebar-title">FRONT</div>
           <div class="sidebar-nav">
             <button
@@ -13838,15 +13981,6 @@
               hidden
             >
               <span class="sidebar-nav__ico" aria-hidden="true">💬</span><span class="sidebar-nav__txt">FD 챗</span>
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
-              id="sidebarBtnTrackIt"
-              aria-pressed="false"
-              hidden
-            >
-              <span class="sidebar-nav__ico" aria-hidden="true">🗂️</span><span class="sidebar-nav__txt">Track IT</span>
             </button>
             <button
               type="button"
@@ -13912,18 +14046,12 @@
         과거 날짜 · 읽기 전용 (AI 모드만 입력 가능)
       </div>
       <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
-        <div class="notice-board__megaphone" aria-hidden="true">📢</div>
+        <button type="button" class="notice-board__collapse" id="btnNoticeCollapse" aria-expanded="true" title="공지 접기">접기</button>
         <div class="notice-board__body">
           <div class="notice-board__label">공지사항</div>
           <div class="notice-board__content">
             <div class="notice-board__text" id="noticeText"></div>
-            <div class="notice-board__images" id="noticeImagesMount"></div>
-            <img
-              id="noticeImage"
-              class="notice-thumb-image"
-              alt="공지 첨부 사진"
-              hidden
-            />
+            <div class="notice-board__images" id="noticeImagesMount" hidden></div>
           </div>
         </div>
       </div>
@@ -14068,6 +14196,13 @@
           />
           <button type="submit">질문</button>
         </form>
+      </section>
+
+      <section class="fnb-ready-panel" id="fnbReadyPanel" hidden aria-labelledby="fnbReadyPanelTitle">
+        <div class="fnb-ready-panel__inner">
+          <h2 id="fnbReadyPanelTitle">F&amp;B</h2>
+          <p class="fnb-ready-panel__msg">준비중입니다</p>
+        </div>
       </section>
 
       <section class="zone-block is-collapsed" id="zoneBlock" aria-label="특이객실 등록 객실">
@@ -15829,7 +15964,7 @@
       var roomList = document.getElementById("roomListFront");
       var roomEmpty = document.getElementById("roomListEmpty");
       var noticeText = document.getElementById("noticeText");
-      var noticeImage = document.getElementById("noticeImage");
+      var noticeImage = null;
       var mbInvNoticeBody = document.getElementById("mbInvNoticeBody");
       var zoneLabels = {
         VIP: "VIP",
@@ -16506,21 +16641,8 @@
         if (name) {
           el.textContent = name;
           el.hidden = false;
-          if (typeof HKChatColors !== "undefined") {
-            if (HKChatColors.applyThemeForUser) {
-              HKChatColors.applyThemeForUser(name);
-            }
-            HKChatColors.bindOperatorColorPicker(el, getOperatorName, function () {
-              renderFrontChatPanel();
-              renderOrderPanels();
-              renderRequestDeskChat({ force: true });
-              renderOrderDeskChat({ force: true });
-              renderMbCheckDeskChat({ force: true });
-              renderFacilityDeskChat({ force: true });
-              if (typeof HKMbWorkflow !== "undefined") {
-                HKMbWorkflow.renderMbInvPanels();
-              }
-            });
+          if (typeof HKChatColors !== "undefined" && HKChatColors.applyThemeForUser) {
+            HKChatColors.applyThemeForUser(name);
           }
         } else {
           el.textContent = "이름";
@@ -16529,6 +16651,59 @@
             HKChatColors.applyTheme(HKChatColors.DEFAULT_THEME_ID || "blue");
           }
         }
+        updateActiveModeLabel();
+      }
+
+      function updateActiveModeLabel() {
+        var el = document.getElementById("topbarActiveModeLabel");
+        if (!el) return;
+        var label = "";
+        if (maintenanceMode) label = "정비 입력";
+        else if (frontMode) label = "프론트";
+        else if (roomMode) label = "객실";
+        if (label) {
+          el.textContent = label;
+          el.hidden = false;
+        } else {
+          el.textContent = "";
+          el.hidden = true;
+        }
+      }
+
+      function clearExclusiveModesExcept(keep) {
+        if (keep !== "maint") maintenanceMode = false;
+        if (keep !== "front") frontMode = false;
+        if (keep !== "room") roomMode = false;
+      }
+
+      function refreshExclusiveModeUi() {
+        applyMaintenanceModeUi();
+        applyFrontModeUi();
+        applyRoomModeUi();
+        updateActiveModeLabel();
+      }
+
+      function onChatAppearanceChanged() {
+        renderFrontChatPanel();
+        renderOrderPanels();
+        renderRequestDeskChat({ force: true });
+        renderOrderDeskChat({ force: true });
+        renderMbCheckDeskChat({ force: true });
+        renderFacilityDeskChat({ force: true });
+        if (typeof HKMbWorkflow !== "undefined") {
+          HKMbWorkflow.renderMbInvPanels();
+        }
+      }
+
+      function fillTopbarMenuThemeSwatches() {
+        if (typeof HKChatColors === "undefined" || !HKChatColors.fillColorAndThemeSwatches) return;
+        var name = getOperatorName();
+        if (!String(name || "").trim()) return;
+        var swatches = document.getElementById("chatColorPickerSwatches");
+        var themeSwatches = document.getElementById("chatThemePickerSwatches");
+        HKChatColors.fillColorAndThemeSwatches(swatches, themeSwatches, name, onChatAppearanceChanged, {
+          keepOpen: true,
+        });
       }
 
       function formatTopbarDateLabel(d) {
@@ -16658,6 +16833,8 @@
           btn.setAttribute("aria-expanded", "false");
         }
         function openMenu() {
+          closeTopbarHamMenu();
+          fillTopbarMenuThemeSwatches();
           menu.hidden = false;
           btn.setAttribute("aria-expanded", "true");
         }
@@ -16668,9 +16845,10 @@
           else closeMenu();
         });
         menu.addEventListener("click", function (e) {
+          if (e.target.closest("#topbarMenuThemeMount")) return;
           var item = e.target.closest(".topbar-user-menu__item");
           if (!item) return;
-          if (item.id === "btnAdmin" || item.id === "linkRoomingFromFront") {
+          if (item.id === "btnAdmin") {
             closeMenu();
             return;
           }
@@ -16679,6 +16857,49 @@
         document.addEventListener("click", function (e) {
           if (!menu.hidden && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
             closeMenu();
+          }
+        });
+      }
+
+      function closeTopbarHamMenu() {
+        var ham = document.getElementById("btnSidebarHamburger");
+        var hamMenu = document.getElementById("topbarHamMenu");
+        if (hamMenu) hamMenu.hidden = true;
+        if (ham) ham.setAttribute("aria-expanded", "false");
+      }
+
+      function setupTopbarHamMenu() {
+        var ham = document.getElementById("btnSidebarHamburger");
+        var hamMenu = document.getElementById("topbarHamMenu");
+        if (!ham || !hamMenu) return;
+        ham.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var userMenu = document.getElementById("topbarUserMenu");
+          var userBtn = document.getElementById("topbarUserMenuBtn");
+          if (userMenu) userMenu.hidden = true;
+          if (userBtn) userBtn.setAttribute("aria-expanded", "false");
+          var open = hamMenu.hidden;
+          hamMenu.hidden = !open;
+          ham.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        hamMenu.addEventListener("click", function (e) {
+          var item = e.target.closest(".topbar-user-menu__item");
+          if (!item) return;
+          if (item.id === "btnOpenFnB") {
+            e.preventDefault();
+            showSidebarFnBView();
+          }
+          closeTopbarHamMenu();
+        });
+        document.addEventListener("click", function (e) {
+          if (
+            !hamMenu.hidden &&
+            !hamMenu.contains(e.target) &&
+            e.target !== ham &&
+            !ham.contains(e.target)
+          ) {
+            closeTopbarHamMenu();
           }
         });
       }
@@ -17055,26 +17276,23 @@
         showSidebarOrderView();
         if (kind === "maint") {
           requireRoleAuth("maint", function () {
+            clearExclusiveModesExcept("maint");
             maintenanceMode = true;
-            roomMode = false;
-            applyMaintenanceModeUi();
-            applyRoomModeUi();
+            refreshExclusiveModeUi();
             var invenNav = document.getElementById("sidebarBtnInvenNotify");
             if (invenNav) invenNav.hidden = false;
           });
         } else if (kind === "front") {
           requireRoleAuth("front", function () {
+            clearExclusiveModesExcept("front");
             frontMode = true;
-            roomMode = false;
-            applyFrontModeUi();
-            applyRoomModeUi();
+            refreshExclusiveModeUi();
           });
         } else if (kind === "room") {
           requireRoleAuth("front", function () {
+            clearExclusiveModesExcept("room");
             roomMode = true;
-            frontMode = false;
-            applyFrontModeUi();
-            applyRoomModeUi();
+            refreshExclusiveModeUi();
           });
         }
       }
@@ -17148,12 +17366,6 @@
           btn.addEventListener("click", function () {
             applyMode(nextMode(currentMode()));
           });
-          var ham = document.getElementById("btnSidebarHamburger");
-          if (ham) {
-            ham.addEventListener("click", function () {
-              applyMode(nextMode(currentMode()));
-            });
-          }
         })();
       }
 
@@ -23330,12 +23542,15 @@
           btnRoom.classList.toggle("is-on", roomMode);
           btnRoom.setAttribute("aria-pressed", roomMode ? "true" : "false");
         }
+        var sidebarFrontSection = document.getElementById("sidebarFrontSection");
+        if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
         var frontChatNav = document.getElementById("sidebarBtnFront");
         if (frontEmbedNav) frontEmbedNav.hidden = !canUseFrontSidebar();
         if (complaintNav) complaintNav.hidden = !canUseFrontSidebar();
         if (frontChatNav) frontChatNav.hidden = !canUseFrontSidebar();
+        updateActiveModeLabel();
         if (!canUseFrontSidebar()) {
           if (
             sidebarMainView === "complaint" ||
@@ -23514,6 +23729,7 @@
         var showFront = view === "front";
         var showFrontEmbed = view === "frontEmbed";
         var showAi = view === "ai";
+        var showFnB = view === "fnb";
         var showZone = view === "zone";
         var showComplaint = view === "complaint";
         if (!showRequest) {
@@ -23557,6 +23773,7 @@
         var frontChatPanel = document.getElementById("frontChatPanel");
         var frontEmbedHubPanel = document.getElementById("frontEmbedHubPanel");
         var aiModePanel = document.getElementById("aiModePanel");
+        var fnbReadyPanel = document.getElementById("fnbReadyPanel");
         var zoneBlock = document.getElementById("zoneBlock");
         var mainEl = document.querySelector(".main");
         if (requestStack) requestStack.hidden = !showRequest;
@@ -23564,7 +23781,7 @@
         if (schedPanel) schedPanel.hidden = !showRequest;
         if (orderPanel) orderPanel.hidden = !showOrder;
         if (complaintPanel) complaintPanel.hidden = !showComplaint;
-        if (trackItPanel) trackItPanel.hidden = !showTrackIt;
+        if (trackItPanel) trackItPanel.hidden = true;
         if (nightHandoverPanel) nightHandoverPanel.hidden = !showNightHandover;
         if (vipCheckInPanel) vipCheckInPanel.hidden = !showVipCheckIn;
         if (facilityPanel) facilityPanel.hidden = !showFacility;
@@ -23581,13 +23798,14 @@
         if (frontEmbedHubPanel) frontEmbedHubPanel.hidden = !showFrontEmbed || !frontMode;
         syncFrontEmbedTabUi();
         if (aiModePanel) aiModePanel.hidden = !showAi;
+        if (fnbReadyPanel) fnbReadyPanel.hidden = !showFnB;
         if (!showChat && !showFront) hkClearPhoto("frontChat");
         if (zoneBlock) zoneBlock.hidden = !showZone;
         if (mainEl) {
           mainEl.classList.toggle("main--request", showRequest);
           mainEl.classList.toggle("main--order", showOrder);
           mainEl.classList.toggle("main--complaint", showComplaint);
-          mainEl.classList.toggle("main--track-it", showTrackIt);
+          mainEl.classList.toggle("main--track-it", false);
           mainEl.classList.toggle("main--night-handover", showNightHandover);
           mainEl.classList.toggle("main--vip-checkin", showVipCheckIn);
           mainEl.classList.toggle("main--facility", showFacility);
@@ -23600,6 +23818,7 @@
           mainEl.classList.toggle("main--front", showFront);
           mainEl.classList.toggle("main--front-embed", showFrontEmbed);
           mainEl.classList.toggle("main--ai", showAi);
+          mainEl.classList.toggle("main--fnb", showFnB);
         }
         var feedbackColumn = document.getElementById("feedbackColumn");
         var requestFeedback = document.getElementById("requestFeedback");
@@ -26343,6 +26562,12 @@
         else if (from === "request") aiOrdersScope = "all";
         applySidebarMainView("ai", { skipDirtyConfirm: true });
         ensureAiModeWelcome();
+      }
+
+      function showSidebarFnBView(opts) {
+        if (!applySidebarMainView("fnb", opts)) return;
+        collapseZoneBlock();
+        clearZoneTabSelection();
       }
 
       function showSidebarZoneView(zone, opts) {
@@ -31605,41 +31830,53 @@
         var mount = document.getElementById("noticeImagesMount");
         if (!mount) return;
         mount.innerHTML = "";
-        (images || []).forEach(function (src, i) {
-          if (!src) return;
+        var list = (images || []).filter(Boolean);
+        list.forEach(function (src, i) {
           var img = document.createElement("img");
           img.className = "notice-thumb-image";
           img.src = src;
-          img.alt = "공지 첨부 사진 " + (i + 1);
+          img.alt = "공지 사진 " + (i + 1);
           img.title = "클릭하면 크게 보기";
           mount.appendChild(img);
         });
-        if (noticeImage) noticeImage.hidden = true;
+        mount.hidden = list.length === 0;
       }
 
       function layoutNoticeColumns() {
         if (!noticeText) return;
-        var cs = window.getComputedStyle(noticeText);
-        var fontSize = parseFloat(cs.fontSize) || 14;
-        var lh = parseFloat(cs.lineHeight);
-        if (!isFinite(lh) || lh < fontSize) lh = fontSize * 1.35;
-        var baseLines = 5;
-        var text = noticeText.textContent != null ? String(noticeText.textContent) : "";
-        if (!text.trim()) {
-          noticeText.style.height = lh * baseLines + "px";
-          return;
-        }
-        // 왼쪽 5줄을 먼저 채운 뒤 오른쪽으로 넘어가도록 높이(=단 높이)를 계산
-        var colWidth = Math.max(80, (noticeText.clientWidth || 320) / 2 - 8);
-        var charsPerLine = Math.max(8, Math.floor(colWidth / (fontSize * 0.62)));
-        var approxLines = text.split(/\n/).reduce(function (sum, line) {
-          var len = Array.from(String(line || " ")).length || 1;
-          return sum + Math.max(1, Math.ceil(len / charsPerLine));
-        }, 0);
-        var rowsNeeded = Math.max(baseLines, Math.ceil(approxLines / 2));
-        var maxRows = Math.floor((Math.min(window.innerHeight * 0.4, 280) - 12) / lh) || baseLines;
-        if (rowsNeeded > maxRows) rowsNeeded = maxRows;
-        noticeText.style.height = lh * rowsNeeded + "px";
+        noticeText.style.height = "";
+      }
+
+      function applyNoticeCollapseUi() {
+        var board = document.getElementById("noticeBoard");
+        var btn = document.getElementById("btnNoticeCollapse");
+        if (!board || !btn) return;
+        var collapsed = false;
+        try {
+          collapsed = sessionStorage.getItem("lotte-hk-notice-collapsed") === "1";
+        } catch (e) {}
+        board.classList.toggle("is-collapsed", collapsed);
+        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        btn.textContent = collapsed ? "펼치기" : "접기";
+        btn.title = collapsed ? "공지 펼치기" : "공지 접기";
+      }
+
+      function setupNoticeCollapse() {
+        var btn = document.getElementById("btnNoticeCollapse");
+        if (!btn || btn.__noticeCollapseBound) return;
+        btn.__noticeCollapseBound = true;
+        applyNoticeCollapseUi();
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var board = document.getElementById("noticeBoard");
+          if (!board) return;
+          var next = !board.classList.contains("is-collapsed");
+          try {
+            sessionStorage.setItem("lotte-hk-notice-collapsed", next ? "1" : "0");
+          } catch (err) {}
+          applyNoticeCollapseUi();
+        });
       }
 
       function applyNotice(opts) {
@@ -33569,6 +33806,7 @@
         syncTeamChatSidebarUi();
         syncRequestFeedbackLayoutUi();
         syncNightVipSidebarUi();
+        updateActiveModeLabel();
         if (maintenanceMode) {
           if (typeof HKPush !== "undefined" && HKPush.isOrderPushEnabledPreference()) {
             HKPush.ensureOrderPushSubscription().then(refreshPushAlarmButtonUi);
@@ -33596,7 +33834,7 @@
         if (!isFrontLike()) closeZoneRoomManagePanel();
         updateZoneAddRoomBtnUi();
         renderRoomsForZone(getActiveZone(), { force: true });
-        if (sidebarFrontSection) sidebarFrontSection.hidden = false;
+        if (sidebarFrontSection) sidebarFrontSection.hidden = !frontMode;
         var frontEmbedNav = document.getElementById("sidebarBtnFrontEmbed");
         var complaintNav = document.getElementById("sidebarBtnComplaint");
         if (frontEmbedNav) frontEmbedNav.hidden = !canUseFrontSidebar();
@@ -33604,7 +33842,7 @@
         syncNightVipSidebarUi();
         applyFacilityLogSidebarUi();
         syncTeamChatSidebarUi();
-        applyRoomModeUi();
+        updateActiveModeLabel();
         if (!canUseFrontSidebar() && sidebarMainView === "complaint") {
           showSidebarOrderView({ skipDirtyConfirm: true });
         } else if (
@@ -34134,12 +34372,13 @@
         btnMaint.addEventListener("click", function () {
           if (maintenanceMode) {
             maintenanceMode = false;
-            applyMaintenanceModeUi();
+            refreshExclusiveModeUi();
             return;
           }
           requireRoleAuth("maint", function () {
+            clearExclusiveModesExcept("maint");
             maintenanceMode = true;
-            applyMaintenanceModeUi();
+            refreshExclusiveModeUi();
           });
         });
       }
@@ -34149,13 +34388,13 @@
         btnFront.addEventListener("click", function () {
           if (frontMode) {
             frontMode = false;
-            applyFrontModeUi();
+            refreshExclusiveModeUi();
             return;
           }
           requireRoleAuth("front", function () {
+            clearExclusiveModesExcept("front");
             frontMode = true;
-            roomMode = false;
-            applyFrontModeUi();
+            refreshExclusiveModeUi();
           });
         });
       }
@@ -34165,15 +34404,13 @@
         btnRoom.addEventListener("click", function () {
           if (roomMode) {
             roomMode = false;
-            applyFrontModeUi();
-            applyRoomModeUi();
+            refreshExclusiveModeUi();
             return;
           }
           requireRoleAuth("front", function () {
+            clearExclusiveModesExcept("room");
             roomMode = true;
-            frontMode = false;
-            applyFrontModeUi();
-            applyRoomModeUi();
+            refreshExclusiveModeUi();
           });
         });
       }
@@ -34693,14 +34930,17 @@
       setupPushAlarmButton();
       setupTopbarToolbar();
       setupTopbarUserMenu();
+      setupTopbarHamMenu();
       setupTopbarDatePicker();
+      setupNoticeCollapse();
       updateTopbarDateChip();
+      updateActiveModeLabel();
       ensureOperatorNameOnLoad();
 
       var noticeBoardEl = document.getElementById("noticeBoard");
       if (noticeBoardEl) {
         noticeBoardEl.addEventListener("click", function (e) {
-          if (e.target && e.target.id === "noticeImage") return;
+          if (e.target && e.target.classList && e.target.classList.contains("notice-thumb-image")) return;
           stopNoticeBoardFlash();
         });
       }
@@ -35333,7 +35573,7 @@
       applyFrontEmbedStatesFromStorage({ force: true });
       showSidebarOrderView();
       renderOrderPanels();
-      applyFrontModeUi();
+      refreshExclusiveModeUi();
       renderFrontChatPanel();
 
       function clearRoomStatusDisplay() {
