@@ -7302,6 +7302,18 @@
       text-overflow: ellipsis;
     }
 
+    .sidebar-section__toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .sidebar-section__toggle-label .sidebar-nav__txt {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .sidebar-section--handover .sidebar-section__toggle:disabled,
     .sidebar-section--vip-notes .sidebar-section__toggle:disabled {
       opacity: 0.55;
@@ -13964,7 +13976,7 @@
             aria-controls="sidebarZoneNav"
             title="Room Assign (Ctrl+` — 누를 때마다 다음 구역)"
           >
-            <span class="sidebar-section__toggle-label">Room Assign</span>
+            <span class="sidebar-section__toggle-label"><span class="sidebar-nav__ico" aria-hidden="true">🗂️</span><span class="sidebar-nav__txt">Room Assign</span></span>
             <span class="sidebar-section__toggle-hint" aria-hidden="true">펼치기</span>
           </button>
           <div class="sidebar-nav sidebar-nav--zones" id="sidebarZoneNav" role="tablist" aria-label="Room Assign 구역 (Ctrl+`)">
@@ -15974,6 +15986,15 @@
         AJ: "AJ",
         MINIBAR: "MB",
         SHUTTLE: "셔틀",
+      };
+      var ZONE_SIDEBAR_ICONS = {
+        VIP: "👑",
+        RC: "🔁",
+        CASINO: "🎰",
+        MOBILE_CI: "📱",
+        AJ: "🅰️",
+        MINIBAR: "🍾",
+        SHUTTLE: "🚌",
       };
       var currentZone = null;
       var maintenanceMode = false;
@@ -20554,6 +20575,12 @@
         setSidebarZonesCollapsed(false);
       }
 
+      function getZoneSidebarIcon(zoneId) {
+        var id = String(zoneId || "").trim();
+        if (ZONE_SIDEBAR_ICONS[id]) return ZONE_SIDEBAR_ICONS[id];
+        return "📍";
+      }
+
       function renderSidebarZoneTabs() {
         var nav = document.getElementById("sidebarZoneNav");
         if (!nav || typeof HKStorage.getZoneOrder !== "function") return;
@@ -20579,10 +20606,20 @@
           btn.className = "sidebar-nav__btn zone-tab";
           btn.setAttribute("role", "tab");
           btn.setAttribute("data-zone", zoneId);
+          var label = zoneLabels[zoneId] || zoneId;
+          btn.title = label;
           var isActive = activeZone === zoneId;
           btn.classList.toggle("active", isActive);
           btn.setAttribute("aria-selected", isActive ? "true" : "false");
-          btn.textContent = zoneLabels[zoneId] || zoneId;
+          var ico = document.createElement("span");
+          ico.className = "sidebar-nav__ico";
+          ico.setAttribute("aria-hidden", "true");
+          ico.textContent = getZoneSidebarIcon(zoneId);
+          var txt = document.createElement("span");
+          txt.className = "sidebar-nav__txt";
+          txt.textContent = label;
+          btn.appendChild(ico);
+          btn.appendChild(txt);
           if (pendingZoneAlerts[zoneId]) btn.classList.add("is-change-alert");
           nav.appendChild(btn);
         });
