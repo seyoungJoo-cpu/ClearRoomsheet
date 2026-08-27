@@ -1930,6 +1930,7 @@
     onChange: onChange,
     pull: pull,
     hydrateFromLocal: hydrateFromLocal,
+    getSyncPassword: getSyncPassword,
     mergeOrderChats: mergeOrderChats,
     clearLocalCaches: clearLocalCaches,
     clearDayLocalCachesOnCloseDay: clearDayLocalCachesOnCloseDay,

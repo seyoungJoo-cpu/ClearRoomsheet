@@ -3551,6 +3551,14 @@
       }
 
       function getCloseDayFilenameBase(snapshot) {
+        var dateStr = snapshot && snapshot.archiveDate ? String(snapshot.archiveDate) : "";
+        var label = snapshot && snapshot.archiveLabel ? String(snapshot.archiveLabel) : "";
+        if (label) {
+          return "마감_" + label.replace(/[\\/:*?"<>|]/g, "_");
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return "마감_" + dateStr.replace(/-/g, "");
+        }
         var now = new Date(snapshot.exportedAt);
         return (
           "마감_" +
@@ -3561,6 +3569,62 @@
           pad2(now.getHours()) +
           pad2(now.getMinutes())
         );
+      }
+
+      function getKstDateInputValue() {
+        try {
+          var parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(new Date());
+          var map = {};
+          parts.forEach(function (p) {
+            map[p.type] = p.value;
+          });
+          return map.year + "-" + map.month + "-" + map.day;
+        } catch (e) {
+          var d = new Date();
+          return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+        }
+      }
+
+      function promptCloseDayArchiveDate() {
+        var def = getKstDateInputValue();
+        var input = window.prompt(
+          "몇 일에 마감을 저장할까요?\n(YYYY-MM-DD)\n동일 날짜에 이미 있으면 (1), (2) 복사본으로 저장됩니다. 서버에는 약 7일 보관됩니다.",
+          def
+        );
+        if (input == null) return null;
+        var dateStr = String(input || "").trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          toast("날짜 형식이 올바르지 않습니다. (예: " + def + ")");
+          return null;
+        }
+        return dateStr;
+      }
+
+      function uploadCloseDayArchiveToServer(snapshot, reportHtml, screenHtml) {
+        var pwd =
+          (typeof HKSync !== "undefined" && HKSync.getSyncPassword && HKSync.getSyncPassword()) ||
+          sessionStorage.getItem("clear_html_sync_pwd") ||
+          "74321";
+        return fetch("/api/close-day-archives", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-sync-password": pwd,
+          },
+          body: JSON.stringify({
+            date: snapshot.archiveDate,
+            reportHtml: reportHtml || "",
+            screenHtml: screenHtml || "",
+          }),
+        }).then(function (res) {
+          if (!res.ok) throw new Error("archive upload " + res.status);
+          return res.json();
+        });
       }
 
       function sectionAnchorId(title, index) {
@@ -4945,132 +5009,200 @@
           toast("마감 데이터 수집 실패: " + (err && err.message ? err.message : err));
           return;
         }
-        if (typeof HKSync !== "undefined" && HKSync.hydrateFromLocal) {
-          HKSync.hydrateFromLocal();
-        }
-        var preservedTeamChat =
-          typeof HKSync !== "undefined" && HKSync.getTeamChat
-            ? HKSync.getTeamChat().slice()
-            : (snapshot.teamChat || []).slice();
-        var preservedFrontChat =
-          typeof HKSync !== "undefined" && HKSync.getFrontChat
-            ? HKSync.getFrontChat().slice()
-            : (snapshot.frontChat || []).slice();
-        var preservedAdminInquiries =
-          typeof HKSync !== "undefined" && HKSync.getAdminInquiries
-            ? HKSync.getAdminInquiries().slice()
-            : [];
-        if (!preservedAdminInquiries.length) {
-          try {
-            var rawInq = localStorage.getItem("lotte-hk-admin-inquiries-v1");
-            if (rawInq) {
-              var parsedInq = JSON.parse(rawInq);
-              if (Array.isArray(parsedInq) && parsedInq.length) {
-                preservedAdminInquiries = parsedInq;
+        var archiveDate = window.__hkPendingCloseDayArchiveDate || getKstDateInputValue();
+        window.__hkPendingCloseDayArchiveDate = "";
+        snapshot.archiveDate = archiveDate;
+        snapshot.archiveLabel = archiveDate;
+
+        function continueCloseDay(labelInfo) {
+          if (labelInfo && labelInfo.label) {
+            snapshot.archiveLabel = labelInfo.label;
+            snapshot.archiveCopyIndex = labelInfo.copyIndex || 0;
+          }
+          if (typeof HKSync !== "undefined" && HKSync.hydrateFromLocal) {
+            HKSync.hydrateFromLocal();
+          }
+          var preservedTeamChat =
+            typeof HKSync !== "undefined" && HKSync.getTeamChat
+              ? HKSync.getTeamChat().slice()
+              : (snapshot.teamChat || []).slice();
+          var preservedFrontChat =
+            typeof HKSync !== "undefined" && HKSync.getFrontChat
+              ? HKSync.getFrontChat().slice()
+              : (snapshot.frontChat || []).slice();
+          var preservedAdminInquiries =
+            typeof HKSync !== "undefined" && HKSync.getAdminInquiries
+              ? HKSync.getAdminInquiries().slice()
+              : [];
+          if (!preservedAdminInquiries.length) {
+            try {
+              var rawInq = localStorage.getItem("lotte-hk-admin-inquiries-v1");
+              if (rawInq) {
+                var parsedInq = JSON.parse(rawInq);
+                if (Array.isArray(parsedInq) && parsedInq.length) {
+                  preservedAdminInquiries = parsedInq;
+                }
               }
-            }
-          } catch (e) {}
-        }
-        // 스냅샷에 문의가 있으면 그쪽도 합침 (마감 PC 로컬이 비어 있어도 유실 방지)
-        if (Array.isArray(snapshot.adminInquiries) && snapshot.adminInquiries.length) {
-          var inqMap = {};
-          preservedAdminInquiries.forEach(function (e) {
-            if (e && e.id) inqMap[e.id] = e;
-          });
-          snapshot.adminInquiries.forEach(function (e) {
-            if (!e || !e.id) return;
-            if (!inqMap[e.id]) inqMap[e.id] = e;
-          });
-          preservedAdminInquiries = Object.keys(inqMap).map(function (k) {
-            return inqMap[k];
-          });
-        }
-        var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
-        var preservedFacility =
-          typeof HKFacilityLogs !== "undefined"
-            ? HKFacilityLogs.prepareForAdminCloseDay(snapshot.data)
-            : null;
-        try {
-          downloadCloseDayHtml(snapshot);
-        } catch (errHtml) {
-          console.error(errHtml);
-          toast("HTML 보고서 저장 실패");
-          return;
-        }
-        try {
-          downloadCloseDayExcel(snapshot);
-        } catch (errXls) {
-          console.error(errXls);
-          toast("엑셀 저장 실패");
-        }
-        setTimeout(function () {
-          downloadCloseDayScreenHtml(snapshot);
-        }, 400);
+            } catch (e) {}
+          }
+          if (Array.isArray(snapshot.adminInquiries) && snapshot.adminInquiries.length) {
+            var inqMap = {};
+            preservedAdminInquiries.forEach(function (e) {
+              if (e && e.id) inqMap[e.id] = e;
+            });
+            snapshot.adminInquiries.forEach(function (e) {
+              if (!e || !e.id) return;
+              if (!inqMap[e.id]) inqMap[e.id] = e;
+            });
+            preservedAdminInquiries = Object.keys(inqMap).map(function (k) {
+              return inqMap[k];
+            });
+          }
+          var preservedOrderLog = preserveOrderAlertEntries(snapshot.orderLog);
+          var preservedFacility =
+            typeof HKFacilityLogs !== "undefined"
+              ? HKFacilityLogs.prepareForAdminCloseDay(snapshot.data)
+              : null;
 
-        var resetStorage = getResetStorageData(preservedFacility);
-        var closeAtIso = resetStorage.closeDayAt || new Date().toISOString();
-        if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
-          HKSync.pushSnapshot({
-            hkCloseDayReset: true,
-            hkClearLocalCaches: true,
-            hkCloseDayAt: closeAtIso,
-            hkStorage: resetStorage,
-            hkRequestLog: [],
-            hkOrderLog: preservedOrderLog,
-            hkMbInvLog: [],
-            hkMbCheckLog: [],
-            hkTeamChat: preservedTeamChat,
-            hkFrontChat: preservedFrontChat,
-            hkAdminInquiries: preservedAdminInquiries,
-            hkCancelLog: [],
-            hkUseLog: [],
-            hkChangeLog: [],
-            hkLastRoomChange: null,
-            // 마감 시 연박 목록도 전체 동기화 PC에서 비움
-            extendedStayRooms: {},
-            extendedStayUpdatedAt: closeAtIso,
-          }).finally(function () {
-            if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
-              HKInvenNotify.resetOnCloseDay();
-            }
-            clearFrontEmbedLocalStorage();
-            adminNoticeDirty = false;
-            adminMbInvNoticeDirty = false;
-            adminVipMemoDirty = false;
-            adminHotelInfoDirty = false;
-            refresh({ force: true });
-            loadHotelInfoIntoForm(HKStorage.load(), true);
-            toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비/시설/MB 미니채팅 삭제 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지 · 연박 초기화)");
+          var reportHtml = "";
+          try {
+            reportHtml = buildCloseDayReportHtml(snapshot);
+            downloadBlobFile(
+              getCloseDayFilenameBase(snapshot) + ".html",
+              new Blob([reportHtml], { type: "text/html;charset=utf-8;" })
+            );
+          } catch (errHtml) {
+            console.error(errHtml);
+            toast("HTML 보고서 저장 실패");
+            return;
+          }
+          try {
+            downloadCloseDayExcel(snapshot);
+          } catch (errXls) {
+            console.error(errXls);
+            toast("엑셀 저장 실패");
+          }
+
+          var screenHtmlPromise = loadCloseDayArchiveRuntime()
+            .then(function (runtimeJs) {
+              var screenHtml = buildCloseDayScreenHtml(snapshot, runtimeJs);
+              downloadBlobFile(
+                getCloseDayFilenameBase(snapshot) + "_읽기모드.html",
+                new Blob([screenHtml], { type: "text/html;charset=utf-8;" })
+              );
+              return screenHtml;
+            })
+            .catch(function (err) {
+              console.error(err);
+              toast("읽기 모드 파일 생성 실패 · 보고서/엑셀은 저장됨");
+              return "";
+            });
+
+          screenHtmlPromise.then(function (screenHtml) {
+            uploadCloseDayArchiveToServer(snapshot, reportHtml, screenHtml || "")
+              .then(function (resp) {
+                if (resp && resp.archive && resp.archive.label) {
+                  snapshot.archiveLabel = resp.archive.label;
+                }
+              })
+              .catch(function (errUp) {
+                console.warn(errUp);
+                toast("서버 마감 보관 실패 · 로컬 파일은 저장됨");
+              })
+              .finally(function () {
+                var resetStorage = getResetStorageData(preservedFacility);
+                var closeAtIso = resetStorage.closeDayAt || new Date().toISOString();
+                if (typeof HKSync !== "undefined" && HKSync.pushSnapshot) {
+                  HKSync.pushSnapshot({
+                    hkCloseDayReset: true,
+                    hkClearLocalCaches: true,
+                    hkCloseDayAt: closeAtIso,
+                    hkStorage: resetStorage,
+                    hkRequestLog: [],
+                    hkOrderLog: preservedOrderLog,
+                    hkMbInvLog: [],
+                    hkMbCheckLog: [],
+                    hkTeamChat: preservedTeamChat,
+                    hkFrontChat: preservedFrontChat,
+                    hkAdminInquiries: preservedAdminInquiries,
+                    hkCancelLog: [],
+                    hkUseLog: [],
+                    hkChangeLog: [],
+                    hkLastRoomChange: null,
+                    extendedStayRooms: {},
+                    extendedStayUpdatedAt: closeAtIso,
+                  }).finally(function () {
+                    if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
+                      HKInvenNotify.resetOnCloseDay();
+                    }
+                    clearFrontEmbedLocalStorage();
+                    adminNoticeDirty = false;
+                    adminMbInvNoticeDirty = false;
+                    adminVipMemoDirty = false;
+                    adminHotelInfoDirty = false;
+                    refresh({ force: true });
+                    loadHotelInfoIntoForm(HKStorage.load(), true);
+                    toast(
+                      "마감 완료 · " +
+                        (snapshot.archiveLabel || archiveDate) +
+                        " 저장 (HTML·엑셀·읽기모드 · 서버 약 7일 보관)"
+                    );
+                  });
+                  return;
+                }
+                toast("마감 완료 · 로컬 저장됨 (동기화 없음)");
+              });
           });
-          return;
         }
 
-        HKStorage.save(resetStorage, { skipSync: true });
-        if (typeof HKSync !== "undefined" && HKSync.setAdminInquiries) {
-          HKSync.setAdminInquiries(preservedAdminInquiries);
-        }
-        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
-          HKInvenNotify.resetOnCloseDay();
-        }
-        clearFrontEmbedLocalStorage();
-        adminNoticeDirty = false;
-        adminMbInvNoticeDirty = false;
-        adminVipMemoDirty = false;
-        adminHotelInfoDirty = false;
-        refresh({ force: true });
-        loadHotelInfoIntoForm(HKStorage.load(), true);
-        toast("마감 완료 · HTML·엑셀·읽기모드 저장됨 (채팅·관리자 문의·오더 알림·시설업무 10일 · 시설관리 알림·문제발생 초기화 · 공지 문구 유지·사진 초기화 · 오더/정비/시설/MB 미니채팅 삭제 · 인포등록·게임랭킹·고객불편·Track IT·야간인계·VIP체크인 유지)");
+        var pwd =
+          (typeof HKSync !== "undefined" && HKSync.getSyncPassword && HKSync.getSyncPassword()) ||
+          sessionStorage.getItem("clear_html_sync_pwd") ||
+          "74321";
+        fetch("/api/close-day-archives", {
+          method: "GET",
+          headers: { "x-sync-password": pwd },
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error("list failed");
+            return res.json();
+          })
+          .then(function (data) {
+            var list = (data && data.archives) || [];
+            var same = list.filter(function (r) {
+              return r && String(r.date) === archiveDate;
+            });
+            if (!same.length) {
+              continueCloseDay({ label: archiveDate, copyIndex: 0 });
+              return;
+            }
+            var max = 0;
+            same.forEach(function (r) {
+              var n = parseInt(r.copyIndex, 10);
+              if (isFinite(n) && n > max) max = n;
+            });
+            var next = max + 1;
+            continueCloseDay({ label: archiveDate + " (" + next + ")", copyIndex: next });
+          })
+          .catch(function () {
+            continueCloseDay({ label: archiveDate, copyIndex: 0 });
+          });
       }
 
       function performCloseDay() {
+        var archiveDate = promptCloseDayArchiveDate();
+        if (!archiveDate) return;
         if (
           !confirm(
-            "마감을 진행할까요?\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편·Track IT·야간인계·VIP체크인 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생·시설 관리 알림·오더/정비/시설/MB 미니채팅 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편·Track IT·야간인계·VIP체크인은 유지 (초기화 버튼으로만 삭제)\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
+            "마감을 진행할까요?\n\n저장 날짜: " +
+              archiveDate +
+              "\n(동일 날짜면 (1)(2) 복사본 · 서버 약 7일 보관)\n\n1) 현재 데이터를 HTML 보고서 + 엑셀 + 읽기모드 HTML로 저장\n   (보고서·엑셀: 전체 데이터 · 고객불편·Track IT·야간인계·VIP체크인 포함 / 읽기모드: 사이드바 전체 화면 이동 + AI 채팅 조회)\n2) 공지 사진·DD·인벤·고객취향·인벤통보·객실·요청·MB·문제발생·시설 관리 알림·오더/정비/시설/MB 미니채팅 초기화 (공지 문구는 유지)\n3) 인포등록(호텔 인포·홈페이지)·고객불편·Track IT·야간인계·VIP체크인은 유지 (초기화 버튼으로만 삭제)\n4) 채팅·관리자 문의는 마감 후에도 유지 · 오더 알림·시설업무(컴플레인·당일습득물)는 10일간 유지\n\n되돌릴 수 없습니다."
           )
         ) {
           return;
         }
 
+        window.__hkPendingCloseDayArchiveDate = archiveDate;
         if (typeof HKSync !== "undefined" && HKSync.pull) {
           HKSync.pull(false).finally(runCloseDayExport);
           return;

@@ -559,10 +559,177 @@ function checkSyncAuth(req, res, next) {
   next();
 }
 
-app.use(express.json({ limit: "12mb" }));
+const CLOSE_DAY_ARCHIVE_DIR = path.join(__dirname, "close-day-archives");
+const CLOSE_DAY_ARCHIVE_INDEX = path.join(CLOSE_DAY_ARCHIVE_DIR, "index.json");
+const CLOSE_DAY_KEEP_DAYS = 7;
+
+function ensureCloseDayArchiveDir() {
+  try {
+    if (!fs.existsSync(CLOSE_DAY_ARCHIVE_DIR)) fs.mkdirSync(CLOSE_DAY_ARCHIVE_DIR, { recursive: true });
+  } catch (e) {}
+}
+
+function loadCloseDayArchiveIndex() {
+  ensureCloseDayArchiveDir();
+  try {
+    if (!fs.existsSync(CLOSE_DAY_ARCHIVE_INDEX)) return [];
+    var raw = fs.readFileSync(CLOSE_DAY_ARCHIVE_INDEX, "utf8");
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveCloseDayArchiveIndex(list) {
+  ensureCloseDayArchiveDir();
+  try {
+    fs.writeFileSync(CLOSE_DAY_ARCHIVE_INDEX, JSON.stringify(list || [], null, 2));
+  } catch (e) {
+    console.warn("close-day archive index save failed", e && e.message);
+  }
+}
+
+function pruneCloseDayArchives(list) {
+  list = Array.isArray(list) ? list.slice() : [];
+  var cutoff = Date.now() - CLOSE_DAY_KEEP_DAYS * 24 * 3600 * 1000;
+  var kept = [];
+  list.forEach(function (row) {
+    if (!row) return;
+    var t = Date.parse(String(row.savedAt || row.date || ""));
+    if (!isFinite(t)) t = Date.parse(String(row.date) + "T00:00:00+09:00");
+    if (isFinite(t) && t < cutoff) {
+      try {
+        if (row.reportFile) {
+          var rp = path.join(CLOSE_DAY_ARCHIVE_DIR, path.basename(String(row.reportFile)));
+          if (fs.existsSync(rp)) fs.unlinkSync(rp);
+        }
+        if (row.screenFile) {
+          var sp = path.join(CLOSE_DAY_ARCHIVE_DIR, path.basename(String(row.screenFile)));
+          if (fs.existsSync(sp)) fs.unlinkSync(sp);
+        }
+      } catch (eDel) {}
+      return;
+    }
+    kept.push(row);
+  });
+  return kept;
+}
+
+function nextCloseDayArchiveLabel(dateStr, list) {
+  dateStr = String(dateStr || "").trim();
+  var same = (list || []).filter(function (r) {
+    return r && String(r.date) === dateStr;
+  });
+  if (!same.length) return { label: dateStr, copyIndex: 0 };
+  var max = 0;
+  same.forEach(function (r) {
+    var n = parseInt(r.copyIndex, 10);
+    if (isFinite(n) && n > max) max = n;
+  });
+  var next = max + 1;
+  return { label: dateStr + " (" + next + ")", copyIndex: next };
+}
+
+app.use(express.json({ limit: "40mb" }));
 
 app.get("/ping", function (req, res) {
   res.status(200).type("text/plain").send("ok");
+});
+
+app.get("/api/close-day-archives", checkSyncAuth, function (req, res) {
+  var list = pruneCloseDayArchives(loadCloseDayArchiveIndex());
+  saveCloseDayArchiveIndex(list);
+  res.set("Cache-Control", "no-store");
+  res.json({
+    archives: list.map(function (r) {
+      return {
+        id: r.id,
+        date: r.date,
+        label: r.label,
+        copyIndex: r.copyIndex,
+        savedAt: r.savedAt,
+        hasReport: !!r.reportFile,
+        hasScreen: !!r.screenFile,
+      };
+    }),
+  });
+});
+
+app.post("/api/close-day-archives", checkSyncAuth, function (req, res) {
+    var body = req.body || {};
+    var dateStr = String(body.date || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      res.status(400).json({ error: "invalid date" });
+      return;
+    }
+    ensureCloseDayArchiveDir();
+    var list = pruneCloseDayArchives(loadCloseDayArchiveIndex());
+    var next = nextCloseDayArchiveLabel(dateStr, list);
+    var id =
+      "cd_" +
+      dateStr.replace(/-/g, "") +
+      "_" +
+      Date.now().toString(36) +
+      "_" +
+      Math.random().toString(36).slice(2, 7);
+    var safeBase = next.label.replace(/[\\/:*?"<>|]/g, "_");
+    var reportFile = "";
+    var screenFile = "";
+    try {
+      if (body.reportHtml) {
+        reportFile = safeBase + "_report.html";
+        fs.writeFileSync(path.join(CLOSE_DAY_ARCHIVE_DIR, reportFile), String(body.reportHtml), "utf8");
+      }
+      if (body.screenHtml) {
+        screenFile = safeBase + "_screen.html";
+        fs.writeFileSync(path.join(CLOSE_DAY_ARCHIVE_DIR, screenFile), String(body.screenHtml), "utf8");
+      }
+    } catch (eWrite) {
+      res.status(500).json({ error: "write failed", detail: eWrite && eWrite.message });
+      return;
+    }
+    var row = {
+      id: id,
+      date: dateStr,
+      label: next.label,
+      copyIndex: next.copyIndex,
+      savedAt: new Date().toISOString(),
+      reportFile: reportFile,
+      screenFile: screenFile,
+    };
+    list.unshift(row);
+    saveCloseDayArchiveIndex(list);
+    res.json({ ok: true, archive: { id: row.id, date: row.date, label: row.label, copyIndex: row.copyIndex } });
+  });
+
+app.get("/api/close-day-archives/:id/file", checkSyncAuth, function (req, res) {
+  var list = loadCloseDayArchiveIndex();
+  var id = String(req.params.id || "");
+  var kind = String(req.query.kind || "report");
+  var row = null;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && list[i].id === id) {
+      row = list[i];
+      break;
+    }
+  }
+  if (!row) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  var fileName = kind === "screen" ? row.screenFile : row.reportFile;
+  if (!fileName) {
+    res.status(404).json({ error: "file missing" });
+    return;
+  }
+  var fp = path.join(CLOSE_DAY_ARCHIVE_DIR, path.basename(String(fileName)));
+  if (!fs.existsSync(fp)) {
+    res.status(404).json({ error: "file missing" });
+    return;
+  }
+  res.set("Cache-Control", "no-store");
+  res.type("html").send(fs.readFileSync(fp, "utf8"));
 });
 
 app.get("/api/sync", checkSyncAuth, function (req, res) {

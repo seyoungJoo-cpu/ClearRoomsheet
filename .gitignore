@@ -19,3 +19,4 @@ node_modules/
 push-subs.json
 .push-vapid-marker.txt
 sync-state.json
+close-day-archives/

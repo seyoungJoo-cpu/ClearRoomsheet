@@ -18,6 +18,7 @@
     admin: "관리자",
     maint: "정비 입력",
     front: "프론트",
+    room: "객실",
     inquiry: "관리자 문의",
   };
 
