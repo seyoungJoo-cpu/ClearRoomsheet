@@ -13121,17 +13121,17 @@
   </header>
 
   <div class="layout">
-    <aside class="sidebar" id="hkSidebar" aria-label="House Keeping">
+    <aside class="sidebar is-half-collapsed" id="hkSidebar" aria-label="House Keeping">
       <button
         type="button"
         class="sidebar-collapse-btn"
         id="btnSidebarCollapse"
-        aria-expanded="true"
+        aria-expanded="false"
         aria-controls="hkSidebar"
-        title="사이드바 접기"
+        title="사이드바 완전 접기"
       >
         <span aria-hidden="true">◀</span>
-        <span class="sidebar-collapse-btn__label">접기</span>
+        <span class="sidebar-collapse-btn__label">더접기</span>
       </button>
       <div class="sidebar-brand">
         <h1 class="sidebar-brand__title">House Keeping</h1>
@@ -16289,7 +16289,7 @@
               sessionStorage.setItem(key, mode);
             } catch (e) {}
           }
-          var saved = "open";
+          var saved = "half";
           try {
             var raw = sessionStorage.getItem(key);
             if (raw === "half" || raw === "full" || raw === "open") saved = raw;
