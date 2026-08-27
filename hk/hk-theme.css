@@ -1,31 +1,37 @@
 /**
- * 정비관리(HK) — 가시성 우선 라이트 테마
+ * 정비관리(HK) — ROD 스타일 라이트 테마
  * 기본: 파랑. html[data-hk-theme="…"] 로 전환.
  */
 :root,
 html[data-hk-theme="blue"] {
-  --bg: #dde3ec;
+  --bg: #eef1f6;
   --panel: #ffffff;
-  --bg-page: #dde3ec;
+  --bg-page: #eef1f6;
   --bg-card: #ffffff;
-  --border: #b8c2d0;
-  --text: #15202b;
-  --muted: #4b5563;
-  --text-muted: #4b5563;
-  --accent: #1565c0;
-  --accent-dim: #0d47a1;
-  --accent-light: #1976d2;
-  --accent-bright: #3d9cf5;
-  --ok: #15803d;
-  --danger: #b91c1c;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --accent-dim: #1d4ed8;
+  --accent-light: #3b82f6;
+  --accent-bright: #60a5fa;
+  --ok: #16a34a;
+  --danger: #dc2626;
   --danger-bg: #fee2e2;
   --surface-raised: #ffffff;
-  --surface-inset: #f3f5f8;
-  --hover-bg: #e3f0ff;
+  --surface-inset: #f8fafc;
+  --hover-bg: #eff6ff;
   --accent-soft: #eff6ff;
   --accent-soft-2: #dbeafe;
-  --accent-ring: #3b82f6;
+  --accent-ring: #60a5fa;
   --accent-deep: #1e40af;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.06);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
   /* 인벤 = 테마(accent) 보색 */
   --inv-accent: #ea580c;
   --inv-dim: #c2410c;
@@ -37,42 +43,42 @@ html[data-hk-theme="blue"] {
   --alert-flash-bg: var(--accent-soft-2);
   --alert-flash-bd: var(--accent-ring);
   --alert-flash-fg: var(--accent-deep);
-  --alert-flash-glow: color-mix(in srgb, var(--accent) 45%, transparent);
-  --alert-active-glow: color-mix(in srgb, var(--accent) 20%, transparent);
+  --alert-flash-glow: color-mix(in srgb, var(--accent) 35%, transparent);
+  --alert-active-glow: color-mix(in srgb, var(--accent) 16%, transparent);
 
-  /* 배경은 루밍과 동일 원색, 글씨/테두리는 기존 뱃지 가독성 색 */
-  --st-ip-bg: #00ff00;
-  --st-ip-fg: #14532d;
-  --st-ip-bd: #4ade80;
-  --st-cl-bg: #00ffff;
-  --st-cl-fg: #0c4a6e;
-  --st-cl-bd: #38bdf8;
-  --st-pu-bg: #ffff00;
-  --st-pu-fg: #713f12;
-  --st-pu-bd: #facc15;
-  --st-di-bg: #ff0000;
-  --st-di-fg: #ffffff;
-  --st-di-bd: #f87171;
-  --st-oo-bg: #9ca3af;
-  --st-oo-fg: #111827;
-  --st-oo-bd: #6b7280;
-  --st-os-bg: #9ca3af;
-  --st-os-fg: #111827;
-  --st-os-bd: #6b7280;
+  /* 파스텔 상태 뱃지 (가독성 + 소프트 UI) */
+  --st-ip-bg: #dcfce7;
+  --st-ip-fg: #166534;
+  --st-ip-bd: #86efac;
+  --st-cl-bg: #e0f2fe;
+  --st-cl-fg: #075985;
+  --st-cl-bd: #7dd3fc;
+  --st-pu-bg: #fef9c3;
+  --st-pu-fg: #854d0e;
+  --st-pu-bd: #fde047;
+  --st-di-bg: #fee2e2;
+  --st-di-fg: #991b1b;
+  --st-di-bd: #fca5a5;
+  --st-oo-bg: #f1f5f9;
+  --st-oo-fg: #475569;
+  --st-oo-bd: #cbd5e1;
+  --st-os-bg: #f1f5f9;
+  --st-os-fg: #475569;
+  --st-os-bd: #cbd5e1;
 }
 
 html[data-hk-theme="teal"] {
-  --bg: #dce8e8;
-  --bg-page: #dce8e8;
-  --border: #a8c0c0;
+  --bg: #eef4f4;
+  --bg-page: #eef4f4;
+  --border: #d5e3e3;
   --accent: #0f766e;
   --accent-dim: #115e59;
   --accent-light: #0d9488;
   --accent-bright: #2dd4bf;
-  --hover-bg: #ccfbf1;
+  --hover-bg: #f0fdfa;
   --accent-soft: #f0fdfa;
   --accent-soft-2: #ccfbf1;
-  --accent-ring: #14b8a6;
+  --accent-ring: #2dd4bf;
   --accent-deep: #134e4a;
   --inv-accent: #e11d48;
   --inv-dim: #be123c;
@@ -83,17 +89,17 @@ html[data-hk-theme="teal"] {
 }
 
 html[data-hk-theme="green"] {
-  --bg: #dde8df;
-  --bg-page: #dde8df;
-  --border: #a8bfb0;
+  --bg: #eef4f0;
+  --bg-page: #eef4f0;
+  --border: #d5e3da;
   --accent: #15803d;
   --accent-dim: #166534;
   --accent-light: #16a34a;
   --accent-bright: #4ade80;
-  --hover-bg: #dcfce7;
+  --hover-bg: #f0fdf4;
   --accent-soft: #f0fdf4;
   --accent-soft-2: #dcfce7;
-  --accent-ring: #22c55e;
+  --accent-ring: #4ade80;
   --accent-deep: #14532d;
   --inv-accent: #c026d3;
   --inv-dim: #a21caf;
@@ -104,17 +110,17 @@ html[data-hk-theme="green"] {
 }
 
 html[data-hk-theme="indigo"] {
-  --bg: #e0e2ec;
-  --bg-page: #e0e2ec;
-  --border: #b4b8cc;
-  --accent: #4338ca;
-  --accent-dim: #3730a3;
-  --accent-light: #4f46e5;
+  --bg: #eef0f6;
+  --bg-page: #eef0f6;
+  --border: #dce0ec;
+  --accent: #4f46e5;
+  --accent-dim: #4338ca;
+  --accent-light: #6366f1;
   --accent-bright: #818cf8;
-  --hover-bg: #e0e7ff;
+  --hover-bg: #eef2ff;
   --accent-soft: #eef2ff;
   --accent-soft-2: #e0e7ff;
-  --accent-ring: #6366f1;
+  --accent-ring: #818cf8;
   --accent-deep: #312e81;
   --inv-accent: #d97706;
   --inv-dim: #b45309;
@@ -125,17 +131,17 @@ html[data-hk-theme="indigo"] {
 }
 
 html[data-hk-theme="violet"] {
-  --bg: #e4e0ec;
-  --bg-page: #e4e0ec;
-  --border: #c0b4cc;
+  --bg: #f2eff6;
+  --bg-page: #f2eff6;
+  --border: #e4dced;
   --accent: #7c3aed;
   --accent-dim: #6d28d9;
   --accent-light: #8b5cf6;
   --accent-bright: #a78bfa;
-  --hover-bg: #ede9fe;
+  --hover-bg: #f5f3ff;
   --accent-soft: #f5f3ff;
   --accent-soft-2: #ede9fe;
-  --accent-ring: #8b5cf6;
+  --accent-ring: #a78bfa;
   --accent-deep: #4c1d95;
   --inv-accent: #65a30d;
   --inv-dim: #4d7c0f;
@@ -146,17 +152,17 @@ html[data-hk-theme="violet"] {
 }
 
 html[data-hk-theme="rose"] {
-  --bg: #ece0e4;
-  --bg-page: #ece0e4;
-  --border: #ccb4bc;
+  --bg: #f6eef1;
+  --bg-page: #f6eef1;
+  --border: #eddce2;
   --accent: #e11d48;
   --accent-dim: #be123c;
   --accent-light: #f43f5e;
   --accent-bright: #fb7185;
-  --hover-bg: #ffe4e6;
+  --hover-bg: #fff1f2;
   --accent-soft: #fff1f2;
   --accent-soft-2: #ffe4e6;
-  --accent-ring: #f43f5e;
+  --accent-ring: #fb7185;
   --accent-deep: #9f1239;
   --inv-accent: #0f766e;
   --inv-dim: #115e59;
@@ -167,17 +173,17 @@ html[data-hk-theme="rose"] {
 }
 
 html[data-hk-theme="orange"] {
-  --bg: #ece4dc;
-  --bg-page: #ece4dc;
-  --border: #ccb8a8;
+  --bg: #f6f0ea;
+  --bg-page: #f6f0ea;
+  --border: #ebdccc;
   --accent: #ea580c;
   --accent-dim: #c2410c;
   --accent-light: #f97316;
   --accent-bright: #fb923c;
-  --hover-bg: #ffedd5;
+  --hover-bg: #fff7ed;
   --accent-soft: #fff7ed;
   --accent-soft-2: #ffedd5;
-  --accent-ring: #f97316;
+  --accent-ring: #fb923c;
   --accent-deep: #9a3412;
   --inv-accent: #1565c0;
   --inv-dim: #0d47a1;
@@ -387,18 +393,18 @@ textarea:focus {
   border-color: var(--accent);
 }
 
-/* 정비상태 뱃지 공통 */
+/* 정비상태 뱃지 공통 — soft pill */
 .hk-st-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 2.6em;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill, 999px);
   font-weight: 800;
-  font-size: 0.875rem;
-  line-height: 1.1;
-  border: 2px solid transparent;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  border: 1px solid transparent;
   letter-spacing: 0.02em;
 }
 
@@ -457,12 +463,12 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   min-width: 1.6em;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill, 999px);
   font-weight: 800;
-  font-size: 0.72rem;
-  line-height: 1.1;
-  border: 2px solid transparent;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  border: 1px solid transparent;
   letter-spacing: 0.02em;
 }
 
