@@ -1321,8 +1321,9 @@
       padding-bottom: 10px;
     }
 
-    .notice-board.is-collapsed .notice-board__content {
-      display: none;
+    .notice-board.is-collapsed .notice-board__text,
+    .notice-board.is-collapsed .notice-board__images {
+      display: none !important;
     }
 
     .notice-board__collapse {
@@ -1348,48 +1349,27 @@
     .notice-board__body {
       flex: 1;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      display: block;
       padding-right: 48px;
     }
 
-    .notice-board__content {
-      display: block;
-      min-width: 0;
-      flex: 1;
-      overflow: visible;
-      max-height: none;
+    .notice-board__body::after {
+      content: "";
+      display: table;
+      clear: both;
     }
 
-    .notice-board__text {
-      font-size: var(--notice-font, 0.875rem);
-      font-weight: 600;
-      color: #1e293b;
-      line-height: var(--notice-lh, 1.4);
-      white-space: pre-wrap;
-      overflow: visible;
-      display: block;
-      -webkit-line-clamp: unset;
-      line-clamp: unset;
-      word-break: break-word;
-      column-count: 1;
-      column-gap: normal;
-      column-fill: balance;
-      height: auto;
-      max-height: none;
-    }
-
+    /* 사진: 오른쪽 최상단 1줄 — 글이 왼쪽으로 이어짐 */
     .notice-board__images {
       float: right;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: row;
+      flex-wrap: nowrap;
       justify-content: flex-end;
-      align-content: flex-start;
-      gap: 6px;
-      margin: 0 0 8px 12px;
-      max-width: min(46%, 260px);
-      max-height: none;
+      align-items: flex-start;
+      gap: 4px;
+      margin: 0 0 4px 10px;
+      max-width: 55%;
       overflow: visible;
     }
 
@@ -1401,11 +1381,11 @@
     .notice-thumb-image {
       display: block;
       width: auto;
-      max-width: min(100%, 120px);
-      max-height: 88px;
+      max-width: 64px;
+      max-height: 48px;
       height: auto;
-      object-fit: contain;
-      border-radius: 6px;
+      object-fit: cover;
+      border-radius: 4px;
       border: 1px solid #fbbf24;
       cursor: zoom-in;
       flex-shrink: 0;
@@ -1417,9 +1397,22 @@
       font-weight: 800;
       color: #92400e;
       letter-spacing: 0.02em;
-      flex-shrink: 0;
       line-height: 1.2;
-      padding-top: 0;
+      margin-bottom: 2px;
+    }
+
+    .notice-board__text {
+      font-size: var(--notice-font, 0.875rem);
+      font-weight: 600;
+      color: #1e293b;
+      line-height: var(--notice-lh, 1.4);
+      white-space: pre-wrap;
+      overflow: visible;
+      display: block;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      height: auto;
+      max-height: none;
     }
 
     .fnb-ready-panel {
@@ -14127,11 +14120,9 @@
       <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
         <button type="button" class="notice-board__collapse" id="btnNoticeCollapse" aria-expanded="true" title="공지 접기">접기</button>
         <div class="notice-board__body">
+          <div class="notice-board__images" id="noticeImagesMount" hidden></div>
           <div class="notice-board__label">공지사항</div>
-          <div class="notice-board__content">
-            <div class="notice-board__images" id="noticeImagesMount" hidden></div>
-            <div class="notice-board__text" id="noticeText"></div>
-          </div>
+          <div class="notice-board__text" id="noticeText"></div>
         </div>
       </div>
     </div>
