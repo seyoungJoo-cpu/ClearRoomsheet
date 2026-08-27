@@ -207,29 +207,32 @@
   function fillColorAndThemeSwatches(swatches, themeSwatches, userName, onChanged, opts) {
     opts = opts || {};
     var name = String(userName || "").trim();
-    if (!swatches || !name) return false;
+    if (!name) return false;
+    if (!swatches && !themeSwatches) return false;
     var keepOpen = !!opts.keepOpen;
 
-    swatches.innerHTML = "";
-    var currentId = getColorIdForUser(name);
-    PASTELS.forEach(function (p) {
-      var btn = global.document.createElement("button");
-      btn.type = "button";
-      btn.className = "chat-color-picker__swatch";
-      btn.title = p.id;
-      btn.style.background = p.bg;
-      btn.style.borderColor = p.border;
-      if (p.id === currentId) btn.classList.add("is-selected");
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        setColorIdForUser(name, p.id);
-        if (!keepOpen) closeColorPicker();
-        fillColorAndThemeSwatches(swatches, themeSwatches, name, onChanged, opts);
-        if (typeof onChanged === "function") onChanged({ type: "bubble", id: p.id });
+    if (swatches) {
+      swatches.innerHTML = "";
+      var currentId = getColorIdForUser(name);
+      PASTELS.forEach(function (p) {
+        var btn = global.document.createElement("button");
+        btn.type = "button";
+        btn.className = "chat-color-picker__swatch";
+        btn.title = p.id;
+        btn.style.background = p.bg;
+        btn.style.borderColor = p.border;
+        if (p.id === currentId) btn.classList.add("is-selected");
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          setColorIdForUser(name, p.id);
+          if (!keepOpen) closeColorPicker();
+          fillColorAndThemeSwatches(swatches, themeSwatches, name, onChanged, opts);
+          if (typeof onChanged === "function") onChanged({ type: "bubble", id: p.id });
+        });
+        swatches.appendChild(btn);
       });
-      swatches.appendChild(btn);
-    });
+    }
 
     if (themeSwatches) {
       themeSwatches.innerHTML = "";
@@ -260,10 +263,9 @@
 
   function openColorPicker(anchorEl, userName, onChanged) {
     var picker = global.document.getElementById("chatColorPicker");
-    var swatches = global.document.getElementById("chatColorPickerSwatches");
     var themeSwatches = global.document.getElementById("chatThemePickerSwatches");
-    if (!picker || !swatches || !anchorEl) return;
-    if (!fillColorAndThemeSwatches(swatches, themeSwatches, userName, onChanged)) return;
+    if (!picker || !themeSwatches || !anchorEl) return;
+    if (!fillColorAndThemeSwatches(null, themeSwatches, userName, onChanged)) return;
 
     var rect = anchorEl.getBoundingClientRect();
     picker.style.top = rect.bottom + 6 + "px";

@@ -1117,6 +1117,50 @@
       font-weight: 800;
     }
 
+    /* 모드 버튼(.btn-maint 등)이 옛 탑바 스타일로 높이/패딩이 달라지지 않게 */
+    .topbar-user-menu__item.topbar-user-menu__item--mode,
+    .topbar-user-menu__item.btn-maint,
+    .topbar-user-menu__item.btn-front,
+    .topbar-user-menu__item.btn-room {
+      flex: none;
+      display: block;
+      align-items: unset;
+      justify-content: unset;
+      width: 100%;
+      min-height: 36px;
+      height: auto;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      line-height: 1.25;
+      text-align: left;
+      color: #334155;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+
+    .topbar-user-menu__item.topbar-user-menu__item--mode:hover,
+    .topbar-user-menu__item.btn-maint:hover,
+    .topbar-user-menu__item.btn-front:hover,
+    .topbar-user-menu__item.btn-room:hover {
+      border-color: transparent;
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+    }
+
+    .topbar-user-menu__item.btn-maint.is-on,
+    .topbar-user-menu__item.btn-front.is-on,
+    .topbar-user-menu__item.btn-room.is-on {
+      background: var(--accent-soft-2);
+      color: var(--accent-deep);
+      border: none;
+      font-weight: 800;
+    }
+
     .topbar-user-menu__sep {
       height: 1px;
       margin: 4px 2px;
@@ -1201,6 +1245,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .sidebar-nav__btn[hidden],
+    #sidebarBtnVipCheckIn,
+    #sidebarBtnNightHandover {
+      display: none !important;
     }
 
     .sidebar-nav__ico {
@@ -13283,6 +13333,17 @@
         font-size: 0.875rem;
       }
 
+      .topbar-user-menu__item.topbar-user-menu__item--mode,
+      .topbar-user-menu__item.btn-maint,
+      .topbar-user-menu__item.btn-front,
+      .topbar-user-menu__item.btn-room {
+        flex: none;
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: 0.8125rem;
+        line-height: 1.25;
+      }
+
       .btn-push-alarm {
         flex: 0 0 44px;
         width: 44px;
@@ -13735,7 +13796,7 @@
     aria-label="채팅 색상 · 테마 선택"
     hidden
   >
-    <p class="chat-color-picker__label">채팅 말풍선 · 테마는 이름 메뉴에서 선택</p>
+    <p class="chat-color-picker__label">테마는 이름 메뉴에서 선택</p>
   </div>
 
   <div id="operator-gate" class="operator-gate" aria-hidden="false">
@@ -13849,11 +13910,8 @@
           <button type="button" class="topbar-user-menu__item" id="sidebarBtnShiftChange" role="menuitem" title="근무자 이름 변경 (F8)">교대</button>
           <button type="button" class="topbar-user-menu__item" id="btnAdminInquiry" role="menuitem" title="관리자에게 문의·건의">관리자 문의</button>
           <div class="topbar-user-menu__sep" role="separator"></div>
-          <div class="topbar-user-menu__label">테마 · 말풍선</div>
+          <div class="topbar-user-menu__label">테마</div>
           <div class="topbar-user-menu__theme" id="topbarMenuThemeMount">
-            <p class="topbar-user-menu__sublabel">말풍선</p>
-            <div class="chat-color-picker__swatches" id="chatColorPickerSwatches"></div>
-            <p class="topbar-user-menu__sublabel">테마</p>
             <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
           </div>
           <div class="topbar-user-menu__sep" role="separator"></div>
@@ -13939,24 +13997,6 @@
         <nav class="sidebar-section sidebar-section--handover" id="sidebarHandoverSection" aria-label="인계사항">
           <div class="sidebar-title">인계사항</div>
           <div class="sidebar-nav">
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnVipCheckIn"
-              aria-pressed="false"
-              hidden
-            >
-              VIP&amp;특이사항
-            </button>
-            <button
-              type="button"
-              class="sidebar-nav__btn sidebar-nav__btn--compact"
-              id="sidebarBtnNightHandover"
-              aria-pressed="false"
-              hidden
-            >
-              야간인계
-            </button>
             <button
               type="button"
               class="sidebar-nav__btn sidebar-nav__btn--compact"
@@ -16720,9 +16760,8 @@
         if (typeof HKChatColors === "undefined" || !HKChatColors.fillColorAndThemeSwatches) return;
         var name = getOperatorName();
         if (!String(name || "").trim()) return;
-        var swatches = document.getElementById("chatColorPickerSwatches");
         var themeSwatches = document.getElementById("chatThemePickerSwatches");
-        HKChatColors.fillColorAndThemeSwatches(swatches, themeSwatches, name, onChatAppearanceChanged, {
+        HKChatColors.fillColorAndThemeSwatches(null, themeSwatches, name, onChatAppearanceChanged, {
           keepOpen: true,
         });
       }
