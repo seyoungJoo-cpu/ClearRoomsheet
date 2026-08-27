@@ -210,30 +210,52 @@
     .topbar-date-row {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 6px;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       max-width: 100%;
-      flex-shrink: 0;
+    }
+
+    .topbar-date-row--menu {
+      padding: 2px 6px 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .topbar-date-row--menu .topbar-date-chip {
+      width: 100%;
+      justify-content: space-between;
+      padding: 8px 10px;
+      font-size: 0.8125rem;
+      border-radius: 8px;
+      gap: 6px;
+    }
+
+    .topbar-date-row--menu .past-day-archive-link {
+      display: block;
+      width: 100%;
+      font-size: 0.72rem;
+      padding: 2px 4px;
     }
 
     .topbar-date-chip {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
-      padding: 3px 8px;
+      gap: 6px;
+      padding: 6px 10px;
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      font-size: 0.7rem;
+      border-radius: 8px;
+      font-size: 0.8125rem;
       font-weight: 700;
       color: #334155;
-      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+      box-shadow: none;
       cursor: pointer;
       font: inherit;
-      font-size: 0.7rem;
+      font-size: 0.8125rem;
       line-height: 1.2;
       white-space: nowrap;
+      box-sizing: border-box;
     }
 
     .topbar-date-chip:hover {
@@ -242,11 +264,11 @@
     }
 
     .topbar-date-chip__icon {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
     }
 
     .topbar-date-chip__chev {
-      font-size: 0.6rem;
+      font-size: 0.7rem;
       color: #94a3b8;
     }
 
@@ -1236,31 +1258,46 @@
     .topbar-date-row {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 6px;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       max-width: 100%;
-      flex-shrink: 0;
+    }
+
+    .topbar-date-row--menu {
+      padding: 2px 6px 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .topbar-date-row--menu .topbar-date-chip {
+      width: 100%;
+      justify-content: space-between;
+      padding: 8px 10px;
+      font-size: 0.8125rem;
+      border-radius: 8px;
+      gap: 6px;
     }
 
     .topbar-date-chip {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
-      padding: 3px 8px;
+      gap: 6px;
+      padding: 6px 10px;
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      font-size: 0.7rem;
+      border-radius: 8px;
+      font-size: 0.8125rem;
       font-weight: 700;
       color: #334155;
-      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+      box-shadow: none;
       line-height: 1.2;
       white-space: nowrap;
+      box-sizing: border-box;
     }
 
     .topbar-date-chip__icon {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
     }
 
     .topbar-main {
@@ -13944,28 +13981,30 @@
           <div class="topbar-user-menu__theme" id="topbarMenuThemeMount">
             <div class="chat-color-picker__swatches" id="chatThemePickerSwatches"></div>
           </div>
-        </div>
-        <div class="topbar-date-row">
-          <button type="button" class="topbar-date-chip" id="topbarDateChip" title="날짜 선택">
-            <span class="topbar-date-chip__icon" aria-hidden="true">📅</span>
-            <span id="topbarDateLabel">—</span>
-            <span class="topbar-date-chip__chev" aria-hidden="true">▾</span>
-          </button>
-          <input type="date" id="topbarDatePicker" class="topbar-date-picker" aria-label="조회 날짜" />
-          <div
-            class="topbar-xml-upload-time"
-            id="topbarXmlUploadTime"
-            hidden
-            title="루밍 XML 업로드 시각"
-          ></div>
-          <a
-            class="past-day-archive-link"
-            id="pastDayArchiveLink"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            hidden
-          >마감 보관본 보기</a>
+          <div class="topbar-user-menu__sep" role="separator"></div>
+          <div class="topbar-user-menu__label">날짜</div>
+          <div class="topbar-date-row topbar-date-row--menu" id="topbarDateRow">
+            <button type="button" class="topbar-date-chip" id="topbarDateChip" title="날짜 선택">
+              <span class="topbar-date-chip__icon" aria-hidden="true">📅</span>
+              <span id="topbarDateLabel">—</span>
+              <span class="topbar-date-chip__chev" aria-hidden="true">▾</span>
+            </button>
+            <input type="date" id="topbarDatePicker" class="topbar-date-picker" aria-label="조회 날짜" />
+            <div
+              class="topbar-xml-upload-time"
+              id="topbarXmlUploadTime"
+              hidden
+              title="루밍 XML 업로드 시각"
+            ></div>
+            <a
+              class="past-day-archive-link"
+              id="pastDayArchiveLink"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+            >마감 보관본 보기</a>
+          </div>
         </div>
         <button type="button" class="topbar-collapse-btn" id="btnTopbarCollapse" hidden>접기</button>
       </div>
