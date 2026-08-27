@@ -340,7 +340,7 @@
       tdDate.textContent = formatDateDisplay(row.createdAt);
       tr.appendChild(tdDate);
 
-      ["reservationNo", "guestName", "roomNo", "memo"].forEach(function (field) {
+      ["reservationNo", "roomNo", "memo"].forEach(function (field) {
         var td = document.createElement("td");
         if (field === "memo") td.className = "complaint-td-memo";
         else td.className = "complaint-td-narrow";
@@ -745,8 +745,8 @@
     var roomNo = roomEl ? String(roomEl.value || "").trim() : "";
     var memo = memoEl ? String(memoEl.value || "").trim() : "";
     var dateStr = dateEl ? String(dateEl.value || "").trim() : "";
-    if (!reservationNo && !guestName && !roomNo) {
-      opts.toast("예약번호·이름·객실번호 중 하나 이상 입력하세요.");
+    if (!reservationNo && !roomNo) {
+      opts.toast("예약번호·객실번호 중 하나 이상 입력하세요.");
       return;
     }
     if (!formTypeId) {

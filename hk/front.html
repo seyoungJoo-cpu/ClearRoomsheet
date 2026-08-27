@@ -4902,6 +4902,23 @@
     .order-chat__msg-text {
       white-space: pre-wrap;
       word-break: break-word;
+      color: #111 !important;
+    }
+
+    /* 상태색(DI 등) 상속으로 채팅 글씨가 하얘지지 않도록 */
+    .request-feedback .order-chat,
+    .request-feedback .order-chat__msg,
+    .request-feedback .order-chat__msg-text,
+    .request-feedback .order-chat__msg-by,
+    .sched-req-card .order-chat,
+    .sched-req-card .order-chat__msg,
+    .sched-req-card .order-chat__msg-text,
+    .order-feedback .order-chat,
+    .order-feedback .order-chat__msg,
+    .order-feedback .order-chat__msg-text,
+    .request-desk-chat__msg-text,
+    .order-desk-chat__msg-text {
+      color: #111 !important;
     }
 
     .order-chat__msg-time {
@@ -8165,8 +8182,8 @@
     .confirming-cards-panel--tile .confirming-cards-panel__wing .sched-cards-list,
     .confirming-cards-panel--tile > .sched-cards-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
-      gap: 6px;
+      grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+      gap: 8px;
       align-content: start;
     }
 
@@ -8174,19 +8191,21 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      gap: 4px;
+      gap: 6px;
       min-width: 0;
       width: 100%;
-      aspect-ratio: 1 / 1.05;
-      max-height: 9.5rem;
+      min-height: 0;
+      height: auto;
+      max-height: none;
+      aspect-ratio: auto;
       margin: 0;
-      padding: 6px 7px;
-      border-radius: 8px;
+      padding: 8px 9px;
+      border-radius: 10px;
       border: 1px solid #a5b4fc;
       background: #eef2ff;
-      box-shadow: none;
+      box-shadow: 0 1px 2px rgba(30, 27, 75, 0.06);
       box-sizing: border-box;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .sched-req-card--confirming-tile .confirming-tile__room {
@@ -8197,22 +8216,24 @@
       line-height: 1.15;
       text-align: center;
       word-break: break-all;
+      flex-shrink: 0;
     }
 
     .sched-req-card--confirming-tile .confirming-tile__meta {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 2px 4px;
+      gap: 3px 5px;
       min-height: 1.1rem;
+      flex-shrink: 0;
     }
 
     .sched-req-card--confirming-tile .confirming-tile__meta .hk-st-badge,
     .sched-req-card--confirming-tile .confirming-tile__meta .room-card__status,
     .sched-req-card--confirming-tile .confirming-tile__meta .hk-resv-badge {
-      font-size: 0.62rem;
+      font-size: 0.68rem;
       min-width: 1.4em;
-      padding: 1px 4px;
+      padding: 2px 5px;
     }
 
     .sched-req-card--confirming-tile .request-feedback__maint-actions,
@@ -8220,8 +8241,9 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 3px;
-      margin-top: auto;
+      gap: 4px;
+      margin-top: 2px;
+      flex-shrink: 0;
     }
 
     .sched-req-card--confirming-tile .request-feedback__sched-btn,
@@ -8230,16 +8252,23 @@
     .sched-req-card--confirming-tile .request-feedback__facility-btn,
     .sched-req-card--confirming-tile .sched-card__chat-btn,
     .sched-req-card--confirming-tile .request-feedback__chat-drop-btn {
-      font-size: 0.62rem;
-      padding: 2px 5px;
-      min-height: 0;
+      font-size: 0.68rem;
+      padding: 4px 7px;
+      min-height: 24px;
       line-height: 1.2;
+      border-radius: 6px;
     }
 
     .sched-req-card--confirming-tile .order-chat {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-height: 0;
-      max-height: 40%;
+      max-height: none;
+      width: 100%;
+    }
+
+    .sched-req-card--confirming-tile .order-chat__msg,
+    .sched-req-card--confirming-tile .order-chat__msg-text {
+      color: #111 !important;
     }
 
     .request-feedback__chat-drop-btn {
@@ -10948,16 +10977,13 @@
       width: 7%;
     }
     .complaint-table col.c-res {
-      width: 9%;
-    }
-    .complaint-table col.c-name {
-      width: 8%;
+      width: 10%;
     }
     .complaint-table col.c-room {
-      width: 7%;
+      width: 8%;
     }
     .complaint-table col.c-memo {
-      width: 46%;
+      width: 50%;
     }
     .complaint-table col.c-type {
       width: 10%;
@@ -12002,8 +12028,8 @@
 
     .main .order-work-item:not(.is-strip-cols),
     .main .room-list-main > .room-card:not(.is-strip-cols),
-    .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--ip-compact):not(.is-strip-cols),
-    .confirming-cards-panel .request-feedback__item {
+    .main .sched-cards-list > .sched-req-card:not(.sched-req-card--confirming-compact):not(.sched-req-card--confirming-tile):not(.sched-req-card--ip-compact):not(.is-strip-cols),
+    .confirming-cards-panel .request-feedback__item:not(.sched-req-card--confirming-tile) {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -13225,6 +13251,7 @@
               class="sidebar-nav__btn sidebar-nav__btn--compact sidebar-nav__btn--track-it"
               id="sidebarBtnTrackIt"
               aria-pressed="false"
+              hidden
             >
               Track IT
             </button>
@@ -13356,7 +13383,7 @@
           class="front-embed-panel__frame"
           id="ddEmbedFrame"
           title="DD 고객 확인 문자 도우미"
-          src="/DD/index.html?embed=hkFront&v=edit-cols-1"
+          src="/DD/index.html?embed=hkFront&v=row-del-1"
           loading="eager"
         ></iframe>
       </section>
@@ -13707,7 +13734,7 @@
                 <label for="complaintReservationNo">예약번호</label>
                 <input type="text" id="complaintReservationNo" autocomplete="off" />
               </div>
-              <div class="field">
+              <div class="field" hidden>
                 <label for="complaintGuestName">이름</label>
                 <input type="text" id="complaintGuestName" autocomplete="off" />
               </div>
@@ -13757,7 +13784,6 @@
               <colgroup>
                 <col class="c-date" />
                 <col class="c-res" />
-                <col class="c-name" />
                 <col class="c-room" />
                 <col class="c-memo" />
                 <col class="c-type" />
@@ -13768,7 +13794,6 @@
                 <tr>
                   <th>날짜</th>
                   <th>예약번호</th>
-                  <th>이름</th>
                   <th>객실번호</th>
                   <th>메모</th>
                   <th>유형</th>
@@ -15154,7 +15179,7 @@
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
   <script src="hk-inven-notify.js?v=autosave-2"></script>
   <script src="hk-facility-logs.js?v=2"></script>
-  <script src="hk-complaint-analysis.js?v=bydate-15"></script>
+  <script src="hk-complaint-analysis.js?v=bydate-16"></script>
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
@@ -18533,6 +18558,10 @@
         } catch (e) {}
       }
 
+      var lastOrderQuickItem = "";
+      var orderMemoEnterArmed = "submit";
+      var orderMemoQuickSilent = false;
+
       function bindOrderMemoQuickButtons() {
         var bar = document.getElementById("orderMemoQuickBar");
         if (!bar || bar.__hkQuickBound) return;
@@ -18541,7 +18570,18 @@
           var btn = e.target.closest("[data-order-quick]");
           if (!btn) return;
           e.preventDefault();
-          applyOrderMemoQuickDelta(btn.getAttribute("data-order-quick"), 1);
+          var item = btn.getAttribute("data-order-quick");
+          orderMemoQuickSilent = true;
+          applyOrderMemoQuickDelta(item, 1);
+          orderMemoQuickSilent = false;
+          lastOrderQuickItem = item || "";
+          orderMemoEnterArmed = "bump";
+          var memoEl = document.getElementById("orderMemo");
+          if (memoEl) {
+            try {
+              memoEl.focus();
+            } catch (err) {}
+          }
         });
         bar.addEventListener("contextmenu", function (e) {
           var btn = e.target.closest("[data-order-quick]");
@@ -22476,11 +22516,9 @@
           mbCheckNav.setAttribute("aria-pressed", sidebarMainView === "mbCheck" ? "true" : "false");
         }
         if (trackItNav) {
-          trackItNav.classList.toggle("is-active", sidebarMainView === "trackIt");
-          trackItNav.setAttribute(
-            "aria-pressed",
-            sidebarMainView === "trackIt" ? "true" : "false"
-          );
+          trackItNav.hidden = true;
+          trackItNav.classList.toggle("is-active", false);
+          trackItNav.setAttribute("aria-pressed", "false");
         }
         if (nightHandoverNav) {
           nightHandoverNav.classList.toggle("is-active", sidebarMainView === "nightHandover");
@@ -22571,6 +22609,7 @@
 
       function applySidebarMainView(view, opts) {
         if (!confirmLeaveDirtySidebarForm(view, opts)) return false;
+        if (view === "trackIt") view = "order";
         sidebarMainView = view;
         var showRequest = view === "request";
         var showOrder = view === "order";
@@ -22579,7 +22618,7 @@
         var showFacilityDailyFound = view === "facilityDailyFound";
         var showMbInv = view === "mbInv";
         var showMbCheck = view === "mbCheck";
-        var showTrackIt = view === "trackIt";
+        var showTrackIt = false;
         var showNightHandover = view === "nightHandover";
         var showVipCheckIn = view === "vipCheckIn";
         var showInvenNotify = view === "invenNotify";
@@ -32616,15 +32655,13 @@
       }
 
       function syncNightVipSidebarUi() {
-        var canView = !!(frontMode || maintenanceMode);
+        // VIP&특이사항 / 야간인계 — 당분간 사이드바에서 숨김
         var nhBtn = document.getElementById("sidebarBtnNightHandover");
         var vipBtn = document.getElementById("sidebarBtnVipCheckIn");
-        if (nhBtn) nhBtn.hidden = !canView;
-        if (vipBtn) vipBtn.hidden = !canView;
-        if (!canView) {
-          if (sidebarMainView === "nightHandover" || sidebarMainView === "vipCheckIn") {
-            showSidebarOrderView({ skipDirtyConfirm: true });
-          }
+        if (nhBtn) nhBtn.hidden = true;
+        if (vipBtn) vipBtn.hidden = true;
+        if (sidebarMainView === "nightHandover" || sidebarMainView === "vipCheckIn") {
+          showSidebarOrderView({ skipDirtyConfirm: true });
         }
         if (typeof HKNightHandover !== "undefined" && HKNightHandover.onFrontModeChanged) {
           HKNightHandover.onFrontModeChanged();
@@ -34620,6 +34657,8 @@
         appendOrderLog(room, memo, isUrgent, memoImage);
         if (roomEl) roomEl.value = "";
         if (memoEl) memoEl.value = "";
+        lastOrderQuickItem = "";
+        orderMemoEnterArmed = "submit";
         if (btnOrderUrgentEl) {
           btnOrderUrgentEl.classList.remove("is-on");
           btnOrderUrgentEl.setAttribute("aria-pressed", "false");
@@ -34914,12 +34953,49 @@
         var orderMemoEl = document.getElementById("orderMemo");
         if (orderMemoEl) {
           orderMemoEl.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              if (orderMemoEnterArmed === "bump" && lastOrderQuickItem) {
+                e.preventDefault();
+                e.stopPropagation();
+                orderMemoQuickSilent = true;
+                applyOrderMemoQuickDelta(lastOrderQuickItem, 1);
+                orderMemoQuickSilent = false;
+                orderMemoEnterArmed = "submit";
+                return;
+              }
+              orderMemoEnterArmed = "submit";
+              return;
+            }
             if (e.key !== "Tab" || !e.shiftKey) return;
             e.preventDefault();
             orderRoomEl.focus();
           });
+          orderMemoEl.addEventListener("input", function () {
+            if (orderMemoQuickSilent) return;
+            if (orderMemoEnterArmed === "bump") orderMemoEnterArmed = "submit";
+          });
         }
         updateOrderFoDisplay();
+      })();
+
+      (function setupRequestRoomTabToMemo() {
+        var roomEl = document.getElementById("roomNo");
+        if (!roomEl) return;
+        roomEl.addEventListener("keydown", function (e) {
+          if (e.key !== "Tab" || e.shiftKey) return;
+          var memoEl = document.getElementById("requestMemo");
+          if (!memoEl) return;
+          e.preventDefault();
+          memoEl.focus();
+        });
+        var requestMemoEl = document.getElementById("requestMemo");
+        if (requestMemoEl) {
+          requestMemoEl.addEventListener("keydown", function (e) {
+            if (e.key !== "Tab" || !e.shiftKey) return;
+            e.preventDefault();
+            roomEl.focus();
+          });
+        }
       })();
 
       (function setupFacilityOrderRoomAuto() {
@@ -35403,10 +35479,7 @@
           });
         }
         if (bTrackIt) {
-          bTrackIt.addEventListener("click", function () {
-            if (sidebarMainView === "trackIt") return;
-            showSidebarTrackItView();
-          });
+          bTrackIt.hidden = true;
         }
         if (bNightHandover) {
           bNightHandover.addEventListener("click", function () {
