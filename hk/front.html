@@ -4066,15 +4066,15 @@
     }
 
     .btn-request {
-      height: 28px;
-      padding: 0 12px;
+      height: 26px;
+      padding: 0 11px;
       background: var(--accent);
       color: #fff;
       border: none;
       border-radius: 8px;
       font: inherit;
       font-weight: 700;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       cursor: pointer;
     }
 
@@ -4465,9 +4465,31 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 8px 14px 14px;
+      padding: 7px 12px 12px;
       margin-bottom: 14px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    /* 정비·시설·MB확인 입력 영역만 아주 약간 축소 */
+    .main.main--request .request-panel__main .field label,
+    .main.main--facility .order-panel__main .field label,
+    .main.main--mb-check .order-panel__main .field label {
+      font-size: 0.68rem;
+    }
+
+    .main.main--request .request-panel__main .field input,
+    .main.main--request .request-panel__main .field select,
+    .main.main--mb-check .order-panel__main .field input,
+    .main.main--mb-check .order-panel__main .field select {
+      height: 26px;
+      padding: 0 7px;
+      font-size: 0.78rem;
+    }
+
+    .main.main--request .request-panel h2,
+    .main.main--facility .order-panel h2,
+    .main.main--mb-check .order-panel h2 {
+      font-size: 0.9rem;
     }
 
     .main.main--order #orderPanel,
@@ -4505,29 +4527,29 @@
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
-      gap: 6px 8px;
+      gap: 5px 7px;
     }
 
     .order-row .field {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       min-width: 0;
     }
 
     .order-row .field label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: var(--text-muted);
     }
 
     .order-row input[type="text"] {
-      height: 28px;
-      padding: 0 8px;
+      height: 26px;
+      padding: 0 7px;
       border: 1px solid var(--border);
       border-radius: 8px;
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 0.78rem;
       min-width: 0;
     }
 
@@ -4555,11 +4577,11 @@
       align-items: center;
       justify-content: center;
       min-width: 2.5rem;
-      height: 28px;
-      padding: 0 8px;
+      height: 26px;
+      padding: 0 7px;
       border-radius: 8px;
       font-weight: 800;
-      font-size: 0.8125rem;
+      font-size: 0.78rem;
       background: var(--surface-inset);
       border: 1px solid var(--border);
       color: var(--text-muted);
@@ -4578,14 +4600,14 @@
     }
 
     .btn-order {
-      height: 28px;
-      padding: 0 12px;
+      height: 26px;
+      padding: 0 11px;
       border: none;
       border-radius: 8px;
       background: var(--accent);
       color: #fff;
       font: inherit;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
@@ -5009,38 +5031,38 @@
     .main.main--facility .order-row input[type="text"],
     .main.main--facility-misc .order-row input[type="text"],
     .main.main--facility-daily-found .order-row input[type="text"] {
-      height: 28px;
-      font-size: 0.8125rem;
+      height: 26px;
+      font-size: 0.78rem;
     }
 
     .main.main--order .order-fo-display,
     .main.main--facility .order-fo-display {
-      height: 28px;
-      font-size: 0.8125rem;
+      height: 26px;
+      font-size: 0.78rem;
     }
 
     .main.main--order .btn-order,
     .main.main--facility .btn-order,
     .main.main--facility-misc .btn-order,
     .main.main--facility-daily-found .btn-order {
-      height: 28px;
-      font-size: 0.8125rem;
-      padding: 0 12px;
+      height: 26px;
+      font-size: 0.78rem;
+      padding: 0 11px;
     }
 
     .main.main--order .btn-urgent,
     .main.main--facility .btn-urgent,
     .main.main--request .btn-urgent {
-      height: 28px;
-      min-width: 44px;
-      padding: 0 10px;
-      font-size: 0.75rem;
+      height: 26px;
+      min-width: 42px;
+      padding: 0 9px;
+      font-size: 0.72rem;
     }
 
     .main.main--request .btn-request {
-      height: 28px;
-      padding: 0 12px;
-      font-size: 0.8125rem;
+      height: 26px;
+      padding: 0 11px;
+      font-size: 0.78rem;
     }
 
     .main.main--order .order-work-section__title,
@@ -7159,16 +7181,16 @@
 
     .mb-check-change-form .mb-inv-form__memo input[type="text"] {
       width: 100%;
-      padding: 7px 10px;
+      padding: 6px 9px;
       border: 1px solid var(--border);
       border-radius: 8px;
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 0.78rem;
       box-sizing: border-box;
     }
 
     .mb-check-change-form {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .order-work-section--gst .order-work-section__title {
@@ -8471,7 +8493,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 8px 14px 12px;
+      padding: 6px 12px 10px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       margin-bottom: 10px;
       flex-shrink: 0;
@@ -8479,7 +8501,7 @@
 
     .request-panel h2 {
       margin: 0;
-      font-size: 0.9375rem;
+      font-size: 0.875rem;
       font-weight: 700;
       color: var(--accent);
     }
@@ -9803,7 +9825,7 @@
     .request-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 8px;
+      gap: 5px 7px;
       align-items: flex-end;
       flex: 1 1 280px;
       min-width: 0;
@@ -9842,11 +9864,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 3px 6px 8px;
+      padding: 2px 5px 6px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
       margin-bottom: 8px;
-      height: var(--hk-sticky-h, 168px);
-      min-height: 118px;
+      height: var(--hk-sticky-h, 156px);
+      min-height: 108px;
       max-height: min(62vh, 480px);
       overflow: hidden;
       box-sizing: border-box;
@@ -10171,8 +10193,8 @@
     .order-desk-chat__form {
       flex-shrink: 0;
       display: flex;
-      gap: 6px;
-      padding: 6px 8px;
+      gap: 5px;
+      padding: 5px 7px;
       border-top: 2px solid #334155;
       align-items: center;
       flex-wrap: wrap;
@@ -10182,20 +10204,20 @@
     .order-desk-chat__form input {
       flex: 1;
       min-width: 0;
-      height: 30px;
-      padding: 0 8px;
+      height: 28px;
+      padding: 0 7px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font: inherit;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
     }
 
     .request-desk-chat__form button,
     .order-desk-chat__form button {
-      height: 30px;
-      padding: 0 10px;
+      height: 28px;
+      padding: 0 9px;
       font: inherit;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -10271,11 +10293,11 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 3px 6px 8px;
+      padding: 2px 5px 6px;
       box-shadow: 0 10px 16px -10px rgba(15, 23, 42, 0.35);
       margin-bottom: 8px;
-      height: var(--hk-sticky-h, 156px);
-      min-height: 110px;
+      height: var(--hk-sticky-h, 144px);
+      min-height: 100px;
       max-height: min(62vh, 480px);
       overflow: hidden;
       box-sizing: border-box;
