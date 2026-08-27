@@ -551,7 +551,7 @@ function chatMsgFingerprint(m) {
 })();
 
 function checkSyncAuth(req, res, next) {
-  const password = req.get("x-sync-password");
+  const password = req.get("x-sync-password") || req.query.pwd || req.query.password;
   if (password !== SYNC_PASSWORD) {
     res.status(401).json({ error: "unauthorized" });
     return;

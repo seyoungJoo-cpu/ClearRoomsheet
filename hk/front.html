@@ -50,34 +50,231 @@
       overflow: hidden;
     }
 
-    /* 상단: 로고 + 공지 | 우측 상단 관리자 */
+    /* 상단 ROD 한 줄 */
     .topbar {
       flex-shrink: 0;
-      background: var(--panel);
+      background: #fff;
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: stretch;
-      padding: 4px 12px;
-      gap: 8px;
+      display: block;
+      padding: 0;
+      gap: 0;
+      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.05));
     }
 
-    .topbar-main {
-      flex: 1;
-      min-width: 0;
+    .topbar-rod-row {
       display: flex;
-      align-items: stretch;
+      align-items: center;
       gap: 12px;
+      width: 100%;
+      padding: 10px 14px;
+      box-sizing: border-box;
     }
 
-    .brand-block {
-      flex-shrink: 0;
-      display: flex;
+    .topbar-hamburger {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 1px;
-      padding-top: 0;
-      padding-right: 4px;
-      align-self: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+    }
+
+    .topbar-hamburger span {
+      display: block;
+      width: 16px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    .topbar-hamburger:hover {
+      background: var(--accent-dim);
+    }
+
+    .topbar-title-block {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .topbar-title-block .brand {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+      padding: 0;
+    }
+
+    .topbar-title-sep {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .topbar-title-block .brand-sub {
+      display: inline;
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #475569;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-collapse-btn {
+      display: none;
+    }
+
+    .topbar-head-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .main-notice-wrap {
+      flex-shrink: 0;
+      padding: 10px 14px 8px;
+      background: var(--bg-page, #eef1f6);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .layout-main-area {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .layout-main-area > .main {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .topbar-date-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-date-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #334155;
+      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .topbar-date-chip:hover {
+      border-color: var(--accent-ring);
+      background: var(--accent-soft);
+    }
+
+    .topbar-date-chip__chev {
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+
+    .topbar-date-picker {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 0;
+      height: 0;
+      border: 0;
+    }
+
+    .past-day-readonly-banner {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .past-day-archive-link {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .past-day-archive-link:hover {
+      text-decoration: underline;
+    }
+
+    body.hk-past-day-readonly .main:not(.main--ai) input,
+    body.hk-past-day-readonly .main:not(.main--ai) textarea,
+    body.hk-past-day-readonly .main:not(.main--ai) select,
+    body.hk-past-day-readonly .main:not(.main--ai) button:not(.desk-chat-font-btn):not(.panel-alert-ack-btn),
+    body.hk-past-day-readonly .feedback-column button,
+    body.hk-past-day-readonly .feedback-column input,
+    body.hk-past-day-readonly .feedback-column textarea {
+      pointer-events: none !important;
+      opacity: 0.72;
+    }
+
+    body.hk-past-day-readonly .main.main--ai input,
+    body.hk-past-day-readonly .main.main--ai textarea,
+    body.hk-past-day-readonly .main.main--ai button {
+      pointer-events: auto !important;
+      opacity: 1 !important;
+    }
+
+    .brand-sub {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #64748b;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin-top: 1px;
+    }
+
+    .topbar-user-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px 4px 4px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.05));
     }
 
     .brand {
@@ -13446,21 +13643,24 @@
 
   <div class="hk-app-main">
   <header class="topbar" id="topbar">
-    <div class="topbar-mobile-bar">
-      <div class="brand-block">
-        <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="Lotte Hotel 미니게임">HK</span>
-        <span class="brand-sub">House Keeping</span>
+    <div class="topbar-rod-row">
+      <button
+        type="button"
+        class="topbar-hamburger"
+        id="btnSidebarHamburger"
+        aria-label="사이드바 접기/펼치기"
+        title="사이드바"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+      <div class="topbar-title-block">
+        <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="ROD 미니게임">ROD</span>
+        <span class="topbar-title-sep" aria-hidden="true">-</span>
+        <span class="brand-sub">Room Operation Dashboard</span>
       </div>
       <div class="topbar-head-tools">
-        <button
-          type="button"
-          class="btn-refresh-app"
-          id="btnRefreshApp"
-          title="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
-          aria-label="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
-        >
-          ↻
-        </button>
         <button
           type="button"
           class="btn-push-alarm"
@@ -13468,12 +13668,20 @@
           aria-pressed="false"
           aria-label="오더 알림 끔"
           title="오더 알림 끔 — 탭하여 켜기"
-          hidden
         >
           <svg class="btn-push-alarm__icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             <path class="btn-push-alarm__slash" d="M4.22 4.22l15.56 15.56" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
+        </button>
+        <button
+          type="button"
+          class="btn-refresh-app"
+          id="btnRefreshApp"
+          title="새로고침 — 캐시 삭제 후 서버에서 다시 받기"
+          aria-label="새로고침"
+        >
+          ↻
         </button>
         <button
           type="button"
@@ -13500,50 +13708,8 @@
           <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-front" id="btnFront" role="menuitem" aria-pressed="false">프론트</button>
           <button type="button" class="topbar-user-menu__item topbar-user-menu__item--mode btn-room" id="btnRoom" role="menuitem" aria-pressed="false">객실</button>
         </div>
-        <button
-          type="button"
-          class="topbar-collapse-btn"
-          id="btnTopbarCollapse"
-          aria-expanded="true"
-          aria-controls="topbarCollapsible"
-          hidden
-        >
-          접기
-        </button>
+        <button type="button" class="topbar-collapse-btn" id="btnTopbarCollapse" hidden>접기</button>
       </div>
-    </div>
-    <div class="topbar-collapsible" id="topbarCollapsible">
-      <div class="topbar-main">
-        <div class="topbar-date-row">
-          <div class="topbar-date-chip" id="topbarDateChip" title="오늘 날짜">
-            <span class="topbar-date-chip__icon" aria-hidden="true">📅</span>
-            <span id="topbarDateLabel">—</span>
-          </div>
-          <div
-            class="topbar-xml-upload-time"
-            id="topbarXmlUploadTime"
-            hidden
-            title="루밍 XML 업로드 시각"
-          ></div>
-        </div>
-        <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
-          <div class="notice-board__megaphone" aria-hidden="true">📢</div>
-          <div class="notice-board__body">
-            <div class="notice-board__label">공지사항</div>
-            <div class="notice-board__content">
-              <div class="notice-board__text" id="noticeText"></div>
-              <div class="notice-board__images" id="noticeImagesMount"></div>
-              <img
-                id="noticeImage"
-                class="notice-thumb-image"
-                alt="공지 첨부 사진"
-                hidden
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="topbar-actions" hidden aria-hidden="true"></div>
     </div>
   </header>
 
@@ -13719,6 +13885,49 @@
     </aside>
 
     <div class="layout-main-area">
+    <div class="main-notice-wrap" id="mainNoticeWrap">
+      <div class="topbar-date-row">
+        <button type="button" class="topbar-date-chip" id="topbarDateChip" title="날짜 선택">
+          <span class="topbar-date-chip__icon" aria-hidden="true">📅</span>
+          <span id="topbarDateLabel">—</span>
+          <span class="topbar-date-chip__chev" aria-hidden="true">▾</span>
+        </button>
+        <input type="date" id="topbarDatePicker" class="topbar-date-picker" aria-label="조회 날짜" />
+        <div
+          class="topbar-xml-upload-time"
+          id="topbarXmlUploadTime"
+          hidden
+          title="루밍 XML 업로드 시각"
+        ></div>
+        <a
+          class="past-day-archive-link"
+          id="pastDayArchiveLink"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          hidden
+        >마감 보관본 보기</a>
+      </div>
+      <div class="past-day-readonly-banner" id="pastDayReadonlyBanner" hidden>
+        과거 날짜 · 읽기 전용 (AI 모드만 입력 가능)
+      </div>
+      <div class="notice-board" id="noticeBoard" role="region" aria-label="공지">
+        <div class="notice-board__megaphone" aria-hidden="true">📢</div>
+        <div class="notice-board__body">
+          <div class="notice-board__label">공지사항</div>
+          <div class="notice-board__content">
+            <div class="notice-board__text" id="noticeText"></div>
+            <div class="notice-board__images" id="noticeImagesMount"></div>
+            <img
+              id="noticeImage"
+              class="notice-thumb-image"
+              alt="공지 첨부 사진"
+              hidden
+            />
+          </div>
+        </div>
+      </div>
+    </div>
     <main class="main">
       <section class="front-chat-panel" id="frontChatPanel" hidden aria-labelledby="frontChatPanelTitle" data-front-chat-font="2">
         <div class="panel-head-row">
@@ -15643,6 +15852,47 @@
       function canUseFrontSidebar() {
         return !!frontMode;
       }
+
+      var selectedViewDate = "";
+      var pastDayArchiveId = "";
+
+      function getTodayKstDateStr() {
+        try {
+          var parts = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Seoul",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).formatToParts(new Date());
+          var map = {};
+          parts.forEach(function (p) {
+            map[p.type] = p.value;
+          });
+          return map.year + "-" + map.month + "-" + map.day;
+        } catch (e) {
+          var d = new Date();
+          function pad(n) {
+            return String(n).padStart(2, "0");
+          }
+          return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+        }
+      }
+
+      function ensureSelectedViewDate() {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedViewDate)) {
+          selectedViewDate = getTodayKstDateStr();
+        }
+        return selectedViewDate;
+      }
+
+      function isPastDayView() {
+        return ensureSelectedViewDate() < getTodayKstDateStr();
+      }
+
+      function isHkWriteAllowed() {
+        if (!isPastDayView()) return true;
+        return sidebarMainView === "ai";
+      }
       var memoStack = [];
       var pendingCancelConfirmId = null;
       var pendingCancelNameId = null;
@@ -16289,27 +16539,114 @@
         return y + "." + m + "." + day + " (" + days[d.getDay()] + ")";
       }
 
+      function labelFromDateStr(dateStr) {
+        var m = String(dateStr || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return dateStr || "—";
+        var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        var days = ["일", "월", "화", "수", "목", "금", "토"];
+        return m[1] + "." + m[2] + "." + m[3] + " (" + days[d.getDay()] + ")";
+      }
+
       function updateTopbarDateChip() {
         var el = document.getElementById("topbarDateLabel");
-        if (!el) return;
-        try {
-          var parts = new Intl.DateTimeFormat("en-US", {
-            timeZone: "Asia/Seoul",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            weekday: "short",
-          }).formatToParts(new Date());
-          var map = {};
-          parts.forEach(function (p) {
-            map[p.type] = p.value;
-          });
-          var wdMap = { Sun: "일", Mon: "월", Tue: "화", Wed: "수", Thu: "목", Fri: "금", Sat: "토" };
-          var wd = wdMap[map.weekday] || map.weekday || "";
-          el.textContent = map.year + "." + map.month + "." + map.day + (wd ? " (" + wd + ")" : "");
-        } catch (e) {
-          el.textContent = formatTopbarDateLabel(new Date());
+        var picker = document.getElementById("topbarDatePicker");
+        var dateStr = ensureSelectedViewDate();
+        if (el) el.textContent = labelFromDateStr(dateStr);
+        if (picker && picker.value !== dateStr) picker.value = dateStr;
+        applyPastDayReadonlyUi();
+        refreshPastDayArchiveLink();
+      }
+
+      function applyPastDayReadonlyUi() {
+        var past = isPastDayView();
+        document.body.classList.toggle("hk-past-day-readonly", past);
+        var banner = document.getElementById("pastDayReadonlyBanner");
+        if (banner) banner.hidden = !past;
+      }
+
+      function getSyncPwdForArchives() {
+        return (
+          (typeof HKSync !== "undefined" && HKSync.getSyncPassword && HKSync.getSyncPassword()) ||
+          sessionStorage.getItem("clear_html_sync_pwd") ||
+          "74321"
+        );
+      }
+
+      function refreshPastDayArchiveLink() {
+        var link = document.getElementById("pastDayArchiveLink");
+        if (!link) return;
+        pastDayArchiveId = "";
+        link.hidden = true;
+        link.removeAttribute("href");
+        if (!isPastDayView()) return;
+        var dateStr = ensureSelectedViewDate();
+        fetch("/api/close-day-archives", {
+          method: "GET",
+          headers: { "x-sync-password": getSyncPwdForArchives() },
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error("list failed");
+            return res.json();
+          })
+          .then(function (data) {
+            var list = (data && data.archives) || [];
+            var hit = null;
+            for (var i = 0; i < list.length; i++) {
+              if (list[i] && String(list[i].date) === dateStr) {
+                hit = list[i];
+                break;
+              }
+            }
+            if (!hit || !hit.id) return;
+            pastDayArchiveId = hit.id;
+            var kind = hit.hasScreen ? "screen" : "report";
+            link.href =
+              "/api/close-day-archives/" +
+              encodeURIComponent(hit.id) +
+              "/file?kind=" +
+              kind +
+              "&pwd=" +
+              encodeURIComponent(getSyncPwdForArchives());
+            link.textContent = "마감 보관본 보기" + (hit.label ? " · " + hit.label : "");
+            link.hidden = false;
+          })
+          .catch(function () {});
+      }
+
+      function setSelectedViewDate(dateStr) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ""))) return;
+        selectedViewDate = String(dateStr);
+        updateTopbarDateChip();
+        if (isPastDayView() && sidebarMainView !== "ai") {
+          showHkActionToast("과거 날짜는 읽기 전용입니다. AI 모드만 입력할 수 있습니다.");
         }
+      }
+
+      function setupTopbarDatePicker() {
+        var chip = document.getElementById("topbarDateChip");
+        var picker = document.getElementById("topbarDatePicker");
+        if (!chip || !picker) return;
+        ensureSelectedViewDate();
+        picker.value = selectedViewDate;
+        chip.addEventListener("click", function () {
+          try {
+            if (typeof picker.showPicker === "function") picker.showPicker();
+            else {
+              picker.style.pointerEvents = "auto";
+              picker.style.opacity = "1";
+              picker.style.position = "static";
+              picker.style.width = "auto";
+              picker.style.height = "auto";
+              picker.focus();
+              picker.click();
+            }
+          } catch (e) {
+            picker.focus();
+          }
+        });
+        picker.addEventListener("change", function () {
+          if (picker.value) setSelectedViewDate(picker.value);
+        });
       }
 
       function setupTopbarUserMenu() {
@@ -16514,11 +16851,12 @@
       function setupPushAlarmButton() {
         var btn = document.getElementById("btnPushAlarm");
         if (!btn || typeof HKPush === "undefined") return;
+        btn.hidden = false;
         if (!HKPush.isSupported()) {
-          btn.hidden = true;
+          btn.disabled = true;
+          btn.title = "이 브라우저는 오더 알림을 지원하지 않습니다";
           return;
         }
-        btn.hidden = false;
         btn.addEventListener("click", function () {
           if (btn.classList.contains("is-busy")) return;
           if (btn.classList.contains("is-denied")) {
@@ -16810,6 +17148,12 @@
           btn.addEventListener("click", function () {
             applyMode(nextMode(currentMode()));
           });
+          var ham = document.getElementById("btnSidebarHamburger");
+          if (ham) {
+            ham.addEventListener("click", function () {
+              applyMode(nextMode(currentMode()));
+            });
+          }
         })();
       }
 
@@ -20057,6 +20401,10 @@
       }
 
       function requireSelectedMode() {
+        if (!isHkWriteAllowed()) {
+          showHkActionToast("과거 날짜는 읽기 전용입니다. AI 모드만 입력할 수 있습니다.");
+          return false;
+        }
         if (maintenanceMode || frontMode || roomMode) return true;
         showHkActionToast("오른쪽 이름 메뉴에서 모드를 선택하세요");
         return false;
@@ -34345,6 +34693,7 @@
       setupPushAlarmButton();
       setupTopbarToolbar();
       setupTopbarUserMenu();
+      setupTopbarDatePicker();
       updateTopbarDateChip();
       ensureOperatorNameOnLoad();
 
