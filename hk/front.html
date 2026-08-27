@@ -3584,7 +3584,7 @@
     }
 
     .zone-type-filters {
-      margin: 0 0 10px;
+      margin: 0 0 6px;
       padding: 0;
       border-top: none;
     }
@@ -8507,30 +8507,31 @@
     }
 
     .request-type-filters {
-      margin-top: 12px;
-      padding-top: 12px;
+      margin-top: 6px;
+      padding-top: 6px;
       border-top: 1px solid var(--border);
     }
 
     .request-type-filters__actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 4px;
       align-items: center;
       justify-content: flex-start;
     }
 
     .request-type-filters__toggle {
-      height: 34px;
-      padding: 0 14px;
+      height: 24px;
+      padding: 0 8px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       background: var(--bg-card);
       font: inherit;
-      font-size: 0.8125rem;
+      font-size: 0.7rem;
       font-weight: 700;
       color: var(--text-muted);
       cursor: pointer;
+      line-height: 1;
     }
 
     .request-type-filters__toggle:hover {
@@ -8864,7 +8865,13 @@
     }
 
     .request-type-filters__body {
-      margin-top: 10px;
+      margin-top: 4px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-raised, #f8fafc);
+      max-height: 9.5rem;
+      overflow: auto;
     }
 
     .request-type-filters__body[hidden] {
@@ -8874,33 +8881,36 @@
     .request-type-filters__list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 2px;
     }
 
     .request-type-filters__row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px 14px;
+      gap: 2px 8px;
       align-items: center;
     }
 
     .request-type-filters__item {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 0.8125rem;
+      gap: 3px;
+      font-size: 0.68rem;
       font-weight: 600;
       color: var(--text);
       cursor: pointer;
       user-select: none;
+      line-height: 1.2;
+      padding: 1px 0;
     }
 
     .request-type-filters__item input[type="checkbox"] {
-      width: 1rem;
-      height: 1rem;
+      width: 0.75rem;
+      height: 0.75rem;
       margin: 0;
       accent-color: var(--accent);
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .request-type-filters__item--all {
@@ -9890,10 +9900,10 @@
     .request-main-stack .request-type-filters {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px 12px;
+      border-radius: 8px;
+      padding: 5px 8px 6px;
       margin-top: 0;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     .request-desk-chat,
