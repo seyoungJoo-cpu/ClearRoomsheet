@@ -190,6 +190,23 @@
     return !!(frontCtx && typeof frontCtx.isFrontMode === "function" && frontCtx.isFrontMode());
   }
 
+  function isRoomMode() {
+    return !!(frontCtx && typeof frontCtx.isRoomMode === "function" && frontCtx.isRoomMode());
+  }
+
+  function canReceiveDirectAlerts() {
+    if (!frontCtx) return false;
+    if (typeof frontCtx.isSessionActive === "function" && !frontCtx.isSessionActive()) {
+      return false;
+    }
+    if (isFront()) return true;
+    if (typeof frontCtx.isMaintenanceMode === "function" && frontCtx.isMaintenanceMode()) {
+      return true;
+    }
+    if (isRoomMode()) return true;
+    return false;
+  }
+
   function isPresenceMode() {
     if (!frontCtx) return false;
     if (typeof frontCtx.isSessionActive === "function" && !frontCtx.isSessionActive()) {
@@ -290,7 +307,7 @@
       if (name && row.dismissedBy && row.dismissedBy[name]) return false;
       else if (!name && localDismissed()[row.id]) return false;
     }
-    if (row.kind === "direct") return isFront();
+    if (row.kind === "direct") return canReceiveDirectAlerts();
     if (!isFront()) return false;
     if (row.audience === "all") return true;
     return wasOpenAt(fireAtOf(row));
@@ -699,6 +716,33 @@
     postPresence({ sid: presenceSid(), leave: true });
   }
 
+  function findDirectById(id) {
+    var want = String(id || "");
+    if (!want) return null;
+    var pack = getPack();
+    var i;
+    for (i = 0; i < (pack.directs || []).length; i++) {
+      if (pack.directs[i] && pack.directs[i].id === want) return pack.directs[i];
+    }
+    return null;
+  }
+
+  function resolveAlertSource(row) {
+    var cur = row;
+    var guard = 0;
+    while (cur && guard++ < 30) {
+      if (cur.sourceType && cur.sourceId) {
+        return {
+          sourceType: String(cur.sourceType),
+          sourceId: String(cur.sourceId),
+        };
+      }
+      if (!cur.replyTo) break;
+      cur = findDirectById(cur.replyTo);
+    }
+    return null;
+  }
+
   function sendDirectAlerts(from, text, tos, image, opts) {
     from = String(from || "").trim();
     image = image != null ? String(image).trim() : "";
@@ -728,7 +772,7 @@
       if (namesMatch(to, from) && !(opts && opts.allowSelf)) return;
       seen[namesNorm(to)] = true;
       var id = newId("dm-");
-      pack.directs.push({
+      var directRow = {
         id: id,
         kind: "direct",
         text: text,
@@ -742,7 +786,17 @@
         cancelledAt: "",
         replyTo: opts && opts.replyTo ? String(opts.replyTo) : "",
         dismissedBy: {},
-      });
+      };
+      if (opts && opts.sourceType) directRow.sourceType = String(opts.sourceType);
+      if (opts && opts.sourceId) directRow.sourceId = String(opts.sourceId);
+      if ((!directRow.sourceType || !directRow.sourceId) && directRow.replyTo) {
+        var parentSource = resolveAlertSource(findDirectById(directRow.replyTo));
+        if (parentSource) {
+          directRow.sourceType = parentSource.sourceType;
+          directRow.sourceId = parentSource.sourceId;
+        }
+      }
+      pack.directs.push(directRow);
       ids.push(id);
     });
     if (ids.length) savePack(pack);
@@ -887,22 +941,21 @@
           if (replyInp) replyInp.focus();
           return;
         }
-        sendDirectAlerts(me, replyText, [fromName], "", { replyTo: row.id });
-        if (global.HKSync && typeof global.HKSync.appendFrontChatMessage === "function") {
-          var chatId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
-          global.HKSync.appendFrontChatMessage({
-            id: chatId,
-            channel: "front",
-            at: new Date().toISOString(),
-            by: me,
-            text: "@" + fromName + " " + replyText,
-            image: "",
-            alertIds: [],
-            alertTo: [fromName],
-          });
-          if (frontCtx && typeof frontCtx.onFrontChatChanged === "function") {
-            frontCtx.onFrontChatChanged();
-          }
+        var source = resolveAlertSource(row);
+        var replyOpts = { replyTo: row.id };
+        if (source) {
+          replyOpts.sourceType = source.sourceType;
+          replyOpts.sourceId = source.sourceId;
+        }
+        sendDirectAlerts(me, replyText, [fromName], "", replyOpts);
+        if (
+          source &&
+          frontCtx &&
+          typeof frontCtx.onAlertReplyToCardChat === "function"
+        ) {
+          try {
+            frontCtx.onAlertReplyToCardChat(source.sourceType, source.sourceId, replyText);
+          } catch (eReply) {}
         }
         persistDismiss(row);
         hideOverlay();
@@ -1136,7 +1189,7 @@
     } else if (presenceWasOn) {
       dropPresence();
     }
-    if (!isFront()) {
+    if (!canReceiveDirectAlerts()) {
       hideOverlay();
       return;
     }

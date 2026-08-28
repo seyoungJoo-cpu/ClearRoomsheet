@@ -4375,7 +4375,7 @@
     .hk-compose-row input,
     .request-desk-chat__form input,
     .order-desk-chat__form input {
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, #64748b 22%, var(--border));
       border-radius: 10px;
       background: #fff;
       transition: border-color 0.15s, box-shadow 0.15s;
@@ -4658,7 +4658,7 @@
     .order-row input[type="text"] {
       height: 26px;
       padding: 0 7px;
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, #64748b 22%, var(--border));
       border-radius: 8px;
       font: inherit;
       font-size: 0.78rem;
@@ -7294,7 +7294,7 @@
     .mb-check-change-form .mb-inv-form__memo input[type="text"] {
       width: 100%;
       padding: 6px 9px;
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, #64748b 22%, var(--border));
       border-radius: 8px;
       font: inherit;
       font-size: 0.78rem;
@@ -12522,7 +12522,7 @@
     .field select {
       height: 28px;
       padding: 0 8px;
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, #64748b 22%, var(--border));
       border-radius: 6px;
       font: inherit;
       min-width: 120px;
@@ -14128,6 +14128,7 @@
           title="계정 · 모드"
         >
           <span class="topbar-user-btn__meta">
+            <span class="topbar-user-btn__mode" id="topbarActiveModeLabel" hidden></span>
             <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
           </span>
           <span class="topbar-user-btn__avatar" aria-hidden="true">👤</span>
@@ -16960,7 +16961,19 @@
       }
 
       function updateActiveModeLabel() {
-        /* 모드 라벨은 계정 버튼 위에 표시하지 않음 */
+        var el = document.getElementById("topbarActiveModeLabel");
+        if (!el) return;
+        var label = "";
+        if (maintenanceMode) label = "정비 입력";
+        else if (frontMode) label = "프론트";
+        else if (roomMode) label = "객실";
+        if (label) {
+          el.textContent = label;
+          el.hidden = false;
+        } else {
+          el.textContent = "";
+          el.hidden = true;
+        }
       }
 
       function clearExclusiveModesExcept(keep) {
@@ -23975,6 +23988,9 @@
         if (complaintNav) complaintNav.hidden = !canUseFrontSidebar();
         if (frontChatNav) frontChatNav.hidden = !canUseFrontSidebar();
         updateActiveModeLabel();
+        if (roomMode && typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.refresh) {
+          HKStaffBroadcast.refresh();
+        }
         if (!canUseFrontSidebar()) {
           if (
             sidebarMainView === "complaint" ||
@@ -28103,7 +28119,11 @@
 
       function hasSchedChatAlert(entry) {
         if (!entry || entry.used || isRequestCancelled(entry)) return false;
-        if (isRequestPendingAlert(entry) || isRequestConfirmingEntry(entry)) return false;
+        if (isRequestPendingAlert(entry)) return false;
+        if (isRequestConfirmingEntry(entry)) {
+          if (entry.chatAlertAt) return true;
+          return !!(entry.id && pinnedSchedChatFeedbackIds[String(entry.id)]);
+        }
         if (Object.prototype.hasOwnProperty.call(entry, "chatAlertAt") && !entry.chatAlertAt) {
           return false;
         }
@@ -30170,7 +30190,10 @@
           typeof HKStaffBroadcast.sendDirectAlerts === "function"
         ) {
           try {
-            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "");
+            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "", {
+              sourceType: "order",
+              sourceId: String(entry.id || ""),
+            });
           } catch (eDm) {}
         }
       }
@@ -30427,7 +30450,10 @@
           typeof HKStaffBroadcast.sendDirectAlerts === "function"
         ) {
           try {
-            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "");
+            HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "", {
+              sourceType: "request",
+              sourceId: String(entry.id || ""),
+            });
           } catch (eDm) {}
         }
       }
@@ -30466,7 +30492,9 @@
         var fromFeedback = !!(opts && opts.fromFeedback);
         // 채팅을 치면 알림으로 올림 (정비/프론트 공통, 내리기 버튼으로만 내림)
         markSchedChatAlert(reqId);
-        notifyRequestChatToRequester(entry, msgText || msgImage, senderName);
+        if (!(opts && opts.skipChatNotify)) {
+          notifyRequestChatToRequester(entry, msgText || msgImage, senderName);
+        }
         hkClearPhoto("schedReqChat:" + reqId);
         markRequestEntrySavedLocally(entry);
         saveRequestLog();
@@ -30502,7 +30530,8 @@
         });
       }
 
-      function appendOrderChat(orderId, text, image) {
+      function appendOrderChat(orderId, text, image, opts) {
+        opts = opts || {};
         var entry = findOrderEntry(orderId);
         if (!entry || !canUseOrderChat(entry)) return;
         var msgText = String(text || "").trim();
@@ -30512,7 +30541,7 @@
           showOperatorGate({
             mode: "initial",
             onSaved: function () {
-              appendOrderChat(orderId, msgText, msgImage);
+              appendOrderChat(orderId, msgText, msgImage, opts);
             },
           });
           return;
@@ -30532,7 +30561,9 @@
         entry.updatedAt = new Date().toISOString();
         entry.lastChatAt = entry.updatedAt;
         markOrderChatAlert(orderId);
-        notifyOrderChatToRequester(entry, msgText || msgImage, getOperatorName());
+        if (!opts.skipChatNotify) {
+          notifyOrderChatToRequester(entry, msgText || msgImage, getOperatorName());
+        }
         hkClearPhoto("orderChat:" + orderId);
         // 리렌더 전 입력값을 비움 — captureOrderChatComposeDraft가 방금 보낸 글을 다시 넣지 않게
         try {
@@ -35754,9 +35785,24 @@
           isMaintenanceMode: function () {
             return maintenanceMode;
           },
+          isRoomMode: function () {
+            return roomMode;
+          },
           isSessionActive: isOperatorSessionUnlocked,
           getOperatorName: getOperatorName,
           onPresence: renderFrontChatOnline,
+          onAlertReplyToCardChat: function (sourceType, sourceId, text) {
+            var msg = String(text || "").trim();
+            if (!msg || !sourceId) return;
+            if (sourceType === "order") {
+              appendOrderChat(sourceId, msg, "", { skipChatNotify: true });
+            } else if (sourceType === "request") {
+              appendSchedRequestChat(sourceId, msg, "", {
+                skipChatNotify: true,
+                fromFeedback: true,
+              });
+            }
+          },
           onFrontChatChanged: function () {
             syncFrontChatFromServer();
             renderFrontChatPanel({ scrollToBottom: true, force: true });

@@ -1272,6 +1272,8 @@
       cancelled: !!raw.cancelled,
       cancelledAt: raw.cancelledAt != null ? String(raw.cancelledAt) : "",
       replyTo: raw.replyTo != null ? String(raw.replyTo).trim() : "",
+      sourceType: raw.sourceType != null ? String(raw.sourceType).trim() : "",
+      sourceId: raw.sourceId != null ? String(raw.sourceId).trim() : "",
       scheduledAt: raw.scheduledAt != null ? String(raw.scheduledAt) : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
@@ -1485,11 +1487,15 @@
         prevD.createdAt = row.createdAt;
         if (row.image) prevD.image = row.image;
         if (row.replyTo) prevD.replyTo = row.replyTo;
+        if (row.sourceType) prevD.sourceType = row.sourceType;
+        if (row.sourceId) prevD.sourceId = row.sourceId;
         if (row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       } else if (!prevD.image && row.image) {
         prevD.image = row.image;
       }
       if (!prevD.replyTo && row.replyTo) prevD.replyTo = row.replyTo;
+      if (!prevD.sourceType && row.sourceType) prevD.sourceType = row.sourceType;
+      if (!prevD.sourceId && row.sourceId) prevD.sourceId = row.sourceId;
       if (!prevD.scheduledAt && row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       directsById[row.id] = prevD;
     }
