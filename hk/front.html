@@ -240,11 +240,98 @@
       gap: 6px;
     }
 
-    .topbar-date-row--menu .past-day-archive-link {
+    .topbar-date-row--menu .past-day-archive-link,
+    .topbar-date-row--menu .past-day-archive-btn {
       display: block;
       width: 100%;
       font-size: 0.72rem;
       padding: 2px 4px;
+    }
+
+    .past-day-archive-btn {
+      margin: 0;
+      padding: 8px 10px;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--accent-deep, var(--accent));
+      background: var(--accent-soft, #eff6ff);
+      border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      border-radius: 8px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .past-day-archive-btn:hover {
+      background: #fff;
+      border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .past-day-archive-pick {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .past-day-archive-pick[hidden] {
+      display: none !important;
+    }
+
+    .past-day-archive-pick__date {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .past-day-archive-pick__copies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .past-day-archive-pick__copies[hidden] {
+      display: none !important;
+    }
+
+    .past-day-archive-pick__copy-btn {
+      flex: 1 1 calc(50% - 6px);
+      min-width: 3.5rem;
+      padding: 7px 8px;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--accent-deep, var(--accent));
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .past-day-archive-pick__copy-btn:hover {
+      background: var(--accent-soft, #eff6ff);
+    }
+
+    .past-day-archive-pick__empty {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .past-day-archive-pick__empty[hidden] {
+      display: none !important;
     }
 
     .topbar-date-chip {
@@ -14071,14 +14158,30 @@
               <span class="topbar-date-chip__chev" aria-hidden="true">▾</span>
             </button>
             <input type="date" id="topbarDatePicker" class="topbar-date-picker" aria-label="조회 날짜" />
-            <a
-              class="past-day-archive-link"
-              id="pastDayArchiveLink"
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              hidden
-            >마감 보관본 보기</a>
+          </div>
+          <div class="topbar-archive-row" id="pastDayArchiveMount">
+            <button type="button" class="past-day-archive-btn" id="btnPastDayArchive">
+              마감 보관본 보기
+            </button>
+            <div class="past-day-archive-pick" id="pastDayArchivePick" hidden>
+              <label class="sr-only" for="pastDayArchiveDate">보관본 날짜</label>
+              <input
+                type="date"
+                id="pastDayArchiveDate"
+                class="past-day-archive-pick__date"
+                aria-label="보관본 날짜"
+              />
+              <div
+                class="past-day-archive-pick__copies"
+                id="pastDayArchiveCopies"
+                hidden
+                role="group"
+                aria-label="보관본 복사본"
+              ></div>
+              <p class="past-day-archive-pick__empty" id="pastDayArchiveEmpty" hidden>
+                해당 날짜 보관본이 없습니다.
+              </p>
+            </div>
           </div>
         </div>
         <button type="button" class="topbar-collapse-btn" id="btnTopbarCollapse" hidden>접기</button>
@@ -16190,7 +16293,8 @@
       }
 
       var selectedViewDate = "";
-      var pastDayArchiveId = "";
+      var closeDayArchiveListCache = null;
+      var closeDayArchiveListPromise = null;
 
       function getTodayKstDateStr() {
         try {
@@ -16917,7 +17021,6 @@
         if (el) el.textContent = labelFromDateStr(dateStr);
         if (picker && picker.value !== dateStr) picker.value = dateStr;
         applyPastDayReadonlyUi();
-        refreshPastDayArchiveLink();
       }
 
       function applyPastDayReadonlyUi() {
@@ -16935,15 +17038,12 @@
         );
       }
 
-      function refreshPastDayArchiveLink() {
-        var link = document.getElementById("pastDayArchiveLink");
-        if (!link) return;
-        pastDayArchiveId = "";
-        link.hidden = true;
-        link.removeAttribute("href");
-        if (!isPastDayView()) return;
-        var dateStr = ensureSelectedViewDate();
-        fetch("/api/close-day-archives", {
+      function fetchCloseDayArchiveList(force) {
+        if (!force && closeDayArchiveListCache) {
+          return Promise.resolve(closeDayArchiveListCache);
+        }
+        if (!force && closeDayArchiveListPromise) return closeDayArchiveListPromise;
+        closeDayArchiveListPromise = fetch("/api/close-day-archives", {
           method: "GET",
           headers: { "x-sync-password": getSyncPwdForArchives() },
         })
@@ -16952,28 +17052,146 @@
             return res.json();
           })
           .then(function (data) {
-            var list = (data && data.archives) || [];
-            var hit = null;
-            for (var i = 0; i < list.length; i++) {
-              if (list[i] && String(list[i].date) === dateStr) {
-                hit = list[i];
-                break;
-              }
-            }
-            if (!hit || !hit.id) return;
-            pastDayArchiveId = hit.id;
-            var kind = hit.hasScreen ? "screen" : "report";
-            link.href =
-              "/api/close-day-archives/" +
-              encodeURIComponent(hit.id) +
-              "/file?kind=" +
-              kind +
-              "&pwd=" +
-              encodeURIComponent(getSyncPwdForArchives());
-            link.textContent = "마감 보관본 보기" + (hit.label ? " · " + hit.label : "");
-            link.hidden = false;
+            closeDayArchiveListCache = (data && data.archives) || [];
+            return closeDayArchiveListCache;
           })
-          .catch(function () {});
+          .catch(function () {
+            closeDayArchiveListCache = [];
+            return closeDayArchiveListCache;
+          })
+          .finally(function () {
+            closeDayArchiveListPromise = null;
+          });
+        return closeDayArchiveListPromise;
+      }
+
+      function getCloseDayArchivesForDate(dateStr) {
+        return fetchCloseDayArchiveList(false).then(function (list) {
+          var hits = (list || []).filter(function (row) {
+            return row && String(row.date) === String(dateStr || "");
+          });
+          hits.sort(function (a, b) {
+            var ai = parseInt(a && a.copyIndex, 10);
+            var bi = parseInt(b && b.copyIndex, 10);
+            if (!isFinite(ai)) ai = 0;
+            if (!isFinite(bi)) bi = 0;
+            if (ai !== bi) return ai - bi;
+            return String(a.savedAt || "").localeCompare(String(b.savedAt || ""));
+          });
+          return hits;
+        });
+      }
+
+      function buildCloseDayArchiveFileUrl(hit) {
+        if (!hit || !hit.id) return "";
+        var kind = hit.hasScreen ? "screen" : "report";
+        return (
+          "/api/close-day-archives/" +
+          encodeURIComponent(hit.id) +
+          "/file?kind=" +
+          kind +
+          "&pwd=" +
+          encodeURIComponent(getSyncPwdForArchives())
+        );
+      }
+
+      function formatCloseDayArchiveSavedHint(hit) {
+        if (!hit || !hit.savedAt) return "";
+        var d = new Date(hit.savedAt);
+        if (isNaN(d.getTime())) return "";
+        try {
+          return d.toLocaleString("ko-KR", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        } catch (e) {
+          return "";
+        }
+      }
+
+      function renderPastDayArchiveCopies(dateStr) {
+        var copiesEl = document.getElementById("pastDayArchiveCopies");
+        var emptyEl = document.getElementById("pastDayArchiveEmpty");
+        if (!copiesEl || !emptyEl) return;
+        copiesEl.innerHTML = "";
+        copiesEl.hidden = true;
+        emptyEl.hidden = true;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ""))) return;
+        getCloseDayArchivesForDate(dateStr).then(function (hits) {
+          if (!hits.length) {
+            emptyEl.hidden = false;
+            return;
+          }
+          copiesEl.hidden = false;
+          hits.forEach(function (hit, idx) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "past-day-archive-pick__copy-btn";
+            var copyNo = idx + 1;
+            var hint = formatCloseDayArchiveSavedHint(hit);
+            btn.textContent = "(" + copyNo + ")";
+            btn.title =
+              (hit.label ? String(hit.label) : dateStr) + (hint ? " · " + hint : "");
+            btn.setAttribute("aria-label", "보관본 " + copyNo + " 열기");
+            btn.addEventListener("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              var url = buildCloseDayArchiveFileUrl(hit);
+              if (!url) {
+                showHkActionToast("보관본을 열 수 없습니다.");
+                return;
+              }
+              window.open(url, "_blank", "noopener,noreferrer");
+            });
+            copiesEl.appendChild(btn);
+          });
+        });
+      }
+
+      function setupPastDayArchiveUi() {
+        var btn = document.getElementById("btnPastDayArchive");
+        var pick = document.getElementById("pastDayArchivePick");
+        var dateInp = document.getElementById("pastDayArchiveDate");
+        if (!btn || !pick || !dateInp) return;
+
+        function syncArchiveDateInput() {
+          var dateStr = ensureSelectedViewDate();
+          if (dateInp.value !== dateStr) dateInp.value = dateStr;
+          renderPastDayArchiveCopies(dateStr);
+        }
+
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var open = pick.hidden;
+          pick.hidden = !open;
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+          if (open) {
+            closeDayArchiveListCache = null;
+            syncArchiveDateInput();
+            try {
+              if (typeof dateInp.showPicker === "function") dateInp.showPicker();
+              else dateInp.focus();
+            } catch (e2) {
+              dateInp.focus();
+            }
+          }
+        });
+
+        dateInp.addEventListener("change", function () {
+          if (!dateInp.value) return;
+          renderPastDayArchiveCopies(dateInp.value);
+        });
+
+        dateInp.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
+        pick.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
       }
 
       function setSelectedViewDate(dateStr) {
@@ -17035,6 +17253,7 @@
         menu.addEventListener("click", function (e) {
           if (e.target.closest("#topbarMenuThemeMount")) return;
           if (e.target.closest("#topbarDateRow")) return;
+          if (e.target.closest("#pastDayArchiveMount")) return;
           var item = e.target.closest(".topbar-user-menu__item");
           if (!item) return;
           if (item.id === "btnAdmin") {
@@ -35147,6 +35366,7 @@
       setupTopbarUserMenu();
       setupTopbarHamMenu();
       setupTopbarDatePicker();
+      setupPastDayArchiveUi();
       setupNoticeCollapse();
       updateTopbarDateChip();
       updateActiveModeLabel();
