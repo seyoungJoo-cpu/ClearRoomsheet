@@ -2661,10 +2661,8 @@
           : [];
     });
 
-    // 마감 이전 객실만 제외. 스탬프 없는 현재 등록분은 지금 찍고 유지
-    // (저장/프리즌스 하트비트가 특이객실을 통째로 지우는 것 방지)
+    // 마감 이전 객실만 제외. 스탬프 없는 잔존은 마감 후 되살리지 않음.
     if (d.closeDayAt) {
-      var stampNow = new Date().toISOString();
       var zoneIds = STANDARD_ZONE_IDS.concat(
         customZones.map(function (z) {
           return z.id;
@@ -2672,18 +2670,11 @@
       );
       zoneIds.forEach(function (zone) {
         var list = Array.isArray(d.rooms[zone]) ? d.rooms[zone] : [];
-        var clearAt =
-          d.zoneRoomClearAt && d.zoneRoomClearAt[zone]
-            ? String(d.zoneRoomClearAt[zone])
-            : "";
         d.rooms[zone] = list.filter(function (room) {
           if (!room || !room.number) return false;
           var at = roomActivityAt(room);
           if (!at) {
-            if (!room.createdAt) room.createdAt = stampNow;
-            if (!room.updatedAt) room.updatedAt = stampNow;
-            if (clearAt && String(room.updatedAt) < String(clearAt)) return false;
-            return isRoomAfterCloseDay(room, d.closeDayAt);
+            return false;
           }
           return isRoomAfterCloseDay(room, d.closeDayAt);
         });
@@ -2957,6 +2948,33 @@
       merged.zoneRoomClearAt = base.zoneRoomClearAt || {};
       merged.rooms = base.rooms || merged.rooms;
       // invenNotify / 공지 등은 위에서 이미 병합됨
+    } else if (incCd && (!baseCd || String(incCd) > String(baseCd))) {
+      // 새 마감: 로컬 객실·존을 병합하지 않고 원격으로 교체 (꺼져 있던 PC 되살림 방지)
+      if (Object.prototype.hasOwnProperty.call(incoming, "customZones")) {
+        merged.customZones = incoming.customZones || [];
+      } else {
+        merged.customZones = base.customZones || [];
+      }
+      if (Object.prototype.hasOwnProperty.call(incoming, "deletedCustomZones")) {
+        merged.deletedCustomZones = incoming.deletedCustomZones || [];
+      } else {
+        merged.deletedCustomZones = base.deletedCustomZones || [];
+      }
+      if (Object.prototype.hasOwnProperty.call(incoming, "deletedRooms")) {
+        merged.deletedRooms = incoming.deletedRooms || {};
+      } else {
+        merged.deletedRooms = base.deletedRooms || {};
+      }
+      if (Object.prototype.hasOwnProperty.call(incoming, "zoneRoomClearAt")) {
+        merged.zoneRoomClearAt = incoming.zoneRoomClearAt || {};
+      } else {
+        merged.zoneRoomClearAt = base.zoneRoomClearAt || {};
+      }
+      if (incoming.rooms && typeof incoming.rooms === "object") {
+        merged.rooms = incoming.rooms;
+      } else {
+        merged.rooms = { VIP: [], RC: [], CASINO: [], MOBILE_CI: [], AJ: [], MINIBAR: [], SHUTTLE: [] };
+      }
     } else {
       var mergedDeletedCustom = mergeDeletedCustomZones(
         base.deletedCustomZones,

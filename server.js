@@ -398,8 +398,29 @@ function presenceIdentityFingerprint(snap) {
   return crypto.createHash("sha1").update(people + "\n#\n" + kickStr).digest("hex").slice(0, 16);
 }
 
+function syncCloseDayAtValue() {
+  var p = sharedState.payload;
+  if (!p || typeof p !== "object") return "";
+  if (p.hkCloseDayAt != null && String(p.hkCloseDayAt).trim()) {
+    return String(p.hkCloseDayAt).trim();
+  }
+  if (
+    p.hkStorage &&
+    typeof p.hkStorage === "object" &&
+    p.hkStorage.closeDayAt != null &&
+    String(p.hkStorage.closeDayAt).trim()
+  ) {
+    return String(p.hkStorage.closeDayAt).trim();
+  }
+  return "";
+}
+
 function attachStaffPresenceToSyncBody(body, req, scope) {
-  if (!body || scope === "rooming") return body;
+  if (!body || typeof body !== "object") return body;
+  // 마감 시각은 unchanged 폴링에도 실어, 웹앱이 꺼져 있던 PC가 초기화를 놓치지 않게 함
+  var closeAt = syncCloseDayAtValue();
+  if (closeAt) body.hkCloseDayAt = closeAt;
+  if (scope === "rooming") return body;
   var snap = staffPresenceSnapshot();
   var ident = presenceIdentityFingerprint(snap);
   body.presenceIdent = ident;
@@ -1558,6 +1579,12 @@ function buildSyncGetPayload(since, scope) {
         out[k] = payload[k];
       }
     });
+  });
+  // 증분에서 hkMeta가 빠지면 다른 PC가 마감을 감지하지 못하므로 항상 포함
+  (SYNC_PART_KEYS.hkMeta || []).forEach(function (k) {
+    if (Object.prototype.hasOwnProperty.call(payload, k) && !Object.prototype.hasOwnProperty.call(out, k)) {
+      out[k] = payload[k];
+    }
   });
   if (!Object.keys(out).length) {
     return { unchanged: true, payload: null, partial: true };

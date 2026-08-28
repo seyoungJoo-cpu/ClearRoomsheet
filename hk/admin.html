@@ -1178,9 +1178,9 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=desk-chat-close-1"></script>
+  <script src="hk-storage.js?v=close-sync-all-1"></script>
   <script src="hk-facility-logs.js"></script>
-  <script src="hk-sync.js?v=bw-sync-6"></script>
+  <script src="hk-sync.js?v=close-sync-all-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-inven-notify.js?v=autosave-2"></script>
   <script src="hk-staff-broadcast.js?v=bw-presence-4"></script>
@@ -1689,6 +1689,9 @@
         }
         if (changed.indexOf("hkStorage") >= 0) {
           refresh();
+        }
+        if (changed.indexOf("hkCloseDayAt") >= 0 || changed.indexOf("hkClearLocalCaches") >= 0) {
+          refresh({ force: true });
         }
       }
 

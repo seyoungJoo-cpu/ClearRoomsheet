@@ -69,6 +69,7 @@
   var syncVersion = 0;
   var appliedPartVersions = {};
   var catchUpPull = null;
+  var closeDayFullPull = null;
   var lastAppliedSyncUpdatedAt = "";
   var lastPresenceIdent = "";
   var pollTimer = null;
@@ -485,6 +486,43 @@
     } catch (e) {
       return "";
     }
+  }
+
+  function localCloseDayAtCombined() {
+    var best = getCloseDayAtLocal() || "";
+    try {
+      if (global.HKStorage && typeof global.HKStorage.load === "function") {
+        var d = global.HKStorage.load();
+        var cd = d && d.closeDayAt != null ? String(d.closeDayAt).trim() : "";
+        if (cd && (!best || cd > best)) best = cd;
+      }
+    } catch (eLoc) {}
+    return best;
+  }
+
+  function pickCloseDayAtFromData(data) {
+    var best = "";
+    function consider(v) {
+      var s = v != null ? String(v).trim() : "";
+      if (s && (!best || s > best)) best = s;
+    }
+    if (!data || typeof data !== "object") return "";
+    consider(data.hkCloseDayAt);
+    if (data.payload && typeof data.payload === "object") {
+      consider(data.payload.hkCloseDayAt);
+      if (data.payload.hkStorage && typeof data.payload.hkStorage === "object") {
+        consider(data.payload.hkStorage.closeDayAt);
+      }
+    }
+    return best;
+  }
+
+  function pullFullForCloseDay() {
+    if (closeDayFullPull) return closeDayFullPull;
+    closeDayFullPull = pull(false, { full: true, catchUp: true }).finally(function () {
+      closeDayFullPull = null;
+    });
+    return closeDayFullPull;
   }
 
   function filterArrAfterCloseDay(arr, closeAt) {
@@ -1409,24 +1447,50 @@
     try {
       prevCloseDayAt = global.localStorage.getItem(CLOSE_DAY_KEY) || "";
     } catch (e) {}
-    if (payload.hkCloseDayAt) {
-      applyCloseDayMarker(payload);
-      if (String(payload.hkCloseDayAt) !== prevCloseDayAt) {
-        changed.push("hkCloseDayAt");
+    var localStorageCdEarly = "";
+    try {
+      if (global.HKStorage && typeof global.HKStorage.load === "function") {
+        var localEarly = global.HKStorage.load();
+        localStorageCdEarly =
+          localEarly && localEarly.closeDayAt != null
+            ? String(localEarly.closeDayAt).trim()
+            : "";
       }
+    } catch (eEarlyCd) {}
+    var payloadCloseAt =
+      (payload.hkCloseDayAt && String(payload.hkCloseDayAt).trim()) ||
+      (payload.hkStorage && payload.hkStorage.closeDayAt
+        ? String(payload.hkStorage.closeDayAt).trim()
+        : "") ||
+      (meta.closeDayAt ? String(meta.closeDayAt).trim() : "") ||
+      "";
+    if (payloadCloseAt && String(payloadCloseAt) !== String(payload.hkCloseDayAt || "")) {
+      payload = Object.assign({}, payload, { hkCloseDayAt: payloadCloseAt });
     }
+    var localCloseAt =
+      prevCloseDayAt && localStorageCdEarly
+        ? String(prevCloseDayAt) >= String(localStorageCdEarly)
+          ? String(prevCloseDayAt)
+          : String(localStorageCdEarly)
+        : String(prevCloseDayAt || localStorageCdEarly || "");
     isApplyingRemote = true;
     try {
-    var isCloseDayReplace = payload.hkCloseDayReset === true;
+    var isCloseDayReplace = payload.hkCloseDayReset === true || meta.forceCloseDay === true;
     var isNewCloseDay =
-      !!payload.hkCloseDayAt &&
-      String(payload.hkCloseDayAt) !== String(prevCloseDayAt || "");
-    // 새 마감 시각에만 로컬 당일 캐시를 비움 (플래그 잔존 시 매 폴링 wipe 방지)
+      !!payloadCloseAt && String(payloadCloseAt) > String(localCloseAt || "");
+    var remoteStorageCdEarly =
+      payload.hkStorage && payload.hkStorage.closeDayAt != null
+        ? String(payload.hkStorage.closeDayAt).trim()
+        : "";
+    var storageEpochNewerEarly =
+      !!remoteStorageCdEarly &&
+      (!localStorageCdEarly || String(remoteStorageCdEarly) > String(localStorageCdEarly));
+    // 웹앱이 꺼져 있던 PC·증분 폴링에서도 새 마감이면 당일 캐시를 비움
     var clearLocalSignal =
-      isNewCloseDay &&
-      (payload.hkClearLocalCaches === true ||
-        isCloseDayReplace ||
-        !!payload.hkCloseDayAt);
+      isNewCloseDay ||
+      isCloseDayReplace ||
+      storageEpochNewerEarly ||
+      (payload.hkClearLocalCaches === true && isNewCloseDay);
 
     if (clearLocalSignal) {
       // 마감/초기화: dirty·대기 푸시 취소 후 당일 캐시 비움 (전날 데이터 재푸시 방지)
@@ -1434,6 +1498,7 @@
       if (changed.indexOf("hkClearLocalCaches") < 0) {
         changed.push("hkClearLocalCaches");
       }
+      if (changed.indexOf("hkCloseDayAt") < 0) changed.push("hkCloseDayAt");
       if (changed.indexOf("hkRequestLog") < 0) changed.push("hkRequestLog");
       if (changed.indexOf("hkOrderLog") < 0) changed.push("hkOrderLog");
       if (changed.indexOf("hkMbInvLog") < 0) changed.push("hkMbInvLog");
@@ -1441,6 +1506,13 @@
       if (changed.indexOf("hkCancelLog") < 0) changed.push("hkCancelLog");
       if (changed.indexOf("hkUseLog") < 0) changed.push("hkUseLog");
       if (changed.indexOf("hkChangeLog") < 0) changed.push("hkChangeLog");
+    }
+
+    if (payload.hkCloseDayAt) {
+      applyCloseDayMarker(payload);
+      if (String(payload.hkCloseDayAt) !== prevCloseDayAt) {
+        if (changed.indexOf("hkCloseDayAt") < 0) changed.push("hkCloseDayAt");
+      }
     }
 
     if (payload.hkStorage && global.HKStorage) {
@@ -1812,7 +1884,8 @@
     var url = "/api/sync?scope=hk";
     var sinceOverride = opts.since;
     var sendSince =
-      sinceOverride != null || (syncVersion > 0 && (isPoll || hasLocalHkHydration()));
+      !opts.full &&
+      (sinceOverride != null || (syncVersion > 0 && (isPoll || hasLocalHkHydration())));
     if (sendSince) {
       var sinceVal = sinceOverride != null ? sinceOverride : syncVersion;
       headers["X-Sync-Version"] = String(sinceVal);
@@ -1832,6 +1905,18 @@
       .then(function (data) {
         if (!data) return false;
         applyPresenceFromSyncResponse(data);
+        var remoteCloseAt = pickCloseDayAtFromData(data);
+        var missedCloseDay =
+          !!remoteCloseAt && String(remoteCloseAt) > String(localCloseDayAtCombined() || "");
+        if (missedCloseDay && !opts.full) {
+          var hasCloseStorage =
+            data.payload &&
+            data.payload.hkStorage &&
+            typeof data.payload.hkStorage === "object";
+          if (!hasCloseStorage) {
+            return pullFullForCloseDay();
+          }
+        }
         function catchUpIfNeeded() {
           if (opts.catchUp) return Promise.resolve(true);
           var sinceMissed = missedPartsSince(data.partVersions);
@@ -1842,10 +1927,21 @@
           });
           return catchUpPull;
         }
+        function catchUpCloseDayIfNeeded() {
+          if (!missedCloseDay || opts.full) return Promise.resolve(true);
+          var hasStorage =
+            data.payload &&
+            data.payload.hkStorage &&
+            typeof data.payload.hkStorage === "object";
+          if (hasStorage) return Promise.resolve(true);
+          return pullFullForCloseDay();
+        }
         if (data.unchanged) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-          return catchUpIfNeeded();
+          return catchUpCloseDayIfNeeded().then(function () {
+            return catchUpIfNeeded();
+          });
         }
         if (!data.payload) {
           if (data.version != null && data.version < syncVersion) {
@@ -1856,12 +1952,14 @@
             loadCachesFromLocal();
             emitLocalCacheHydrate();
           }
-          return catchUpIfNeeded().then(function () {
-            return false;
+          return catchUpCloseDayIfNeeded().then(function () {
+            return catchUpIfNeeded().then(function () {
+              return false;
+            });
           });
         }
         var forceFullApply =
-          (!isPoll && !data.partial && !sendSince) || !!opts.catchUp;
+          (!isPoll && !data.partial && !sendSince) || !!opts.catchUp || missedCloseDay;
         if (shouldApplyRemoteSync(data) || forceFullApply) {
           if (data.version != null) saveSyncVersion(data.version);
           if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
@@ -1869,9 +1967,13 @@
             partVersions: data.partVersions,
             version: data.version,
             partial: !!data.partial,
+            closeDayAt: remoteCloseAt,
+            forceCloseDay: missedCloseDay,
           });
           applyPresenceFromSyncResponse(data);
-          return catchUpIfNeeded();
+          return catchUpCloseDayIfNeeded().then(function () {
+            return catchUpIfNeeded();
+          });
         }
         lastServerPayload = Object.assign({}, lastServerPayload || {}, data.payload);
         var reconChanged = [];
@@ -1886,7 +1988,9 @@
           emitChange(reconChanged, Object.assign({}, data.payload));
         }
         applyPresenceFromSyncResponse(data);
-        return catchUpIfNeeded();
+        return catchUpCloseDayIfNeeded().then(function () {
+          return catchUpIfNeeded();
+        });
       })
       .catch(function () {
         if (!isPoll) {
@@ -2202,6 +2306,8 @@
       clearAllDirty();
       pendingPush = {};
       return postPayload(payload).then(function (data) {
+        if (data && data.version != null) saveSyncVersion(data.version);
+        if (data && data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
         var closeChanged = [
           "hkCloseDayAt",
           "hkClearLocalCaches",
