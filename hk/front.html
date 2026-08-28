@@ -132,6 +132,15 @@
       flex: 1;
     }
 
+    .topbar-brand-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+
     .topbar-title-block .brand {
       font-size: 1.05rem;
       font-weight: 800;
@@ -408,15 +417,17 @@
     }
 
     .topbar-xml-upload-time {
-      font-size: 0.5625rem;
+      font-size: 0.5rem;
       font-weight: 600;
       color: var(--text-muted);
-      line-height: 1.25;
-      text-align: center;
-      max-width: 9.5rem;
+      line-height: 1.2;
+      text-align: left;
+      max-width: 7.5rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-top: 1px;
+      letter-spacing: -0.01em;
     }
 
     .topbar-xml-upload-time[hidden] {
@@ -3070,9 +3081,10 @@
     }
 
     .sidebar-nav__btn.is-active {
-      background: var(--hover-bg);
-      border-color: var(--accent);
-      color: var(--accent);
+      background: var(--accent-soft, var(--hover-bg));
+      border-color: var(--accent-ring, var(--accent));
+      color: var(--accent-deep, var(--accent));
+      font-weight: 800;
     }
 
     a.sidebar-nav__link {
@@ -4158,10 +4170,10 @@
     }
 
     .sidebar-nav__btn.is-active {
-      background: #fff;
-      border-color: transparent;
-      color: var(--accent);
-      box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.05));
+      background: var(--accent-soft, #eff6ff);
+      border-color: var(--accent-ring, rgba(37, 99, 235, 0.22));
+      color: var(--accent-deep, var(--accent));
+      box-shadow: none;
       font-weight: 800;
     }
 
@@ -8298,6 +8310,13 @@
       pointer-events: none;
     }
 
+    #hkNoticeToast.hk-notice-toast {
+      left: 50%;
+      right: auto;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(12px);
+    }
+
     .hk-notice-toast[hidden] {
       display: none !important;
     }
@@ -8306,6 +8325,10 @@
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
+    }
+
+    #hkNoticeToast.hk-notice-toast.is-visible {
+      transform: translateX(-50%) translateY(0);
     }
 
     .hk-notice-toast__text {
@@ -8319,6 +8342,12 @@
       .hk-notice-toast {
         right: max(16px, env(safe-area-inset-right));
         bottom: max(16px, env(safe-area-inset-bottom));
+      }
+
+      #hkNoticeToast.hk-notice-toast {
+        left: 50%;
+        right: auto;
+        bottom: max(24px, env(safe-area-inset-bottom));
       }
     }
 
@@ -13954,7 +13983,15 @@
         <button type="button" class="topbar-user-menu__item" id="btnOpenFnB" role="menuitem">F&amp;B</button>
       </div>
       <div class="topbar-title-block">
-        <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="ROD 미니게임">ROD</span>
+        <div class="topbar-brand-stack">
+          <span class="brand" id="brandGamesBtn" role="button" tabindex="0" title="클릭하면 미니게임" aria-label="ROD 미니게임">ROD</span>
+          <div
+            class="topbar-xml-upload-time"
+            id="topbarXmlUploadTime"
+            hidden
+            title="루밍 XML 업로드 시각"
+          ></div>
+        </div>
         <span class="topbar-title-sep" aria-hidden="true">-</span>
         <span class="brand-sub">Room Operation Dashboard</span>
       </div>
@@ -13991,7 +14028,6 @@
           title="계정 · 모드"
         >
           <span class="topbar-user-btn__meta">
-            <span class="topbar-user-btn__mode" id="topbarActiveModeLabel" hidden></span>
             <span class="brand-operator topbar-user-btn__name" id="topbarOperatorName">이름</span>
           </span>
           <span class="topbar-user-btn__avatar" aria-hidden="true">👤</span>
@@ -14022,12 +14058,6 @@
               <span class="topbar-date-chip__chev" aria-hidden="true">▾</span>
             </button>
             <input type="date" id="topbarDatePicker" class="topbar-date-picker" aria-label="조회 날짜" />
-            <div
-              class="topbar-xml-upload-time"
-              id="topbarXmlUploadTime"
-              hidden
-              title="루밍 XML 업로드 시각"
-            ></div>
             <a
               class="past-day-archive-link"
               id="pastDayArchiveLink"
@@ -14044,17 +14074,17 @@
   </header>
 
   <div class="layout">
-    <aside class="sidebar is-half-collapsed" id="hkSidebar" aria-label="House Keeping">
+    <aside class="sidebar" id="hkSidebar" aria-label="House Keeping">
       <button
         type="button"
         class="sidebar-collapse-btn"
         id="btnSidebarCollapse"
-        aria-expanded="false"
+        aria-expanded="true"
         aria-controls="hkSidebar"
-        title="사이드바 완전 접기"
+        title="사이드바 반만 접기"
       >
         <span aria-hidden="true">◀</span>
-        <span class="sidebar-collapse-btn__label">더접기</span>
+        <span class="sidebar-collapse-btn__label">접기</span>
       </button>
       <div class="sidebar-brand">
         <h1 class="sidebar-brand__title">House Keeping</h1>
@@ -14529,7 +14559,7 @@
                     type="text"
                     id="orderMemo"
                     name="orderMemo"
-                    placeholder="메모 (선택 · EXB/BEG 자동변환)"
+                    placeholder="메모 (필수 · EXB/BEG 자동변환)"
                     autocomplete="off"
                   />
                   <button type="button" class="hk-photo-btn" id="btnPhotoOrderMemo" title="사진 첨부">사진</button>
@@ -16142,6 +16172,10 @@
         return !!frontMode;
       }
 
+      function canUseFacilityMaintPermissions() {
+        return maintenanceMode || (roomMode && sidebarMainView === "facility");
+      }
+
       var selectedViewDate = "";
       var pastDayArchiveId = "";
 
@@ -16809,19 +16843,7 @@
       }
 
       function updateActiveModeLabel() {
-        var el = document.getElementById("topbarActiveModeLabel");
-        if (!el) return;
-        var label = "";
-        if (maintenanceMode) label = "정비 입력";
-        else if (frontMode) label = "프론트";
-        else if (roomMode) label = "객실";
-        if (label) {
-          el.textContent = label;
-          el.hidden = false;
-        } else {
-          el.textContent = "";
-          el.hidden = true;
-        }
+        /* 모드 라벨은 계정 버튼 위에 표시하지 않음 */
       }
 
       function clearExclusiveModesExcept(keep) {
@@ -17510,7 +17532,7 @@
               sessionStorage.setItem(key, mode);
             } catch (e) {}
           }
-          var saved = "half";
+          var saved = "open";
           try {
             var raw = sessionStorage.getItem(key);
             if (raw === "half" || raw === "full" || raw === "open") saved = raw;
@@ -18593,7 +18615,7 @@
           return;
         }
         el.hidden = false;
-        el.textContent = "XML " + label;
+        el.textContent = label;
         el.title = "루밍 XML 업로드 " + label;
       }
 
@@ -29347,7 +29369,7 @@
         }
         if (frontMode) {
           if (!entry.fromMaint && !isFacilityOrder(entry)) return;
-        } else if (maintenanceMode) {
+        } else if (maintenanceMode || (roomMode && sidebarMainView === "facility")) {
           if (entry.fromMaint && !isFacilityOrder(entry)) return;
         } else {
           return;
@@ -29438,7 +29460,9 @@
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return false;
         if (isFacilityOrderUnavailableBucket(entry)) return false;
-        if (!auto && !maintenanceMode) return false;
+        if (!auto && !maintenanceMode) {
+          if (!(roomMode && sidebarMainView === "facility" && isFacilityOrder(entry))) return false;
+        }
         if (!auto && !getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -29586,7 +29610,11 @@
       }
 
       function appendOrderAcceptedMaintActions(li, entry) {
-        if (!maintenanceMode) return;
+        if (isFacilityOrder(entry)) {
+          if (!canUseFacilityMaintPermissions()) return;
+        } else if (!maintenanceMode) {
+          return;
+        }
         var acts = document.createElement("div");
         acts.className = "order-work__actions order-work__actions--toggle";
         if (isIssueBtnVisible(entry)) {
@@ -29680,7 +29708,7 @@
         if (!entry || !isFacilityOrder(entry)) return;
         var phase = getOrderPhase(entry);
         if ((phase !== "accepted" && phase !== "unavailable") || isOrderIssueOpen(entry)) return;
-        if (!maintenanceMode) return;
+        if (!canUseFacilityMaintPermissions()) return;
         var p = parseRequestSchedInput(rawTime);
         if (!p.ok || !p.value) {
           alert("시간 형식을 확인하세요. (예: 14:30, 1430, IP, 202 14:00)");
@@ -29725,7 +29753,7 @@
         if (!entry || !isFacilityOrder(entry)) return;
         if (getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
         if (isFacilityOrderUnavailableBucket(entry)) return;
-        if (!maintenanceMode) return;
+        if (!canUseFacilityMaintPermissions()) return;
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -29758,7 +29786,7 @@
       }
 
       function appendFacilityUnavailableActions(li, entry) {
-        if (!maintenanceMode || !entry || !isFacilityOrder(entry)) return;
+        if (!canUseFacilityMaintPermissions() || !entry || !isFacilityOrder(entry)) return;
         {
           var timeWrap = document.createElement("div");
           timeWrap.className = "order-work__facility-time-wrap";
@@ -30612,7 +30640,7 @@
           li.setAttribute("data-order-id", entry.id || "");
           appendOrderItemCommon(li, entry);
           appendOrderStaffLabels(li, entry);
-          if (isFacilityOrder(entry) && !maintenanceMode) {
+          if (isFacilityOrder(entry) && !canUseFacilityMaintPermissions()) {
             appendFacilityDueTimeDisplay(li, entry);
           }
           appendOrderAcceptedMaintActions(li, entry);
@@ -30961,7 +30989,11 @@
             li.appendChild(frontAcceptActs);
           }
 
-          if (maintenanceMode && (!entry.fromMaint || isFacilityOrder(entry)) && !(frontMode && isFacilityAlertList)) {
+          if (
+            (maintenanceMode || canUseFacilityMaintPermissions()) &&
+            (!entry.fromMaint || isFacilityOrder(entry)) &&
+            !(frontMode && isFacilityAlertList)
+          ) {
             var maintAcceptActs = document.createElement("div");
             maintAcceptActs.className = "order-feedback__maint-actions";
             var maintAcceptBtn = document.createElement("button");
@@ -30986,7 +31018,7 @@
             li.appendChild(maintAcceptActs);
           }
 
-          if (frontMode && isFacilityOrder(entry) && isFacilityAlertList) {
+          if (frontMode && isFacilityOrder(entry) && isFacilityAlertList && !canUseFacilityMaintPermissions()) {
             var facFrontActs = document.createElement("div");
             facFrontActs.className = "order-feedback__maint-actions";
             var facFrontAcceptBtn = document.createElement("button");
@@ -35492,6 +35524,10 @@
           isSessionActive: isOperatorSessionUnlocked,
           getOperatorName: getOperatorName,
           onPresence: renderFrontChatOnline,
+          onFrontChatChanged: function () {
+            syncFrontChatFromServer();
+            renderFrontChatPanel({ scrollToBottom: true, force: true });
+          },
           onDuplicateLogin: function () {
             showOperatorGate({
               mode: "shift",
@@ -35964,6 +36000,11 @@
         var memoImage = hkGetPhoto("orderMemo");
         if (!room) {
           if (roomEl) roomEl.focus();
+          return;
+        }
+        if (!memo) {
+          if (memoEl) memoEl.focus();
+          showHkActionToast("메모를 입력해야 오더할 수 있습니다.");
           return;
         }
         if (!getOperatorName()) {

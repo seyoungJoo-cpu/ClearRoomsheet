@@ -888,6 +888,22 @@
           return;
         }
         sendDirectAlerts(me, replyText, [fromName], "", { replyTo: row.id });
+        if (global.HKSync && typeof global.HKSync.appendFrontChatMessage === "function") {
+          var chatId = "fchat-" + Date.now() + "-" + Math.floor(Math.random() * 1e9);
+          global.HKSync.appendFrontChatMessage({
+            id: chatId,
+            channel: "front",
+            at: new Date().toISOString(),
+            by: me,
+            text: "@" + fromName + " " + replyText,
+            image: "",
+            alertIds: [],
+            alertTo: [fromName],
+          });
+          if (frontCtx && typeof frontCtx.onFrontChatChanged === "function") {
+            frontCtx.onFrontChatChanged();
+          }
+        }
         persistDismiss(row);
         hideOverlay();
         refreshFront();
