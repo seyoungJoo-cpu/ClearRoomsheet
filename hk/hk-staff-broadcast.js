@@ -735,6 +735,7 @@
         return {
           sourceType: String(cur.sourceType),
           sourceId: String(cur.sourceId),
+          sourceRoom: cur.sourceRoom != null ? String(cur.sourceRoom).trim() : "",
         };
       }
       if (!cur.replyTo) break;
@@ -789,11 +790,15 @@
       };
       if (opts && opts.sourceType) directRow.sourceType = String(opts.sourceType);
       if (opts && opts.sourceId) directRow.sourceId = String(opts.sourceId);
+      if (opts && opts.sourceRoom) directRow.sourceRoom = String(opts.sourceRoom);
       if ((!directRow.sourceType || !directRow.sourceId) && directRow.replyTo) {
         var parentSource = resolveAlertSource(findDirectById(directRow.replyTo));
         if (parentSource) {
           directRow.sourceType = parentSource.sourceType;
           directRow.sourceId = parentSource.sourceId;
+          if (!directRow.sourceRoom && parentSource.sourceRoom) {
+            directRow.sourceRoom = parentSource.sourceRoom;
+          }
         }
       }
       pack.directs.push(directRow);
@@ -946,8 +951,26 @@
         if (source) {
           replyOpts.sourceType = source.sourceType;
           replyOpts.sourceId = source.sourceId;
+          if (source.sourceRoom) replyOpts.sourceRoom = source.sourceRoom;
         }
-        sendDirectAlerts(me, replyText, [fromName], "", replyOpts);
+        var alertText = replyText;
+        if (
+          source &&
+          frontCtx &&
+          typeof frontCtx.formatAlertReplyText === "function"
+        ) {
+          try {
+            alertText =
+              frontCtx.formatAlertReplyText(
+                source.sourceType,
+                source.sourceId,
+                replyText,
+                me,
+                source.sourceRoom
+              ) || replyText;
+          } catch (eFmt) {}
+        }
+        sendDirectAlerts(me, alertText, [fromName], "", replyOpts);
         if (
           source &&
           frontCtx &&

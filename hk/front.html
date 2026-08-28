@@ -30503,6 +30503,7 @@
             HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "", {
               sourceType: "order",
               sourceId: String(entry.id || ""),
+              sourceRoom: entry.room != null ? String(entry.room) : "",
             });
           } catch (eDm) {}
         }
@@ -30763,6 +30764,7 @@
             HKStaffBroadcast.sendDirectAlerts(me || "시스템", alertText, [requester], "", {
               sourceType: "request",
               sourceId: String(entry.id || ""),
+              sourceRoom: entry.room != null ? String(entry.room) : "",
             });
           } catch (eDm) {}
         }
@@ -36121,6 +36123,32 @@
                 fromFeedback: true,
               });
             }
+          },
+          formatAlertReplyText: function (sourceType, sourceId, text, senderName, sourceRoom) {
+            var msg = String(text || "").trim();
+            if (!msg) return "";
+            var me = String(senderName || "").trim() || "상대";
+            var roomLabel = "";
+            if (sourceRoom) {
+              roomLabel = formatRoomNoDisplay(String(sourceRoom));
+            } else if (sourceType === "order") {
+              var orderEntry = findOrderEntry(sourceId);
+              if (orderEntry && orderEntry.room) {
+                roomLabel = formatRoomNoDisplay(String(orderEntry.room));
+              }
+            } else if (sourceType === "request") {
+              var reqEntry = findRequestEntry(sourceId);
+              if (reqEntry && reqEntry.room) {
+                roomLabel = formatRoomNoDisplay(String(reqEntry.room));
+              }
+            }
+            var prefix =
+              sourceType === "order"
+                ? "오더 채팅 · "
+                : sourceType === "request"
+                  ? "채팅 · "
+                  : "";
+            return (roomLabel ? roomLabel + " " : "") + prefix + me + ": " + msg;
           },
           onFrontChatChanged: function () {
             syncFrontChatFromServer();

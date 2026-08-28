@@ -1274,6 +1274,7 @@
       replyTo: raw.replyTo != null ? String(raw.replyTo).trim() : "",
       sourceType: raw.sourceType != null ? String(raw.sourceType).trim() : "",
       sourceId: raw.sourceId != null ? String(raw.sourceId).trim() : "",
+      sourceRoom: raw.sourceRoom != null ? String(raw.sourceRoom).trim() : "",
       scheduledAt: raw.scheduledAt != null ? String(raw.scheduledAt) : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
@@ -1489,6 +1490,7 @@
         if (row.replyTo) prevD.replyTo = row.replyTo;
         if (row.sourceType) prevD.sourceType = row.sourceType;
         if (row.sourceId) prevD.sourceId = row.sourceId;
+        if (row.sourceRoom) prevD.sourceRoom = row.sourceRoom;
         if (row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       } else if (!prevD.image && row.image) {
         prevD.image = row.image;
@@ -1496,6 +1498,7 @@
       if (!prevD.replyTo && row.replyTo) prevD.replyTo = row.replyTo;
       if (!prevD.sourceType && row.sourceType) prevD.sourceType = row.sourceType;
       if (!prevD.sourceId && row.sourceId) prevD.sourceId = row.sourceId;
+      if (!prevD.sourceRoom && row.sourceRoom) prevD.sourceRoom = row.sourceRoom;
       if (!prevD.scheduledAt && row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
       directsById[row.id] = prevD;
     }
