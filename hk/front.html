@@ -5198,27 +5198,56 @@
       font-size: 0.72rem;
       line-height: 1.25;
       grid-template-columns:
-        minmax(2rem, 0.48fr)
-        2.5rem
-        minmax(4.5rem, 1.5fr)
-        minmax(2rem, 0.38fr)
-        minmax(2.2rem, 0.42fr)
-        minmax(2.2rem, 0.42fr)
-        minmax(2.2rem, 0.42fr)
-        auto
-        minmax(2.2rem, 0.42fr);
+        minmax(1.8rem, 0.42fr)
+        2.2rem
+        minmax(3.5rem, 1.35fr)
+        minmax(1.6rem, 0.34fr)
+        minmax(1.7rem, 0.36fr)
+        minmax(1.7rem, 0.36fr)
+        minmax(1.5rem, 0.32fr)
+        7rem
+        minmax(1.6rem, 0.34fr);
     }
 
     .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--room {
-      font-size: 0.92rem;
+      font-size: 0.76rem;
       font-weight: 900;
       line-height: 1.1;
     }
 
-    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--memo .order-feedback__item-memo {
-      font-size: 0.76rem;
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--time,
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--received {
+      font-size: 0.5rem;
+      line-height: 1.1;
+      overflow: hidden;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--time .request-feedback__item-time,
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--received .sched-req-card__received,
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--received .request-feedback__item-time {
+      font-size: inherit;
+      margin-bottom: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--time .hk-time-em,
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--received .hk-time-em {
+      font-size: 0.54rem;
+      font-weight: 700;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--memo {
+      font-size: 0.62rem;
+      line-height: 1.2;
       font-weight: 600;
-      line-height: 1.25;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--memo .order-feedback__item-memo {
+      font-size: inherit;
+      font-weight: inherit;
+      line-height: inherit;
     }
 
     .main.main--facility .order-work-item.is-strip-cols > .order-feedback__item-by,
@@ -5258,11 +5287,27 @@
       font-size: 1.35rem;
     }
 
-    .main.main--facility .order-work-item.is-strip-cols > .order-work__actions,
+    .main.main--facility .order-work-item.is-strip-cols > .order-work__actions.order-work__actions--toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      width: 7rem;
+      min-width: 7rem;
+      max-width: 7rem;
+      margin: 0;
+      flex-wrap: unset;
+      align-items: stretch;
+      justify-self: end;
+    }
+
     .main.main--facility .order-work-item.is-strip-cols > .order-feedback__front-actions {
       gap: 3px;
       flex-wrap: wrap;
       max-width: 100%;
+    }
+
+    .main.main--facility .order-work__actions--toggle .order-work__wan-btn {
+      margin-left: 0;
     }
 
     .main.main--facility .order-work-item.is-strip-cols .order-work__accept-btn,
@@ -5271,14 +5316,20 @@
     .main.main--facility .order-work-item.is-strip-cols .order-feedback__memo-btn,
     .main.main--facility .order-work-item.is-strip-cols .order-work__doorhandle-btn,
     .main.main--facility .order-work-item.is-strip-cols .order-work__facility-time-btn {
-      padding: 2px 6px;
-      font-size: 0.64rem;
+      width: 100%;
+      padding: 2px 3px;
+      font-size: 0.56rem;
       font-weight: 700;
       line-height: 1.1;
       border-radius: 4px;
       margin-top: 0;
       min-height: 20px;
       height: auto;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-sizing: border-box;
     }
 
     .main.main--order .order-work-item.is-strip-cols {
@@ -10028,25 +10079,51 @@
       font-weight: 700;
     }
 
-    /* 정비관리: 시설확인중·시설오더됨 글씨 강조 */
+    /* 정비관리: 시설확인중·시설오더됨 본문 강조 */
     .main.main--request .request-feedback__facility-pending-hint,
     .main.main--request .sched-req-card .request-feedback__facility-pending-hint {
-      font-size: 1.2rem;
-      font-weight: 900;
+      font-size: 0.78rem;
+      font-weight: 800;
       letter-spacing: -0.01em;
       padding: 0;
     }
 
-    .main.main--request .sched-req-card__actions .request-feedback__facility-btn,
-    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done,
-    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__maint-actions,
+    .main.main--request .confirming-cards-panel .request-feedback__maint-actions,
+    .main.main--request .confirming-cards-panel .request-feedback__front-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__sched-btn,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__ip-btn,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__memo2-btn,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__facility-btn,
+    .main.main--request .sched-req-card--confirming-tile .sched-card__chat-btn,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__chat-drop-btn,
+    .main.main--request .confirming-cards-panel .request-feedback__sched-btn,
+    .main.main--request .confirming-cards-panel .request-feedback__ip-btn,
+    .main.main--request .confirming-cards-panel .request-feedback__memo2-btn,
     .main.main--request .confirming-cards-panel .request-feedback__facility-btn,
     .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done,
-    .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done.is-ok {
-      font-size: 1.1rem;
-      font-weight: 800;
-      padding: 5px 12px;
+    .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done.is-ok,
+    .main.main--request .confirming-cards-panel .sched-card__chat-btn,
+    .main.main--request .confirming-cards-panel .request-feedback__chat-drop-btn,
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn,
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done,
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 7px;
+      min-height: 24px;
+      height: 24px;
       line-height: 1.2;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-top: 0;
     }
 
     .request-row {
