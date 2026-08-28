@@ -3068,21 +3068,21 @@
       font-weight: 600;
       color: var(--text);
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
       border-radius: 8px;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
     }
 
     .sidebar-nav__btn:hover {
-      border-color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
       background: var(--hover-bg);
       color: var(--accent);
     }
 
     .sidebar-nav__btn.is-active {
       background: var(--accent-soft, var(--hover-bg));
-      border-color: var(--accent-ring, var(--accent));
+      border-color: color-mix(in srgb, var(--accent) 18%, transparent);
       color: var(--accent-deep, var(--accent));
       font-weight: 800;
     }
@@ -3097,7 +3097,7 @@
       font-weight: 600;
       color: var(--text);
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
       border-radius: 8px;
       text-decoration: none;
       box-sizing: border-box;
@@ -3105,7 +3105,7 @@
     }
 
     a.sidebar-nav__link:hover {
-      border-color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
       background: var(--hover-bg);
       color: var(--accent);
     }
@@ -4153,7 +4153,7 @@
     .sidebar-nav__btn,
     a.sidebar-nav__link {
       background: transparent;
-      border: 1px solid transparent;
+      border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
       border-radius: 10px;
       color: #475569;
       font-weight: 600;
@@ -4164,17 +4164,30 @@
     .sidebar-nav__btn:hover,
     a.sidebar-nav__link:hover {
       background: #fff;
-      border-color: transparent;
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
       color: var(--accent);
       box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.05));
     }
 
     .sidebar-nav__btn.is-active {
       background: var(--accent-soft, #eff6ff);
-      border-color: var(--accent-ring, rgba(37, 99, 235, 0.22));
+      border-color: color-mix(in srgb, var(--accent) 18%, transparent);
       color: var(--accent-deep, var(--accent));
       box-shadow: none;
       font-weight: 800;
+    }
+
+    .sidebar .sidebar-section__toggle {
+      border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
+      border-radius: 10px;
+      margin: 2px 8px 4px;
+      width: calc(100% - 16px);
+      box-sizing: border-box;
+    }
+
+    .sidebar .sidebar-section__toggle:hover {
+      background: #fff;
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
     }
 
     .main {
