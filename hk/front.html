@@ -5192,8 +5192,96 @@
       padding: 10px 10px 24px;
     }
 
-    .main.main--order .order-work-item.is-strip-cols,
     .main.main--facility .order-work-item.is-strip-cols {
+      padding: 6px 8px;
+      gap: 4px 5px;
+      font-size: 0.72rem;
+      line-height: 1.25;
+      grid-template-columns:
+        minmax(2rem, 0.48fr)
+        2.5rem
+        minmax(4.5rem, 1.5fr)
+        minmax(2rem, 0.38fr)
+        minmax(2.2rem, 0.42fr)
+        minmax(2.2rem, 0.42fr)
+        minmax(2.2rem, 0.42fr)
+        auto
+        minmax(2.2rem, 0.42fr);
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--room {
+      font-size: 0.92rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .hk-strip-cell--memo .order-feedback__item-memo {
+      font-size: 0.76rem;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .order-feedback__item-by,
+    .main.main--facility .order-work-item.is-strip-cols > .hk-staff-names {
+      font-size: 0.62rem;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols .hk-accepter-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      margin-top: 0;
+    }
+
+    .main.main--facility .facility-stay-col .order-work-section {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top-width: 1px;
+    }
+
+    .main.main--facility .facility-stay-col .order-work-section__title-btn {
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      gap: 4px;
+    }
+
+    .main.main--facility .facility-stay-col .order-work-section--accepted .order-work-item,
+    .main.main--facility .facility-stay-col .order-work-section--deployed .order-work-item,
+    .main.main--facility .facility-stay-col .order-work-section--unavailable .order-work-item,
+    .main.main--facility .facility-stay-col .order-work-section--cancelled .order-work-item,
+    .main.main--facility .facility-stay-col .order-work-section--issue .order-work-item {
+      border-width: 1px;
+      padding-bottom: 6px;
+    }
+
+    .main.main--facility .facility-stay-col .order-work-item--unavailable .order-work-item__x,
+    .main.main--facility .facility-stay-col .order-work-item--cancelled .order-work-item__x {
+      font-size: 1.35rem;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols > .order-work__actions,
+    .main.main--facility .order-work-item.is-strip-cols > .order-feedback__front-actions {
+      gap: 3px;
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    .main.main--facility .order-work-item.is-strip-cols .order-work__accept-btn,
+    .main.main--facility .order-work-item.is-strip-cols .order-work__wan-btn,
+    .main.main--facility .order-work-item.is-strip-cols .order-work__issue-btn,
+    .main.main--facility .order-work-item.is-strip-cols .order-feedback__memo-btn,
+    .main.main--facility .order-work-item.is-strip-cols .order-work__doorhandle-btn,
+    .main.main--facility .order-work-item.is-strip-cols .order-work__facility-time-btn {
+      padding: 2px 6px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      line-height: 1.1;
+      border-radius: 4px;
+      margin-top: 0;
+      min-height: 20px;
+      height: auto;
+    }
+
+    .main.main--order .order-work-item.is-strip-cols {
       padding: 10px 14px;
     }
 
@@ -5716,12 +5804,12 @@
     }
 
     .main.main--facility .order-work__wan-btn {
-      padding: 12px 18px;
-      font-size: 1.15rem;
-      font-weight: 800;
-      border-radius: 8px;
-      border-width: 2px;
-      letter-spacing: -0.02em;
+      padding: 2px 6px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      border-radius: 4px;
+      border-width: 1px;
+      letter-spacing: 0;
     }
 
     .order-work__wan-btn:hover {

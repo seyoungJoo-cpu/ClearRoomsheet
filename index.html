@@ -2699,6 +2699,9 @@
           authGateEl.classList.add("hidden");
           authGateEl.setAttribute("aria-hidden", "true");
         }
+        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        if (!hasLocalFasnData()) loadFasnStateFromLocal();
+        refreshBoards();
         startRoomSyncPolling();
       }
 
@@ -5607,8 +5610,11 @@
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
         loadCachedArrResvTotalsFromStorage();
+        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        if (!hasLocalFasnData()) loadFasnStateFromLocal();
         updateIndiArrSummary();
         switchBoardView("indi");
+        refreshBoards();
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {
