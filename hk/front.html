@@ -5192,6 +5192,62 @@
       padding: 10px 10px 24px;
     }
 
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols {
+      padding: 6px 8px;
+      gap: 4px 6px;
+      font-size: 0.72rem;
+      line-height: 1.25;
+      grid-template-columns:
+        minmax(2rem, 0.48fr)
+        minmax(4rem, 2.1fr)
+        minmax(2rem, 0.62fr)
+        minmax(1.6rem, 0.42fr)
+        7rem;
+    }
+
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols > .hk-strip-cell--room {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 0.76rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols > .hk-strip-cell--memo {
+      grid-column: 2;
+      grid-row: 1;
+      font-size: 0.62rem;
+      line-height: 1.2;
+      font-weight: 600;
+    }
+
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols > .hk-strip-cell--status {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols > .order-feedback__item-by {
+      grid-column: 4;
+      grid-row: 1;
+      font-size: 0.62rem;
+    }
+
+    .main.main--facility .order-work-item.is-facility-strip.is-strip-cols > .order-work__actions {
+      grid-column: 5;
+      grid-row: 1;
+    }
+
+    .hk-strip-sort--facility-work {
+      grid-template-columns:
+        minmax(2rem, 0.48fr)
+        minmax(4rem, 2.1fr)
+        minmax(2rem, 0.62fr)
+        minmax(1.6rem, 0.42fr)
+        7rem;
+      gap: 4px 6px;
+      padding: 5px 8px;
+    }
+
     .main.main--facility .order-work-item.is-strip-cols {
       padding: 6px 8px;
       gap: 4px 5px;
@@ -14172,6 +14228,57 @@
       visibility: hidden;
       pointer-events: none;
     }
+
+    .hk-app-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(11, 15, 20, 0.55);
+      backdrop-filter: blur(2px);
+    }
+
+    .hk-app-loading[hidden] {
+      display: none !important;
+    }
+
+    .hk-app-loading__card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 22px 28px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+      min-width: 200px;
+    }
+
+    .hk-app-loading__spinner {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 3px solid #e2e8f0;
+      border-top-color: #2563eb;
+      animation: hk-app-loading-spin 0.75s linear infinite;
+    }
+
+    .hk-app-loading__text {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #334155;
+      text-align: center;
+    }
+
+    @keyframes hk-app-loading-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
 <body class="operator-locked">
@@ -14213,6 +14320,13 @@
         </button>
       </div>
       <button type="button" class="operator-gate__cancel" id="operatorGateCancel" hidden>취소</button>
+    </div>
+  </div>
+
+  <div id="hkAppLoading" class="hk-app-loading" hidden aria-live="polite">
+    <div class="hk-app-loading__card">
+      <div class="hk-app-loading__spinner" aria-hidden="true"></div>
+      <p class="hk-app-loading__text" id="hkAppLoadingText">데이터 불러오는 중…</p>
     </div>
   </div>
 
@@ -17042,15 +17156,31 @@
         });
       }
 
+      function showAppLoading(msg) {
+        var el = document.getElementById("hkAppLoading");
+        var text = document.getElementById("hkAppLoadingText");
+        if (text && msg) text.textContent = msg;
+        if (el) el.hidden = false;
+      }
+
+      function hideAppLoading() {
+        var el = document.getElementById("hkAppLoading");
+        if (el) el.hidden = true;
+      }
+
       function resumeHkSyncAfterIdleLogin() {
         if (typeof HKSync === "undefined" || typeof HKSync.start !== "function") return;
+        showAppLoading("동기화 중…");
         var startResult = HKSync.start();
         if (startResult && typeof startResult.finally === "function") {
           startResult.finally(function () {
+            hideAppLoading();
             if (typeof refreshSyncedPanelsFromCache === "function") {
               refreshSyncedPanelsFromCache();
             }
           });
+        } else {
+          hideAppLoading();
         }
       }
 
@@ -18646,6 +18776,13 @@
         { id: "no", label: "" },
         { id: "no", label: "투입" },
       ];
+      var FACILITY_WORK_STRIP_SORT_COLS = [
+        { id: "room", label: "객실" },
+        { id: "memo", label: "메모" },
+        { id: "status", label: "상태" },
+        { id: "by", label: "요청" },
+        { id: "no", label: "" },
+      ];
       var SCHED_STRIP_SORT_COLS = [
         { id: "room", label: "객실" },
         { id: "wing", label: "동" },
@@ -18787,7 +18924,11 @@
           });
           listEl.parentNode.insertBefore(head, listEl);
         }
+        head.classList.remove("hk-strip-sort--work", "hk-strip-sort--facility-work");
         if (sortCols.length >= 7) head.classList.add("hk-strip-sort--work");
+        else if (sortCols === FACILITY_WORK_STRIP_SORT_COLS) {
+          head.classList.add("hk-strip-sort--facility-work");
+        }
         head.__hkSortRerender = rerenderFn;
         syncStripSortHeadUi(head, listKey);
         return head;
@@ -29128,7 +29269,9 @@
         opts = opts || {};
         var compact = opts.compact !== false;
         var isWorkStrip = li.classList.contains("order-work-item");
+        var facilityStrip = isWorkStrip && isFacilityOrder(entry);
         if (isWorkStrip) li.classList.add("is-strip-cols");
+        if (facilityStrip) li.classList.add("is-facility-strip");
 
         var roomCell = document.createElement("span");
         roomCell.className = "hk-strip-cell hk-strip-cell--room request-feedback__item-room";
@@ -29255,12 +29398,14 @@
         hkAppendImageEl(memoCell, entry.memoImage);
 
         li.appendChild(roomCell);
-        li.appendChild(wingCell);
-        li.appendChild(timeCell);
+        if (!facilityStrip) {
+          li.appendChild(wingCell);
+          li.appendChild(timeCell);
+        }
         li.appendChild(statusCell);
         li.appendChild(memoCell);
 
-        if (isWorkStrip) {
+        if (isWorkStrip && !facilityStrip) {
           var receivedCell = document.createElement("div");
           receivedCell.className = "hk-strip-cell hk-strip-cell--received";
           if (entry.acceptedAt) {
@@ -30932,15 +31077,18 @@
         var rerenderOrderLists = function () {
           renderOrderWorkPanels({ force: true });
         };
-        ensureStripSortHead(issueList, prefix + "Issue", rerenderOrderLists, WORK_STRIP_SORT_COLS);
-        ensureStripSortHead(acceptedList, prefix + "Accepted", rerenderOrderLists, WORK_STRIP_SORT_COLS);
-        ensureStripSortHead(cancelledList, prefix + "Cancelled", rerenderOrderLists, WORK_STRIP_SORT_COLS);
-        ensureStripSortHead(deployedList, prefix + "Deployed", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+        var stripSortCols = isFacilityPanel
+          ? FACILITY_WORK_STRIP_SORT_COLS
+          : WORK_STRIP_SORT_COLS;
+        ensureStripSortHead(issueList, prefix + "Issue", rerenderOrderLists, stripSortCols);
+        ensureStripSortHead(acceptedList, prefix + "Accepted", rerenderOrderLists, stripSortCols);
+        ensureStripSortHead(cancelledList, prefix + "Cancelled", rerenderOrderLists, stripSortCols);
+        ensureStripSortHead(deployedList, prefix + "Deployed", rerenderOrderLists, stripSortCols);
         if (doorhandleList) {
-          ensureStripSortHead(doorhandleList, prefix + "Doorhandle", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+          ensureStripSortHead(doorhandleList, prefix + "Doorhandle", rerenderOrderLists, stripSortCols);
         }
         if (unavailableList) {
-          ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists, WORK_STRIP_SORT_COLS);
+          ensureStripSortHead(unavailableList, prefix + "Unavailable", rerenderOrderLists, stripSortCols);
         }
 
         hkChatCaptureSticks(
@@ -31067,7 +31215,7 @@
           li.className = "order-work-item";
           li.setAttribute("data-order-id", entry.id || "");
           appendOrderItemCommon(li, entry);
-          appendOrderStaffLabels(li, entry);
+          if (!isFacilityPanel) appendOrderStaffLabels(li, entry);
           if (isFacilityOrder(entry) && !canUseFacilityMaintPermissions()) {
             appendFacilityDueTimeDisplay(li, entry);
           }
@@ -31210,10 +31358,12 @@
             li.title = "클릭하면 대화 보기";
           }
           appendOrderItemCommon(li, entry);
-          appendOrderStaffLabels(li, entry, {
-            topName: entry.deployedBy,
-            topLabel: isFacilityPanel ? "처리완료 : " : "투입 : ",
-          });
+          if (!isFacilityPanel) {
+            appendOrderStaffLabels(li, entry, {
+              topName: entry.deployedBy,
+              topLabel: isFacilityPanel ? "처리완료 : " : "투입 : ",
+            });
+          }
           if (isFacilityPanel && isFacilityOrder(entry)) {
             var dueShown = getFacilityOrderDueTime(entry);
             if (dueShown) {
@@ -35843,7 +35993,11 @@
       syncPanelAckButtons();
       if (typeof HKSync !== "undefined") {
         HKSync.onChange(handleHkSyncChange);
+        if (isOperatorSessionUnlocked()) {
+          showAppLoading("데이터 불러오는 중…");
+        }
         HKSync.start().finally(function () {
+          hideAppLoading();
           refreshSyncedPanelsFromCache();
           initFrontChatTracking();
           initOrderIssueTracking();

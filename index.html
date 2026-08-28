@@ -1099,6 +1099,57 @@
       pointer-events: none;
     }
 
+    .hk-app-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(11, 15, 20, 0.55);
+      backdrop-filter: blur(2px);
+    }
+
+    .hk-app-loading[hidden] {
+      display: none !important;
+    }
+
+    .hk-app-loading__card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 22px 28px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+      min-width: 200px;
+    }
+
+    .hk-app-loading__spinner {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 3px solid #e2e8f0;
+      border-top-color: #2563eb;
+      animation: hk-app-loading-spin 0.75s linear infinite;
+    }
+
+    .hk-app-loading__text {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #334155;
+      text-align: center;
+    }
+
+    @keyframes hk-app-loading-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     /* ── 모바일·태블릿 반응형 ── */
     /* 모바일·태블릿만 — PC 창 축소 시에는 데스크톱 레이아웃 유지 */
     @media (max-width: 900px) and (hover: none) {
@@ -1400,6 +1451,13 @@
         <button type="submit">확인</button>
       </form>
       <div id="auth-error" class="auth-error" role="alert"></div>
+    </div>
+  </div>
+
+  <div id="hkAppLoading" class="hk-app-loading" hidden aria-live="polite">
+    <div class="hk-app-loading__card">
+      <div class="hk-app-loading__spinner" aria-hidden="true"></div>
+      <p class="hk-app-loading__text" id="hkAppLoadingText">루밍 불러오는 중…</p>
     </div>
   </div>
 
@@ -2559,6 +2617,22 @@
         }, 400);
       }
 
+      function needsRoomingBootstrap() {
+        return !hasLocalRoomingData() && !hasLocalFasnData();
+      }
+
+      function showRoomingLoading(msg) {
+        var el = document.getElementById("hkAppLoading");
+        var text = document.getElementById("hkAppLoadingText");
+        if (text && msg) text.textContent = msg;
+        if (el) el.hidden = false;
+      }
+
+      function hideRoomingLoading() {
+        var el = document.getElementById("hkAppLoading");
+        if (el) el.hidden = true;
+      }
+
       function pullSharedState(isPoll, opts) {
         if (!roomingSessionActive) return Promise.resolve(false);
         opts = opts || {};
@@ -2568,6 +2642,8 @@
         if (
           sinceSend == null &&
           sharedStateVersion > 0 &&
+          !needsRoomingBootstrap() &&
+          !opts.bootstrap &&
           (isPoll || hasLocalRoomingData() || hasLocalFasnData())
         ) {
           sinceSend = sharedStateVersion;
@@ -2608,6 +2684,9 @@
             if (data.unchanged) {
               if (data.version != null) saveSharedStateVersion(data.version);
               if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
+              if (needsRoomingBootstrap() && !opts.bootstrapRetry) {
+                return pullSharedState(isPoll, { bootstrap: true, bootstrapRetry: true });
+              }
               return catchUpIfNeeded().then(function (caught) {
                 if (caught != null) return caught;
                 return hasLocalRoomingData() || hasLocalFasnData();
@@ -2630,7 +2709,10 @@
             var applied = applyRemoteSyncFromServer(data, {
               forceApply:
                 opts.catchUp ||
-                // 정비→루밍 이동 시 메모리는 비어 있고 part 버전만 앞선 경우에도 반영
+                opts.bootstrap ||
+                (!isPoll &&
+                  needsRoomingBootstrap() &&
+                  hasPayloadRoomingSyncData(data.payload)) ||
                 (!isPoll &&
                   !hasLocalRoomingData() &&
                   !hasLocalFasnData() &&
@@ -2639,6 +2721,14 @@
                   !lastAppliedSyncUpdatedAt &&
                   hasPayloadRoomingSyncData(data.payload)),
             });
+            if (
+              !applied &&
+              data.payload &&
+              (opts.bootstrap || needsRoomingBootstrap()) &&
+              hasPayloadRoomingSyncData(data.payload)
+            ) {
+              applied = applyRemoteSyncFromServer(data, { forceApply: true });
+            }
             if (applied) markRoomingPartApplied(data);
 
             if (applied) {
@@ -2676,19 +2766,22 @@
       }
 
       function startRoomSyncPolling() {
-        if (syncPollTimer) return;
+        if (syncPollTimer) return Promise.resolve();
         loadSharedStateVersion();
         loadRoomingPartVersion();
-        pullSharedState(false).then(function () {
-          // 서버가 unchanged여도 메모리가 비면 로컬 캐시로 복구 (정비→루밍 이동)
+        var boot = pullSharedState(false, { bootstrap: needsRoomingBootstrap() }).then(function () {
           if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
           if (!hasLocalFasnData()) loadFasnStateFromLocal();
-          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
+          refreshBoards();
+          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) {
+            return loadDefaultXmlFiles();
+          }
         });
         syncPollTimer = setInterval(function () {
           if (!roomingSessionActive) return;
           pullSharedState(true);
         }, 3000);
+        return boot;
       }
 
       function beginRoomingSession() {
@@ -2699,10 +2792,18 @@
           authGateEl.classList.add("hidden");
           authGateEl.setAttribute("aria-hidden", "true");
         }
+        showRoomingLoading(
+          needsRoomingBootstrap()
+            ? "최신 루밍 업로드 불러오는 중…"
+            : "루밍 불러오는 중…"
+        );
         if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
         if (!hasLocalFasnData()) loadFasnStateFromLocal();
         refreshBoards();
-        startRoomSyncPolling();
+        return startRoomSyncPolling().finally(function () {
+          refreshBoards();
+          hideRoomingLoading();
+        });
       }
 
       window.__startRoomSync = function () {
