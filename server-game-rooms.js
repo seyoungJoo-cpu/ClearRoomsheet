@@ -2,17 +2,21 @@
 
 const { WebSocketServer } = require("ws");
 const laneNexus = require("./server-mp-lane-nexus");
+const boardGames = require("./server-mp-board");
 
-const GAMES = {
-  tank: { max: 4, hz: 20 },
-  rts: { max: 4, hz: 20 },
-  ageofwar: { max: 2, hz: 20 },
-  snakes: { max: 8, hz: 15 },
-  airhockey: { max: 2, hz: 45 },
-  memorymp: { max: 4, hz: 30 },
-  lanepush: { max: 4, hz: 60 },
-  nexuswar: { max: 4, hz: 10 },
-};
+const GAMES = Object.assign(
+  {
+    tank: { max: 4, hz: 20 },
+    rts: { max: 4, hz: 20 },
+    ageofwar: { max: 2, hz: 20 },
+    snakes: { max: 8, hz: 15 },
+    airhockey: { max: 2, hz: 45 },
+    memorymp: { max: 4, hz: 30 },
+    lanepush: { max: 4, hz: 60 },
+    nexuswar: { max: 4, hz: 10 },
+  },
+  boardGames.GAMES
+);
 
 const MEMORY_MODES = {
   solo: { label: "싱글 vs AI", need: 2, max: 2, team: false, solo: true },
@@ -99,6 +103,7 @@ function publicState(room) {
   const s = room.state;
   if (!s) return null;
   if (room.game === "memorymp") return publicMemoryState(s);
+  if (boardGames.isBoardGame(room.game)) return boardGames.publicState(s);
   return s;
 }
 
@@ -237,6 +242,7 @@ function roomIsSolo(room) {
   if (room.game === "rts") return rtsIsSolo(room.mode);
   if (room.game === "lanepush" || room.game === "nexuswar") return laneNexus.modeIsSolo(room.mode);
   if (room.game === "memorymp") return memoryIsSolo(room.mode);
+  if (boardGames.isBoardGame(room.game)) return boardGames.isSolo(room.mode);
   return false;
 }
 function soloAiWant(room) {
@@ -306,6 +312,10 @@ function allReady(room) {
     const need = laneNexus.modeNeed(room.mode);
     const mmax = laneNexus.modeMax(room.mode) || need;
     return humans.length === need && humans.length <= mmax && readyOk;
+  }
+  if (boardGames.isBoardGame(room.game)) {
+    boardGames.ensurePlayers(room, () => nextPlayerId++);
+    return boardGames.allReady(room);
   }
   return room.players.length === max && readyOk;
 }
@@ -480,6 +490,7 @@ function defaultInput(game) {
     };
   }
   if (game === "nexuswar") return { cmd: null, from: null, to: null, ratio: 0.5 };
+  if (boardGames.isBoardGame(game)) return boardGames.defaultInput();
   return {};
 }
 
@@ -3735,6 +3746,7 @@ function initState(room) {
     case "nexuswar":
       return laneNexus.initNexusWar(room);
     default:
+      if (boardGames.isBoardGame(room.game)) return boardGames.initState(room);
       return {};
   }
 }
@@ -3765,6 +3777,9 @@ function tick(room, dt) {
         break;
       case "nexuswar":
         laneNexus.tickNexusWar(room, dt, endGame);
+        break;
+      default:
+        if (boardGames.isBoardGame(room.game)) boardGames.tick(room, dt, endGame);
         break;
     }
   } catch (e) {
@@ -3881,11 +3896,14 @@ function attachGameRooms(httpServer) {
           mode = laneNexus.parseSharedMode(msg.mode);
         } else if (game === "ageofwar" || game === "snakes" || game === "airhockey") {
           mode = rawMode === "solo" ? "solo" : null;
+        } else if (boardGames.isBoardGame(game)) {
+          mode = boardGames.parseMode(msg.mode);
         }
         let maxPlayers = GAMES[game].max;
         if (game === "rts") maxPlayers = rtsModeMax(mode);
         else if (game === "memorymp") maxPlayers = memoryModeMax(mode);
         else if (game === "lanepush" || game === "nexuswar") maxPlayers = laneNexus.modeMax(mode);
+        else if (boardGames.isBoardGame(game)) maxPlayers = boardGames.modeMax(mode);
         else if (mode === "solo") maxPlayers = game === "snakes" ? 4 : 2;
         const room = {
           code,
@@ -3910,6 +3928,7 @@ function attachGameRooms(httpServer) {
         };
         room.players.push(player);
         if (roomIsSolo(room)) ensureSoloAiPlayers(room);
+        if (boardGames.isBoardGame(game)) boardGames.ensurePlayers(room, () => nextPlayerId++);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
         // Host gets room first; lobby fan-out deferred off the hot path
@@ -4062,6 +4081,9 @@ function attachGameRooms(httpServer) {
             if (player.inputQ.length > 20) player.inputQ.shift();
             player.input = packed;
           }
+        } else if (boardGames.isBoardGame(room.game)) {
+          boardGames.applyInput(room, player, payload, endGame);
+          if (room.status === "playing") broadcastState(room);
         } else {
           player.input = Object.assign({}, base, payload);
         }

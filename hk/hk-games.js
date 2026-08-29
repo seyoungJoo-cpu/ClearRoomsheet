@@ -1,8 +1,8 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
-  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
+  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
@@ -22,7 +22,7 @@
     simon: { icon: '🔔', name: '벨 시퀀스', desc: '종 순서를 기억해 따라 누르기' },
     cleanroute: { icon: '🧹', name: '청소 루트', desc: '복도 먼지를 쓸고 컴플레인을 피하기' },
     invaders: { icon: '😠', name: '컴플레인 인베이더', desc: '내려오는 컴플레인을 격추' },
-    putting: { icon: '⛳', name: '퍼팅 골프', desc: '홀까지 힘과 각도로 굴리기' },
+    putting: { icon: '⛳', name: '퍼팅 골프', desc: '18홀 · 맵 랜덤 · 점점 어려워짐' },
     crossland: { icon: '✚', name: '십자 땅따먹기', desc: '십자로 칸을 차지해 CPU보다 많이 먹기' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '싱글/FFA/팀전 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '싱글/대결 · 본진 파괴' },
@@ -31,7 +31,12 @@
     airhockey: { icon: '🏒', name: '에어하키', desc: '싱글/대결 · 반응속도' },
     memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '싱글/1:1/1:1:1/2:2' },
     lanepush: { icon: '🗡️', name: '레인 푸시', desc: '싱글/대결 · LOL 미니 라인전' },
-    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령' }
+    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령' },
+    gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
+    chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
+    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한·초 장기' },
+    marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
+    yut: { icon: '🪵', name: '윷놀이', desc: '1:1 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
   var config = {};
   var root, refs = {}, active = null, toastTimer = 0;
@@ -182,7 +187,7 @@
       '.hkg-2048{width:min(100%,480px);aspect-ratio:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#173033;padding:10px;border-radius:18px;margin:auto}.hkg-tile{display:grid;place-items:center;border-radius:11px;background:#284144;color:#f5ecd5;font-size:clamp(20px,5vw,40px);font-weight:900;transition:transform .16s ease,background .12s,box-shadow .16s}.hkg-tile.is-merge{animation:hkg-merge-pop .28s ease}.hkg-tile.is-spawn{animation:hkg-tile-spawn .22s ease}@keyframes hkg-merge-pop{0%{transform:scale(.82);box-shadow:0 0 0 0 #efd28a00}45%{transform:scale(1.14);box-shadow:0 0 22px #efd28aaa}100%{transform:scale(1);box-shadow:0 0 0 0 #efd28a00}}@keyframes hkg-tile-spawn{from{transform:scale(.55);opacity:.35}to{transform:scale(1);opacity:1}}.hkg-tile[data-v="0"]{color:transparent}.hkg-tile[data-v="2"]{background:#eee4cf;color:#263c3a}.hkg-tile[data-v="4"]{background:#e7cf9a;color:#263c3a}.hkg-tile[data-v="8"]{background:#df9b55}.hkg-tile[data-v="16"]{background:#d87947}.hkg-tile[data-v="32"]{background:#c9553e}.hkg-tile[data-v="64"]{background:#a83332}.hkg-tile[data-v="128"],.hkg-tile[data-v="256"]{background:#b99b45}.hkg-tile[data-v="512"],.hkg-tile[data-v="1024"],.hkg-tile[data-v="2048"]{background:#dfbf55;color:#142623;box-shadow:0 0 24px #e6c75c88}',
       '.hkg-memory-frame{width:min(100%,340px);aspect-ratio:3/4;height:auto;max-height:min(72vh,560px);margin:auto;display:flex;align-items:center;justify-content:center}.hkg-memory{width:100%;height:100%;display:grid;gap:6px;margin:0;perspective:900px;-webkit-user-select:none;user-select:none;box-sizing:border-box}.hkg-memory.wave .hkg-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}.hkg-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(22px,4.6vw,40px);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;text-align:center;transform-style:preserve-3d;transition:.28s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;-webkit-touch-callout:none}.hkg-memory-card.open,.hkg-memory-card.done{transform:rotateY(180deg);background:#f0dfa8;color:#142826;text-shadow:0 1px 0 #fff6}.hkg-memory-card .hkg-memory-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;transform:rotateY(180deg)}.hkg-memory-card.done{background:#9fcbb0;opacity:.78}.hkg-memory-setup{width:min(100%,520px);margin:auto;text-align:center}.hkg-memory-setup h3{font-family:Georgia,serif;color:#efd28a;margin:0 0 12px;font-size:22px}.hkg-memory-sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0 18px}',
       '.hkg-mines{width:min(100%,420px);display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:auto}.hkg-mine{aspect-ratio:1;border:0;border-radius:8px;background:#1a3a3f;color:#f0e6c8;font-weight:800;font-size:clamp(12px,3vw,16px);cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff14}.hkg-mine.open{background:#0d2428;cursor:default}.hkg-mine.flag{background:#3a2f1a;color:#efd28a}.hkg-mine.boom{background:#7a2f2f;color:#fff}.hkg-reaction{width:min(100%,520px);aspect-ratio:1;margin:auto;position:relative;border-radius:18px;background:radial-gradient(circle at 50% 40%,#1a4540,#07151a);overflow:hidden;touch-action:manipulation}.hkg-bell{position:absolute;width:104px;height:104px;border:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff6,#efd28a 35%,#b89245);box-shadow:0 8px 24px #0007;font-size:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;transform:translate(-50%,-50%);animation:hkg-pop .35s ease}.hkg-bell:active{transform:translate(-50%,-50%) scale(.9)}.hkg-bell.is-complaint{background:radial-gradient(circle at 30% 25%,#fff8,#f6e05e 40%,#d69e2e);font-size:40px;box-shadow:0 8px 24px #0007,0 0 0 2px #f6e05e88}@keyframes hkg-pop{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}',
-      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-reset-modal{position:fixed;inset:0;z-index:10003;display:none;place-items:center;background:#061218cc;padding:18px;box-sizing:border-box}.hkg-reset-modal.show{display:grid}.hkg-reset-box{width:min(520px,100%);max-height:min(80vh,640px);overflow:auto;padding:22px 20px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;box-shadow:0 16px 40px #0008}.hkg-reset-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:24px;margin-bottom:6px}.hkg-reset-box p{margin:0 0 14px;color:#b1c1bd;font-size:13px}.hkg-reset-list{display:grid;gap:8px;margin:0 0 12px}.hkg-reset-list button{appearance:none;width:100%;text-align:left;border:1px solid #ffffff1c;background:#0a1c20;color:#f5f0df;border-radius:12px;padding:11px 13px;cursor:pointer;font:inherit}.hkg-reset-list button:hover{border-color:#cbb27088;background:#123034}.hkg-reset-list button.all{background:linear-gradient(135deg,#3a2f14,#1f2a1e);border-color:#cbb27066;color:#efd28a;font-weight:700}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
+      '.hkg-pause{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:5}.hkg-pause.show{display:grid}.hkg-pause-box{padding:22px 28px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;text-align:center;box-shadow:0 16px 40px #0008}.hkg-pause-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:28px;margin-bottom:8px}.hkg-pause-box span{color:#b1c1bd;font-size:13px}.hkg-reset-modal{position:fixed;inset:0;z-index:10003;display:none;place-items:center;background:#061218cc;padding:18px;box-sizing:border-box}.hkg-reset-modal.show{display:grid}.hkg-reset-box{width:min(520px,100%);max-height:min(80vh,640px);overflow:auto;padding:22px 20px;border:1px solid #cbb27088;border-radius:18px;background:#0d2429ee;box-shadow:0 16px 40px #0008}.hkg-reset-box strong{display:block;font-family:Georgia,serif;color:#efd28a;font-size:24px;margin-bottom:6px}.hkg-reset-box p{margin:0 0 14px;color:#b1c1bd;font-size:13px}.hkg-reset-list{display:grid;gap:8px;margin:0 0 12px}.hkg-reset-list button{appearance:none;width:100%;text-align:left;border:1px solid #ffffff1c;background:#0a1c20;color:#f5f0df;border-radius:12px;padding:11px 13px;cursor:pointer;font:inherit}.hkg-reset-list button:hover{border-color:#cbb27088;background:#123034}.hkg-reset-list button.all{background:linear-gradient(135deg,#3a2f14,#1f2a1e);border-color:#cbb27066;color:#efd28a;font-weight:700}.hkg-canvas{display:block;width:auto;height:auto;max-width:min(100%,620px);max-height:68vh;margin:auto;border-radius:16px;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none;object-fit:contain}.hkg-canvas.hkg-canvas-tetris{max-width:min(100%,340px);max-height:min(72vh,680px)}.hkg-dpad{display:grid;grid-template-columns:repeat(3,48px);gap:6px;justify-content:center;margin:12px auto 0;width:max-content}.hkg-dpad button{width:48px;height:48px;border:1px solid #8f7b4f;border-radius:12px;background:#122a2d;color:#efd28a;font-size:18px;cursor:pointer;touch-action:manipulation;padding:0;line-height:1}.hkg-dpad button:active{background:#1f5650}.hkg-dpad i{display:block;height:48px}.hkg-message{position:absolute;inset:0;display:none;place-items:center;background:#061218cc;z-index:4}.hkg-message.show{display:grid}.hkg-message-box{padding:25px;text-align:center}.hkg-message h2{font-family:Georgia,serif;color:#efd28a;font-size:31px;margin:0 0 7px}.hkg-message p{color:#b1c1bd}.hkg-toast{position:fixed;left:50%;bottom:28px;z-index:10002;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkg-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:850px){.hkg-grid{grid-template-columns:repeat(2,1fr)}.hkg-layout{grid-template-columns:1fr}.hkg-ranking{order:2}.hkg-stage{min-height:460px}}@media(max-width:560px){.hkg-shell{width:min(100% - 18px,1180px);padding-top:12px}.hkg-grid{grid-template-columns:1fr}.hkg-card{min-height:195px}.hkg-hero{padding:22px}.hkg-stage{padding:10px;min-height:390px}.hkg-game-head{flex-wrap:wrap}.hkg-game-head h1{order:2;flex-basis:70%}.hkg-hud{order:3;width:100%}.hkg-candy{gap:3px}.hkg-gem{border-radius:9px}.hkg-2048{gap:6px;padding:7px}}'
     ].join('');
     document.head.appendChild(style);
@@ -2933,74 +2938,80 @@
     tiles.forEach(function (row) {
       for (var i = 0; i < row.length; i++) if (row[i] === 'G') row[i] = ' ';
     });
-    var px = 1, py = 7, pvx = 0, pvy = 0, wantX = 0, wantY = 0;
-    var ghosts = [{ x: 9, y: 7, vx: 1, vy: 0, color: '#ef5350' }, { x: 17, y: 7, vx: -1, vy: 0, color: '#55a9e8' }];
-    var score = 0, dots = 0, power = 0, running = true, last = 0, lives = 3;
+    var px = 1, py = 7, ax = 1, ay = 7, moving = false, tx = 1, ty = 7, wantX = 0, wantY = 0;
+    var ghosts = [
+      { x: 9, y: 7, ax: 9, ay: 7, tx: 9, ty: 7, moving: false, color: '#ef5350' },
+      { x: 17, y: 7, ax: 17, ay: 7, tx: 17, ty: 7, moving: false, color: '#55a9e8' }
+    ];
+    var score = 0, dots = 0, power = 0, running = true, last = 0, lives = 3, touch0 = null;
     tiles.forEach(function (row) { row.forEach(function (ch) { if (ch === '.' || ch === 'o') dots++; }); });
-    var totalDots = dots;
     setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('cleanroute', name())), 'best']]);
     function wall(x, y) {
       if (y < 0 || y >= ROWS || x < 0 || x >= COLS) return true;
       return tiles[y][x] === '#';
     }
-    function centerish(v) { return Math.abs(v - Math.round(v)) < 0.12; }
-    function tryDir(ent, dx, dy) {
-      if (!centerish(ent.x) && dx === 0) return false;
-      if (!centerish(ent.y) && dy === 0) return false;
-      var nx = Math.round(ent.x) + dx, ny = Math.round(ent.y) + dy;
-      if (wall(nx, ny)) return false;
-      ent.x = Math.round(ent.x); ent.y = Math.round(ent.y);
-      ent.vx = dx; ent.vy = dy;
-      return true;
+    function setWant(dx, dy) { wantX = dx; wantY = dy; }
+    function stepTile(ent, spd, dt) {
+      if (!ent.moving) {
+        var dx = ent.wantX, dy = ent.wantY;
+        if ((dx || dy) && !wall(ent.x + dx, ent.y + dy)) {
+          ent.tx = ent.x + dx; ent.ty = ent.y + dy; ent.moving = true;
+        }
+      }
+      if (!ent.moving) return;
+      var ddx = ent.tx - ent.ax, ddy = ent.ty - ent.ay, dist = Math.hypot(ddx, ddy);
+      if (dist < 0.06) {
+        ent.ax = ent.tx; ent.ay = ent.ty; ent.x = ent.tx; ent.y = ent.ty; ent.moving = false;
+        return;
+      }
+      var step = Math.min(dist, spd * dt);
+      ent.ax += (ddx / dist) * step;
+      ent.ay += (ddy / dist) * step;
     }
-    function moveEnt(ent, spd, dt) {
-      if (ent.vx && wall(Math.round(ent.x + Math.sign(ent.vx) * 0.51), Math.round(ent.y))) { ent.vx = 0; ent.x = Math.round(ent.x); }
-      if (ent.vy && wall(Math.round(ent.x), Math.round(ent.y + Math.sign(ent.vy) * 0.51))) { ent.vy = 0; ent.y = Math.round(ent.y); }
-      ent.x += ent.vx * spd * dt;
-      ent.y += ent.vy * spd * dt;
+    function eatAt(cx, cy) {
+      if (!tiles[cy] || (tiles[cy][cx] !== '.' && tiles[cy][cx] !== 'o')) return;
+      if (tiles[cy][cx] === 'o') { power = 6; score += 40; }
+      else score += 10;
+      tiles[cy][cx] = ' ';
+      dots--;
+      hud('score', formatScore(score));
+      if (dots <= 0) {
+        running = false;
+        gameOver('복도 완료', formatScore(score) + '점', function () { startGame('cleanroute'); }, score);
+      }
     }
     function loop(t) {
       if (!running) return;
       var dt = frameDt(t, last); last = t; fx.update(dt);
       if (power > 0) power -= dt;
-      var player = { x: px, y: py, vx: pvx, vy: pvy };
-      if (wantX || wantY) tryDir(player, wantX, wantY);
-      moveEnt(player, 6.1, dt);
-      px = player.x; py = player.y; pvx = player.vx; pvy = player.vy;
-      var cx = Math.round(px), cy = Math.round(py);
-      if (tiles[cy] && (tiles[cy][cx] === '.' || tiles[cy][cx] === 'o')) {
-        if (tiles[cy][cx] === 'o') { power = 6; score += 40; }
-        else score += 10;
-        tiles[cy][cx] = ' ';
-        dots--;
-        hud('score', formatScore(score));
-        if (dots <= 0) {
-          running = false;
-          gameOver('복도 완료', formatScore(score) + '점', function () { startGame('cleanroute'); }, score);
-          return;
-        }
-      }
+      var player = { x: px, y: py, ax: ax, ay: ay, tx: tx, ty: ty, moving: moving, wantX: wantX, wantY: wantY };
+      stepTile(player, 7.2, dt);
+      if (!player.moving && (wantX || wantY)) stepTile(player, 7.2, dt);
+      px = player.x; py = player.y; ax = player.ax; ay = player.ay; tx = player.tx; ty = player.ty; moving = player.moving;
+      eatAt(px, py);
+      if (!running) return;
       ghosts.forEach(function (g) {
-        if (centerish(g.x) && centerish(g.y)) {
+        if (!g.moving) {
           var opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(function (d) {
-            return !wall(Math.round(g.x) + d[0], Math.round(g.y) + d[1]);
+            return !wall(g.x + d[0], g.y + d[1]);
           });
           if (opts.length) {
             var chase = power > 0 ? -1 : 1;
             opts.sort(function (a, b) {
-              var da = Math.abs(Math.round(g.x) + a[0] - px) + Math.abs(Math.round(g.y) + a[1] - py);
-              var db = Math.abs(Math.round(g.x) + b[0] - px) + Math.abs(Math.round(g.y) + b[1] - py);
+              var da = Math.abs(g.x + a[0] - px) + Math.abs(g.y + a[1] - py);
+              var db = Math.abs(g.x + b[0] - px) + Math.abs(g.y + b[1] - py);
               return (da - db) * chase;
             });
             var pick = Math.random() < 0.72 ? opts[0] : opts[(Math.random() * opts.length) | 0];
-            g.vx = pick[0]; g.vy = pick[1];
+            g.wantX = pick[0]; g.wantY = pick[1];
           }
         }
-        moveEnt(g, power > 0 ? 3.4 : 4.8, dt);
-        if (Math.hypot(g.x - px, g.y - py) < 0.55) {
+        stepTile(g, power > 0 ? 4.2 : 5.6, dt);
+        if (Math.hypot(g.ax - ax, g.ay - ay) < 0.55) {
           if (power > 0) {
             score += 120; hud('score', formatScore(score));
-            g.x = 9; g.y = 7; fx.burst(px * CELL, py * CELL, '#efd28a', 10, 160);
+            g.x = 9; g.y = 7; g.ax = 9; g.ay = 7; g.tx = 9; g.ty = 7; g.moving = false;
+            fx.burst(ax * CELL, ay * CELL, '#efd28a', 10, 160);
           } else {
             lives--; hud('lives', lives);
             if (lives <= 0) {
@@ -3008,8 +3019,8 @@
               gameOver('컴플레인에 걸렸어요', formatScore(score) + '점', function () { startGame('cleanroute'); }, score);
               return;
             }
-            px = 1; py = 7; pvx = 0; pvy = 0;
-            g.x = 9; g.y = 7;
+            px = 1; py = 7; ax = 1; ay = 7; tx = 1; ty = 7; moving = false;
+            g.x = 9; g.y = 7; g.ax = 9; g.ay = 7; g.tx = 9; g.ty = 7; g.moving = false;
             shakeStage();
           }
         }
@@ -3031,21 +3042,56 @@
           }
         }
       }
-      drawHeroShape(ctx, px * CELL + 3, py * CELL + 3, CELL - 6, CELL - 6, { radius: 8, font: 9 });
+      drawHeroShape(ctx, ax * CELL + 3, ay * CELL + 3, CELL - 6, CELL - 6, { radius: 8, font: 9 });
       ghosts.forEach(function (g) {
         ctx.fillStyle = power > 0 ? '#9bb6ff' : g.color;
-        ctx.beginPath(); ctx.arc(g.x * CELL + CELL / 2, g.y * CELL + CELL / 2, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(g.ax * CELL + CELL / 2, g.ay * CELL + CELL / 2, 8, 0, Math.PI * 2); ctx.fill();
       });
       fx.draw(ctx);
       c.raf(loop);
     }
-    function key(e) {
+    function applyKey(e) {
       var map = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
-      var d = map[e.key]; if (!d) return; e.preventDefault(); wantX = d[0]; wantY = d[1];
+      var d = map[e.key]; if (!d) return; e.preventDefault(); setWant(d[0], d[1]);
     }
-    c.on(document, 'keydown', key);
+    c.on(document, 'keydown', applyKey, true);
+    c.on(window, 'keydown', applyKey, true);
+    function swipeFrom(dx, dy) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
+      if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 1 : -1, 0);
+      else setWant(0, dy > 0 ? 1 : -1);
+    }
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      touch0 = [e.clientX, e.clientY];
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      var dx = x - (ax * CELL + CELL / 2), dy = y - (ay * CELL + CELL / 2);
+      if (Math.hypot(dx, dy) > 10) {
+        if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 1 : -1, 0);
+        else setWant(0, dy > 0 ? 1 : -1);
+      }
+    });
+    c.on(window, 'pointerup', function (e) {
+      if (!touch0) return;
+      swipeFrom(e.clientX - touch0[0], e.clientY - touch0[1]);
+      touch0 = null;
+    });
+    var pad = el('div', 'hkg-dpad',
+      '<i></i><button type="button" data-dx="0" data-dy="-1">▲</button><i></i>' +
+      '<button type="button" data-dx="-1" data-dy="0">◀</button>' +
+      '<button type="button" data-dx="0" data-dy="1">▼</button>' +
+      '<button type="button" data-dx="1" data-dy="0">▶</button>');
+    refs.stage.appendChild(pad);
+    Array.prototype.forEach.call(pad.querySelectorAll('button'), function (btn) {
+      var press = function (e) {
+        e.preventDefault();
+        setWant(Number(btn.getAttribute('data-dx')), Number(btn.getAttribute('data-dy')));
+      };
+      c.on(btn, 'pointerdown', press);
+    });
     c.raf(loop);
-    actions(function () { startGame('cleanroute'); }, function () { return score; }, 'WASD·방향키로 먼지를 쓸세요. 큰 점은 잠시 컴플레인을 밀어냅니다.');
+    actions(function () { startGame('cleanroute'); }, function () { return score; }, 'WASD·방향키·화면 스와이프·아래 패드로 먼지를 쓸세요. 큰 점은 잠시 컴플레인을 밀어냅니다.');
     return { id: 'cleanroute', destroy: c.destroy };
   };
 
@@ -3153,24 +3199,89 @@
   };
 
   games.putting = function () {
-    var W = 420, H = 620, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
-    var holes = [
-      { ball: [80, 540], hole: [320, 120], par: 2, walls: [{ x: 170, y: 280, w: 80, h: 24 }] },
-      { ball: [60, 560], hole: [340, 90], par: 3, walls: [{ x: 40, y: 300, w: 220, h: 22 }, { x: 200, y: 180, w: 22, h: 140 }] },
-      { ball: [210, 560], hole: [210, 80], par: 3, walls: [{ x: 90, y: 250, w: 240, h: 22 }, { x: 40, y: 380, w: 160, h: 22 }, { x: 220, y: 140, w: 160, h: 22 }] },
-      { ball: [50, 500], hole: [360, 80], par: 4, walls: [{ x: 140, y: 420, w: 22, h: 160 }, { x: 250, y: 220, w: 22, h: 200 }, { x: 80, y: 160, w: 180, h: 22 }] }
-    ];
-    var hi = 0, strokes = 0, total = 0, running = true, last = 0, ball, hole, walls, charging = false, power = 0, aim = { x: 0, y: -1 };
-    setHud([['홀', '1/4', 'hole'], ['타수', '0', 'strokes'], ['점수', '0', 'score']]);
+    var W = 420, H = 620, HOLES = 18, c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    function mulberry(seed) {
+      var s = seed | 0;
+      return function () {
+        s = (s + 0x6D2B79F5) | 0;
+        var t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function hitsRect(x, y, r, rect) {
+      var nx = Math.max(rect.x, Math.min(x, rect.x + rect.w));
+      var ny = Math.max(rect.y, Math.min(y, rect.y + rect.h));
+      return Math.hypot(x - nx, y - ny) < r;
+    }
+    function addRect(list, x, y, w, h, ball, hole, pad) {
+      x = Math.max(12, Math.min(W - 12 - w, x));
+      y = Math.max(12, Math.min(H - 12 - h, y));
+      var rect = { x: x, y: y, w: Math.max(16, w), h: Math.max(16, h) };
+      if (hitsRect(ball[0], ball[1], pad, rect) || hitsRect(hole[0], hole[1], pad, rect)) return false;
+      list.push(rect);
+      return true;
+    }
+    function makeHole(i, rand) {
+      var t = i / (HOLES - 1);
+      var par = t < 0.18 ? 2 : t < 0.45 ? 3 : t < 0.72 ? 4 : 5;
+      var holeR = Math.max(8, Math.round(15 - t * 6.5));
+      var ball = [40 + rand() * (W - 80), 508 + rand() * 72];
+      var hole = [40 + rand() * (W - 80), 48 + rand() * (70 + t * 50)];
+      if (Math.abs(hole[0] - ball[0]) < 70 + t * 40) hole[0] = hole[0] < W / 2 ? Math.min(W - 40, hole[0] + 110) : Math.max(40, hole[0] - 110);
+      var walls = [], sands = [], waters = [];
+      var kind = (i + Math.floor(rand() * 7)) % 6;
+      var nWall = 1 + Math.floor(t * 6 + rand() * 1.8);
+      var j;
+      if (kind === 0) {
+        for (j = 0; j < nWall; j++) addRect(walls, 24 + rand() * 220, 140 + j * (70 - t * 8) + rand() * 20, 90 + rand() * (80 + t * 40), 18 + t * 8, ball, hole, 26);
+      } else if (kind === 1) {
+        for (j = 0; j < nWall; j++) addRect(walls, 70 + (j % 2) * 160 + rand() * 30, 110 + j * 72, 20 + t * 8, 90 + rand() * 70, ball, hole, 26);
+      } else if (kind === 2) {
+        for (j = 0; j < nWall; j++) {
+          addRect(walls, 40 + rand() * 240, 160 + j * 80, 140 + rand() * 80, 20, ball, hole, 26);
+          addRect(walls, 40 + rand() * 280, 160 + j * 80, 20, 70 + rand() * 50, ball, hole, 26);
+        }
+      } else if (kind === 3) {
+        addRect(walls, 20, 200 + rand() * 40, 250 + t * 40, 22, ball, hole, 28);
+        addRect(walls, 150 - t * 20, 340 + rand() * 30, 250, 22, ball, hole, 28);
+        if (t > 0.35) addRect(walls, 180 + rand() * 40, 120, 22, 140 + t * 40, ball, hole, 26);
+      } else if (kind === 4) {
+        for (j = 0; j < 2 + Math.floor(t * 4); j++) addRect(walls, 50 + rand() * 280, 110 + rand() * 360, 36 + rand() * 40, 36 + rand() * 40, ball, hole, 28);
+      } else {
+        addRect(walls, ball[0] < W / 2 ? 0 : 220, 380, 210, 24, ball, hole, 28);
+        addRect(walls, hole[0] < W / 2 ? 210 : 0, 170, 210, 24, ball, hole, 28);
+        if (t > 0.4) addRect(walls, 190, 240, 22, 120 + t * 40, ball, hole, 24);
+      }
+      var nSand = Math.floor(t * 2.6 + rand() * 1.2);
+      for (j = 0; j < nSand; j++) addRect(sands, 40 + rand() * 280, 120 + rand() * 340, 50 + rand() * 40, 28 + rand() * 18, ball, hole, 30);
+      if (t > 0.32) {
+        var nWater = 1 + (t > 0.7 && rand() > 0.4 ? 1 : 0);
+        for (j = 0; j < nWater; j++) addRect(waters, 30 + rand() * 260, 100 + rand() * 300, 70 + rand() * 50, 26 + rand() * 16, ball, hole, 32);
+      }
+      return { ball: ball, hole: hole, par: par, holeR: holeR, walls: walls, sands: sands, waters: waters };
+    }
+    var rand = mulberry((Date.now() ^ (Math.random() * 1e9)) | 0);
+    var holes = [];
+    for (var n = 0; n < HOLES; n++) holes.push(makeHole(n, rand));
+    var hi = 0, strokes = 0, total = 0, running = true, last = 0, ball, hole, walls, sands, waters, charging = false, power = 0, aim = { x: 0, y: -1 }, tee, maxStrokes;
+    setHud([['홀', '1/18', 'hole'], ['타수', '0', 'strokes'], ['점수', '0', 'score']]);
     function loadHole() {
       var h = holes[hi];
+      tee = { x: h.ball[0], y: h.ball[1] };
       ball = { x: h.ball[0], y: h.ball[1], vx: 0, vy: 0, r: 9 };
-      hole = { x: h.hole[0], y: h.hole[1], r: 14 };
-      walls = h.walls; strokes = 0; charging = false; power = 0;
-      hud('hole', (hi + 1) + '/4'); hud('strokes', 0);
+      hole = { x: h.hole[0], y: h.hole[1], r: h.holeR };
+      walls = h.walls; sands = h.sands || []; waters = h.waters || [];
+      strokes = 0; charging = false; power = 0;
+      maxStrokes = h.par + 5;
+      hud('hole', (hi + 1) + '/18'); hud('strokes', 0);
     }
     loadHole();
     function moving() { return Math.hypot(ball.vx, ball.vy) > 8; }
+    function inHaz(list) {
+      for (var i = 0; i < list.length; i++) if (hitsRect(ball.x, ball.y, ball.r - 2, list[i])) return true;
+      return false;
+    }
     function aimAt(e) {
       var r = cv.canvas.getBoundingClientRect();
       var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
@@ -3200,7 +3311,7 @@
       hi++;
       if (hi >= holes.length) {
         running = false;
-        gameOver('라운드 종료', formatScore(total) + '점', function () { startGame('putting'); }, total);
+        gameOver('18홀 종료', formatScore(total) + '점', function () { startGame('putting'); }, total);
         return;
       }
       loadHole();
@@ -3210,9 +3321,17 @@
       var dt = frameDt(t, last); last = t; fx.update(dt);
       if (charging && !moving()) power = Math.min(1, power + dt * 0.9);
       ball.x += ball.vx * dt; ball.y += ball.vy * dt;
-      ball.vx *= Math.pow(0.985, dt * 60); ball.vy *= Math.pow(0.985, dt * 60);
+      var damp = inHaz(sands) ? 0.94 : 0.985;
+      ball.vx *= Math.pow(damp, dt * 60); ball.vy *= Math.pow(damp, dt * 60);
       if (Math.hypot(ball.vx, ball.vy) < 8) { ball.vx = 0; ball.vy = 0; }
       bounceWalls();
+      if (inHaz(waters) && Math.hypot(ball.vx, ball.vy) > 4) {
+        fx.burst(ball.x, ball.y, '#6ec8ff', 10, 140);
+        ball.x = tee.x; ball.y = tee.y; ball.vx = 0; ball.vy = 0;
+        strokes++; hud('strokes', strokes);
+        if (strokes >= maxStrokes) nextHole();
+        if (!running) return;
+      }
       var dist = Math.hypot(ball.x - hole.x, ball.y - hole.y);
       if (dist < hole.r - 2 && Math.hypot(ball.vx, ball.vy) < 90) {
         fx.burst(hole.x, hole.y, '#efd28a', 12, 160);
@@ -3222,6 +3341,8 @@
       ctx.fillStyle = '#0d3b32'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#0a2f28';
       for (var g = 0; g < 12; g++) ctx.fillRect(0, g * 54, W, 2);
+      sands.forEach(function (s) { ctx.fillStyle = '#c4a35a'; ctx.fillRect(s.x, s.y, s.w, s.h); });
+      waters.forEach(function (w) { ctx.fillStyle = '#1a6a88'; ctx.fillRect(w.x, w.y, w.w, w.h); });
       walls.forEach(function (w) { ctx.fillStyle = '#1f5650'; ctx.fillRect(w.x, w.y, w.w, w.h); });
       ctx.fillStyle = '#123'; ctx.beginPath(); ctx.arc(hole.x, hole.y, hole.r, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#efd28a'; ctx.beginPath(); ctx.arc(hole.x, hole.y, hole.r + 2, 0, Math.PI * 2); ctx.stroke();
@@ -3234,6 +3355,8 @@
         ctx.fillStyle = '#122a2d'; ctx.fillRect(24, H - 28, W - 48, 10);
         ctx.fillStyle = '#efd28a'; ctx.fillRect(24, H - 28, (W - 48) * power, 10);
       }
+      ctx.fillStyle = '#efd28acc'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('Par ' + holes[hi].par + ' · ' + (hi + 1) + '/18', 16, 20);
       fx.draw(ctx);
       c.raf(loop);
     }
@@ -3250,10 +3373,10 @@
       ball.vx = aim.x * p; ball.vy = aim.y * p;
       strokes++; hud('strokes', strokes);
       power = 0;
-      if (strokes >= 8) nextHole();
+      if (strokes >= maxStrokes) nextHole();
     });
     c.raf(loop);
-    actions(function () { startGame('putting'); }, function () { return total; }, '조준 후 누르고 있으면 힘이 찹니다. 떼서 퍼팅하세요. 4홀.');
+    actions(function () { startGame('putting'); }, function () { return total; }, '조준 후 누르고 있으면 힘이 찹니다. 떼서 퍼팅하세요. 18홀 · 맵은 매 라운드 랜덤 · 뒤로 갈수록 어렵습니다. 모래=감속, 물=티 리셋.');
     return { id: 'putting', destroy: c.destroy };
   };
 

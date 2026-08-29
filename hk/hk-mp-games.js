@@ -9,9 +9,23 @@
     airhockey: { icon: '🏒', name: '에어하키', desc: '싱글/대결 · 반응속도 에어하키' },
     memorymp: { icon: '🛎️', name: '호텔 메모리 멀티', desc: '싱글/1:1/1:1:1/2:2 · 카드수 선택' },
     lanepush: { icon: '🗡️', name: '레인 푸시', desc: '싱글/대결 · LOL 미니 라인전' },
-    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령 스노우볼' }
+    nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령 스노우볼' },
+    gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
+    chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
+    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한·초 장기' },
+    marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
+    yut: { icon: '🪵', name: '윷놀이', desc: '1:1 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
-  var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4 };
+  var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4, gomoku: 4, chess: 4, janggi: 4, marble: 4, yut: 4 };
+  var BOARD_IDS = ['gomoku', 'chess', 'janggi', 'marble', 'yut'];
+  var BOARD_MODE_META = {
+    solo: { label: '1:AI', max: 2 },
+    '1v1': { label: '1:1', max: 2 },
+    '2v2': { label: '2:2', max: 4 }
+  };
+  var boardCreateMode = '1v1';
+  var boardSel = null;
+  var boardSig = '';
   var tankCreateMode = 'ffa';
   var rtsCreateMode = '1v1';
   var rtsCreateAiDiff = 'medium';
@@ -173,6 +187,7 @@
     toastTimer = setTimeout(function () { refs.toast.classList.remove('show'); }, 2400);
   }
   function meta(id) { return META[id] || { icon: '🎮', name: id, desc: '' }; }
+  function isBoard(id) { return BOARD_IDS.indexOf(id || gameId) >= 0; }
 
   function inject() {
     if (root) return;
@@ -205,6 +220,7 @@
       '.hkmp-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(22px,4.6vw,40px);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;text-align:center;transition:.22s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none}',
       '.hkmp-memory-card.open,.hkmp-memory-card.done{background:#f0dfa8;color:#142826;transform:rotateY(180deg);text-shadow:0 1px 0 #fff6}.hkmp-memory-card.done{background:#9fcbb0;opacity:.78;cursor:default}',
       '.hkmp-memory-card .hkmp-memory-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;transform:rotateY(180deg)}.hkmp-memory-card.mine{box-shadow:inset 0 0 0 2px #efd28a,0 0 0 1px #efd28a55}.hkmp-memory-card:disabled{cursor:default;opacity:.85}',
+      '.hkmp-board-wrap{width:min(100%,560px);margin:0 auto}.hkmp-grid{display:grid;gap:0;margin:0 auto;user-select:none}.hkmp-cell{appearance:none;border:1px solid #1f565088;background:#0d292d;color:#f5f0df;cursor:pointer;display:grid;place-items:center;padding:0;font-weight:800;min-width:0;min-height:0}.hkmp-cell:hover{background:#16383c}.hkmp-cell.mine{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-cell.sel{background:#3a4a28;box-shadow:inset 0 0 0 2px #efd28a}.hkmp-cell.last{outline:2px solid #f6ad55}.hkmp-cell.light{background:#e8d9a8;color:#1a302c}.hkmp-cell.dark{background:#6b8f71;color:#122}.hkmp-cell.pal{background:#3a2a22}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:10px auto;background:radial-gradient(circle at 50% 50%,#5a2a22,#2a1512);border-radius:16px;border:2px solid #cbb27066}.hkmp-yut-node{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;display:grid;place-items:center;font-size:10px;color:#122}.hkmp-mal{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff8;z-index:2}.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:560px){.hkmp-shell{width:calc(100% - 16px);padding-top:12px}.hkmp-panel{padding:14px}}'
     ].join('');
@@ -444,6 +460,7 @@
     if (gameId === 'memorymp') maxGuess = (MEMORY_MODE_META[memoryCreateMode] && MEMORY_MODE_META[memoryCreateMode].max) || 2;
     if (gameId === 'lanepush') maxGuess = (SHARED_MODE_META[laneCreateMode] && SHARED_MODE_META[laneCreateMode].max) || 2;
     if (gameId === 'nexuswar') maxGuess = (SHARED_MODE_META[nexusCreateMode] && SHARED_MODE_META[nexusCreateMode].max) || 2;
+    if (isBoard()) maxGuess = (BOARD_MODE_META[boardCreateMode] && BOARD_MODE_META[boardCreateMode].max) || 2;
     if (gameId === 'ageofwar' || gameId === 'airhockey') maxGuess = 2;
     if (gameId === 'snakes') maxGuess = snakesCreateMode === 'solo' ? 4 : 8;
     room = {
@@ -456,7 +473,8 @@
         : (gameId === 'nexuswar' ? nexusCreateMode
         : (gameId === 'ageofwar' ? aowCreateMode
         : (gameId === 'snakes' ? snakesCreateMode
-        : (gameId === 'airhockey' ? hockeyCreateMode : null))))))),
+        : (gameId === 'airhockey' ? hockeyCreateMode
+        : (isBoard() ? boardCreateMode : null)))))))),
       aiDiff: gameId === 'rts' && rtsCreateMode === 'solo' ? rtsCreateAiDiff : null,
       pairs: gameId === 'memorymp' ? memoryPairs : null,
       status: 'lobby',
@@ -484,6 +502,7 @@
         payload.mode = memoryCreateMode;
         payload.pairs = memoryPairs;
       }
+      if (isBoard()) payload.mode = boardCreateMode;
       var ok = send(payload);
       if (!ok) {
         pendingCreate = false;
@@ -583,6 +602,9 @@
         if (gameId === 'memorymp') {
           updateMemoryBoard();
           updateHud();
+        } else if (isBoard()) {
+          updateBoardUi();
+          updateHud();
         } else {
           if (lastState && (lastState.W || lastState.H)) {
             canvasW = lastState.W || canvasW;
@@ -620,7 +642,13 @@
       last_alive: '최후의 생존자',
       time: '시간 종료 · 길이/점수 우승',
       life: '라이프 전멸',
-      score: '목표 점수 달성'
+      score: '목표 점수 달성',
+      five: '5목 완성',
+      checkmate: '체크메이트',
+      king: '왕을 잡았습니다',
+      bankrupt: '파산',
+      yut: '윷놀이 골인',
+      draw: '무승부',
     };
     return map[code] || code;
   }
@@ -668,6 +696,7 @@
         modeTag = ' · ' + ((MEMORY_MODE_META[r.mode] && MEMORY_MODE_META[r.mode].label) || r.mode || '1:1');
         if (r.pairs) modeTag += ' · ' + r.pairs + '쌍';
       }
+      if (isBoard() && r.mode) modeTag = ' · ' + ((BOARD_MODE_META[r.mode] && BOARD_MODE_META[r.mode].label) || r.mode);
       return '<button type="button" class="hkmp-room" data-join="' + esc(code) + '"' + (full ? ' disabled' : '') + '>' +
         '<b>' + esc(host) + '</b>' +
         '<span>' + cnt + '/' + roomMax + modeTag + (full ? ' · 가득 참' : ' · 클릭해서 참가') + '</span>' +
@@ -700,6 +729,7 @@
     if (gameId === 'memorymp') max = (MEMORY_MODE_META[memoryCreateMode] || MEMORY_MODE_META['1v1']).max;
     if (gameId === 'lanepush') max = (SHARED_MODE_META[laneCreateMode] || SHARED_MODE_META['1v1']).max;
     if (gameId === 'nexuswar') max = (SHARED_MODE_META[nexusCreateMode] || SHARED_MODE_META['1v1']).max;
+    if (isBoard()) max = (BOARD_MODE_META[boardCreateMode] || BOARD_MODE_META['1v1']).max;
     list.innerHTML = browseListHtml(lastBrowseRooms, max);
     bindBrowseListClicks(list);
   }
@@ -708,7 +738,7 @@
     stopInput();
     tankCam = { x: null, y: null, free: false };
     bindPlayKeys(true);
-    if (gameId === 'memorymp') return;
+    if (gameId === 'memorymp' || isBoard()) return;
     // Air hockey uses RAF smooth for prediction — avoid a second 60fps input timer
     if (gameId === 'airhockey') {
       startHockeySmooth();
@@ -1008,6 +1038,7 @@
     if (gameId === 'memorymp') max = (MEMORY_MODE_META[memoryCreateMode] || MEMORY_MODE_META['1v1']).max;
     if (gameId === 'lanepush') max = (SHARED_MODE_META[laneCreateMode] || SHARED_MODE_META['1v1']).max;
     if (gameId === 'nexuswar') max = (SHARED_MODE_META[nexusCreateMode] || SHARED_MODE_META['1v1']).max;
+    if (isBoard()) max = (BOARD_MODE_META[boardCreateMode] || BOARD_MODE_META['1v1']).max;
     var modeRow = '';
     if (gameId === 'tank') {
       modeRow = '<div class="hkmp-row" style="margin:0">' +
@@ -1055,6 +1086,13 @@
           return '<button type="button" class="hkmp-btn' + (curMode === mm[0] ? ' primary' : '') + '" data-shared-mode="' + mm[0] + '">' + mm[1] + '</button>';
         }).join('') +
         '<span class="hkmp-note">' + (gameId === 'lanepush' ? '싱글은 Ready 한 명 · AI 자동' : '싱글은 Ready 한 명 · AI 자동') + '</span></div>';
+    }
+    if (isBoard()) {
+      modeRow = '<div class="hkmp-row" style="margin:0">' +
+        [['solo', '1:AI'], ['1v1', '1:1'], ['2v2', '2:2']].map(function (mm) {
+          return '<button type="button" class="hkmp-btn' + (boardCreateMode === mm[0] ? ' primary' : '') + '" data-board-mode="' + mm[0] + '">' + mm[1] + '</button>';
+        }).join('') +
+        '<span class="hkmp-note">1:AI는 Ready 한 명 · 2:2는 2명 이상이면 AI 합류</span></div>';
     }
     var creating = pendingCreate;
     var connected = !!(ws && ws.readyState === 1);
@@ -1128,6 +1166,15 @@
         renderBrowse();
       };
     });
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-board-mode]'), function (btn) {
+      btn.onclick = function () {
+        var bm = btn.getAttribute('data-board-mode');
+        if (!BOARD_MODE_META[bm]) return;
+        boardCreateMode = bm;
+        lastBrowseSig = '';
+        renderBrowse();
+      };
+    });
     refs.body.querySelector('[data-act="create"]').onclick = function () {
       if (pendingCreate) { toast('방 생성 요청 중입니다…'); return; }
       requestCreateRoom();
@@ -1142,6 +1189,7 @@
     if (gameId === 'rts') minNeed = room.max || ((RTS_MODE_META[room.mode] && RTS_MODE_META[room.mode].max) || 2);
     if (gameId === 'memorymp') minNeed = room.max || ((MEMORY_MODE_META[room.mode] && MEMORY_MODE_META[room.mode].max) || 2);
     if (gameId === 'lanepush' || gameId === 'nexuswar') minNeed = room.max || ((SHARED_MODE_META[room.mode] && SHARED_MODE_META[room.mode].max) || 2);
+    if (isBoard()) minNeed = room.max || ((BOARD_MODE_META[room.mode] && BOARD_MODE_META[room.mode].max) || 2);
     if (gameId === 'ageofwar' || gameId === 'airhockey') minNeed = 2;
     var soloMode = room.mode === 'solo';
     if (soloMode) minNeed = 1;
@@ -1158,6 +1206,7 @@
     if ((gameId === 'lanepush' || gameId === 'nexuswar') && room.mode && SHARED_MODE_META[room.mode]) {
       rtsLabel = SHARED_MODE_META[room.mode].label;
     }
+    if (isBoard() && room.mode && BOARD_MODE_META[room.mode]) rtsLabel = BOARD_MODE_META[room.mode].label;
     if (soloMode && gameId === 'rts') {
       var curDiff = room.aiDiff || 'medium';
       var diffLabel = (RTS_AI_DIFF_META[curDiff] && RTS_AI_DIFF_META[curDiff].label) || '중급';
@@ -1179,7 +1228,7 @@
         var isMe = p.id === selfId || p.id === 'me';
         var teamTag = '';
         if (gameId === 'rts' && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
-        if ((gameId === 'lanepush' || gameId === 'nexuswar' || gameId === 'memorymp') && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
+        if ((gameId === 'lanepush' || gameId === 'nexuswar' || gameId === 'memorymp' || isBoard()) && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
         if (gameId === 'memorymp' && room.mode === '2v2' && !teamTag) teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
         return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' +
           '<strong>' + esc(p.name || ('P' + (i + 1))) + (p.isAi ? ' ·AI' : '') + '</strong>' +
@@ -1204,6 +1253,7 @@
         (gameId === 'lanepush' ? ((rtsLabel || '레인푸시') + (soloMode ? ' · AI 대전 · ' : ' · 챔피언 픽 후 라인전 · ')) : '') +
         (gameId === 'nexuswar' ? ((rtsLabel || '점령전') + (soloMode ? ' · AI 대전 · ' : ' · 거점 드래그 · ')) : '') +
         (gameId === 'memorymp' ? ((memLabel || '메모리') + (soloMode ? ' · AI 대전 · ' : (room.mode === '2v2' ? ' · 팀원 각 1장씩 · ' : ' · '))) : '') +
+        (isBoard() ? ((rtsLabel || meta(gameId).name) + (soloMode ? ' · AI 대전 · ' : (room.mode === '2v2' ? ' · 팀전 · ' : ' · '))) : '') +
         (allReady ? '모두 준비됨 — 곧 시작합니다' :
         (soloMode ? 'Ready하면 AI와 바로 시작' :
         (humans.length < minNeed ? '대기 중… (' + humans.length + '명, ' + minNeed + '명 필요)' : '모두 Ready하면 자동 시작'))) +
@@ -1233,8 +1283,14 @@
 
   function renderPlay() {
     memoryBoardSig = '';
+    boardSig = '';
+    boardSel = null;
     if (gameId === 'memorymp') {
       renderPlayMemory();
+      return;
+    }
+    if (isBoard()) {
+      renderPlayBoard();
       return;
     }
     canvasW = (lastState && (lastState.W || lastState.w || lastState.width)) || defaultSize().w;
@@ -1390,6 +1446,166 @@
     });
   }
 
+  var CHESS_U = { '0K': '♔', '0Q': '♕', '0R': '♖', '0B': '♗', '0N': '♘', '0P': '♙', '1K': '♚', '1Q': '♛', '1R': '♜', '1B': '♝', '1N': '♞', '1P': '♟' };
+  var JANGGI_U = { K: ['楚', '漢'], R: '車', N: '馬', B: '象', A: '士', C: '包', P: ['兵', '卒'] };
+
+  function renderPlayBoard() {
+    setGamePaused(false);
+    boardSel = null;
+    boardSig = '';
+    refs.body.innerHTML =
+      '<div class="hkmp-hud" data-hud></div>' +
+      '<div class="hkmp-board-wrap" data-board></div>' +
+      '<div class="hkmp-row" data-board-act style="justify-content:center;margin-top:10px"></div>' +
+      '<div class="hkmp-pause" aria-hidden="true"><div class="hkmp-pause-box"><strong>일시정지</strong><span>P 키로 계속 · Ctrl+Q 오더 화면</span></div></div>' +
+      '<div class="hkmp-note" data-help></div>';
+    refs.hud = refs.body.querySelector('[data-hud]');
+    refs.board = refs.body.querySelector('[data-board]');
+    refs.boardAct = refs.body.querySelector('[data-board-act]');
+    refs.pause = refs.body.querySelector('.hkmp-pause');
+    refs.help = refs.body.querySelector('[data-help]');
+    refs.canvas = null;
+    refs.help.textContent = helpText();
+    updateBoardUi();
+    updateHud();
+  }
+
+  function boardMyTurn(st) {
+    return !!(st && st.turnId != null && (st.turnId === selfId || st.turnId == selfId));
+  }
+
+  function pieceGlyph(p, kind) {
+    if (!p) return '';
+    if (kind === 'chess') return CHESS_U[p.s + p.t] || p.t;
+    if (kind === 'janggi') {
+      if (p.t === 'K' || p.t === 'P') return (JANGGI_U[p.t] || [])[p.s] || p.t;
+      return JANGGI_U[p.t] || p.t;
+    }
+    return '';
+  }
+
+  function updateBoardUi() {
+    if (!isBoard() || !refs.board) return;
+    var st = lastState || {};
+    var myTurn = boardMyTurn(st);
+    var sig = gameId + '|' + (st.turnId || '') + '|' + (st.pending || '') + '|' + (st.log || '') + '|' + JSON.stringify(st.last || null) + '|' + (boardSel ? boardSel.join(',') : '') + '|' + JSON.stringify(st.board || st.cells || st.mals || null);
+    if (sig === boardSig) return;
+    boardSig = sig;
+
+    if (gameId === 'gomoku') {
+      var b = st.board || [];
+      refs.board.innerHTML = '<div class="hkmp-grid" style="grid-template-columns:repeat(15,minmax(0,1fr));width:min(100%,420px);aspect-ratio:1">' +
+        b.map(function (row, r) {
+          return row.map(function (v, c) {
+            var last = st.last && st.last.r === r && st.last.c === c;
+            var cls = 'hkmp-cell' + (myTurn && !v ? ' mine' : '') + (last ? ' last' : '');
+            var stone = v === 1 ? '●' : v === 2 ? '○' : '';
+            return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' + ((!myTurn || v) ? ' disabled' : '') + '>' + stone + '</button>';
+          }).join('');
+        }).join('') + '</div>';
+      Array.prototype.forEach.call(refs.board.querySelectorAll('[data-r]'), function (btn) {
+        btn.onclick = function () {
+          if (btn.disabled) return;
+          send({ type: 'input', payload: { r: Number(btn.getAttribute('data-r')), c: Number(btn.getAttribute('data-c')) } });
+        };
+      });
+      refs.boardAct.innerHTML = '';
+      return;
+    }
+
+    if (gameId === 'chess' || gameId === 'janggi') {
+      var rows = gameId === 'janggi' ? 10 : 8;
+      var cols = gameId === 'janggi' ? 9 : 8;
+      var board = st.board || [];
+      refs.board.innerHTML = '<div class="hkmp-grid" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr));width:min(100%,' + (cols === 9 ? '460' : '420') + 'px);aspect-ratio:' + cols + '/' + rows + '">' +
+        board.map(function (row, r) {
+          return row.map(function (p, c) {
+            var light = (r + c) % 2 === 0;
+            var pal = gameId === 'janggi' && c >= 3 && c <= 5 && ((r <= 2) || (r >= 7));
+            var sel = boardSel && boardSel[0] === r && boardSel[1] === c;
+            var last = st.last && ((st.last.fr === r && st.last.fc === c) || (st.last.tr === r && st.last.tc === c));
+            var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : (pal ? ' pal' : '')) + (sel ? ' sel' : '') + (last ? ' last' : '');
+            var col = p ? (p.s === 0 ? '#f5f0df' : '#ff8a7a') : '';
+            return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '" style="color:' + col + ';font-size:' + (gameId === 'janggi' ? '15' : '22') + 'px">' + pieceGlyph(p, gameId) + '</button>';
+          }).join('');
+        }).join('') + '</div>';
+      Array.prototype.forEach.call(refs.board.querySelectorAll('[data-r]'), function (btn) {
+        btn.onclick = function () {
+          if (!myTurn) return;
+          var r = Number(btn.getAttribute('data-r')), c = Number(btn.getAttribute('data-c'));
+          var cell = board[r] && board[r][c];
+          var mySide = (room && room.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
+          if (!boardSel) {
+            if (cell && cell.s === mySide) {
+              boardSel = [r, c];
+              boardSig = '';
+              updateBoardUi();
+            }
+            return;
+          }
+          if (boardSel[0] === r && boardSel[1] === c) {
+            boardSel = null;
+            boardSig = '';
+            updateBoardUi();
+            return;
+          }
+          send({ type: 'input', payload: { fr: boardSel[0], fc: boardSel[1], tr: r, tc: c } });
+          boardSel = null;
+        };
+      });
+      refs.boardAct.innerHTML = '';
+      return;
+    }
+
+    if (gameId === 'marble') {
+      var cells = st.cells || [];
+      var tokens = st.tokens || [];
+      refs.board.innerHTML = '<div class="hkmp-marble">' + cells.map(function (cell) {
+        var here = tokens.filter(function (t) { return !t.bankrupt && t.pos === cell.i; }).map(function (t) { return '<b style="color:' + COLORS[t.slot] + '">●</b>'; }).join('');
+        var own = cell.owner >= 0 ? ' own' + (cell.owner % 4) : '';
+        return '<div class="hkmp-mcell' + own + '"><div>' + esc(cell.name || '') + '</div><div style="color:#efd28a">' + (cell.price ? cell.price + 'G' : (cell.t || '')) + '</div><div>' + here + '</div></div>';
+      }).join('') + '</div>';
+      var actHtml = '';
+      if (myTurn && st.pending === 'roll') actHtml = '<button type="button" class="hkmp-btn primary" data-act="roll">주사위</button>';
+      if (myTurn && st.pending === 'buy') actHtml = '<button type="button" class="hkmp-btn primary" data-act="buy">구매</button><button type="button" class="hkmp-btn" data-act="skip">패스</button>';
+      refs.boardAct.innerHTML = actHtml;
+      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
+        btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
+      });
+      return;
+    }
+
+    if (gameId === 'yut') {
+      var nodes = st.nodes || [];
+      var mals = st.mals || [];
+      var myTeam = (room && room.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
+      refs.board.innerHTML = '<div class="hkmp-yut">' + nodes.map(function (n) {
+        return '<div class="hkmp-yut-node" style="left:' + (n.x * 100) + '%;top:' + (n.y * 100) + '%"></div>';
+      }).join('') + mals.map(function (m, i) {
+        if (m.home || m.pos < 0) return '';
+        var nd = nodes[m.pos] || nodes[0];
+        var ox = (m.i % 2) * 8 - 4, oy = (m.i > 1 ? 8 : -4);
+        return '<div class="hkmp-mal" data-mal="' + i + '" style="left:calc(' + (nd.x * 100) + '% + ' + ox + 'px);top:calc(' + (nd.y * 100) + '% + ' + oy + 'px);background:' + (m.team ? '#ff8a7a' : '#6ec8ff') + '"></div>';
+      }).join('') + '</div>' +
+        '<div class="hkmp-note">' + (st.lastYut ? ('이번 윷: ' + esc(st.lastYut.name || '') + ' · ' + (st.moveN || '') + '칸') : '대기 말은 출발선에 있습니다') + '</div>';
+      var yact = '';
+      if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">윷 던지기</button>';
+      if (myTurn && st.pending === 'move') {
+        yact = mals.map(function (m, i) {
+          if (m.team !== myTeam || m.home) return '';
+          return '<button type="button" class="hkmp-btn" data-mal="' + i + '">말' + (m.i + 1) + (m.pos < 0 ? ' (대기)' : '') + '</button>';
+        }).join('');
+      }
+      refs.boardAct.innerHTML = yact;
+      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
+        btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
+      });
+      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-mal]'), function (btn) {
+        btn.onclick = function () { send({ type: 'input', payload: { act: 'move', mal: Number(btn.getAttribute('data-mal')) } }); };
+      });
+    }
+  }
+
   function defaultSize() {
     if (gameId === 'rts') return { w: 1800, h: 1200 };
     if (gameId === 'ageofwar') return { w: 1100, h: 420 };
@@ -1410,6 +1626,11 @@
       memorymp: '시작 시 파도 미리보기 · 내 차례에 카드 선택 · 2:2는 팀원이 한 장씩',
       lanepush: '우클릭 이동 · QWER 스킬 · 1~5 픽 · 미니언 막타로 골드 · 타워→본진 파괴',
       nexuswar: '내 거점에서 드래그해 출동 · Shift 전군 · 상대 본진 점령 승리',
+      gomoku: '내 차례에 빈 칸을 눌러 돌을 놓으세요. 5목이 먼저 승리.',
+      chess: '내 기물을 누른 뒤 갈 칸을 누르세요. 체크메이트로 승리.',
+      janggi: '내 기물을 누른 뒤 갈 칸을 누르세요. 왕을 잡으면 승리.',
+      marble: '내 차례에 주사위 · 빈 땅은 구매/패스. 상대 파산 시 승리.',
+      yut: '윷을 던진 뒤 말을 선택하세요. 네 말이 모두 골인하면 승리.',
     }[gameId] || '';
   }
 
@@ -1880,6 +2101,28 @@
         html += '<span class="hkmp-pill" style="color:' + (myTurnHud ? '#9ae6b4' : '#efd28a') + '">' +
           (myTurnHud ? '내 차례' : ('차례 · ' + esc(pickerName || '?'))) + '</span>';
       }
+    } else if (isBoard()) {
+      var blabel = (BOARD_MODE_META[st.mode] && BOARD_MODE_META[st.mode].label) || st.mode || '';
+      html += '<span class="hkmp-pill">' + esc(blabel) + '</span>';
+      var turnName = '';
+      (st.playerMeta || []).forEach(function (pm) {
+        if (pm.id === st.turnId || pm.id == st.turnId) turnName = pm.name;
+      });
+      var myB = st.turnId != null && (st.turnId === selfId || st.turnId == selfId);
+      html += '<span class="hkmp-pill" style="color:' + (myB ? '#9ae6b4' : '#efd28a') + '">' + (myB ? '내 차례' : ('차례 · ' + esc(turnName || '?'))) + '</span>';
+      if (st.log) html += '<span class="hkmp-pill">' + esc(st.log) + '</span>';
+      if (gameId === 'gomoku' && st.stones != null) html += '<span class="hkmp-pill">돌 <b>' + st.stones + '</b></span>';
+      if (gameId === 'marble' && st.tokens) {
+        var meTok = st.tokens[mySlot()] || st.tokens.filter(function (t) { return t.id === selfId || t.id == selfId; })[0];
+        if (meTok) html += '<span class="hkmp-pill">소지금 <b>' + Math.floor(meTok.money || 0) + 'G</b></span>';
+        if (st.lastRoll) html += '<span class="hkmp-pill">주사위 <b>' + st.lastRoll[0] + '+' + st.lastRoll[1] + '</b></span>';
+      }
+      if (gameId === 'yut' && st.mals) {
+        var yt = (st.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
+        var leftM = st.mals.filter(function (m) { return m.team === yt && !m.home; }).length;
+        html += '<span class="hkmp-pill">남은 말 <b>' + leftM + '/4</b></span>';
+        if (st.lastYut) html += '<span class="hkmp-pill">' + esc(st.lastYut.name || '') + '</span>';
+      }
     }
     refs.hud.innerHTML = html;
     if (gameId === 'rts' && refs.tools && view === 'play') {
@@ -1913,6 +2156,10 @@
   function drawFrame() {
     if (gameId === 'memorymp') {
       updateMemoryBoard();
+      return;
+    }
+    if (isBoard()) {
+      updateBoardUi();
       return;
     }
     var cv = refs.canvas;
@@ -3097,7 +3344,7 @@
     var winner = '알 수 없음';
     var wid = endedInfo && endedInfo.winnerId;
     var iWon = wid != null && (wid === selfId || wid == selfId);
-    if (!iWon && gameId === 'memorymp' && wid != null && lastState && lastState.mode === '2v2' && lastState.playerMeta) {
+    if (!iWon && (gameId === 'memorymp' || isBoard()) && wid != null && lastState && lastState.mode === '2v2' && lastState.playerMeta) {
       var myTeam = null, winTeam = null;
       lastState.playerMeta.forEach(function (pm) {
         if (pm.id === selfId || pm.id == selfId) myTeam = pm.team;
@@ -3141,6 +3388,15 @@
       } else if (endedInfo && endedInfo.reason === 'memory_complete') {
         reasonText = iWon ? '가장 많은 짝을 맞췄습니다!' : '짝 찾기 완료';
       }
+    }
+    if (isBoard() && endedInfo && endedInfo.reason) {
+      var br = endedInfo.reason;
+      if (br === 'draw') { title = '무승부'; reasonText = '무승부입니다'; iWon = false; }
+      else if (br === 'five') reasonText = iWon ? '5목을 만들었습니다!' : '상대가 5목을 만들었습니다';
+      else if (br === 'checkmate') reasonText = iWon ? '체크메이트!' : '체크메이트로 패배';
+      else if (br === 'king') reasonText = iWon ? '왕을 잡았습니다!' : '왕이 잡혔습니다';
+      else if (br === 'bankrupt') reasonText = iWon ? '상대가 파산했습니다' : '파산했습니다';
+      else if (br === 'yut') reasonText = iWon ? '모든 말이 골인!' : '상대 말이 모두 골인했습니다';
     }
     refs.body.innerHTML =
       '<div class="hkmp-ended"><h2 style="font-size:' + ((iWon || gameId === 'snakes') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' +
