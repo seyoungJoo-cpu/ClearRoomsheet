@@ -1137,6 +1137,7 @@ function applyYut(room, player, payload, endGame) {
     }
     const n = backs === 0 ? 5 : backs;
     s.lastYut = { n, name: YUT_NAMES[n], sticks };
+    s.throwId = (s.throwId || 0) + 1;
     s.extra = n >= 4 ? 1 : 0;
     s.pending = "move";
     s.log = YUT_NAMES[n] + " (" + n + "칸)";

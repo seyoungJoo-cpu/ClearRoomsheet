@@ -26,6 +26,9 @@
   var boardCreateMode = '1v1';
   var boardSel = null;
   var boardSig = '';
+  var yutThrowSeen = '';
+  var yutPrevMals = null;
+  var yutAnimReady = false;
   var tankCreateMode = 'ffa';
   var rtsCreateMode = '1v1';
   var rtsCreateAiDiff = 'medium';
@@ -220,7 +223,12 @@
       '.hkmp-memory-card{min-width:0;min-height:0;width:100%;height:100%;aspect-ratio:3/4;border:0;border-radius:10px;background:linear-gradient(160deg,#1f5650,#0d252c);color:transparent;font-size:clamp(22px,4.6vw,40px);line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;text-align:center;transition:.22s;box-shadow:inset 0 0 0 1px #d2b77044,0 4px 10px #0005;-webkit-user-select:none;user-select:none}',
       '.hkmp-memory-card.open,.hkmp-memory-card.done{background:#f0dfa8;color:#142826;transform:rotateY(180deg);text-shadow:0 1px 0 #fff6}.hkmp-memory-card.done{background:#9fcbb0;opacity:.78;cursor:default}',
       '.hkmp-memory-card .hkmp-memory-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;transform:rotateY(180deg)}.hkmp-memory-card.mine{box-shadow:inset 0 0 0 2px #efd28a,0 0 0 1px #efd28a55}.hkmp-memory-card:disabled{cursor:default;opacity:.85}',
-      '.hkmp-board-wrap{width:min(100%,560px);margin:0 auto}.hkmp-grid{display:grid;gap:0;margin:0 auto;user-select:none}.hkmp-cell{appearance:none;border:1px solid #1f565088;background:#0d292d;color:#f5f0df;cursor:pointer;display:grid;place-items:center;padding:0;font-weight:800;min-width:0;min-height:0}.hkmp-cell:hover{background:#16383c}.hkmp-cell.mine{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-cell.sel{background:#3a4a28;box-shadow:inset 0 0 0 2px #efd28a}.hkmp-cell.last{outline:2px solid #f6ad55}.hkmp-cell.light{background:#e8d9a8;color:#1a302c}.hkmp-cell.dark{background:#6b8f71;color:#122}.hkmp-cell.pal{background:#3a2a22}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:10px auto;background:radial-gradient(circle at 50% 50%,#5a2a22,#2a1512);border-radius:16px;border:2px solid #cbb27066}.hkmp-yut-node{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;display:grid;place-items:center;font-size:10px;color:#122}.hkmp-mal{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff8;z-index:2}.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
+      '.hkmp-board-wrap{width:min(100%,640px);margin:0 auto}.hkmp-grid{display:grid;gap:0;margin:0 auto;user-select:none}.hkmp-cell{appearance:none;border:0;background:#0d292d;color:#f5f0df;cursor:pointer;display:grid;place-items:center;padding:0;font-weight:800;min-width:0;min-height:0;position:relative}.hkmp-cell:hover{filter:brightness(1.08)}.hkmp-cell.mine{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-cell.sel{box-shadow:inset 0 0 0 3px #efd28a,inset 0 0 12px #efd28a44}.hkmp-cell.last{box-shadow:inset 0 0 0 3px #e8b84a}.hkmp-cell.hint:after,.hkmp-cell.cap:after{content:"";position:absolute;pointer-events:none;z-index:2}.hkmp-cell.hint:after{width:28%;height:28%;border-radius:50%;background:rgba(46,170,80,.58)}.hkmp-cell.cap:after{inset:8%;border:3px solid rgba(210,50,50,.82);border-radius:50%;box-sizing:border-box}',
+      '.hkmp-go{position:relative;width:min(100%,540px);aspect-ratio:1;margin:0 auto;box-sizing:border-box;background:#c9955a;background-image:repeating-linear-gradient(90deg,rgba(90,50,20,.07) 0 2px,transparent 2px 5px),repeating-linear-gradient(0deg,rgba(90,50,20,.05) 0 2px,transparent 2px 6px),radial-gradient(ellipse at 30% 20%,rgba(255,230,180,.22),transparent 55%);border:12px solid #5a3214;box-shadow:inset 0 0 28px #0004,0 10px 28px #0007;border-radius:4px}.hkmp-go-lines{position:absolute;inset:3.333%;width:auto;height:auto;pointer-events:none;overflow:visible}.hkmp-go-pts{position:absolute;inset:0;display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr)}.hkmp-go-pt{border:0;background:transparent;padding:0;margin:0;display:grid;place-items:center;cursor:pointer;min-width:0;min-height:0}.hkmp-go-pt:disabled{cursor:default}.hkmp-go-stone{width:86%;height:86%;border-radius:50%;box-shadow:1px 2px 4px #0007,inset -2px -3px 5px #0004,inset 2px 3px 4px #fff4;pointer-events:none}.hkmp-go-stone.b{background:radial-gradient(circle at 32% 28%,#6a6a6a,#1a1a1a 54%,#050505)}.hkmp-go-stone.w{background:radial-gradient(circle at 32% 28%,#fff,#e8e8e8 50%,#c8c8c8);box-shadow:1px 2px 4px #0005,inset -1px -2px 3px #0002,inset 2px 3px 4px #fff}.hkmp-go-pt.last .hkmp-go-stone{box-shadow:0 0 0 2px #c41e3a,1px 2px 4px #0007}',
+      '.hkmp-chess{width:min(100%,520px);aspect-ratio:1;margin:0 auto;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:14px solid #1a120c;box-shadow:0 10px 28px #0008,inset 0 0 0 2px #c9a56a;border-radius:4px}.hkmp-chess .hkmp-cell{width:100%;height:100%;border:0;filter:none}.hkmp-chess .hkmp-cell.light{background:#f3efe6}.hkmp-chess .hkmp-cell.dark{background:#1e1e1e}.hkmp-chess .hkmp-cell.light:hover{background:#fff8ee}.hkmp-chess .hkmp-cell.dark:hover{background:#333}.hkmp-chess .hkmp-cell.sel.light{background:#d4e87a}.hkmp-chess .hkmp-cell.sel.dark{background:#6a8f2a}.hkmp-chess .hkmp-cell.last.light{background:#f0d56a}.hkmp-chess .hkmp-cell.last.dark{background:#b8860b}.hkmp-ch-piece{font-size:clamp(24px,6.4vw,44px);line-height:1;pointer-events:none;font-weight:700}.hkmp-ch-piece.w{color:#fafafa;text-shadow:0 1px 0 #111,0 0 3px #000,1px 1px 0 #333,-1px -1px 0 #333}.hkmp-ch-piece.b{color:#111;text-shadow:0 0 2px #fff,0 1px 0 #fff,1px 1px 0 #ccc}',
+      '.hkmp-jg{position:relative;width:min(100%,430px);aspect-ratio:9/10;margin:0 auto;box-sizing:border-box;background:#e4bc6a;background-image:repeating-linear-gradient(90deg,rgba(90,40,10,.06) 0 1px,transparent 1px 4px);border:12px solid #6b3a14;box-shadow:inset 0 0 24px #0003,0 10px 28px #0007}.hkmp-jg-lines{position:absolute;left:5.555%;right:5.555%;top:5%;bottom:5%;width:auto;height:auto;pointer-events:none}.hkmp-jg-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(10,1fr)}.hkmp-jg .hkmp-cell{background:transparent;border:0;filter:none}.hkmp-jg .hkmp-cell:hover{background:rgba(255,255,255,.12)}.hkmp-jg .hkmp-cell.sel{background:rgba(239,210,138,.35)}.hkmp-jg-piece{width:84%;height:84%;max-width:48px;max-height:48px;border-radius:50%;display:grid;place-items:center;font-family:"Noto Serif KR","Nanum Myeongjo",Batang,Georgia,serif;font-weight:900;font-size:clamp(13px,3.1vw,20px);line-height:1;background:radial-gradient(circle at 35% 30%,#fff4d4,#e8c98a 55%,#c9a05a);box-shadow:1px 2px 4px #0006,inset 0 1px 0 #fff8;pointer-events:none}.hkmp-jg-piece.s0{color:#c41e3a;border:2px solid #8b1515}.hkmp-jg-piece.s1{color:#153a6b;border:2px solid #0f2a4a}',
+      '.hkmp-yut-layout{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:0;background:radial-gradient(circle at 50% 42%,#8b3a28,#4a1812 62%,#2a0e0c);border-radius:18px;border:4px solid #cbb27088;box-shadow:inset 0 0 40px #0005,0 8px 22px #0006;overflow:hidden}.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.hkmp-yut-node{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff6,0 2px 4px #0005;z-index:1}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px;background:#f3e0b0;border-width:3px}.hkmp-mal{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid #fff;z-index:3;box-shadow:0 2px 6px #0007;transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),transform .2s ease}.hkmp-mal.home{opacity:.55;transform:scale(.82)}.hkmp-mal.wait{box-shadow:0 0 0 2px #fff4}.hkmp-yut-side{width:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 10px;background:linear-gradient(180deg,#2a1612,#1a0c0a);border-radius:16px;border:1px solid #cbb27055;min-height:220px;box-sizing:border-box}.hkmp-yut-sticks{display:flex;gap:8px;align-items:flex-end;height:110px}.hkmp-stick{width:20px;height:92px;border-radius:8px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center bottom;position:relative}.hkmp-stick i{display:block;width:8px;height:8px;margin:14px auto 0;border-radius:50%;background:transparent}.hkmp-stick.face{background:linear-gradient(90deg,#5a3418,#2a160c);border-color:#1a0c08}.hkmp-stick.back{background:linear-gradient(90deg,#f6e4b8,#d4b06a)}.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}.hkmp-stick.toss{animation:hkmp-stick-toss .72s ease}.hkmp-yut-yname{color:#efd28a;font-weight:800;font-size:20px;min-height:28px}.hkmp-yut-fx{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,8vw,56px);font-weight:900;color:#fff;text-shadow:0 0 16px #c00,0 4px 0 #800,0 8px 24px #000;z-index:8;pointer-events:none;opacity:0}.hkmp-yut-fx.show{animation:hkmp-catch-pop .9s ease forwards}.hkmp-board-wrap.shake .hkmp-yut{animation:hkmp-board-shake .5s ease}@keyframes hkmp-stick-toss{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-46px) rotate(160deg)}45%{transform:translateY(-8px) rotate(320deg)}70%{transform:translateY(-28px) rotate(520deg)}100%{transform:translateY(0) rotate(720deg)}}@keyframes hkmp-catch-pop{0%{transform:scale(.35);opacity:0}22%{transform:scale(1.18);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:0}}@keyframes hkmp-board-shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-11px) rotate(-1.6deg)}36%{transform:translateX(11px) rotate(1.6deg)}54%{transform:translateX(-8px)}72%{transform:translateX(8px)}88%{transform:translateX(-3px)}}@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px}.hkmp-stick{height:70px;width:16px}.hkmp-yut-sticks{height:80px}}',
+      '.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:560px){.hkmp-shell{width:calc(100% - 16px);padding-top:12px}.hkmp-panel{padding:14px}}'
     ].join('');
@@ -1453,6 +1461,9 @@
     setGamePaused(false);
     boardSel = null;
     boardSig = '';
+    yutThrowSeen = '';
+    yutPrevMals = null;
+    yutAnimReady = false;
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
       '<div class="hkmp-board-wrap" data-board></div>' +
@@ -1484,25 +1495,426 @@
     return '';
   }
 
+  function boardMySide() {
+    return (room && room.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
+  }
+
+  function cloneBoard(b) {
+    return (b || []).map(function (row) {
+      return (row || []).map(function (c) { return c ? { t: c.t, s: c.s } : 0; });
+    });
+  }
+
+  var CHESS_N = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]];
+  var CHESS_K = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+  function chessIn(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+  function chessSlide(board, r, c, side, dirs, out) {
+    dirs.forEach(function (d) {
+      var rr = r + d[0], cc = c + d[1];
+      while (chessIn(rr, cc)) {
+        var x = board[rr][cc];
+        if (!x) out.push([rr, cc]);
+        else { if (x.s !== side) out.push([rr, cc]); break; }
+        rr += d[0]; cc += d[1];
+      }
+    });
+  }
+  function chessPseudo(board, r, c, p, forAttack) {
+    var out = [], s = p.s;
+    if (p.t === 'P') {
+      var dir = s === 0 ? -1 : 1, start = s === 0 ? 6 : 1;
+      if (!forAttack) {
+        if (chessIn(r + dir, c) && !board[r + dir][c]) {
+          out.push([r + dir, c]);
+          if (r === start && chessIn(r + dir * 2, c) && !board[r + dir * 2][c]) out.push([r + dir * 2, c]);
+        }
+      }
+      [-1, 1].forEach(function (dc) {
+        var rr = r + dir, cc = c + dc;
+        if (!chessIn(rr, cc)) return;
+        if (forAttack || (board[rr][cc] && board[rr][cc].s !== s)) out.push([rr, cc]);
+      });
+    } else if (p.t === 'N') {
+      CHESS_N.forEach(function (d) {
+        var rr = r + d[0], cc = c + d[1];
+        if (!chessIn(rr, cc)) return;
+        var x = board[rr][cc];
+        if (!x || x.s !== s) out.push([rr, cc]);
+      });
+    } else if (p.t === 'B') chessSlide(board, r, c, s, CHESS_K.filter(function (d) { return d[0] && d[1]; }), out);
+    else if (p.t === 'R') chessSlide(board, r, c, s, CHESS_K.filter(function (d) { return !d[0] || !d[1]; }), out);
+    else if (p.t === 'Q') chessSlide(board, r, c, s, CHESS_K, out);
+    else if (p.t === 'K') {
+      CHESS_K.forEach(function (d) {
+        var rr = r + d[0], cc = c + d[1];
+        if (!chessIn(rr, cc)) return;
+        var x = board[rr][cc];
+        if (!x || x.s !== s) out.push([rr, cc]);
+      });
+    }
+    return out;
+  }
+  function chessFindKing(board, side) {
+    for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) {
+      var p = board[r][c];
+      if (p && p.t === 'K' && p.s === side) return [r, c];
+    }
+    return null;
+  }
+  function chessSquareAttacked(board, tr, tc, bySide) {
+    for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) {
+      var p = board[r][c];
+      if (!p || p.s !== bySide) continue;
+      var moves = chessPseudo(board, r, c, p, true);
+      for (var i = 0; i < moves.length; i++) if (moves[i][0] === tr && moves[i][1] === tc) return true;
+    }
+    return false;
+  }
+  function chessCastleOk(board, side, kingSide, flags) {
+    flags = flags || {};
+    var row = side === 0 ? 7 : 0;
+    if (chessSquareAttacked(board, row, 4, 1 - side)) return false;
+    if (kingSide) {
+      if (flags[side === 0 ? 'wK' : 'bK']) return false;
+      if (board[row][5] || board[row][6]) return false;
+      if (chessSquareAttacked(board, row, 5, 1 - side) || chessSquareAttacked(board, row, 6, 1 - side)) return false;
+      var rook = board[row][7];
+      return rook && rook.t === 'R' && rook.s === side;
+    }
+    if (flags[side === 0 ? 'wQ' : 'bQ']) return false;
+    if (board[row][1] || board[row][2] || board[row][3]) return false;
+    if (chessSquareAttacked(board, row, 3, 1 - side) || chessSquareAttacked(board, row, 2, 1 - side)) return false;
+    var rookQ = board[row][0];
+    return rookQ && rookQ.t === 'R' && rookQ.s === side;
+  }
+  function chessLegal(board, r, c, nr, nc, flags) {
+    var p = board[r][c];
+    if (!p) return false;
+    var dests = chessPseudo(board, r, c, p, false);
+    if (p.t === 'K' && r === (p.s === 0 ? 7 : 0) && c === 4 && Math.abs(nc - c) === 2 && nr === r) {
+      return chessCastleOk(board, p.s, nc > c, flags);
+    }
+    if (!dests.some(function (m) { return m[0] === nr && m[1] === nc; })) return false;
+    var next = cloneBoard(board);
+    next[nr][nc] = p;
+    next[r][c] = 0;
+    if (p.t === 'P' && (nr === 0 || nr === 7)) next[nr][nc] = { t: 'Q', s: p.s };
+    var k = chessFindKing(next, p.s);
+    if (!k) return false;
+    return !chessSquareAttacked(next, k[0], k[1], 1 - p.s);
+  }
+  function chessDests(board, r, c, flags) {
+    var p = board[r] && board[r][c];
+    if (!p) return [];
+    var dests = chessPseudo(board, r, c, p, false);
+    if (p.t === 'K') dests.push([r, c + 2], [r, c - 2]);
+    var out = [];
+    dests.forEach(function (m) {
+      if (chessIn(m[0], m[1]) && chessLegal(board, r, c, m[0], m[1], flags || {})) out.push(m);
+    });
+    return out;
+  }
+
+  function jgIn(r, c) { return r >= 0 && r < 10 && c >= 0 && c < 9; }
+  function janggiPalace(r, c, side) {
+    if (c < 3 || c > 5) return false;
+    if (side === 0) return r >= 7 && r <= 9;
+    return r >= 0 && r <= 2;
+  }
+  function janggiInPalace(r, c) {
+    return c >= 3 && c <= 5 && ((r >= 0 && r <= 2) || (r >= 7 && r <= 9));
+  }
+  function janggiPseudo(board, r, c, p) {
+    var out = [], s = p.s;
+    function push(rr, cc) {
+      if (!jgIn(rr, cc)) return;
+      var x = board[rr][cc];
+      if (!x || x.s !== s) out.push([rr, cc]);
+    }
+    if (p.t === 'R') {
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var rr = r + d[0], cc = c + d[1];
+        while (jgIn(rr, cc)) {
+          var x = board[rr][cc];
+          if (!x) out.push([rr, cc]);
+          else { if (x.s !== s) out.push([rr, cc]); break; }
+          rr += d[0]; cc += d[1];
+        }
+      });
+    } else if (p.t === 'C') {
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var rr = r + d[0], cc = c + d[1], jumped = false;
+        while (jgIn(rr, cc)) {
+          var x = board[rr][cc];
+          if (!jumped) {
+            if (x) { if (x.t === 'C') break; jumped = true; }
+          } else {
+            if (!x) out.push([rr, cc]);
+            else { if (x.t !== 'C' && x.s !== s) out.push([rr, cc]); break; }
+          }
+          rr += d[0]; cc += d[1];
+        }
+      });
+    } else if (p.t === 'N') {
+      [[1, 0, 2, 1], [1, 0, 2, -1], [-1, 0, -2, 1], [-1, 0, -2, -1], [0, 1, 1, 2], [0, 1, -1, 2], [0, -1, 1, -2], [0, -1, -1, -2]].forEach(function (leg) {
+        if (!jgIn(r + leg[0], c + leg[1]) || board[r + leg[0]][c + leg[1]]) return;
+        push(r + leg[2], c + leg[3]);
+      });
+    } else if (p.t === 'B') {
+      [[1, 0, 2, 1, 3, 2], [1, 0, 2, -1, 3, -2], [-1, 0, -2, 1, -3, 2], [-1, 0, -2, -1, -3, -2], [0, 1, 1, 2, 2, 3], [0, 1, -1, 2, -2, 3], [0, -1, 1, -2, 2, -3], [0, -1, -1, -2, -2, -3]].forEach(function (leg) {
+        if (!jgIn(r + leg[0], c + leg[1]) || board[r + leg[0]][c + leg[1]]) return;
+        if (!jgIn(r + leg[2], c + leg[3]) || board[r + leg[2]][c + leg[3]]) return;
+        push(r + leg[4], c + leg[5]);
+      });
+    } else if (p.t === 'A' || p.t === 'K') {
+      [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (d) {
+        var rr = r + d[0], cc = c + d[1];
+        if (!janggiPalace(rr, cc, s) && !(p.t === 'K' && janggiInPalace(rr, cc) && janggiPalace(r, c, s))) return;
+        if (!janggiInPalace(rr, cc)) return;
+        push(rr, cc);
+      });
+    } else if (p.t === 'P') {
+      var fwd = s === 0 ? -1 : 1;
+      push(r + fwd, c);
+      var crossed = s === 0 ? r <= 4 : r >= 5;
+      if (crossed) { push(r, c - 1); push(r, c + 1); }
+    }
+    return out;
+  }
+  function janggiFindKing(board, side) {
+    for (var r = 0; r < 10; r++) for (var c = 0; c < 9; c++) {
+      var p = board[r][c];
+      if (p && p.t === 'K' && p.s === side) return [r, c];
+    }
+    return null;
+  }
+  function janggiFlying(board) {
+    var a = janggiFindKing(board, 0), b = janggiFindKing(board, 1);
+    if (!a || !b || a[1] !== b[1]) return false;
+    var col = a[1], r0 = Math.min(a[0], b[0]) + 1, r1 = Math.max(a[0], b[0]);
+    for (var r = r0; r < r1; r++) if (board[r][col]) return false;
+    return true;
+  }
+  function janggiLegal(board, r, c, nr, nc) {
+    var p = board[r][c];
+    if (!p) return false;
+    if (!janggiPseudo(board, r, c, p).some(function (m) { return m[0] === nr && m[1] === nc; })) return false;
+    var next = cloneBoard(board);
+    next[nr][nc] = p;
+    next[r][c] = 0;
+    if (!janggiFindKing(next, p.s)) return false;
+    if (janggiFlying(next)) return false;
+    return true;
+  }
+  function janggiDests(board, r, c) {
+    var p = board[r] && board[r][c];
+    if (!p) return [];
+    return janggiPseudo(board, r, c, p).filter(function (m) { return janggiLegal(board, r, c, m[0], m[1]); });
+  }
+
+  function gomokuLinesSvg() {
+    var i, h = '', stars = [[3, 3], [3, 11], [7, 7], [11, 3], [11, 11]];
+    for (i = 0; i < 15; i++) {
+      h += '<line x1="' + i + '" y1="0" x2="' + i + '" y2="14"/>';
+      h += '<line x1="0" y1="' + i + '" x2="14" y2="' + i + '"/>';
+    }
+    stars.forEach(function (s) {
+      h += '<circle cx="' + s[0] + '" cy="' + s[1] + '" r="0.18"/>';
+    });
+    return '<svg class="hkmp-go-lines" viewBox="0 0 14 14" preserveAspectRatio="none"><g stroke="#2a1810" stroke-width="0.055" fill="#2a1810">' + h + '</g></svg>';
+  }
+  function janggiLinesSvg() {
+    var i, h = '';
+    for (i = 0; i <= 9; i++) h += '<line x1="0" y1="' + i + '" x2="8" y2="' + i + '"/>';
+    for (i = 0; i <= 8; i++) {
+      h += '<line x1="' + i + '" y1="0" x2="' + i + '" y2="4"/>';
+      h += '<line x1="' + i + '" y1="5" x2="' + i + '" y2="9"/>';
+    }
+    h += '<line x1="3" y1="0" x2="5" y2="2"/><line x1="5" y1="0" x2="3" y2="2"/>';
+    h += '<line x1="3" y1="7" x2="5" y2="9"/><line x1="5" y1="7" x2="3" y2="9"/>';
+    return '<svg class="hkmp-jg-lines" viewBox="0 0 8 9" preserveAspectRatio="none"><g stroke="#4a2a12" stroke-width="0.055" fill="none">' + h + '</g></svg>';
+  }
+  function destHintClass(board, r, c, dests) {
+    var map = {};
+    (dests || []).forEach(function (m) {
+      map[m[0] + ',' + m[1]] = (board[m[0]] && board[m[0]][m[1]]) ? ' cap' : ' hint';
+    });
+    return map[r + ',' + c] || '';
+  }
+
+  function yutPathSvg(nodes) {
+    function pt(i) {
+      var n = nodes[i];
+      if (!n) return '0,0';
+      return (n.x * 100).toFixed(2) + ',' + (n.y * 100).toFixed(2);
+    }
+    function poly(ids) {
+      return '<polyline points="' + ids.map(pt).join(' ') + '"/>';
+    }
+    var outer = [];
+    for (var i = 0; i < 20; i++) outer.push(i);
+    outer.push(0);
+    return '<svg class="hkmp-yut-path" viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke="#ead18faa" stroke-width="2.2">' +
+      poly(outer) + poly([5, 21, 20, 22, 10]) + poly([10, 23, 20, 24, 15]) + poly([15, 25, 20, 26, 0]) +
+      '</g></svg>';
+  }
+  function yutMalXY(m, nodes) {
+    if (m.home) {
+      return { x: m.team ? 10 + m.i * 5 : 70 + m.i * 5, y: m.team ? 8 : 92, home: true, wait: false };
+    }
+    if (m.pos < 0) {
+      return { x: m.team ? 8 + (m.i % 2) * 7 : 78 + (m.i % 2) * 7, y: m.team ? 78 + (m.i > 1 ? 7 : 0) : 6 + (m.i > 1 ? 7 : 0), home: false, wait: true };
+    }
+    var nd = nodes[m.pos] || nodes[0] || { x: 0.5, y: 0.5 };
+    var ox = (m.i % 2) * 3.2 - 1.6, oy = (m.i > 1 ? 3.2 : -1.6);
+    return { x: nd.x * 100 + ox, y: nd.y * 100 + oy, home: false, wait: false };
+  }
+  function playYutToss(sticks, name) {
+    var els = refs.board.querySelectorAll('.hkmp-stick');
+    if (!els.length) return;
+    Array.prototype.forEach.call(els, function (el, i) {
+      el.classList.remove('toss', 'back', 'face');
+      void el.offsetWidth;
+      el.style.animationDelay = (i * 0.07) + 's';
+      el.classList.add('toss');
+      setTimeout(function () {
+        el.classList.remove('toss');
+        el.style.animationDelay = '';
+        if (sticks && sticks[i]) el.classList.add('back');
+        else el.classList.add('face');
+      }, 720 + i * 70);
+    });
+    var nameEl = refs.board.querySelector('.hkmp-yut-yname');
+    if (nameEl) {
+      nameEl.textContent = '';
+      setTimeout(function () { nameEl.textContent = name || ''; }, 780);
+    }
+  }
+  function playYutCatch() {
+    if (!refs.board) return;
+    var wrap = refs.board;
+    wrap.classList.remove('shake');
+    void wrap.offsetWidth;
+    wrap.classList.add('shake');
+    var fx = wrap.querySelector('.hkmp-yut-fx');
+    if (fx) {
+      fx.classList.remove('show');
+      fx.textContent = '잡았다!';
+      void fx.offsetWidth;
+      fx.classList.add('show');
+    }
+    setTimeout(function () { wrap.classList.remove('shake'); }, 560);
+  }
+  function yutDetectCapture(mals) {
+    if (!mals) return false;
+    var captured = false;
+    if (yutPrevMals) {
+      mals.forEach(function (m, i) {
+        var prev = yutPrevMals[i];
+        if (prev && prev.pos >= 0 && m.pos < 0 && !m.home) captured = true;
+      });
+    }
+    yutPrevMals = mals.map(function (m) { return { pos: m.pos, home: !!m.home, team: m.team }; });
+    return captured;
+  }
+  function bindYutActions(st, myTurn) {
+    if (!refs.boardAct) return;
+    var mals = st.mals || [];
+    var myTeam = boardMySide();
+    var yact = '';
+    if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">윷 던지기</button>';
+    if (myTurn && st.pending === 'move') {
+      yact = mals.map(function (m, i) {
+        if (m.team !== myTeam || m.home) return '';
+        return '<button type="button" class="hkmp-btn" data-mal="' + i + '">말' + (m.i + 1) + (m.pos < 0 ? ' (대기)' : '') + '</button>';
+      }).join('');
+    }
+    refs.boardAct.innerHTML = yact;
+    Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
+      btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
+    });
+    Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-mal]'), function (btn) {
+      btn.onclick = function () { send({ type: 'input', payload: { act: 'move', mal: Number(btn.getAttribute('data-mal')) } }); };
+    });
+  }
+  function updateYutUi(st, myTurn) {
+    var nodes = st.nodes || [];
+    var mals = st.mals || [];
+    var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + JSON.stringify(mals) + '|' + myTurn;
+    var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
+    if (!needDom && key === boardSig) return;
+    if (needDom) {
+      var corners = { 0: 1, 5: 1, 10: 1, 15: 1 };
+      refs.board.setAttribute('data-kind', 'yut');
+      refs.board.innerHTML =
+        '<div class="hkmp-yut-layout"><div class="hkmp-yut">' + yutPathSvg(nodes) +
+        nodes.map(function (n, ni) {
+          var id = n.id != null ? n.id : ni;
+          return '<div class="hkmp-yut-node' + (corners[id] ? ' corner' : '') + '" style="left:' + (n.x * 100) + '%;top:' + (n.y * 100) + '%"></div>';
+        }).join('') +
+        mals.map(function (m, i) {
+          return '<div class="hkmp-mal" data-mal="' + i + '" style="left:-20%;top:-20%;background:' + (m.team ? '#ff8a7a' : '#6ec8ff') + '"></div>';
+        }).join('') +
+        '<div class="hkmp-yut-fx" aria-hidden="true"></div></div>' +
+        '<div class="hkmp-yut-side"><div class="hkmp-yut-sticks">' +
+        [0, 1, 2, 3].map(function () { return '<div class="hkmp-stick"><i></i></div>'; }).join('') +
+        '</div><div class="hkmp-yut-yname"></div></div></div>';
+      yutAnimReady = false;
+      yutThrowSeen = '';
+      requestAnimationFrame(function () { yutAnimReady = true; });
+    }
+    var captured = yutDetectCapture(mals);
+    Array.prototype.forEach.call(refs.board.querySelectorAll('.hkmp-mal'), function (el) {
+      var i = Number(el.getAttribute('data-mal'));
+      var m = mals[i];
+      if (!m) { el.style.display = 'none'; return; }
+      var xy = yutMalXY(m, nodes);
+      if (!yutAnimReady) el.style.transition = 'none';
+      else el.style.transition = '';
+      el.style.display = '';
+      el.style.left = xy.x + '%';
+      el.style.top = xy.y + '%';
+      el.classList.toggle('home', !!xy.home);
+      el.classList.toggle('wait', !!xy.wait);
+    });
+    var throwKey = String(st.throwId || 0) + ':' + JSON.stringify((st.lastYut && st.lastYut.sticks) || []);
+    if (st.lastYut && throwKey !== yutThrowSeen) {
+      yutThrowSeen = throwKey;
+      playYutToss(st.lastYut.sticks, st.lastYut.name);
+    } else if (!st.lastYut) {
+      var nameEl = refs.board.querySelector('.hkmp-yut-yname');
+      if (nameEl && !nameEl.textContent) nameEl.textContent = '윷';
+    }
+    if (captured) playYutCatch();
+    if (key !== boardSig) {
+      boardSig = key;
+      bindYutActions(st, myTurn);
+    }
+  }
+
   function updateBoardUi() {
     if (!isBoard() || !refs.board) return;
     var st = lastState || {};
     var myTurn = boardMyTurn(st);
+    if (gameId === 'yut') {
+      updateYutUi(st, myTurn);
+      return;
+    }
     var sig = gameId + '|' + (st.turnId || '') + '|' + (st.pending || '') + '|' + (st.log || '') + '|' + JSON.stringify(st.last || null) + '|' + (boardSel ? boardSel.join(',') : '') + '|' + JSON.stringify(st.board || st.cells || st.mals || null);
     if (sig === boardSig) return;
     boardSig = sig;
 
     if (gameId === 'gomoku') {
       var b = st.board || [];
-      refs.board.innerHTML = '<div class="hkmp-grid" style="grid-template-columns:repeat(15,minmax(0,1fr));width:min(100%,420px);aspect-ratio:1">' +
+      refs.board.innerHTML = '<div class="hkmp-go">' + gomokuLinesSvg() + '<div class="hkmp-go-pts">' +
         b.map(function (row, r) {
           return row.map(function (v, c) {
             var last = st.last && st.last.r === r && st.last.c === c;
-            var cls = 'hkmp-cell' + (myTurn && !v ? ' mine' : '') + (last ? ' last' : '');
-            var stone = v === 1 ? '●' : v === 2 ? '○' : '';
-            return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' + ((!myTurn || v) ? ' disabled' : '') + '>' + stone + '</button>';
+            var stone = v === 1 ? '<span class="hkmp-go-stone b"></span>' : v === 2 ? '<span class="hkmp-go-stone w"></span>' : '';
+            return '<button type="button" class="hkmp-go-pt' + (last ? ' last' : '') + '" data-r="' + r + '" data-c="' + c + '"' + ((!myTurn || v) ? ' disabled' : '') + '>' + stone + '</button>';
           }).join('');
-        }).join('') + '</div>';
+        }).join('') + '</div></div>';
       Array.prototype.forEach.call(refs.board.querySelectorAll('[data-r]'), function (btn) {
         btn.onclick = function () {
           if (btn.disabled) return;
@@ -1514,27 +1926,36 @@
     }
 
     if (gameId === 'chess' || gameId === 'janggi') {
-      var rows = gameId === 'janggi' ? 10 : 8;
-      var cols = gameId === 'janggi' ? 9 : 8;
       var board = st.board || [];
-      refs.board.innerHTML = '<div class="hkmp-grid" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr));width:min(100%,' + (cols === 9 ? '460' : '420') + 'px);aspect-ratio:' + cols + '/' + rows + '">' +
+      var dests = [];
+      if (boardSel) {
+        dests = gameId === 'chess' ? chessDests(board, boardSel[0], boardSel[1], st.flags) : janggiDests(board, boardSel[0], boardSel[1]);
+      }
+      var wrapClass = gameId === 'chess' ? 'hkmp-chess' : 'hkmp-jg';
+      var extra = gameId === 'janggi' ? janggiLinesSvg() : '';
+      var gridOpen = gameId === 'janggi' ? '<div class="hkmp-jg-grid">' : '';
+      var gridClose = gameId === 'janggi' ? '</div>' : '';
+      refs.board.innerHTML = '<div class="' + wrapClass + '">' + extra + gridOpen +
         board.map(function (row, r) {
           return row.map(function (p, c) {
             var light = (r + c) % 2 === 0;
-            var pal = gameId === 'janggi' && c >= 3 && c <= 5 && ((r <= 2) || (r >= 7));
             var sel = boardSel && boardSel[0] === r && boardSel[1] === c;
             var last = st.last && ((st.last.fr === r && st.last.fc === c) || (st.last.tr === r && st.last.tc === c));
-            var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : (pal ? ' pal' : '')) + (sel ? ' sel' : '') + (last ? ' last' : '');
-            var col = p ? (p.s === 0 ? '#f5f0df' : '#ff8a7a') : '';
-            return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '" style="color:' + col + ';font-size:' + (gameId === 'janggi' ? '15' : '22') + 'px">' + pieceGlyph(p, gameId) + '</button>';
+            var hint = destHintClass(board, r, c, dests);
+            var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : '') + (sel ? ' sel' : '') + (last ? ' last' : '') + hint;
+            var inner = '';
+            if (p && gameId === 'chess') inner = '<span class="hkmp-ch-piece ' + (p.s === 0 ? 'w' : 'b') + '">' + pieceGlyph(p, 'chess') + '</span>';
+            if (p && gameId === 'janggi') inner = '<span class="hkmp-jg-piece s' + p.s + '">' + pieceGlyph(p, 'janggi') + '</span>';
+            return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '">' + inner + '</button>';
           }).join('');
-        }).join('') + '</div>';
+        }).join('') + gridClose + '</div>';
       Array.prototype.forEach.call(refs.board.querySelectorAll('[data-r]'), function (btn) {
         btn.onclick = function () {
           if (!myTurn) return;
           var r = Number(btn.getAttribute('data-r')), c = Number(btn.getAttribute('data-c'));
           var cell = board[r] && board[r][c];
-          var mySide = (room && room.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
+          var mySide = boardMySide();
+          var legal = dests.some(function (m) { return m[0] === r && m[1] === c; });
           if (!boardSel) {
             if (cell && cell.s === mySide) {
               boardSel = [r, c];
@@ -1544,6 +1965,18 @@
             return;
           }
           if (boardSel[0] === r && boardSel[1] === c) {
+            boardSel = null;
+            boardSig = '';
+            updateBoardUi();
+            return;
+          }
+          if (cell && cell.s === mySide) {
+            boardSel = [r, c];
+            boardSig = '';
+            updateBoardUi();
+            return;
+          }
+          if (!legal) {
             boardSel = null;
             boardSig = '';
             updateBoardUi();
@@ -1574,36 +2007,6 @@
       });
       return;
     }
-
-    if (gameId === 'yut') {
-      var nodes = st.nodes || [];
-      var mals = st.mals || [];
-      var myTeam = (room && room.mode === '2v2') ? (mySlot() < 2 ? 0 : 1) : (mySlot() % 2);
-      refs.board.innerHTML = '<div class="hkmp-yut">' + nodes.map(function (n) {
-        return '<div class="hkmp-yut-node" style="left:' + (n.x * 100) + '%;top:' + (n.y * 100) + '%"></div>';
-      }).join('') + mals.map(function (m, i) {
-        if (m.home || m.pos < 0) return '';
-        var nd = nodes[m.pos] || nodes[0];
-        var ox = (m.i % 2) * 8 - 4, oy = (m.i > 1 ? 8 : -4);
-        return '<div class="hkmp-mal" data-mal="' + i + '" style="left:calc(' + (nd.x * 100) + '% + ' + ox + 'px);top:calc(' + (nd.y * 100) + '% + ' + oy + 'px);background:' + (m.team ? '#ff8a7a' : '#6ec8ff') + '"></div>';
-      }).join('') + '</div>' +
-        '<div class="hkmp-note">' + (st.lastYut ? ('이번 윷: ' + esc(st.lastYut.name || '') + ' · ' + (st.moveN || '') + '칸') : '대기 말은 출발선에 있습니다') + '</div>';
-      var yact = '';
-      if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">윷 던지기</button>';
-      if (myTurn && st.pending === 'move') {
-        yact = mals.map(function (m, i) {
-          if (m.team !== myTeam || m.home) return '';
-          return '<button type="button" class="hkmp-btn" data-mal="' + i + '">말' + (m.i + 1) + (m.pos < 0 ? ' (대기)' : '') + '</button>';
-        }).join('');
-      }
-      refs.boardAct.innerHTML = yact;
-      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
-        btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
-      });
-      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-mal]'), function (btn) {
-        btn.onclick = function () { send({ type: 'input', payload: { act: 'move', mal: Number(btn.getAttribute('data-mal')) } }); };
-      });
-    }
   }
 
   function defaultSize() {
@@ -1626,11 +2029,11 @@
       memorymp: '시작 시 파도 미리보기 · 내 차례에 카드 선택 · 2:2는 팀원이 한 장씩',
       lanepush: '우클릭 이동 · QWER 스킬 · 1~5 픽 · 미니언 막타로 골드 · 타워→본진 파괴',
       nexuswar: '내 거점에서 드래그해 출동 · Shift 전군 · 상대 본진 점령 승리',
-      gomoku: '내 차례에 빈 칸을 눌러 돌을 놓으세요. 5목이 먼저 승리.',
-      chess: '내 기물을 누른 뒤 갈 칸을 누르세요. 체크메이트로 승리.',
-      janggi: '내 기물을 누른 뒤 갈 칸을 누르세요. 왕을 잡으면 승리.',
+      gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
+      chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
+      janggi: '기물을 누르면 갈 수 있는 길이 표시됩니다. 칸을 눌러 이동 · 왕을 잡으면 승리.',
       marble: '내 차례에 주사위 · 빈 땅은 구매/패스. 상대 파산 시 승리.',
-      yut: '윷을 던진 뒤 말을 선택하세요. 네 말이 모두 골인하면 승리.',
+      yut: '윷 던지기 · 오른쪽에서 윷이 움직입니다. 말을 고르면 이동합니다. 잡으면 한 번 더.',
     }[gameId] || '';
   }
 
