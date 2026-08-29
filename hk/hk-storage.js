@@ -2390,7 +2390,7 @@
     return d;
   }
 
-  var GAME_RANK_IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump", "tetris", "pong", "flappy", "mines", "reaction", "dodge", "suika", "stack", "crossy", "simon", "cleanroute", "invaders", "putting", "crossland"];
+  var GAME_RANK_IDS = ["candy", "merge2048", "snake", "memory", "breakout", "jump", "tetris", "pong", "flappy", "mines", "reaction", "dodge", "suika", "stack", "crossy", "simon", "cleanroute", "invaders", "putting", "crossland", "hotelshare"];
   var GAME_RANK_MAX = 30;
 
   function defaultGameRanks() {

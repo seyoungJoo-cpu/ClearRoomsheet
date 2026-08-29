@@ -1,7 +1,7 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'hotelshare', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
   var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
@@ -24,6 +24,7 @@
     invaders: { icon: '😠', name: '컴플레인 인베이더', desc: '내려오는 컴플레인을 격추' },
     putting: { icon: '⛳', name: '퍼팅 골프', desc: '18홀 · 맵 랜덤 · 점점 어려워짐' },
     crossland: { icon: '✚', name: '십자 땅따먹기', desc: '십자로 칸을 차지해 CPU보다 많이 먹기' },
+    hotelshare: { icon: '🏨', name: '호텔지분얻기', desc: '선을 그어 호텔을 확보 · 갈스패닉' },
     tank: { icon: '🛡️', name: '탱크대전', desc: '싱글/FFA/팀전 · 초대형 맵' },
     rts: { icon: '🏰', name: '미니 RTS', desc: '싱글/대결 · 본진 파괴' },
     ageofwar: { icon: '⚔️', name: '전쟁시대', desc: '싱글/대결 · 시대 진화 라인전' },
@@ -3523,6 +3524,340 @@
     c.raf(loop);
     actions(function () { startGame('crossland'); }, function () { return score; }, '빈 칸을 누르면 그 칸과 상하좌우가 내 땅이 됩니다. CPU보다 칸을 많이 차지하세요.');
     return { id: 'crossland', destroy: c.destroy };
+  };
+
+  games.hotelshare = function () {
+    var COLS = 80, ROWS = 56, CELL = 6, W = COLS * CELL, H = ROWS * CELL, GOAL = 80;
+    var c = controller(), cv = canvasBase(W, H), ctx = cv.ctx, fx = makeFx();
+    var art = document.createElement('canvas');
+    art.width = W; art.height = H;
+    var grid = [], trail = [], px, py, wantX = 0, wantY = 0, drawing = false;
+    var enemies = [], lives = 3, stage = 1, score = 0, claimed = 0, total = COLS * ROWS;
+    var running = true, last = 0, stepAcc = 0, invuln = 0, winFlash = 0, touch0 = null;
+    setHud([['지분', '0%', 'pct'], ['목표', GOAL + '%', 'goal'], ['목숨', '3', 'lives'], ['단계', '1', 'stage'], ['점수', '0', 'score']]);
+    function gget(x, y) { return grid[y] && grid[y][x]; }
+    function gset(x, y, v) { if (grid[y]) grid[y][x] = v; }
+    function inb(x, y) { return x >= 0 && y >= 0 && x < COLS && y < ROWS; }
+    function paintHotel(st) {
+      var g = art.getContext('2d'), kind = (st - 1) % 5, i, x, y;
+      var sky = [['#14343c', '#0b1c24'], ['#1a2848', '#0a1220'], ['#16384a', '#071820'], ['#3a2418', '#120c08'], ['#123830', '#071614']][kind];
+      var lg = g.createLinearGradient(0, 0, 0, H);
+      lg.addColorStop(0, sky[0]); lg.addColorStop(1, sky[1]);
+      g.fillStyle = lg; g.fillRect(0, 0, W, H);
+      if (kind === 0) {
+        g.fillStyle = '#1c4a46';
+        g.fillRect(0, H * 0.58, W, H * 0.42);
+        g.strokeStyle = '#cbb27055'; g.lineWidth = 2;
+        for (i = 0; i < 12; i++) {
+          g.beginPath(); g.moveTo(W / 2, H * 0.58); g.lineTo(i * W / 11, H); g.stroke();
+        }
+        g.fillStyle = '#0e2a30'; g.fillRect(W * 0.28, H * 0.62, W * 0.44, H * 0.22);
+        g.fillStyle = '#d4b36a'; g.fillRect(W * 0.28, H * 0.62, W * 0.44, 8);
+        g.fillStyle = '#efd28a'; g.font = 'bold 22px Georgia,serif'; g.textAlign = 'center';
+        g.fillText('GRAND LOBBY', W / 2, H * 0.28);
+        g.strokeStyle = '#ead18f88'; g.lineWidth = 1.5;
+        for (i = 0; i < 5; i++) {
+          g.beginPath(); g.arc(W / 2, H * 0.16, 8 + i * 10, 0, Math.PI * 2); g.stroke();
+        }
+        g.fillStyle = '#c5a96a';
+        g.fillRect(70, 40, 22, H * 0.55); g.fillRect(W - 92, 40, 22, H * 0.55);
+        g.fillStyle = '#9ae6b4'; g.beginPath(); g.arc(W / 2, H * 0.55, 14, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#1a302c'; g.font = 'bold 11px sans-serif'; g.fillText('🛎️', W / 2, H * 0.57);
+      } else if (kind === 1) {
+        g.fillStyle = '#0c1828'; g.fillRect(40, 36, W - 80, H * 0.5);
+        for (i = 0; i < 40; i++) {
+          g.fillStyle = 'rgba(239,210,138,' + (0.15 + Math.random() * 0.5) + ')';
+          g.fillRect(50 + Math.random() * (W - 110), 46 + Math.random() * (H * 0.42), 3, 8);
+        }
+        g.fillStyle = '#6b4a2a'; g.fillRect(28, 28, 18, H * 0.56); g.fillRect(W - 46, 28, 18, H * 0.56);
+        g.fillStyle = '#d4b36a'; g.fillRect(W * 0.18, H * 0.68, W * 0.64, H * 0.18);
+        g.fillStyle = '#f5f0df'; g.fillRect(W * 0.22, H * 0.66, W * 0.28, 10);
+        g.fillStyle = '#efd28a'; g.font = 'bold 20px Georgia,serif'; g.textAlign = 'center';
+        g.fillText('SUITE NIGHT', W / 2, 28);
+      } else if (kind === 2) {
+        g.fillStyle = '#1a6a88'; g.fillRect(0, H * 0.62, W, H * 0.2);
+        g.fillStyle = '#0d3b32'; g.fillRect(0, H * 0.8, W, H * 0.2);
+        g.fillStyle = '#122030';
+        g.beginPath(); g.moveTo(0, H * 0.62);
+        for (i = 0; i < 10; i++) g.lineTo(i * W / 9, H * 0.42 - (i % 3) * 18);
+        g.lineTo(W, H * 0.62); g.fill();
+        g.fillStyle = '#efd28a'; g.font = 'bold 22px Georgia,serif'; g.textAlign = 'center';
+        g.fillText('ROOFTOP', W / 2, H * 0.22);
+        g.fillStyle = '#fff6dc'; g.font = '13px Georgia,serif'; g.fillText('SIGNIEL POOL', W / 2, H * 0.3);
+      } else if (kind === 3) {
+        g.fillStyle = '#2a1c12'; g.fillRect(0, H * 0.55, W, H * 0.45);
+        for (i = 0; i < 6; i++) {
+          x = 30 + i * 74; y = H * 0.58;
+          g.fillStyle = '#5a3a22'; g.fillRect(x, y, 58, 36);
+          g.fillStyle = ['#d87947', '#dfbf55', '#9fcbb0', '#efd28a'][i % 4];
+          g.beginPath(); g.arc(x + 29, y + 8, 10, 0, Math.PI * 2); g.fill();
+        }
+        g.fillStyle = '#efd28a'; g.font = 'bold 22px Georgia,serif'; g.textAlign = 'center';
+        g.fillText('BUFFET', W / 2, 48);
+        g.fillStyle = '#f0dfa8';
+        for (i = 0; i < 8; i++) { g.globalAlpha = 0.35; g.beginPath(); g.arc(40 + i * 55, 90, 16, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1;
+      } else {
+        g.fillStyle = '#0a4038'; g.beginPath(); g.ellipse(W / 2, H * 0.62, 150, 58, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#1a6a88aa'; g.beginPath(); g.ellipse(W / 2, H * 0.6, 128, 44, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#efd28a'; g.font = 'bold 22px Georgia,serif'; g.textAlign = 'center';
+        g.fillText('SPA & SAUNA', W / 2, 44);
+        for (i = 0; i < 12; i++) {
+          g.fillStyle = 'rgba(245,240,223,0.12)';
+          g.beginPath(); g.arc(80 + (i * 29) % (W - 80), 70 + (i * 17) % 80, 18, 0, Math.PI * 2); g.fill();
+        }
+      }
+      g.fillStyle = 'rgba(197,169,106,0.18)';
+      g.fillRect(0, 0, W, 10); g.fillRect(0, H - 10, W, 10);
+    }
+    function countClaimed() {
+      var n = 0, y, x;
+      for (y = 0; y < ROWS; y++) for (x = 0; x < COLS; x++) if (grid[y][x] === 1) n++;
+      return n;
+    }
+    function spawnEnemies() {
+      var n = Math.min(5, 1 + Math.floor((stage - 1) / 1));
+      var spd = 72 + stage * 16;
+      enemies = [];
+      var i, x, y, tries;
+      for (i = 0; i < n; i++) {
+        tries = 0;
+        do {
+          x = 8 + Math.random() * (COLS - 16);
+          y = 8 + Math.random() * (ROWS - 16);
+          tries++;
+        } while (tries < 40 && gget(x | 0, y | 0) !== 0);
+        var a = Math.random() * Math.PI * 2;
+        enemies.push({ x: x, y: y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd });
+      }
+    }
+    function resetField(keepScore) {
+      var y, x;
+      grid = [];
+      for (y = 0; y < ROWS; y++) {
+        grid[y] = [];
+        for (x = 0; x < COLS; x++) grid[y][x] = (y === 0 || x === 0 || y === ROWS - 1 || x === COLS - 1) ? 1 : 0;
+      }
+      trail = []; drawing = false;
+      px = (COLS / 2) | 0; py = ROWS - 1;
+      wantX = 0; wantY = 0;
+      claimed = countClaimed();
+      paintHotel(stage);
+      spawnEnemies();
+      if (!keepScore) { }
+      hud('pct', Math.floor(claimed * 100 / total) + '%');
+      hud('stage', String(stage));
+      hud('lives', String(lives));
+      hud('score', formatScore(score));
+    }
+    function pct() { return claimed * 100 / total; }
+    function floodKeep(sx, sy, keep) {
+      if (!inb(sx, sy) || gget(sx, sy) !== 0 || keep[sy * COLS + sx]) return;
+      var q = [sx, sy], qi = 0;
+      keep[sy * COLS + sx] = 1;
+      while (qi < q.length) {
+        var x = q[qi++], y = q[qi++];
+        var nbs = [x + 1, y, x - 1, y, x, y + 1, x, y - 1], i;
+        for (i = 0; i < 8; i += 2) {
+          var nx = nbs[i], ny = nbs[i + 1];
+          if (!inb(nx, ny) || gget(nx, ny) !== 0 || keep[ny * COLS + nx]) continue;
+          keep[ny * COLS + nx] = 1;
+          q.push(nx, ny);
+        }
+      }
+    }
+    function closeTrail() {
+      var i, x, y, gained = 0;
+      for (i = 0; i < trail.length; i++) gset(trail[i][0], trail[i][1], 1);
+      trail = [];
+      drawing = false;
+      var keep = new Uint8Array(COLS * ROWS);
+      enemies.forEach(function (e) {
+        floodKeep(e.x | 0, e.y | 0, keep);
+      });
+      for (y = 0; y < ROWS; y++) for (x = 0; x < COLS; x++) {
+        if (gget(x, y) === 0 && !keep[y * COLS + x]) {
+          gset(x, y, 1);
+          gained++;
+        }
+      }
+      claimed = countClaimed();
+      var add = gained * 12 + Math.floor(gained * stage * 0.4);
+      score += add;
+      hud('score', formatScore(score));
+      hud('pct', Math.floor(pct()) + '%');
+      enemies.forEach(function (e) {
+        if (gget(e.x | 0, e.y | 0) === 0) return;
+        var t = 0, nx, ny;
+        do {
+          nx = 6 + Math.random() * (COLS - 12);
+          ny = 6 + Math.random() * (ROWS - 12);
+          t++;
+        } while (t < 50 && gget(nx | 0, ny | 0) !== 0);
+        e.x = nx; e.y = ny;
+      });
+      if (gained) fx.burst(px * CELL, py * CELL, '#efd28a', 12, 180);
+      if (pct() >= GOAL) {
+        var bonus = Math.round((pct() - GOAL) * 40) + stage * 200;
+        score += bonus;
+        hud('score', formatScore(score));
+        winFlash = 0.9;
+        stage++;
+        c.timer(function () {
+          if (!running) return;
+          resetField(true);
+        }, 700);
+      }
+    }
+    function die() {
+      if (invuln > 0) return;
+      lives--;
+      hud('lives', String(lives));
+      shakeStage();
+      fx.burst(px * CELL, py * CELL, '#ef5350', 14, 200);
+      var i;
+      for (i = 0; i < trail.length; i++) gset(trail[i][0], trail[i][1], 0);
+      trail = []; drawing = false;
+      px = (COLS / 2) | 0; py = ROWS - 1;
+      wantX = 0; wantY = 0; invuln = 1.1;
+      if (lives <= 0) {
+        running = false;
+        gameOver('지분 확보 실패', '단계 ' + stage + ' · ' + formatScore(score) + '점', function () { startGame('hotelshare'); }, score);
+      }
+    }
+    function step(dx, dy) {
+      if (!dx && !dy) return;
+      var nx = px + dx, ny = py + dy;
+      if (!inb(nx, ny)) return;
+      var next = gget(nx, ny);
+      if (drawing) {
+        if (next === 2) { die(); return; }
+        if (next === 1) {
+          px = nx; py = ny;
+          closeTrail();
+          return;
+        }
+        gset(nx, ny, 2);
+        trail.push([nx, ny]);
+        px = nx; py = ny;
+      } else {
+        if (next === 1) { px = nx; py = ny; }
+        else if (next === 0) {
+          drawing = true;
+          gset(nx, ny, 2);
+          trail.push([nx, ny]);
+          px = nx; py = ny;
+        }
+      }
+    }
+    function loop(t) {
+      if (!running) return;
+      var dt = frameDt(t, last); last = t; fx.update(dt);
+      if (invuln > 0) invuln -= dt;
+      if (winFlash > 0) winFlash -= dt;
+      var spd = Math.max(0.038, 0.062 - stage * 0.003);
+      stepAcc += dt;
+      while (stepAcc >= spd) {
+        stepAcc -= spd;
+        step(wantX, wantY);
+        if (!running) return;
+      }
+      enemies.forEach(function (e) {
+        var nx = e.x + e.vx * dt / CELL, ny = e.y + e.vy * dt / CELL;
+        var cx = nx | 0, cy = ny | 0;
+        if (!inb(cx, cy) || gget(cx, e.y | 0) === 1) { e.vx *= -1; nx = e.x; }
+        if (!inb(cx, cy) || gget(e.x | 0, cy) === 1) { e.vy *= -1; ny = e.y; }
+        e.x = Math.max(1.2, Math.min(COLS - 1.2, nx));
+        e.y = Math.max(1.2, Math.min(ROWS - 1.2, ny));
+        var gx = e.x | 0, gy = e.y | 0;
+        if (gget(gx, gy) === 2) die();
+        if (drawing && Math.hypot(e.x - px, e.y - py) < 0.85) die();
+      });
+      if (!running) return;
+      ctx.drawImage(art, 0, 0);
+      ctx.fillStyle = 'rgba(4,10,14,0.9)';
+      ctx.beginPath();
+      var y, x;
+      for (y = 0; y < ROWS; y++) {
+        for (x = 0; x < COLS; x++) {
+          if (grid[y][x] === 0) ctx.rect(x * CELL, y * CELL, CELL, CELL);
+        }
+      }
+      ctx.fill();
+      ctx.fillStyle = '#efd28a';
+      for (y = 0; y < ROWS; y++) {
+        for (x = 0; x < COLS; x++) {
+          if (grid[y][x] === 2) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        }
+      }
+      ctx.strokeStyle = '#cbb27055'; ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
+      enemies.forEach(function (e) {
+        ctx.fillStyle = '#ef5350';
+        ctx.beginPath(); ctx.arc(e.x * CELL, e.y * CELL, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('!', e.x * CELL, e.y * CELL + 3);
+      });
+      var blink = invuln > 0 && ((invuln * 10) | 0) % 2 === 0;
+      if (!blink) drawHeroShape(ctx, px * CELL - 5, py * CELL - 5, 16, 16, { radius: 5, font: 8 });
+      if (winFlash > 0) {
+        ctx.fillStyle = 'rgba(239,210,138,' + (winFlash * 0.35) + ')';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff6dc'; ctx.font = 'bold 22px Georgia,serif'; ctx.textAlign = 'center';
+        ctx.fillText('지분 확보!', W / 2, H / 2);
+      }
+      fx.draw(ctx);
+      c.raf(loop);
+    }
+    function setWant(dx, dy) { wantX = dx; wantY = dy; }
+    function applyKey(e) {
+      var map = { ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0], ArrowRight: [1, 0], d: [1, 0], D: [1, 0], ArrowUp: [0, -1], w: [0, -1], W: [0, -1], ArrowDown: [0, 1], s: [0, 1], S: [0, 1] };
+      var d = map[e.key]; if (!d) return; e.preventDefault(); setWant(d[0], d[1]);
+    }
+    c.on(document, 'keydown', applyKey, true);
+    c.on(cv.canvas, 'pointerdown', function (e) {
+      e.preventDefault();
+      touch0 = [e.clientX, e.clientY];
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      var dx = x - (px * CELL + CELL / 2), dy = y - (py * CELL + CELL / 2);
+      if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 1 : -1, 0);
+      else setWant(0, dy > 0 ? 1 : -1);
+    });
+    c.on(cv.canvas, 'pointermove', function (e) {
+      if (e.buttons === 0 && !(e.pressure > 0)) return;
+      var r = cv.canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      var dx = x - (px * CELL + CELL / 2), dy = y - (py * CELL + CELL / 2);
+      if (Math.hypot(dx, dy) < 8) return;
+      if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 1 : -1, 0);
+      else setWant(0, dy > 0 ? 1 : -1);
+    });
+    c.on(window, 'pointerup', function (e) {
+      if (!touch0) return;
+      var dx = e.clientX - touch0[0], dy = e.clientY - touch0[1];
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 18) {
+        if (Math.abs(dx) > Math.abs(dy)) setWant(dx > 0 ? 1 : -1, 0);
+        else setWant(0, dy > 0 ? 1 : -1);
+      }
+      touch0 = null;
+    });
+    var pad = el('div', 'hkg-dpad',
+      '<i></i><button type="button" data-dx="0" data-dy="-1">▲</button><i></i>' +
+      '<button type="button" data-dx="-1" data-dy="0">◀</button>' +
+      '<button type="button" data-dx="0" data-dy="1">▼</button>' +
+      '<button type="button" data-dx="1" data-dy="0">▶</button>');
+    refs.stage.appendChild(pad);
+    Array.prototype.forEach.call(pad.querySelectorAll('button'), function (btn) {
+      c.on(btn, 'pointerdown', function (e) {
+        e.preventDefault();
+        setWant(Number(btn.getAttribute('data-dx')), Number(btn.getAttribute('data-dy')));
+      });
+    });
+    resetField(false);
+    c.raf(loop);
+    actions(function () { startGame('hotelshare'); }, function () { return score; }, '테두리에서 출발해 안쪽으로 선을 그은 뒤 다시 테두리에 붙이면 영역이 채워집니다. 빨간 컴플레인에 선이 닿으면 실패. 80% 지분이면 다음 호텔!');
+    return { id: 'hotelshare', destroy: c.destroy };
   };
 
   window.HKGames = {

@@ -16549,7 +16549,7 @@
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
   <script src="hk-staff-broadcast.js?v=room-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-42"></script>
+  <script src="hk-games.js?v=lounge-45"></script>
   <script src="hk-mp-games.js?v=mp-41"></script>
   <script>
     (function () {
@@ -29968,7 +29968,11 @@
       function raiseOrderIssue(orderId) {
         var entry = findOrderEntry(orderId);
         if (!entry || getOrderPhase(entry) !== "accepted" || isOrderIssueOpen(entry)) return;
-        if (!maintenanceMode) return;
+        if (isFacilityOrder(entry)) {
+          if (!canUseFacilityMaintPermissions()) return;
+        } else if (!maintenanceMode) {
+          return;
+        }
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -29996,7 +30000,11 @@
       function resolveOrderIssueEntry(orderId) {
         var entry = findOrderEntry(orderId);
         if (!entry || !isOrderIssueOpen(entry)) return;
-        if (!maintenanceMode) return;
+        if (isFacilityOrder(entry)) {
+          if (!canUseFacilityMaintPermissions()) return;
+        } else if (!maintenanceMode) {
+          return;
+        }
         if (!getOperatorName()) {
           showOperatorGate({
             mode: "initial",
@@ -37208,7 +37216,7 @@
           if (handleChatReactionClick(e)) return;
           var acceptIssueBtn = e.target.closest(".order-work__accept-btn");
           if (acceptIssueBtn) {
-            if (!maintenanceMode) return;
+            if (!canUseFacilityMaintPermissions()) return;
             e.preventDefault();
             e.stopPropagation();
             var acceptId = acceptIssueBtn.getAttribute("data-order-id");
@@ -37217,7 +37225,7 @@
           }
           var wanBtn = e.target.closest(".order-work__wan-btn");
           if (wanBtn) {
-            if (!maintenanceMode) return;
+            if (!canUseFacilityMaintPermissions()) return;
             e.preventDefault();
             e.stopPropagation();
             var wanId = wanBtn.getAttribute("data-order-id");
@@ -37235,7 +37243,7 @@
           }
           var facTimeBtn = e.target.closest(".order-work__facility-time-btn");
           if (facTimeBtn) {
-            if (!maintenanceMode) return;
+            if (!canUseFacilityMaintPermissions()) return;
             e.preventDefault();
             e.stopPropagation();
             var facTimeOrderId = facTimeBtn.getAttribute("data-order-id");
@@ -37267,7 +37275,7 @@
           }
           var issueBtn = e.target.closest(".order-work__issue-btn");
           if (issueBtn) {
-            if (!maintenanceMode) return;
+            if (!canUseFacilityMaintPermissions()) return;
             e.preventDefault();
             e.stopPropagation();
             var orderId = issueBtn.getAttribute("data-order-id");
@@ -37305,7 +37313,7 @@
           if (e.key === "Enter") {
             var facTimeInp = e.target.closest(".order-work__facility-time-input");
             if (facTimeInp) {
-              if (!maintenanceMode) return;
+              if (!canUseFacilityMaintPermissions()) return;
               e.preventDefault();
               var facTimeOrderId = facTimeInp.getAttribute("data-order-id");
               if (facTimeOrderId) applyFacilityAcceptedTime(facTimeOrderId, facTimeInp.value);
