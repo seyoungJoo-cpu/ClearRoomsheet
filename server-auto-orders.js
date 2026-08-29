@@ -165,8 +165,8 @@ function startAutoOrderScheduler(ctx) {
         if (uploadIso) {
           const staleMin = minutesSinceIso(uploadIso);
           const ackAt = st.rpaAckAt ? String(st.rpaAckAt) : "";
-          // 확인 후·같은 업로드 구간에서는 재생성하지 않음. 새 업로드 뒤에만 다시 감시.
-          const ackedThisUpload = !!(ackAt && String(uploadIso) <= ackAt);
+          // 사람이 확인한 뒤에만 막음. 업로드 시각과 같으면(구버전 자가ACK) 감시 재개.
+          const ackedThisUpload = !!(ackAt && String(uploadIso) < ackAt);
           if (
             staleMin >= STALE_XML_MINUTES &&
             !ackedThisUpload &&

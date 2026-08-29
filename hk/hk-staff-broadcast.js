@@ -216,6 +216,7 @@
     if (typeof frontCtx.isMaintenanceMode === "function" && frontCtx.isMaintenanceMode()) {
       return true;
     }
+    if (isRoomMode()) return true;
     return false;
   }
 
@@ -503,7 +504,7 @@
     }
   }
 
-  function getOnlineFrontNames() {
+  function getOnlineNamesByFlag(flag) {
     var pack = getPack();
     var seen = {};
     var names = [];
@@ -516,7 +517,8 @@
       if (!isFinite(t) || now - t > 25000) return;
       var name = String(row.name).trim();
       if (!name || seen[name]) return;
-      if (row.front !== true) return;
+      if (flag === "front" && row.front !== true) return;
+      if (flag === "room" && row.room !== true) return;
       seen[name] = true;
       names.push(name);
     });
@@ -524,6 +526,14 @@
       return a.localeCompare(b, "ko");
     });
     return names;
+  }
+
+  function getOnlineFrontNames() {
+    return getOnlineNamesByFlag("front");
+  }
+
+  function getOnlineRoomNames() {
+    return getOnlineNamesByFlag("room");
   }
 
   function pruneStalePresence(pack) {
@@ -602,6 +612,10 @@
     return isFront();
   }
 
+  function presenceRoomFlag() {
+    return isRoomMode();
+  }
+
   function claimNameAndKickOthers() {
     var name = operatorName();
     if (!name) return;
@@ -622,6 +636,7 @@
       claim: true,
       claimAt: now,
       front: presenceFrontFlag(),
+      room: presenceRoomFlag(),
     });
   }
 
@@ -652,6 +667,7 @@
       kick: true,
       claimAt: at,
       front: presenceFrontFlag(),
+      room: presenceRoomFlag(),
     });
   }
 
@@ -692,6 +708,7 @@
       name: name,
       at: nowIsoStr,
       front: presenceFrontFlag(),
+      room: presenceRoomFlag(),
     };
     lastPresencePush = now;
     presenceWasOn = true;
@@ -702,6 +719,7 @@
       at: nowIsoStr,
       kick: false,
       front: presenceFrontFlag(),
+      room: presenceRoomFlag(),
     });
   }
 
@@ -754,6 +772,7 @@
     var pack = getPack();
     if (!pack.directs) pack.directs = [];
     var online = getOnlineFrontNames().slice();
+    var roomOnline = getOnlineRoomNames().slice();
     if (opts && opts.allowSelf && from && online.indexOf(from) < 0) online.push(from);
     var targets = [];
     (tos || []).forEach(function (toRaw) {
@@ -762,6 +781,12 @@
       if (namesNorm(token) === "all") {
         online.forEach(function (n) {
           if (n && !namesMatch(n, from)) targets.push(n);
+        });
+        return;
+      }
+      if (namesNorm(token) === "room") {
+        roomOnline.forEach(function (n) {
+          if (n && (!(opts && opts.allowSelf) ? !namesMatch(n, from) : true)) targets.push(n);
         });
         return;
       }
@@ -791,6 +816,8 @@
       if (opts && opts.sourceType) directRow.sourceType = String(opts.sourceType);
       if (opts && opts.sourceId) directRow.sourceId = String(opts.sourceId);
       if (opts && opts.sourceRoom) directRow.sourceRoom = String(opts.sourceRoom);
+      if (opts && opts.noReply) directRow.noReply = true;
+      if (opts && opts.alertKicker) directRow.alertKicker = String(opts.alertKicker).trim();
       if ((!directRow.sourceType || !directRow.sourceId) && directRow.replyTo) {
         var parentSource = resolveAlertSource(findDirectById(directRow.replyTo));
         if (parentSource) {
@@ -873,7 +900,9 @@
     card.innerHTML = "";
     var kicker = document.createElement("p");
     kicker.className = "hk-broadcast__kicker";
-    kicker.textContent = row.kind === "direct" ? "1:1 알럿" : "알럿";
+    kicker.textContent =
+      (row.alertKicker && String(row.alertKicker).trim()) ||
+      (row.kind === "direct" ? "1:1 알럿" : "알럿");
     var body = document.createElement("p");
     body.className = "hk-broadcast__text";
     body.textContent = row.text;
@@ -926,7 +955,12 @@
     card.onclick = function (e) {
       e.stopPropagation();
     };
-    if (row.kind === "direct" && fromName && !namesMatch(fromName, operatorName())) {
+    if (
+      row.kind === "direct" &&
+      !row.noReply &&
+      fromName &&
+      !namesMatch(fromName, operatorName())
+    ) {
       var replyWrap = document.createElement("div");
       replyWrap.className = "hk-broadcast__reply";
       var replyInp = document.createElement("input");
@@ -1568,6 +1602,7 @@
     onFrontEnabled: onFrontEnabled,
     onOperatorChange: onOperatorChange,
     getOnlineFrontNames: getOnlineFrontNames,
+    getOnlineRoomNames: getOnlineRoomNames,
     sendDirectAlerts: sendDirectAlerts,
     resolveMentionName: resolveMentionName,
     cancelDirects: cancelDirects,

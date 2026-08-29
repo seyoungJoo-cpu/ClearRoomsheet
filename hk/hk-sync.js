@@ -1852,6 +1852,8 @@
       if (opts.claimAt) body.claimAt = String(opts.claimAt);
       if (opts.front === true) body.front = true;
       else if (opts.front === false) body.front = false;
+      if (opts.room === true) body.room = true;
+      else if (opts.room === false) body.room = false;
     }
     return fetch("/api/presence", {
       method: "POST",

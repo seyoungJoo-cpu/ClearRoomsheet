@@ -385,7 +385,15 @@ function presenceIdentityFingerprint(snap) {
     .sort()
     .map(function (sid) {
       var row = p[sid] || {};
-      return sid + "\t" + String(row.name || "") + "\t" + (row.front === true ? "1" : "0");
+      return (
+        sid +
+        "\t" +
+        String(row.name || "") +
+        "\t" +
+        (row.front === true ? "1" : "0") +
+        "\t" +
+        (row.room === true ? "1" : "0")
+      );
     })
     .join("\n");
   var kickStr = Object.keys(kicks)
@@ -825,6 +833,7 @@ app.post("/api/presence", checkSyncAuth, function (req, res) {
       name: name,
       at: at,
       front: body.front === true,
+      room: body.room === true,
     };
   }
   var claimAt = body.claimAt ? String(body.claimAt).slice(0, 40) : "";
@@ -3360,7 +3369,6 @@ function mergeSyncPayload(prev, incoming) {
     );
   }
   if (out.__hkClearRpaOnUpload) {
-    var uploadAck = String(out.__hkClearRpaOnUpload);
     delete out.__hkClearRpaOnUpload;
     var cancelAt = new Date().toISOString();
     var logSrc = Array.isArray(out.hkOrderLog)
@@ -3387,7 +3395,7 @@ function mergeSyncPayload(prev, incoming) {
         : prev.hkAutoOrderState && typeof prev.hkAutoOrderState === "object"
           ? prev.hkAutoOrderState
           : {},
-      { rpaAckAt: uploadAck }
+      { rpaAckAt: "" }
     );
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "hkMbInvLog")) {

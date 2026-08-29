@@ -1936,6 +1936,23 @@
       border-color: #fca5a5;
     }
 
+    .request-feedback__hk-btn {
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #5b21b6;
+      background: #ede9fe;
+      border: 1px solid #c4b5fd;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .request-feedback__hk-btn:hover {
+      background: #ddd6fe;
+    }
+
     .request-feedback__memo2-editor-wrap {
       margin-top: 8px;
       padding: 10px;
@@ -9474,6 +9491,7 @@
     .sched-req-card--confirming-tile .request-feedback__ip-btn,
     .sched-req-card--confirming-tile .request-feedback__memo2-btn,
     .sched-req-card--confirming-tile .request-feedback__facility-btn,
+    .sched-req-card--confirming-tile .request-feedback__hk-btn,
     .sched-req-card--confirming-tile .sched-card__chat-btn,
     .sched-req-card--confirming-tile .request-feedback__chat-drop-btn {
       font-size: 0.68rem;
@@ -9987,6 +10005,7 @@
     .sched-req-card__actions .request-feedback__ip-btn,
     .sched-req-card__actions .request-feedback__memo2-btn,
     .sched-req-card__actions .request-feedback__facility-btn,
+    .sched-req-card__actions .request-feedback__hk-btn,
     .sched-req-card__actions .sched-card__chat-btn {
       margin-top: 0;
       padding: 2px 7px;
@@ -10158,6 +10177,7 @@
     .main.main--request .sched-req-card--confirming-tile .request-feedback__ip-btn,
     .main.main--request .sched-req-card--confirming-tile .request-feedback__memo2-btn,
     .main.main--request .sched-req-card--confirming-tile .request-feedback__facility-btn,
+    .main.main--request .sched-req-card--confirming-tile .request-feedback__hk-btn,
     .main.main--request .sched-req-card--confirming-tile .sched-card__chat-btn,
     .main.main--request .sched-req-card--confirming-tile .request-feedback__chat-drop-btn,
     .main.main--request .confirming-cards-panel .request-feedback__sched-btn,
@@ -10166,11 +10186,13 @@
     .main.main--request .confirming-cards-panel .request-feedback__facility-btn,
     .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done,
     .main.main--request .confirming-cards-panel .request-feedback__facility-btn.is-done.is-ok,
+    .main.main--request .confirming-cards-panel .request-feedback__hk-btn,
     .main.main--request .confirming-cards-panel .sched-card__chat-btn,
     .main.main--request .confirming-cards-panel .request-feedback__chat-drop-btn,
     .main.main--request .sched-req-card__actions .request-feedback__facility-btn,
     .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done,
-    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok {
+    .main.main--request .sched-req-card__actions .request-feedback__facility-btn.is-done.is-ok,
+    .main.main--request .sched-req-card__actions .request-feedback__hk-btn {
       font-size: 0.68rem;
       font-weight: 700;
       padding: 4px 7px;
@@ -16512,8 +16534,8 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=close-sync-all-1"></script>
-  <script src="hk-sync.js?v=close-sync-all-1"></script>
+  <script src="hk-storage.js?v=room-alert-1"></script>
+  <script src="hk-sync.js?v=room-alert-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
@@ -16525,7 +16547,7 @@
   <script src="hk-track-it.js?v=bydate-20"></script>
   <script src="hk-night-handover.js?v=bydate-17"></script>
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
-  <script src="hk-staff-broadcast.js?v=bw-presence-4"></script>
+  <script src="hk-staff-broadcast.js?v=room-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
   <script src="hk-games.js?v=lounge-41"></script>
   <script src="hk-mp-games.js?v=mp-40"></script>
@@ -16570,6 +16592,10 @@
 
       function canUseFacilityMaintPermissions() {
         return maintenanceMode || (roomMode && sidebarMainView === "facility");
+      }
+
+      function canUseMaintRequestTools() {
+        return !!(maintenanceMode || roomMode);
       }
 
       var selectedViewDate = "";
@@ -16931,7 +16957,6 @@
         if (!entry || isFacilityOrder(entry)) return false;
         if (isAutoRobotOrder(entry)) {
           if (entry.fromMaint) return false;
-          if (entry.autoOrderKind === "rpa_check") return false;
           return true;
         }
         return true;
@@ -27581,7 +27606,7 @@
       function buildRequestFeedbackItemLi(entry, opts) {
         opts = opts || {};
         var confirmingStrip = !!opts.confirmingStrip;
-        var confirmingTile = !!(confirmingStrip && maintenanceMode);
+        var confirmingTile = !!(confirmingStrip && canUseMaintRequestTools());
         var li = document.createElement("li");
         li.className = confirmingTile
           ? "request-feedback__item sched-req-card sched-req-card--confirming-tile"
@@ -27743,7 +27768,7 @@
         var pinChat =
           !!opts.forceChat ||
           hasSchedChatAlert(entry);
-        if (maintenanceMode) {
+        if (canUseMaintRequestTools()) {
           var hasMaintSched = !!(entry.sched && String(entry.sched).trim());
           var isConfirming = isRequestConfirmingEntry(entry);
           var showItemChat = isConfirming || pinChat;
@@ -27795,31 +27820,8 @@
               isConfirming ? "메모" : memo2Str ? "메모2 수정" : "메모2 입력"
             );
             maintActs.appendChild(memo2BtnP);
-            var facilityBtn = document.createElement("button");
-            facilityBtn.type = "button";
-            facilityBtn.setAttribute("data-req-id", entry.id);
-            var facStatus = getFacilityRequestStatus(entry.id);
-            if (facStatus === "ok") {
-              facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
-              facilityBtn.textContent = formatFacilityOkButtonText(entry.id);
-              facilityBtn.setAttribute("aria-label", "시설 확인 완료");
-              facilityBtn.disabled = true;
-            } else if (facStatus === "pending") {
-              facilityBtn.className = "request-feedback__facility-btn is-done";
-              facilityBtn.textContent = "시설 오더됨";
-              facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
-              facilityBtn.disabled = true;
-            } else if (facStatus === "unavailable") {
-              facilityBtn.className = "request-feedback__facility-btn is-done is-denied";
-              facilityBtn.textContent = "입실 불가";
-              facilityBtn.setAttribute("aria-label", "입실 불가");
-              facilityBtn.disabled = true;
-            } else {
-              facilityBtn.className = "request-feedback__facility-btn";
-              facilityBtn.textContent = "시설 확인";
-              facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
-            }
-            maintActs.appendChild(facilityBtn);
+            appendFacilityActionBtn(maintActs, entry);
+            appendHkConfirmBtn(maintActs, entry.id);
             if (showItemChat) {
               noteChatAutoOpenFromFirstMessage(
                 entry.id,
@@ -27862,7 +27864,7 @@
               });
               li.classList.add("is-chat-open");
             }
-          } else {
+          } else if (maintenanceMode) {
             var ackActs = document.createElement("div");
             ackActs.className = "request-feedback__maint-actions";
             var ackBtn = document.createElement("button");
@@ -28186,12 +28188,12 @@
           return ta - tb;
         });
         var wingSplit = !!(maintenanceMode && listMain && listAnnex);
-        panel.classList.toggle("confirming-cards-panel--front", !!isFrontLike() && !maintenanceMode);
+        panel.classList.toggle("confirming-cards-panel--front", !!frontMode && !maintenanceMode);
         panel.classList.toggle("confirming-cards-panel--wing-split", wingSplit);
-        panel.classList.toggle("confirming-cards-panel--tile", !!maintenanceMode);
+        panel.classList.toggle("confirming-cards-panel--tile", !!canUseMaintRequestTools());
         if (splitEl) splitEl.hidden = !wingSplit;
         if (hint) {
-          hint.textContent = maintenanceMode
+          hint.textContent = canUseMaintRequestTools()
             ? "알림에서 확인한 요청입니다. 시간·IP·메모2·시설을 입력하면 약속 시간으로 이동합니다."
             : "정비에서 확인 중인 객실입니다. 메모·채팅을 확인할 수 있습니다.";
         }
@@ -31029,6 +31031,107 @@
         parent.appendChild(btn);
       }
 
+      function appendHkConfirmBtn(parent, reqId) {
+        if (!parent || !reqId) return;
+        var hkBtn = document.createElement("button");
+        hkBtn.type = "button";
+        hkBtn.className = "request-feedback__hk-btn";
+        hkBtn.setAttribute("data-req-id", reqId);
+        hkBtn.textContent = "H.K 확인";
+        hkBtn.setAttribute("aria-label", "H.K 정비 확인 요청");
+        hkBtn.title = "객실 모드에 H.K 정비 확인 요청 알럿";
+        parent.appendChild(hkBtn);
+      }
+
+      function appendFacilityActionBtn(parent, entry) {
+        if (!parent || !entry) return;
+        var facilityBtn = document.createElement("button");
+        facilityBtn.type = "button";
+        facilityBtn.setAttribute("data-req-id", entry.id);
+        var facStatus = getFacilityRequestStatus(entry.id);
+        if (facStatus === "ok") {
+          facilityBtn.className = "request-feedback__facility-btn is-done is-ok";
+          facilityBtn.textContent = formatFacilityOkButtonText(entry.id);
+          facilityBtn.setAttribute("aria-label", "시설 확인 완료");
+          facilityBtn.disabled = true;
+        } else if (facStatus === "pending") {
+          facilityBtn.className = "request-feedback__facility-btn is-done";
+          facilityBtn.textContent = "시설 오더됨";
+          facilityBtn.setAttribute("aria-label", "시설 오더 생성됨");
+          facilityBtn.disabled = true;
+        } else if (facStatus === "unavailable") {
+          facilityBtn.className = "request-feedback__facility-btn is-done is-denied";
+          facilityBtn.textContent = "입실 불가";
+          facilityBtn.setAttribute("aria-label", "입실 불가");
+          facilityBtn.disabled = true;
+        } else {
+          facilityBtn.className = "request-feedback__facility-btn";
+          facilityBtn.textContent = "시설 확인";
+          facilityBtn.setAttribute("aria-label", "시설 확인 오더 생성");
+        }
+        parent.appendChild(facilityBtn);
+      }
+
+      function requestContentForRoomAlert(entry) {
+        if (!entry) return "";
+        var m = entry.memo != null ? String(entry.memo).trim() : "";
+        var m2 = entry.memo2 != null ? String(entry.memo2).trim() : "";
+        if (m && m2) return m + "\n" + m2;
+        return m || m2;
+      }
+
+      function notifyRoomModeStaffAlert(kind, room, content) {
+        var title = kind === "hk" ? "H.K 정비 확인 요청!" : "시설 요청!";
+        var roomLabel = room ? formatRoomNoDisplay(String(room)) : "";
+        var body = String(content || "").trim();
+        var text = "";
+        if (roomLabel) text += "객실 " + roomLabel;
+        if (body) text += (text ? "\n" : "") + body;
+        if (!text) text = title;
+        var me = getOperatorName();
+        if (!me) {
+          showOperatorGate({
+            mode: "initial",
+            onSaved: function () {
+              notifyRoomModeStaffAlert(kind, room, content);
+            },
+          });
+          return [];
+        }
+        var ids = [];
+        if (
+          typeof HKStaffBroadcast !== "undefined" &&
+          typeof HKStaffBroadcast.sendDirectAlerts === "function"
+        ) {
+          try {
+            ids =
+              HKStaffBroadcast.sendDirectAlerts(me, text, ["room"], "", {
+                noReply: true,
+                alertKicker: title,
+                sourceType: kind === "hk" ? "hk_confirm" : "facility_request",
+                sourceRoom: room != null ? String(room) : "",
+              }) || [];
+          } catch (eN) {}
+        }
+        if (typeof HKSync !== "undefined" && HKSync.flushPending) {
+          HKSync.flushPending();
+        }
+        if (typeof showHkActionToast === "function") {
+          showHkActionToast(
+            ids.length
+              ? "객실 모드에 알럿을 보냈습니다."
+              : "객실 모드 접속자가 없어 알럿을 보내지 못했습니다."
+          );
+        }
+        return ids;
+      }
+
+      function sendHkConfirmAlertForRequest(reqId) {
+        var entry = findRequestEntry(reqId);
+        if (!entry) return;
+        notifyRoomModeStaffAlert("hk", entry.room, requestContentForRoomAlert(entry));
+      }
+
       function renderOrderWorkPanels(opts) {
         opts = opts || {};
         renderOrderWorkPanelBundle("order", isRegularOrder, opts);
@@ -31876,7 +31979,7 @@
           if (maintenanceMode || isFrontLike()) {
             var actions = document.createElement("div");
             actions.className = "sched-req-card__actions";
-            if (maintenanceMode) {
+            if (canUseMaintRequestTools()) {
               var editBtn = document.createElement("button");
               editBtn.type = "button";
               editBtn.className = "request-feedback__sched-btn sched-card__edit-btn";
@@ -31898,12 +32001,8 @@
               m2CardBtn.textContent = memo2Sched ? "메모2 수정" : "메모2 입력";
               m2CardBtn.setAttribute("aria-label", memo2Sched ? "메모2 수정" : "메모2 입력");
               actions.appendChild(m2CardBtn);
-              if (getFacilityRequestStatus(entry.id) !== "none") {
-                appendFacilityRequestStatusBtn(actions, entry.id, {
-                  pendingLabel: "시설 오더됨",
-                  pendingAria: "시설 오더 생성됨",
-                });
-              }
+              appendFacilityActionBtn(actions, entry);
+              appendHkConfirmBtn(actions, entry.id);
             }
             if (frontMode) {
               var trailSched = document.createElement("span");
@@ -32090,7 +32189,7 @@
       }
 
       function openRequestSchedEditor(entryId) {
-        if (!maintenanceMode) return;
+        if (!canUseMaintRequestTools()) return;
         var li =
           document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
           document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
@@ -32228,7 +32327,7 @@
       }
 
       function openFacilityRequestSchedEditor(entryId) {
-        if (!maintenanceMode || !hasActiveFacilityOrderForRequest(entryId)) return;
+        if (!canUseMaintRequestTools() || !hasActiveFacilityOrderForRequest(entryId)) return;
         var li =
           document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
           document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
@@ -32480,7 +32579,7 @@
       }
 
       function openRequestMemo2Editor(entryId) {
-        if (!maintenanceMode) return;
+        if (!canUseMaintRequestTools()) return;
         var li =
           document.querySelector('.request-feedback__item[data-req-id="' + entryId + '"]') ||
           document.querySelector('.sched-req-card[data-req-id="' + entryId + '"]');
@@ -35263,16 +35362,25 @@
           }
           var m2fb = e.target.closest(".request-feedback__memo2-btn");
           if (m2fb && !m2fb.classList.contains("sched-card__memo2-btn")) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridM2 = m2fb.getAttribute("data-req-id");
             if (ridM2) openRequestMemo2Editor(ridM2);
             return;
           }
+          var hkBtn = e.target.closest(".request-feedback__hk-btn");
+          if (hkBtn) {
+            if (!canUseMaintRequestTools()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridHk = hkBtn.getAttribute("data-req-id");
+            if (ridHk) sendHkConfirmAlertForRequest(ridHk);
+            return;
+          }
           var facilityBtn = e.target.closest(".request-feedback__facility-btn");
           if (facilityBtn) {
-            if (!maintenanceMode || facilityBtn.disabled) return;
+            if (!canUseMaintRequestTools() || facilityBtn.disabled) return;
             e.preventDefault();
             e.stopPropagation();
             var ridFac = facilityBtn.getAttribute("data-req-id");
@@ -35284,7 +35392,7 @@
           }
           var facSchedB = e.target.closest(".request-feedback__facility-sched-btn");
           if (facSchedB) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridFs = facSchedB.getAttribute("data-req-id");
@@ -35293,7 +35401,7 @@
           }
           var ipB = e.target.closest(".request-feedback__ip-btn");
           if (ipB && !ipB.classList.contains("sched-card__ip-btn")) {
-            if (!maintenanceMode && !isFrontLike()) return;
+            if (!canUseMaintRequestTools() && !isFrontLike()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridIp = ipB.getAttribute("data-req-id");
@@ -35301,7 +35409,7 @@
             return;
           }
           var b = e.target.closest(".request-feedback__sched-btn");
-          if (!b || !maintenanceMode) return;
+          if (!b || !canUseMaintRequestTools()) return;
           e.preventDefault();
           e.stopPropagation();
           var rid = b.getAttribute("data-req-id");
@@ -35360,16 +35468,25 @@
           }
           var m2fbC = e.target.closest(".request-feedback__memo2-btn");
           if (m2fbC) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridM2c = m2fbC.getAttribute("data-req-id");
             if (ridM2c) openRequestMemo2Editor(ridM2c);
             return;
           }
+          var hkBtnC = e.target.closest(".request-feedback__hk-btn");
+          if (hkBtnC) {
+            if (!canUseMaintRequestTools()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridHkC = hkBtnC.getAttribute("data-req-id");
+            if (ridHkC) sendHkConfirmAlertForRequest(ridHkC);
+            return;
+          }
           var facilityBtnC = e.target.closest(".request-feedback__facility-btn");
           if (facilityBtnC) {
-            if (!maintenanceMode || facilityBtnC.disabled) return;
+            if (!canUseMaintRequestTools() || facilityBtnC.disabled) return;
             e.preventDefault();
             e.stopPropagation();
             var ridFacC = facilityBtnC.getAttribute("data-req-id");
@@ -35381,7 +35498,7 @@
           }
           var facSchedBC = e.target.closest(".request-feedback__facility-sched-btn");
           if (facSchedBC) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridFsC = facSchedBC.getAttribute("data-req-id");
@@ -35390,7 +35507,7 @@
           }
           var ipBC = e.target.closest(".request-feedback__ip-btn");
           if (ipBC) {
-            if (!maintenanceMode && !isFrontLike()) return;
+            if (!canUseMaintRequestTools() && !isFrontLike()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridIpC = ipBC.getAttribute("data-req-id");
@@ -35398,7 +35515,7 @@
             return;
           }
           var schedBC = e.target.closest(".request-feedback__sched-btn");
-          if (!schedBC || !maintenanceMode) return;
+          if (!schedBC || !canUseMaintRequestTools()) return;
           e.preventDefault();
           e.stopPropagation();
           var ridSc = schedBC.getAttribute("data-req-id");
@@ -35417,7 +35534,7 @@
           if (
             ackCard &&
             !e.target.closest(
-              ".sched-card__use-btn, .sched-card__chat-btn, .sched-card__memo-btn, .sched-card__memo2-btn, .sched-card__edit-btn, .sched-card__ip-btn, .order-chat, .request-feedback__sched-editor-wrap, .request-feedback__memo-editor-wrap, .request-feedback__memo2-editor-wrap"
+              ".sched-card__use-btn, .sched-card__chat-btn, .sched-card__memo-btn, .sched-card__memo2-btn, .sched-card__edit-btn, .sched-card__ip-btn, .request-feedback__facility-btn, .request-feedback__hk-btn, .order-chat, .request-feedback__sched-editor-wrap, .request-feedback__memo-editor-wrap, .request-feedback__memo2-editor-wrap"
             )
           ) {
             var ackId = ackCard.getAttribute("data-req-id");
@@ -35475,16 +35592,37 @@
           }
           var m2s = e.target.closest(".sched-card__memo2-btn");
           if (m2s) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridM2s = m2s.getAttribute("data-req-id");
             if (ridM2s) openRequestMemo2Editor(ridM2s);
             return;
           }
+          var hkSched = e.target.closest(".request-feedback__hk-btn");
+          if (hkSched) {
+            if (!canUseMaintRequestTools()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridHkS = hkSched.getAttribute("data-req-id");
+            if (ridHkS) sendHkConfirmAlertForRequest(ridHkS);
+            return;
+          }
+          var facActionCard = e.target.closest(".request-feedback__facility-btn");
+          if (facActionCard) {
+            if (!canUseMaintRequestTools() || facActionCard.disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ridFacS = facActionCard.getAttribute("data-req-id");
+            if (!ridFacS) return;
+            var reqEntryS = findRequestEntry(ridFacS);
+            if (!reqEntryS) return;
+            openFacilityConfirmModal(reqEntryS);
+            return;
+          }
           var ipSched = e.target.closest(".sched-card__ip-btn");
           if (ipSched) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridIpS = ipSched.getAttribute("data-req-id");
@@ -35493,7 +35631,7 @@
           }
           var facSchedCard = e.target.closest(".request-feedback__facility-sched-btn");
           if (facSchedCard) {
-            if (!maintenanceMode) return;
+            if (!canUseMaintRequestTools()) return;
             e.preventDefault();
             e.stopPropagation();
             var ridFsC = facSchedCard.getAttribute("data-req-id");
@@ -35501,7 +35639,7 @@
             return;
           }
           var b = e.target.closest(".sched-card__edit-btn");
-          if (!b || !maintenanceMode) return;
+          if (!b || !canUseMaintRequestTools()) return;
           e.preventDefault();
           e.stopPropagation();
           var rid = b.getAttribute("data-req-id");
@@ -36541,7 +36679,7 @@
       }
 
       function createFacilityOrderFromRequest(reqEntry, facilityMemo) {
-        if (!reqEntry || !maintenanceMode) return null;
+        if (!reqEntry || !canUseMaintRequestTools()) return null;
         var existing = findFacilityOrderForRequest(reqEntry.id);
         if (existing && hasActiveFacilityOrderForRequest(reqEntry.id)) return existing.id;
         if (!getOperatorName()) {
@@ -36560,7 +36698,7 @@
         if (!memo) memo = "시설 확인";
         var memo2 = reqEntry.memo2 != null ? String(reqEntry.memo2).trim() : "";
         var memoImage = reqEntry.memoImage || reqEntry.memo2Image || "";
-        return appendOrderLog(reqEntry.room, memo, !!reqEntry.urgent, memoImage, {
+        var orderId = appendOrderLog(reqEntry.room, memo, !!reqEntry.urgent, memoImage, {
           category: "facility",
           sourceReqId: reqEntry.id,
           fromMaint: true,
@@ -36568,10 +36706,18 @@
           memo2: memo2,
           facilityStay: "vacant",
         });
+        if (orderId) {
+          notifyRoomModeStaffAlert(
+            "facility",
+            reqEntry.room,
+            memo || requestContentForRoomAlert(reqEntry)
+          );
+        }
+        return orderId;
       }
 
       function openFacilityConfirmModal(reqEntry) {
-        if (!reqEntry || !maintenanceMode) return;
+        if (!reqEntry || !canUseMaintRequestTools()) return;
         if (hasActiveFacilityOrderForRequest(reqEntry.id)) return;
         pendingFacilityConfirmReqId = reqEntry.id;
         var hintEl = document.getElementById("hkFacilityConfirmRoomHint");
@@ -36696,6 +36842,7 @@
           facilityStay: facilityStay,
           guestPresence: guest,
         });
+        notifyRoomModeStaffAlert("facility", room, memo);
         if (roomEl) roomEl.value = "";
         if (memoEl) memoEl.value = "";
         if (btnUrgentEl) {

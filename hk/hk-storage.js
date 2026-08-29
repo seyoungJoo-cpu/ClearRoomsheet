@@ -1276,6 +1276,8 @@
       sourceId: raw.sourceId != null ? String(raw.sourceId).trim() : "",
       sourceRoom: raw.sourceRoom != null ? String(raw.sourceRoom).trim() : "",
       scheduledAt: raw.scheduledAt != null ? String(raw.scheduledAt) : "",
+      noReply: !!raw.noReply,
+      alertKicker: raw.alertKicker != null ? String(raw.alertKicker).trim() : "",
       dismissedBy: normalizeStrMap(raw.dismissedBy),
     };
   }
@@ -1314,7 +1316,7 @@
       if (!name || !at) return;
       var t = new Date(at).getTime();
       if (!isFinite(t) || now - t > 45000) return;
-      out[id] = { name: name, at: at, front: row.front === true };
+      out[id] = { name: name, at: at, front: row.front === true, room: row.room === true };
     });
     return out;
   }
@@ -1492,6 +1494,8 @@
         if (row.sourceId) prevD.sourceId = row.sourceId;
         if (row.sourceRoom) prevD.sourceRoom = row.sourceRoom;
         if (row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
+        if (row.noReply) prevD.noReply = true;
+        if (row.alertKicker) prevD.alertKicker = row.alertKicker;
       } else if (!prevD.image && row.image) {
         prevD.image = row.image;
       }
@@ -1500,6 +1504,8 @@
       if (!prevD.sourceId && row.sourceId) prevD.sourceId = row.sourceId;
       if (!prevD.sourceRoom && row.sourceRoom) prevD.sourceRoom = row.sourceRoom;
       if (!prevD.scheduledAt && row.scheduledAt) prevD.scheduledAt = row.scheduledAt;
+      if (!prevD.noReply && row.noReply) prevD.noReply = true;
+      if (!prevD.alertKicker && row.alertKicker) prevD.alertKicker = row.alertKicker;
       directsById[row.id] = prevD;
     }
     (base.directs || []).forEach(takeDirect);
