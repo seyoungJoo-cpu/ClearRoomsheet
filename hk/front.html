@@ -16579,8 +16579,8 @@
   <script src="hk-vip-checkin.js?v=table-fit-3"></script>
   <script src="hk-staff-broadcast.js?v=room-alert-1"></script>
   <script src="hk-admin-inquiry.js"></script>
-  <script src="hk-games.js?v=lounge-47"></script>
-  <script src="hk-mp-games.js?v=mp-45"></script>
+  <script src="hk-games.js?v=lounge-48"></script>
+  <script src="hk-mp-games.js?v=mp-47"></script>
   <script>
     (function () {
       var label = document.getElementById("mainZoneLabel");
@@ -31130,6 +31130,7 @@
         } else if (memoBody.indexOf(HK_CONFIRM_NEED_MEMO + "\n") === 0) {
           memoBody = memoBody.slice(HK_CONFIRM_NEED_MEMO.length).trim();
         }
+        if (memo !== memoBody) entry.memo = memoBody;
         var parts = [];
         if (memo2) parts.push(memo2);
         if (memoBody && parts.indexOf(memoBody) === -1 && memo2.indexOf(memoBody) === -1) {
@@ -31140,9 +31141,6 @@
           parts.push(HK_CONFIRM_NEED_MEMO);
         }
         entry.memo2 = parts.filter(Boolean).join("\n");
-        if (memo.indexOf(HK_CONFIRM_NEED_MEMO) === -1) {
-          entry.memo = memo ? memo + "\n" + HK_CONFIRM_NEED_MEMO : HK_CONFIRM_NEED_MEMO;
-        }
       }
 
       function appendHkConfirmBtn(parent, reqId) {

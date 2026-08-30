@@ -13,11 +13,10 @@
     gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
     chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
     janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한국 장기' },
-    marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
     yut: { icon: '🪵', name: '윷놀이', desc: '2~4팀 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
-  var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4, gomoku: 4, chess: 4, janggi: 4, marble: 4, yut: 4 };
-  var BOARD_IDS = ['gomoku', 'chess', 'janggi', 'marble', 'yut'];
+  var MAX_PLAYERS = { tank: 4, rts: 4, ageofwar: 2, snakes: 8, airhockey: 2, memorymp: 4, lanepush: 4, nexuswar: 4, gomoku: 4, chess: 4, janggi: 4, yut: 4 };
+  var BOARD_IDS = ['gomoku', 'chess', 'janggi', 'yut'];
   var BOARD_MODE_META = {
     solo: { label: '1:AI', max: 2 },
     '1v1': { label: '1:1', max: 2 },
@@ -226,6 +225,64 @@
       '.hkmp-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}',
       '.hkmp-toolbar .hkmp-btn{padding:8px 11px;font-size:12px}.hkmp-toolbar .hkmp-btn.active{box-shadow:0 0 0 2px #efd28a}',
       '.hkmp-ended{text-align:center;padding:28px 12px}.hkmp-ended h2{font-family:Georgia,serif;color:#efd28a;font-size:30px;margin:0 0 8px}',
+      '.hkmp-ended.board-end{position:relative;overflow:hidden;padding:36px 16px 28px;border-radius:22px;min-height:280px;isolation:isolate}',
+      '.hkmp-ended.board-end.win{background:radial-gradient(circle at 50% 18%,#fff7c8,#ffe566 28%,#e23d28 62%,#5a1008);box-shadow:inset 0 0 80px #fff6,0 0 40px #ffe56688;animation:hkmp-end-winbg 1.4s ease}',
+      '.hkmp-ended.board-end.lose{background:radial-gradient(circle at 50% 80%,#6a3a3a,#2a1212 42%,#0a0606);animation:hkmp-end-losebg 1.3s ease}',
+      '.hkmp-ended.board-end.draw{background:radial-gradient(circle at 50% 30%,#dbe7ff,#6a8cc8 48%,#1a2840);animation:hkmp-end-drawbg 1.1s ease}',
+      '.hkmp-ended.board-end .hkmp-end-title{position:relative;z-index:2;margin:10px 0 8px;font-family:"Noto Serif KR",Batang,Impact,serif;font-weight:900;letter-spacing:-.06em;line-height:1;text-shadow:0 8px 0 #0005,0 0 28px #fff8}',
+      '.hkmp-ended.board-end.win .hkmp-end-title{font-size:clamp(56px,16vw,108px)!important;color:#fff!important;animation:hkmp-end-wintitle 1.15s cubic-bezier(.15,1.5,.3,1) both}',
+      '.hkmp-ended.board-end.lose .hkmp-end-title{font-size:clamp(52px,15vw,96px)!important;color:#fff!important;animation:hkmp-end-losetitle 1.05s cubic-bezier(.4,0,.2,1) both}',
+      '.hkmp-ended.board-end.draw .hkmp-end-title{font-size:clamp(44px,12vw,80px)!important;color:#fff!important;animation:hkmp-end-drawtitle .9s ease both}',
+      '.hkmp-ended.board-end p{position:relative;z-index:2}',
+      '.hkmp-ended.board-end .hkmp-row{position:relative;z-index:2}',
+      '.hkmp-end-rays{position:absolute;inset:-40%;background:repeating-conic-gradient(from 0deg,#fff8 0 8deg,#0000 8deg 22deg);opacity:0;pointer-events:none}',
+      '.hkmp-ended.board-end.win .hkmp-end-rays{animation:hkmp-end-spin 6s linear infinite,hkmp-end-rayin .6s ease forwards}',
+      '.hkmp-end-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}',
+      '.hkmp-end-piece{position:absolute;top:-12%;width:12px;height:18px;border-radius:2px;opacity:0;animation:hkmp-end-fall 1.8s ease-in forwards}',
+      '.hkmp-end-crack{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(115deg,#0000 42%,#fff3 43%,#0000 44%),linear-gradient(70deg,#0000 51%,#fff2 52%,#0000 53%),linear-gradient(160deg,#0000 36%,#0008 37%,#0000 38%);}',
+      '.hkmp-ended.board-end.lose .hkmp-end-crack{animation:hkmp-end-crackin .8s ease forwards}',
+      '.hkmp-endfx{position:fixed;inset:0;z-index:10030;pointer-events:none;display:none}.hkmp-endfx.go{display:block}',
+      '.hkmp-endfx-flash{position:absolute;inset:0;opacity:0}',
+      '.hkmp-endfx.go[data-kind="win"] .hkmp-endfx-flash{background:radial-gradient(circle,#fff,#ffe566ee 28%,#e23d28aa 58%,#0000);animation:hkmp-end-flash 1.5s ease forwards}',
+      '.hkmp-endfx.go[data-kind="lose"] .hkmp-endfx-flash{background:radial-gradient(circle,#444c,#111d 40%,#000e);animation:hkmp-end-flash 1.45s ease forwards}',
+      '.hkmp-endfx.go[data-kind="draw"] .hkmp-endfx-flash{background:radial-gradient(circle,#fff8,#3d7cff99 50%,#0000);animation:hkmp-end-flash 1.2s ease forwards}',
+      '.hkmp-endfx-rays{position:absolute;left:50%;top:42%;width:140vmax;height:140vmax;margin:-70vmax;background:repeating-conic-gradient(#ffe56666 0 10deg,#0000 10deg 24deg);opacity:0}',
+      '.hkmp-endfx.go[data-kind="win"] .hkmp-endfx-rays{animation:hkmp-end-spin 2.4s linear,hkmp-end-rayin .35s ease forwards}',
+      '.hkmp-endfx-shock{position:absolute;left:50%;top:46%;width:48px;height:48px;margin:-24px;border-radius:50%;border:14px solid #fff;opacity:0}',
+      '.hkmp-endfx.go .hkmp-endfx-shock{animation:hkmp-end-shock 1.05s cubic-bezier(.1,.7,.2,1) forwards}',
+      '.hkmp-endfx.go[data-kind="win"] .hkmp-endfx-shock{border-color:#ffe566}',
+      '.hkmp-endfx.go[data-kind="lose"] .hkmp-endfx-shock{border-color:#666;animation-name:hkmp-end-shock-in}',
+      '.hkmp-endfx-shock2{animation-delay:.18s!important}',
+      '.hkmp-endfx-txt{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.1) rotate(-22deg);font-size:clamp(64px,20vw,148px);font-weight:900;color:#fff;font-family:"Noto Serif KR",Batang,Impact,serif;letter-spacing:-.07em;text-shadow:0 0 12px #000,10px 12px 0 #7a0000,-6px -4px 0 #ff0,0 24px 52px #000;opacity:0;white-space:nowrap}',
+      '.hkmp-endfx.go[data-kind="win"] .hkmp-endfx-txt{animation:hkmp-end-slam 1.35s cubic-bezier(.12,1.5,.28,1) forwards}',
+      '.hkmp-endfx.go[data-kind="lose"] .hkmp-endfx-txt{text-shadow:0 0 18px #000,0 18px 40px #000;color:#bbb;animation:hkmp-end-drop 1.25s cubic-bezier(.4,0,.2,1) forwards}',
+      '.hkmp-endfx.go[data-kind="draw"] .hkmp-endfx-txt{text-shadow:0 0 10px #000,6px 8px 0 #163a88,-4px -3px 0 #fff;animation:hkmp-end-slam 1.15s cubic-bezier(.15,1.4,.3,1) forwards}',
+      '.hkmp-endfx-bits,.hkmp-endfx-rain{position:absolute;inset:0;overflow:hidden}',
+      '.hkmp-endfx-bit{position:absolute;left:50%;top:48%;width:16px;height:16px;margin:-8px;border-radius:2px;opacity:0}',
+      '.hkmp-endfx.go .hkmp-endfx-bit{animation:hkmp-end-bit 1.25s ease-out forwards}',
+      '.hkmp-endfx-drop{position:absolute;top:-8%;width:10px;height:16px;border-radius:2px;opacity:0}',
+      '.hkmp-endfx.go .hkmp-endfx-drop{animation:hkmp-end-fall 1.7s ease-in forwards}',
+      '.hk-mp-overlay.end-win-quake{animation:hkmp-end-winquake 1.1s ease}',
+      '.hk-mp-overlay.end-lose-quake{animation:hkmp-end-losequake 1.05s ease}',
+      '.hk-mp-overlay.end-draw-quake{animation:hkmp-jg-quake2 .7s ease}',
+      '@keyframes hkmp-end-flash{0%{opacity:0}8%{opacity:1}20%{opacity:.92}100%{opacity:0}}',
+      '@keyframes hkmp-end-shock{0%{transform:scale(.12);opacity:1;border-width:22px}100%{transform:scale(28);opacity:0;border-width:0}}',
+      '@keyframes hkmp-end-shock-in{0%{transform:scale(18);opacity:.9;border-width:0}100%{transform:scale(.2);opacity:0;border-width:22px}}',
+      '@keyframes hkmp-end-slam{0%{transform:translate(-50%,-50%) scale(.08) rotate(-32deg);opacity:0}16%{transform:translate(-50%,-50%) scale(1.55) rotate(12deg);opacity:1}34%{transform:translate(-50%,-50%) scale(.86) rotate(-8deg);opacity:1}55%{transform:translate(-50%,-50%) scale(1.18) rotate(4deg);opacity:1}78%{transform:translate(-50%,-50%) scale(1.04) rotate(-2deg);opacity:1}100%{transform:translate(-50%,-50%) scale(1.08) rotate(-1deg);opacity:0}}',
+      '@keyframes hkmp-end-drop{0%{transform:translate(-50%,-120%) scale(.6) rotate(-8deg);opacity:0}22%{transform:translate(-50%,-40%) scale(1.2) rotate(6deg);opacity:1}40%{transform:translate(-50%,-50%) scale(.92) rotate(-3deg);opacity:1}70%{transform:translate(-50%,-48%) scale(1.04);opacity:1}100%{transform:translate(-50%,-20%) scale(1.1);opacity:0}}',
+      '@keyframes hkmp-end-bit{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(320deg) scale(.1);opacity:0}}',
+      '@keyframes hkmp-end-fall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(120vh) rotate(540deg);opacity:.15}}',
+      '@keyframes hkmp-end-spin{to{transform:rotate(360deg)}}',
+      '@keyframes hkmp-end-rayin{0%{opacity:0}30%{opacity:.55}100%{opacity:.28}}',
+      '@keyframes hkmp-end-winbg{0%{filter:brightness(4) saturate(2.4)}40%{filter:brightness(1.35) saturate(1.4)}100%{filter:none}}',
+      '@keyframes hkmp-end-losebg{0%{filter:brightness(2.2) contrast(1.4)}100%{filter:saturate(.55)}}',
+      '@keyframes hkmp-end-drawbg{0%{filter:brightness(2.4)}100%{filter:none}}',
+      '@keyframes hkmp-end-wintitle{0%{transform:scale(.2) rotate(-18deg);opacity:0;filter:blur(8px)}28%{transform:scale(1.28) rotate(8deg);opacity:1;filter:none}48%{transform:scale(.9) rotate(-4deg)}72%{transform:scale(1.08) rotate(2deg)}100%{transform:scale(1)}}',
+      '@keyframes hkmp-end-losetitle{0%{transform:translateY(-80px) scale(1.3);opacity:0;filter:blur(6px)}30%{transform:translateY(12px) scale(1.08);opacity:1;filter:none}55%{transform:translateY(-6px) scale(.96)}100%{transform:translateY(0) scale(1)}}',
+      '@keyframes hkmp-end-drawtitle{0%{transform:scale(.4);opacity:0}40%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}',
+      '@keyframes hkmp-end-crackin{0%{opacity:0}30%{opacity:1}100%{opacity:.7}}',
+      '@keyframes hkmp-end-winquake{0%,100%{transform:none}6%{transform:translate(-28px,16px) rotate(-4deg) scale(1.04)}14%{transform:translate(30px,-14px) rotate(4.2deg) scale(1.05)}24%{transform:translate(-22px,-18px) rotate(-3deg)}36%{transform:translate(24px,14px) rotate(3.2deg)}50%{transform:translate(-12px,8px)}66%{transform:translate(10px,-6px)}100%{transform:none}}',
+      '@keyframes hkmp-end-losequake{0%,100%{transform:none}10%{transform:translate(18px,22px) rotate(2deg) scale(.97)}22%{transform:translate(-20px,28px) rotate(-2.4deg) scale(.95)}40%{transform:translate(8px,16px) scale(.98)}70%{transform:translate(-4px,6px)}100%{transform:none}}',
       '.hkmp-memory-wrap{width:min(100%,340px);aspect-ratio:3/4;height:auto;max-height:min(72vh,560px);margin:0 auto;padding:0;display:flex;align-items:center;justify-content:center}',
       '.hkmp-memory{width:100%;height:100%;display:grid;gap:6px;perspective:900px;-webkit-user-select:none;user-select:none;box-sizing:border-box}',
       '.hkmp-memory.wave .hkmp-memory-card{transition:transform .14s ease,background .14s ease,color .14s ease}',
@@ -278,7 +335,6 @@
       '@keyframes hkmp-jg-land{0%{transform:scale(1.4) rotate(-8deg)}100%{transform:scale(1) rotate(0)}}',
       '@keyframes hkmp-jg-winbg{0%{filter:brightness(3) saturate(2)}100%{filter:none}}',
       '.hkmp-yut-layout{display:flex;flex-wrap:nowrap;flex-direction:row;gap:14px;justify-content:center;align-items:stretch}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:0;background:radial-gradient(circle at 50% 42%,#8b3a28,#4a1812 62%,#2a0e0c);border-radius:18px;border:4px solid #cbb27088;box-shadow:inset 0 0 40px #0005,0 8px 22px #0006;overflow:hidden}.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.hkmp-yut-node{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff6,0 2px 4px #0005;z-index:1}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px;background:#f3e0b0;border-width:3px}.hkmp-mal{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2px solid #fff;z-index:3;box-shadow:0 2px 6px #0007;transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),transform .2s ease;display:grid;place-items:center;font-size:16px;font-weight:900;color:#1a1208;line-height:1;-webkit-user-select:none;user-select:none}.hkmp-mal.home{opacity:.55;transform:scale(.82)}.hkmp-mal.wait{box-shadow:0 0 0 2px #fff4}.hkmp-yut-side{width:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 10px;background:linear-gradient(180deg,#2a1612,#1a0c0a);border-radius:16px;border:1px solid #cbb27055;min-height:220px;box-sizing:border-box}.hkmp-yut-sticks{display:flex;gap:8px;align-items:flex-end;height:110px}.hkmp-stick{width:20px;height:92px;border-radius:8px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center bottom;position:relative}.hkmp-stick i{display:block;width:8px;height:8px;margin:14px auto 0;border-radius:50%;background:transparent}.hkmp-stick.face{background:linear-gradient(90deg,#5a3418,#2a160c);border-color:#1a0c08}.hkmp-stick.back{background:linear-gradient(90deg,#f6e4b8,#d4b06a)}.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}.hkmp-stick.toss{animation:hkmp-stick-toss .72s ease}.hkmp-yut-yname{color:#efd28a;font-weight:800;font-size:20px;min-height:28px}.hkmp-yut-fx{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,8vw,56px);font-weight:900;color:#fff;text-shadow:0 0 16px #c00,0 4px 0 #800,0 8px 24px #000;z-index:8;pointer-events:none;opacity:0}.hkmp-yut-fx.show{animation:hkmp-catch-pop .9s ease forwards}.hkmp-board-wrap.shake .hkmp-yut{animation:hkmp-board-shake .5s ease}@keyframes hkmp-stick-toss{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-46px) rotate(160deg)}45%{transform:translateY(-8px) rotate(320deg)}70%{transform:translateY(-28px) rotate(520deg)}100%{transform:translateY(0) rotate(720deg)}}@keyframes hkmp-catch-pop{0%{transform:scale(.35);opacity:0}22%{transform:scale(1.18);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:0}}@keyframes hkmp-board-shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-11px) rotate(-1.6deg)}36%{transform:translateX(11px) rotate(1.6deg)}54%{transform:translateX(-8px)}72%{transform:translateX(8px)}88%{transform:translateX(-3px)}}@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px}.hkmp-stick{height:70px;width:16px}.hkmp-yut-sticks{height:80px}}',
-      '.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:560px){.hkmp-shell{width:calc(100% - 16px);padding-top:12px}.hkmp-panel{padding:14px}}'
     ].join('') + yutSkinCss();
@@ -2095,6 +2151,69 @@
   function heavyQuake(kind) {
     return kind === 'capture' || kind === 'check' || kind === 'mate' || kind === 'win' || kind === 'bikjang';
   }
+  function boardEndOutcomeHtml(n, win) {
+    var h = '', i;
+    for (i = 0; i < n; i++) {
+      var left = (Math.random() * 100).toFixed(1);
+      var delay = (Math.random() * 0.7).toFixed(2);
+      var dur = (1.2 + Math.random() * 1.1).toFixed(2);
+      var col = win
+        ? (i % 4 === 0 ? '#ffe566' : (i % 4 === 1 ? '#e23d28' : (i % 4 === 2 ? '#fff' : '#3d7cff')))
+        : (i % 2 ? '#555' : '#888');
+      h += '<i class="hkmp-end-piece" style="left:' + left + '%;background:' + col + ';animation-delay:' + delay + 's;animation-duration:' + dur + 's;width:' + (8 + Math.random() * 14) + 'px;height:' + (10 + Math.random() * 18) + 'px"></i>';
+    }
+    return h;
+  }
+  function playBoardEndFx(outcome) {
+    if (!root) return;
+    outcome = outcome === 'win' || outcome === 'draw' ? outcome : 'lose';
+    var boom = root.querySelector('.hkmp-endfx');
+    if (!boom) {
+      boom = el('div', 'hkmp-endfx');
+      boom.innerHTML = '<div class="hkmp-endfx-flash"></div><div class="hkmp-endfx-rays"></div><div class="hkmp-endfx-shock"></div><div class="hkmp-endfx-shock hkmp-endfx-shock2"></div><div class="hkmp-endfx-bits"></div><div class="hkmp-endfx-rain"></div><div class="hkmp-endfx-txt"></div>';
+      root.appendChild(boom);
+    }
+    var txtMap = { win: '승리!!!', lose: '패배...', draw: '무승부' };
+    var txt = boom.querySelector('.hkmp-endfx-txt');
+    if (txt) txt.textContent = txtMap[outcome] || '!!!';
+    var bits = boom.querySelector('.hkmp-endfx-bits');
+    if (bits) {
+      var n = outcome === 'win' ? 56 : (outcome === 'lose' ? 36 : 28);
+      var h = '';
+      for (var i = 0; i < n; i++) {
+        var ang = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+        var dist = 80 + Math.random() * (outcome === 'win' ? 380 : 240);
+        var col = outcome === 'win'
+          ? (i % 3 === 0 ? '#ffe566' : (i % 3 === 1 ? '#e23d28' : '#fff'))
+          : (outcome === 'draw' ? (i % 2 ? '#3d7cff' : '#efd28a') : (i % 2 ? '#666' : '#222'));
+        h += '<i class="hkmp-endfx-bit" style="--dx:' + Math.cos(ang) * dist + 'px;--dy:' + Math.sin(ang) * dist + 'px;background:' + col + ';animation-delay:' + (Math.random() * 0.16) + 's;width:' + (10 + Math.random() * 20) + 'px;height:' + (10 + Math.random() * 20) + 'px"></i>';
+      }
+      bits.innerHTML = h;
+    }
+    var rain = boom.querySelector('.hkmp-endfx-rain');
+    if (rain) {
+      var rh = '', r, nRain = outcome === 'win' ? 42 : 16;
+      for (r = 0; r < nRain; r++) {
+        var c2 = outcome === 'win'
+          ? (r % 3 === 0 ? '#ffe566' : (r % 3 === 1 ? '#ff2a00' : '#fff'))
+          : '#444';
+        rh += '<i class="hkmp-endfx-drop" style="left:' + (Math.random() * 100) + '%;background:' + c2 + ';animation-delay:' + (Math.random() * 0.45) + 's;width:' + (8 + Math.random() * 12) + 'px;height:' + (12 + Math.random() * 16) + 'px"></i>';
+      }
+      rain.innerHTML = rh;
+    }
+    boom.setAttribute('data-kind', outcome);
+    boom.classList.remove('go');
+    void boom.offsetWidth;
+    boom.classList.add('go');
+    root.classList.remove('end-win-quake', 'end-lose-quake', 'end-draw-quake', 'jg-quake', 'yut-quake');
+    void root.offsetWidth;
+    root.classList.add(outcome === 'win' ? 'end-win-quake' : (outcome === 'lose' ? 'end-lose-quake' : 'end-draw-quake'));
+    var dur = outcome === 'win' ? 1800 : 1500;
+    setTimeout(function () {
+      boom.classList.remove('go');
+      if (root) root.classList.remove('end-win-quake', 'end-lose-quake', 'end-draw-quake');
+    }, dur);
+  }
   function playJanggiMoveAnim(last) {
     if (!last || !refs.board) return;
     var key = last.fr + ',' + last.fc + '>' + last.tr + ',' + last.tc;
@@ -2219,7 +2338,6 @@
     if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">윷 던지기</button>';
     else if (myTurn && st.pending === 'move') {
       var hint = '말을 누른 뒤, 빛나는 칸을 누르세요';
-      if (st.legal && st.legal.some(function (x) { return (x.dests || []).length > 1; })) hint += ' · 모서리에 멈춰야 지름길';
       if (yutSel != null && yutDestsForMal(st, yutSel).indexOf(-1) >= 0) {
         yact = '<button type="button" class="hkmp-btn primary" data-act="backdo">출발 전으로</button>';
       }
@@ -2492,23 +2610,6 @@
       return;
     }
 
-    if (gameId === 'marble') {
-      var cells = st.cells || [];
-      var tokens = st.tokens || [];
-      refs.board.innerHTML = '<div class="hkmp-marble">' + cells.map(function (cell) {
-        var here = tokens.filter(function (t) { return !t.bankrupt && t.pos === cell.i; }).map(function (t) { return '<b style="color:' + COLORS[t.slot] + '">●</b>'; }).join('');
-        var own = cell.owner >= 0 ? ' own' + (cell.owner % 4) : '';
-        return '<div class="hkmp-mcell' + own + '"><div>' + esc(cell.name || '') + '</div><div style="color:#efd28a">' + (cell.price ? cell.price + 'G' : (cell.t || '')) + '</div><div>' + here + '</div></div>';
-      }).join('') + '</div>';
-      var actHtml = '';
-      if (myTurn && st.pending === 'roll') actHtml = '<button type="button" class="hkmp-btn primary" data-act="roll">주사위</button>';
-      if (myTurn && st.pending === 'buy') actHtml = '<button type="button" class="hkmp-btn primary" data-act="buy">구매</button><button type="button" class="hkmp-btn" data-act="skip">패스</button>';
-      refs.boardAct.innerHTML = actHtml;
-      Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
-        btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
-      });
-      return;
-    }
   }
 
   function defaultSize() {
@@ -2534,8 +2635,7 @@
       gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
       chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
       janggi: '한국 장기. 시작 전 내상/외상. 졸·병은 처음부터 앞·좌·우(뒤 불가). 포는 반드시 한 점을 뛰어넘고 포끼리 못 넘고 못 잡음. 상은 한 칸 직선+두 칸 대각(막히면 불가). 궁 안 대각. 장군은 피해야 함. 빅장(양왕 마주봄)은 무승부. 장군이 아닐 때 한수쉼, 연속 두 번이면 무승부.',
-      marble: '내 차례에 주사위 · 빈 땅은 구매/패스. 상대 파산 시 승리.',
-      yut: '윷 던지기(오른쪽) → 말을 눌러 선택 → 빛나는 칸으로 이동. 모서리에 멈춰야 지름길. 같은 팀 말은 업기, 상대는 잡기. 윷·모·잡으면 한 번 더. 빽도는 한 칸 뒤.',
+      yut: '반시계로 진행. 윷 던지기(오른쪽) → 말을 눌러 선택 → 빛나는 칸으로 이동. 모서리·중심에 멈추면 지름길 필수(지나치면 바깥길). 같은 팀 말은 업기, 상대는 잡기. 윷·모·잡으면 한 번 더. 빽도는 한 칸 뒤.',
     }[gameId] || '';
   }
 
@@ -3024,11 +3124,6 @@
       }
       if (st.log) html += '<span class="hkmp-pill">' + esc(st.log) + '</span>';
       if (gameId === 'gomoku' && st.stones != null) html += '<span class="hkmp-pill">돌 <b>' + st.stones + '</b></span>';
-      if (gameId === 'marble' && st.tokens) {
-        var meTok = st.tokens[mySlot()] || st.tokens.filter(function (t) { return t.id === selfId || t.id == selfId; })[0];
-        if (meTok) html += '<span class="hkmp-pill">소지금 <b>' + Math.floor(meTok.money || 0) + 'G</b></span>';
-        if (st.lastRoll) html += '<span class="hkmp-pill">주사위 <b>' + st.lastRoll[0] + '+' + st.lastRoll[1] + '</b></span>';
-      }
       if (gameId === 'yut' && st.mals) {
         var yt = boardMySide();
         var leftM = st.mals.filter(function (m) { return m.team === yt && !m.home; }).length;
@@ -4311,7 +4406,7 @@
       else if (br === 'checkmate') reasonText = iWon ? '체크메이트!' : '체크메이트로 패배';
       else if (br === 'king') reasonText = iWon ? '왕을 잡았습니다!' : '왕이 잡혔습니다';
       else if (br === 'han') reasonText = iWon ? '한! 상대 왕이 외통수입니다' : '한으로 패배했습니다';
-      else if (br === 'bikjang') { title = '빅장'; reasonText = '양왕이 마주쳐 무승부입니다'; iWon = false; }
+      else if (br === 'bikjang') { title = '무승부'; reasonText = '빅장 · 양왕이 마주쳐 무승부입니다'; iWon = false; }
       else if (br === 'bankrupt') reasonText = iWon ? '상대가 파산했습니다' : '파산했습니다';
       else if (br === 'yut') {
         var winTeamName = '';
@@ -4320,17 +4415,31 @@
             if (pm.id === wid || pm.id == wid) winTeamName = yutTeamName(pm.team);
           });
         }
-        title = iWon ? '승리!!!' : '패배...';
         reasonText = iWon
           ? ((winTeamName ? winTeamName + '팀 · ' : '') + '말 4개가 모두 골인했습니다!')
           : ((winTeamName ? winTeamName + '팀이 이겼습니다. ' : '') + '상대 말이 모두 골인했습니다');
       }
     }
-    var endSkin = gameId === 'yut' ? (' yut-end ' + (iWon ? 'win' : 'lose')) : (gameId === 'janggi' ? (' jg-end ' + (iWon ? 'win' : 'lose')) : '');
+    var loudEnd = gameId === 'gomoku' || gameId === 'chess' || gameId === 'janggi' || gameId === 'yut';
+    var endOutcome = 'lose';
+    if (loudEnd) {
+      if (iWon) endOutcome = 'win';
+      else if (wid == null || (endedInfo && (endedInfo.reason === 'draw' || endedInfo.reason === 'bikjang'))) endOutcome = 'draw';
+      title = endOutcome === 'win' ? '승리!!!' : (endOutcome === 'lose' ? '패배...' : '무승부');
+    }
+    var endSkin = '';
+    if (loudEnd) endSkin = ' board-end ' + endOutcome;
+    else if (gameId === 'yut') endSkin = ' yut-end ' + (iWon ? 'win' : 'lose');
+    else if (gameId === 'janggi') endSkin = ' jg-end ' + (iWon ? 'win' : 'lose');
+    var confetti = loudEnd && endOutcome !== 'draw' ? ('<div class="hkmp-end-confetti">' + boardEndOutcomeHtml(endOutcome === 'win' ? 36 : 18, endOutcome === 'win') + '</div>') : '';
     refs.body.innerHTML =
-      '<div class="hkmp-ended' + endSkin + '"><h2 style="font-size:' + ((iWon || gameId === 'snakes' || gameId === 'yut' || gameId === 'janggi') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' +
+      '<div class="hkmp-ended' + endSkin + '">' +
+      (loudEnd && endOutcome === 'win' ? '<div class="hkmp-end-rays"></div>' : '') +
+      (loudEnd && endOutcome === 'lose' ? '<div class="hkmp-end-crack"></div>' : '') +
+      confetti +
+      '<h2' + (loudEnd ? ' class="hkmp-end-title"' : (' style="font-size:' + ((iWon || gameId === 'snakes') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '"')) + '>' +
       (gameId === 'snakes' ? title : esc(title)) + '</h2>' +
-      (gameId === 'snakes' ? '' : '<p style="color:#b1c1bd">' + (iWon ? '승리' : (wid != null ? '패배' : '종료')) + ' · 승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b></p>') +
+      (gameId === 'snakes' ? '' : '<p style="color:#b1c1bd">' + (loudEnd && endOutcome === 'draw' ? '무승부입니다' : ((iWon ? '승리' : (wid != null ? '패배' : '종료')) + ' · 승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b>')) + '</p>') +
       (reasonText ? '<p class="hkmp-note">' + esc(reasonText) + '</p>' : '') +
       (room && room.code ? '<p class="hkmp-note">방 ' + esc(room.code) + '</p>' : '') +
       '<div class="hkmp-row" style="justify-content:center;margin-top:18px">' +
@@ -4343,10 +4452,9 @@
       send({ type: 'leave' });
       room = null; endedInfo = null; lastState = null; view = 'browse'; render(); requestList();
     };
-    if (gameId === 'yut') playYutFx(iWon ? 'win' : 'lose');
-    if (gameId === 'janggi') {
-      var jgEnd = endedInfo && endedInfo.reason;
-      playJanggiFx(jgEnd === 'bikjang' || jgEnd === 'draw' ? 'bikjang' : (iWon ? 'mate' : 'lose'));
+    if (loudEnd) {
+      playBoardEndFx(endOutcome);
+      setTimeout(function () { playBoardEndFx(endOutcome); }, 620);
     }
   }
 

@@ -1,8 +1,8 @@
 (function (window, document) {
   'use strict';
 
-  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'hotelshare', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
-  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'marble', 'yut'];
+  var GAME_IDS = ['candy', 'merge2048', 'snake', 'memory', 'breakout', 'jump', 'tetris', 'pong', 'flappy', 'mines', 'reaction', 'dodge', 'suika', 'stack', 'crossy', 'simon', 'cleanroute', 'invaders', 'putting', 'crossland', 'hotelshare', 'tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'yut'];
+  var MP_IDS = ['tank', 'rts', 'ageofwar', 'snakes', 'airhockey', 'memorymp', 'lanepush', 'nexuswar', 'gomoku', 'chess', 'janggi', 'yut'];
   var META = {
     candy: { icon: '🍬', name: 'NPS 마카롱 제공', desc: '10초 시작 · 깨면 시간 조금 추가 · 타임어택' },
     merge2048: { icon: '🔢', name: '업셀링 계산기', desc: '같은 숫자를 합쳐 2048에 도전' },
@@ -36,7 +36,6 @@
     gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
     chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
     janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한국 장기' },
-    marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
     yut: { icon: '🪵', name: '윷놀이', desc: '2~4팀 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
   var config = {};

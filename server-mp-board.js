@@ -4,7 +4,6 @@ const GAMES = {
   gomoku: { max: 4, hz: 8 },
   chess: { max: 4, hz: 8 },
   janggi: { max: 4, hz: 8 },
-  marble: { max: 4, hz: 10 },
   yut: { max: 4, hz: 10 },
 };
 
@@ -67,7 +66,7 @@ function currentActor(room, s) {
 function nextTurn(room, s, extra) {
   if (extra) return;
   const n = room.players.length;
-  if (isTeam(s.mode) && n >= 4 && room.game !== "marble") {
+  if (isTeam(s.mode) && n >= 4) {
     const order = [0, 2, 1, 3];
     const idx = order.indexOf(s.turnSlot | 0);
     s.turnSlot = order[(idx < 0 ? 0 : idx + 1) % order.length];
@@ -1254,9 +1253,9 @@ function yutLerp(a, b, t) {
 function yutNodes() {
   const pts = new Array(29);
   pts[0] = { x: 0.14, y: 0.86 };
-  pts[5] = { x: 0.14, y: 0.14 };
+  pts[5] = { x: 0.86, y: 0.86 };
   pts[10] = { x: 0.86, y: 0.14 };
-  pts[15] = { x: 0.86, y: 0.86 };
+  pts[15] = { x: 0.14, y: 0.14 };
   pts[20] = { x: 0.5, y: 0.5 };
   for (let i = 1; i <= 4; i++) {
     const t = i / 5;
@@ -1276,12 +1275,12 @@ function yutNodes() {
   return pts.map((p, i) => ({ id: i, x: p.x, y: p.y }));
 }
 
-function yutNextOptions(pos, canFork) {
+function yutNextOptions(pos, fromCorner) {
   if (pos === "home" || pos === 99) return ["home"];
   if (pos < 0) return [0];
   if (YUT_INNER_NEXT[pos] != null) return [YUT_INNER_NEXT[pos]];
-  if (pos === 5 && canFork) return [6, 21];
-  if (pos === 10 && canFork) return [11, 25];
+  if (pos === 5) return fromCorner ? [21] : [6];
+  if (pos === 10) return fromCorner ? [25] : [11];
   if (pos === 19) return ["home"];
   if (pos >= 0 && pos < 19) return [pos + 1];
   return ["home"];
