@@ -769,7 +769,7 @@ function janggiFindKing(board, side) {
   return null;
 }
 
-function janggiFlying(board) {
+function janggiBikjang(board) {
   const a = janggiFindKing(board, 0);
   const b = janggiFindKing(board, 1);
   if (!a || !b || a[1] !== b[1]) return false;
@@ -780,6 +780,20 @@ function janggiFlying(board) {
   return true;
 }
 
+function janggiInCheck(board, side) {
+  const king = janggiFindKing(board, side);
+  if (!king) return true;
+  const opp = 1 - side;
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 9; c++) {
+      const p = board[r][c];
+      if (!p || p.s !== opp) continue;
+      if (janggiPseudo(board, r, c, p).some((m) => m[0] === king[0] && m[1] === king[1])) return true;
+    }
+  }
+  return false;
+}
+
 function janggiLegal(board, r, c, nr, nc) {
   const p = board[r][c];
   if (!p) return false;
@@ -788,8 +802,41 @@ function janggiLegal(board, r, c, nr, nc) {
   next[nr][nc] = p;
   next[r][c] = 0;
   if (!janggiFindKing(next, p.s)) return false;
-  if (janggiFlying(next)) return false;
+  if (janggiInCheck(next, p.s)) return false;
   return true;
+}
+
+function janggiHasMove(board, side) {
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 9; c++) {
+      const p = board[r][c];
+      if (!p || p.s !== side) continue;
+      for (const m of janggiPseudo(board, r, c, p)) {
+        if (janggiLegal(board, r, c, m[0], m[1])) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function janggiApplyLayout(board, side, inner) {
+  const row = side === 0 ? 9 : 0;
+  if (inner) {
+    board[row][1] = { t: "N", s: side };
+    board[row][2] = { t: "B", s: side };
+    board[row][6] = { t: "B", s: side };
+    board[row][7] = { t: "N", s: side };
+  } else {
+    board[row][1] = { t: "B", s: side };
+    board[row][2] = { t: "N", s: side };
+    board[row][6] = { t: "N", s: side };
+    board[row][7] = { t: "B", s: side };
+  }
+}
+
+function janggiPushFx(s, kind, extra) {
+  s.fxSeq = (s.fxSeq || 0) + 1;
+  s.fx = Object.assign({ kind: kind, id: s.fxSeq }, extra || {});
 }
 
 function initJanggi(room) {
@@ -803,15 +850,61 @@ function initJanggi(room) {
     turnId: actor ? actor.id : null,
     turnSide: 0,
     last: null,
+    pending: "setup",
+    setupReady: [false, false],
+    layoutInner: [true, true],
+    lastPass: 0,
+    check: false,
+    log: "상·마 배치 · 내상/외상을 고르세요",
+    fx: null,
+    fxSeq: 0,
     playerMeta: metaPlayers(room),
-    aiAt: Date.now() + 380,
+    aiAt: Date.now() + 280,
   };
 }
 
 function applyJanggi(room, player, payload, endGame) {
   const s = room.state;
-  if (!s || s.turnId !== player.id) return;
+  if (!s) return;
   const side = sideOf(player.slot, s.mode);
+  const act = String(payload.act || "");
+  if (s.pending === "setup") {
+    if (act === "layout") {
+      const inner = payload.inner !== false && payload.inner !== 0 && payload.inner !== "0";
+      s.layoutInner[side] = !!inner;
+      janggiApplyLayout(s.board, side, s.layoutInner[side]);
+      s.log = (side === 0 ? "초" : "한") + (s.layoutInner[side] ? " · 내상" : " · 외상");
+      janggiPushFx(s, "setup");
+      return;
+    }
+    if (act === "ready" || act === "setup-ok") {
+      s.setupReady[side] = true;
+      if (s.setupReady[0] && s.setupReady[1]) {
+        s.pending = "play";
+        s.log = "대국 시작";
+        janggiPushFx(s, "start");
+      } else {
+        s.log = (side === 0 ? "초" : "한") + " 배치 완료 · 상대 대기";
+      }
+      return;
+    }
+    return;
+  }
+  if (s.turnId !== player.id) return;
+  if (act === "pass") {
+    if (janggiInCheck(s.board, side)) return;
+    s.lastPass = (s.lastPass || 0) + 1;
+    s.last = null;
+    s.check = false;
+    s.log = "한수쉼";
+    janggiPushFx(s, "pass");
+    if (s.lastPass >= 2) {
+      endGame(room, "draw", null);
+      return;
+    }
+    nextTurn(room, s, false);
+    return;
+  }
   const fr = payload.fr | 0,
     fc = payload.fc | 0,
     tr = payload.tr | 0,
@@ -822,10 +915,38 @@ function applyJanggi(room, player, payload, endGame) {
   const cap = s.board[tr][tc];
   s.board[tr][tc] = p;
   s.board[fr][fc] = 0;
-  s.last = { fr, fc, tr, tc };
+  s.last = { fr, fc, tr, tc, cap: cap ? cap.t : "" };
+  s.lastPass = 0;
+  const opp = 1 - side;
   if (cap && cap.t === "K") {
-    endGame(room, "king", player.id);
+    s.log = "한!";
+    janggiPushFx(s, "mate", { cap: cap.t });
+    endGame(room, "han", player.id);
     return;
+  }
+  if (janggiBikjang(s.board)) {
+    s.log = "빅장 · 무승부";
+    janggiPushFx(s, "bikjang");
+    endGame(room, "bikjang", null);
+    return;
+  }
+  const check = janggiInCheck(s.board, opp);
+  s.check = check;
+  if (check && !janggiHasMove(s.board, opp)) {
+    s.log = "한!";
+    janggiPushFx(s, "mate", { cap: cap ? cap.t : "" });
+    endGame(room, "han", player.id);
+    return;
+  }
+  if (check) {
+    s.log = "장군!";
+    janggiPushFx(s, "check", { cap: cap ? cap.t : "" });
+  } else if (cap) {
+    s.log = "잡기!";
+    janggiPushFx(s, "capture", { cap: cap.t });
+  } else {
+    s.log = "이동";
+    janggiPushFx(s, "move");
   }
   nextTurn(room, s, false);
 }
@@ -835,6 +956,18 @@ const JANGGI_VAL = { P: 2, A: 3, N: 5, B: 3, C: 7, R: 13, K: 0 };
 function janggiAi(room, endGame) {
   const s = room.state;
   const actor = currentActor(room, s);
+  if (!s) return;
+  if (s.pending === "setup") {
+    const ais = (room.players || []).filter((p) => p.isAi);
+    for (let i = 0; i < ais.length; i++) {
+      const ai = ais[i];
+      const aiSide = sideOf(ai.slot, s.mode);
+      if (s.setupReady[aiSide]) continue;
+      if (Math.random() < 0.5) applyJanggi(room, ai, { act: "layout", inner: false }, endGame);
+      applyJanggi(room, ai, { act: "ready" }, endGame);
+    }
+    return;
+  }
   if (!actor || !actor.isAi) return;
   if (Date.now() < (s.aiAt || 0)) return;
   const side = sideOf(actor.slot, s.mode);
@@ -849,7 +982,7 @@ function janggiAi(room, endGame) {
     }
   }
   if (!moves.length) {
-    endGame(room, "king", (room.players.find((p) => sideOf(p.slot, s.mode) === 1 - side) || {}).id);
+    applyJanggi(room, actor, { act: "pass" }, endGame);
     return;
   }
   let best = -1e9,
@@ -858,6 +991,10 @@ function janggiAi(room, endGame) {
     const cap = s.board[m[2]][m[3]];
     let sc = (cap ? (JANGGI_VAL[cap.t] || 0) * 10 : 0) + Math.random() * 2;
     if (cap && cap.t === "K") sc += 1000;
+    const next = clone2(s.board);
+    next[m[2]][m[3]] = next[m[0]][m[1]];
+    next[m[0]][m[1]] = 0;
+    if (janggiInCheck(next, 1 - side)) sc += 18;
     if (sc > best) {
       best = sc;
       pick = m;

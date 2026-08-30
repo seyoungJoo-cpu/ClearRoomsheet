@@ -12,7 +12,7 @@
     nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령 스노우볼' },
     gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
     chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
-    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한·초 장기' },
+    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한국 장기' },
     marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
     yut: { icon: '🪵', name: '윷놀이', desc: '2~4팀 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
@@ -33,6 +33,8 @@
   var yutAnimReady = false;
   var yutSel = null;
   var yutFxSeen = 0;
+  var jgFxSeen = 0;
+  var jgMoveSeen = '';
   var YUT_TEAM_NAMES = ['청', '홍', '황', '녹'];
   var YUT_TEAM_COL = ['#3d7cff', '#e23d28', '#e0a020', '#2f9e58'];
   var YUT_TEAM_COL_DARK = ['#163a88', '#7a1510', '#7a5a0a', '#14532d'];
@@ -235,6 +237,46 @@
       '.hkmp-chess{width:min(100%,520px);aspect-ratio:1;margin:0 auto;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:14px solid #1a120c;box-shadow:0 10px 28px #0008,inset 0 0 0 2px #c9a56a;border-radius:4px}.hkmp-chess .hkmp-cell{width:100%;height:100%;border:0;filter:none}.hkmp-chess .hkmp-cell.light{background:#f3efe6}.hkmp-chess .hkmp-cell.dark{background:#1e1e1e}.hkmp-chess .hkmp-cell.light:hover{background:#fff8ee}.hkmp-chess .hkmp-cell.dark:hover{background:#333}.hkmp-chess .hkmp-cell.sel.light{background:#d4e87a}.hkmp-chess .hkmp-cell.sel.dark{background:#6a8f2a}.hkmp-chess .hkmp-cell.last.light{background:#f0d56a}.hkmp-chess .hkmp-cell.last.dark{background:#b8860b}.hkmp-ch-piece{font-size:clamp(24px,6.4vw,44px);line-height:1;pointer-events:none;font-weight:700}.hkmp-ch-piece.w{color:#fafafa;text-shadow:0 1px 0 #111,0 0 3px #000,1px 1px 0 #333,-1px -1px 0 #333}.hkmp-ch-piece.b{color:#111;text-shadow:0 0 2px #fff,0 1px 0 #fff,1px 1px 0 #ccc}',
       '.hkmp-jg{position:relative;width:min(100%,430px);aspect-ratio:9/10;margin:0 auto;box-sizing:border-box;background:#e4bc6a;background-image:repeating-linear-gradient(90deg,rgba(90,40,10,.06) 0 1px,transparent 1px 4px);border:12px solid #6b3a14;box-shadow:inset 0 0 24px #0003,0 10px 28px #0007}.hkmp-jg-lines{position:absolute;left:5.555%;right:5.555%;top:5%;bottom:5%;width:auto;height:auto;pointer-events:none}.hkmp-jg-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(10,1fr)}.hkmp-jg .hkmp-cell{background:transparent;border:0;filter:none}.hkmp-jg .hkmp-cell:hover{background:rgba(255,255,255,.12)}.hkmp-jg .hkmp-cell.sel{background:rgba(239,210,138,.35)}.hkmp-jg-piece{width:84%;height:84%;max-width:48px;max-height:48px;border-radius:50%;display:grid;place-items:center;font-family:"Noto Serif KR","Nanum Myeongjo",Batang,Georgia,serif;font-weight:900;font-size:clamp(13px,3.1vw,20px);line-height:1;background:radial-gradient(circle at 35% 30%,#fff4d4,#e8c98a 55%,#c9a05a);box-shadow:1px 2px 4px #0006,inset 0 1px 0 #fff8;pointer-events:none}.hkmp-jg-piece.s0{color:#c41e3a;border:2px solid #8b1515}.hkmp-jg-piece.s1{color:#153a6b;border:2px solid #0f2a4a}',
       '.hkmp-jg-piece.t-K{width:96%;height:96%;max-width:56px;max-height:56px;font-size:clamp(16px,3.8vw,24px);border-width:3px}.hkmp-jg-piece.t-R{width:90%;height:90%;max-width:51px;max-height:51px;font-size:clamp(14px,3.4vw,21px)}.hkmp-jg-piece.t-C{width:86%;height:86%;max-width:48px;max-height:48px;font-size:clamp(13px,3.2vw,20px)}.hkmp-jg-piece.t-N,.hkmp-jg-piece.t-B{width:80%;height:80%;max-width:44px;max-height:44px;font-size:clamp(12px,3vw,18px)}.hkmp-jg-piece.t-A{width:72%;height:72%;max-width:39px;max-height:39px;font-size:clamp(11px,2.7vw,16px)}.hkmp-jg-piece.t-P{width:62%;height:62%;max-width:34px;max-height:34px;font-size:clamp(10px,2.4vw,14px)}',
+      '.hkmp-jg.jg-check{box-shadow:inset 0 0 48px #c41e3aaa,0 0 32px #c41e3a,0 10px 28px #0007;animation:hkmp-jg-boardslam .7s ease}.hkmp-jg.jg-slam{animation:hkmp-jg-boardslam .55s ease}',
+      '.hkmp-jg-banner{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:6;pointer-events:none;font-family:"Noto Serif KR",Batang,Impact,serif;font-weight:900;font-size:clamp(28px,8vw,52px);color:#fff;text-shadow:0 0 8px #c41e3a,4px 6px 0 #7a0000,-3px -2px 0 #ffe566,0 12px 28px #000;animation:hkmp-jg-bannerpop .9s ease both;white-space:nowrap}',
+      '.hkmp-jg-banner.setup{font-size:clamp(18px,4.5vw,28px);color:#5a2a12;text-shadow:0 1px 0 #fff8,0 4px 10px #0004;top:50%}',
+      '.hkmp-jg .hkmp-cell.chk .hkmp-jg-piece{box-shadow:0 0 0 4px #c41e3a,0 0 18px #ff2a00,1px 2px 4px #0006;animation:hkmp-jg-kingpulse .7s ease infinite}',
+      '.hkmp-jg-fly{position:fixed;z-index:10040;pointer-events:none;margin:0;filter:drop-shadow(0 10px 18px #000a)}',
+      '.hkmp-jg-cell-burst{position:absolute;inset:12%;border-radius:50%;pointer-events:none;animation:hkmp-jg-burst .55s ease forwards}',
+      '.hkmp-jg-boom{position:fixed;inset:0;z-index:10020;pointer-events:none;display:none}.hkmp-jg-boom.go{display:block}',
+      '.hkmp-jg-boom-flash{position:absolute;inset:0;opacity:0}',
+      '.hkmp-jg-boom.go[data-kind="move"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#fff6,#c9a22755 50%,#0000);animation:hkmp-jg-flash .65s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="capture"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#ff2a00dd,#7a0000aa 42%,#ffcc0044);animation:hkmp-jg-flash 1.15s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="check"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#c41e3add,#7a0000bb 48%,#ffe56655);animation:hkmp-jg-flash 1.25s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="mate"] .hkmp-jg-boom-flash,.hkmp-jg-boom.go[data-kind="win"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#ffe566ee,#c41e3aaa 46%,#111c);animation:hkmp-jg-flash 1.55s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="bikjang"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#efd28add,#3d7cff99);animation:hkmp-jg-flash 1.25s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="start"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#fff8,#c9a22777);animation:hkmp-jg-flash .85s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="pass"] .hkmp-jg-boom-flash,.hkmp-jg-boom.go[data-kind="setup"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#ffffff66,#0000);animation:hkmp-jg-flash .7s ease forwards}',
+      '.hkmp-jg-boom.go[data-kind="lose"] .hkmp-jg-boom-flash{background:radial-gradient(circle,#222c,#000d);animation:hkmp-jg-flash 1.3s ease forwards}',
+      '.hkmp-jg-boom-shock{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:50%;border:10px solid #fff;opacity:0}',
+      '.hkmp-jg-boom.go .hkmp-jg-boom-shock{animation:hkmp-jg-shock .95s cubic-bezier(.1,.7,.2,1) forwards}',
+      '.hkmp-jg-boom.go[data-kind="check"] .hkmp-jg-boom-shock,.hkmp-jg-boom.go[data-kind="mate"] .hkmp-jg-boom-shock{border-color:#ffe566;border-width:14px}',
+      '.hkmp-jg-boom-txt{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.12) rotate(-16deg);font-size:clamp(56px,18vw,128px);font-weight:900;color:#fff;font-family:"Noto Serif KR",Batang,Impact,serif;letter-spacing:-.06em;text-shadow:0 0 10px #000,8px 10px 0 #7a0000,-5px -4px 0 #ff0,0 20px 48px #000;opacity:0;white-space:nowrap}',
+      '.hkmp-jg-boom.go .hkmp-jg-boom-txt{animation:hkmp-jg-slam 1.2s cubic-bezier(.15,1.45,.3,1) forwards}',
+      '.hkmp-jg-bits{position:absolute;inset:0;overflow:hidden}',
+      '.hkmp-jg-bit{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px;border-radius:2px;background:#ffe566;opacity:0}',
+      '.hkmp-jg-boom.go .hkmp-jg-bit{animation:hkmp-jg-bit 1.15s ease-out forwards}',
+      '.hk-mp-overlay.jg-quake{animation:hkmp-jg-quake .75s ease}.hk-mp-overlay.jg-quake2{animation:hkmp-jg-quake2 .55s ease}',
+      '.hkmp-ended.jg-end.win{background:radial-gradient(circle at 50% 30%,#ffe566,#c41e3a 62%,#5a1810);animation:hkmp-jg-winbg 1.2s ease}',
+      '.hkmp-ended.jg-end.lose{background:radial-gradient(circle at 50% 30%,#6a6a6a,#2a1512 62%,#120808)}',
+      '.hkmp-ended.jg-end h2{font-size:clamp(48px,14vw,92px)!important;margin:8px 0 12px;font-family:"Noto Serif KR",Batang,Impact,serif;text-shadow:0 6px 0 #0006,0 0 24px #fff8}',
+      '@keyframes hkmp-jg-flash{0%{opacity:0}10%{opacity:1}22%{opacity:.9}100%{opacity:0}}',
+      '@keyframes hkmp-jg-shock{0%{transform:scale(.12);opacity:1;border-width:18px}100%{transform:scale(24);opacity:0;border-width:0}}',
+      '@keyframes hkmp-jg-slam{0%{transform:translate(-50%,-50%) scale(.12) rotate(-28deg);opacity:0}18%{transform:translate(-50%,-50%) scale(1.45) rotate(10deg);opacity:1}36%{transform:translate(-50%,-50%) scale(.88) rotate(-6deg);opacity:1}58%{transform:translate(-50%,-50%) scale(1.14) rotate(3deg);opacity:1}100%{transform:translate(-50%,-50%) scale(1.04) rotate(-2deg);opacity:0}}',
+      '@keyframes hkmp-jg-bit{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(280deg) scale(.12);opacity:0}}',
+      '@keyframes hkmp-jg-quake{0%,100%{transform:none}8%{transform:translate(-26px,14px) rotate(-3.4deg)}16%{transform:translate(28px,-12px) rotate(3.8deg)}26%{transform:translate(-20px,-16px) rotate(-2.6deg)}36%{transform:translate(22px,12px) rotate(2.8deg)}50%{transform:translate(-12px,8px)}66%{transform:translate(10px,-6px)}100%{transform:none}}',
+      '@keyframes hkmp-jg-quake2{0%,100%{transform:none}12%{transform:translate(14px,-8px) rotate(2deg)}28%{transform:translate(-16px,10px) rotate(-2.2deg)}48%{transform:translate(10px,6px)}70%{transform:translate(-6px,-4px)}100%{transform:none}}',
+      '@keyframes hkmp-jg-boardslam{0%{transform:scale(1)}16%{transform:scale(1.045) rotate(-.7deg)}38%{transform:scale(.975)}100%{transform:scale(1)}}',
+      '@keyframes hkmp-jg-burst{0%{box-shadow:0 0 0 0 #ffe566cc,0 0 0 0 #c41e3a99;opacity:1}100%{box-shadow:0 0 0 46px #ffe56600,0 0 0 72px #c41e3a00;opacity:0}}',
+      '@keyframes hkmp-jg-kingpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}',
+      '@keyframes hkmp-jg-bannerpop{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}30%{transform:translate(-50%,-50%) scale(1.12);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}',
+      '@keyframes hkmp-jg-land{0%{transform:scale(1.4) rotate(-8deg)}100%{transform:scale(1) rotate(0)}}',
+      '@keyframes hkmp-jg-winbg{0%{filter:brightness(3) saturate(2)}100%{filter:none}}',
       '.hkmp-yut-layout{display:flex;flex-wrap:nowrap;flex-direction:row;gap:14px;justify-content:center;align-items:stretch}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:0;background:radial-gradient(circle at 50% 42%,#8b3a28,#4a1812 62%,#2a0e0c);border-radius:18px;border:4px solid #cbb27088;box-shadow:inset 0 0 40px #0005,0 8px 22px #0006;overflow:hidden}.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.hkmp-yut-node{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff6,0 2px 4px #0005;z-index:1}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px;background:#f3e0b0;border-width:3px}.hkmp-mal{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2px solid #fff;z-index:3;box-shadow:0 2px 6px #0007;transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),transform .2s ease;display:grid;place-items:center;font-size:16px;font-weight:900;color:#1a1208;line-height:1;-webkit-user-select:none;user-select:none}.hkmp-mal.home{opacity:.55;transform:scale(.82)}.hkmp-mal.wait{box-shadow:0 0 0 2px #fff4}.hkmp-yut-side{width:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 10px;background:linear-gradient(180deg,#2a1612,#1a0c0a);border-radius:16px;border:1px solid #cbb27055;min-height:220px;box-sizing:border-box}.hkmp-yut-sticks{display:flex;gap:8px;align-items:flex-end;height:110px}.hkmp-stick{width:20px;height:92px;border-radius:8px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center bottom;position:relative}.hkmp-stick i{display:block;width:8px;height:8px;margin:14px auto 0;border-radius:50%;background:transparent}.hkmp-stick.face{background:linear-gradient(90deg,#5a3418,#2a160c);border-color:#1a0c08}.hkmp-stick.back{background:linear-gradient(90deg,#f6e4b8,#d4b06a)}.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}.hkmp-stick.toss{animation:hkmp-stick-toss .72s ease}.hkmp-yut-yname{color:#efd28a;font-weight:800;font-size:20px;min-height:28px}.hkmp-yut-fx{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,8vw,56px);font-weight:900;color:#fff;text-shadow:0 0 16px #c00,0 4px 0 #800,0 8px 24px #000;z-index:8;pointer-events:none;opacity:0}.hkmp-yut-fx.show{animation:hkmp-catch-pop .9s ease forwards}.hkmp-board-wrap.shake .hkmp-yut{animation:hkmp-board-shake .5s ease}@keyframes hkmp-stick-toss{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-46px) rotate(160deg)}45%{transform:translateY(-8px) rotate(320deg)}70%{transform:translateY(-28px) rotate(520deg)}100%{transform:translateY(0) rotate(720deg)}}@keyframes hkmp-catch-pop{0%{transform:scale(.35);opacity:0}22%{transform:scale(1.18);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:0}}@keyframes hkmp-board-shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-11px) rotate(-1.6deg)}36%{transform:translateX(11px) rotate(1.6deg)}54%{transform:translateX(-8px)}72%{transform:translateX(8px)}88%{transform:translateX(-3px)}}@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px}.hkmp-stick{height:70px;width:16px}.hkmp-yut-sticks{height:80px}}',
       '.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
@@ -662,6 +704,8 @@
       five: '5목 완성',
       checkmate: '체크메이트',
       king: '왕을 잡았습니다',
+      han: '한!',
+      bikjang: '빅장 · 무승부',
       bankrupt: '파산',
       yut: '윷놀이 골인',
       draw: '무승부',
@@ -1475,7 +1519,7 @@
   }
 
   var CHESS_U = { '0K': '♔', '0Q': '♕', '0R': '♖', '0B': '♗', '0N': '♘', '0P': '♙', '1K': '♚', '1Q': '♛', '1R': '♜', '1B': '♝', '1N': '♞', '1P': '♟' };
-  var JANGGI_U = { K: ['楚', '漢'], R: '車', N: '馬', B: '象', A: '士', C: '包', P: ['兵', '卒'] };
+  var JANGGI_U = { K: ['楚', '漢'], R: '車', N: '馬', B: '象', A: '士', C: '包', P: ['卒', '兵'] };
 
   function renderPlayBoard() {
     setGamePaused(false);
@@ -1486,6 +1530,8 @@
     yutAnimReady = false;
     yutSel = null;
     yutFxSeen = 0;
+    jgFxSeen = 0;
+    jgMoveSeen = '';
     refs.body.innerHTML =
       '<div class="hkmp-hud" data-hud></div>' +
       '<div class="hkmp-board-wrap" data-board></div>' +
@@ -1767,12 +1813,16 @@
     }
     return null;
   }
-  function janggiFlying(board) {
-    var a = janggiFindKing(board, 0), b = janggiFindKing(board, 1);
-    if (!a || !b || a[1] !== b[1]) return false;
-    var col = a[1], r0 = Math.min(a[0], b[0]) + 1, r1 = Math.max(a[0], b[0]);
-    for (var r = r0; r < r1; r++) if (board[r][col]) return false;
-    return true;
+  function janggiInCheck(board, side) {
+    var king = janggiFindKing(board, side);
+    if (!king) return true;
+    var opp = 1 - side, r, c, p;
+    for (r = 0; r < 10; r++) for (c = 0; c < 9; c++) {
+      p = board[r][c];
+      if (!p || p.s !== opp) continue;
+      if (janggiPseudo(board, r, c, p).some(function (m) { return m[0] === king[0] && m[1] === king[1]; })) return true;
+    }
+    return false;
   }
   function janggiLegal(board, r, c, nr, nc) {
     var p = board[r][c];
@@ -1782,7 +1832,7 @@
     next[nr][nc] = p;
     next[r][c] = 0;
     if (!janggiFindKing(next, p.s)) return false;
-    if (janggiFlying(next)) return false;
+    if (janggiInCheck(next, p.s)) return false;
     return true;
   }
   function janggiDests(board, r, c) {
@@ -1805,13 +1855,12 @@
   function janggiLinesSvg() {
     var i, h = '';
     for (i = 0; i <= 9; i++) h += '<line x1="0" y1="' + i + '" x2="8" y2="' + i + '"/>';
-    for (i = 0; i <= 8; i++) {
-      h += '<line x1="' + i + '" y1="0" x2="' + i + '" y2="4"/>';
-      h += '<line x1="' + i + '" y1="5" x2="' + i + '" y2="9"/>';
-    }
+    for (i = 0; i <= 8; i++) h += '<line x1="' + i + '" y1="0" x2="' + i + '" y2="9"/>';
     h += '<line x1="3" y1="0" x2="5" y2="2"/><line x1="5" y1="0" x2="3" y2="2"/>';
     h += '<line x1="3" y1="7" x2="5" y2="9"/><line x1="5" y1="7" x2="3" y2="9"/>';
-    return '<svg class="hkmp-jg-lines" viewBox="0 0 8 9" preserveAspectRatio="none"><g stroke="#4a2a12" stroke-width="0.055" fill="none">' + h + '</g></svg>';
+    return '<svg class="hkmp-jg-lines" viewBox="0 0 8 9" preserveAspectRatio="none"><g stroke="#4a2a12" stroke-width="0.055" fill="none">' + h + '</g>' +
+      '<text x="4" y="1.05" text-anchor="middle" font-size="0.72" fill="#153a6b44" font-family="Noto Serif KR,Batang,serif" font-weight="700">漢</text>' +
+      '<text x="4" y="8.35" text-anchor="middle" font-size="0.72" fill="#c41e3a44" font-family="Noto Serif KR,Batang,serif" font-weight="700">楚</text></svg>';
   }
   function destHintClass(board, r, c, dests) {
     var map = {};
@@ -1983,6 +2032,109 @@
       boom.classList.remove('go');
       if (root) root.classList.remove('yut-quake', 'yut-quake2');
     }, kind === 'win' ? 1600 : 1200);
+  }
+  function playJanggiFx(kind) {
+    if (!root) return;
+    kind = kind || 'move';
+    var boom = root.querySelector('.hkmp-jg-boom');
+    if (!boom) {
+      boom = el('div', 'hkmp-jg-boom');
+      boom.innerHTML = '<div class="hkmp-jg-boom-flash"></div><div class="hkmp-jg-boom-shock"></div><div class="hkmp-jg-bits"></div><div class="hkmp-jg-boom-txt"></div>';
+      root.appendChild(boom);
+    }
+    var txtMap = {
+      move: '탁!!!',
+      capture: '잡았다!!!',
+      check: '장군!!!',
+      mate: '한!!!',
+      win: '한!!!',
+      bikjang: '빅장!!!',
+      start: '대국!!!',
+      pass: '한수쉼',
+      setup: '배치',
+      lose: '패배...'
+    };
+    var txt = boom.querySelector('.hkmp-jg-boom-txt');
+    if (txt) txt.textContent = txtMap[kind] || '!!!';
+    var bits = boom.querySelector('.hkmp-jg-bits');
+    if (bits) {
+      var heavy = kind === 'mate' || kind === 'win' || kind === 'check' || kind === 'capture' || kind === 'bikjang';
+      var n = kind === 'mate' || kind === 'win' ? 48 : (heavy ? 36 : 18);
+      var h = '';
+      for (var i = 0; i < n; i++) {
+        var ang = (Math.PI * 2 * i) / n + Math.random() * 0.45;
+        var dist = 90 + Math.random() * (heavy ? 340 : 200);
+        var col = kind === 'bikjang'
+          ? (i % 2 ? '#3d7cff' : '#efd28a')
+          : (kind === 'check' || kind === 'mate' || kind === 'win'
+            ? (i % 3 === 0 ? '#c41e3a' : (i % 3 === 1 ? '#ffe566' : '#fff'))
+            : (kind === 'capture' ? (i % 2 ? '#ff2a00' : '#ffe566') : (i % 2 ? '#c9a227' : '#fff')));
+        h += '<i class="hkmp-jg-bit" style="--dx:' + Math.cos(ang) * dist + 'px;--dy:' + Math.sin(ang) * dist + 'px;background:' + col + ';animation-delay:' + (Math.random() * 0.14) + 's;width:' + (10 + Math.random() * 18) + 'px;height:' + (10 + Math.random() * 18) + 'px"></i>';
+      }
+      bits.innerHTML = h;
+    }
+    boom.setAttribute('data-kind', kind);
+    boom.classList.remove('go');
+    void boom.offsetWidth;
+    boom.classList.add('go');
+    root.classList.remove('jg-quake', 'jg-quake2', 'yut-quake', 'yut-quake2');
+    void root.offsetWidth;
+    root.classList.add(heavyQuake(kind) ? 'jg-quake' : 'jg-quake2');
+    var wrap = refs.board && refs.board.querySelector('.hkmp-jg');
+    if (wrap) {
+      wrap.classList.remove('jg-slam');
+      void wrap.offsetWidth;
+      wrap.classList.add('jg-slam');
+    }
+    var dur = kind === 'mate' || kind === 'win' ? 1700 : (kind === 'check' || kind === 'capture' ? 1300 : 900);
+    setTimeout(function () {
+      boom.classList.remove('go');
+      if (root) root.classList.remove('jg-quake', 'jg-quake2');
+    }, dur);
+  }
+  function heavyQuake(kind) {
+    return kind === 'capture' || kind === 'check' || kind === 'mate' || kind === 'win' || kind === 'bikjang';
+  }
+  function playJanggiMoveAnim(last) {
+    if (!last || !refs.board) return;
+    var key = last.fr + ',' + last.fc + '>' + last.tr + ',' + last.tc;
+    if (key === jgMoveSeen) return;
+    jgMoveSeen = key;
+    Array.prototype.forEach.call(document.querySelectorAll('.hkmp-jg-fly'), function (n) {
+      if (n.parentNode) n.parentNode.removeChild(n);
+    });
+    var destBtn = refs.board.querySelector('[data-r="' + last.tr + '"][data-c="' + last.tc + '"]');
+    var fromBtn = refs.board.querySelector('[data-r="' + last.fr + '"][data-c="' + last.fc + '"]');
+    var destPiece = destBtn && destBtn.querySelector('.hkmp-jg-piece');
+    if (!destBtn || !fromBtn || !destPiece) return;
+    var fromRect = fromBtn.getBoundingClientRect();
+    var toRect = destBtn.getBoundingClientRect();
+    var pw = destPiece.offsetWidth || 36;
+    var ph = destPiece.offsetHeight || 36;
+    destPiece.style.opacity = '0';
+    var fly = destPiece.cloneNode(true);
+    fly.classList.add('hkmp-jg-fly');
+    fly.style.width = pw + 'px';
+    fly.style.height = ph + 'px';
+    fly.style.left = (fromRect.left + fromRect.width / 2 - pw / 2) + 'px';
+    fly.style.top = (fromRect.top + fromRect.height / 2 - ph / 2) + 'px';
+    fly.style.transform = 'scale(1.08)';
+    document.body.appendChild(fly);
+    requestAnimationFrame(function () {
+      fly.style.transition = 'left .4s cubic-bezier(.15,.9,.25,1), top .4s cubic-bezier(.15,.9,.25,1), transform .4s cubic-bezier(.15,.9,.25,1)';
+      fly.style.left = (toRect.left + toRect.width / 2 - pw / 2) + 'px';
+      fly.style.top = (toRect.top + toRect.height / 2 - ph / 2) + 'px';
+      fly.style.transform = 'scale(1.22) rotate(10deg)';
+    });
+    setTimeout(function () {
+      destPiece.style.opacity = '';
+      destPiece.style.animation = 'hkmp-jg-land .28s ease';
+      if (fly.parentNode) fly.parentNode.removeChild(fly);
+      var burst = document.createElement('span');
+      burst.className = 'hkmp-jg-cell-burst';
+      destBtn.appendChild(burst);
+      setTimeout(function () { if (burst.parentNode) burst.parentNode.removeChild(burst); }, 620);
+    }, 410);
   }
   function yutDestsForMal(st, malIndex) {
     var mals = st.mals || [];
@@ -2204,7 +2356,7 @@
       updateYutUi(st, myTurn);
       return;
     }
-    var sig = gameId + '|' + (st.turnId || '') + '|' + (st.pending || '') + '|' + (st.log || '') + '|' + JSON.stringify(st.last || null) + '|' + (boardSel ? boardSel.join(',') : '') + '|' + JSON.stringify(st.board || st.cells || st.mals || null);
+    var sig = gameId + '|' + (st.turnId || '') + '|' + (st.pending || '') + '|' + (st.log || '') + '|' + JSON.stringify(st.last || null) + '|' + (boardSel ? boardSel.join(',') : '') + '|' + JSON.stringify(st.board || st.cells || st.mals || null) + '|' + (st.fx && st.fx.id || '') + '|' + JSON.stringify(st.setupReady || null) + '|' + JSON.stringify(st.layoutInner || null) + '|' + (st.check ? 1 : 0);
     if (sig === boardSig) return;
     boardSig = sig;
 
@@ -2231,13 +2383,24 @@
     if (gameId === 'chess' || gameId === 'janggi') {
       var board = st.board || [];
       var dests = [];
-      if (boardSel) {
+      var setupPhase = gameId === 'janggi' && st.pending === 'setup';
+      if (boardSel && !setupPhase) {
         dests = gameId === 'chess' ? chessDests(board, boardSel[0], boardSel[1], st.flags) : janggiDests(board, boardSel[0], boardSel[1]);
       }
-      var wrapClass = gameId === 'chess' ? 'hkmp-chess' : 'hkmp-jg';
-      var extra = gameId === 'janggi' ? janggiLinesSvg() : '';
+      var wrapClass = gameId === 'chess' ? 'hkmp-chess' : ('hkmp-jg' + (st.check ? ' jg-check' : ''));
+      var extra = '';
+      if (gameId === 'janggi') {
+        extra = janggiLinesSvg();
+        if (setupPhase) extra += '<div class="hkmp-jg-banner setup">상·마 배치</div>';
+        else if (st.check) extra += '<div class="hkmp-jg-banner">장군!</div>';
+      }
       var gridOpen = gameId === 'janggi' ? '<div class="hkmp-jg-grid">' : '';
       var gridClose = gameId === 'janggi' ? '</div>' : '';
+      var chkKing = null;
+      if (gameId === 'janggi' && st.check) {
+        var chkSide = st.turnSide != null ? st.turnSide : (myTurn ? boardMySide() : 1 - boardMySide());
+        chkKing = janggiFindKing(board, chkSide);
+      }
       refs.board.innerHTML = '<div class="' + wrapClass + '">' + extra + gridOpen +
         board.map(function (row, r) {
           return row.map(function (p, c) {
@@ -2245,7 +2408,8 @@
             var sel = boardSel && boardSel[0] === r && boardSel[1] === c;
             var last = st.last && ((st.last.fr === r && st.last.fc === c) || (st.last.tr === r && st.last.tc === c));
             var hint = destHintClass(board, r, c, dests);
-            var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : '') + (sel ? ' sel' : '') + (last ? ' last' : '') + hint;
+            var kingChk = chkKing && chkKing[0] === r && chkKing[1] === c;
+            var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : '') + (sel ? ' sel' : '') + (last ? ' last' : '') + (kingChk ? ' chk' : '') + hint;
             var inner = '';
             if (p && gameId === 'chess') inner = '<span class="hkmp-ch-piece ' + (p.s === 0 ? 'w' : 'b') + '">' + pieceGlyph(p, 'chess') + '</span>';
             if (p && gameId === 'janggi') inner = '<span class="hkmp-jg-piece s' + p.s + ' t-' + p.t + '">' + pieceGlyph(p, 'janggi') + '</span>';
@@ -2254,6 +2418,7 @@
         }).join('') + gridClose + '</div>';
       Array.prototype.forEach.call(refs.board.querySelectorAll('[data-r]'), function (btn) {
         btn.onclick = function () {
+          if (setupPhase) return;
           if (!myTurn) return;
           var r = Number(btn.getAttribute('data-r')), c = Number(btn.getAttribute('data-c'));
           var cell = board[r] && board[r][c];
@@ -2289,7 +2454,41 @@
           boardSel = null;
         };
       });
-      refs.boardAct.innerHTML = '';
+      if (gameId === 'janggi') {
+        var mySideAct = boardMySide();
+        var actHtml = '';
+        if (setupPhase) {
+          var iReady = !!(st.setupReady && st.setupReady[mySideAct]);
+          var innerOn = !(st.layoutInner && st.layoutInner[mySideAct] === false);
+          if (!iReady) {
+            actHtml =
+              '<button type="button" class="hkmp-btn' + (innerOn ? ' primary' : '') + '" data-jg="inner">내상</button>' +
+              '<button type="button" class="hkmp-btn' + (!innerOn ? ' primary' : '') + '" data-jg="outer">외상</button>' +
+              '<button type="button" class="hkmp-btn primary" data-jg="ready">배치 완료</button>';
+          } else {
+            actHtml = '<span class="hkmp-note" style="margin:0">배치 완료 · 상대 대기</span>';
+          }
+        } else if (myTurn && !st.check) {
+          actHtml = '<button type="button" class="hkmp-btn" data-jg="pass">한수쉼</button>';
+        }
+        refs.boardAct.innerHTML = actHtml;
+        Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-jg]'), function (btn) {
+          btn.onclick = function () {
+            var a = btn.getAttribute('data-jg');
+            if (a === 'inner') send({ type: 'input', payload: { act: 'layout', inner: true } });
+            else if (a === 'outer') send({ type: 'input', payload: { act: 'layout', inner: false } });
+            else if (a === 'ready') send({ type: 'input', payload: { act: 'ready' } });
+            else if (a === 'pass') send({ type: 'input', payload: { act: 'pass' } });
+          };
+        });
+        if (st.last) playJanggiMoveAnim(st.last);
+        if (st.fx && st.fx.id && st.fx.id !== jgFxSeen) {
+          jgFxSeen = st.fx.id;
+          playJanggiFx(st.fx.kind || 'move');
+        }
+      } else {
+        refs.boardAct.innerHTML = '';
+      }
       return;
     }
 
@@ -2334,7 +2533,7 @@
       nexuswar: '내 거점에서 드래그해 출동 · Shift 전군 · 상대 본진 점령 승리',
       gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
       chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
-      janggi: '기물을 누르면 갈 수 있는 길이 표시됩니다. 졸·병은 앞·좌·우. 궁 안에서는 대각선. 왕을 잡으면 승리.',
+      janggi: '한국 장기. 시작 전 내상/외상. 졸·병은 처음부터 앞·좌·우(뒤 불가). 포는 반드시 한 점을 뛰어넘고 포끼리 못 넘고 못 잡음. 상은 한 칸 직선+두 칸 대각(막히면 불가). 궁 안 대각. 장군은 피해야 함. 빅장(양왕 마주봄)은 무승부. 장군이 아닐 때 한수쉼, 연속 두 번이면 무승부.',
       marble: '내 차례에 주사위 · 빈 땅은 구매/패스. 상대 파산 시 승리.',
       yut: '윷 던지기(오른쪽) → 말을 눌러 선택 → 빛나는 칸으로 이동. 모서리에 멈춰야 지름길. 같은 팀 말은 업기, 상대는 잡기. 윷·모·잡으면 한 번 더. 빽도는 한 칸 뒤.',
     }[gameId] || '';
@@ -2815,7 +3014,14 @@
         if (pm.id === st.turnId || pm.id == st.turnId) turnName = pm.name;
       });
       var myB = st.turnId != null && (st.turnId === selfId || st.turnId == selfId);
-      html += '<span class="hkmp-pill" style="color:' + (myB ? '#9ae6b4' : '#efd28a') + '">' + (myB ? '내 차례' : ('차례 · ' + esc(turnName || '?'))) + '</span>';
+      if (!(gameId === 'janggi' && st.pending === 'setup')) {
+        html += '<span class="hkmp-pill" style="color:' + (myB ? '#9ae6b4' : '#efd28a') + '">' + (myB ? '내 차례' : ('차례 · ' + esc(turnName || '?'))) + '</span>';
+      }
+      if (gameId === 'janggi') {
+        html += '<span class="hkmp-pill">' + (boardMySide() === 0 ? '초(楚)' : '한(漢)') + '</span>';
+        if (st.pending === 'setup') html += '<span class="hkmp-pill" style="color:#efd28a">상·마 배치</span>';
+        if (st.check) html += '<span class="hkmp-pill" style="color:#ff8a7a">장군!</span>';
+      }
       if (st.log) html += '<span class="hkmp-pill">' + esc(st.log) + '</span>';
       if (gameId === 'gomoku' && st.stones != null) html += '<span class="hkmp-pill">돌 <b>' + st.stones + '</b></span>';
       if (gameId === 'marble' && st.tokens) {
@@ -4104,6 +4310,8 @@
       else if (br === 'five') reasonText = iWon ? '5목을 만들었습니다!' : '상대가 5목을 만들었습니다';
       else if (br === 'checkmate') reasonText = iWon ? '체크메이트!' : '체크메이트로 패배';
       else if (br === 'king') reasonText = iWon ? '왕을 잡았습니다!' : '왕이 잡혔습니다';
+      else if (br === 'han') reasonText = iWon ? '한! 상대 왕이 외통수입니다' : '한으로 패배했습니다';
+      else if (br === 'bikjang') { title = '빅장'; reasonText = '양왕이 마주쳐 무승부입니다'; iWon = false; }
       else if (br === 'bankrupt') reasonText = iWon ? '상대가 파산했습니다' : '파산했습니다';
       else if (br === 'yut') {
         var winTeamName = '';
@@ -4118,8 +4326,9 @@
           : ((winTeamName ? winTeamName + '팀이 이겼습니다. ' : '') + '상대 말이 모두 골인했습니다');
       }
     }
+    var endSkin = gameId === 'yut' ? (' yut-end ' + (iWon ? 'win' : 'lose')) : (gameId === 'janggi' ? (' jg-end ' + (iWon ? 'win' : 'lose')) : '');
     refs.body.innerHTML =
-      '<div class="hkmp-ended' + (gameId === 'yut' ? (' yut-end ' + (iWon ? 'win' : 'lose')) : '') + '"><h2 style="font-size:' + ((iWon || gameId === 'snakes' || gameId === 'yut') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' +
+      '<div class="hkmp-ended' + endSkin + '"><h2 style="font-size:' + ((iWon || gameId === 'snakes' || gameId === 'yut' || gameId === 'janggi') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '">' +
       (gameId === 'snakes' ? title : esc(title)) + '</h2>' +
       (gameId === 'snakes' ? '' : '<p style="color:#b1c1bd">' + (iWon ? '승리' : (wid != null ? '패배' : '종료')) + ' · 승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b></p>') +
       (reasonText ? '<p class="hkmp-note">' + esc(reasonText) + '</p>' : '') +
@@ -4135,6 +4344,10 @@
       room = null; endedInfo = null; lastState = null; view = 'browse'; render(); requestList();
     };
     if (gameId === 'yut') playYutFx(iWon ? 'win' : 'lose');
+    if (gameId === 'janggi') {
+      var jgEnd = endedInfo && endedInfo.reason;
+      playJanggiFx(jgEnd === 'bikjang' || jgEnd === 'draw' ? 'bikjang' : (iWon ? 'mate' : 'lose'));
+    }
   }
 
   window.HKMpGames = {

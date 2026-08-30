@@ -35,7 +35,7 @@
     nexuswar: { icon: '🌐', name: '점령전', desc: '싱글/대결 · 거점 점령' },
     gomoku: { icon: '⚫', name: '오목', desc: '1:1 / 2:2 / 1:AI · 5목을 먼저' },
     chess: { icon: '♟️', name: '체스', desc: '1:1 / 2:2 / 1:AI · 클래식 체스' },
-    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한·초 장기' },
+    janggi: { icon: '🐴', name: '장기', desc: '1:1 / 2:2 / 1:AI · 한국 장기' },
     marble: { icon: '🎲', name: '모두의마블', desc: '1:1 / 2:2 / 1:AI · 주사위 보드' },
     yut: { icon: '🪵', name: '윷놀이', desc: '2~4팀 / 2:2 / 1:AI · 윷 던져 말 옮기기' }
   };
