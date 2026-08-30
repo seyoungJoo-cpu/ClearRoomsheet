@@ -1237,8 +1237,8 @@ function marbleAi(room, endGame) {
 /* ===================== YUT ===================== */
 const YUT_NAMES = ["", "도", "개", "걸", "윷", "모"];
 const YUT_TEAM_NAMES = ["청", "홍", "황", "녹"];
-const YUT_INNER_NEXT = { 21: 22, 22: 20, 25: 26, 26: 20, 20: 27, 27: 28, 28: "home" };
-const YUT_INNER_PREV = { 21: 5, 22: 21, 25: 10, 26: 25, 27: 20, 28: 27 };
+const YUT_INNER_NEXT = { 21: 22, 22: 20, 25: 26, 26: 20, 23: 24, 24: 15, 27: 28, 28: 0 };
+const YUT_INNER_PREV = { 21: 5, 22: 21, 25: 10, 26: 25, 23: 20, 24: 23, 27: 20, 28: 27 };
 
 function yutTeamCount(mode) {
   if (mode === "ffa3") return 3;
@@ -1275,25 +1275,31 @@ function yutNodes() {
   return pts.map((p, i) => ({ id: i, x: p.x, y: p.y }));
 }
 
-function yutNextOptions(pos, fromCorner) {
+function yutNextOptions(pos, startingHere, from) {
   if (pos === "home" || pos === 99) return ["home"];
-  if (pos < 0) return [0];
+  if (pos < 0) return [1];
+  if (pos === 20) return startingHere ? [27] : [23];
   if (YUT_INNER_NEXT[pos] != null) return [YUT_INNER_NEXT[pos]];
-  if (pos === 5) return fromCorner ? [21] : [6];
-  if (pos === 10) return fromCorner ? [25] : [11];
-  if (pos === 19) return ["home"];
+  if (pos === 5) return startingHere ? [21] : [6];
+  if (pos === 10) return startingHere ? [25] : [11];
+  if (pos === 0) return from === -1 ? [1] : ["home"];
+  if (pos === 19) return [0];
   if (pos >= 0 && pos < 19) return [pos + 1];
   return ["home"];
 }
 
 function yutPrevPos(pos, arrivedFrom) {
-  if (pos === "home" || pos === 99) return 28;
+  if (pos === "home" || pos === 99) return 0;
   if (pos < 0) return null;
-  if (pos === 0) return -1;
+  if (pos === 0) {
+    if (arrivedFrom === 19 || arrivedFrom === 28 || arrivedFrom === 1) return arrivedFrom;
+    return 19;
+  }
   if (pos === 20) {
-    if (arrivedFrom === 22 || arrivedFrom === 26) return arrivedFrom;
+    if (arrivedFrom === 22 || arrivedFrom === 26 || arrivedFrom === 23) return arrivedFrom;
     return 22;
   }
+  if (pos === 15 && arrivedFrom === 24) return 24;
   if (YUT_INNER_PREV[pos] != null) return YUT_INNER_PREV[pos];
   if (pos > 0 && pos <= 19) return pos - 1;
   return null;
@@ -1308,7 +1314,9 @@ function yutDests(start, steps, arrivedFrom) {
   const n = Math.max(1, steps | 0);
   const seen = {};
   const out = [];
-  function rec(pos, left, first) {
+  const origin = start < 0 ? 0 : start;
+  const originFrom = start < 0 ? -1 : arrivedFrom;
+  function rec(pos, left, first, from) {
     if (left === 0) {
       const key = String(pos);
       if (!seen[key]) {
@@ -1318,13 +1326,13 @@ function yutDests(start, steps, arrivedFrom) {
       return;
     }
     if (pos === "home" || pos === 99) {
-      rec("home", 0, first);
+      rec("home", 0, first, from);
       return;
     }
-    const choices = yutNextOptions(pos, left === n);
-    for (let i = 0; i < choices.length; i++) rec(choices[i], left - 1, first == null ? choices[i] : first);
+    const choices = yutNextOptions(pos, left === n, from);
+    for (let i = 0; i < choices.length; i++) rec(choices[i], left - 1, first == null ? choices[i] : first, pos);
   }
-  rec(start, n, null);
+  rec(origin, n, null, originFrom);
   return out;
 }
 
@@ -1363,6 +1371,31 @@ function yutLegalForTeam(s, team, n) {
   return out;
 }
 
+function yutSetPoolLegal(s, team) {
+  const throws = s.throws || [];
+  s.legalAll = throws.map((t) => yutLegalForTeam(s, team, t.n));
+  s.turnThrows = throws.map((t) => t.name);
+  const idx = Math.max(0, Math.min(throws.length - 1, s.throwI | 0));
+  s.throwI = throws.length ? idx : 0;
+  s.moveN = throws.length ? throws[idx].n : 0;
+  s.legal = s.legalAll[idx] || [];
+}
+
+function yutEndTurn(room, s, keep) {
+  s.pending = "throw";
+  s.legal = [];
+  s.legalAll = [];
+  nextTurn(room, s, keep);
+  if (!keep) {
+    s.throws = [];
+    s.turnThrows = [];
+    s.bonus = 0;
+    s.throwI = 0;
+    s.moveN = 0;
+  }
+  s.turnTeam = teamOf(s.turnSlot, s.mode);
+}
+
 function yutPushFx(s, kind, extra) {
   s.fxSeq = (s.fxSeq || 0) + 1;
   s.fx = Object.assign({ kind: kind, id: s.fxSeq }, extra || {});
@@ -1387,9 +1420,12 @@ function initYut(room) {
     turnTeam: teamOf(0, mode),
     pending: "throw",
     lastYut: null,
-    extra: 0,
+    bonus: 0,
     moveN: 0,
+    throwI: 0,
+    throws: [],
     legal: [],
+    legalAll: [],
     history: [],
     turnThrows: [],
     log: "윷을 던지세요",
@@ -1409,6 +1445,15 @@ function applyYut(room, player, payload, endGame) {
   if (!s || s.turnId !== player.id) return;
   const team = yutTeamOfPlayer(player, s.mode);
   const act = String(payload.act || "");
+  if (!Array.isArray(s.throws)) s.throws = [];
+  if (s.pending === "move" && act === "pickThrow" && payload.throwI != null) {
+    const i = payload.throwI | 0;
+    if (i >= 0 && i < s.throws.length) {
+      s.throwI = i;
+      yutSetPoolLegal(s, team);
+    }
+    return;
+  }
   if (s.pending === "throw" && (act === "throw" || act === "roll" || act === "")) {
     let backs = 0;
     const sticks = [];
@@ -1420,28 +1465,32 @@ function applyYut(room, player, payload, endGame) {
     const isBackDo = backs === 1 && sticks[0] === 1;
     const n = isBackDo ? -1 : backs === 0 ? 5 : backs;
     const name = isBackDo ? "빽도" : YUT_NAMES[n];
-    s.lastYut = { n, name, sticks };
+    const rec = { n, name, sticks };
+    s.lastYut = rec;
     s.throwId = (s.throwId || 0) + 1;
-    if (!isBackDo && n >= 4) s.extra = (s.extra || 0) + 1;
-    s.pending = "move";
-    s.log = name + (isBackDo ? " (한 칸 뒤로)" : " (" + n + "칸)");
-    s.moveN = n;
+    s.throws.push(rec);
     s.history = (s.history || []).concat([name]).slice(-16);
-    s.turnThrows = (s.turnThrows || []).concat([name]);
-    s.legal = yutLegalForTeam(s, team, n);
-    s.aiAt = Date.now() + 1100;
-    if (!s.legal.length) {
-      s.log = name + " — 움직일 말이 없습니다";
+    s.turnThrows = s.throws.map((t) => t.name);
+    if (n >= 4) {
       s.pending = "throw";
+      s.log = name + " · 한 번 더 던지세요";
       s.legal = [];
-      const keep = s.extra > 0;
-      nextTurn(room, s, keep);
-      if (s.extra > 0) s.extra--;
-      if (!keep) {
-        s.turnThrows = [];
-        s.extra = 0;
-      }
+      s.legalAll = [];
+      s.aiAt = Date.now() + 900;
+      s.turnTeam = teamOf(s.turnSlot, s.mode);
+      return;
     }
+    yutSetPoolLegal(s, team);
+    const usable = (s.legalAll || []).some((ls) => ls && ls.length);
+    if (!usable) {
+      s.log = name + " — 움직일 말이 없습니다";
+      yutEndTurn(room, s, false);
+      s.aiAt = Date.now() + 500;
+      return;
+    }
+    s.pending = "move";
+    s.log = s.throws.map((t) => t.name).join(" → ") + " · 결과를 골라 말을 옮기세요";
+    s.aiAt = Date.now() + 1100;
     s.turnTeam = teamOf(s.turnSlot, s.mode);
     return;
   }
@@ -1449,7 +1498,11 @@ function applyYut(room, player, payload, endGame) {
     const idx = payload.mal != null ? payload.mal | 0 : payload.i | 0;
     const mal = s.mals[idx];
     if (!mal || mal.team !== team || mal.home) return;
-    const dests = yutDests(mal.pos, s.moveN || 1, mal.arrivedFrom);
+    let throwI = payload.throwI != null ? payload.throwI | 0 : s.throwI | 0;
+    if (throwI < 0 || throwI >= s.throws.length) throwI = 0;
+    const rec = s.throws[throwI];
+    if (!rec) return;
+    const dests = yutDests(mal.pos, rec.n, mal.arrivedFrom);
     let want = payload.dest;
     if (want === 99 || want === "99") want = "home";
     if (want === -1 || want === "-1") want = -1;
@@ -1475,6 +1528,8 @@ function applyYut(room, player, payload, endGame) {
         yutPushFx(s, "win", { team: team });
         yutRefreshStacks(s);
         s.legal = [];
+        s.legalAll = [];
+        s.throws = [];
         s.pending = "throw";
         endGame(room, "yut", player.id);
         return;
@@ -1502,24 +1557,35 @@ function applyYut(room, player, payload, endGame) {
           m.stacked = 1;
           m.arrivedFrom = -1;
         });
-        s.extra = (s.extra || 0) + 1;
-        s.log = "잡기! 한 번 더";
+        s.bonus = (s.bonus || 0) + 1;
+        s.log = "잡기! 남은 결과를 쓴 뒤 한 번 더";
         yutPushFx(s, "capture", { n: captured.length });
       } else if (alliesThere) {
         const stacked = s.mals.filter((m) => m.team === team && !m.home && m.pos === dest).length;
         s.log = "업기! ×" + stacked;
         yutPushFx(s, "stack");
-      } else s.log = (s.lastYut && s.lastYut.name) || YUT_NAMES[Math.max(0, s.moveN)] || "이동";
+      } else s.log = rec.name || "이동";
     }
+    s.throws.splice(throwI, 1);
     yutRefreshStacks(s);
-    s.legal = [];
-    s.pending = "throw";
-    const keep = s.extra > 0;
-    nextTurn(room, s, keep);
-    if (s.extra > 0) s.extra--;
-    if (!keep) {
+    yutSetPoolLegal(s, team);
+    const usable = (s.legalAll || []).some((ls) => ls && ls.length);
+    if (s.throws.length && usable) {
+      s.pending = "move";
+      s.log = (s.log || "") + " · 남은 결과 " + s.throws.map((t) => t.name).join(" → ");
+    } else {
+      s.throws = [];
       s.turnThrows = [];
-      s.extra = 0;
+      s.legalAll = [];
+      const keep = (s.bonus || 0) > 0;
+      if (keep) {
+        s.bonus--;
+        s.pending = "throw";
+        s.legal = [];
+        s.log = "잡기 보너스 · 한 번 더 던지세요";
+      } else {
+        yutEndTurn(room, s, false);
+      }
     }
     s.turnTeam = teamOf(s.turnSlot, s.mode);
     s.aiAt = Date.now() + (s.fx && (s.fx.kind === "capture" || s.fx.kind === "stack") ? 1200 : 520);
@@ -1537,28 +1603,33 @@ function yutAi(room, endGame) {
   }
   if (s.pending === "move") {
     const team = yutTeamOfPlayer(actor, s.mode);
-    const legal = s.legal && s.legal.length ? s.legal : yutLegalForTeam(s, team, s.moveN);
+    const throws = s.throws || [];
+    const legalAll = s.legalAll && s.legalAll.length === throws.length
+      ? s.legalAll
+      : throws.map((t) => yutLegalForTeam(s, team, t.n));
     let best = null;
     let bestScore = -1e9;
-    legal.forEach((opt) => {
-      const mal = s.mals[opt.mal];
-      (opt.dests || []).forEach((dest) => {
-        let score = Math.random() * 2;
-        if (dest === "home" || dest === 99) score += 90;
-        else {
-          if (s.mals.some((m) => m.team !== team && !m.home && m.pos === dest)) score += 70;
-          if (s.mals.some((m) => m.team === team && !m.home && m.pos === dest && m !== mal)) score += 28;
-          if (dest === 20 || dest === 27 || dest === 28) score += 14;
-          if (typeof dest === "number" && dest >= 21) score += 6;
-        }
-        if (mal && mal.pos >= 0) score += 4;
-        if (score > bestScore) {
-          bestScore = score;
-          best = { mal: opt.mal, dest: dest };
-        }
+    throws.forEach((rec, throwI) => {
+      (legalAll[throwI] || []).forEach((opt) => {
+        const mal = s.mals[opt.mal];
+        (opt.dests || []).forEach((dest) => {
+          let score = Math.random() * 2;
+          if (dest === "home" || dest === 99) score += 90;
+          else {
+            if (s.mals.some((m) => m.team !== team && !m.home && m.pos === dest)) score += 70;
+            if (s.mals.some((m) => m.team === team && !m.home && m.pos === dest && m !== mal)) score += 28;
+            if (dest === 20 || dest === 27 || dest === 28) score += 14;
+            if (typeof dest === "number" && dest >= 21) score += 6;
+          }
+          if (mal && mal.pos >= 0) score += 4;
+          if (score > bestScore) {
+            bestScore = score;
+            best = { mal: opt.mal, dest: dest, throwI: throwI };
+          }
+        });
       });
     });
-    if (best) applyYut(room, actor, { act: "move", mal: best.mal, dest: best.dest }, endGame);
+    if (best) applyYut(room, actor, { act: "move", mal: best.mal, dest: best.dest, throwI: best.throwI }, endGame);
   }
 }
 
