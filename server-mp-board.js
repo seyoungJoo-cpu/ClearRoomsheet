@@ -1396,6 +1396,42 @@ function yutEndTurn(room, s, keep) {
   s.turnTeam = teamOf(s.turnSlot, s.mode);
 }
 
+function yutMalScore(m) {
+  if (!m || m.home || m.pos === 99) return 1000;
+  if (m.pos < 0) return 0;
+  if (m.pos === 0) return 96;
+  if (m.pos === 28) return 94;
+  if (m.pos === 27) return 88;
+  if (m.pos === 20) return 72;
+  if (m.pos === 24 || m.pos === 23) return 62;
+  if (m.pos === 26 || m.pos === 22) return 58;
+  if (m.pos === 25 || m.pos === 21) return 52;
+  if (typeof m.pos === "number" && m.pos >= 1 && m.pos <= 19) return 10 + m.pos;
+  return 1;
+}
+
+function yutRanks(s) {
+  const n = Math.max(2, s.teams | 0);
+  const rows = [];
+  for (let t = 0; t < n; t++) {
+    const mals = (s.mals || []).filter((m) => m.team === t);
+    const home = mals.filter((m) => m.home).length;
+    const score = mals.reduce((acc, m) => acc + yutMalScore(m), 0);
+    rows.push({
+      team: t,
+      name: (s.teamNames && s.teamNames[t]) || YUT_TEAM_NAMES[t],
+      home,
+      score,
+    });
+  }
+  rows.sort((a, b) => b.home - a.home || b.score - a.score || a.team - b.team);
+  rows.forEach((r, i) => {
+    if (i > 0 && rows[i - 1].home === r.home && rows[i - 1].score === r.score) r.place = rows[i - 1].place;
+    else r.place = i + 1;
+  });
+  return rows;
+}
+
 function yutPushFx(s, kind, extra) {
   s.fxSeq = (s.fxSeq || 0) + 1;
   s.fx = Object.assign({ kind: kind, id: s.fxSeq }, extra || {});
@@ -1530,6 +1566,7 @@ function applyYut(room, player, payload, endGame) {
         s.legal = [];
         s.legalAll = [];
         s.throws = [];
+        s.ranks = yutRanks(s);
         s.pending = "throw";
         endGame(room, "yut", player.id);
         return;

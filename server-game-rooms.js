@@ -62,7 +62,7 @@ function send(ws, obj) {
 }
 
 function roomSnapshot(room) {
-  return {
+  const snap = {
     type: "room",
     code: room.code,
     game: room.game,
@@ -79,6 +79,8 @@ function roomSnapshot(room) {
     })),
     max: room.max || GAMES[room.game].max,
   };
+  if (room.status === "ended" && room.endedInfo) snap.ended = room.endedInfo;
+  return snap;
 }
 
 function broadcastRoom(room) {
@@ -351,6 +353,13 @@ function endGame(room, reason, winnerId) {
     winnerId: winnerId != null ? winnerId : null,
     winnerName: winnerName || null,
     state: publicState(room),
+  };
+  if (room.state && Array.isArray(room.state.ranks)) ended.ranks = room.state.ranks;
+  room.endedInfo = {
+    reason: ended.reason,
+    winnerId: ended.winnerId,
+    winnerName: ended.winnerName,
+    ranks: ended.ranks || null,
   };
   for (const p of room.players) {
     p.ready = false;
@@ -4100,6 +4109,7 @@ function attachGameRooms(httpServer) {
         clearTick(room);
         room.status = "lobby";
         room.state = null;
+        room.endedInfo = null;
         for (const p of room.players) {
           p.ready = false;
           p.input = null;

@@ -232,6 +232,11 @@
       '.hkmp-ended.board-end.draw{background:radial-gradient(circle at 50% 30%,#dbe7ff,#6a8cc8 48%,#1a2840);animation:hkmp-end-drawbg 1.1s ease}',
       '.hkmp-ended.board-end .hkmp-end-title{position:relative;z-index:2;margin:10px 0 8px;font-family:"Noto Serif KR",Batang,Impact,serif;font-weight:900;letter-spacing:-.06em;line-height:1;text-shadow:0 8px 0 #0005,0 0 28px #fff8}',
       '.hkmp-ended.board-end.win .hkmp-end-title{font-size:clamp(56px,16vw,108px)!important;color:#fff!important;animation:hkmp-end-wintitle 1.15s cubic-bezier(.15,1.5,.3,1) both}',
+      '.hkmp-yut-ranks{position:relative;z-index:2;list-style:none;margin:12px auto 0;padding:0;max-width:320px;text-align:left}',
+      '.hkmp-yut-ranks li{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;margin:6px 0;border-radius:12px;background:#0006;color:#fff;font-weight:800;font-size:14px}',
+      '.hkmp-yut-ranks li.me{box-shadow:inset 0 0 0 2px #ffe566}',
+      '.hkmp-end-actions{position:relative;z-index:2;opacity:0;pointer-events:none;transform:translateY(10px);transition:.35s ease}',
+      '.hkmp-end-actions.show{opacity:1;pointer-events:auto;transform:none}',
       '.hkmp-ended.board-end.lose .hkmp-end-title{font-size:clamp(52px,15vw,96px)!important;color:#fff!important;animation:hkmp-end-losetitle 1.05s cubic-bezier(.4,0,.2,1) both}',
       '.hkmp-ended.board-end.draw .hkmp-end-title{font-size:clamp(44px,12vw,80px)!important;color:#fff!important;animation:hkmp-end-drawtitle .9s ease both}',
       '.hkmp-ended.board-end p{position:relative;z-index:2}',
@@ -693,15 +698,19 @@
         if (createWatchTimer) clearTimeout(createWatchTimer);
         toast('방이 만들어졌습니다');
       }
-      endedInfo = null;
       if (room.status === 'playing') {
+        endedInfo = null;
         view = 'play';
         if (!lastState) lastState = null;
         startInput();
       } else if (room.status === 'ended') {
+        if (msg.ended) {
+          endedInfo = Object.assign({}, endedInfo || { type: 'ended' }, msg.ended);
+        }
         view = 'ended';
         stopInput();
       } else {
+        endedInfo = null;
         view = 'room';
         stopInput();
         lastState = null;
@@ -734,6 +743,7 @@
     if (msg.type === 'ended') {
       endedInfo = msg;
       if (msg.state) lastState = msg.state;
+      if (!endedInfo.ranks && lastState && lastState.ranks) endedInfo.ranks = lastState.ranks;
       view = 'ended';
       stopInput();
       if (room) room.status = 'ended';
@@ -4377,13 +4387,29 @@
     var winner = '알 수 없음';
     var wid = endedInfo && endedInfo.winnerId;
     var iWon = wid != null && (wid === selfId || wid == selfId);
-    if (!iWon && (gameId === 'memorymp' || isBoard()) && wid != null && lastState && lastState.mode === '2v2' && lastState.playerMeta) {
-      var myTeam = null, winTeam = null;
-      lastState.playerMeta.forEach(function (pm) {
-        if (pm.id === selfId || pm.id == selfId) myTeam = pm.team;
-        if (pm.id === wid || pm.id == wid) winTeam = pm.team;
+    var ranks = (endedInfo && endedInfo.ranks) || (lastState && lastState.ranks) || [];
+    var myYutTeam = boardMySide();
+    var myRank = null;
+    if (gameId === 'yut' && ranks.length) {
+      ranks.forEach(function (r) {
+        if ((r.team | 0) === (myYutTeam | 0)) myRank = r;
       });
-      if (myTeam != null && winTeam != null && myTeam === winTeam) iWon = true;
+      if (myRank) iWon = myRank.place === 1;
+      else if (!iWon && wid != null && lastState && lastState.playerMeta) {
+        var myTeam = null, winTeam = null;
+        lastState.playerMeta.forEach(function (pm) {
+          if (pm.id === selfId || pm.id == selfId) myTeam = pm.team;
+          if (pm.id === wid || pm.id == wid) winTeam = pm.team;
+        });
+        if (myTeam != null && winTeam != null && myTeam === winTeam) iWon = true;
+      }
+    } else if (!iWon && (gameId === 'memorymp' || isBoard()) && wid != null && lastState && lastState.mode === '2v2' && lastState.playerMeta) {
+      var myTeam2 = null, winTeam2 = null;
+      lastState.playerMeta.forEach(function (pm) {
+        if (pm.id === selfId || pm.id == selfId) myTeam2 = pm.team;
+        if (pm.id === wid || pm.id == wid) winTeam2 = pm.team;
+      });
+      if (myTeam2 != null && winTeam2 != null && myTeam2 === winTeam2) iWon = true;
     }
     if (wid != null && room && room.players) {
       for (var i = 0; i < room.players.length; i++) {
@@ -4398,7 +4424,7 @@
       title = '승리!';
       winner = (winner && winner !== '알 수 없음' ? winner + ' (당신)' : '당신');
     } else {
-      title = wid != null ? '패배' : '경기 종료';
+      title = wid != null || (gameId === 'yut' && myRank) ? '패배' : '경기 종료';
     }
     var reasonText = endedInfo && endedInfo.reason ? translateErr(endedInfo.reason) : '';
     if (gameId === 'rts' && endedInfo && endedInfo.reason === 'nexus') {
@@ -4432,29 +4458,57 @@
       else if (br === 'bikjang') { title = '무승부'; reasonText = '빅장 · 양왕이 마주쳐 무승부입니다'; iWon = false; }
       else if (br === 'bankrupt') reasonText = iWon ? '상대가 파산했습니다' : '파산했습니다';
       else if (br === 'yut') {
-        var winTeamName = '';
-        if (lastState && lastState.playerMeta) {
+        var winTeamName = (ranks[0] && ranks[0].name) || (myRank && iWon ? myRank.name : '');
+        if (!winTeamName && lastState && lastState.playerMeta) {
           lastState.playerMeta.forEach(function (pm) {
             if (pm.id === wid || pm.id == wid) winTeamName = yutTeamName(pm.team);
           });
         }
-        reasonText = iWon
-          ? ((winTeamName ? winTeamName + '팀 · ' : '') + '말 4개가 모두 골인했습니다!')
-          : ((winTeamName ? winTeamName + '팀이 이겼습니다. ' : '') + '상대 말이 모두 골인했습니다');
+        if (myRank && ranks.length >= 3) {
+          reasonText = myRank.place === 1
+            ? (myRank.name + '팀 1등 · 말 4개가 모두 골인했습니다!')
+            : (myRank.name + '팀 ' + myRank.place + '등 · 골인 ' + myRank.home + '/4');
+        } else {
+          reasonText = iWon
+            ? ((winTeamName ? winTeamName + '팀 · ' : '') + '말 4개가 모두 골인했습니다!')
+            : ((winTeamName ? winTeamName + '팀이 이겼습니다. ' : '') + '상대 말이 모두 골인했습니다');
+        }
       }
     }
     var loudEnd = gameId === 'gomoku' || gameId === 'chess' || gameId === 'janggi' || gameId === 'yut';
     var endOutcome = 'lose';
     if (loudEnd) {
       if (iWon) endOutcome = 'win';
+      else if (gameId === 'yut' && (wid != null || myRank)) endOutcome = 'lose';
       else if (wid == null || (endedInfo && (endedInfo.reason === 'draw' || endedInfo.reason === 'bikjang'))) endOutcome = 'draw';
-      title = endOutcome === 'win' ? '승리!!!' : (endOutcome === 'lose' ? '패배...' : '무승부');
+      if (gameId === 'yut' && myRank && ranks.length >= 3) {
+        title = myRank.place === 1 ? '1등!!!' : (myRank.place + '등');
+      } else {
+        title = endOutcome === 'win' ? '승리!!!' : (endOutcome === 'lose' ? '패배...' : '무승부');
+      }
     }
     var endSkin = '';
     if (loudEnd) endSkin = ' board-end ' + endOutcome;
     else if (gameId === 'yut') endSkin = ' yut-end ' + (iWon ? 'win' : 'lose');
     else if (gameId === 'janggi') endSkin = ' jg-end ' + (iWon ? 'win' : 'lose');
     var confetti = loudEnd && endOutcome !== 'draw' ? ('<div class="hkmp-end-confetti">' + boardEndOutcomeHtml(endOutcome === 'win' ? 36 : 18, endOutcome === 'win') + '</div>') : '';
+    var rankHtml = '';
+    if (gameId === 'yut' && ranks.length) {
+      rankHtml = '<ol class="hkmp-yut-ranks">' + ranks.map(function (r) {
+        var me = (r.team | 0) === (myYutTeam | 0);
+        return '<li class="' + (me ? 'me' : '') + '" style="border-left:4px solid ' + yutTeamColor(r.team) + '"><span>' +
+          r.place + '등 · ' + esc(r.name || '') + '팀</span><span>골인 ' + (r.home | 0) + '/4</span></li>';
+      }).join('') + '</ol>';
+    }
+    var subLine = '';
+    if (gameId !== 'snakes') {
+      if (loudEnd && endOutcome === 'draw') subLine = '무승부입니다';
+      else if (gameId === 'yut' && myRank && ranks.length >= 3) {
+        subLine = myRank.place === 1 ? '우승' : (myRank.place + '등입니다');
+      } else {
+        subLine = (iWon ? '승리' : (wid != null || myRank ? '패배' : '종료')) + ' · 승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b>';
+      }
+    }
     refs.body.innerHTML =
       '<div class="hkmp-ended' + endSkin + '">' +
       (loudEnd && endOutcome === 'win' ? '<div class="hkmp-end-rays"></div>' : '') +
@@ -4462,12 +4516,13 @@
       confetti +
       '<h2' + (loudEnd ? ' class="hkmp-end-title"' : (' style="font-size:' + ((iWon || gameId === 'snakes') ? '36px' : '30px') + ';color:' + (iWon ? '#9ae6b4' : '#efd28a') + '"')) + '>' +
       (gameId === 'snakes' ? title : esc(title)) + '</h2>' +
-      (gameId === 'snakes' ? '' : '<p style="color:#b1c1bd">' + (loudEnd && endOutcome === 'draw' ? '무승부입니다' : ((iWon ? '승리' : (wid != null ? '패배' : '종료')) + ' · 승자: <b style="color:#efd28a">' + esc(String(winner)) + '</b>')) + '</p>') +
+      (subLine ? '<p style="color:#b1c1bd;position:relative;z-index:2">' + subLine + '</p>' : '') +
       (reasonText ? '<p class="hkmp-note">' + esc(reasonText) + '</p>' : '') +
+      rankHtml +
       (room && room.code ? '<p class="hkmp-note">방 ' + esc(room.code) + '</p>' : '') +
-      '<div class="hkmp-row" style="justify-content:center;margin-top:18px">' +
-      '<button type="button" class="hkmp-btn primary" data-act="rematch">Rematch</button>' +
-      '<button type="button" class="hkmp-btn" data-act="leave">Leave lobby</button></div></div>';
+      '<div class="hkmp-row hkmp-end-actions" style="justify-content:center;margin-top:18px">' +
+      '<button type="button" class="hkmp-btn primary" data-act="rematch">다시하기</button>' +
+      '<button type="button" class="hkmp-btn" data-act="leave">로비로</button></div></div>';
     refs.body.querySelector('[data-act="rematch"]').onclick = function () {
       send({ type: 'rematch' });
     };
@@ -4475,6 +4530,10 @@
       send({ type: 'leave' });
       room = null; endedInfo = null; lastState = null; view = 'browse'; render(); requestList();
     };
+    setTimeout(function () {
+      var acts = refs.body && refs.body.querySelector('.hkmp-end-actions');
+      if (acts) acts.classList.add('show');
+    }, loudEnd ? 1200 : 200);
     if (loudEnd) {
       playBoardEndFx(endOutcome);
       setTimeout(function () { playBoardEndFx(endOutcome); }, 620);
