@@ -33,10 +33,28 @@
   var yutSel = null;
   var yutThrowI = 0;
   var yutFxSeen = 0;
+  var yutNameFxTimer = 0;
+  var yutAgainFxTimer = 0;
+  var yutAgainSeen = '';
   var jgFxSeen = 0;
   var jgMoveSeen = '';
   var YUT_TEAM_NAMES = ['청', '홍', '황', '녹'];
-  var YUT_TEAM_COL = ['#3d7cff', '#e23d28', '#e0a020', '#2f9e58'];
+  var YUT_PALETTE = [
+    { id: 'red', name: '빨', hex: '#e23d28', ink: '#fff' },
+    { id: 'orange', name: '주', hex: '#f97316', ink: '#1a1208' },
+    { id: 'yellow', name: '노', hex: '#f4c430', ink: '#1a1208' },
+    { id: 'green', name: '초', hex: '#22a855', ink: '#fff' },
+    { id: 'blue', name: '파', hex: '#2563eb', ink: '#fff' },
+    { id: 'sky', name: '하늘', hex: '#38bdf8', ink: '#0b1a24' },
+    { id: 'pink', name: '핑크', hex: '#fb7185', ink: '#1a1208' },
+    { id: 'purple', name: '보', hex: '#7c3aed', ink: '#fff' },
+    { id: 'black', name: '검', hex: '#1c1917', ink: '#fff' },
+    { id: 'white', name: '흰', hex: '#f8f5ef', ink: '#1a1208' }
+  ];
+  var YUT_PALETTE_MAP = {};
+  YUT_PALETTE.forEach(function (c) { YUT_PALETTE_MAP[c.id] = c; });
+  var YUT_DEFAULT_IDS = ['blue', 'red', 'yellow', 'green'];
+  var YUT_TEAM_COL = ['#2563eb', '#e23d28', '#f4c430', '#22a855'];
   var YUT_TEAM_COL_DARK = ['#163a88', '#7a1510', '#7a5a0a', '#14532d'];
   var tankCreateMode = 'ffa';
   var rtsCreateMode = '1v1';
@@ -218,6 +236,12 @@
       '.hkmp-create-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}',
       '.hkmp-players{display:grid;gap:8px;margin:12px 0}.hkmp-player{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#091a21cc;border:1px solid #ffffff12}',
       '.hkmp-player.me{border-color:#cbb27088;color:#efd28a}.hkmp-dot{width:10px;height:10px;border-radius:50%;background:#88a09a}.hkmp-dot.on{background:#9ae6b4}',
+      '.hkmp-color-label{margin:14px 0 8px;font-size:13px;font-weight:800;color:#fff6dc;letter-spacing:.04em}',
+      '.hkmp-color-pick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}',
+      '.hkmp-color-sw{width:42px;height:42px;border-radius:50%;border:2px solid #fff6;cursor:pointer;font-weight:900;font-size:11px;display:grid;place-items:center;box-shadow:0 2px 8px #0006;padding:0;line-height:1}',
+      '.hkmp-color-sw.on{box-shadow:0 0 0 3px #12211f,0 0 0 6px #efd28a,0 4px 12px #0006}',
+      '.hkmp-color-sw.taken{opacity:.32;cursor:not-allowed;filter:grayscale(.35)}',
+      '.hkmp-color-dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff8;box-shadow:0 1px 3px #0006;flex:0 0 14px}',
       '.hkmp-note{color:#88a09a;font-size:12px;margin-top:8px}.hkmp-hud{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}',
       '.hkmp-pill{padding:7px 11px;border:1px solid #ffffff1c;background:#0d2429;border-radius:12px;font-size:13px}.hkmp-pill b{color:#efd58f;margin-left:5px}',
       '.hkmp-stage{position:relative;border-radius:16px;overflow:hidden;background:#07151a;box-shadow:inset 0 0 0 1px #ffffff12;touch-action:none}',
@@ -776,6 +800,7 @@
       bankrupt: '파산',
       yut: '윷놀이 골인',
       draw: '무승부',
+      color_taken: '이미 다른 팀이 쓰는 색입니다',
     };
     return map[code] || code;
   }
@@ -1364,12 +1389,18 @@
         var teamTag = '';
         if (gameId === 'rts' && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
         if ((gameId === 'lanepush' || gameId === 'nexuswar' || gameId === 'memorymp' || isBoard()) && room.mode === '2v2') teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
-        if (gameId === 'yut' && room.mode !== '2v2') {
-          var ytSlot = p.slot != null ? p.slot : i;
-          teamTag = ' · ' + yutTeamName(room.mode === 'ffa3' || room.mode === 'ffa4' ? ytSlot : (ytSlot % 2)) + '팀';
+        if (gameId === 'yut') {
+          var ytTeam = yutLobbyTeam(p, i, room);
+          var colMeta = yutColorMeta(p.malColor || YUT_DEFAULT_IDS[ytTeam] || 'blue');
+          teamTag = ' · ' + colMeta.name + '팀';
         }
         if (gameId === 'memorymp' && room.mode === '2v2' && !teamTag) teamTag = ' · 팀' + ((p.slot != null ? p.slot : i) < 2 ? 'A' : 'B');
-        return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' +
+        var colDot = '';
+        if (gameId === 'yut') {
+          var pc = yutColorMeta(p.malColor || YUT_DEFAULT_IDS[yutLobbyTeam(p, i, room)] || 'blue');
+          colDot = '<i class="hkmp-color-dot" style="background:' + pc.hex + '"></i>';
+        }
+        return '<div class="hkmp-player' + (isMe ? ' me' : '') + '"><span class="hkmp-dot' + (ready ? ' on' : '') + '"></span>' + colDot +
           '<strong>' + esc(p.name || ('P' + (i + 1))) + (p.isAi ? ' ·AI' : '') + '</strong>' +
           '<span style="flex:1;color:#88a09a;font-size:12px">' + (pendingRoom ? '생성 중' : (p.isAi ? 'Ready' : (ready ? 'Ready' : '대기'))) + teamTag + (isMe ? ' · 나' : '') + '</span></div>';
       }).join('') + '</div>' +
@@ -1379,6 +1410,21 @@
             return '<button type="button" class="hkmp-btn' + ((room.aiDiff || 'medium') === dd[0] ? ' primary' : '') + '" data-room-rts-diff="' + dd[0] + '">AI ' + dd[1] + '</button>';
           }).join('') + '</div>')
         : '') +
+      (gameId === 'yut' && !pendingRoom ? (function () {
+        var myT = me ? yutLobbyTeam(me, players.indexOf(me), room) : 0;
+        var taken = {};
+        players.forEach(function (p, i) {
+          var t = yutLobbyTeam(p, i, room);
+          if (p.malColor && t !== myT) taken[p.malColor] = 1;
+        });
+        var mine = (me && me.malColor) || YUT_DEFAULT_IDS[myT] || 'blue';
+        return '<div class="hkmp-color-label">말 색상 · 빨 주 노 초 파 하늘 핑크 보 검 흰</div><div class="hkmp-color-pick">' +
+          YUT_PALETTE.map(function (c) {
+            var on = mine === c.id;
+            var busy = !!taken[c.id];
+            return '<button type="button" class="hkmp-color-sw' + (on ? ' on' : '') + (busy ? ' taken' : '') + '" data-mal-color="' + c.id + '" style="background:' + c.hex + ';color:' + c.ink + '"' + (busy ? ' disabled' : '') + ' title="' + c.name + '"><span>' + c.name + '</span></button>';
+          }).join('') + '</div>';
+      }()) : '') +
       '<div class="hkmp-row">' +
       '<button type="button" class="hkmp-btn primary" data-act="ready"' + (pendingRoom || (me && me.ready) ? ' disabled' : '') + '>Ready</button>' +
       '</div>' +
@@ -1415,6 +1461,21 @@
         if (!RTS_AI_DIFF_META[dd]) return;
         send({ type: 'rts_ai_diff', aiDiff: dd });
         room.aiDiff = dd;
+        renderRoom();
+      };
+    });
+    Array.prototype.forEach.call(refs.body.querySelectorAll('[data-mal-color]'), function (btn) {
+      btn.onclick = function () {
+        var cid = btn.getAttribute('data-mal-color');
+        if (!cid || btn.classList.contains('taken')) return;
+        send({ type: 'mal_color', color: cid });
+        if (me) me.malColor = cid;
+        if (room && room.mode === '2v2') {
+          var myT = yutLobbyTeam(me, 0, room);
+          (room.players || []).forEach(function (p, i) {
+            if (yutLobbyTeam(p, i, room) === myT) p.malColor = cid;
+          });
+        }
         renderRoom();
       };
     });
@@ -1598,6 +1659,11 @@
     yutSel = null;
     yutThrowI = 0;
     yutFxSeen = 0;
+    yutAgainSeen = '';
+    if (yutNameFxTimer) clearTimeout(yutNameFxTimer);
+    if (yutAgainFxTimer) clearTimeout(yutAgainFxTimer);
+    yutNameFxTimer = 0;
+    yutAgainFxTimer = 0;
     jgFxSeen = 0;
     jgMoveSeen = '';
     refs.body.innerHTML =
@@ -1636,11 +1702,30 @@
     if (room && (room.mode === 'ffa3' || room.mode === 'ffa4')) return mySlot();
     return mySlot() % 2;
   }
+  function yutLobbyTeam(p, i, rm) {
+    var slot = (p && p.slot != null) ? p.slot : i;
+    rm = rm || room || {};
+    if (rm.mode === '2v2') return slot < 2 ? 0 : 1;
+    if (rm.mode === 'ffa3' || rm.mode === 'ffa4') return slot;
+    return slot % 2;
+  }
+  function yutColorMeta(id) {
+    return YUT_PALETTE_MAP[id] || YUT_PALETTE_MAP[YUT_DEFAULT_IDS[0]] || YUT_PALETTE[0];
+  }
+  function yutColorIdOfTeam(t, st) {
+    st = st || lastState || {};
+    if (st.malColors && st.malColors[t]) return st.malColors[t];
+    return YUT_DEFAULT_IDS[t] || 'blue';
+  }
   function yutTeamName(t) {
-    return YUT_TEAM_NAMES[t] || ('팀' + ((t | 0) + 1));
+    var names = (lastState && lastState.teamNames) || YUT_TEAM_NAMES;
+    return names[t] || ('팀' + ((t | 0) + 1));
   }
   function yutTeamColor(t) {
-    return YUT_TEAM_COL[t] || '#efd28a';
+    return yutColorMeta(yutColorIdOfTeam(t)).hex;
+  }
+  function yutTeamInk(t) {
+    return yutColorMeta(yutColorIdOfTeam(t)).ink;
   }
 
   function cloneBoard(b) {
@@ -1940,28 +2025,38 @@
 
   function yutSkinCss() {
     return [
-      '.hkmp-yut-layout{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%}',
-      '.hkmp-yut-banner{width:100%;text-align:center;padding:10px 14px;border-radius:14px;border:2px solid #c9a227;background:linear-gradient(180deg,#fff4d4,#e8c98a);color:#5a1a12;font-weight:900;font-size:clamp(16px,4.2vw,22px);letter-spacing:.04em;box-shadow:inset 0 1px 0 #fff8,0 4px 0 #8a5a22;font-family:"Noto Serif KR",Batang,Georgia,serif}',
-      '.hkmp-yut-banner b{color:#9b1b1b}',
+      '.hkmp-yut-layout{display:flex;flex-direction:column;align-items:stretch;gap:12px;width:100%}',
+      '.hkmp-yut-banner{width:100%;text-align:center;padding:12px 16px;border-radius:16px;border:1px solid #d4b36a;background:linear-gradient(180deg,#fff8e8,#f0d49a 55%,#e2bc72);color:#3a160e;font-weight:900;font-size:clamp(16px,4.2vw,22px);letter-spacing:.06em;box-shadow:inset 0 1px 0 #fff,0 8px 18px #0004;font-family:"Noto Serif KR",Batang,Georgia,serif}',
+      '.hkmp-yut-banner b{color:#8b1515}',
       '.hkmp-yut-row{display:flex;flex-direction:row;flex-wrap:nowrap;gap:12px;justify-content:center;align-items:stretch;width:100%}',
-      '.hkmp-yut{position:relative;width:min(100%,min(70vw,520px));flex:1 1 auto;max-width:520px;aspect-ratio:1;margin:0;background:#c45c3a;background-image:radial-gradient(circle at 50% 50%,#d96a44 0 18%,transparent 19%),repeating-linear-gradient(90deg,rgba(90,20,10,.08) 0 2px,transparent 2px 7px),repeating-linear-gradient(0deg,rgba(90,20,10,.06) 0 2px,transparent 2px 8px),radial-gradient(circle at 50% 42%,#c45c3a,#8b2e1c 70%,#5a1810);border-radius:8px;border:10px solid #5c2a14;box-shadow:inset 0 0 0 3px #e8c98a,inset 0 0 40px #0004,0 10px 28px #0006;overflow:visible}',
-      '.hkmp-yut:before{content:"";position:absolute;inset:10px;border:1px solid #ead18f55;border-radius:4px;pointer-events:none}',
+      '.hkmp-yut-bench{flex:0 0 108px;width:108px;display:flex;flex-direction:column;gap:8px;padding:10px 8px;background:linear-gradient(180deg,#3a2218,#23140f);border-radius:16px;border:1px solid #c9a56a66;box-shadow:inset 0 1px 0 #fff2,0 8px 18px #0005;box-sizing:border-box}',
+      '.hkmp-yut-bench-h{font-size:11px;font-weight:900;color:#f3e0b8;letter-spacing:.08em;text-align:center;opacity:.9}',
+      '.hkmp-yut-bench-team{padding:8px 6px;border-radius:12px;background:#0004;border:1px solid #fff1}',
+      '.hkmp-yut-bench-lab{font-size:11px;font-weight:900;color:#fff6dc;margin-bottom:6px;display:flex;align-items:center;gap:6px}',
+      '.hkmp-yut-bench-lab i{width:10px;height:10px;border-radius:50%;border:1px solid #fff8;display:inline-block}',
+      '.hkmp-yut-bench-mals,.hkmp-yut-bench-home{display:flex;flex-wrap:wrap;gap:6px;min-height:34px;justify-content:center}',
+      '.hkmp-yut-bench-home{opacity:.7;margin-top:4px}',
+      '.hkmp-yut{position:relative;width:min(100%,min(64vw,500px));flex:1 1 auto;max-width:500px;aspect-ratio:1;margin:0;background:#b44a32;background-image:radial-gradient(circle at 50% 50%,#c85a3c 0 16%,transparent 17%),repeating-linear-gradient(90deg,rgba(70,16,8,.07) 0 1px,transparent 1px 9px),repeating-linear-gradient(0deg,rgba(70,16,8,.06) 0 1px,transparent 1px 9px),radial-gradient(circle at 50% 40%,#c25438,#8a2818 68%,#4a140e);border-radius:18px;border:12px solid #4a2416;box-shadow:inset 0 0 0 3px #e8c98a,inset 0 0 48px #0005,0 14px 32px #0006;overflow:visible}',
+      '.hkmp-yut:before{content:"";position:absolute;inset:12px;border:1px solid #ead18f44;border-radius:8px;pointer-events:none}',
       '.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}',
-      '.hkmp-yut-node{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:#f3e4b8;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff8,0 2px 4px #0005;z-index:1;cursor:default;touch-action:manipulation;-webkit-tap-highlight-color:transparent}',
-      '.hkmp-yut-node.corner{width:40px;height:40px;margin:-20px 0 0 -20px;background:#fff0c8;border-width:3px;border-color:#7a4a18}',
+      '.hkmp-yut-node{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6d8,#e8d09a);border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff8,0 2px 4px #0005;z-index:1;cursor:default;touch-action:manipulation;-webkit-tap-highlight-color:transparent}',
+      '.hkmp-yut-node.corner{width:40px;height:40px;margin:-20px 0 0 -20px;background:radial-gradient(circle at 35% 30%,#fff8e0,#efd28a);border-width:3px;border-color:#7a4a18}',
       '.hkmp-yut-node.center{width:46px;height:46px;margin:-23px 0 0 -23px;background:radial-gradient(circle at 40% 35%,#fff6d8,#e8c070);border-width:3px}',
       '.hkmp-yut-node .hkmp-yut-nlbl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:900;color:#6a2a12;pointer-events:none;white-space:nowrap;font-family:"Noto Serif KR",Batang,serif}',
       '.hkmp-yut-node.corner .hkmp-yut-nlbl,.hkmp-yut-node.center .hkmp-yut-nlbl{font-size:11px}',
       '.hkmp-yut-node.lit{z-index:8;cursor:pointer;box-shadow:0 0 0 4px #ffe566,0 0 18px #ffb000,inset 0 0 8px #fff;animation:hkmp-yut-pulse .7s ease infinite;transform:scale(1.18)}',
       '.hkmp-yut-node.lit.goal{box-shadow:0 0 0 5px #9ae6b4,0 0 22px #2f9e58;background:#d8f5c8}',
-      '.hkmp-mal{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid #fff8e8;z-index:5;box-shadow:0 3px 8px #0008,inset 0 2px 0 #fff6;transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .18s ease;display:grid;place-items:center;font-size:17px;font-weight:900;color:#fff;line-height:1;-webkit-user-select:none;user-select:none;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;text-shadow:0 1px 2px #0009}',
-      '.hkmp-mal.home{opacity:.7;transform:scale(.78);cursor:default}',
+      '.hkmp-mal{position:absolute;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;border:3px solid #fff8e8;z-index:5;box-shadow:0 4px 10px #0008,inset 0 3px 0 #fff7,inset 0 -6px 10px #0004;background-image:radial-gradient(circle at 32% 28%,#fff8,transparent 46%);transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .18s ease;display:grid;place-items:center;font-size:16px;font-weight:900;color:#fff;line-height:1;-webkit-user-select:none;user-select:none;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;text-shadow:0 1px 2px #0009}',
+      '.hkmp-mal.ink-dark{color:#1a1208;text-shadow:0 1px 0 #fff8}',
+      '.hkmp-mal.parked{position:relative;left:auto!important;top:auto!important;margin:0;width:32px;height:32px;flex:0 0 32px;box-shadow:0 2px 6px #0007,inset 0 2px 0 #fff6}',
+      '.hkmp-mal.home{opacity:.55;transform:scale(.78);cursor:default}',
+      '.hkmp-mal.parked.home{opacity:.4;transform:scale(.7)}',
       '.hkmp-mal.wait{box-shadow:0 0 0 2px #fff6,0 3px 8px #0008}',
       '.hkmp-mal.sel{transform:scale(1.16);box-shadow:0 0 0 4px #ffe566,0 0 16px #fff;z-index:7}',
       '.hkmp-mal.can{box-shadow:0 0 0 3px #9ae6b4,0 3px 8px #0008}',
-      '.hkmp-mal .hkmp-mal-n{font-size:15px}',
+      '.hkmp-mal .hkmp-mal-n{font-size:14px}',
       '.hkmp-mal .hkmp-mal-stack{position:absolute;right:-6px;top:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:#1a1208;color:#ffe566;font-size:12px;display:grid;place-items:center;border:2px solid #fff}',
-      '.hkmp-yut-side{flex:0 0 168px;width:168px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:14px 12px;background:linear-gradient(180deg,#f6ead0,#e2c48a);border-radius:16px;border:3px solid #8a5a22;min-height:240px;box-sizing:border-box;box-shadow:inset 0 1px 0 #fff8,0 6px 16px #0004}',
+      '.hkmp-yut-side{flex:0 0 176px;width:176px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:16px 12px;background:linear-gradient(180deg,#fff6e4,#edd4a0 40%,#d9b56e);border-radius:18px;border:1px solid #b8893a;min-height:240px;box-sizing:border-box;box-shadow:inset 0 1px 0 #fff,0 10px 22px #0004}',
       '.hkmp-yut-act{width:100%;display:flex;flex-direction:column;gap:8px;align-items:stretch}',
       '.hkmp-yut-act .hkmp-btn{width:100%}',
       '.hkmp-yut-sticks{display:flex;gap:10px;align-items:flex-end;height:120px;perspective:420px}',
@@ -1971,49 +2066,74 @@
       '.hkmp-stick.back{background:linear-gradient(90deg,#fff1c8,#d4b06a)}',
       '.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}',
       '.hkmp-stick.toss{animation:hkmp-stick-flip .9s cubic-bezier(.2,.7,.2,1)}',
-      '.hkmp-yut-yname{color:#7a1a12;font-weight:900;font-size:26px;min-height:32px;font-family:"Noto Serif KR",Batang,serif;text-shadow:0 1px 0 #fff8}',
-      '.hkmp-yut-hist{width:100%;text-align:center;color:#5a2a12;font-weight:800;font-size:13px;line-height:1.45;word-break:keep-all}',
-      '.hkmp-yut-hist b{color:#9b1b1b;font-size:15px}',
+      '.hkmp-yut-yname{color:#5a1a12;font-weight:900;font-size:28px;min-height:34px;font-family:"Noto Serif KR",Batang,serif;text-shadow:0 1px 0 #fff8}',
+      '.hkmp-yut-hist{width:100%;text-align:center;color:#3a1a10;font-weight:800;font-size:13px;line-height:1.45;word-break:keep-all}',
+      '.hkmp-yut-hist b{color:#8b1515;font-size:15px}',
       '.hkmp-yut-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}',
       '.hkmp-yut-chip{border:0;border-radius:999px;padding:5px 10px;font-weight:800;font-size:13px;background:#ead18f;color:#3a1a10;cursor:pointer;box-shadow:0 1px 0 #0003}',
-      '.hkmp-yut-chip.on{background:#ffe566;box-shadow:0 0 0 2px #9b1b1b,0 1px 0 #0003}',
-      '.hkmp-yut-order{width:100%;text-align:left;font-size:12px;line-height:1.45;color:#ead18f}',
-      '.hkmp-yut-order div{padding:3px 0;display:flex;justify-content:space-between;gap:8px}',
-      '.hkmp-yut-order .on{color:#ffe566;font-weight:900}',
+      '.hkmp-yut-chip.on{background:#5a1a12;color:#fff6dc;box-shadow:0 0 0 2px #c9a227}',
+      '.hkmp-yut-order{width:100%;text-align:left;font-size:13px;line-height:1.45;color:#3a1a10}',
+      '.hkmp-yut-order div{padding:5px 8px;display:flex;justify-content:space-between;gap:8px;border-radius:10px}',
+      '.hkmp-yut-order .on{background:#5a1a12;color:#fff6dc;font-weight:900}',
+      '.hkmp-yut-order .seq{margin-top:8px;padding-top:8px;border-top:1px solid #8a5a2244;color:#5a1a12;font-weight:900;display:block}',
       '.hkmp-yut-hint{font-size:12px;color:#6a3a18;text-align:center;font-weight:700}',
       '.hkmp-yut-boom{position:fixed;inset:0;z-index:10020;pointer-events:none;display:none}',
       '.hkmp-yut-boom.go{display:block}',
-      '.hkmp-yut-boom-flash{position:absolute;inset:0;opacity:0}',
-      '.hkmp-yut-boom.go[data-kind="capture"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ff2a00cc,#7a0000aa 42%,#ffcc0044);animation:hkmp-yut-flash 1.15s ease forwards}',
-      '.hkmp-yut-boom.go[data-kind="stack"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ffe566cc,#e0a020aa 42%,#fff8);animation:hkmp-yut-flash 1.05s ease forwards}',
-      '.hkmp-yut-boom.go[data-kind="goal"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#9ae6b4bb,#2f9e5888);animation:hkmp-yut-flash .9s ease forwards}',
-      '.hkmp-yut-boom.go[data-kind="win"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ffe566ee,#e23d28aa 50%,#3d7cff66);animation:hkmp-yut-flash 1.6s ease forwards}',
+      '.hkmp-yut-boom-flash,.hkmp-yut-boom-flash2{position:absolute;inset:0;opacity:0}',
+      '.hkmp-yut-boom.go[data-kind="do"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#fff8e8ee,#e8c07088 38%,#0000);animation:hkmp-yut-flash 1.05s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="gae"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#ffe566ee,#f97316aa 40%,#0000);animation:hkmp-yut-flash 1.1s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="geol"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#ffb020ee,#e23d28aa 42%,#0000);animation:hkmp-yut-flash 1.15s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="yut"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#fffbe8ff,#ffe566ee 28%,#e0a020cc 52%,#ff7a0022);animation:hkmp-yut-flash 1.35s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="mo"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#fff,#ffe566ff 22%,#ff2a00cc 48%,#7a000088);animation:hkmp-yut-flash 1.45s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="backdo"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 48%,#e8f4ffee,#38bdf8aa 40%,#1d4ed888);animation:hkmp-yut-flash 1.15s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="again"] .hkmp-yut-boom-flash{background:radial-gradient(circle at 50% 45%,#fff,#ffe566ff 18%,#ff7a00ee 40%,#e23d28aa 62%,#0006);animation:hkmp-yut-flash 1.55s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="capture"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ff2a00ee,#7a0000cc 42%,#ffcc0044);animation:hkmp-yut-flash 1.25s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="stack"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ffe566ee,#e0a020bb 42%,#fff8);animation:hkmp-yut-flash 1.1s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="goal"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#9ae6b4cc,#2f9e5888);animation:hkmp-yut-flash 1.05s ease forwards}',
+      '.hkmp-yut-boom.go[data-kind="win"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#ffe566ee,#e23d28aa 50%,#3d7cff66);animation:hkmp-yut-flash 1.7s ease forwards}',
       '.hkmp-yut-boom.go[data-kind="lose"] .hkmp-yut-boom-flash{background:radial-gradient(circle,#222c,#000d);animation:hkmp-yut-flash 1.3s ease forwards}',
+      '.hkmp-yut-boom.go.heavy .hkmp-yut-boom-flash2{background:radial-gradient(circle at 50% 50%,#fff8,transparent 55%);animation:hkmp-yut-flash2 1.2s ease forwards}',
+      '.hkmp-yut-boom-rays{position:absolute;left:50%;top:50%;width:160vmax;height:160vmax;margin:-80vmax 0 0 -80vmax;background:repeating-conic-gradient(from 0deg,#ffe56655 0 7deg,transparent 7deg 18deg);opacity:0;mix-blend-mode:screen}',
+      '.hkmp-yut-boom.go.heavy .hkmp-yut-boom-rays{animation:hkmp-yut-rays 1.45s ease-out forwards}',
       '.hkmp-yut-boom-shock{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:10px solid #fff;opacity:0}',
-      '.hkmp-yut-boom.go .hkmp-yut-boom-shock{animation:hkmp-yut-shock 1s cubic-bezier(.1,.7,.2,1) forwards}',
+      '.hkmp-yut-boom.go .hkmp-yut-boom-shock{animation:hkmp-yut-shock 1.05s cubic-bezier(.1,.7,.2,1) forwards}',
+      '.hkmp-yut-boom.go .hkmp-yut-boom-shock.s2{animation-delay:.08s;border-color:#ffe566}',
+      '.hkmp-yut-boom.go .hkmp-yut-boom-shock.s3{animation-delay:.16s;border-color:#ff7a00}',
+      '.hkmp-yut-boom.go[data-kind="backdo"] .hkmp-yut-boom-shock{border-color:#7dd3fc}',
       '.hkmp-yut-boom.go[data-kind="stack"] .hkmp-yut-boom-shock{border-color:#ffe566}',
-      '.hkmp-yut-boom-txt{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) scale(.2) rotate(-18deg);font-size:clamp(52px,16vw,120px);font-weight:900;color:#fff;font-family:"Noto Serif KR",Batang,Impact,serif;letter-spacing:-.04em;text-shadow:0 0 8px #000,6px 8px 0 #7a0000,-4px -3px 0 #ff0,0 18px 40px #000;opacity:0;white-space:nowrap}',
-      '.hkmp-yut-boom.go .hkmp-yut-boom-txt{animation:hkmp-yut-slam 1.15s cubic-bezier(.15,1.4,.3,1) forwards}',
+      '.hkmp-yut-boom-txt{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) scale(.2) rotate(-18deg);font-size:clamp(64px,18vw,148px);font-weight:900;color:#fff;font-family:"Noto Serif KR",Batang,Impact,serif;letter-spacing:-.04em;text-shadow:0 0 12px #000,8px 10px 0 #7a0000,-5px -4px 0 #ffe566,0 22px 48px #000;opacity:0;white-space:nowrap}',
+      '.hkmp-yut-boom.go .hkmp-yut-boom-txt{animation:hkmp-yut-slam 1.25s cubic-bezier(.12,1.45,.28,1) forwards}',
+      '.hkmp-yut-boom.go[data-kind="again"] .hkmp-yut-boom-txt{font-size:clamp(52px,14vw,118px);text-shadow:0 0 16px #fff,0 0 40px #ffe566,10px 12px 0 #9b1b1b,-6px -5px 0 #fff,0 24px 50px #000;animation:hkmp-yut-slam-big 1.55s cubic-bezier(.12,1.5,.28,1) forwards}',
+      '.hkmp-yut-boom.go[data-kind="mo"] .hkmp-yut-boom-txt,.hkmp-yut-boom.go[data-kind="yut"] .hkmp-yut-boom-txt{animation:hkmp-yut-slam-big 1.4s cubic-bezier(.12,1.5,.28,1) forwards}',
       '.hkmp-yut-boom.go[data-kind="stack"] .hkmp-yut-boom-txt{text-shadow:0 0 8px #000,6px 8px 0 #7a5a00,-4px -3px 0 #fff,0 18px 40px #000}',
+      '.hkmp-yut-boom-sub{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);font-size:clamp(22px,5vw,36px);font-weight:900;color:#ffe566;text-shadow:0 2px 0 #7a0000,0 8px 18px #000;opacity:0;font-family:"Noto Serif KR",Batang,serif}',
+      '.hkmp-yut-boom.go[data-kind="again"] .hkmp-yut-boom-sub{animation:hkmp-yut-sub 1.4s ease forwards}',
       '.hkmp-yut-bits{position:absolute;inset:0;overflow:hidden}',
       '.hkmp-yut-bit{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:2px;background:#ffe566;opacity:0}',
-      '.hkmp-yut-boom.go .hkmp-yut-bit{animation:hkmp-yut-bit 1.1s ease-out forwards}',
-      '.hk-mp-overlay.yut-quake{animation:hkmp-yut-quake 1.05s ease}',
+      '.hkmp-yut-boom.go .hkmp-yut-bit{animation:hkmp-yut-bit 1.25s ease-out forwards}',
+      '.hk-mp-overlay.yut-quake{animation:hkmp-yut-quake 1.15s ease}',
       '.hk-mp-overlay.yut-quake2{animation:hkmp-yut-quake2 .95s ease}',
+      '.hk-mp-overlay.yut-quake3{animation:hkmp-yut-quake3 1.35s ease}',
       '.hkmp-ended.yut-end{padding:28px 16px;text-align:center;border-radius:20px;overflow:hidden;position:relative}',
       '.hkmp-ended.yut-end.win{background:radial-gradient(circle at 50% 30%,#ffe566,#c45c3a 62%,#5a1810);animation:hkmp-yut-winbg 1.2s ease}',
       '.hkmp-ended.yut-end.lose{background:radial-gradient(circle at 50% 30%,#6a6a6a,#2a1512 62%,#120808)}',
       '.hkmp-ended.yut-end h2{font-size:clamp(48px,14vw,92px)!important;margin:8px 0 12px;font-family:"Noto Serif KR",Batang,Impact,serif;text-shadow:0 6px 0 #0006,0 0 24px #fff8;animation:hkmp-yut-slam 1s cubic-bezier(.15,1.4,.3,1) both}',
       '@keyframes hkmp-stick-flip{0%{transform:translateY(0) rotateX(0) rotateY(0)}18%{transform:translateY(-78px) rotateX(200deg) rotateY(90deg)}40%{transform:translateY(-18px) rotateX(400deg) rotateY(200deg)}62%{transform:translateY(-54px) rotateX(620deg) rotateY(300deg)}82%{transform:translateY(-8px) rotateX(800deg) rotateY(360deg)}100%{transform:translateY(0) rotateX(720deg) rotateY(360deg)}}',
       '@keyframes hkmp-yut-pulse{0%,100%{box-shadow:0 0 0 4px #ffe566,0 0 12px #ffb000}50%{box-shadow:0 0 0 8px #fff38a,0 0 26px #ff7}}',
-      '@keyframes hkmp-yut-flash{0%{opacity:0}8%{opacity:1}18%{opacity:.85}100%{opacity:0}}',
-      '@keyframes hkmp-yut-shock{0%{transform:scale(.2);opacity:1;border-width:18px}100%{transform:scale(18);opacity:0;border-width:0}}',
-      '@keyframes hkmp-yut-slam{0%{transform:translate(-50%,-50%) scale(.15) rotate(-24deg);opacity:0}22%{transform:translate(-50%,-50%) scale(1.35) rotate(8deg);opacity:1}40%{transform:translate(-50%,-50%) scale(.92) rotate(-4deg);opacity:1}70%{transform:translate(-50%,-50%) scale(1.08) rotate(2deg);opacity:1}100%{transform:translate(-50%,-50%) scale(1.02) rotate(-1deg);opacity:0}}',
-      '@keyframes hkmp-yut-bit{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(260deg) scale(.2);opacity:0}}',
+      '@keyframes hkmp-yut-flash{0%{opacity:0}6%{opacity:1}16%{opacity:.9}100%{opacity:0}}',
+      '@keyframes hkmp-yut-flash2{0%{opacity:0}10%{opacity:.85}100%{opacity:0}}',
+      '@keyframes hkmp-yut-rays{0%{transform:rotate(0) scale(.15);opacity:0}16%{opacity:.9}100%{transform:rotate(80deg) scale(1.2);opacity:0}}',
+      '@keyframes hkmp-yut-shock{0%{transform:scale(.15);opacity:1;border-width:22px}100%{transform:scale(22);opacity:0;border-width:0}}',
+      '@keyframes hkmp-yut-slam{0%{transform:translate(-50%,-50%) scale(.12) rotate(-26deg);opacity:0}18%{transform:translate(-50%,-50%) scale(1.48) rotate(9deg);opacity:1}34%{transform:translate(-50%,-50%) scale(.88) rotate(-5deg);opacity:1}58%{transform:translate(-50%,-50%) scale(1.12) rotate(3deg);opacity:1}100%{transform:translate(-50%,-50%) scale(1.04) rotate(-1deg);opacity:0}}',
+      '@keyframes hkmp-yut-slam-big{0%{transform:translate(-50%,-50%) scale(.08) rotate(-32deg);opacity:0}14%{transform:translate(-50%,-50%) scale(1.7) rotate(12deg);opacity:1}28%{transform:translate(-50%,-50%) scale(.82) rotate(-8deg);opacity:1}48%{transform:translate(-50%,-50%) scale(1.22) rotate(4deg);opacity:1}72%{transform:translate(-50%,-50%) scale(1.06) rotate(-2deg);opacity:1}100%{transform:translate(-50%,-50%) scale(1.1) rotate(0);opacity:0}}',
+      '@keyframes hkmp-yut-sub{0%{opacity:0;transform:translate(-50%,-20%) scale(.6)}22%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}',
+      '@keyframes hkmp-yut-bit{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(280deg) scale(.15);opacity:0}}',
       '@keyframes hkmp-yut-quake{0%,100%{transform:translate(0) rotate(0)}8%{transform:translate(-22px,12px) rotate(-3deg)}16%{transform:translate(24px,-10px) rotate(3.4deg)}24%{transform:translate(-18px,-14px) rotate(-2.2deg)}32%{transform:translate(20px,10px) rotate(2.8deg)}44%{transform:translate(-12px,8px) rotate(-1.6deg)}58%{transform:translate(10px,-6px) rotate(1.2deg)}76%{transform:translate(-4px,3px)}100%{transform:none}}',
       '@keyframes hkmp-yut-quake2{0%,100%{transform:translate(0)}10%{transform:translate(16px,-8px) rotate(2deg)}22%{transform:translate(-18px,10px) rotate(-2.4deg)}36%{transform:translate(12px,8px)}52%{transform:translate(-10px,-6px)}70%{transform:translate(6px,3px)}100%{transform:none}}',
+      '@keyframes hkmp-yut-quake3{0%,100%{transform:none}6%{transform:translate(-28px,16px) rotate(-4deg) scale(1.03)}12%{transform:translate(30px,-14px) rotate(4.2deg) scale(1.04)}20%{transform:translate(-24px,-18px) rotate(-3deg)}28%{transform:translate(26px,14px) rotate(3.4deg)}40%{transform:translate(-16px,10px) rotate(-2deg)}54%{transform:translate(14px,-8px)}70%{transform:translate(-8px,5px)}100%{transform:none}}',
       '@keyframes hkmp-yut-winbg{0%{filter:brightness(3) saturate(2)}100%{filter:none}}',
-      '@media(max-width:560px){.hkmp-yut-side{flex:0 0 118px;width:118px;padding:8px 6px;min-height:0}.hkmp-yut-row{gap:6px}.hkmp-stick{height:64px;width:14px}.hkmp-yut-sticks{height:72px;gap:4px}.hkmp-mal{width:36px;height:36px;margin:-18px 0 0 -18px}.hkmp-yut-node{width:22px;height:22px;margin:-11px 0 0 -11px}.hkmp-yut-node.corner{width:30px;height:30px;margin:-15px 0 0 -15px}.hkmp-yut-node.center{width:34px;height:34px;margin:-17px 0 0 -17px}.hkmp-board-wrap{width:min(100%,100%)}}'
+      '@media(max-width:720px){.hkmp-yut-row{flex-wrap:wrap;justify-content:center}.hkmp-yut-bench{flex:1 0 100%;width:auto;flex-direction:row;overflow-x:auto;align-items:stretch}.hkmp-yut-bench-team{min-width:96px}.hkmp-yut-side{flex:1 0 100%;width:auto;flex-direction:row;flex-wrap:wrap;min-height:0}}',
+      '@media(max-width:560px){.hkmp-yut-side{padding:10px 8px}.hkmp-yut-row{gap:6px}.hkmp-stick{height:64px;width:14px}.hkmp-yut-sticks{height:72px;gap:4px}.hkmp-mal{width:34px;height:34px;margin:-17px 0 0 -17px}.hkmp-mal.parked{width:28px;height:28px;flex-basis:28px}.hkmp-yut-node{width:22px;height:22px;margin:-11px 0 0 -11px}.hkmp-yut-node.corner{width:30px;height:30px;margin:-15px 0 0 -15px}.hkmp-yut-node.center{width:34px;height:34px;margin:-17px 0 0 -17px}.hkmp-board-wrap{width:min(100%,100%)}}'
     ].join('');
   }
   function yutPathSvg(nodes) {
@@ -2032,24 +2152,19 @@
       poly(outer) + poly([5, 21, 22, 20, 23, 24, 15]) + poly([10, 25, 26, 20, 27, 28, 0]) +
       '</g></svg>';
   }
-  function yutMalXY(m, nodes, teams) {
-    var benches = [
-      { x: 4, y: 96 },
-      { x: 4, y: 4 },
-      { x: 96, y: 4 },
-      { x: 96, y: 96 }
-    ];
-    var b = benches[m.team] || benches[0];
-    if (m.home) {
-      var hx = b.x < 50 ? b.x + 12 : b.x - 12;
-      var hy = b.y < 50 ? b.y + 12 : b.y - 12;
-      return { x: hx + (m.i % 2) * 4.5, y: hy + (m.i > 1 ? 4.5 : 0), home: true, wait: false };
-    }
-    if (m.pos < 0) {
-      return { x: b.x + (m.i % 2) * 7.2, y: b.y + (m.i > 1 ? 7.2 : 0), home: false, wait: true };
-    }
+  function yutMalXY(m, nodes) {
+    if (m.home || m.pos < 0) return { x: -40, y: -40, home: !!m.home, wait: m.pos < 0 && !m.home };
     var nd = nodes[m.pos] || nodes[0] || { x: 0.5, y: 0.5 };
     return { x: nd.x * 100, y: nd.y * 100, home: false, wait: false };
+  }
+  function yutThrowKind(name) {
+    if (name === '도') return 'do';
+    if (name === '개') return 'gae';
+    if (name === '걸') return 'geol';
+    if (name === '윷') return 'yut';
+    if (name === '모') return 'mo';
+    if (name === '빽도') return 'backdo';
+    return '';
   }
   function playYutToss(sticks, name) {
     var els = refs.board.querySelectorAll('.hkmp-stick');
@@ -2071,41 +2186,76 @@
       nameEl.textContent = '';
       setTimeout(function () { nameEl.textContent = name || ''; }, 920);
     }
+    if (yutNameFxTimer) clearTimeout(yutNameFxTimer);
+    if (yutAgainFxTimer) clearTimeout(yutAgainFxTimer);
+    var kind = yutThrowKind(name);
+    yutNameFxTimer = setTimeout(function () {
+      if (kind) playYutFx(kind);
+      if (name === '윷' || name === '모') {
+        yutAgainSeen = String(name);
+        yutAgainFxTimer = setTimeout(function () { playYutFx('again'); }, 720);
+      }
+    }, 860);
   }
   function playYutFx(kind) {
     if (!root) return;
     var boom = root.querySelector('.hkmp-yut-boom');
     if (!boom) {
       boom = el('div', 'hkmp-yut-boom');
-      boom.innerHTML = '<div class="hkmp-yut-boom-flash"></div><div class="hkmp-yut-boom-shock"></div><div class="hkmp-yut-bits"></div><div class="hkmp-yut-boom-txt"></div>';
+      boom.innerHTML = '<div class="hkmp-yut-boom-flash"></div><div class="hkmp-yut-boom-flash2"></div><div class="hkmp-yut-boom-rays"></div><div class="hkmp-yut-boom-shock"></div><div class="hkmp-yut-boom-shock s2"></div><div class="hkmp-yut-boom-shock s3"></div><div class="hkmp-yut-bits"></div><div class="hkmp-yut-boom-txt"></div><div class="hkmp-yut-boom-sub"></div>';
       root.appendChild(boom);
     }
-    var txtMap = { capture: '잡았다!!!', stack: '업기!!!', goal: '골인!!!', win: '승리!!!', lose: '패배...' };
+    var txtMap = {
+      do: '도', gae: '개', geol: '걸', yut: '윷', mo: '모', backdo: '빽도',
+      again: '한 번 더!!!', capture: '잡았다!!!', stack: '업기!!!', goal: '골인!!!', win: '승리!!!', lose: '패배...'
+    };
+    var palettes = {
+      do: ['#fff8e8', '#e8c070', '#fff'],
+      gae: ['#ffe566', '#f97316', '#fff'],
+      geol: ['#ffb020', '#e23d28', '#ffe566'],
+      yut: ['#ffe566', '#fff', '#ff7a00', '#e23d28'],
+      mo: ['#ff2a00', '#ffe566', '#fff', '#ff7a00'],
+      backdo: ['#7dd3fc', '#2563eb', '#fff'],
+      again: ['#ffe566', '#ff2a00', '#fff', '#ff7a00', '#e23d28'],
+      capture: ['#ff2a00', '#ffe566', '#fff'],
+      stack: ['#ffe566', '#fff', '#e0a020'],
+      goal: ['#9ae6b4', '#ffe566', '#fff'],
+      win: ['#ffe566', '#e23d28', '#3d7cff', '#fff'],
+      lose: ['#888', '#444', '#222']
+    };
+    var heavy = kind === 'again' || kind === 'yut' || kind === 'mo' || kind === 'capture' || kind === 'win';
     var txt = boom.querySelector('.hkmp-yut-boom-txt');
     if (txt) txt.textContent = txtMap[kind] || '!!!';
+    var sub = boom.querySelector('.hkmp-yut-boom-sub');
+    if (sub) sub.textContent = kind === 'again' ? 'THROW AGAIN' : '';
     var bits = boom.querySelector('.hkmp-yut-bits');
     if (bits) {
-      var n = kind === 'win' ? 42 : 28;
+      var n = kind === 'again' ? 86 : (heavy ? 64 : (kind === 'win' ? 52 : 36));
+      var cols = palettes[kind] || palettes.do;
+      var distMax = kind === 'again' ? 460 : (heavy ? 380 : 260);
       var h = '';
-      for (var i = 0; i < n; i++) {
-        var ang = (Math.PI * 2 * i) / n + Math.random() * 0.4;
-        var dist = 120 + Math.random() * 280;
-        var col = kind === 'stack' ? (i % 2 ? '#ffe566' : '#fff') : (kind === 'capture' ? (i % 2 ? '#ff2a00' : '#ffe566') : (i % 3 === 0 ? '#3d7cff' : (i % 3 === 1 ? '#e23d28' : '#ffe566')));
-        h += '<i class="hkmp-yut-bit" style="--dx:' + Math.cos(ang) * dist + 'px;--dy:' + Math.sin(ang) * dist + 'px;background:' + col + ';animation-delay:' + (Math.random() * 0.12) + 's;width:' + (10 + Math.random() * 16) + 'px;height:' + (10 + Math.random() * 16) + 'px"></i>';
+      var i;
+      for (i = 0; i < n; i++) {
+        var ang = (Math.PI * 2 * i) / n + Math.random() * 0.45;
+        var dist = 110 + Math.random() * distMax;
+        var col = cols[i % cols.length];
+        var w = (kind === 'again' ? 12 : 8) + Math.random() * (heavy ? 22 : 14);
+        h += '<i class="hkmp-yut-bit" style="--dx:' + Math.cos(ang) * dist + 'px;--dy:' + Math.sin(ang) * dist + 'px;background:' + col + ';animation-delay:' + (Math.random() * 0.16) + 's;width:' + w + 'px;height:' + (w * (0.5 + Math.random())) + 'px;border-radius:' + (Math.random() > 0.55 ? '99px' : '3px') + '"></i>';
       }
       bits.innerHTML = h;
     }
     boom.setAttribute('data-kind', kind || 'capture');
+    boom.classList.toggle('heavy', !!heavy);
     boom.classList.remove('go');
     void boom.offsetWidth;
     boom.classList.add('go');
-    root.classList.remove('yut-quake', 'yut-quake2');
+    root.classList.remove('yut-quake', 'yut-quake2', 'yut-quake3');
     void root.offsetWidth;
-    root.classList.add(kind === 'stack' ? 'yut-quake2' : 'yut-quake');
+    root.classList.add(kind === 'again' || kind === 'mo' || kind === 'capture' ? 'yut-quake3' : (heavy ? 'yut-quake' : 'yut-quake2'));
     setTimeout(function () {
       boom.classList.remove('go');
-      if (root) root.classList.remove('yut-quake', 'yut-quake2');
-    }, kind === 'win' ? 1600 : 1200);
+      if (root) root.classList.remove('yut-quake', 'yut-quake2', 'yut-quake3');
+    }, kind === 'again' || kind === 'win' ? 1700 : (heavy ? 1450 : 1200));
   }
   function playJanggiFx(kind) {
     if (!root) return;
@@ -2383,18 +2533,24 @@
     var turnTeam = st.turnTeam != null ? st.turnTeam : boardMySide();
     var throws = st.throws || [];
     if (yutThrowI >= throws.length) yutThrowI = Math.max(0, throws.length - 1);
-    var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + (yutSel == null ? '' : yutSel) + '|' + yutThrowI + '|' + JSON.stringify(throws) + '|' + JSON.stringify(st.orderRolls || []) + '|' + JSON.stringify(st.order || []) + '|' + JSON.stringify(mals) + '|' + myTurn + '|' + (st.fx && st.fx.id);
-    var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut-row') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
+    var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + (yutSel == null ? '' : yutSel) + '|' + yutThrowI + '|' + JSON.stringify(throws) + '|' + JSON.stringify(st.orderRolls || []) + '|' + JSON.stringify(st.order || []) + '|' + JSON.stringify(st.malColors || []) + '|' + JSON.stringify(mals) + '|' + myTurn + '|' + (st.fx && st.fx.id);
+    var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut-bench') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
     if (!needDom && key === boardSig) return;
     if (needDom) {
       var corners = { 0: 1, 5: 1, 10: 1, 15: 1, 20: 1 };
       var labels = { 0: '날', 5: '참', 10: '모', 15: '방', 20: '중심' };
+      var benchTeams = '';
+      var ti;
+      for (ti = 0; ti < teams; ti++) {
+        benchTeams += '<div class="hkmp-yut-bench-team" data-bench-team="' + ti + '"><div class="hkmp-yut-bench-lab"><i style="background:' + yutTeamColor(ti) + '"></i>' + esc(yutTeamName(ti)) + '</div><div class="hkmp-yut-bench-mals" data-bench-mals="' + ti + '"></div><div class="hkmp-yut-bench-home" data-bench-home="' + ti + '"></div></div>';
+      }
       refs.board.setAttribute('data-kind', 'yut');
       refs.board.innerHTML =
         '<div class="hkmp-yut-layout">' +
         '<div class="hkmp-yut-banner" data-yut-banner></div>' +
         '<div class="hkmp-yut-row">' +
-        '<div class="hkmp-yut">' + yutPathSvg(nodes) +
+        '<aside class="hkmp-yut-bench"><div class="hkmp-yut-bench-h">대기 말</div>' + benchTeams + '</aside>' +
+        '<div class="hkmp-yut" data-yut-board>' + yutPathSvg(nodes) +
         nodes.map(function (n, ni) {
           var id = n.id != null ? n.id : ni;
           var cls = 'hkmp-yut-node' + (corners[id] ? (id === 20 ? ' center' : ' corner') : '');
@@ -2403,7 +2559,7 @@
           return '<div class="' + cls + '" data-id="' + id + '"' + title + ' style="left:' + (n.x * 100) + '%;top:' + (n.y * 100) + '%">' + lab + '</div>';
         }).join('') +
         mals.map(function (m, i) {
-          return '<div class="hkmp-mal" data-mal="' + i + '" style="left:-20%;top:-20%;background:' + yutTeamColor(m.team) + '"><span class="hkmp-mal-n">' + ((m.i || 0) + 1) + '</span></div>';
+          return '<div class="hkmp-mal" data-mal="' + i + '"><span class="hkmp-mal-n">' + ((m.i || 0) + 1) + '</span></div>';
         }).join('') +
         '</div>' +
         '<div class="hkmp-yut-side"><div class="hkmp-yut-sticks">' +
@@ -2436,7 +2592,7 @@
           var on = st.pending === 'order' && (r.id === st.turnId || r.id == st.turnId);
           var val = r.rec ? r.rec.name : (waiting ? '대기' : '—');
           return '<div class="' + (on ? 'on' : '') + '"><span>' + esc(r.name || '') + '</span><b>' + esc(val) + '</b></div>';
-        }).join('') + (st.orderNames && st.orderNames.length && st.pending !== 'order' ? '<div style="margin-top:6px;color:#ffe566">순서 ' + st.orderNames.map(function (n) { return esc(n); }).join(' → ') + '</div>' : '') + '</div>';
+        }).join('') + (st.orderNames && st.orderNames.length && st.pending !== 'order' ? '<div class="seq">순서 · ' + st.orderNames.map(function (n) { return esc(n); }).join(' → ') + '</div>' : '') + '</div>';
       } else if (st.pending === 'move' && myTurn && throws.length) {
         hist.innerHTML = '<div class="hkmp-yut-chips">' + throws.map(function (t, i) {
           return '<button type="button" class="hkmp-yut-chip' + (i === yutThrowI ? ' on' : '') + '" data-throw-i="' + i + '">' + esc(t.name || '') + '</button>';
@@ -2468,6 +2624,7 @@
       el.classList.toggle('goal', lit[id] === 'goal');
     });
     var shown = {};
+    var boardEl = refs.board.querySelector('[data-yut-board]') || refs.board.querySelector('.hkmp-yut');
     Array.prototype.forEach.call(refs.board.querySelectorAll('.hkmp-mal'), function (el) {
       var i = Number(el.getAttribute('data-mal'));
       var m = mals[i];
@@ -2477,21 +2634,33 @@
         if (shown[sk] != null) { el.style.display = 'none'; return; }
         shown[sk] = i;
       }
-      var xy = yutMalXY(m, nodes, teams);
+      var parked = m.home || m.pos < 0;
+      var host = parked
+        ? refs.board.querySelector((m.home ? '[data-bench-home="' : '[data-bench-mals="') + m.team + '"]')
+        : boardEl;
+      if (host && el.parentNode !== host) host.appendChild(el);
+      el.classList.toggle('parked', !!parked);
       if (!yutAnimReady) el.style.transition = 'none';
-      else el.style.transition = '';
+      else el.style.transition = parked ? 'none' : '';
       el.style.display = '';
-      el.style.left = xy.x + '%';
-      el.style.top = xy.y + '%';
+      if (parked) {
+        el.style.left = '';
+        el.style.top = '';
+      } else {
+        var xy = yutMalXY(m, nodes);
+        el.style.left = xy.x + '%';
+        el.style.top = xy.y + '%';
+      }
       el.style.background = yutTeamColor(m.team);
-      el.style.color = '#fff';
+      el.style.color = yutTeamInk(m.team);
+      el.classList.toggle('ink-dark', yutTeamInk(m.team) !== '#fff');
       var stack = m.stacked || 1;
-      el.innerHTML = '<span class="hkmp-mal-n">' + ((m.i || 0) + 1) + '</span>' + (stack > 1 ? '<span class="hkmp-mal-stack">×' + stack + '</span>' : '');
-      el.classList.toggle('home', !!xy.home);
-      el.classList.toggle('wait', !!xy.wait);
+      el.innerHTML = '<span class="hkmp-mal-n">' + ((m.i || 0) + 1) + '</span>' + (stack > 1 && !parked ? '<span class="hkmp-mal-stack">×' + stack + '</span>' : '');
+      el.classList.toggle('home', !!m.home);
+      el.classList.toggle('wait', m.pos < 0 && !m.home);
       el.classList.toggle('sel', yutSel === i || (yutSel != null && mals[yutSel] && m.pos >= 0 && mals[yutSel].pos === m.pos && mals[yutSel].team === m.team && !m.home));
       el.classList.toggle('can', yutCanSelect(st, i, myTurn) && yutSel == null);
-      el.style.cursor = (xy.home || !yutCanSelect(st, i, myTurn)) ? 'default' : 'pointer';
+      el.style.cursor = (m.home || !yutCanSelect(st, i, myTurn)) ? 'default' : 'pointer';
     });
     var throwKey = String(st.throwId || 0) + ':' + JSON.stringify((st.lastYut && st.lastYut.sticks) || []);
     if (st.lastYut && throwKey !== yutThrowSeen) {
@@ -2504,7 +2673,24 @@
     }
     if (st.fx && st.fx.id && st.fx.id !== yutFxSeen) {
       yutFxSeen = st.fx.id;
-      playYutFx(st.fx.kind || 'capture');
+      var fk = st.fx.kind || 'capture';
+      if (fk === 'throw') {
+        /* 윷 결과는 lastYut 토스로 이미 중앙 이펙트 재생 */
+      } else if (fk === 'again') {
+        if (st.lastYut && (st.lastYut.name === '윷' || st.lastYut.name === '모') && throwKey === yutThrowSeen) {
+          /* playYutToss가 한 번 더를 예약함 */
+        } else {
+          playYutFx('again');
+        }
+      } else if (fk === 'capture') {
+        playYutFx('capture');
+        if (st.fx.extra) {
+          if (yutAgainFxTimer) clearTimeout(yutAgainFxTimer);
+          yutAgainFxTimer = setTimeout(function () { playYutFx('again'); }, 780);
+        }
+      } else {
+        playYutFx(fk);
+      }
     }
     if (st.pending !== 'move') yutSel = null;
     bindYutBoard();
@@ -2683,7 +2869,7 @@
       gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
       chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
       janggi: '한국 장기. 시작 전 내상/외상. 졸·병은 처음부터 앞·좌·우(뒤 불가). 포는 반드시 한 점을 뛰어넘고 포끼리 못 넘고 못 잡음. 상은 한 칸 직선+두 칸 대각(막히면 불가). 궁 안 대각. 장군은 피해야 함. 빅장(양왕 마주봄)은 무승부. 장군이 아닐 때 한수쉼, 연속 두 번이면 무승부.',
-      yut: '시작 때 각자 윷을 한 번 던져 높은 사람부터 둡니다(동점이면 다시). 반시계. 첫 출발은 날에서 칸을 세요(도=날 다음, 모=첫 모서리). 윷·모는 바로 안 옮기고 더 던진 뒤 결과를 쌓아 원하는 순서로 이동. 모서리·중심에 멈추면 지름길, 지나치면 직진. 날에 멈추면 아직 안 남 — 한 칸 더 나가야 골인. 업기·잡기, 잡으면 결과 다 쓴 뒤 한 번 더. 빽도는 한 칸 뒤.',
+      yut: '시작 전 말 색을 고르고, 각자 윷을 한 번 던져 높은 사람부터 둡니다(동점이면 다시). 대기 말은 왼쪽. 반시계. 첫 출발은 날에서 칸을 세요(도=날 다음, 모=첫 모서리). 윷·모는 바로 안 옮기고 더 던진 뒤 결과를 쌓아 원하는 순서로 이동. 모서리·중심에 멈추면 지름길, 지나치면 직진. 날에 멈추면 아직 안 남 — 한 칸 더 나가야 골인. 업기·잡기, 잡으면 결과 다 쓴 뒤 한 번 더. 빽도는 한 칸 뒤.',
     }[gameId] || '';
   }
 
@@ -3176,7 +3362,7 @@
       if (gameId === 'yut' && st.mals) {
         var yt = boardMySide();
         var leftM = st.mals.filter(function (m) { return m.team === yt && !m.home; }).length;
-        html += '<span class="hkmp-pill" style="color:' + yutTeamColor(st.turnTeam != null ? st.turnTeam : yt) + '"><b>' +
+        html += '<span class="hkmp-pill" style="color:#fff6dc;border-color:' + yutTeamColor(st.turnTeam != null ? st.turnTeam : yt) + '"><b style="color:' + yutTeamColor(st.turnTeam != null ? st.turnTeam : yt) + '">' +
           yutTeamName(st.turnTeam != null ? st.turnTeam : yt) + '팀</b> 차례</span>';
         html += '<span class="hkmp-pill">남은 말 <b>' + leftM + '/4</b></span>';
         if (st.turnThrows && st.turnThrows.length) html += '<span class="hkmp-pill">' + esc(st.turnThrows.join(' → ')) + '</span>';

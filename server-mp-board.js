@@ -114,6 +114,7 @@ function ensurePlayers(room, nextPlayerId) {
     p.slot = i;
     p.team = teamOf(i, mode);
   });
+  if (room.game === "yut") yutFillDefaultColors(room);
 }
 
 function allReady(room) {
@@ -1240,8 +1241,94 @@ function marbleAi(room, endGame) {
 /* ===================== YUT ===================== */
 const YUT_NAMES = ["", "도", "개", "걸", "윷", "모"];
 const YUT_TEAM_NAMES = ["청", "홍", "황", "녹"];
+const YUT_COLOR_META = {
+  red: { name: "빨", hex: "#e23d28" },
+  orange: { name: "주", hex: "#f97316" },
+  yellow: { name: "노", hex: "#f4c430" },
+  green: { name: "초", hex: "#22a855" },
+  blue: { name: "파", hex: "#2563eb" },
+  sky: { name: "하늘", hex: "#38bdf8" },
+  pink: { name: "핑크", hex: "#fb7185" },
+  purple: { name: "보", hex: "#7c3aed" },
+  black: { name: "검", hex: "#1c1917" },
+  white: { name: "흰", hex: "#f8f5ef" },
+};
+const YUT_COLOR_IDS = Object.keys(YUT_COLOR_META);
+const YUT_COLOR_DEFAULTS = ["blue", "red", "yellow", "green"];
 const YUT_INNER_NEXT = { 21: 22, 22: 20, 25: 26, 26: 20, 23: 24, 24: 15, 27: 28, 28: 0 };
 const YUT_INNER_PREV = { 21: 5, 22: 21, 25: 10, 26: 25, 23: 20, 24: 23, 27: 20, 28: 27 };
+
+function yutColorOk(id) {
+  return YUT_COLOR_IDS.indexOf(id) >= 0;
+}
+
+function yutFillDefaultColors(room) {
+  if (!room || room.game !== "yut") return;
+  const mode = parseMode(room.mode);
+  const used = new Set();
+  const byTeam = {};
+  (room.players || []).forEach((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    const t = teamOf(slot, mode);
+    const c = p.malColor;
+    if (yutColorOk(c) && !used.has(c)) {
+      if (byTeam[t] == null) {
+        byTeam[t] = c;
+        used.add(c);
+      } else if (byTeam[t] !== c) {
+        p.malColor = byTeam[t];
+      }
+    }
+  });
+  const teams = yutTeamCount(mode);
+  for (let t = 0; t < teams; t++) {
+    if (byTeam[t]) continue;
+    const pref = YUT_COLOR_DEFAULTS[t];
+    let pick = pref && !used.has(pref) ? pref : YUT_COLOR_IDS.find((id) => !used.has(id));
+    if (!pick) pick = YUT_COLOR_IDS[t % YUT_COLOR_IDS.length];
+    byTeam[t] = pick;
+    used.add(pick);
+  }
+  (room.players || []).forEach((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    p.malColor = byTeam[teamOf(slot, mode)];
+  });
+}
+
+function yutPickColor(room, player, colorId) {
+  if (!room || room.game !== "yut" || !player) return false;
+  const id = String(colorId || "");
+  if (!yutColorOk(id)) return false;
+  const mode = parseMode(room.mode);
+  const myTeam = teamOf(player.slot != null ? player.slot : 0, mode);
+  const taken = (room.players || []).some((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    if (teamOf(slot, mode) === myTeam) return false;
+    return p.malColor === id;
+  });
+  if (taken) return false;
+  (room.players || []).forEach((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    if (teamOf(slot, mode) === myTeam) p.malColor = id;
+  });
+  return true;
+}
+
+function yutAssignColors(room) {
+  yutFillDefaultColors(room);
+  const mode = parseMode(room.mode);
+  const teams = yutTeamCount(mode);
+  const byTeam = [];
+  (room.players || []).forEach((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    const t = teamOf(slot, mode);
+    if (byTeam[t] == null) byTeam[t] = p.malColor;
+  });
+  for (let t = 0; t < teams; t++) {
+    if (!yutColorOk(byTeam[t])) byTeam[t] = YUT_COLOR_DEFAULTS[t] || "blue";
+  }
+  return byTeam;
+}
 
 function yutTeamCount(mode) {
   if (mode === "ffa3") return 3;
@@ -1519,6 +1606,7 @@ function yutApplyOrderThrow(room, s) {
   row.history = (row.history || []).concat([rec.name]);
   s.orderNeed.shift();
   s.log = row.name + " · " + rec.name;
+  yutPushFx(s, "throw", { name: rec.name, order: true });
   yutOrderNext(room, s);
 }
 
@@ -1530,9 +1618,11 @@ function yutPushFx(s, kind, extra) {
 function initYut(room) {
   const mode = parseMode(room.mode);
   const teams = yutTeamCount(mode);
+  const malColors = yutAssignColors(room);
+  const teamNames = malColors.map((id, t) => (YUT_COLOR_META[id] && YUT_COLOR_META[id].name) || YUT_TEAM_NAMES[t] || ("팀" + (t + 1)));
   const mals = [];
   for (let t = 0; t < teams; t++) {
-    for (let i = 0; i < 4; i++) mals.push({ team: t, i, pos: -1, home: false, stacked: 1, arrivedFrom: -1 });
+    for (let i = 0; i < 4; i++) mals.push({ team: t, i, pos: -1, home: false, stacked: 1, arrivedFrom: -1, color: malColors[t] });
   }
   const orderRolls = room.players.map((p, i) => {
     const slot = p.slot != null ? p.slot : i;
@@ -1552,7 +1642,8 @@ function initYut(room) {
     nodes: yutNodes(),
     mals,
     teams,
-    teamNames: YUT_TEAM_NAMES.slice(0, teams),
+    malColors,
+    teamNames,
     turnSlot: first && first.slot != null ? first.slot : 0,
     turnId: first ? first.id : null,
     turnTeam: teamOf(first && first.slot != null ? first.slot : 0, mode),
@@ -1610,12 +1701,14 @@ function applyYut(room, player, payload, endGame) {
     if (rec.n >= 4) {
       s.pending = "throw";
       s.log = rec.name + " · 한 번 더 던지세요";
+      yutPushFx(s, "again", { name: rec.name, extra: true });
       s.legal = [];
       s.legalAll = [];
-      s.aiAt = Date.now() + 900;
+      s.aiAt = Date.now() + 1900;
       s.turnTeam = teamOf(s.turnSlot, s.mode);
       return;
     }
+    yutPushFx(s, "throw", { name: rec.name });
     yutSetPoolLegal(s, team);
     const usable = (s.legalAll || []).some((ls) => ls && ls.length);
     if (!usable) {
@@ -1696,7 +1789,7 @@ function applyYut(room, player, payload, endGame) {
         });
         s.bonus = (s.bonus || 0) + 1;
         s.log = "잡기! 남은 결과를 쓴 뒤 한 번 더";
-        yutPushFx(s, "capture", { n: captured.length });
+        yutPushFx(s, "capture", { n: captured.length, extra: true });
       } else if (alliesThere) {
         const stacked = s.mals.filter((m) => m.team === team && !m.home && m.pos === dest).length;
         s.log = "업기! ×" + stacked;
@@ -1725,7 +1818,7 @@ function applyYut(room, player, payload, endGame) {
       }
     }
     s.turnTeam = teamOf(s.turnSlot, s.mode);
-    s.aiAt = Date.now() + (s.fx && (s.fx.kind === "capture" || s.fx.kind === "stack") ? 1200 : 520);
+    s.aiAt = Date.now() + (s.fx && s.fx.kind === "capture" ? 1900 : (s.fx && s.fx.kind === "stack" ? 1300 : 520));
   }
 }
 
@@ -1841,4 +1934,7 @@ module.exports = {
   applyInput,
   tick,
   publicState,
+  yutPickColor,
+  yutFillDefaultColors,
+  yutColorOk,
 };

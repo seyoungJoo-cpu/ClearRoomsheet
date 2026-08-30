@@ -76,6 +76,7 @@ function roomSnapshot(room) {
       slot: p.slot,
       ready: !!p.ready,
       isAi: !!p.isAi,
+      malColor: p.malColor || null,
     })),
     max: room.max || GAMES[room.game].max,
   };
@@ -3940,6 +3941,7 @@ function attachGameRooms(httpServer) {
         if (boardGames.isBoardGame(game)) boardGames.ensurePlayers(room, () => nextPlayerId++);
         rooms.set(code, room);
         send(ws, { type: "hello_ok", name, playerId: player.id });
+        if (room.game === "yut") boardGames.yutFillDefaultColors(room);
         // Host gets room first; lobby fan-out deferred off the hot path
         send(ws, roomSnapshot(room));
         setImmediate(function () { notifyLobby(game); });
@@ -3977,6 +3979,7 @@ function attachGameRooms(httpServer) {
         room.players.push(player);
         ws._watchGame = room.game;
         send(ws, { type: "hello_ok", name, playerId: player.id });
+        if (room.game === "yut") boardGames.yutFillDefaultColors(room);
         broadcastRoom(room);
         setImmediate(function () { notifyLobby(room.game); });
         return;
@@ -3996,6 +3999,13 @@ function attachGameRooms(httpServer) {
         player.ready = true;
         broadcastRoom(room);
         return tryStart(room);
+      }
+
+      if (type === "mal_color") {
+        if (room.game !== "yut") return;
+        if (room.status !== "lobby" && room.status !== "ended") return;
+        if (!boardGames.yutPickColor(room, player, msg.color)) return error(ws, "color_taken");
+        return broadcastRoom(room);
       }
 
       if (type === "rts_ai_diff") {
