@@ -909,12 +909,41 @@ function hkRoomNumberKey(number) {
   return d.slice(-4);
 }
 
-function hkMarkRoomDeletedInMap(deletedRooms, zone, roomNumber) {
+function hkTombstoneKey(entry) {
+  if (entry && typeof entry === "object") {
+    return hkRoomNumberKey(entry.n != null ? entry.n : entry.number);
+  }
+  return hkRoomNumberKey(entry);
+}
+
+function hkTombstoneAt(entry) {
+  if (entry && typeof entry === "object" && entry.at != null && String(entry.at).trim()) {
+    return String(entry.at).trim();
+  }
+  return "";
+}
+
+function hkMarkRoomDeletedInMap(deletedRooms, zone, roomNumber, atIso) {
   if (!deletedRooms || !zone) return;
   var k = hkRoomNumberKey(roomNumber);
   if (!k) return;
   if (!deletedRooms[zone]) deletedRooms[zone] = [];
-  if (deletedRooms[zone].indexOf(k) < 0) deletedRooms[zone].push(k);
+  var at = "";
+  if (atIso === "") {
+    at = "";
+  } else if (atIso != null && String(atIso).trim()) {
+    at = String(atIso).trim();
+  } else {
+    at = new Date().toISOString();
+  }
+  for (var i = 0; i < deletedRooms[zone].length; i++) {
+    if (hkTombstoneKey(deletedRooms[zone][i]) === k) {
+      var prevAt = hkTombstoneAt(deletedRooms[zone][i]);
+      if (!prevAt || at >= prevAt) deletedRooms[zone][i] = { n: k, at: at };
+      return;
+    }
+  }
+  deletedRooms[zone].push({ n: k, at: at });
 }
 
 function hkIsRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
@@ -922,7 +951,24 @@ function hkIsRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
   if (!k) return false;
   var list = deletedRooms && deletedRooms[zone];
   if (!Array.isArray(list)) return false;
-  return list.indexOf(k) >= 0;
+  for (var i = 0; i < list.length; i++) {
+    if (hkTombstoneKey(list[i]) === k) return true;
+  }
+  return false;
+}
+
+function hkDeletedRoomAt(deletedRooms, zone, roomNumber) {
+  var k = hkRoomNumberKey(roomNumber);
+  if (!k) return "";
+  var list = deletedRooms && deletedRooms[zone];
+  if (!Array.isArray(list)) return "";
+  var latest = "";
+  for (var i = 0; i < list.length; i++) {
+    if (hkTombstoneKey(list[i]) !== k) continue;
+    var at = hkTombstoneAt(list[i]);
+    if (at && (!latest || at > latest)) latest = at;
+  }
+  return latest;
 }
 
 function hkMergeDeletedRoomsMaps(a, b) {
@@ -939,7 +985,7 @@ function hkMergeDeletedRoomsMaps(a, b) {
     [a, b].forEach(function (src) {
       if (!src || !Array.isArray(src[zone])) return;
       src[zone].forEach(function (n) {
-        hkMarkRoomDeletedInMap(out, zone, n);
+        hkMarkRoomDeletedInMap(out, zone, hkTombstoneKey(n), hkTombstoneAt(n) || "");
       });
     });
   });
@@ -957,20 +1003,27 @@ function hkMergeRoomEntry(prev, incoming) {
   var incomingTrayWins = tiAt && (!tpAt || tiAt >= tpAt);
   var tray = incomingTrayWins ? ti : tpAt ? tp : ti || tp || "";
   var trayUpdatedAt = incomingTrayWins ? tiAt : tpAt || tiAt || "";
-  var merged = Object.assign({}, prev, incoming, {
+  var prevAt = String(prev.updatedAt || prev.createdAt || "").trim();
+  var incAt = String(incoming.updatedAt || incoming.createdAt || "").trim();
+  var incomingNewer = !!(incAt && (!prevAt || incAt >= prevAt));
+  var newer = incomingNewer ? incoming : prev;
+  var older = incomingNewer ? prev : incoming;
+  var merged = Object.assign({}, older, newer, {
     tray: tray,
     trayUpdatedAt: trayUpdatedAt,
   });
-  // 더 최신 updatedAt/createdAt 유지
-  var prevAt = String(prev.updatedAt || prev.createdAt || "").trim();
-  var incAt = String(incoming.updatedAt || incoming.createdAt || "").trim();
-  if (incAt && (!prevAt || String(incAt) >= String(prevAt))) {
-    if (incoming.updatedAt) merged.updatedAt = String(incoming.updatedAt);
-    if (incoming.createdAt) merged.createdAt = String(incoming.createdAt);
-    else if (prev.createdAt) merged.createdAt = String(prev.createdAt);
+  if (prev.createdAt && incoming.createdAt) {
+    merged.createdAt =
+      String(prev.createdAt) <= String(incoming.createdAt)
+        ? String(prev.createdAt)
+        : String(incoming.createdAt);
   } else {
-    if (prev.updatedAt) merged.updatedAt = String(prev.updatedAt);
-    if (prev.createdAt) merged.createdAt = String(prev.createdAt);
+    merged.createdAt = String(prev.createdAt || incoming.createdAt || "");
+  }
+  if (prevAt && incAt) {
+    merged.updatedAt = prevAt >= incAt ? prevAt : incAt;
+  } else {
+    merged.updatedAt = incAt || prevAt || "";
   }
   return merged;
 }
@@ -1073,7 +1126,7 @@ function hkMergeRoomArraysByNumber(
   function unmarkDeleted(k) {
     if (deletedRooms && deletedRooms[zone]) {
       deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-        return hkRoomNumberKey(n) !== k;
+        return hkTombstoneKey(n) !== k;
       });
     }
   }
@@ -1089,7 +1142,11 @@ function hkMergeRoomArraysByNumber(
     }
     if (hkIsRoomMarkedDeleted(deletedRooms, zone, k)) {
       var sourceDeleted = fromIncoming ? incomingClaimsDeleted(k) : prevClaimsDeleted(k);
-      if (!sourceDeleted && canReviveByStamp(room)) {
+      var delAt = hkDeletedRoomAt(deletedRooms, zone, k);
+      var roomAt = hkRoomActivityAt(room);
+      var newerThanDelete = !!(roomAt && delAt && roomAt > delAt);
+      var localReaddWithoutStamp = !fromIncoming && !sourceDeleted && !delAt;
+      if (!sourceDeleted && canReviveByStamp(room) && (newerThanDelete || localReaddWithoutStamp)) {
         unmarkDeleted(k);
       } else {
         return;

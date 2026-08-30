@@ -2140,8 +2140,12 @@
               ? data.deletedRooms[zoneId]
               : [];
           deletedList.forEach(function (num) {
-            var k = zoneId + "|" + String(num || "").trim();
-            if (!num || deletedSeen[k]) return;
+            var no =
+              num && typeof num === "object"
+                ? String(num.n || num.number || "").trim()
+                : String(num || "").trim();
+            var k = zoneId + "|" + no;
+            if (!no || deletedSeen[k]) return;
             deletedSeen[k] = true;
             counts.deleted += 1;
           });
@@ -2181,7 +2185,12 @@
                 ? data.deletedRooms[zoneId]
                 : [];
             deletedList.forEach(function (num) {
-              pushRow(zoneId, { number: num });
+              var no =
+                num && typeof num === "object"
+                  ? String(num.n || num.number || "").trim()
+                  : String(num || "").trim();
+              if (!no) return;
+              pushRow(zoneId, { number: no });
             });
           }
         });

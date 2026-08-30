@@ -234,7 +234,8 @@
       '.hkmp-go{position:relative;width:min(100%,540px);aspect-ratio:1;margin:0 auto;box-sizing:border-box;background:#c9955a;background-image:repeating-linear-gradient(90deg,rgba(90,50,20,.07) 0 2px,transparent 2px 5px),repeating-linear-gradient(0deg,rgba(90,50,20,.05) 0 2px,transparent 2px 6px),radial-gradient(ellipse at 30% 20%,rgba(255,230,180,.22),transparent 55%);border:12px solid #5a3214;box-shadow:inset 0 0 28px #0004,0 10px 28px #0007;border-radius:4px}.hkmp-go-lines{position:absolute;inset:3.333%;width:auto;height:auto;pointer-events:none;overflow:visible}.hkmp-go-pts{position:absolute;inset:0;display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr)}.hkmp-go-pt{border:0;background:transparent;padding:0;margin:0;display:grid;place-items:center;cursor:pointer;min-width:0;min-height:0}.hkmp-go-pt:disabled{cursor:default}.hkmp-go-stone{width:86%;height:86%;border-radius:50%;box-shadow:1px 2px 4px #0007,inset -2px -3px 5px #0004,inset 2px 3px 4px #fff4;pointer-events:none}.hkmp-go-stone.b{background:radial-gradient(circle at 32% 28%,#6a6a6a,#1a1a1a 54%,#050505)}.hkmp-go-stone.w{background:radial-gradient(circle at 32% 28%,#fff,#e8e8e8 50%,#c8c8c8);box-shadow:1px 2px 4px #0005,inset -1px -2px 3px #0002,inset 2px 3px 4px #fff}.hkmp-go-pt.last .hkmp-go-stone{box-shadow:0 0 0 2px #c41e3a,1px 2px 4px #0007}',
       '.hkmp-chess{width:min(100%,520px);aspect-ratio:1;margin:0 auto;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:14px solid #1a120c;box-shadow:0 10px 28px #0008,inset 0 0 0 2px #c9a56a;border-radius:4px}.hkmp-chess .hkmp-cell{width:100%;height:100%;border:0;filter:none}.hkmp-chess .hkmp-cell.light{background:#f3efe6}.hkmp-chess .hkmp-cell.dark{background:#1e1e1e}.hkmp-chess .hkmp-cell.light:hover{background:#fff8ee}.hkmp-chess .hkmp-cell.dark:hover{background:#333}.hkmp-chess .hkmp-cell.sel.light{background:#d4e87a}.hkmp-chess .hkmp-cell.sel.dark{background:#6a8f2a}.hkmp-chess .hkmp-cell.last.light{background:#f0d56a}.hkmp-chess .hkmp-cell.last.dark{background:#b8860b}.hkmp-ch-piece{font-size:clamp(24px,6.4vw,44px);line-height:1;pointer-events:none;font-weight:700}.hkmp-ch-piece.w{color:#fafafa;text-shadow:0 1px 0 #111,0 0 3px #000,1px 1px 0 #333,-1px -1px 0 #333}.hkmp-ch-piece.b{color:#111;text-shadow:0 0 2px #fff,0 1px 0 #fff,1px 1px 0 #ccc}',
       '.hkmp-jg{position:relative;width:min(100%,430px);aspect-ratio:9/10;margin:0 auto;box-sizing:border-box;background:#e4bc6a;background-image:repeating-linear-gradient(90deg,rgba(90,40,10,.06) 0 1px,transparent 1px 4px);border:12px solid #6b3a14;box-shadow:inset 0 0 24px #0003,0 10px 28px #0007}.hkmp-jg-lines{position:absolute;left:5.555%;right:5.555%;top:5%;bottom:5%;width:auto;height:auto;pointer-events:none}.hkmp-jg-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(10,1fr)}.hkmp-jg .hkmp-cell{background:transparent;border:0;filter:none}.hkmp-jg .hkmp-cell:hover{background:rgba(255,255,255,.12)}.hkmp-jg .hkmp-cell.sel{background:rgba(239,210,138,.35)}.hkmp-jg-piece{width:84%;height:84%;max-width:48px;max-height:48px;border-radius:50%;display:grid;place-items:center;font-family:"Noto Serif KR","Nanum Myeongjo",Batang,Georgia,serif;font-weight:900;font-size:clamp(13px,3.1vw,20px);line-height:1;background:radial-gradient(circle at 35% 30%,#fff4d4,#e8c98a 55%,#c9a05a);box-shadow:1px 2px 4px #0006,inset 0 1px 0 #fff8;pointer-events:none}.hkmp-jg-piece.s0{color:#c41e3a;border:2px solid #8b1515}.hkmp-jg-piece.s1{color:#153a6b;border:2px solid #0f2a4a}',
-      '.hkmp-yut-layout{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:0;background:radial-gradient(circle at 50% 42%,#8b3a28,#4a1812 62%,#2a0e0c);border-radius:18px;border:4px solid #cbb27088;box-shadow:inset 0 0 40px #0005,0 8px 22px #0006;overflow:hidden}.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.hkmp-yut-node{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff6,0 2px 4px #0005;z-index:1}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px;background:#f3e0b0;border-width:3px}.hkmp-mal{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2px solid #fff;z-index:3;box-shadow:0 2px 6px #0007;transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),transform .2s ease;display:grid;place-items:center;font-size:16px;font-weight:900;color:#1a1208;line-height:1;-webkit-user-select:none;user-select:none}.hkmp-mal.home{opacity:.55;transform:scale(.82)}.hkmp-mal.wait{box-shadow:0 0 0 2px #fff4}.hkmp-yut-side{width:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 10px;background:linear-gradient(180deg,#2a1612,#1a0c0a);border-radius:16px;border:1px solid #cbb27055;min-height:220px;box-sizing:border-box}.hkmp-yut-sticks{display:flex;gap:8px;align-items:flex-end;height:110px}.hkmp-stick{width:20px;height:92px;border-radius:8px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center bottom;position:relative}.hkmp-stick i{display:block;width:8px;height:8px;margin:14px auto 0;border-radius:50%;background:transparent}.hkmp-stick.face{background:linear-gradient(90deg,#5a3418,#2a160c);border-color:#1a0c08}.hkmp-stick.back{background:linear-gradient(90deg,#f6e4b8,#d4b06a)}.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}.hkmp-stick.toss{animation:hkmp-stick-toss .72s ease}.hkmp-yut-yname{color:#efd28a;font-weight:800;font-size:20px;min-height:28px}.hkmp-yut-fx{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,8vw,56px);font-weight:900;color:#fff;text-shadow:0 0 16px #c00,0 4px 0 #800,0 8px 24px #000;z-index:8;pointer-events:none;opacity:0}.hkmp-yut-fx.show{animation:hkmp-catch-pop .9s ease forwards}.hkmp-board-wrap.shake .hkmp-yut{animation:hkmp-board-shake .5s ease}@keyframes hkmp-stick-toss{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-46px) rotate(160deg)}45%{transform:translateY(-8px) rotate(320deg)}70%{transform:translateY(-28px) rotate(520deg)}100%{transform:translateY(0) rotate(720deg)}}@keyframes hkmp-catch-pop{0%{transform:scale(.35);opacity:0}22%{transform:scale(1.18);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:0}}@keyframes hkmp-board-shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-11px) rotate(-1.6deg)}36%{transform:translateX(11px) rotate(1.6deg)}54%{transform:translateX(-8px)}72%{transform:translateX(8px)}88%{transform:translateX(-3px)}}@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px}.hkmp-stick{height:70px;width:16px}.hkmp-yut-sticks{height:80px}}',
+      '.hkmp-jg-piece.t-K{width:96%;height:96%;max-width:56px;max-height:56px;font-size:clamp(16px,3.8vw,24px);border-width:3px}.hkmp-jg-piece.t-R{width:90%;height:90%;max-width:51px;max-height:51px;font-size:clamp(14px,3.4vw,21px)}.hkmp-jg-piece.t-C{width:86%;height:86%;max-width:48px;max-height:48px;font-size:clamp(13px,3.2vw,20px)}.hkmp-jg-piece.t-N,.hkmp-jg-piece.t-B{width:80%;height:80%;max-width:44px;max-height:44px;font-size:clamp(12px,3vw,18px)}.hkmp-jg-piece.t-A{width:72%;height:72%;max-width:39px;max-height:39px;font-size:clamp(11px,2.7vw,16px)}.hkmp-jg-piece.t-P{width:62%;height:62%;max-width:34px;max-height:34px;font-size:clamp(10px,2.4vw,14px)}',
+      '.hkmp-yut-layout{display:flex;flex-wrap:nowrap;flex-direction:row;gap:14px;justify-content:center;align-items:stretch}.hkmp-yut{position:relative;width:min(100%,420px);aspect-ratio:1;margin:0;background:radial-gradient(circle at 50% 42%,#8b3a28,#4a1812 62%,#2a0e0c);border-radius:18px;border:4px solid #cbb27088;box-shadow:inset 0 0 40px #0005,0 8px 22px #0006;overflow:hidden}.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.hkmp-yut-node{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ead18f;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff6,0 2px 4px #0005;z-index:1}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px;background:#f3e0b0;border-width:3px}.hkmp-mal{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2px solid #fff;z-index:3;box-shadow:0 2px 6px #0007;transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),transform .2s ease;display:grid;place-items:center;font-size:16px;font-weight:900;color:#1a1208;line-height:1;-webkit-user-select:none;user-select:none}.hkmp-mal.home{opacity:.55;transform:scale(.82)}.hkmp-mal.wait{box-shadow:0 0 0 2px #fff4}.hkmp-yut-side{width:136px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px 10px;background:linear-gradient(180deg,#2a1612,#1a0c0a);border-radius:16px;border:1px solid #cbb27055;min-height:220px;box-sizing:border-box}.hkmp-yut-sticks{display:flex;gap:8px;align-items:flex-end;height:110px}.hkmp-stick{width:20px;height:92px;border-radius:8px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center bottom;position:relative}.hkmp-stick i{display:block;width:8px;height:8px;margin:14px auto 0;border-radius:50%;background:transparent}.hkmp-stick.face{background:linear-gradient(90deg,#5a3418,#2a160c);border-color:#1a0c08}.hkmp-stick.back{background:linear-gradient(90deg,#f6e4b8,#d4b06a)}.hkmp-stick.back i{background:#8b1a1a;box-shadow:0 28px 0 #8b1a1a,0 56px 0 #8b1a1a}.hkmp-stick.toss{animation:hkmp-stick-toss .72s ease}.hkmp-yut-yname{color:#efd28a;font-weight:800;font-size:20px;min-height:28px}.hkmp-yut-fx{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,8vw,56px);font-weight:900;color:#fff;text-shadow:0 0 16px #c00,0 4px 0 #800,0 8px 24px #000;z-index:8;pointer-events:none;opacity:0}.hkmp-yut-fx.show{animation:hkmp-catch-pop .9s ease forwards}.hkmp-board-wrap.shake .hkmp-yut{animation:hkmp-board-shake .5s ease}@keyframes hkmp-stick-toss{0%{transform:translateY(0) rotate(0)}20%{transform:translateY(-46px) rotate(160deg)}45%{transform:translateY(-8px) rotate(320deg)}70%{transform:translateY(-28px) rotate(520deg)}100%{transform:translateY(0) rotate(720deg)}}@keyframes hkmp-catch-pop{0%{transform:scale(.35);opacity:0}22%{transform:scale(1.18);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:0}}@keyframes hkmp-board-shake{0%,100%{transform:translateX(0)}18%{transform:translateX(-11px) rotate(-1.6deg)}36%{transform:translateX(11px) rotate(1.6deg)}54%{transform:translateX(-8px)}72%{transform:translateX(8px)}88%{transform:translateX(-3px)}}@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px}.hkmp-stick{height:70px;width:16px}.hkmp-yut-sticks{height:80px}}',
       '.hkmp-marble{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:min(100%,520px);margin:0 auto}.hkmp-mcell{min-height:54px;border-radius:10px;border:1px solid #ffffff22;background:#0d2429;padding:6px 4px;font-size:11px;text-align:center;color:#d9e4df}.hkmp-mcell.on{box-shadow:inset 0 0 0 2px #efd28a}.hkmp-mcell.own0{background:#1d3a28}.hkmp-mcell.own1{background:#3a2428}.hkmp-mcell.own2{background:#24344a}.hkmp-mcell.own3{background:#3a3320}',
       '.hkmp-toast{position:fixed;left:50%;bottom:28px;z-index:10003;transform:translate(-50%,25px);opacity:0;background:#ead18f;color:#122421;padding:12px 18px;border-radius:999px;font-weight:800;box-shadow:0 10px 35px #0008;transition:.25s;pointer-events:none}.hkmp-toast.show{transform:translate(-50%,0);opacity:1}',
       '@media(max-width:560px){.hkmp-shell{width:calc(100% - 16px);padding-top:12px}.hkmp-panel{padding:14px}}'
@@ -1654,12 +1655,54 @@
   function janggiInPalace(r, c) {
     return c >= 3 && c <= 5 && ((r >= 0 && r <= 2) || (r >= 7 && r <= 9));
   }
+  function janggiPalaceDiags() {
+    return [
+      [[0, 3], [1, 4], [2, 5]],
+      [[0, 5], [1, 4], [2, 3]],
+      [[7, 3], [8, 4], [9, 5]],
+      [[7, 5], [8, 4], [9, 3]]
+    ];
+  }
+  function janggiPalaceDiagStep(r, c, nr, nc) {
+    if (Math.abs(nr - r) !== 1 || Math.abs(nc - c) !== 1) return false;
+    if (!janggiInPalace(r, c) || !janggiInPalace(nr, nc)) return false;
+    return janggiPalaceDiags().some(function (line) {
+      var i = -1, j = -1, k;
+      for (k = 0; k < line.length; k++) {
+        if (line[k][0] === r && line[k][1] === c) i = k;
+        if (line[k][0] === nr && line[k][1] === nc) j = k;
+      }
+      return i >= 0 && j >= 0;
+    });
+  }
   function janggiPseudo(board, r, c, p) {
     var out = [], s = p.s;
     function push(rr, cc) {
       if (!jgIn(rr, cc)) return;
       var x = board[rr][cc];
       if (!x || x.s !== s) out.push([rr, cc]);
+    }
+    function slideLine(points, cannon) {
+      var idx = -1, k;
+      for (k = 0; k < points.length; k++) {
+        if (points[k][0] === r && points[k][1] === c) idx = k;
+      }
+      if (idx < 0) return;
+      [-1, 1].forEach(function (dir) {
+        var jumped = false, p;
+        for (p = idx + dir; p >= 0 && p < points.length; p += dir) {
+          var rr = points[p][0], cc = points[p][1], x = board[rr][cc];
+          if (!cannon) {
+            if (!x) out.push([rr, cc]);
+            else { if (x.s !== s) out.push([rr, cc]); break; }
+          } else if (!jumped) {
+            if (x) { if (x.t === 'C') break; jumped = true; }
+          } else {
+            if (!x) out.push([rr, cc]);
+            else { if (x.t !== 'C' && x.s !== s) out.push([rr, cc]); break; }
+          }
+        }
+      });
     }
     if (p.t === 'R') {
       [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
@@ -1671,6 +1714,7 @@
           rr += d[0]; cc += d[1];
         }
       });
+      janggiPalaceDiags().forEach(function (line) { slideLine(line, false); });
     } else if (p.t === 'C') {
       [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
         var rr = r + d[0], cc = c + d[1], jumped = false;
@@ -1685,6 +1729,7 @@
           rr += d[0]; cc += d[1];
         }
       });
+      janggiPalaceDiags().forEach(function (line) { slideLine(line, true); });
     } else if (p.t === 'N') {
       [[1, 0, 2, 1], [1, 0, 2, -1], [-1, 0, -2, 1], [-1, 0, -2, -1], [0, 1, 1, 2], [0, 1, -1, 2], [0, -1, 1, -2], [0, -1, -1, -2]].forEach(function (leg) {
         if (!jgIn(r + leg[0], c + leg[1]) || board[r + leg[0]][c + leg[1]]) return;
@@ -1701,13 +1746,17 @@
         var rr = r + d[0], cc = c + d[1];
         if (!janggiPalace(rr, cc, s) && !(p.t === 'K' && janggiInPalace(rr, cc) && janggiPalace(r, c, s))) return;
         if (!janggiInPalace(rr, cc)) return;
+        if (d[0] !== 0 && d[1] !== 0 && !janggiPalaceDiagStep(r, c, rr, cc)) return;
         push(rr, cc);
       });
     } else if (p.t === 'P') {
       var fwd = s === 0 ? -1 : 1;
       push(r + fwd, c);
-      var crossed = s === 0 ? r <= 4 : r >= 5;
-      if (crossed) { push(r, c - 1); push(r, c + 1); }
+      push(r, c - 1);
+      push(r, c + 1);
+      [-1, 1].forEach(function (dc) {
+        if (janggiPalaceDiagStep(r, c, r + fwd, c + dc)) push(r + fwd, c + dc);
+      });
     }
     return out;
   }
@@ -1774,10 +1823,11 @@
 
   function yutSkinCss() {
     return [
-      '.hkmp-yut-layout{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:flex-start;width:100%}',
+      '.hkmp-yut-layout{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%}',
       '.hkmp-yut-banner{width:100%;text-align:center;padding:10px 14px;border-radius:14px;border:2px solid #c9a227;background:linear-gradient(180deg,#fff4d4,#e8c98a);color:#5a1a12;font-weight:900;font-size:clamp(16px,4.2vw,22px);letter-spacing:.04em;box-shadow:inset 0 1px 0 #fff8,0 4px 0 #8a5a22;font-family:"Noto Serif KR",Batang,Georgia,serif}',
       '.hkmp-yut-banner b{color:#9b1b1b}',
-      '.hkmp-yut{position:relative;width:min(100%,min(92vw,520px));aspect-ratio:1;margin:0;background:#c45c3a;background-image:radial-gradient(circle at 50% 50%,#d96a44 0 18%,transparent 19%),repeating-linear-gradient(90deg,rgba(90,20,10,.08) 0 2px,transparent 2px 7px),repeating-linear-gradient(0deg,rgba(90,20,10,.06) 0 2px,transparent 2px 8px),radial-gradient(circle at 50% 42%,#c45c3a,#8b2e1c 70%,#5a1810);border-radius:8px;border:10px solid #5c2a14;box-shadow:inset 0 0 0 3px #e8c98a,inset 0 0 40px #0004,0 10px 28px #0006;overflow:visible}',
+      '.hkmp-yut-row{display:flex;flex-direction:row;flex-wrap:nowrap;gap:12px;justify-content:center;align-items:stretch;width:100%}',
+      '.hkmp-yut{position:relative;width:min(100%,min(70vw,520px));flex:1 1 auto;max-width:520px;aspect-ratio:1;margin:0;background:#c45c3a;background-image:radial-gradient(circle at 50% 50%,#d96a44 0 18%,transparent 19%),repeating-linear-gradient(90deg,rgba(90,20,10,.08) 0 2px,transparent 2px 7px),repeating-linear-gradient(0deg,rgba(90,20,10,.06) 0 2px,transparent 2px 8px),radial-gradient(circle at 50% 42%,#c45c3a,#8b2e1c 70%,#5a1810);border-radius:8px;border:10px solid #5c2a14;box-shadow:inset 0 0 0 3px #e8c98a,inset 0 0 40px #0004,0 10px 28px #0006;overflow:visible}',
       '.hkmp-yut:before{content:"";position:absolute;inset:10px;border:1px solid #ead18f55;border-radius:4px;pointer-events:none}',
       '.hkmp-yut-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}',
       '.hkmp-yut-node{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:#f3e4b8;border:2px solid #5a3a1a;box-shadow:inset 0 1px 0 #fff8,0 2px 4px #0005;z-index:1;cursor:default;touch-action:manipulation;-webkit-tap-highlight-color:transparent}',
@@ -1785,7 +1835,7 @@
       '.hkmp-yut-node.center{width:46px;height:46px;margin:-23px 0 0 -23px;background:radial-gradient(circle at 40% 35%,#fff6d8,#e8c070);border-width:3px}',
       '.hkmp-yut-node .hkmp-yut-nlbl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:900;color:#6a2a12;pointer-events:none;white-space:nowrap;font-family:"Noto Serif KR",Batang,serif}',
       '.hkmp-yut-node.corner .hkmp-yut-nlbl,.hkmp-yut-node.center .hkmp-yut-nlbl{font-size:11px}',
-      '.hkmp-yut-node.lit{z-index:4;cursor:pointer;box-shadow:0 0 0 4px #ffe566,0 0 18px #ffb000,inset 0 0 8px #fff;animation:hkmp-yut-pulse .7s ease infinite;transform:scale(1.18)}',
+      '.hkmp-yut-node.lit{z-index:8;cursor:pointer;box-shadow:0 0 0 4px #ffe566,0 0 18px #ffb000,inset 0 0 8px #fff;animation:hkmp-yut-pulse .7s ease infinite;transform:scale(1.18)}',
       '.hkmp-yut-node.lit.goal{box-shadow:0 0 0 5px #9ae6b4,0 0 22px #2f9e58;background:#d8f5c8}',
       '.hkmp-mal{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid #fff8e8;z-index:5;box-shadow:0 3px 8px #0008,inset 0 2px 0 #fff6;transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .18s ease;display:grid;place-items:center;font-size:17px;font-weight:900;color:#fff;line-height:1;-webkit-user-select:none;user-select:none;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;text-shadow:0 1px 2px #0009}',
       '.hkmp-mal.home{opacity:.7;transform:scale(.78);cursor:default}',
@@ -1794,7 +1844,9 @@
       '.hkmp-mal.can{box-shadow:0 0 0 3px #9ae6b4,0 3px 8px #0008}',
       '.hkmp-mal .hkmp-mal-n{font-size:15px}',
       '.hkmp-mal .hkmp-mal-stack{position:absolute;right:-6px;top:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:#1a1208;color:#ffe566;font-size:12px;display:grid;place-items:center;border:2px solid #fff}',
-      '.hkmp-yut-side{width:min(100%,180px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:14px 12px;background:linear-gradient(180deg,#f6ead0,#e2c48a);border-radius:16px;border:3px solid #8a5a22;min-height:240px;box-sizing:border-box;box-shadow:inset 0 1px 0 #fff8,0 6px 16px #0004}',
+      '.hkmp-yut-side{flex:0 0 168px;width:168px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:14px 12px;background:linear-gradient(180deg,#f6ead0,#e2c48a);border-radius:16px;border:3px solid #8a5a22;min-height:240px;box-sizing:border-box;box-shadow:inset 0 1px 0 #fff8,0 6px 16px #0004}',
+      '.hkmp-yut-act{width:100%;display:flex;flex-direction:column;gap:8px;align-items:stretch}',
+      '.hkmp-yut-act .hkmp-btn{width:100%}',
       '.hkmp-yut-sticks{display:flex;gap:10px;align-items:flex-end;height:120px;perspective:420px}',
       '.hkmp-stick{width:22px;height:96px;border-radius:9px;background:#e8c47a;border:1px solid #6b4a22;box-shadow:1px 2px 4px #0006;transform-origin:center center;position:relative;transform-style:preserve-3d}',
       '.hkmp-stick i{display:block;width:8px;height:8px;margin:16px auto 0;border-radius:50%;background:transparent}',
@@ -1838,7 +1890,7 @@
       '@keyframes hkmp-yut-quake{0%,100%{transform:translate(0) rotate(0)}8%{transform:translate(-22px,12px) rotate(-3deg)}16%{transform:translate(24px,-10px) rotate(3.4deg)}24%{transform:translate(-18px,-14px) rotate(-2.2deg)}32%{transform:translate(20px,10px) rotate(2.8deg)}44%{transform:translate(-12px,8px) rotate(-1.6deg)}58%{transform:translate(10px,-6px) rotate(1.2deg)}76%{transform:translate(-4px,3px)}100%{transform:none}}',
       '@keyframes hkmp-yut-quake2{0%,100%{transform:translate(0)}10%{transform:translate(16px,-8px) rotate(2deg)}22%{transform:translate(-18px,10px) rotate(-2.4deg)}36%{transform:translate(12px,8px)}52%{transform:translate(-10px,-6px)}70%{transform:translate(6px,3px)}100%{transform:none}}',
       '@keyframes hkmp-yut-winbg{0%{filter:brightness(3) saturate(2)}100%{filter:none}}',
-      '@media(max-width:560px){.hkmp-yut-side{width:100%;flex-direction:row;flex-wrap:wrap;min-height:0;padding:10px;justify-content:center}.hkmp-stick{height:72px;width:18px}.hkmp-yut-sticks{height:84px}.hkmp-mal{width:40px;height:40px;margin:-20px 0 0 -20px}.hkmp-yut-node{width:24px;height:24px;margin:-12px 0 0 -12px}.hkmp-yut-node.corner{width:34px;height:34px;margin:-17px 0 0 -17px}.hkmp-yut-node.center{width:38px;height:38px;margin:-19px 0 0 -19px}.hkmp-board-wrap{width:min(100%,100%)}}'
+      '@media(max-width:560px){.hkmp-yut-side{flex:0 0 118px;width:118px;padding:8px 6px;min-height:0}.hkmp-yut-row{gap:6px}.hkmp-stick{height:64px;width:14px}.hkmp-yut-sticks{height:72px;gap:4px}.hkmp-mal{width:36px;height:36px;margin:-18px 0 0 -18px}.hkmp-yut-node{width:22px;height:22px;margin:-11px 0 0 -11px}.hkmp-yut-node.corner{width:30px;height:30px;margin:-15px 0 0 -15px}.hkmp-yut-node.center{width:34px;height:34px;margin:-17px 0 0 -17px}.hkmp-board-wrap{width:min(100%,100%)}}'
     ].join('');
   }
   function yutPathSvg(nodes) {
@@ -1859,10 +1911,10 @@
   }
   function yutMalXY(m, nodes, teams) {
     var benches = [
-      { x: 96, y: 96 },
       { x: 4, y: 96 },
       { x: 4, y: 4 },
-      { x: 96, y: 4 }
+      { x: 96, y: 4 },
+      { x: 96, y: 96 }
     ];
     var b = benches[m.team] || benches[0];
     if (m.home) {
@@ -1958,8 +2010,33 @@
       if (t && t.nodeType === 3) t = t.parentElement;
       var malEl = t && t.closest ? t.closest('.hkmp-mal') : null;
       var nodeEl = t && t.closest ? t.closest('.hkmp-yut-node') : null;
+      function sendMove(mal, dest) {
+        send({ type: 'input', payload: { act: 'move', mal: mal, dest: dest } });
+        yutSel = null;
+      }
+      function destOfNode(nid, dests) {
+        if ((nid === 0) && dests.indexOf('home') >= 0) return 'home';
+        if (dests.indexOf(nid) >= 0) return nid;
+        return null;
+      }
       if (malEl) {
         var mi = Number(malEl.getAttribute('data-mal'));
+        var mals = st.mals || [];
+        var clicked = mals[mi];
+        if (yutSel != null && myTurn && st.pending === 'move') {
+          var destsSel = yutDestsForMal(st, yutSel);
+          if (destsSel.indexOf(-1) >= 0 && mi === yutSel) {
+            sendMove(yutSel, -1);
+            return;
+          }
+          if (clicked && clicked.pos >= 0 && !clicked.home) {
+            var land = destOfNode(clicked.pos, destsSel);
+            if (land != null) {
+              sendMove(yutSel, land);
+              return;
+            }
+          }
+        }
         if (!yutCanSelect(st, mi, myTurn)) return;
         yutSel = mi;
         boardSig = '';
@@ -1970,12 +2047,9 @@
         if (yutSel == null) return;
         var dests = yutDestsForMal(st, yutSel);
         var nid = Number(nodeEl.getAttribute('data-id'));
-        var sendDest = null;
-        if ((nid === 0) && dests.indexOf('home') >= 0) sendDest = 'home';
-        else if (dests.indexOf(nid) >= 0) sendDest = nid;
+        var sendDest = destOfNode(nid, dests);
         if (sendDest == null) return;
-        send({ type: 'input', payload: { act: 'move', mal: yutSel, dest: sendDest } });
-        yutSel = null;
+        sendMove(yutSel, sendDest);
         return;
       }
       if (yutSel != null) {
@@ -1986,14 +2060,32 @@
     };
   }
   function bindYutActions(st, myTurn) {
-    if (!refs.boardAct) return;
+    var mount = refs.board && refs.board.querySelector('[data-yut-act]');
+    if (!mount && refs.boardAct) mount = refs.boardAct;
+    if (!mount) return;
     var yact = '';
     if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">윷 던지기</button>';
-    else if (myTurn && st.pending === 'move') yact = '<div class="hkmp-yut-hint">말을 누른 뒤, 빛나는 칸을 누르세요' + ((st.legal && st.legal.some(function (x) { return (x.dests || []).length > 1; })) ? ' · 지름길/바깥길을 칸으로 선택' : '') + '</div>';
-    refs.boardAct.innerHTML = yact;
-    Array.prototype.forEach.call(refs.boardAct.querySelectorAll('[data-act]'), function (btn) {
-      btn.onclick = function () { send({ type: 'input', payload: { act: btn.getAttribute('data-act') } }); };
+    else if (myTurn && st.pending === 'move') {
+      var hint = '말을 누른 뒤, 빛나는 칸을 누르세요';
+      if (st.legal && st.legal.some(function (x) { return (x.dests || []).length > 1; })) hint += ' · 모서리에 멈춰야 지름길';
+      if (yutSel != null && yutDestsForMal(st, yutSel).indexOf(-1) >= 0) {
+        yact = '<button type="button" class="hkmp-btn primary" data-act="backdo">출발 전으로</button>';
+      }
+      yact += '<div class="hkmp-yut-hint">' + hint + '</div>';
+    }
+    mount.innerHTML = yact;
+    Array.prototype.forEach.call(mount.querySelectorAll('[data-act]'), function (btn) {
+      btn.onclick = function () {
+        var act = btn.getAttribute('data-act');
+        if (act === 'backdo' && yutSel != null) {
+          send({ type: 'input', payload: { act: 'move', mal: yutSel, dest: -1 } });
+          yutSel = null;
+          return;
+        }
+        send({ type: 'input', payload: { act: act } });
+      };
     });
+    if (refs.boardAct && refs.boardAct !== mount) refs.boardAct.innerHTML = '';
   }
   function updateYutUi(st, myTurn) {
     var nodes = st.nodes || [];
@@ -2001,7 +2093,7 @@
     var teams = st.teams || 2;
     var turnTeam = st.turnTeam != null ? st.turnTeam : boardMySide();
     var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + (yutSel == null ? '' : yutSel) + '|' + JSON.stringify(mals) + '|' + myTurn + '|' + (st.fx && st.fx.id);
-    var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
+    var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut-row') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
     if (!needDom && key === boardSig) return;
     if (needDom) {
       var corners = { 0: 1, 5: 1, 10: 1, 15: 1, 20: 1 };
@@ -2010,6 +2102,7 @@
       refs.board.innerHTML =
         '<div class="hkmp-yut-layout">' +
         '<div class="hkmp-yut-banner" data-yut-banner></div>' +
+        '<div class="hkmp-yut-row">' +
         '<div class="hkmp-yut">' + yutPathSvg(nodes) +
         nodes.map(function (n, ni) {
           var id = n.id != null ? n.id : ni;
@@ -2024,7 +2117,7 @@
         '</div>' +
         '<div class="hkmp-yut-side"><div class="hkmp-yut-sticks">' +
         [0, 1, 2, 3].map(function () { return '<div class="hkmp-stick"><i></i></div>'; }).join('') +
-        '</div><div class="hkmp-yut-yname"></div><div class="hkmp-yut-hist" data-yut-hist></div></div></div>';
+        '</div><div class="hkmp-yut-yname"></div><div class="hkmp-yut-hist" data-yut-hist></div><div class="hkmp-yut-act" data-yut-act></div></div></div></div>';
       yutAnimReady = false;
       yutThrowSeen = '';
       yutSel = null;
@@ -2155,7 +2248,7 @@
             var cls = 'hkmp-cell' + (gameId === 'chess' ? (light ? ' light' : ' dark') : '') + (sel ? ' sel' : '') + (last ? ' last' : '') + hint;
             var inner = '';
             if (p && gameId === 'chess') inner = '<span class="hkmp-ch-piece ' + (p.s === 0 ? 'w' : 'b') + '">' + pieceGlyph(p, 'chess') + '</span>';
-            if (p && gameId === 'janggi') inner = '<span class="hkmp-jg-piece s' + p.s + '">' + pieceGlyph(p, 'janggi') + '</span>';
+            if (p && gameId === 'janggi') inner = '<span class="hkmp-jg-piece s' + p.s + ' t-' + p.t + '">' + pieceGlyph(p, 'janggi') + '</span>';
             return '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '">' + inner + '</button>';
           }).join('');
         }).join('') + gridClose + '</div>';
@@ -2241,9 +2334,9 @@
       nexuswar: '내 거점에서 드래그해 출동 · Shift 전군 · 상대 본진 점령 승리',
       gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
       chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
-      janggi: '기물을 누르면 갈 수 있는 길이 표시됩니다. 칸을 눌러 이동 · 왕을 잡으면 승리.',
+      janggi: '기물을 누르면 갈 수 있는 길이 표시됩니다. 졸·병은 앞·좌·우. 궁 안에서는 대각선. 왕을 잡으면 승리.',
       marble: '내 차례에 주사위 · 빈 땅은 구매/패스. 상대 파산 시 승리.',
-      yut: '윷 던지기 → 말을 직접 눌러 선택 → 빛나는 칸을 눌러 이동. 모서리에서 지름길/바깥길 선택. 윷·모·잡으면 한 번 더.',
+      yut: '윷 던지기(오른쪽) → 말을 눌러 선택 → 빛나는 칸으로 이동. 모서리에 멈춰야 지름길. 같은 팀 말은 업기, 상대는 잡기. 윷·모·잡으면 한 번 더. 빽도는 한 칸 뒤.',
     }[gameId] || '';
   }
 

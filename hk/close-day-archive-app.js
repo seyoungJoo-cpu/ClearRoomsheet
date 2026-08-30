@@ -501,7 +501,9 @@
           '<p class="muted">삭제·수정 트레이: ' +
             deleted
               .map(function (n) {
-                return esc(roomNo(n));
+                var no =
+                  n && typeof n === "object" ? String(n.n || n.number || "") : String(n || "");
+                return esc(roomNo(no));
               })
               .join(", ") +
             "</p>"

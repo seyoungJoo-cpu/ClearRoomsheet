@@ -208,15 +208,41 @@
     return d.slice(-4);
   }
 
-  function markRoomDeletedInMap(deletedRooms, zone, roomNumber) {
+  function tombstoneKey(entry) {
+    if (entry && typeof entry === "object") {
+      return roomNumberKey(entry.n != null ? entry.n : entry.number);
+    }
+    return roomNumberKey(entry);
+  }
+
+  function tombstoneAt(entry) {
+    if (entry && typeof entry === "object" && entry.at != null && String(entry.at).trim()) {
+      return String(entry.at).trim();
+    }
+    return "";
+  }
+
+  function markRoomDeletedInMap(deletedRooms, zone, roomNumber, atIso) {
     if (!deletedRooms || !zone) return;
     var k = roomNumberKey(roomNumber);
     if (!k) return;
     if (!deletedRooms[zone]) deletedRooms[zone] = [];
-    var exists = deletedRooms[zone].some(function (n) {
-      return roomNumberKey(n) === k;
-    });
-    if (!exists) deletedRooms[zone].push(k);
+    var at = "";
+    if (atIso === "") {
+      at = "";
+    } else if (atIso != null && String(atIso).trim()) {
+      at = String(atIso).trim();
+    } else {
+      at = new Date().toISOString();
+    }
+    for (var i = 0; i < deletedRooms[zone].length; i++) {
+      if (tombstoneKey(deletedRooms[zone][i]) === k) {
+        var prevAt = tombstoneAt(deletedRooms[zone][i]);
+        if (!prevAt || at >= prevAt) deletedRooms[zone][i] = { n: k, at: at };
+        return;
+      }
+    }
+    deletedRooms[zone].push({ n: k, at: at });
   }
 
   function isRoomMarkedDeleted(deletedRooms, zone, roomNumber) {
@@ -225,9 +251,23 @@
     var list = deletedRooms && deletedRooms[zone];
     if (!Array.isArray(list)) return false;
     for (var i = 0; i < list.length; i++) {
-      if (roomNumberKey(list[i]) === k) return true;
+      if (tombstoneKey(list[i]) === k) return true;
     }
     return false;
+  }
+
+  function deletedRoomAt(deletedRooms, zone, roomNumber) {
+    var k = roomNumberKey(roomNumber);
+    if (!k) return "";
+    var list = deletedRooms && deletedRooms[zone];
+    if (!Array.isArray(list)) return "";
+    var latest = "";
+    for (var i = 0; i < list.length; i++) {
+      if (tombstoneKey(list[i]) !== k) continue;
+      var at = tombstoneAt(list[i]);
+      if (at && (!latest || at > latest)) latest = at;
+    }
+    return latest;
   }
 
   function normalizeDeletedRooms(data, customZones) {
@@ -244,7 +284,7 @@
       if (!Array.isArray(src[zone])) return;
       if (!out[zone]) out[zone] = [];
       src[zone].forEach(function (n) {
-        markRoomDeletedInMap(out, zone, n);
+        markRoomDeletedInMap(out, zone, tombstoneKey(n), tombstoneAt(n) || "");
       });
     });
     return out;
@@ -264,7 +304,7 @@
       [a, b].forEach(function (src) {
         if (!src || !Array.isArray(src[zone])) return;
         src[zone].forEach(function (n) {
-          markRoomDeletedInMap(out, zone, n);
+          markRoomDeletedInMap(out, zone, tombstoneKey(n), tombstoneAt(n) || "");
         });
       });
     });
@@ -289,34 +329,39 @@
     } else {
       createdAt = String(prev.createdAt || incoming.createdAt || "");
     }
+    var prevAt = String(prev.updatedAt || prev.createdAt || "");
+    var incAt = String(incoming.updatedAt || incoming.createdAt || "");
+    var incomingNewer = !!(incAt && (!prevAt || incAt >= prevAt));
+    var newer = incomingNewer ? incoming : prev;
+    var older = incomingNewer ? prev : incoming;
     var updatedAt = "";
-    if (prev.updatedAt && incoming.updatedAt) {
-      updatedAt = String(prev.updatedAt) >= String(incoming.updatedAt) ? String(prev.updatedAt) : String(incoming.updatedAt);
+    if (prevAt && incAt) {
+      updatedAt = prevAt >= incAt ? prevAt : incAt;
     } else {
-      updatedAt = String(incoming.updatedAt || prev.updatedAt || "");
+      updatedAt = incAt || prevAt || "";
     }
     return {
-      number: incoming.number || prev.number,
+      number: newer.number || older.number,
       prevNumber:
-        incoming.prevNumber != null
-          ? String(incoming.prevNumber)
-          : prev.prevNumber != null
-            ? String(prev.prevNumber)
+        newer.prevNumber != null && String(newer.prevNumber)
+          ? String(newer.prevNumber)
+          : older.prevNumber != null
+            ? String(older.prevNumber)
             : "",
-      status: incoming.status != null ? String(incoming.status).trim() : prev.status,
-      memo1: incoming.memo1 != null ? String(incoming.memo1) : prev.memo1,
-      memo2: incoming.memo2 != null ? String(incoming.memo2) : prev.memo2,
+      status: newer.status != null ? String(newer.status).trim() : older.status,
+      memo1: newer.memo1 != null ? String(newer.memo1) : older.memo1,
+      memo2: newer.memo2 != null ? String(newer.memo2) : older.memo2,
       memo2Image:
-        incoming.memo2Image != null ? String(incoming.memo2Image) : prev.memo2Image,
-      memo3: incoming.memo3 != null ? String(incoming.memo3) : prev.memo3,
-      time: incoming.time != null ? normalizeTimeField(incoming.time) : prev.time,
+        newer.memo2Image != null ? String(newer.memo2Image) : older.memo2Image,
+      memo3: newer.memo3 != null ? String(newer.memo3) : older.memo3,
+      time: newer.time != null ? normalizeTimeField(newer.time) : older.time,
       tray: tray,
       trayUpdatedAt: trayUpdatedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
       mbProductId:
-        incoming.mbProductId != null ? String(incoming.mbProductId) : prev.mbProductId,
-      mbGroup: incoming.mbGroup != null ? String(incoming.mbGroup) : prev.mbGroup,
+        newer.mbProductId != null ? String(newer.mbProductId) : older.mbProductId,
+      mbGroup: newer.mbGroup != null ? String(newer.mbGroup) : older.mbGroup,
     };
   }
 
@@ -349,7 +394,7 @@
     function unmarkDeleted(k) {
       if (deletedRooms && deletedRooms[zone]) {
         deletedRooms[zone] = deletedRooms[zone].filter(function (n) {
-          return roomNumberKey(n) !== k;
+          return tombstoneKey(n) !== k;
         });
       }
     }
@@ -365,8 +410,15 @@
       }
       if (isRoomMarkedDeleted(deletedRooms, zone, k)) {
         var sourceDeleted = fromIncoming ? incomingClaimsDeleted(k) : prevClaimsDeleted(k);
-        // 로컬/원격이 tombstone을 지우고 다시 넣은 객실은 초기화 시각 이후면 되살린다
-        if (!sourceDeleted && canReviveByStamp(room)) {
+        var delAt = deletedRoomAt(deletedRooms, zone, k);
+        var roomAt =
+          room && (room.updatedAt || room.createdAt)
+            ? String(room.updatedAt || room.createdAt)
+            : "";
+        // 재등록은 tombstone 시각보다 객실 스탬프가 더 최신일 때만. 옛 서버 잔존 배열은 되살리지 않음
+        var newerThanDelete = !!(roomAt && delAt && roomAt > delAt);
+        var localReaddWithoutStamp = !fromIncoming && !sourceDeleted && !delAt;
+        if (!sourceDeleted && canReviveByStamp(room) && (newerThanDelete || localReaddWithoutStamp)) {
           unmarkDeleted(k);
         } else {
           // tombstone 유지 — 다른 PC의 잔존 배열로 삭제 객실이 되살아나지 않게 함
@@ -413,10 +465,10 @@
     });
   }
 
-  function markRoomDeleted(data, zone, roomNumber) {
+  function markRoomDeleted(data, zone, roomNumber, atIso) {
     if (!data) return;
     if (!data.deletedRooms) data.deletedRooms = {};
-    markRoomDeletedInMap(data.deletedRooms, zone, roomNumber);
+    markRoomDeletedInMap(data.deletedRooms, zone, roomNumber, atIso);
   }
 
   function markZoneRoomsCleared(data, zone) {
@@ -444,7 +496,7 @@
     if (!data || !data.deletedRooms || !data.deletedRooms[zone]) return;
     var k = roomNumberKey(roomNumber);
     data.deletedRooms[zone] = data.deletedRooms[zone].filter(function (n) {
-      return roomNumberKey(n) !== k;
+      return tombstoneKey(n) !== k;
     });
   }
 

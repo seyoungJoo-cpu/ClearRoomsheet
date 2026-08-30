@@ -9473,7 +9473,24 @@
       flex-shrink: 0;
     }
 
-    .sched-req-card--confirming-tile .confirming-tile__meta {
+    .sched-req-card--confirming-tile .confirming-tile__memo {
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: #312e81;
+      text-align: left;
+      word-break: break-word;
+      max-height: 4.6em;
+      overflow: auto;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: #e0e7ff;
+    }
+    .sched-req-card--confirming-tile .confirming-tile__memo .room-card__memo,
+    .sched-req-card--confirming-tile .confirming-tile__memo2 {
+      margin: 0 0 2px;
+      font-size: inherit;
+      color: inherit;
+    }
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
@@ -21232,6 +21249,13 @@
         return d.slice(-4).replace(/^0+/, "") || "0";
       }
 
+      function deletedRoomNumber(entry) {
+        if (entry && typeof entry === "object") {
+          return String(entry.n || entry.number || "").trim();
+        }
+        return String(entry == null ? "" : entry).trim();
+      }
+
       function roomsAreSame(roomA, roomB) {
         var a = normalizeRoomDigits(roomNumberForStatusLookup(roomA) || roomA);
         var b = normalizeRoomDigits(roomNumberForStatusLookup(roomB) || roomB);
@@ -21919,6 +21943,23 @@
         return row;
       }
 
+      function roomNumberTextChanged(prevNo, nextNo) {
+        function norm(v) {
+          return formatRoomNoDisplay(
+            String(v || "")
+              .replace(/→/g, "->")
+              .replace(/\s*->\s*/g, " -> ")
+              .replace(/\s+/g, " ")
+              .trim()
+          );
+        }
+        var a = norm(prevNo);
+        var b = norm(nextNo);
+        if (a === b) return false;
+        if (/->|에서/.test(a) || /->|에서/.test(b)) return a !== b;
+        return !roomsAreSame(prevNo, nextNo);
+      }
+
       function buildRoomChangeLines(prev, next) {
         var lines = [];
         var fields = [
@@ -21931,7 +21972,7 @@
           var a = String((prev && prev[f.key]) || "").trim();
           var b = String((next && next[f.key]) || "").trim();
           if (f.key === "number") {
-            if (roomsAreSame(a, b)) return;
+            if (!roomNumberTextChanged(a, b)) return;
           } else if (a === b) {
             return;
           }
@@ -22554,7 +22595,9 @@
           data.deletedRooms && Array.isArray(data.deletedRooms[zone])
             ? data.deletedRooms[zone]
             : [];
-        deletedList.forEach(dismissNum);
+        deletedList.forEach(function (n) {
+          dismissNum(deletedRoomNumber(n));
+        });
         Object.keys(pendingRoomAlerts).forEach(function (key) {
           if (key.indexOf(prefix) !== 0) return;
           var roomPart = key.slice(prefix.length);
@@ -22684,7 +22727,9 @@
           data.deletedRooms && Array.isArray(data.deletedRooms[zone])
             ? data.deletedRooms[zone]
             : [];
-        deletedList.forEach(checkRoom);
+        deletedList.forEach(function (n) {
+          checkRoom(deletedRoomNumber(n));
+        });
         if (hasPending) pendingZoneAlerts[zone] = true;
         else delete pendingZoneAlerts[zone];
       }
@@ -27663,6 +27708,21 @@
             tileMeta.appendChild(ubTile);
           }
           li.appendChild(tileMeta);
+          if (memoStr || memoImg || memo2Str || memo2Img) {
+            var tileMemo = document.createElement("div");
+            tileMemo.className = "confirming-tile__memo";
+            if (memoStr || memoImg) {
+              hkAppendMemoBlock(tileMemo, "FD", memoStr, memoImg, "room-card__memo");
+            }
+            if (memo2Str || memo2Img) {
+              var tileM2 = document.createElement("p");
+              tileM2.className = "room-card__memo confirming-tile__memo2";
+              if (memo2Str) tileM2.textContent = "정비 : " + memo2Str;
+              hkAppendImageEl(tileM2, memo2Img);
+              tileMemo.appendChild(tileM2);
+            }
+            li.appendChild(tileMemo);
+          }
         } else if (confirmingStrip) {
           var roomCell = document.createElement("span");
           roomCell.className = "hk-strip-cell hk-strip-cell--room";
@@ -31061,9 +31121,28 @@
 
       function ensureHkConfirmNeedMemo(entry) {
         if (!entry) return;
-        var cur = entry.memo != null ? String(entry.memo).trim() : "";
-        if (cur.indexOf(HK_CONFIRM_NEED_MEMO) !== -1) return;
-        entry.memo = cur ? cur + "\n" + HK_CONFIRM_NEED_MEMO : HK_CONFIRM_NEED_MEMO;
+        var memo = entry.memo != null ? String(entry.memo).trim() : "";
+        var memo2 = entry.memo2 != null ? String(entry.memo2).trim() : "";
+        var memoBody = memo;
+        if (memoBody === HK_CONFIRM_NEED_MEMO) memoBody = "";
+        else if (memoBody.indexOf("\n" + HK_CONFIRM_NEED_MEMO) !== -1) {
+          memoBody = memoBody.split("\n" + HK_CONFIRM_NEED_MEMO).join("").trim();
+        } else if (memoBody.indexOf(HK_CONFIRM_NEED_MEMO + "\n") === 0) {
+          memoBody = memoBody.slice(HK_CONFIRM_NEED_MEMO.length).trim();
+        }
+        var parts = [];
+        if (memo2) parts.push(memo2);
+        if (memoBody && parts.indexOf(memoBody) === -1 && memo2.indexOf(memoBody) === -1) {
+          parts.push(memoBody);
+        }
+        var joined = parts.join("\n");
+        if (joined.indexOf(HK_CONFIRM_NEED_MEMO) === -1) {
+          parts.push(HK_CONFIRM_NEED_MEMO);
+        }
+        entry.memo2 = parts.filter(Boolean).join("\n");
+        if (memo.indexOf(HK_CONFIRM_NEED_MEMO) === -1) {
+          entry.memo = memo ? memo + "\n" + HK_CONFIRM_NEED_MEMO : HK_CONFIRM_NEED_MEMO;
+        }
       }
 
       function appendHkConfirmBtn(parent, reqId) {
@@ -33583,12 +33662,16 @@
         if (
           prevNo &&
           next.number &&
-          !roomsAreSame(prevNo, next.number) &&
-          typeof HKStorage.unmarkRoomDeleted === "function"
+          roomNumberTextChanged(prevNo, next.number)
         ) {
-          HKStorage.unmarkRoomDeleted(dataSave, zone, next.number);
+          if (typeof HKStorage.markRoomDeleted === "function") {
+            HKStorage.markRoomDeleted(dataSave, zone, prevNo);
+          }
+          if (typeof HKStorage.unmarkRoomDeleted === "function") {
+            HKStorage.unmarkRoomDeleted(dataSave, zone, next.number);
+          }
         }
-        if (prevNo && next.number && !roomsAreSame(prevNo, next.number)) {
+        if (prevNo && next.number && roomNumberTextChanged(prevNo, next.number)) {
           next.prevNumber = prevNo;
         } else if (prevRow && prevRow.prevNumber != null) {
           next.prevNumber = String(prevRow.prevNumber);
@@ -33937,7 +34020,9 @@
           data.deletedRooms && Array.isArray(data.deletedRooms[zone])
             ? data.deletedRooms[zone]
             : [];
-        deletedList.forEach(addCancelledRoom);
+        deletedList.forEach(function (n) {
+          addCancelledRoom(deletedRoomNumber(n));
+        });
         rooms.forEach(function (room) {
           if (room && getRoomTray(room) === "deleted") addCancelledRoom(room.number);
         });
