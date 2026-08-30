@@ -1977,6 +1977,9 @@
       '.hkmp-yut-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}',
       '.hkmp-yut-chip{border:0;border-radius:999px;padding:5px 10px;font-weight:800;font-size:13px;background:#ead18f;color:#3a1a10;cursor:pointer;box-shadow:0 1px 0 #0003}',
       '.hkmp-yut-chip.on{background:#ffe566;box-shadow:0 0 0 2px #9b1b1b,0 1px 0 #0003}',
+      '.hkmp-yut-order{width:100%;text-align:left;font-size:12px;line-height:1.45;color:#ead18f}',
+      '.hkmp-yut-order div{padding:3px 0;display:flex;justify-content:space-between;gap:8px}',
+      '.hkmp-yut-order .on{color:#ffe566;font-weight:900}',
       '.hkmp-yut-hint{font-size:12px;color:#6a3a18;text-align:center;font-weight:700}',
       '.hkmp-yut-boom{position:fixed;inset:0;z-index:10020;pointer-events:none;display:none}',
       '.hkmp-yut-boom.go{display:block}',
@@ -2350,7 +2353,8 @@
     if (!mount && refs.boardAct) mount = refs.boardAct;
     if (!mount) return;
     var yact = '';
-    if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">' + ((st.throws && st.throws.length) ? '한 번 더 던지기' : '윷 던지기') + '</button>';
+    if (myTurn && st.pending === 'order') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">순서 윷 던지기</button>';
+    else if (myTurn && st.pending === 'throw') yact = '<button type="button" class="hkmp-btn primary" data-act="throw">' + ((st.throws && st.throws.length) ? '한 번 더 던지기' : '윷 던지기') + '</button>';
     else if (myTurn && st.pending === 'move') {
       var hint = '쌓인 결과를 고른 뒤, 말을 눌러 빛나는 칸으로 이동';
       if (yutSel != null && yutDestsForMal(st, yutSel).indexOf(-1) >= 0) {
@@ -2379,7 +2383,7 @@
     var turnTeam = st.turnTeam != null ? st.turnTeam : boardMySide();
     var throws = st.throws || [];
     if (yutThrowI >= throws.length) yutThrowI = Math.max(0, throws.length - 1);
-    var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + (yutSel == null ? '' : yutSel) + '|' + yutThrowI + '|' + JSON.stringify(throws) + '|' + JSON.stringify(mals) + '|' + myTurn + '|' + (st.fx && st.fx.id);
+    var key = (st.throwId || '') + '|' + (st.pending || '') + '|' + (st.turnId || '') + '|' + (yutSel == null ? '' : yutSel) + '|' + yutThrowI + '|' + JSON.stringify(throws) + '|' + JSON.stringify(st.orderRolls || []) + '|' + JSON.stringify(st.order || []) + '|' + JSON.stringify(mals) + '|' + myTurn + '|' + (st.fx && st.fx.id);
     var needDom = refs.board.getAttribute('data-kind') !== 'yut' || !refs.board.querySelector('.hkmp-yut-row') || refs.board.querySelectorAll('.hkmp-mal').length !== mals.length || refs.board.querySelectorAll('.hkmp-yut-node').length !== nodes.length;
     if (!needDom && key === boardSig) return;
     if (needDom) {
@@ -2415,15 +2419,25 @@
     if (banner) {
       var tName = yutTeamName(turnTeam);
       var mine = myTurn;
-      banner.innerHTML = '<b>' + esc(tName) + '팀</b> 차례' + (mine ? ' · 당신' : '') +
-        (st.pending === 'throw' ? ((st.throws && st.throws.length) ? ' · 한 번 더 던지세요' : ' · 윷을 던지세요') : (st.pending === 'move' ? ' · 결과를 골라 말을 옮기세요' : ''));
+      if (st.pending === 'order') {
+        banner.innerHTML = '<b>순서 정하기</b>' + (mine ? ' · 당신 차례' : ' · ' + esc(st.log || '윷을 던지세요'));
+      } else {
+        banner.innerHTML = '<b>' + esc(tName) + '팀</b> 차례' + (mine ? ' · 당신' : '') +
+          (st.pending === 'throw' ? ((st.throws && st.throws.length) ? ' · 한 번 더 던지세요' : ' · 윷을 던지세요') : (st.pending === 'move' ? ' · 결과를 골라 말을 옮기세요' : ''));
+      }
       banner.style.borderColor = yutTeamColor(turnTeam);
     }
     var hist = refs.board.querySelector('[data-yut-hist]');
     if (hist) {
-      var chain = throws.length ? throws : ((st.turnThrows && st.turnThrows.length) ? st.turnThrows.map(function (name) { return { name: name }; }) : []);
-      if (!chain.length) hist.innerHTML = '결과 이력';
-      else if (st.pending === 'move' && myTurn && throws.length) {
+      if (st.pending === 'order' || (st.orderRolls && st.orderRolls.length && !throws.length && st.pending === 'throw' && st.orderNames && st.orderNames.length)) {
+        var rolls = st.orderRolls || [];
+        hist.innerHTML = '<div class="hkmp-yut-order">' + rolls.map(function (r) {
+          var waiting = r.rec == null && st.pending === 'order';
+          var on = st.pending === 'order' && (r.id === st.turnId || r.id == st.turnId);
+          var val = r.rec ? r.rec.name : (waiting ? '대기' : '—');
+          return '<div class="' + (on ? 'on' : '') + '"><span>' + esc(r.name || '') + '</span><b>' + esc(val) + '</b></div>';
+        }).join('') + (st.orderNames && st.orderNames.length && st.pending !== 'order' ? '<div style="margin-top:6px;color:#ffe566">순서 ' + st.orderNames.map(function (n) { return esc(n); }).join(' → ') + '</div>' : '') + '</div>';
+      } else if (st.pending === 'move' && myTurn && throws.length) {
         hist.innerHTML = '<div class="hkmp-yut-chips">' + throws.map(function (t, i) {
           return '<button type="button" class="hkmp-yut-chip' + (i === yutThrowI ? ' on' : '') + '" data-throw-i="' + i + '">' + esc(t.name || '') + '</button>';
         }).join('') + '</div>';
@@ -2437,7 +2451,8 @@
           };
         });
       } else {
-        hist.innerHTML = '<b>' + chain.map(function (x) { return esc(typeof x === 'string' ? x : (x.name || '')); }).join(' → ') + '</b>';
+        var chain = throws.length ? throws : ((st.turnThrows && st.turnThrows.length) ? st.turnThrows.map(function (name) { return { name: name }; }) : []);
+        hist.innerHTML = chain.length ? '<b>' + chain.map(function (x) { return esc(typeof x === 'string' ? x : (x.name || '')); }).join(' → ') + '</b>' : '결과 이력';
       }
     }
     var lit = {};
@@ -2668,7 +2683,7 @@
       gomoku: '교차점에 돌을 놓으세요. 5목이 먼저 승리.',
       chess: '기물을 누르면 갈 수 있는 칸이 표시됩니다. 칸을 눌러 이동 · 체크메이트로 승리.',
       janggi: '한국 장기. 시작 전 내상/외상. 졸·병은 처음부터 앞·좌·우(뒤 불가). 포는 반드시 한 점을 뛰어넘고 포끼리 못 넘고 못 잡음. 상은 한 칸 직선+두 칸 대각(막히면 불가). 궁 안 대각. 장군은 피해야 함. 빅장(양왕 마주봄)은 무승부. 장군이 아닐 때 한수쉼, 연속 두 번이면 무승부.',
-      yut: '반시계. 첫 출발은 날에서 칸을 세요(도=날 다음, 모=첫 모서리). 윷·모는 바로 안 옮기고 더 던진 뒤 결과를 쌓아 원하는 순서로 이동. 모서리·중심에 멈추면 지름길, 지나치면 직진. 날에 멈추면 아직 안 남 — 한 칸 더 나가야 골인. 업기·잡기, 잡으면 결과 다 쓴 뒤 한 번 더. 빽도는 한 칸 뒤.',
+      yut: '시작 때 각자 윷을 한 번 던져 높은 사람부터 둡니다(동점이면 다시). 반시계. 첫 출발은 날에서 칸을 세요(도=날 다음, 모=첫 모서리). 윷·모는 바로 안 옮기고 더 던진 뒤 결과를 쌓아 원하는 순서로 이동. 모서리·중심에 멈추면 지름길, 지나치면 직진. 날에 멈추면 아직 안 남 — 한 칸 더 나가야 골인. 업기·잡기, 잡으면 결과 다 쓴 뒤 한 번 더. 빽도는 한 칸 뒤.',
     }[gameId] || '';
   }
 
@@ -3157,6 +3172,7 @@
       }
       if (st.log) html += '<span class="hkmp-pill">' + esc(st.log) + '</span>';
       if (gameId === 'gomoku' && st.stones != null) html += '<span class="hkmp-pill">돌 <b>' + st.stones + '</b></span>';
+      if (gameId === 'yut' && st.pending === 'order') html += '<span class="hkmp-pill" style="color:#efd28a">순서 정하기</span>';
       if (gameId === 'yut' && st.mals) {
         var yt = boardMySide();
         var leftM = st.mals.filter(function (m) { return m.team === yt && !m.home; }).length;

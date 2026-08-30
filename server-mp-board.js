@@ -66,7 +66,10 @@ function currentActor(room, s) {
 function nextTurn(room, s, extra) {
   if (extra) return;
   const n = room.players.length;
-  if (isTeam(s.mode) && n >= 4) {
+  if (s && s.game === "yut" && Array.isArray(s.order) && s.order.length) {
+    const idx = s.order.indexOf(s.turnSlot | 0);
+    s.turnSlot = s.order[(idx < 0 ? 0 : idx + 1) % s.order.length];
+  } else if (isTeam(s.mode) && n >= 4) {
     const order = [0, 2, 1, 3];
     const idx = order.indexOf(s.turnSlot | 0);
     s.turnSlot = order[(idx < 0 ? 0 : idx + 1) % order.length];
@@ -1432,6 +1435,93 @@ function yutRanks(s) {
   return rows;
 }
 
+function yutRollOnce() {
+  let backs = 0;
+  const sticks = [];
+  for (let i = 0; i < 4; i++) {
+    const back = Math.random() < 0.5;
+    sticks.push(back ? 1 : 0);
+    if (back) backs++;
+  }
+  const isBackDo = backs === 1 && sticks[0] === 1;
+  const n = isBackDo ? -1 : backs === 0 ? 5 : backs;
+  return { n, name: isBackDo ? "빽도" : YUT_NAMES[n], sticks };
+}
+
+function yutOrderNext(room, s) {
+  if (!s.orderNeed || !s.orderNeed.length) {
+    yutOrderResolve(room, s);
+    return;
+  }
+  const i = s.orderNeed[0];
+  const row = s.orderRolls[i];
+  const p = room.players.find((x) => (x.slot != null ? x.slot : 0) === row.slot) || room.players[row.slot];
+  s.turnSlot = row.slot;
+  s.turnId = p ? p.id : row.id;
+  s.turnTeam = teamOf(row.slot, s.mode);
+  s.log = (row.name || "플레이어") + " · 순서 정하기";
+  s.aiAt = Date.now() + 520 + Math.random() * 280;
+}
+
+function yutOrderResolve(room, s) {
+  const rows = s.orderRolls || [];
+  const idxs = rows.map((_, i) => i);
+  idxs.sort((a, b) => {
+    const na = rows[a].rec ? rows[a].rec.n : -9;
+    const nb = rows[b].rec ? rows[b].rec.n : -9;
+    return nb - na || a - b;
+  });
+  let i = 0;
+  while (i < idxs.length) {
+    let j = i + 1;
+    const n = rows[idxs[i]].rec ? rows[idxs[i]].rec.n : -9;
+    while (j < idxs.length) {
+      const nj = rows[idxs[j]].rec ? rows[idxs[j]].rec.n : -9;
+      if (nj !== n) break;
+      j++;
+    }
+    if (j - i > 1) {
+      s.log = "동점(" + (n < 0 ? "빽도" : YUT_NAMES[n] || n) + ") · 다시 던지세요";
+      s.orderNeed = idxs.slice(i, j);
+      s.orderNeed.forEach((k) => {
+        rows[k].rec = null;
+      });
+      yutOrderNext(room, s);
+      return;
+    }
+    i = j;
+  }
+  s.order = idxs.map((k) => rows[k].slot);
+  s.orderNames = idxs.map((k) => rows[k].name);
+  s.orderNeed = [];
+  s.pending = "throw";
+  s.turnSlot = s.order[0];
+  const actor = currentActor(room, s);
+  s.turnId = actor ? actor.id : null;
+  s.turnTeam = teamOf(s.turnSlot, s.mode);
+  s.throws = [];
+  s.turnThrows = [];
+  s.legal = [];
+  s.legalAll = [];
+  const lead = actor ? actor.name : rows[idxs[0]].name;
+  s.log = lead + " 선! " + s.orderNames.join(" → ");
+  s.aiAt = Date.now() + 800;
+}
+
+function yutApplyOrderThrow(room, s) {
+  const rec = yutRollOnce();
+  s.lastYut = rec;
+  s.throwId = (s.throwId || 0) + 1;
+  const i = (s.orderNeed || [])[0];
+  if (i == null || !s.orderRolls[i]) return;
+  const row = s.orderRolls[i];
+  row.rec = rec;
+  row.history = (row.history || []).concat([rec.name]);
+  s.orderNeed.shift();
+  s.log = row.name + " · " + rec.name;
+  yutOrderNext(room, s);
+}
+
 function yutPushFx(s, kind, extra) {
   s.fxSeq = (s.fxSeq || 0) + 1;
   s.fx = Object.assign({ kind: kind, id: s.fxSeq }, extra || {});
@@ -1444,6 +1534,18 @@ function initYut(room) {
   for (let t = 0; t < teams; t++) {
     for (let i = 0; i < 4; i++) mals.push({ team: t, i, pos: -1, home: false, stacked: 1, arrivedFrom: -1 });
   }
+  const orderRolls = room.players.map((p, i) => {
+    const slot = p.slot != null ? p.slot : i;
+    return {
+      slot,
+      id: p.id,
+      name: p.name,
+      team: teamOf(slot, mode),
+      rec: null,
+      history: [],
+    };
+  });
+  const first = room.players[0];
   return {
     game: "yut",
     mode,
@@ -1451,10 +1553,10 @@ function initYut(room) {
     mals,
     teams,
     teamNames: YUT_TEAM_NAMES.slice(0, teams),
-    turnSlot: 0,
-    turnId: room.players[0] ? room.players[0].id : null,
-    turnTeam: teamOf(0, mode),
-    pending: "throw",
+    turnSlot: first && first.slot != null ? first.slot : 0,
+    turnId: first ? first.id : null,
+    turnTeam: teamOf(first && first.slot != null ? first.slot : 0, mode),
+    pending: "order",
     lastYut: null,
     bonus: 0,
     moveN: 0,
@@ -1464,7 +1566,11 @@ function initYut(room) {
     legalAll: [],
     history: [],
     turnThrows: [],
-    log: "윷을 던지세요",
+    orderRolls,
+    orderNeed: orderRolls.map((_, i) => i),
+    order: null,
+    orderNames: [],
+    log: "순서 정하기 · 윷을 한 번씩 던지세요",
     fx: null,
     fxSeq: 0,
     playerMeta: metaPlayers(room),
@@ -1482,6 +1588,10 @@ function applyYut(room, player, payload, endGame) {
   const team = yutTeamOfPlayer(player, s.mode);
   const act = String(payload.act || "");
   if (!Array.isArray(s.throws)) s.throws = [];
+  if (s.pending === "order" && (act === "throw" || act === "roll" || act === "")) {
+    yutApplyOrderThrow(room, s);
+    return;
+  }
   if (s.pending === "move" && act === "pickThrow" && payload.throwI != null) {
     const i = payload.throwI | 0;
     if (i >= 0 && i < s.throws.length) {
@@ -1491,25 +1601,15 @@ function applyYut(room, player, payload, endGame) {
     return;
   }
   if (s.pending === "throw" && (act === "throw" || act === "roll" || act === "")) {
-    let backs = 0;
-    const sticks = [];
-    for (let i = 0; i < 4; i++) {
-      const back = Math.random() < 0.5;
-      sticks.push(back ? 1 : 0);
-      if (back) backs++;
-    }
-    const isBackDo = backs === 1 && sticks[0] === 1;
-    const n = isBackDo ? -1 : backs === 0 ? 5 : backs;
-    const name = isBackDo ? "빽도" : YUT_NAMES[n];
-    const rec = { n, name, sticks };
+    const rec = yutRollOnce();
     s.lastYut = rec;
     s.throwId = (s.throwId || 0) + 1;
     s.throws.push(rec);
-    s.history = (s.history || []).concat([name]).slice(-16);
+    s.history = (s.history || []).concat([rec.name]).slice(-16);
     s.turnThrows = s.throws.map((t) => t.name);
-    if (n >= 4) {
+    if (rec.n >= 4) {
       s.pending = "throw";
-      s.log = name + " · 한 번 더 던지세요";
+      s.log = rec.name + " · 한 번 더 던지세요";
       s.legal = [];
       s.legalAll = [];
       s.aiAt = Date.now() + 900;
@@ -1519,7 +1619,7 @@ function applyYut(room, player, payload, endGame) {
     yutSetPoolLegal(s, team);
     const usable = (s.legalAll || []).some((ls) => ls && ls.length);
     if (!usable) {
-      s.log = name + " — 움직일 말이 없습니다";
+      s.log = rec.name + " — 움직일 말이 없습니다";
       yutEndTurn(room, s, false);
       s.aiAt = Date.now() + 500;
       return;
@@ -1634,7 +1734,7 @@ function yutAi(room, endGame) {
   const actor = currentActor(room, s);
   if (!actor || !actor.isAi) return;
   if (Date.now() < (s.aiAt || 0)) return;
-  if (s.pending === "throw") {
+  if (s.pending === "throw" || s.pending === "order") {
     applyYut(room, actor, { act: "throw" }, endGame);
     return;
   }
