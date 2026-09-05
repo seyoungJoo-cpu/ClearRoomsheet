@@ -1538,6 +1538,7 @@ var SYNC_PART_KEYS = {
     "allStatusRooms",
     "extendedStayRooms",
     "extendedStayUpdatedAt",
+    "roomingCheckBoards",
     "blockDisplayAliases",
     "uploadSummary",
     "roomingUploadedAt",
@@ -3298,6 +3299,105 @@ function mergeVacRowsPreservingFields(incoming, existing) {
     });
 }
 
+function emptyRoomingCheckBoard() {
+  return { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" };
+}
+
+function normalizeRoomingCheckBoards(raw) {
+  var out = {
+    tabs: [{ id: "check", label: "CHECK" }],
+    boards: { check: emptyRoomingCheckBoard() },
+    tabsUpdatedAt: "",
+  };
+  if (!raw || typeof raw !== "object") return out;
+  var seen = { check: true };
+  var tabs = [{ id: "check", label: "CHECK" }];
+  if (Array.isArray(raw.tabs)) {
+    raw.tabs.forEach(function (tab) {
+      if (!tab || typeof tab !== "object") return;
+      var id = tab.id != null ? String(tab.id).trim() : "";
+      var label = tab.label != null ? String(tab.label).trim() : "";
+      if (!id || id === "check" || seen[id]) return;
+      if (!/^[a-zA-Z0-9_-]{1,40}$/.test(id)) return;
+      seen[id] = true;
+      tabs.push({ id: id, label: label || id });
+    });
+  }
+  out.tabs = tabs;
+  out.tabsUpdatedAt = raw.tabsUpdatedAt != null ? String(raw.tabsUpdatedAt).trim() : "";
+  out.boards = {};
+  tabs.forEach(function (tab) {
+    var src =
+      raw.boards && typeof raw.boards === "object" && raw.boards[tab.id]
+        ? raw.boards[tab.id]
+        : {};
+    var rooms = {};
+    if (src.rooms && typeof src.rooms === "object") {
+      Object.keys(src.rooms).forEach(function (room) {
+        if (src.rooms[room]) rooms[String(room)] = true;
+      });
+    }
+    out.boards[tab.id] = {
+      rooms: rooms,
+      memo: src.memo != null ? String(src.memo) : "",
+      roomsUpdatedAt: src.roomsUpdatedAt != null ? String(src.roomsUpdatedAt).trim() : "",
+      memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
+    };
+  });
+  return out;
+}
+
+function mergeRoomingCheckBoardsForServer(prev, incoming) {
+  var base = normalizeRoomingCheckBoards(prev);
+  if (!incoming || typeof incoming !== "object") return base;
+  var inc = normalizeRoomingCheckBoards(incoming);
+  var out = {
+    tabs: base.tabs,
+    boards: {},
+    tabsUpdatedAt: base.tabsUpdatedAt,
+  };
+  if (
+    inc.tabsUpdatedAt &&
+    (!base.tabsUpdatedAt || String(inc.tabsUpdatedAt) >= String(base.tabsUpdatedAt))
+  ) {
+    out.tabs = inc.tabs;
+    out.tabsUpdatedAt = inc.tabsUpdatedAt;
+  }
+  var tabIds = {};
+  out.tabs.forEach(function (tab) {
+    tabIds[tab.id] = true;
+  });
+  Object.keys(tabIds).forEach(function (id) {
+    var b = base.boards[id] || emptyRoomingCheckBoard();
+    var i = inc.boards[id] || emptyRoomingCheckBoard();
+    var rooms = b.rooms;
+    var roomsAt = b.roomsUpdatedAt;
+    if (
+      i.roomsUpdatedAt &&
+      (!roomsAt || String(i.roomsUpdatedAt) >= String(roomsAt))
+    ) {
+      rooms = i.rooms;
+      roomsAt = i.roomsUpdatedAt;
+    }
+    var memo = b.memo;
+    var memoAt = b.memoUpdatedAt;
+    if (
+      i.memoUpdatedAt &&
+      (!memoAt || String(i.memoUpdatedAt) >= String(memoAt))
+    ) {
+      memo = i.memo;
+      memoAt = i.memoUpdatedAt;
+    }
+    out.boards[id] = {
+      rooms: rooms,
+      memo: memo,
+      roomsUpdatedAt: roomsAt,
+      memoUpdatedAt: memoAt,
+    };
+  });
+  return out;
+}
+
 function mergeSyncPayload(prev, incoming) {
   if (!incoming || typeof incoming !== "object") return prev || null;
   if (!prev || typeof prev !== "object") return incoming;
@@ -3363,6 +3463,12 @@ function mergeSyncPayload(prev, incoming) {
     if (onlyAt && (!prevOnlyAt || onlyAt >= prevOnlyAt)) {
       out.extendedStayUpdatedAt = onlyAt;
     }
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "roomingCheckBoards")) {
+    out.roomingCheckBoards = mergeRoomingCheckBoardsForServer(
+      prev.roomingCheckBoards,
+      incoming.roomingCheckBoards
+    );
   }
   if (Object.prototype.hasOwnProperty.call(incoming, "blockDisplayAliases")) {
     out.blockDisplayAliases = incoming.blockDisplayAliases;

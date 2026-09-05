@@ -27,6 +27,7 @@
       "allStatusRooms",
       "extendedStayRooms",
       "extendedStayUpdatedAt",
+      "roomingCheckBoards",
       "blockDisplayAliases",
       "uploadSummary",
       "roomingUploadedAt",
@@ -54,6 +55,7 @@
     "blockMap",
     "allStatusRooms",
     "extendedStayRooms",
+    "roomingCheckBoards",
     "blockDisplayAliases",
     "uploadSummary",
     "roomingUploadedAt",
@@ -1329,6 +1331,12 @@
         writeJsonArray(TEAM_CHAT_KEY, cache.teamChat);
         changed.push("hkTeamChat");
       }
+      if (Object.prototype.hasOwnProperty.call(payload, "roomingCheckBoards")) {
+        lastServerPayload = Object.assign({}, lastServerPayload || {}, {
+          roomingCheckBoards: payload.roomingCheckBoards,
+        });
+        changed.push("roomingCheckBoards");
+      }
     } finally {
       isApplyingRemote = false;
     }
@@ -2427,6 +2435,20 @@
     },
     getLastServerPayload: function () {
       return lastServerPayload ? Object.assign({}, lastServerPayload) : null;
+    },
+    pushRoomingCheckBoards: function (boards) {
+      if (!boards || typeof boards !== "object") return Promise.resolve(false);
+      lastServerPayload = Object.assign({}, lastServerPayload || {}, {
+        roomingCheckBoards: boards,
+      });
+      return postPayload({ roomingCheckBoards: boards }).then(function (data) {
+        if (data && data.payload && data.payload.roomingCheckBoards) {
+          lastServerPayload = Object.assign({}, lastServerPayload || {}, {
+            roomingCheckBoards: data.payload.roomingCheckBoards,
+          });
+        }
+        return !!data;
+      });
     },
     clearRoomingXml: function () {
       var clearedAt = new Date().toISOString();

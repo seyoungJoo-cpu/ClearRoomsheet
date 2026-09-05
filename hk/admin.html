@@ -1112,6 +1112,31 @@
       <div class="zone-grid" id="zoneGrid"></div>
     </section>
 
+    <section class="card">
+      <h2>루밍 사이드바</h2>
+      <p style="margin: 0 0 16px; font-size: 0.875rem; color: var(--text-muted);">
+        루밍 화면 P.STAY 아래 <strong>CHECK</strong>처럼 INDI + 객실 체크박스 + 메모장 탭을 추가합니다.
+        체크박스·메모·탭 목록은 <strong>마감해도 유지</strong>됩니다. 체크만 지울 때는 루밍 화면의 초기화(비밀번호 1000)를 쓰세요.
+      </p>
+      <div class="zone-group-add">
+        <label for="newRoomingTabLabel">탭 추가</label>
+        <div class="zone-group-add__row">
+          <input
+            type="text"
+            id="newRoomingTabLabel"
+            placeholder="예: LINEN"
+            autocomplete="off"
+            maxlength="24"
+          />
+          <button type="button" class="btn-primary" id="btnAddRoomingTab">추가</button>
+        </div>
+        <p class="zone-group-add__hint">
+          추가한 이름은 루밍 사이드바에 그대로 표시됩니다. 아래 카드에서 이름 변경·삭제할 수 있습니다.
+        </p>
+      </div>
+      <div class="zone-grid" id="roomingTabGrid"></div>
+    </section>
+
     <section class="card" id="hotelInfoCard">
       <h2>인포등록</h2>
       <p style="margin: 0 0 12px; font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
@@ -1164,6 +1189,7 @@
         <strong>오더/정비/시설/MB 확인 미니채팅</strong>은 마감 시 <strong>전부 삭제</strong>합니다.
         <strong>알럿</strong>은 마감 시 초기화합니다. 아직 시각이 안 된 <strong>예약 알럿</strong>은 남깁니다. <strong>투표</strong>는 마감해도 모두 유지됩니다.
         <strong>인포등록(호텔 인포·홈페이지)</strong>은 마감해도 유지됩니다.
+        <strong>루밍 CHECK 체크박스·메모·커스텀 사이드바 탭</strong>도 마감해도 유지됩니다.
         <strong>고객불편사항 유형분석 · Track IT · 야간 인계사항 · VIP 체크인 리스트</strong>도 마감해도 유지됩니다 (화면에서 초기화 버튼을 눌러야 지워집니다).
         되돌릴 수 없으니 마감 시점에만 사용하세요.
       </p>
@@ -1180,7 +1206,7 @@
   <script src="hk-auth.js"></script>
   <script src="hk-storage.js?v=inven-keep-1"></script>
   <script src="hk-facility-logs.js"></script>
-  <script src="hk-sync.js?v=inven-keep-1"></script>
+  <script src="hk-sync.js?v=check-tab-1"></script>
   <script src="hk-chat-colors.js?v=gradient-1"></script>
   <script src="hk-inven-notify.js?v=inven-keep-1"></script>
   <script src="hk-staff-broadcast.js?v=room-alert-1"></script>
@@ -1267,6 +1293,7 @@
           el.id === "hotelInfoText" ||
           el.id === "hotelInfoUrlInput" ||
           el.id === "newZoneLabel" ||
+          el.id === "newRoomingTabLabel" ||
           el.classList.contains("zone-card__title-input")
         );
       }
@@ -1690,6 +1717,9 @@
         if (changed.indexOf("hkStorage") >= 0) {
           refresh();
         }
+        if (changed.indexOf("roomingCheckBoards") >= 0) {
+          renderRoomingCheckTabGrid();
+        }
         if (changed.indexOf("hkCloseDayAt") >= 0 || changed.indexOf("hkClearLocalCaches") >= 0) {
           refresh({ force: true });
         }
@@ -2004,6 +2034,7 @@
           fasnVacRows: (server && server.fasnVacRows) || [],
           fasnAllStatusRooms: (server && server.fasnAllStatusRooms) || [],
           fasnBlockMap: (server && server.fasnBlockMap) || {},
+          roomingCheckBoards: (server && server.roomingCheckBoards) || null,
         };
       }
 
@@ -5364,6 +5395,209 @@
         });
       }
 
+      function emptyRoomingCheckBoardAdmin() {
+        return { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" };
+      }
+
+      function normalizeRoomingCheckBoardsAdmin(raw) {
+        var out = {
+          tabs: [{ id: "check", label: "CHECK" }],
+          boards: { check: emptyRoomingCheckBoardAdmin() },
+          tabsUpdatedAt: "",
+        };
+        if (!raw || typeof raw !== "object") return out;
+        var seen = { check: true };
+        var tabs = [{ id: "check", label: "CHECK" }];
+        if (Array.isArray(raw.tabs)) {
+          raw.tabs.forEach(function (tab) {
+            if (!tab || typeof tab !== "object") return;
+            var id = tab.id != null ? String(tab.id).trim() : "";
+            var label = tab.label != null ? String(tab.label).trim() : "";
+            if (!id || id === "check" || seen[id]) return;
+            if (!/^[a-zA-Z0-9_-]{1,40}$/.test(id)) return;
+            seen[id] = true;
+            tabs.push({ id: id, label: label || id });
+          });
+        }
+        out.tabs = tabs;
+        out.tabsUpdatedAt = raw.tabsUpdatedAt != null ? String(raw.tabsUpdatedAt).trim() : "";
+        out.boards = {};
+        tabs.forEach(function (tab) {
+          var src =
+            raw.boards && typeof raw.boards === "object" && raw.boards[tab.id]
+              ? raw.boards[tab.id]
+              : {};
+          var rooms = {};
+          if (src.rooms && typeof src.rooms === "object") {
+            Object.keys(src.rooms).forEach(function (room) {
+              if (src.rooms[room]) rooms[String(room)] = true;
+            });
+          }
+          out.boards[tab.id] = {
+            rooms: rooms,
+            memo: src.memo != null ? String(src.memo) : "",
+            roomsUpdatedAt: src.roomsUpdatedAt != null ? String(src.roomsUpdatedAt).trim() : "",
+            memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
+          };
+        });
+        return out;
+      }
+
+      function getRoomingCheckBoardsAdmin() {
+        var payload =
+          typeof HKSync !== "undefined" && HKSync.getLastServerPayload
+            ? HKSync.getLastServerPayload()
+            : null;
+        return normalizeRoomingCheckBoardsAdmin(payload && payload.roomingCheckBoards);
+      }
+
+      function pushRoomingCheckBoardsAdmin(boards, okMsg) {
+        if (typeof HKSync === "undefined" || !HKSync.pushRoomingCheckBoards) {
+          toast("동기화 서버가 없습니다.");
+          return Promise.resolve(false);
+        }
+        return HKSync.pushRoomingCheckBoards(boards).then(function (ok) {
+          renderRoomingCheckTabGrid();
+          toast(ok ? okMsg || "루밍 사이드바가 저장되었습니다." : "저장 실패");
+          return ok;
+        });
+      }
+
+      function makeRoomingCheckTabId(label, tabs) {
+        var reserved = {
+          check: true,
+          indi: true,
+          stay: true,
+          "499": true,
+          vac: true,
+          ovac: true,
+          asn: true,
+          oasn: true,
+          fasn: true,
+        };
+        var used = {};
+        (tabs || []).forEach(function (tab) {
+          if (tab && tab.id) used[String(tab.id)] = true;
+        });
+        var base = String(label || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 40);
+        if (!base || reserved[base] || used[base] || !/^[a-zA-Z0-9_-]{1,40}$/.test(base)) {
+          base = "t" + Date.now().toString(36);
+        }
+        var id = base;
+        var n = 2;
+        while (reserved[id] || used[id]) {
+          var suffix = "_" + n;
+          id = (base.slice(0, Math.max(1, 40 - suffix.length)) + suffix).slice(0, 40);
+          n += 1;
+        }
+        return id;
+      }
+
+      function isDuplicateRoomingTabLabel(boards, label, exceptId) {
+        var want = String(label || "").trim().toLowerCase();
+        if (!want) return false;
+        return (boards.tabs || []).some(function (tab) {
+          if (!tab || tab.id === exceptId) return false;
+          return String(tab.label || "").trim().toLowerCase() === want;
+        });
+      }
+
+      function createRoomingTabCard(tab, builtin) {
+        var card = document.createElement("div");
+        card.className = "zone-card";
+        card.setAttribute("data-rooming-tab", tab.id);
+
+        var head = document.createElement("div");
+        head.className = "zone-card__head";
+        var titleWrap = document.createElement("div");
+        titleWrap.className = "zone-card__title-wrap";
+        var titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.className = "zone-card__title-input";
+        titleInput.value = tab.label || tab.id;
+        titleInput.setAttribute("data-rooming-tab", tab.id);
+        titleInput.setAttribute("maxlength", "24");
+        titleInput.setAttribute("autocomplete", "off");
+        titleInput.setAttribute("aria-label", "루밍 탭 이름");
+        titleInput.title = builtin ? "기본 탭 CHECK" : "탭 이름 수정";
+        if (builtin) {
+          titleInput.readOnly = true;
+        }
+        titleWrap.appendChild(titleInput);
+        head.appendChild(titleWrap);
+        var actions = document.createElement("div");
+        actions.className = "zone-card__head-actions";
+        if (builtin) {
+          var badge = document.createElement("span");
+          badge.className = "zone-group-add__hint";
+          badge.style.margin = "0";
+          badge.textContent = "기본";
+          actions.appendChild(badge);
+        } else {
+          var delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "zone-card__delete";
+          delBtn.setAttribute("data-action", "delete-rooming-tab");
+          delBtn.textContent = "삭제";
+          actions.appendChild(delBtn);
+        }
+        head.appendChild(actions);
+        card.appendChild(head);
+        return card;
+      }
+
+      function renderRoomingCheckTabGrid() {
+        var grid = document.getElementById("roomingTabGrid");
+        if (!grid) return;
+        if (
+          document.activeElement &&
+          grid.contains(document.activeElement) &&
+          document.activeElement.classList.contains("zone-card__title-input")
+        ) {
+          return;
+        }
+        var boards = getRoomingCheckBoardsAdmin();
+        grid.innerHTML = "";
+        (boards.tabs || []).forEach(function (tab) {
+          if (!tab || !tab.id) return;
+          grid.appendChild(createRoomingTabCard(tab, tab.id === "check"));
+        });
+      }
+
+      function commitRoomingTabRename(inp) {
+        if (!inp || inp.readOnly) return;
+        var tabId = inp.getAttribute("data-rooming-tab");
+        var newLabel = String(inp.value || "").trim();
+        if (!tabId || tabId === "check") return;
+        var boards = getRoomingCheckBoardsAdmin();
+        var tab = (boards.tabs || []).filter(function (t) {
+          return t && t.id === tabId;
+        })[0];
+        if (!tab) {
+          renderRoomingCheckTabGrid();
+          return;
+        }
+        if (!newLabel) {
+          inp.value = tab.label || tabId;
+          toast("탭 이름을 입력하세요.");
+          return;
+        }
+        if (isDuplicateRoomingTabLabel(boards, newLabel, tabId)) {
+          inp.value = tab.label || tabId;
+          toast("이미 같은 이름의 탭이 있습니다.");
+          return;
+        }
+        if (newLabel === tab.label) return;
+        tab.label = newLabel;
+        boards.tabsUpdatedAt = new Date().toISOString();
+        pushRoomingCheckBoardsAdmin(boards, "탭 이름이 변경되었습니다.");
+      }
+
       function refresh(opts) {
         opts = opts || {};
         if (!opts.force && isAdminUserEditing()) {
@@ -5416,6 +5650,7 @@
         }
         loadHotelInfoIntoForm(data, false);
         renderZoneGrid(data);
+        renderRoomingCheckTabGrid();
         if (typeof HKStaffBroadcast !== "undefined" && HKStaffBroadcast.renderAdminList) {
           HKStaffBroadcast.renderAdminList();
         }
@@ -5958,6 +6193,96 @@
           toast("그룹이 삭제되었습니다.");
         }
       });
+
+      var btnAddRoomingTab = document.getElementById("btnAddRoomingTab");
+      if (btnAddRoomingTab) {
+        btnAddRoomingTab.addEventListener("click", function () {
+          var labelInput = document.getElementById("newRoomingTabLabel");
+          var label = labelInput ? labelInput.value.trim() : "";
+          if (!label) {
+            toast("탭 이름을 입력하세요.");
+            return;
+          }
+          var boards = getRoomingCheckBoardsAdmin();
+          if (isDuplicateRoomingTabLabel(boards, label, null)) {
+            toast("이미 같은 이름의 탭이 있습니다.");
+            return;
+          }
+          var id = makeRoomingCheckTabId(label, boards.tabs);
+          boards.tabs.push({ id: id, label: label });
+          boards.boards[id] = emptyRoomingCheckBoardAdmin();
+          boards.tabsUpdatedAt = new Date().toISOString();
+          if (labelInput) {
+            labelInput.value = "";
+            labelInput.blur();
+          }
+          pushRoomingCheckBoardsAdmin(boards, "루밍 탭이 추가되었습니다.").then(function (ok) {
+            if (!ok) return;
+            var newCard = document.querySelector('.zone-card[data-rooming-tab="' + id + '"]');
+            if (newCard) {
+              newCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              var titleInput = newCard.querySelector(".zone-card__title-input");
+              if (titleInput && !titleInput.readOnly) titleInput.focus();
+            }
+          });
+        });
+      }
+
+      var newRoomingTabLabelInput = document.getElementById("newRoomingTabLabel");
+      if (newRoomingTabLabelInput) {
+        newRoomingTabLabelInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (btnAddRoomingTab) btnAddRoomingTab.click();
+          }
+        });
+      }
+
+      var roomingTabGrid = document.getElementById("roomingTabGrid");
+      if (roomingTabGrid) {
+        roomingTabGrid.addEventListener("focusout", function (e) {
+          if (e.target.classList.contains("zone-card__title-input")) {
+            commitRoomingTabRename(e.target);
+          }
+        });
+        roomingTabGrid.addEventListener("keydown", function (e) {
+          if (!e.target.classList.contains("zone-card__title-input")) return;
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.target.blur();
+          }
+          if (e.key === "Escape") {
+            var tabId = e.target.getAttribute("data-rooming-tab");
+            var boards = getRoomingCheckBoardsAdmin();
+            var tab = (boards.tabs || []).filter(function (t) {
+              return t && t.id === tabId;
+            })[0];
+            e.target.value = (tab && tab.label) || tabId || "";
+            e.target.blur();
+          }
+        });
+        roomingTabGrid.addEventListener("click", function (e) {
+          var t = e.target;
+          if (!t || t.getAttribute("data-action") !== "delete-rooming-tab") return;
+          var card = t.closest(".zone-card");
+          var tabId = card ? card.getAttribute("data-rooming-tab") : "";
+          if (!tabId || tabId === "check") return;
+          var boards = getRoomingCheckBoardsAdmin();
+          var tab = (boards.tabs || []).filter(function (x) {
+            return x && x.id === tabId;
+          })[0];
+          var label = (tab && tab.label) || tabId;
+          if (!window.confirm("루밍 탭 「" + label + "」을 삭제할까요? 체크·메모도 함께 사라집니다.")) {
+            return;
+          }
+          boards.tabs = (boards.tabs || []).filter(function (x) {
+            return x && x.id && x.id !== tabId;
+          });
+          if (boards.boards) delete boards.boards[tabId];
+          boards.tabsUpdatedAt = new Date().toISOString();
+          pushRoomingCheckBoardsAdmin(boards, "루밍 탭이 삭제되었습니다.");
+        });
+      }
 
       refresh();
       setupAdminNameField();

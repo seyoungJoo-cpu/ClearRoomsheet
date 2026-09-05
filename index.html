@@ -492,6 +492,66 @@
       gap: 1px;
       justify-content: center;
     }
+    .pair-row .cell.status-with-check,
+    .villa-list-row .cell.status-with-check {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 2px 2px;
+    }
+    .room-check-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .room-check-cb {
+      width: 13px;
+      height: 13px;
+      margin: 0;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .rooming-check-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0.15rem 0 0.45rem;
+    }
+    .btn-check-reset {
+      font: inherit;
+      padding: 0.28rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid #fca5a5;
+      background: rgba(127, 29, 29, 0.35);
+      color: #fecaca;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-check-reset:hover {
+      filter: brightness(1.08);
+    }
+    .rooming-check-memo {
+      margin: 0 0 0.65rem;
+    }
+    .rooming-check-memo textarea {
+      width: 100%;
+      min-height: 72px;
+      box-sizing: border-box;
+      padding: 0.45rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.22);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      resize: vertical;
+    }
 
     .fasn-legend {
       margin: 0 0 0.5rem;
@@ -1507,6 +1567,7 @@
           <button type="button" class="sidebar-btn" data-view="fasn" title="F.ASN — 별도 XML · PC 간 동기화">F.ASN</button>
           <button type="button" class="sidebar-btn active" data-view="indi" title="INDI — 예약구분 상세">INDI</button>
           <button type="button" class="sidebar-btn" data-view="stay" title="P.STAY — Stayover만">P.STAY</button>
+          <button type="button" class="sidebar-btn" data-view="check" title="CHECK — INDI + 객실 체크">CHECK</button>
         </aside>
         <div class="board-main">
           <div id="view499" class="view-panel" hidden>
@@ -1622,6 +1683,35 @@
             </div>
             <div id="stayBoardMount"></div>
           </div>
+          <div id="viewCheck" class="view-panel" hidden data-check-tab="check">
+            <p class="indi-legend">
+              <strong>S</strong> Stayover &nbsp;|&nbsp;
+              <strong>N</strong> Not Reserved &nbsp;|&nbsp;
+              <strong>IN</strong> Arrived &nbsp;|&nbsp;
+              <strong>A</strong> Arrival &nbsp;|&nbsp;
+              <strong>OUT예정</strong> Due Out &nbsp;|&nbsp;
+              <strong>(O예정,A)</strong> Departed, Arrival &nbsp;|&nbsp;
+              <strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp;
+              <strong>OUT</strong> Departed
+            </p>
+            <div class="summary-toolbar">
+              <div class="status-summary-bar" data-role="check-cat-bar"></div>
+            </div>
+            <div class="summary-toolbar">
+              <div class="status-summary-bar" data-role="check-status-bar" data-filter-mode="indi"></div>
+              <label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>
+              <button type="button" class="btn-excel-dl" data-export-view="check">엑셀</button>
+            </div>
+            <div class="asn-block-filters" data-role="check-block-filters" hidden></div>
+            <div class="rooming-check-tools">
+              <button type="button" class="btn-check-reset" data-role="check-reset">체크박스 초기화</button>
+            </div>
+            <div class="rooming-check-memo">
+              <textarea data-role="check-memo" rows="3" placeholder="CHECK 메모" autocomplete="off"></textarea>
+            </div>
+            <div data-role="check-board-mount"></div>
+          </div>
+          <div id="customCheckViews"></div>
         </div>
       </div>
     </section>
@@ -1765,6 +1855,18 @@
       /** 연박 추가: 객실번호(4자리) → true , 499·VAC·ASN·F.ASN 보드에 「연박」표시 */
       var extendedStayRooms = {};
       var extendedStayUpdatedAt = "";
+
+      var ROOMING_CHECK_LS_KEY = "lotte-hk-rooming-check-v1";
+      var ROOMING_CHECK_RESET_PASSWORD = "1000";
+      var roomingCheckBoards = {
+        tabs: [{ id: "check", label: "CHECK" }],
+        boards: {
+          check: { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" },
+        },
+        tabsUpdatedAt: "",
+      };
+      var roomingCheckMemoTimer = 0;
+      var currentRoomingView = "indi";
 
       /** @type {Record<string,string>} 객실 → FO 표시(IN/O) */
       var cachedRoomResvMap = {};
@@ -2292,6 +2394,7 @@
           return true;
         }
         if (payload.extendedStayUpdatedAt) return true;
+        if (payload.roomingCheckBoards) return true;
         return false;
       }
 
@@ -2346,7 +2449,285 @@
         return true;
       }
 
+      function emptyRoomingCheckBoard() {
+        return { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" };
+      }
+
+      function normalizeRoomingCheckBoards(raw) {
+        var out = {
+          tabs: [{ id: "check", label: "CHECK" }],
+          boards: { check: emptyRoomingCheckBoard() },
+          tabsUpdatedAt: "",
+        };
+        if (!raw || typeof raw !== "object") return out;
+        var seen = { check: true };
+        var tabs = [{ id: "check", label: "CHECK" }];
+        if (Array.isArray(raw.tabs)) {
+          raw.tabs.forEach(function (tab) {
+            if (!tab || typeof tab !== "object") return;
+            var id = tab.id != null ? String(tab.id).trim() : "";
+            var label = tab.label != null ? String(tab.label).trim() : "";
+            if (!id || id === "check" || seen[id]) return;
+            if (!/^[a-zA-Z0-9_-]{1,40}$/.test(id)) return;
+            seen[id] = true;
+            tabs.push({ id: id, label: label || id });
+          });
+        }
+        out.tabs = tabs;
+        out.tabsUpdatedAt = raw.tabsUpdatedAt != null ? String(raw.tabsUpdatedAt).trim() : "";
+        out.boards = {};
+        tabs.forEach(function (tab) {
+          var src =
+            raw.boards && typeof raw.boards === "object" && raw.boards[tab.id]
+              ? raw.boards[tab.id]
+              : {};
+          var rooms = {};
+          if (src.rooms && typeof src.rooms === "object") {
+            Object.keys(src.rooms).forEach(function (room) {
+              if (src.rooms[room]) rooms[String(room)] = true;
+            });
+          }
+          out.boards[tab.id] = {
+            rooms: rooms,
+            memo: src.memo != null ? String(src.memo) : "",
+            roomsUpdatedAt: src.roomsUpdatedAt != null ? String(src.roomsUpdatedAt).trim() : "",
+            memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
+          };
+        });
+        return out;
+      }
+
+      function mergeRoomingCheckBoardsLocal(prev, incoming) {
+        var base = normalizeRoomingCheckBoards(prev);
+        if (!incoming || typeof incoming !== "object") return base;
+        var inc = normalizeRoomingCheckBoards(incoming);
+        var out = {
+          tabs: base.tabs,
+          boards: {},
+          tabsUpdatedAt: base.tabsUpdatedAt,
+        };
+        if (
+          inc.tabsUpdatedAt &&
+          (!base.tabsUpdatedAt || String(inc.tabsUpdatedAt) >= String(base.tabsUpdatedAt))
+        ) {
+          out.tabs = inc.tabs;
+          out.tabsUpdatedAt = inc.tabsUpdatedAt;
+        }
+        var tabIds = {};
+        out.tabs.forEach(function (tab) {
+          tabIds[tab.id] = true;
+        });
+        Object.keys(tabIds).forEach(function (id) {
+          var b = base.boards[id] || emptyRoomingCheckBoard();
+          var i = inc.boards[id] || emptyRoomingCheckBoard();
+          var rooms = b.rooms;
+          var roomsAt = b.roomsUpdatedAt;
+          if (i.roomsUpdatedAt && (!roomsAt || String(i.roomsUpdatedAt) >= String(roomsAt))) {
+            rooms = i.rooms;
+            roomsAt = i.roomsUpdatedAt;
+          }
+          var memo = b.memo;
+          var memoAt = b.memoUpdatedAt;
+          if (i.memoUpdatedAt && (!memoAt || String(i.memoUpdatedAt) >= String(memoAt))) {
+            memo = i.memo;
+            memoAt = i.memoUpdatedAt;
+          }
+          out.boards[id] = {
+            rooms: rooms,
+            memo: memo,
+            roomsUpdatedAt: roomsAt,
+            memoUpdatedAt: memoAt,
+          };
+        });
+        return out;
+      }
+
+      function isCheckBoardMode(mode) {
+        return mode === "check" || (typeof mode === "string" && mode.indexOf("rcheck:") === 0);
+      }
+
+      function isIndiLikeMode(mode) {
+        return mode === "indi" || isCheckBoardMode(mode);
+      }
+
+      function roomingCheckTabId(mode) {
+        if (mode === "check") return "check";
+        if (typeof mode === "string" && mode.indexOf("rcheck:") === 0) {
+          return mode.slice(7);
+        }
+        return "";
+      }
+
+      function checkModeForTab(tabId) {
+        return tabId === "check" ? "check" : "rcheck:" + tabId;
+      }
+
+      function getRoomingCheckBoard(tabId) {
+        if (!roomingCheckBoards.boards[tabId]) {
+          roomingCheckBoards.boards[tabId] = emptyRoomingCheckBoard();
+        }
+        return roomingCheckBoards.boards[tabId];
+      }
+
+      function isRoomChecked(tabId, roomNorm) {
+        var board = getRoomingCheckBoard(tabId);
+        var room = normalizeRoomDigits(roomNorm);
+        return !!(room && board.rooms && board.rooms[room]);
+      }
+
+      function saveRoomingCheckToLocal() {
+        try {
+          localStorage.setItem(ROOMING_CHECK_LS_KEY, JSON.stringify(roomingCheckBoards));
+        } catch (e) {}
+      }
+
+      function loadRoomingCheckFromLocal() {
+        try {
+          var raw = localStorage.getItem(ROOMING_CHECK_LS_KEY);
+          if (!raw) return;
+          roomingCheckBoards = mergeRoomingCheckBoardsLocal(
+            roomingCheckBoards,
+            JSON.parse(raw)
+          );
+        } catch (e) {}
+      }
+
+      function applyRoomingCheckFromRemote(data) {
+        if (!data || !Object.prototype.hasOwnProperty.call(data, "roomingCheckBoards")) {
+          return false;
+        }
+        var prevTabs = JSON.stringify(roomingCheckBoards.tabs || []);
+        roomingCheckBoards = mergeRoomingCheckBoardsLocal(
+          roomingCheckBoards,
+          data.roomingCheckBoards
+        );
+        saveRoomingCheckToLocal();
+        if (JSON.stringify(roomingCheckBoards.tabs || []) !== prevTabs) {
+          syncRoomingCheckTabUi();
+        }
+        syncRoomingCheckMemos();
+        return true;
+      }
+
+      function pushRoomingCheckBoards(label) {
+        saveRoomingCheckToLocal();
+        pushSharedState({
+          includeExtendedStay: false,
+          includeBlockAliases: false,
+          includeRoomingCheck: true,
+          syncLabel: label || "CHECK 공유됨",
+        });
+      }
+
+      function setRoomChecked(tabId, roomNorm, on) {
+        if (!tabId || !roomNorm) return;
+        var room = normalizeRoomDigits(roomNorm);
+        if (!room) return;
+        var board = getRoomingCheckBoard(tabId);
+        if (on) board.rooms[room] = true;
+        else delete board.rooms[room];
+        board.roomsUpdatedAt = new Date().toISOString();
+        pushRoomingCheckBoards("CHECK 체크 공유됨");
+      }
+
+      function resetRoomingCheckRooms(tabId) {
+        var board = getRoomingCheckBoard(tabId);
+        board.rooms = {};
+        board.roomsUpdatedAt = new Date().toISOString();
+        pushRoomingCheckBoards("CHECK 체크 초기화 공유됨");
+        refreshBoards();
+      }
+
+      function setRoomingCheckMemo(tabId, text) {
+        var board = getRoomingCheckBoard(tabId);
+        board.memo = text != null ? String(text) : "";
+        board.memoUpdatedAt = new Date().toISOString();
+        saveRoomingCheckToLocal();
+      }
+
+      function getCheckViewPanel(tabId) {
+        return document.querySelector('.view-panel[data-check-tab="' + tabId + '"]');
+      }
+
+      function buildCustomCheckView(tab) {
+        var wrap = document.createElement("div");
+        wrap.className = "view-panel";
+        wrap.hidden = true;
+        wrap.setAttribute("data-check-tab", tab.id);
+        wrap.innerHTML =
+          '<p class="indi-legend">' +
+          "<strong>S</strong> Stayover &nbsp;|&nbsp; <strong>N</strong> Not Reserved &nbsp;|&nbsp; " +
+          "<strong>IN</strong> Arrived &nbsp;|&nbsp; <strong>A</strong> Arrival &nbsp;|&nbsp; " +
+          "<strong>OUT예정</strong> Due Out &nbsp;|&nbsp; <strong>(O예정,A)</strong> Departed, Arrival &nbsp;|&nbsp; " +
+          "<strong>(Out,IN)</strong> Arrived, Departed &nbsp;|&nbsp; <strong>OUT</strong> Departed</p>" +
+          '<div class="summary-toolbar"><div class="status-summary-bar" data-role="check-cat-bar"></div></div>' +
+          '<div class="summary-toolbar">' +
+          '<div class="status-summary-bar" data-role="check-status-bar" data-filter-mode="indi"></div>' +
+          '<label class="out-toggle"><input type="checkbox" class="chk-out-departed" /> OUT</label>' +
+          '<button type="button" class="btn-excel-dl" data-export-view="' +
+          checkModeForTab(tab.id) +
+          '">엑셀</button></div>' +
+          '<div class="asn-block-filters" data-role="check-block-filters" hidden></div>' +
+          '<div class="rooming-check-tools">' +
+          '<button type="button" class="btn-check-reset" data-role="check-reset">체크박스 초기화</button></div>' +
+          '<div class="rooming-check-memo"><textarea data-role="check-memo" rows="3" placeholder="' +
+          String(tab.label || tab.id).replace(/"/g, "&quot;") +
+          ' 메모" autocomplete="off"></textarea></div>' +
+          '<div data-role="check-board-mount"></div>';
+        return wrap;
+      }
+
+      function syncRoomingCheckTabUi() {
+        var sidebar = document.querySelector(".board-layout > .sidebar");
+        if (sidebar) {
+          Array.prototype.slice.call(sidebar.querySelectorAll(".sidebar-btn[data-check-custom='1']")).forEach(function (btn) {
+            btn.parentNode.removeChild(btn);
+          });
+          roomingCheckBoards.tabs.forEach(function (tab) {
+            if (!tab || tab.id === "check") return;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "sidebar-btn";
+            btn.setAttribute("data-view", checkModeForTab(tab.id));
+            btn.setAttribute("data-check-custom", "1");
+            btn.title = tab.label + " — INDI + 객실 체크";
+            btn.textContent = tab.label;
+            sidebar.appendChild(btn);
+          });
+        }
+        var host = document.getElementById("customCheckViews");
+        if (host) {
+          host.innerHTML = "";
+          roomingCheckBoards.tabs.forEach(function (tab) {
+            if (!tab || tab.id === "check") return;
+            host.appendChild(buildCustomCheckView(tab));
+          });
+        }
+        syncOutDepartedCheckboxes();
+        wireExcelDownloadButtons();
+        if (currentRoomingView && isCheckBoardMode(currentRoomingView)) {
+          var still =
+            currentRoomingView === "check" ||
+            roomingCheckBoards.tabs.some(function (tab) {
+              return checkModeForTab(tab.id) === currentRoomingView;
+            });
+          if (!still) switchBoardView("check");
+        }
+      }
+
+      function syncRoomingCheckMemos() {
+        roomingCheckBoards.tabs.forEach(function (tab) {
+          var panel = getCheckViewPanel(tab.id);
+          if (!panel) return;
+          var ta = panel.querySelector("[data-role='check-memo']");
+          if (!ta) return;
+          if (document.activeElement === ta) return;
+          ta.value = getRoomingCheckBoard(tab.id).memo || "";
+        });
+      }
+
       function saveRoomingStateToLocal() {
+        saveRoomingCheckToLocal();
         if (!hasLocalRoomingData() && !hasLocalFasnData() && !hasLocalExtendedStayData()) {
           // 연박만 비운 경우에도 로컬 캐시에 빈 연박을 남겨 되살림 방지
           if (!extendedStayUpdatedAt) return;
@@ -2413,6 +2794,9 @@
         }
         if (opts.includeBlockAliases !== false) {
           p.blockDisplayAliases = blockDisplayAliases;
+        }
+        if (opts.includeRoomingCheck !== false) {
+          p.roomingCheckBoards = roomingCheckBoards;
         }
         return p;
       }
@@ -2501,6 +2885,9 @@
         if (data.extendedStayRooms !== undefined) {
           applyExtendedStayFromRemote(data);
         }
+        if (data.roomingCheckBoards !== undefined) {
+          applyRoomingCheckFromRemote(data);
+        }
         if (data.blockDisplayAliases) {
           blockDisplayAliases = JSON.parse(JSON.stringify(data.blockDisplayAliases));
           persistBlockAliases();
@@ -2582,7 +2969,8 @@
         if (!opts.roomingUpload && !opts.fasnUpload && !opts.roomingClear) {
           var hasExtField = Object.prototype.hasOwnProperty.call(body, "extendedStayRooms");
           var hasAliasField = Object.prototype.hasOwnProperty.call(body, "blockDisplayAliases");
-          if (!hasExtField && !hasAliasField) return;
+          var hasCheckField = Object.prototype.hasOwnProperty.call(body, "roomingCheckBoards");
+          if (!hasExtField && !hasAliasField && !hasCheckField) return;
         }
         if (!Object.keys(body).length) return;
         fetch("/api/sync", {
@@ -2853,8 +3241,9 @@
         refreshBoards();
       }
 
-      function fillStatusCell(cell, statusText, blockCodeRaw, boardMode) {
+      function fillStatusCell(cell, statusText, blockCodeRaw, boardMode, roomNorm) {
         var bc = normalizeBlockCode(blockCodeRaw || "");
+        var checkTab = isCheckBoardMode(boardMode) ? roomingCheckTabId(boardMode) : "";
         cell.className = "cell status-code";
         if ((boardMode === "asn" || boardMode === "fasn") && bc !== "") {
           cell.className += " status-with-block";
@@ -2867,6 +3256,23 @@
           chip.textContent = blockLabelForDisplay(bc);
           chip.title = bc;
           cell.appendChild(chip);
+        } else if (checkTab && roomNorm) {
+          cell.className += " status-with-check";
+          cell.textContent = "";
+          var stEl = document.createElement("div");
+          stEl.textContent = statusText || "";
+          cell.appendChild(stEl);
+          var wrap = document.createElement("label");
+          wrap.className = "room-check-wrap";
+          wrap.title = "체크";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "room-check-cb";
+          cb.checked = isRoomChecked(checkTab, roomNorm);
+          cb.setAttribute("data-check-tab", checkTab);
+          cb.setAttribute("data-room", roomNorm);
+          wrap.appendChild(cb);
+          cell.appendChild(wrap);
         } else {
           cell.textContent = statusText || "";
         }
@@ -3133,12 +3539,16 @@
       }
 
       function syncIndiCategoryFilterCheckboxes() {
-        var bar = document.getElementById("indiCategorySummaryBar");
-        if (!bar) return;
-        bar.querySelectorAll(".chk-indi-filter").forEach(function (cb) {
-          var code = cb.getAttribute("data-indi-code");
-          if (code === "ALL") cb.checked = allIndiCategoryFiltersOn();
-          else if (code) cb.checked = !!indiCategoryFilters[code];
+        var bars = [document.getElementById("indiCategorySummaryBar")].concat(
+          Array.prototype.slice.call(document.querySelectorAll("[data-role='check-cat-bar']"))
+        );
+        bars.forEach(function (bar) {
+          if (!bar) return;
+          bar.querySelectorAll(".chk-indi-filter").forEach(function (cb) {
+            var code = cb.getAttribute("data-indi-code");
+            if (code === "ALL") cb.checked = allIndiCategoryFiltersOn();
+            else if (code) cb.checked = !!indiCategoryFilters[code];
+          });
         });
       }
 
@@ -3287,7 +3697,7 @@
         selectedCodes,
         blockMapOverride
       ) {
-        var wrap = document.getElementById(wrapId);
+        var wrap = typeof wrapId === "string" ? document.getElementById(wrapId) : wrapId;
         if (!wrap) return;
 
         if (!rows.length) {
@@ -3521,15 +3931,18 @@
         if (
           mode === "vac" ||
           mode === "ovac" ||
-          mode === "indi" ||
-          mode === "stay"
+          mode === "stay" ||
+          isIndiLikeMode(mode)
         ) {
           return STATUS_FILTER_CODES.concat(VAC_STATUS_EXTRA_CODES);
         }
         return STATUS_FILTER_CODES.slice();
       }
 
-      function summaryBarModeFromId(barId) {
+      function summaryBarModeFromId(barId, barEl) {
+        if (barEl && barEl.getAttribute("data-filter-mode")) {
+          return barEl.getAttribute("data-filter-mode");
+        }
         if (barId === "vacStatusSummaryBar" || barId === "oVacStatusSummaryBar") return "vac";
         if (barId === "asnStatusSummaryBar" || barId === "oAsnStatusSummaryBar") return "asn";
         if (barId === "indiStatusSummaryBar") return "indi";
@@ -3544,7 +3957,7 @@
           { code: "DI", cls: "di" },
           { code: "PU", cls: "pu" },
         ];
-        if (mode === "vac" || mode === "ovac" || mode === "indi" || mode === "stay") {
+        if (mode === "vac" || mode === "ovac" || mode === "stay" || isIndiLikeMode(mode)) {
           chips.push({ code: "OO", cls: "oo" }, { code: "OS", cls: "os" });
         }
         return chips;
@@ -3580,6 +3993,13 @@
             else if (code) cb.checked = !!statusRoomFilters[code];
           });
         });
+        document.querySelectorAll("[data-role='check-status-bar']").forEach(function (bar) {
+          bar.querySelectorAll(".chk-status-filter").forEach(function (cb) {
+            var code = cb.getAttribute("data-status-code");
+            if (code === "ALL") cb.checked = allStatusFiltersOn("indi");
+            else if (code) cb.checked = !!statusRoomFilters[code];
+          });
+        });
       }
 
       function matchesStatusRoomFilter(rec, mode) {
@@ -3589,8 +4009,8 @@
         if (
           mode !== "vac" &&
           mode !== "ovac" &&
-          mode !== "indi" &&
           mode !== "stay" &&
+          !isIndiLikeMode(mode) &&
           (u === "OO" || u === "OS")
         ) {
           return STATUS_FILTER_CODES.every(function (c) {
@@ -4230,7 +4650,7 @@
         var mainLine = document.createElement("div");
         mainLine.textContent = rf(normalizeRoomDigits(it.room));
         cell.appendChild(mainLine);
-        if (boardMode === "indi" && it) {
+        if (isIndiLikeMode(boardMode) && it) {
           var indiEl = document.createElement("div");
           indiEl.className = "room-num__indi";
           indiEl.textContent = indiCategoryLabelForRec(it);
@@ -4285,7 +4705,7 @@
             var c1 = document.createElement("div");
             fillRoomNumCell(c1, it, rf, boardMode);
             var c2 = document.createElement("div");
-            fillStatusCell(c2, it.status || "", it.blockCode, boardMode);
+            fillStatusCell(c2, it.status || "", it.blockCode, boardMode, it.room);
             row.appendChild(c1);
             row.appendChild(c2);
             stack.appendChild(row);
@@ -4334,7 +4754,7 @@
             c1.textContent = String(v).padStart(3, "0");
           }
           var c2 = document.createElement("div");
-          fillStatusCell(c2, st || "—", it ? it.blockCode : "", boardMode);
+          fillStatusCell(c2, st || "—", it ? it.blockCode : "", boardMode, it ? it.room : "");
           row.appendChild(c1);
           row.appendChild(c2);
           body.appendChild(row);
@@ -4360,7 +4780,7 @@
         var banTitle = document.createElement("span");
         banTitle.textContent = titleText;
         ban.appendChild(banTitle);
-        var showNotOut = !!(boardMode === "indi" && notOutBuckets && isIndiOutFilterActive());
+        var showNotOut = !!(isIndiLikeMode(boardMode) && notOutBuckets && isIndiOutFilterActive());
         var useMainMerge = wingKey === "main";
         var wingNotOut = 0;
         if (showNotOut) {
@@ -4441,7 +4861,7 @@
           workRows = applyVacBlockFilter(modeFiltered);
         } else if (mode === "fasn") {
           workRows = applyFasnBlockFilter(modeFiltered);
-        } else if (mode === "indi") {
+        } else if (isIndiLikeMode(mode)) {
           workRows = applyIndiBlockFilter(modeFiltered);
         } else {
           workRows = modeFiltered;
@@ -4450,7 +4870,7 @@
         if (mode === "fasn") {
           return workRows.filter(matchesFoFilter);
         }
-        if (mode === "indi") {
+        if (isIndiLikeMode(mode)) {
           var indiAfterCat = workRows.filter(matchesIndiCategoryFilter);
           return indiAfterCat.filter(function (rec) {
             return matchesStatusRoomFilter(rec, mode);
@@ -4471,7 +4891,15 @@
           fasn: "F.ASN",
           indi: "INDI",
           stay: "P.STAY",
+          check: "CHECK",
         };
+        if (isCheckBoardMode(mode)) {
+          var tabId = roomingCheckTabId(mode);
+          var tab = (roomingCheckBoards.tabs || []).filter(function (t) {
+            return t && t.id === tabId;
+          })[0];
+          return (tab && tab.label) || "CHECK";
+        }
         return labels[mode] || mode;
       }
 
@@ -4504,17 +4932,30 @@
               r.blockCode || "",
             ];
           });
-        } else if (mode === "indi") {
-          header = ["객실", "INDI", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE"];
+        } else if (isIndiLikeMode(mode)) {
+          header = ["객실", "INDI", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE", "CHECK"];
           body = rows.map(function (r) {
+            var room = formatRoomDisplay(normalizeRoomDigits(r.room));
+            var checked = isCheckBoardMode(mode)
+              ? isRoomChecked(roomingCheckTabId(mode), normalizeRoomDigits(r.room))
+                ? "Y"
+                : ""
+              : "";
             return [
-              formatRoomDisplay(normalizeRoomDigits(r.room)),
+              room,
               indiCategoryLabelForRec(r),
               r.status || "",
               r.resvStatus || "",
               r.blockCode || "",
+              checked,
             ];
           });
+          if (mode === "indi") {
+            header = header.slice(0, 5);
+            body = body.map(function (row) {
+              return row.slice(0, 5);
+            });
+          }
         } else {
           header = ["객실", "ROOM_STATUS", "RESV_STATUS", "BLOCK_CODE"];
           body = rows.map(function (r) {
@@ -4611,10 +5052,20 @@
           mountId = "stayBoardMount";
           filterFn = isStayoverResv;
           emptyFiltered = "Stayover(재실) 객실이 없습니다.";
+        } else if (isCheckBoardMode(mode)) {
+          filterFn = null;
+          emptyFiltered = "표시할 객실이 없습니다. HKVACROOM XML을 업로드하세요.";
         }
 
         var summaryEl = document.getElementById(summaryElId);
         var mount = document.getElementById(mountId);
+        var checkPanel = null;
+        if (isCheckBoardMode(mode)) {
+          checkPanel = getCheckViewPanel(roomingCheckTabId(mode));
+          if (!checkPanel) return;
+          summaryEl = checkPanel.querySelector("[data-role='check-status-bar']");
+          mount = checkPanel.querySelector("[data-role='check-board-mount']");
+        }
         if (!mount) return;
         mount.innerHTML = "";
 
@@ -4640,8 +5091,18 @@
         } else if (mode === "fasn") {
           renderFasnBlockFilterBar(modeFiltered);
           workRows = applyFasnBlockFilter(modeFiltered);
-        } else if (mode === "indi") {
-          renderIndiBlockFilterBar(modeFiltered);
+        } else if (isIndiLikeMode(mode)) {
+          if (mode === "indi") {
+            renderIndiBlockFilterBar(modeFiltered);
+          } else if (checkPanel) {
+            renderBlockFilterBar(
+              checkPanel.querySelector("[data-role='check-block-filters']"),
+              modeFiltered,
+              indiBlockShowAll,
+              indiBlockShowFit,
+              indiBlockSelectedCodes
+            );
+          }
           workRows = applyIndiBlockFilter(modeFiltered);
         } else {
           workRows = modeFiltered;
@@ -4656,10 +5117,12 @@
           if (summaryEl) {
             renderFoSummaryBar(summaryEl, summFo.counts, displayRows.length);
           }
-        } else if (mode === "indi") {
+        } else if (isIndiLikeMode(mode)) {
           var indiSource = get499BoardRows(workRows);
           var indiCatSumm = summarizeIndiCategories(indiSource);
-          var indiCatBar = document.getElementById("indiCategorySummaryBar");
+          var indiCatBar = isCheckBoardMode(mode) && checkPanel
+            ? checkPanel.querySelector("[data-role='check-cat-bar']")
+            : document.getElementById("indiCategorySummaryBar");
           if (indiCatBar) {
             renderIndiCategorySummaryBar(
               indiCatBar,
@@ -4735,7 +5198,7 @@
             mode === "vac" ||
             mode === "ovac" ||
             mode === "fasn" ||
-            mode === "indi"
+            isIndiLikeMode(mode)
               ? "선택한 BLOCK_CODE 조건에 맞는 객실이 없습니다."
               : emptyFiltered;
           mount.appendChild(emptyB);
@@ -4748,7 +5211,7 @@
           emptySt.textContent =
             mode === "fasn"
               ? "선택한 FO(청소·빈방) 조건에 맞는 객실이 없습니다."
-              : mode === "vac" || mode === "ovac" || mode === "indi" || mode === "stay"
+              : mode === "vac" || mode === "ovac" || isIndiLikeMode(mode) || mode === "stay"
               ? "선택한 ROOM_STATUS(IP·CL·PU·DI·OO·OS) 조건에 맞는 객실이 없습니다."
               : "선택한 ROOM_STATUS(IP·CL·PU·DI) 조건에 맞는 객실이 없습니다.";
           mount.appendChild(emptySt);
@@ -4757,7 +5220,7 @@
 
         var buckets = buildBuckets(displayRows);
         var notOutBuckets =
-          mode === "indi" && isIndiOutFilterActive()
+          isIndiLikeMode(mode) && isIndiOutFilterActive()
             ? buildBuckets(get499BoardRows(workRows))
             : null;
         var stray = displayRows.filter(function (rec) {
@@ -4829,7 +5292,7 @@
             var c1 = document.createElement("div");
             fillRoomNumCell(c1, s, formatRoomDisplay, mode);
             var c2 = document.createElement("div");
-            fillStatusCell(c2, s.status || "", s.blockCode, mode);
+            fillStatusCell(c2, s.status || "", s.blockCode, mode, s.room);
             row.appendChild(c1);
             row.appendChild(c2);
             strip.appendChild(row);
@@ -4850,8 +5313,13 @@
         renderBoard(cachedRows, "oasn");
         renderBoard(cachedRows, "indi");
         renderBoard(cachedRows, "stay");
+        (roomingCheckBoards.tabs || []).forEach(function (tab) {
+          if (!tab || !tab.id) return;
+          renderBoard(cachedRows, checkModeForTab(tab.id));
+        });
         renderFAsnBoard();
         updateIndiArrSummary();
+        syncRoomingCheckMemos();
       }
 
       function shouldLoadDefaultXmlFiles() {
@@ -5248,6 +5716,7 @@
       });
 
       function switchBoardView(viewId) {
+        currentRoomingView = viewId;
         document.querySelectorAll(".sidebar-btn").forEach(function (b) {
           b.classList.toggle(
             "active",
@@ -5262,29 +5731,43 @@
         document.getElementById("viewFAsn").hidden = viewId !== "fasn";
         document.getElementById("viewIndi").hidden = viewId !== "indi";
         document.getElementById("viewStay").hidden = viewId !== "stay";
+        document.querySelectorAll(".view-panel[data-check-tab]").forEach(function (panel) {
+          var tabId = panel.getAttribute("data-check-tab");
+          panel.hidden = checkModeForTab(tabId) !== viewId;
+        });
         updateIndiArrSummary();
       }
 
-      document.querySelectorAll(".sidebar-btn").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          switchBoardView(btn.getAttribute("data-view"));
+      (function wireSidebarViewButtons() {
+        var sidebar = document.querySelector(".board-layout > .sidebar");
+        if (!sidebar || sidebar.dataset.viewWired) return;
+        sidebar.dataset.viewWired = "1";
+        sidebar.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest(".sidebar-btn") : null;
+          if (!btn || !sidebar.contains(btn)) return;
+          var view = btn.getAttribute("data-view");
+          if (view) switchBoardView(view);
         });
-      });
+      })();
+
+      function syncOutDepartedCheckboxes() {
+        document.querySelectorAll(".chk-out-departed").forEach(function (cb) {
+          cb.checked = outDepartedHighlight;
+        });
+      }
 
       var outDepartedChkWired = false;
       function wireOutDepartedCheckboxes() {
         if (outDepartedChkWired) return;
         outDepartedChkWired = true;
-        document.querySelectorAll(".chk-out-departed").forEach(function (cb) {
-          cb.checked = outDepartedHighlight;
-          cb.addEventListener("change", function () {
-            outDepartedHighlight = !!cb.checked;
-            document.querySelectorAll(".chk-out-departed").forEach(function (x) {
-              x.checked = outDepartedHighlight;
-            });
-            refreshBoards();
-          });
+        document.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t || !t.classList || !t.classList.contains("chk-out-departed")) return;
+          outDepartedHighlight = !!t.checked;
+          syncOutDepartedCheckboxes();
+          refreshBoards();
         });
+        syncOutDepartedCheckboxes();
       }
       wireOutDepartedCheckboxes();
 
@@ -5314,7 +5797,7 @@
           if (!t.classList || !t.classList.contains("chk-status-filter")) return;
           var bar = t.closest(".status-summary-bar");
           var filterMode = bar
-            ? summaryBarModeFromId(bar.id)
+            ? summaryBarModeFromId(bar.id, bar)
             : "499";
           var code = t.getAttribute("data-status-code");
           if (!code) return;
@@ -5639,6 +6122,99 @@
       }
       wireIndiBlockFilterUI();
 
+      (function wireRoomingCheckUi() {
+        document.addEventListener("change", function (e) {
+          var t = e.target;
+          if (!t) return;
+          if (t.classList && t.classList.contains("room-check-cb")) {
+            setRoomChecked(
+              t.getAttribute("data-check-tab"),
+              t.getAttribute("data-room"),
+              !!t.checked
+            );
+            return;
+          }
+          if (!t.classList || !t.classList.contains("asn-filter-cb")) return;
+          if (!t.closest("[data-role='check-block-filters']")) return;
+          var kind = t.getAttribute("data-asn-kind");
+          if (kind === "all") {
+            indiBlockShowAll = !!t.checked;
+            if (indiBlockShowAll) {
+              indiBlockShowFit = false;
+              indiBlockSelectedCodes = {};
+            }
+          } else if (kind === "fit") {
+            indiBlockShowFit = !!t.checked;
+            if (indiBlockShowFit) indiBlockShowAll = false;
+          } else if (kind === "block") {
+            var enc = t.getAttribute("data-block-code") || "";
+            var code = decodeURIComponent(enc);
+            indiBlockSelectedCodes[code] = !!t.checked;
+            if (indiBlockSelectedCodes[code]) indiBlockShowAll = false;
+          }
+          var anyBlock = Object.keys(indiBlockSelectedCodes).some(function (k) {
+            return indiBlockSelectedCodes[k];
+          });
+          if (!indiBlockShowAll && !indiBlockShowFit && !anyBlock) {
+            indiBlockShowAll = true;
+            indiBlockSelectedCodes = {};
+          }
+          refreshBoards();
+        });
+        document.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t || !t.classList || !t.classList.contains("block-alias-input")) return;
+            if (!t.closest("[data-role='check-block-filters']")) return;
+            persistAliasFromInput(t);
+          },
+          true
+        );
+        document.addEventListener("input", function (e) {
+          var t = e.target;
+          if (!t || t.getAttribute("data-role") !== "check-memo") return;
+          var panel = t.closest("[data-check-tab]");
+          if (!panel) return;
+          setRoomingCheckMemo(panel.getAttribute("data-check-tab"), t.value);
+          if (roomingCheckMemoTimer) clearTimeout(roomingCheckMemoTimer);
+          roomingCheckMemoTimer = setTimeout(function () {
+            roomingCheckMemoTimer = 0;
+            pushRoomingCheckBoards("CHECK 메모 공유됨");
+          }, 450);
+        });
+        document.addEventListener(
+          "blur",
+          function (e) {
+            var t = e.target;
+            if (!t || t.getAttribute("data-role") !== "check-memo") return;
+            var panel = t.closest("[data-check-tab]");
+            if (!panel) return;
+            setRoomingCheckMemo(panel.getAttribute("data-check-tab"), t.value);
+            if (roomingCheckMemoTimer) {
+              clearTimeout(roomingCheckMemoTimer);
+              roomingCheckMemoTimer = 0;
+            }
+            pushRoomingCheckBoards("CHECK 메모 공유됨");
+          },
+          true
+        );
+        document.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest("[data-role='check-reset']") : null;
+          if (!btn) return;
+          var panel = btn.closest("[data-check-tab]");
+          if (!panel) return;
+          var tabId = panel.getAttribute("data-check-tab");
+          var pwd = window.prompt("체크박스만 초기화합니다. 비밀번호를 입력하세요.");
+          if (pwd == null) return;
+          if (String(pwd) !== ROOMING_CHECK_RESET_PASSWORD) {
+            window.alert("비밀번호가 올바르지 않습니다.");
+            return;
+          }
+          resetRoomingCheckRooms(tabId);
+        });
+      })();
+
       wireExcelDownloadButtons();
 
       function loadDefaultXmlFiles() {
@@ -5711,6 +6287,9 @@
       document.addEventListener("DOMContentLoaded", function () {
         loadSharedStateVersion();
         loadCachedArrResvTotalsFromStorage();
+        loadRoomingCheckFromLocal();
+        syncRoomingCheckTabUi();
+        syncRoomingCheckMemos();
         if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
         if (!hasLocalFasnData()) loadFasnStateFromLocal();
         updateIndiArrSummary();
