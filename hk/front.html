@@ -16564,14 +16564,14 @@
   </div>
 
   <script src="hk-auth.js"></script>
-  <script src="hk-storage.js?v=room-alert-1"></script>
-  <script src="hk-sync.js?v=room-alert-1"></script>
+  <script src="hk-storage.js?v=inven-keep-1"></script>
+  <script src="hk-sync.js?v=inven-keep-1"></script>
   <script src="hk-alert-ack.js?v=chat-split-2"></script>
   <script src="hk-chat-colors.js?v=gradient-2"></script>
   <script src="hk-push.js?v=direct-focus-2"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="hk-mb-workflow.js?v=inv-memo-3"></script>
-  <script src="hk-inven-notify.js?v=autosave-2"></script>
+  <script src="hk-inven-notify.js?v=inven-keep-1"></script>
   <script src="hk-facility-logs.js?v=2"></script>
   <script src="hk-complaint-analysis.js?v=bydate-16"></script>
   <script src="hk-track-it.js?v=bydate-20"></script>
@@ -16721,7 +16721,7 @@
       var OPERATOR_NAME_KEY = "lotte-hk-operator-name-session-v1";
       var OPERATOR_UNLOCK_KEY = "lotte-hk-operator-unlocked-v1";
       var OPERATOR_MODE_PICK_KEY = "lotte-hk-pending-mode-pick-v1";
-      var OPERATOR_IDLE_MS = 15 * 60 * 1000;
+      var OPERATOR_IDLE_MS = 30 * 60 * 1000;
       var operatorIdleTimer = null;
       var operatorIdleEventsBound = false;
       var operatorNameModalMode = "initial";
@@ -17901,7 +17901,7 @@
         }
         if (hint) {
           hint.textContent = isIdle
-            ? "15분 동안 사용이 없어 로그아웃되었습니다. 이름을 입력하면 화면을 다시 씁니다."
+            ? "30분 동안 사용이 없어 로그아웃되었습니다. 이름을 입력하면 화면을 다시 씁니다."
             : forceShift
             ? "다른 근무자가 같은 이름으로 로그인했습니다. 새 이름을 입력하세요."
             : isShift
@@ -21893,10 +21893,13 @@
         if (typeof HKAdminInquiry !== "undefined") {
           HKAdminInquiry.refresh();
         }
-        if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
-          HKInvenNotify.resetOnCloseDay();
+        // 실제 마감 스냅샷일 때만 비움. 새로고침·첫 동기화의 가짜 마감 신호는 인벤통보/인벤을 지우지 않는다.
+        if (payload.hkCloseDayReset === true) {
+          if (typeof HKInvenNotify !== "undefined" && HKInvenNotify.resetOnCloseDay) {
+            HKInvenNotify.resetOnCloseDay();
+          }
+          resetFrontEmbedPanelsOnCloseDay();
         }
-        resetFrontEmbedPanelsOnCloseDay();
         pendingFacilityOrderAlert = false;
         pendingFacilityOrderIssueAlert = false;
         pendingFacilityMiscAlert = false;

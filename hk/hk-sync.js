@@ -1028,21 +1028,26 @@
   }
 
   /** HK 오더·요청 등 로컬 캐시만 삭제 — opts.preserveRooming 시 루밍 XML 유지.
-   * 인벤통보·DD/인벤/취향(frontEmbedStates)은 마감 전까지 로컬에서도 보존한다.
+   * 인벤통보·DD/인벤/취향(frontEmbedStates)·마감시각은 마감 전까지 로컬에서도 보존한다.
    */
   function clearLocalCaches(opts) {
     opts = opts || {};
     var preservedInvenNotify = null;
     var preservedFrontEmbed = null;
+    var preservedCloseDayAt = "";
     try {
       if (global.HKStorage && typeof global.HKStorage.load === "function") {
         var snap = global.HKStorage.load();
         if (snap && typeof snap === "object") {
           if (snap.invenNotify != null) preservedInvenNotify = snap.invenNotify;
           if (snap.frontEmbedStates != null) preservedFrontEmbed = snap.frontEmbedStates;
+          if (snap.closeDayAt) preservedCloseDayAt = String(snap.closeDayAt).trim();
         }
       }
     } catch (eSnap) {}
+    if (!preservedCloseDayAt) {
+      preservedCloseDayAt = getCloseDayAtLocal() || "";
+    }
     LOCAL_CACHE_KEYS.forEach(function (key) {
       try {
         global.localStorage.removeItem(key);
@@ -1055,14 +1060,20 @@
     }
     try {
       if (
-        (preservedInvenNotify != null || preservedFrontEmbed != null) &&
+        (preservedInvenNotify != null ||
+          preservedFrontEmbed != null ||
+          preservedCloseDayAt) &&
         global.HKStorage &&
         typeof global.HKStorage.save === "function"
       ) {
         var restore = global.HKStorage.load() || {};
         if (preservedInvenNotify != null) restore.invenNotify = preservedInvenNotify;
         if (preservedFrontEmbed != null) restore.frontEmbedStates = preservedFrontEmbed;
+        if (preservedCloseDayAt) restore.closeDayAt = preservedCloseDayAt;
         global.HKStorage.save(restore, { skipSync: true });
+      }
+      if (preservedCloseDayAt) {
+        global.localStorage.setItem(CLOSE_DAY_KEY, preservedCloseDayAt);
       }
     } catch (eRest) {}
     syncVersion = 0;
@@ -1583,6 +1594,22 @@
               localPartial.frontEmbedStates = mergedEmbed;
               wrotePartial = true;
               changed.push("frontEmbedStates");
+            }
+          }
+          if (
+            Object.prototype.hasOwnProperty.call(payload.hkStorage, "invenNotify") &&
+            typeof global.HKStorage.pickInvenNotify === "function"
+          ) {
+            var prevInv = JSON.stringify(
+              (localPartial && localPartial.invenNotify) || null
+            );
+            var mergedInv = global.HKStorage.pickInvenNotify(
+              localPartial,
+              payload.hkStorage
+            );
+            if (JSON.stringify(mergedInv) !== prevInv) {
+              localPartial.invenNotify = mergedInv;
+              wrotePartial = true;
             }
           }
           if (

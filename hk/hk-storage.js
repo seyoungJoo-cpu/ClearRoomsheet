@@ -603,6 +603,30 @@
     return false;
   }
 
+  function pickCloseDayAtFromStoragePair(baseObj, incObj) {
+    var best = "";
+    function consider(obj) {
+      if (!obj || obj.closeDayAt == null) return;
+      var s = String(obj.closeDayAt).trim();
+      if (s && (!best || s > best)) best = s;
+    }
+    consider(baseObj);
+    consider(incObj);
+    return best;
+  }
+
+  /** 수동 초기화이거나, 마감 시각 이하의 빈 표만 권위 있는 비우기로 본다 */
+  function invenNotifyIsAuthoritativeClear(inv, closeAt) {
+    if (!inv || typeof inv !== "object") return false;
+    var reason = inv.clearReason != null ? String(inv.clearReason).trim() : "";
+    if (reason === "userReset") return true;
+    if (reason !== "closeDay") return false;
+    var at = getInvenNotifyUpdatedAt(inv);
+    if (!at) return false;
+    if (!closeAt) return true;
+    return String(at) <= String(closeAt);
+  }
+
   /** 인벤 통보는 updatedAt이 더 최신인 쪽만 채택 (빈 표 초기화도 포함) */
   function pickInvenNotify(base, incoming) {
     var baseObj = base && typeof base === "object" ? base : {};
@@ -612,6 +636,7 @@
     }
     var inc = incObj.invenNotify;
     var baseInv = baseObj.invenNotify;
+    var closeAt = pickCloseDayAtFromStoragePair(baseObj, incObj);
     // 표가 없는(=아직 못 받은) 쪽이 null을 보내도 기존 표를 지우지 않는다.
     if (!inc || typeof inc !== "object") {
       return baseInv != null ? baseInv : null;
@@ -619,11 +644,25 @@
     if (!baseInv || typeof baseInv !== "object") return inc;
     var baseAt = getInvenNotifyUpdatedAt(baseInv);
     var incAt = getInvenNotifyUpdatedAt(inc);
-    // 내용 있는 표를 빈 표로 덮지 않음 — 마감/수동 초기화(clearReason)만 허용
+    // 내용 있는 표를 빈 표로 덮지 않음 — 권위 있는 마감/수동 초기화만 허용
     if (invenNotifyHasContent(baseInv) && !invenNotifyHasContent(inc)) {
-      var reason = inc.clearReason != null ? String(inc.clearReason).trim() : "";
-      if (reason === "closeDay" || reason === "userReset") return inc;
+      if (
+        invenNotifyIsAuthoritativeClear(inc, closeAt) &&
+        (!baseAt || (incAt && String(incAt) >= String(baseAt)))
+      ) {
+        return inc;
+      }
       return baseInv;
+    }
+    if (invenNotifyHasContent(inc) && !invenNotifyHasContent(baseInv)) {
+      if (
+        invenNotifyIsAuthoritativeClear(baseInv, closeAt) &&
+        baseAt &&
+        (!incAt || String(baseAt) >= String(incAt))
+      ) {
+        return baseInv;
+      }
+      return inc;
     }
     if (baseAt && incAt && incAt < baseAt) return baseInv;
     if (baseAt && !incAt) return baseInv;
@@ -3187,7 +3226,9 @@
 
   /** 마감 시 병합 없이 저장소 전체를 교체 (특이객실·메모 등 완전 리셋) */
   function replaceRemote(data) {
+    var prev = load();
     var next = normalize(data || defaultData());
+    next.invenNotify = pickInvenNotify(prev, next);
     global.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }
 
@@ -3225,6 +3266,7 @@
     unmarkRoomDeleted: unmarkRoomDeleted,
     normalizeNoticeImages: normalizeNoticeImages,
     pickNoticeFields: pickNoticeFields,
+    pickInvenNotify: pickInvenNotify,
     stampNotice: stampNotice,
     normalizeMbInvNoticeImages: normalizeMbInvNoticeImages,
     pickMbInvNoticeFields: pickMbInvNoticeFields,

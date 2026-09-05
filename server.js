@@ -1316,6 +1316,12 @@ function pickInvenNotifyForServer(prev, incoming) {
   }
   var inc = incObj.invenNotify;
   var baseInv = baseObj.invenNotify;
+  var closeAt = "";
+  [baseObj, incObj].forEach(function (obj) {
+    if (!obj || obj.closeDayAt == null) return;
+    var s = String(obj.closeDayAt).trim();
+    if (s && (!closeAt || s > closeAt)) closeAt = s;
+  });
   // 표가 없는(=아직 못 받은) 클라이언트가 null을 보내도 기존 표를 지우지 않는다.
   if (!inc || typeof inc !== "object") {
     return baseInv != null ? baseInv : null;
@@ -1340,10 +1346,34 @@ function pickInvenNotifyForServer(prev, incoming) {
     }
     return false;
   }
+  function isAuthoritativeClear(inv) {
+    if (!inv || typeof inv !== "object") return false;
+    var reason = inv.clearReason != null ? String(inv.clearReason).trim() : "";
+    if (reason === "userReset") return true;
+    if (reason !== "closeDay") return false;
+    var at = getInvenNotifyUpdatedAtForServer(inv);
+    if (!at) return false;
+    if (!closeAt) return true;
+    return String(at) <= String(closeAt);
+  }
   if (hasContent(baseInv) && !hasContent(inc)) {
-    var reason = inc.clearReason != null ? String(inc.clearReason).trim() : "";
-    if (reason === "closeDay" || reason === "userReset") return inc;
+    if (
+      isAuthoritativeClear(inc) &&
+      (!baseAt || (incAt && String(incAt) >= String(baseAt)))
+    ) {
+      return inc;
+    }
     return baseInv;
+  }
+  if (hasContent(inc) && !hasContent(baseInv)) {
+    if (
+      isAuthoritativeClear(baseInv) &&
+      baseAt &&
+      (!incAt || String(baseAt) >= String(incAt))
+    ) {
+      return baseInv;
+    }
+    return inc;
   }
   if (baseAt && incAt && incAt < baseAt) return baseInv;
   if (baseAt && !incAt) return baseInv;

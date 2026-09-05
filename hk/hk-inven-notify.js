@@ -577,24 +577,35 @@
 
   function resetOnCloseDay() {
     clearDraftLocal();
+    var stored = cloneState(loadInvenNotify());
+    if (hasContent(stored)) {
+      // 마감 이후 「만들기」된 통보는 유지
+      state = stored;
+      lastGoodPublished = cloneState(stored);
+      lastPublished = null;
+      draftDirty = false;
+      if (ensureUi()) {
+        renderCards();
+        updateSaveButton();
+        updateToolbarHint();
+        updateEmpty();
+      }
+      return;
+    }
     lastGoodPublished = null;
     var empty = cloneState(defaultInvenNotify());
     empty.clearReason = "closeDay";
-    // 마감 스냅샷에 이미 빈 표(+updatedAt)가 있으면 그 시각을 유지해 merge 우선순위 보존
+    var closeAt = "";
     try {
-      var stored = loadInvenNotify();
-      if (
-        stored &&
-        stored.table &&
-        stored.table.updatedAt &&
-        (!stored.cards || !stored.cards.length) &&
-        (!stored.table.rows || !stored.table.rows.length)
-      ) {
-        empty.table.updatedAt = String(stored.table.updatedAt);
-      } else {
-        empty.table.updatedAt = nextUpdatedAt();
-      }
-    } catch (e) {
+      var data = global.HKStorage ? global.HKStorage.load() : null;
+      closeAt = data && data.closeDayAt ? String(data.closeDayAt).trim() : "";
+    } catch (eCd) {}
+    // 마감 스냅샷 시각을 유지해, 지금 시각으로 찍어 이후 만들기를 덮지 않게 한다
+    if (stored && stored.table && stored.table.updatedAt) {
+      empty.table.updatedAt = String(stored.table.updatedAt);
+    } else if (closeAt) {
+      empty.table.updatedAt = closeAt;
+    } else {
       empty.table.updatedAt = nextUpdatedAt();
     }
     state = empty;
