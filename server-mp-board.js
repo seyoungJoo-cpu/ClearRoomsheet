@@ -1368,7 +1368,13 @@ function yutNodes() {
 function yutNextOptions(pos, startingHere, from) {
   if (pos === "home" || pos === 99) return ["home"];
   if (pos < 0) return [1];
-  if (pos === 20) return startingHere ? [27] : [23];
+  if (pos === 20) {
+    if (startingHere) return [27];
+    // 모(10)→중심: 날 쪽으로 직진이 최단. 참(5)→중심: 방 대각이 직진.
+    if (from === 26 || from === 25) return [27];
+    if (from === 22 || from === 21) return [23];
+    return [27];
+  }
   if (YUT_INNER_NEXT[pos] != null) return [YUT_INNER_NEXT[pos]];
   if (pos === 5) return startingHere ? [21] : [6];
   if (pos === 10) return startingHere ? [25] : [11];
