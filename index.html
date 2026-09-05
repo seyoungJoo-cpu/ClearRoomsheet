@@ -2713,6 +2713,15 @@
           });
       }
 
+      function hasLiveBoardRows(mode) {
+        if (mode === "fasn") return hasLocalFasnData();
+        return !!(cachedRows && cachedRows.length);
+      }
+
+      function shouldFillRoomSkeleton(mode) {
+        return isCheckBoardMode(mode) || !hasLiveBoardRows(mode);
+      }
+
       function getRoomingCheckBoard(tabId) {
         if (!roomingCheckBoards.boards[tabId]) {
           roomingCheckBoards.boards[tabId] = emptyRoomingCheckBoard();
@@ -4559,25 +4568,7 @@
       }
 
       function renderFAsnBoard() {
-        var mount = document.getElementById("fAsnBoardMount");
-        var summaryEl = document.getElementById("fAsnFoSummaryBar");
-        if (!mount) return;
-        if (!hasLocalFasnData()) {
-          mount.innerHTML = "";
-          if (summaryEl) summaryEl.innerHTML = "";
-          var fasnBarClear = document.getElementById("fAsnBlockFilters");
-          if (fasnBarClear) {
-            fasnBarClear.innerHTML = "";
-            fasnBarClear.hidden = true;
-          }
-          var emptyAs = document.createElement("div");
-          emptyAs.className = "empty-board";
-          emptyAs.textContent =
-            "F.ASN 전용 XML을 위 업로드 영역에서 올려 주세요. (HK_ALLSTATUS ROOM 목록 기준)";
-          mount.appendChild(emptyAs);
-          return;
-        }
-        renderBoard(buildFasnBoardRows(), "fasn");
+        renderBoard(hasLocalFasnData() ? buildFasnBoardRows() : [], "fasn");
       }
 
       function overlayAllStatusBlocks(rows) {
@@ -4977,8 +4968,7 @@
         mode = mode || "499";
         var rows;
         if (mode === "fasn") {
-          if (!hasLocalFasnData()) return [];
-          rows = buildFasnBoardRows();
+          rows = hasLocalFasnData() ? buildFasnBoardRows() : [];
         } else {
           rows = cachedRows;
         }
@@ -5001,13 +4991,14 @@
         }
 
         var filtered = rows.filter(function (rec) {
-          return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
+          return rec && rec.room && !DROP_ROOMS[normalizeRoomDigits(rec.room)];
         });
         var deduped = dedupeByRoomLastWins(filtered);
-        if (isCheckBoardMode(mode)) {
+        if (shouldFillRoomSkeleton(mode)) {
           deduped = mergeRowsWithCheckSkeleton(deduped);
         }
-        var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
+        var modeFiltered =
+          filterFn && hasLiveBoardRows(mode) ? deduped.filter(filterFn) : deduped;
 
         var workRows;
         if (mode === "asn" || mode === "oasn") {
@@ -5225,13 +5216,14 @@
         mount.innerHTML = "";
 
         var filtered = rows.filter(function (rec) {
-          return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
+          return rec && rec.room && !DROP_ROOMS[normalizeRoomDigits(rec.room)];
         });
         var deduped = dedupeByRoomLastWins(filtered);
-        if (isCheckBoardMode(mode)) {
+        if (shouldFillRoomSkeleton(mode)) {
           deduped = mergeRowsWithCheckSkeleton(deduped);
         }
-        var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
+        var modeFiltered =
+          filterFn && hasLiveBoardRows(mode) ? deduped.filter(filterFn) : deduped;
 
         var workRows;
         if (mode === "asn") {
