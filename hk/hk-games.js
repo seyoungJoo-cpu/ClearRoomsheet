@@ -20,7 +20,7 @@
     stack: { icon: '🧺', name: '타월 타워', desc: '타이밍에 맞춰 타월을 쌓기' },
     crossy: { icon: '🚶', name: '로비 무단횡단', desc: '캐리어·카트를 피해 로비를 건너기' },
     simon: { icon: '🔔', name: '벨 시퀀스', desc: '종 순서를 기억해 따라 누르기' },
-    cleanroute: { icon: '🧹', name: '청소 루트', desc: '복도 먼지를 쓸고 컴플레인을 피하기' },
+    cleanroute: { icon: '🧹', name: '청소 루트', desc: '복도 먼지를 쓸고 컴플레인 4명을 피하기 · 고난도' },
     invaders: { icon: '😠', name: '컴플레인 인베이더', desc: '내려오는 컴플레인을 격추' },
     putting: { icon: '⛳', name: '퍼팅 골프', desc: '18홀 · 맵 랜덤 · 점점 어려워짐' },
     crossland: { icon: '✚', name: '십자 땅따먹기', desc: '십자로 칸을 차지해 CPU보다 많이 먹기' },
@@ -2939,10 +2939,20 @@
       for (var i = 0; i < row.length; i++) if (row[i] === 'G') row[i] = ' ';
     });
     var px = 1, py = 7, ax = 1, ay = 7, moving = false, tx = 1, ty = 7, wantX = 0, wantY = 0;
+    function makeGhost(x, y, color, spd, role, chaseRate) {
+      return {
+        x: x, y: y, ax: x, ay: y, tx: x, ty: y, moving: false,
+        color: color, spd: spd, role: role, chaseRate: chaseRate,
+        homeX: x, homeY: y, lastDx: 0, lastDy: 0, wantX: 0, wantY: 0
+      };
+    }
     var ghosts = [
-      { x: 9, y: 7, ax: 9, ay: 7, tx: 9, ty: 7, moving: false, color: '#ef5350' },
-      { x: 17, y: 7, ax: 17, ay: 7, tx: 17, ty: 7, moving: false, color: '#55a9e8' }
+      makeGhost(9, 7, '#ef5350', 7.15, 'chase', 1),
+      makeGhost(9, 1, '#f48fb1', 6.95, 'ambush', 0.94),
+      makeGhost(17, 7, '#55a9e8', 6.85, 'flank', 0.92),
+      makeGhost(9, 13, '#ffb74d', 6.7, 'wander', 0.88)
     ];
+    var PLAYER_SPD = 6.75;
     var score = 0, dots = 0, power = 0, running = true, last = 0, lives = 3, touch0 = null;
     tiles.forEach(function (row) { row.forEach(function (ch) { if (ch === '.' || ch === 'o') dots++; }); });
     setHud([['점수', '0', 'score'], ['목숨', '3', 'lives'], ['최고', formatScore(best('cleanroute', name())), 'best']]);
@@ -2970,7 +2980,7 @@
     }
     function eatAt(cx, cy) {
       if (!tiles[cy] || (tiles[cy][cx] !== '.' && tiles[cy][cx] !== 'o')) return;
-      if (tiles[cy][cx] === 'o') { power = 6; score += 40; }
+      if (tiles[cy][cx] === 'o') { power = 3.6; score += 40; }
       else score += 10;
       tiles[cy][cx] = ' ';
       dots--;
@@ -2985,34 +2995,62 @@
       var dt = frameDt(t, last); last = t; fx.update(dt);
       if (power > 0) power -= dt;
       var player = { x: px, y: py, ax: ax, ay: ay, tx: tx, ty: ty, moving: moving, wantX: wantX, wantY: wantY };
-      stepTile(player, 7.2, dt);
-      if (!player.moving && (wantX || wantY)) stepTile(player, 7.2, dt);
+      stepTile(player, PLAYER_SPD, dt);
+      if (!player.moving && (wantX || wantY)) stepTile(player, PLAYER_SPD, dt);
       px = player.x; py = player.y; ax = player.ax; ay = player.ay; tx = player.tx; ty = player.ty; moving = player.moving;
       eatAt(px, py);
       if (!running) return;
+      function ghostGoal(g) {
+        if (g.role === 'ambush') return { x: px + wantX * 4, y: py + wantY * 4 };
+        if (g.role === 'flank') {
+          var aheadX = px + wantX * 2, aheadY = py + wantY * 2;
+          return { x: aheadX * 2 - ghosts[0].x, y: aheadY * 2 - ghosts[0].y };
+        }
+        if (g.role === 'wander' && Math.abs(g.x - px) + Math.abs(g.y - py) < 7) {
+          return { x: 1, y: 13 };
+        }
+        return { x: px, y: py };
+      }
+      function resetGhost(g) {
+        g.x = g.homeX; g.y = g.homeY; g.ax = g.homeX; g.ay = g.homeY;
+        g.tx = g.homeX; g.ty = g.homeY; g.moving = false; g.wantX = 0; g.wantY = 0;
+        g.lastDx = 0; g.lastDy = 0;
+      }
+      var hitThisFrame = false;
       ghosts.forEach(function (g) {
         if (!g.moving) {
-          var opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(function (d) {
-            return !wall(g.x + d[0], g.y + d[1]);
+          var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+          var opts = dirs.filter(function (d) {
+            if (wall(g.x + d[0], g.y + d[1])) return false;
+            if ((g.lastDx || g.lastDy) && d[0] === -g.lastDx && d[1] === -g.lastDy) return false;
+            return true;
           });
+          if (!opts.length) {
+            opts = dirs.filter(function (d) { return !wall(g.x + d[0], g.y + d[1]); });
+          }
           if (opts.length) {
+            var goal = power > 0 ? { x: px, y: py } : ghostGoal(g);
             var chase = power > 0 ? -1 : 1;
             opts.sort(function (a, b) {
-              var da = Math.abs(g.x + a[0] - px) + Math.abs(g.y + a[1] - py);
-              var db = Math.abs(g.x + b[0] - px) + Math.abs(g.y + b[1] - py);
+              var da = Math.abs(g.x + a[0] - goal.x) + Math.abs(g.y + a[1] - goal.y);
+              var db = Math.abs(g.x + b[0] - goal.x) + Math.abs(g.y + b[1] - goal.y);
               return (da - db) * chase;
             });
-            var pick = Math.random() < 0.72 ? opts[0] : opts[(Math.random() * opts.length) | 0];
+            var pick = Math.random() < g.chaseRate ? opts[0] : opts[(Math.random() * opts.length) | 0];
             g.wantX = pick[0]; g.wantY = pick[1];
+            g.lastDx = pick[0]; g.lastDy = pick[1];
           }
         }
-        stepTile(g, power > 0 ? 4.2 : 5.6, dt);
+        var gSpd = power > 0 ? 3.35 : (g.role === 'chase' && dots < 40 ? g.spd + 0.45 : g.spd);
+        stepTile(g, gSpd, dt);
+        if (hitThisFrame) return;
         if (Math.hypot(g.ax - ax, g.ay - ay) < 0.55) {
           if (power > 0) {
             score += 120; hud('score', formatScore(score));
-            g.x = 9; g.y = 7; g.ax = 9; g.ay = 7; g.tx = 9; g.ty = 7; g.moving = false;
+            resetGhost(g);
             fx.burst(ax * CELL, ay * CELL, '#efd28a', 10, 160);
           } else {
+            hitThisFrame = true;
             lives--; hud('lives', lives);
             if (lives <= 0) {
               running = false;
@@ -3020,7 +3058,7 @@
               return;
             }
             px = 1; py = 7; ax = 1; ay = 7; tx = 1; ty = 7; moving = false;
-            g.x = 9; g.y = 7; g.ax = 9; g.ay = 7; g.tx = 9; g.ty = 7; g.moving = false;
+            ghosts.forEach(resetGhost);
             shakeStage();
           }
         }
@@ -3091,7 +3129,7 @@
       c.on(btn, 'pointerdown', press);
     });
     c.raf(loop);
-    actions(function () { startGame('cleanroute'); }, function () { return score; }, 'WASD·방향키·화면 스와이프·아래 패드로 먼지를 쓸세요. 큰 점은 잠시 컴플레인을 밀어냅니다.');
+    actions(function () { startGame('cleanroute'); }, function () { return score; }, 'WASD·방향키·화면 스와이프·아래 패드로 먼지를 쓸세요. 컴플레인 4명이 역할을 나눠 쫓습니다. 큰 점은 짧게만 밀어냅니다.');
     return { id: 'cleanroute', destroy: c.destroy };
   };
 
