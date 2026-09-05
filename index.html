@@ -1864,6 +1864,8 @@
           check: { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" },
         },
         tabsUpdatedAt: "",
+        roomList: [],
+        roomListUpdatedAt: "",
       };
       var roomingCheckMemoTimer = 0;
       var currentRoomingView = "indi";
@@ -2453,11 +2455,41 @@
         return { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" };
       }
 
+      function normalizeCheckRoomList(rawList) {
+        var seen = {};
+        var rooms = [];
+        (Array.isArray(rawList) ? rawList : []).forEach(function (raw) {
+          var r = normalizeRoomDigits(raw);
+          if (!r || DROP_ROOMS[r] || seen[r]) return;
+          seen[r] = true;
+          rooms.push(r);
+        });
+        rooms.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+        return rooms;
+      }
+
+      function pickNewerCheckRoomList(baseList, baseAt, incList, incAt) {
+        var bRooms = normalizeCheckRoomList(baseList);
+        var iRooms = normalizeCheckRoomList(incList);
+        var bAt = baseAt != null ? String(baseAt).trim() : "";
+        var iAt = incAt != null ? String(incAt).trim() : "";
+        if (iRooms.length && iAt && (!bAt || String(iAt) >= String(bAt))) {
+          return { roomList: iRooms, roomListUpdatedAt: iAt };
+        }
+        if (bRooms.length) return { roomList: bRooms, roomListUpdatedAt: bAt };
+        if (iRooms.length) return { roomList: iRooms, roomListUpdatedAt: iAt };
+        return { roomList: [], roomListUpdatedAt: bAt || iAt || "" };
+      }
+
       function normalizeRoomingCheckBoards(raw) {
         var out = {
           tabs: [{ id: "check", label: "CHECK" }],
           boards: { check: emptyRoomingCheckBoard() },
           tabsUpdatedAt: "",
+          roomList: [],
+          roomListUpdatedAt: "",
         };
         if (!raw || typeof raw !== "object") return out;
         var seen = { check: true };
@@ -2494,6 +2526,9 @@
             memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
           };
         });
+        out.roomList = normalizeCheckRoomList(raw.roomList);
+        out.roomListUpdatedAt =
+          raw.roomListUpdatedAt != null ? String(raw.roomListUpdatedAt).trim() : "";
         return out;
       }
 
@@ -2539,6 +2574,14 @@
             memoUpdatedAt: memoAt,
           };
         });
+        var pickedList = pickNewerCheckRoomList(
+          base.roomList,
+          base.roomListUpdatedAt,
+          inc.roomList,
+          inc.roomListUpdatedAt
+        );
+        out.roomList = pickedList.roomList;
+        out.roomListUpdatedAt = pickedList.roomListUpdatedAt;
         return out;
       }
 
@@ -2560,6 +2603,114 @@
 
       function checkModeForTab(tabId) {
         return tabId === "check" ? "check" : "rcheck:" + tabId;
+      }
+
+      function emptyCheckBoardRow(room) {
+        return {
+          room: room,
+          status: "",
+          resvStatus: "",
+          blockCode: "",
+          foStatus: "",
+          roomType: "",
+        };
+      }
+
+      function generateDefaultCheckRoomList() {
+        var rooms = [];
+        var seen = {};
+        function add(raw) {
+          var r = normalizeRoomDigits(raw);
+          if (!r || DROP_ROOMS[r] || seen[r]) return;
+          seen[r] = true;
+          rooms.push(r);
+        }
+        for (var v = 1; v <= 4; v++) add(v);
+        MAIN_FLOOR_ORDER.forEach(function (floor) {
+          for (var t = 1; t <= 20; t++) {
+            add(String(floor).padStart(2, "0") + String(t).padStart(2, "0"));
+          }
+        });
+        for (var af = 1; af <= 11; af++) {
+          for (var at = 51; at <= 70; at++) {
+            add(String(af).padStart(2, "0") + String(at));
+          }
+        }
+        return rooms;
+      }
+
+      function collectXmlRoomNumbers() {
+        var seen = {};
+        var rooms = [];
+        function add(raw) {
+          var r = normalizeRoomDigits(raw);
+          if (!r || DROP_ROOMS[r] || seen[r]) return;
+          seen[r] = true;
+          rooms.push(r);
+        }
+        (cachedAllStatusRooms || []).forEach(add);
+        (cachedVacRows || []).forEach(function (rec) {
+          if (rec) add(rec.room);
+        });
+        rooms.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+        return rooms;
+      }
+
+      function rememberCheckRoomListFromXml() {
+        var rooms = collectXmlRoomNumbers();
+        if (!rooms.length) return false;
+        var prev = normalizeCheckRoomList(roomingCheckBoards.roomList).join(",");
+        if (rooms.join(",") === prev) return false;
+        roomingCheckBoards.roomList = rooms;
+        roomingCheckBoards.roomListUpdatedAt = new Date().toISOString();
+        saveRoomingCheckToLocal();
+        return true;
+      }
+
+      function getCheckSkeletonRooms() {
+        var rooms = normalizeCheckRoomList(roomingCheckBoards.roomList);
+        if (!rooms.length) rooms = generateDefaultCheckRoomList();
+        var seen = {};
+        rooms.forEach(function (r) {
+          seen[r] = true;
+        });
+        (roomingCheckBoards.tabs || []).forEach(function (tab) {
+          if (!tab || !tab.id) return;
+          var board = roomingCheckBoards.boards && roomingCheckBoards.boards[tab.id];
+          if (!board || !board.rooms) return;
+          Object.keys(board.rooms).forEach(function (raw) {
+            var r = normalizeRoomDigits(raw);
+            if (!r || DROP_ROOMS[r] || seen[r] || !board.rooms[raw]) return;
+            seen[r] = true;
+            rooms.push(r);
+          });
+        });
+        rooms.sort(function (a, b) {
+          return a.localeCompare(b, undefined, { numeric: true });
+        });
+        return rooms;
+      }
+
+      function mergeRowsWithCheckSkeleton(rows) {
+        var skeleton = getCheckSkeletonRooms();
+        var map = {};
+        (rows || []).forEach(function (rec) {
+          var r = normalizeRoomDigits(rec && rec.room);
+          if (!r || DROP_ROOMS[r]) return;
+          map[r] = rec;
+        });
+        skeleton.forEach(function (r) {
+          if (!map[r]) map[r] = emptyCheckBoardRow(r);
+        });
+        return Object.keys(map)
+          .sort(function (a, b) {
+            return a.localeCompare(b, undefined, { numeric: true });
+          })
+          .map(function (k) {
+            return map[k];
+          });
       }
 
       function getRoomingCheckBoard(tabId) {
@@ -4451,6 +4602,7 @@
 
       function rebuildCachedRowsFromVacAndMap() {
         cachedRows = overlayAllStatusBlocks(cachedVacRows);
+        rememberCheckRoomListFromXml();
       }
 
       function dedupeByRoomLastWins(rows) {
@@ -4852,6 +5004,9 @@
           return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
         });
         var deduped = dedupeByRoomLastWins(filtered);
+        if (isCheckBoardMode(mode)) {
+          deduped = mergeRowsWithCheckSkeleton(deduped);
+        }
         var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
 
         var workRows;
@@ -5073,6 +5228,9 @@
           return !DROP_ROOMS[normalizeRoomDigits(rec.room)];
         });
         var deduped = dedupeByRoomLastWins(filtered);
+        if (isCheckBoardMode(mode)) {
+          deduped = mergeRowsWithCheckSkeleton(deduped);
+        }
         var modeFiltered = filterFn ? deduped.filter(filterFn) : deduped;
 
         var workRows;

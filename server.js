@@ -3303,11 +3303,44 @@ function emptyRoomingCheckBoard() {
   return { rooms: {}, memo: "", roomsUpdatedAt: "", memoUpdatedAt: "" };
 }
 
+function normalizeCheckRoomList(rawList) {
+  var seen = {};
+  var rooms = [];
+  (Array.isArray(rawList) ? rawList : []).forEach(function (raw) {
+    var r = String(raw || "").replace(/\D/g, "");
+    if (!r) return;
+    if (r.length <= 4) r = r.padStart(4, "0");
+    else r = r.slice(-4);
+    if (r === "0012" || r === "0023" || seen[r]) return;
+    seen[r] = true;
+    rooms.push(r);
+  });
+  rooms.sort(function (a, b) {
+    return a.localeCompare(b, undefined, { numeric: true });
+  });
+  return rooms;
+}
+
+function pickNewerCheckRoomList(baseList, baseAt, incList, incAt) {
+  var bRooms = normalizeCheckRoomList(baseList);
+  var iRooms = normalizeCheckRoomList(incList);
+  var bAt = baseAt != null ? String(baseAt).trim() : "";
+  var iAt = incAt != null ? String(incAt).trim() : "";
+  if (iRooms.length && iAt && (!bAt || String(iAt) >= String(bAt))) {
+    return { roomList: iRooms, roomListUpdatedAt: iAt };
+  }
+  if (bRooms.length) return { roomList: bRooms, roomListUpdatedAt: bAt };
+  if (iRooms.length) return { roomList: iRooms, roomListUpdatedAt: iAt };
+  return { roomList: [], roomListUpdatedAt: bAt || iAt || "" };
+}
+
 function normalizeRoomingCheckBoards(raw) {
   var out = {
     tabs: [{ id: "check", label: "CHECK" }],
     boards: { check: emptyRoomingCheckBoard() },
     tabsUpdatedAt: "",
+    roomList: [],
+    roomListUpdatedAt: "",
   };
   if (!raw || typeof raw !== "object") return out;
   var seen = { check: true };
@@ -3344,6 +3377,9 @@ function normalizeRoomingCheckBoards(raw) {
       memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
     };
   });
+  out.roomList = normalizeCheckRoomList(raw.roomList);
+  out.roomListUpdatedAt =
+    raw.roomListUpdatedAt != null ? String(raw.roomListUpdatedAt).trim() : "";
   return out;
 }
 
@@ -3355,6 +3391,8 @@ function mergeRoomingCheckBoardsForServer(prev, incoming) {
     tabs: base.tabs,
     boards: {},
     tabsUpdatedAt: base.tabsUpdatedAt,
+    roomList: base.roomList,
+    roomListUpdatedAt: base.roomListUpdatedAt,
   };
   if (
     inc.tabsUpdatedAt &&
@@ -3395,6 +3433,14 @@ function mergeRoomingCheckBoardsForServer(prev, incoming) {
       memoUpdatedAt: memoAt,
     };
   });
+  var pickedList = pickNewerCheckRoomList(
+    base.roomList,
+    base.roomListUpdatedAt,
+    inc.roomList,
+    inc.roomListUpdatedAt
+  );
+  out.roomList = pickedList.roomList;
+  out.roomListUpdatedAt = pickedList.roomListUpdatedAt;
   return out;
 }
 

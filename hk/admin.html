@@ -5404,6 +5404,8 @@
           tabs: [{ id: "check", label: "CHECK" }],
           boards: { check: emptyRoomingCheckBoardAdmin() },
           tabsUpdatedAt: "",
+          roomList: [],
+          roomListUpdatedAt: "",
         };
         if (!raw || typeof raw !== "object") return out;
         var seen = { check: true };
@@ -5440,6 +5442,9 @@
             memoUpdatedAt: src.memoUpdatedAt != null ? String(src.memoUpdatedAt).trim() : "",
           };
         });
+        out.roomList = Array.isArray(raw.roomList) ? raw.roomList.slice() : [];
+        out.roomListUpdatedAt =
+          raw.roomListUpdatedAt != null ? String(raw.roomListUpdatedAt).trim() : "";
         return out;
       }
 
