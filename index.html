@@ -1915,6 +1915,7 @@
       var syncPushTimer = null;
       var isApplyingRemote = false;
       var roomingSessionActive = false;
+      var roomingHydratedFromSync = false;
 
       function loadSharedStateVersion() {
         try {
@@ -2377,14 +2378,20 @@
         return n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv");
       }
 
-      function hasPayloadRoomingData(payload) {
+      function hasPayloadRoomingXml(payload) {
         if (!payload || typeof payload !== "object") return false;
         if (Array.isArray(payload.vacRows) && payload.vacRows.length) return true;
+        if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
         if (payload.roomResvMap && Object.keys(payload.roomResvMap).length) return true;
+        if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
+        return false;
+      }
+
+      function hasPayloadRoomingData(payload) {
+        if (!payload || typeof payload !== "object") return false;
+        if (hasPayloadRoomingXml(payload)) return true;
         if (payload.excelResvMap && Object.keys(payload.excelResvMap).length) return true;
         if (payload.arrResvTotals && payload.arrResvTotals.unit > 0) return true;
-        if (payload.blockMap && Object.keys(payload.blockMap).length) return true;
-        if (Array.isArray(payload.allStatusRooms) && payload.allStatusRooms.length) return true;
         if (Array.isArray(payload.fasnVacRows) && payload.fasnVacRows.length) return true;
         if (payload.fasnBlockMap && Object.keys(payload.fasnBlockMap).length) return true;
         if (Array.isArray(payload.fasnAllStatusRooms) && payload.fasnAllStatusRooms.length) return true;
@@ -2400,10 +2407,16 @@
         return false;
       }
 
-      function hasLocalRoomingData() {
+      function hasLocalRoomingXml() {
         return (
           (cachedVacRows && cachedVacRows.length > 0) ||
-          (cachedAllStatusRooms && cachedAllStatusRooms.length > 0) ||
+          (cachedAllStatusRooms && cachedAllStatusRooms.length > 0)
+        );
+      }
+
+      function hasLocalRoomingData() {
+        return (
+          hasLocalRoomingXml() ||
           (cachedRoomResvMap && Object.keys(cachedRoomResvMap).length > 0) ||
           (cachedExcelResvMap && Object.keys(cachedExcelResvMap).length > 0) ||
           (cachedArrResvTotals && cachedArrResvTotals.unit > 0) ||
@@ -2719,6 +2732,7 @@
       }
 
       function shouldFillRoomSkeleton(mode) {
+        if (!roomingHydratedFromSync) return false;
         return isCheckBoardMode(mode) || !hasLiveBoardRows(mode);
       }
 
@@ -2981,12 +2995,16 @@
 
       function applySharedState(data) {
         if (!data) return;
+        var xmlCleared = !!data.roomingClearedAt;
         var uploadSummary = document.getElementById("uploadSummary");
         if (uploadSummary && Object.prototype.hasOwnProperty.call(data, "uploadSummary")) {
           uploadSummary.textContent = data.uploadSummary || "";
         }
         if (Object.prototype.hasOwnProperty.call(data, "blockMap")) {
-          cachedAllStatusBlockMap = JSON.parse(JSON.stringify(data.blockMap || {}));
+          var nextBlockMap = data.blockMap && typeof data.blockMap === "object" ? data.blockMap : {};
+          if (Object.keys(nextBlockMap).length || xmlCleared) {
+            cachedAllStatusBlockMap = JSON.parse(JSON.stringify(nextBlockMap));
+          }
         }
         if (Object.prototype.hasOwnProperty.call(data, "vacRows") && Array.isArray(data.vacRows)) {
           if (data.vacRows.length) {
@@ -3016,13 +3034,16 @@
                 };
               })
             );
-          } else {
+            rebuildVacFoMapFromRows();
+          } else if (xmlCleared) {
             cachedVacRows = [];
+            rebuildVacFoMapFromRows();
           }
-          rebuildVacFoMapFromRows();
         }
         if (Object.prototype.hasOwnProperty.call(data, "roomResvMap") && typeof data.roomResvMap === "object") {
-          cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap || {}));
+          if (Object.keys(data.roomResvMap).length || xmlCleared) {
+            cachedRoomResvMap = JSON.parse(JSON.stringify(data.roomResvMap || {}));
+          }
         }
         if (Object.prototype.hasOwnProperty.call(data, "excelResvMap") && typeof data.excelResvMap === "object") {
           cachedExcelResvMap = JSON.parse(JSON.stringify(data.excelResvMap || {}));
@@ -3040,7 +3061,11 @@
         }
         rebuildCombinedRoomResvMap();
         if (Object.prototype.hasOwnProperty.call(data, "allStatusRooms") && Array.isArray(data.allStatusRooms)) {
-          cachedAllStatusRooms = data.allStatusRooms.slice();
+          if (data.allStatusRooms.length) {
+            cachedAllStatusRooms = data.allStatusRooms.slice();
+          } else if (xmlCleared) {
+            cachedAllStatusRooms = [];
+          }
         }
         if (data.extendedStayRooms !== undefined) {
           applyExtendedStayFromRemote(data);
@@ -3166,7 +3191,7 @@
       }
 
       function needsRoomingBootstrap() {
-        return !hasLocalRoomingData() && !hasLocalFasnData();
+        return !hasLocalRoomingXml() && !hasLocalFasnData();
       }
 
       function showRoomingLoading(msg) {
@@ -3190,13 +3215,17 @@
         if (
           sinceSend == null &&
           sharedStateVersion > 0 &&
+          hasLocalRoomingXml() &&
           !needsRoomingBootstrap() &&
           !opts.bootstrap &&
           (isPoll || hasLocalRoomingData() || hasLocalFasnData())
         ) {
           sinceSend = sharedStateVersion;
         }
-        if (sinceSend != null) {
+        if (opts.bootstrap) {
+          url += "&bootstrap=1";
+        }
+        if (sinceSend != null && !opts.bootstrap) {
           headers["X-Sync-Version"] = String(sinceSend);
           url += "&since=" + encodeURIComponent(String(sinceSend));
         }
@@ -3232,7 +3261,7 @@
             if (data.unchanged) {
               if (data.version != null) saveSharedStateVersion(data.version);
               if (data.updatedAt) lastAppliedSyncUpdatedAt = data.updatedAt;
-              if (needsRoomingBootstrap() && !opts.bootstrapRetry) {
+              if (!hasLocalRoomingXml() && !opts.bootstrapRetry) {
                 return pullSharedState(isPoll, { bootstrap: true, bootstrapRetry: true });
               }
               return catchUpIfNeeded().then(function (caught) {
@@ -3259,6 +3288,9 @@
                 opts.catchUp ||
                 opts.bootstrap ||
                 (!isPoll &&
+                  !hasLocalRoomingXml() &&
+                  hasPayloadRoomingXml(data.payload)) ||
+                (!isPoll &&
                   needsRoomingBootstrap() &&
                   hasPayloadRoomingSyncData(data.payload)) ||
                 (!isPoll &&
@@ -3272,8 +3304,8 @@
             if (
               !applied &&
               data.payload &&
-              (opts.bootstrap || needsRoomingBootstrap()) &&
-              hasPayloadRoomingSyncData(data.payload)
+              (opts.bootstrap || needsRoomingBootstrap() || !hasLocalRoomingXml()) &&
+              (hasPayloadRoomingXml(data.payload) || hasPayloadRoomingSyncData(data.payload))
             ) {
               applied = applyRemoteSyncFromServer(data, { forceApply: true });
             }
@@ -3317,11 +3349,10 @@
         if (syncPollTimer) return Promise.resolve();
         loadSharedStateVersion();
         loadRoomingPartVersion();
-        var boot = pullSharedState(false, { bootstrap: needsRoomingBootstrap() }).then(function () {
-          if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        var boot = pullSharedState(false, { bootstrap: true }).then(function () {
+          if (!hasLocalRoomingXml()) loadRoomingStateFromLocal();
           if (!hasLocalFasnData()) loadFasnStateFromLocal();
-          refreshBoards();
-          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) {
+          if (!hasLocalRoomingXml() && shouldLoadDefaultXmlFiles()) {
             return loadDefaultXmlFiles();
           }
         });
@@ -3340,15 +3371,11 @@
           authGateEl.classList.add("hidden");
           authGateEl.setAttribute("aria-hidden", "true");
         }
-        showRoomingLoading(
-          needsRoomingBootstrap()
-            ? "최신 루밍 업로드 불러오는 중…"
-            : "루밍 불러오는 중…"
-        );
-        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        showRoomingLoading("최신 루밍 업로드 불러오는 중…");
+        if (!hasLocalRoomingXml()) loadRoomingStateFromLocal();
         if (!hasLocalFasnData()) loadFasnStateFromLocal();
-        refreshBoards();
         return startRoomSyncPolling().finally(function () {
+          roomingHydratedFromSync = true;
           refreshBoards();
           hideRoomingLoading();
         });
@@ -6440,11 +6467,15 @@
         loadRoomingCheckFromLocal();
         syncRoomingCheckTabUi();
         syncRoomingCheckMemos();
-        if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
+        if (!hasLocalRoomingXml()) loadRoomingStateFromLocal();
         if (!hasLocalFasnData()) loadFasnStateFromLocal();
         updateIndiArrSummary();
         switchBoardView("indi");
-        refreshBoards();
+        var unlockedToday =
+          typeof window.__isRoomingUnlockedToday === "function"
+            ? window.__isRoomingUnlockedToday()
+            : sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1";
+        if (!unlockedToday) refreshBoards();
         var linkToHkFront = document.getElementById("linkToHkFront");
         if (linkToHkFront) {
           linkToHkFront.addEventListener("click", function () {
@@ -6475,10 +6506,6 @@
           var link = document.getElementById("linkToHkFront");
           if (link) link.click();
         });
-        var unlockedToday =
-          typeof window.__isRoomingUnlockedToday === "function"
-            ? window.__isRoomingUnlockedToday()
-            : sessionStorage.getItem(AUTH_UNLOCK_KEY) === "1";
         if (unlockedToday) {
           beginRoomingSession();
         }
@@ -6486,11 +6513,15 @@
 
       window.addEventListener("pageshow", function () {
         if (!roomingSessionActive) return;
-        pullSharedState(false).then(function () {
-          if (!hasLocalRoomingData()) loadRoomingStateFromLocal();
-          if (!hasLocalFasnData()) loadFasnStateFromLocal();
-          if (!hasLocalRoomingData() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
-        });
+        pullSharedState(false, { bootstrap: !hasLocalRoomingXml() })
+          .then(function () {
+            if (!hasLocalRoomingXml()) loadRoomingStateFromLocal();
+            if (!hasLocalFasnData()) loadFasnStateFromLocal();
+            if (!hasLocalRoomingXml() && shouldLoadDefaultXmlFiles()) return loadDefaultXmlFiles();
+          })
+          .then(function () {
+            refreshBoards();
+          });
       });
 
       window.addEventListener("pagehide", function () {

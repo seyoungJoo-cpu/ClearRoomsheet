@@ -768,6 +768,8 @@ app.get("/api/sync", checkSyncAuth, function (req, res) {
   res.set("ETag", '"' + String(version) + '"');
   var since = parseSyncSinceVersion(req);
   var scope = parseSyncScope(req);
+  var bootstrap = req.query && String(req.query.bootstrap) === "1";
+  if (bootstrap) since = null;
   if (since != null && since === version) {
     res.json(
       attachStaffPresenceToSyncBody(
