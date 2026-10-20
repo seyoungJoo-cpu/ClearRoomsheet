@@ -21,10 +21,19 @@ try {
   console.warn("compression: not installed — outbound JSON will be uncompressed");
 }
 const PORT = process.env.PORT || 3000;
+// For Render persistent disk, set MAKEROOM_DATA_DIR to its approved mount path.
+// Defaults to the legacy root to avoid changing live behavior before migration.
+const DATA_DIR = process.env.MAKEROOM_DATA_DIR
+  ? path.resolve(process.env.MAKEROOM_DATA_DIR)
+  : __dirname;
+if (DATA_DIR !== __dirname) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (process.env.RENDER && DATA_DIR === __dirname) {
+  console.warn("WARNING: runtime JSON files use the app folder; configure persistent storage before redeployment");
+}
 const SYNC_PASSWORD = process.env.SYNC_PASSWORD || "74321";
-const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
-const PUSH_SUBS_FILE = path.join(__dirname, "push-subs.json");
-const VAPID_MARKER_FILE = path.join(__dirname, ".push-vapid-marker.txt");
+const VAPID_FILE = path.join(DATA_DIR, ".vapid-keys.json");
+const PUSH_SUBS_FILE = path.join(DATA_DIR, "push-subs.json");
+const VAPID_MARKER_FILE = path.join(DATA_DIR, ".push-vapid-marker.txt");
 const VAPID_SUBJECT = (process.env.VAPID_SUBJECT || "mailto:hk@localhost").trim();
 
 /** @type {Map<string, object>} */
@@ -294,7 +303,7 @@ const sharedState = {
   partVersions: {},
 };
 
-const SYNC_STATE_FILE = path.join(__dirname, "sync-state.json");
+const SYNC_STATE_FILE = path.join(DATA_DIR, "sync-state.json");
 
 function loadSharedStateFromDisk() {
   try {
@@ -593,7 +602,7 @@ function checkSyncAuth(req, res, next) {
   next();
 }
 
-const CLOSE_DAY_ARCHIVE_DIR = path.join(__dirname, "close-day-archives");
+const CLOSE_DAY_ARCHIVE_DIR = path.join(DATA_DIR, "close-day-archives");
 const CLOSE_DAY_ARCHIVE_INDEX = path.join(CLOSE_DAY_ARCHIVE_DIR, "index.json");
 const CLOSE_DAY_KEEP_DAYS = 7;
 
