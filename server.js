@@ -10,6 +10,11 @@ const fs = require("fs");
 const webpush = require("web-push");
 
 const app = express();
+app.disable("x-powered-by");
+app.use(function noSniff(req, res, next) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+});
 try {
   app.use(require("compression")());
 } catch (eComp) {
@@ -3841,6 +3846,19 @@ app.get("/health", function (req, res) {
   res.status(200).send("ok");
 });
 
+// Default room XML may contain operational data: require the existing sync credential.
+const PROTECTED_ROOM_XML = new Set(["hkvacroom6563812.xml", "hk_allstatus6563818.xml"]);
+app.get(/^\/(?:hkvacroom6563812|hk_allstatus6563818)\.xml$/i, checkSyncAuth, function (req, res) {
+  const name = path.basename(req.path).toLowerCase();
+  if (!PROTECTED_ROOM_XML.has(name)) return res.status(404).end();
+  res.set("Cache-Control", "no-store");
+  res.sendFile(name, { root: __dirname }, function (err) {
+    if (err && !res.headersSent) {
+      res.status(err.status === 404 ? 404 : 500).type("text/plain").send("Not Found");
+    }
+  });
+});
+
 function htmlToPlainText(html) {
   var s = String(html || "");
   s = s.replace(/<script[\s\S]*?<\/script>/gi, " ");
@@ -3967,6 +3985,29 @@ app.use(
     setHeaders: setStaticCacheHeaders,
   })
 );
+// Serve only known UI assets. The project root also stores private JSON and server source.
+const PUBLIC_ROOT_ASSETS = new Set(["/", "/index.html", "/favicon.png", "/favicon-32.png"]);
+const PUBLIC_MODULE_DIRS = ["/hk/", "/inven/", "/DD/", "/chichi/"];
+const PUBLIC_MODULE_EXT = /\.(?:html?|css|js|mjs|png|jpe?g|gif|svg|ico|webp|woff2?|ttf)$/i;
+app.use(function restrictStaticFiles(req, res, next) {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  let decoded;
+  try {
+    decoded = decodeURIComponent(req.path);
+  } catch (_) {
+    return res.status(404).end();
+  }
+  if (decoded.includes("\0") || decoded.includes("\\") ||
+      /(^|\/)\.{1,2}(\/|$)/.test(decoded)) {
+    return res.status(404).end();
+  }
+  if (PUBLIC_ROOT_ASSETS.has(decoded)) return next();
+  const permitted = PUBLIC_MODULE_DIRS.some(function (dir) {
+    return decoded.startsWith(dir);
+  }) && PUBLIC_MODULE_EXT.test(decoded);
+  if (!permitted) return res.status(404).type("text/plain").send("Not Found");
+  next();
+});
 app.use(
   express.static(path.join(__dirname), {
     setHeaders: setStaticCacheHeaders,
