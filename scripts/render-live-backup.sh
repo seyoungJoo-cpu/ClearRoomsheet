@@ -22,7 +22,7 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE="$OUT/makeroom-operation-$STAMP.tar.gz"
 
 files=(sync-state.json)
-for file in push-subs.json .vapid-keys.json .push-vapid-marker.txt close-day-archives; do
+for file in push-subs.json .vapid-keys.json .push-vapid-marker.txt close-day-archives hkvacroom6563812.xml hk_allstatus6563818.xml; do
   if [[ -e "$file" ]]; then files+=("$file"); fi
 done
 
