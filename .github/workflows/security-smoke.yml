@@ -21,3 +21,17 @@ jobs:
       - run: node --check server.js
       - run: node --check test/security-smoke.test.cjs
       - run: node test/security-smoke.test.cjs
+      - run: node test/storage-path-smoke.test.cjs
+      - name: Check backup script with fictional data
+        run: |
+          bash -n scripts/render-live-backup.sh
+          temp="$(mktemp -d)"
+          mkdir -p "$temp/export" "$temp/close-day-archives"
+          printf '{"version":42,"updatedAt":null,"payload":{"note":"FAKE"},"partVersions":{}}\n' > "$temp/sync-state.json"
+          printf '[]\n' > "$temp/push-subs.json"
+          MAKEROOM_APP_ROOT="$temp" bash scripts/render-live-backup.sh "$temp/export"
+          archive="$(find "$temp/export" -maxdepth 1 -name '*.tar.gz' -print -quit)"
+          test -s "$archive"
+          tar -tzf "$archive" | grep -q 'sync-state.json'
+          tar -xOf "$archive" sync-state.json | node -e 'let s="";process.stdin.on("data", b=>s+=b).on("end",()=>{if(JSON.parse(s).version!==42)process.exit(1)})'
+          rm -rf "$temp"
