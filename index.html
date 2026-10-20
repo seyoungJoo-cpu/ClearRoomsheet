@@ -6395,7 +6395,10 @@
       wireExcelDownloadButtons();
 
       function loadDefaultXmlFiles() {
-        return fetch(DEFAULT_VACROOM_XML)
+        return fetch(DEFAULT_VACROOM_XML, {
+          headers: { "X-Sync-Password": getSyncPassword() },
+          cache: "no-store",
+        })
           .then(function (r) {
             if (!r.ok) throw new Error("HTTP " + r.status);
             return r.text();
@@ -6405,7 +6408,10 @@
             if (doc.querySelector("parsererror")) throw new Error("HKVACROOM 파싱 오류");
             cachedVacRows = parseVacRooms(doc);
             rebuildVacFoMapFromRows();
-            return fetch(DEFAULT_ALLSTATUS_XML).then(function (r2) {
+            return fetch(DEFAULT_ALLSTATUS_XML, {
+              headers: { "X-Sync-Password": getSyncPassword() },
+              cache: "no-store",
+            }).then(function (r2) {
               if (!r2.ok) return "";
               return r2.text();
             });
